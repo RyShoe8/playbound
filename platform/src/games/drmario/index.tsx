@@ -35,7 +35,7 @@ export default function DrMarioGame() {
 
   // Broadcast our board state when it changes (simplified sync)
   useEffect(() => {
-    if (joined && socketRef.current && gameState === 'clearing' || gameState === 'playing') {
+    if (joined && socketRef.current && (gameState === 'clearing' || gameState === 'playing')) {
       socketRef.current.emit('gameAction', {
         roomId,
         playerId: socketRef.current.id,
