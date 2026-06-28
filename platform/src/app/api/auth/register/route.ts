@@ -37,8 +37,7 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ success: true, userId: user._id }), { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      const zodError = error as z.ZodError<any>;
-      return new Response(JSON.stringify({ error: zodError.errors[0].message }), { status: 400 });
+      return new Response(JSON.stringify({ error: error.issues[0].message }), { status: 400 });
     }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500 });
   }
