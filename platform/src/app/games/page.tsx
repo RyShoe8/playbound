@@ -3,6 +3,8 @@ import React from 'react';
 import dbConnect from '@/lib/db';
 import Game from '@/lib/models/Game';
 
+export const dynamic = 'force-dynamic';
+
 export default async function GamesCatalog() {
   await dbConnect();
   
