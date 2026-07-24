@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bell, Share2 } from "lucide-react";
 import { collectionsBySlug, gamesFor } from "@/lib/data";
 import { GameArt } from "@/components/GameArt";
-import { PlayCta } from "@/components/GameCard";
-import { Badge, PlayersOnline, Rating } from "@/components/ui/bits";
+import { LaunchBadge, PlayCta } from "@/components/GameCard";
+import { Badge } from "@/components/ui/bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -22,31 +21,10 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <section className="rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-6 sm:p-8">
-        <Badge tone="brand">
-          {collection.curatorType === "playbound"
-            ? "PlayBound Curated"
-            : collection.curatorType === "developer"
-              ? "Developer Pick"
-              : "Community Made"}
-        </Badge>
+        <Badge tone="brand">PlayBound Curated</Badge>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{collection.title}</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">{collection.description}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <span>
-            Curated by <span className="font-semibold text-foreground">{collection.curator}</span>
-          </span>
-          <span>{games.length} games</span>
-          <span>{Intl.NumberFormat("en", { notation: "compact" }).format(collection.followers)} followers</span>
-          <span>Updated {collection.updatedAgo}</span>
-        </div>
-        <div className="mt-5 flex gap-2">
-          <button className="flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground transition-all hover:brightness-110">
-            <Bell className="size-4" /> Follow Collection
-          </button>
-          <button className="flex items-center gap-2 rounded-full border border-border bg-secondary px-5 py-2 text-sm font-bold transition-colors hover:bg-secondary/70">
-            <Share2 className="size-4" /> Share
-          </button>
-        </div>
+        <p className="mt-4 text-sm text-muted-foreground">{games.length} games</p>
       </section>
 
       <div className="space-y-3">
@@ -65,8 +43,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
               </Link>
               <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{game.tagline}</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
-                <Rating value={game.rating} />
-                <PlayersOnline count={game.playersOnline} className="text-xs" />
+                <LaunchBadge game={game} />
                 <span className="text-muted-foreground">{game.genres.join(" · ")}</span>
               </div>
             </div>

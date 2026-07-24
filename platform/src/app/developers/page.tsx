@@ -1,34 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Upload } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { developers, gamesByDeveloper } from "@/lib/data";
-import { Avatar, Badge } from "@/components/ui/bits";
+import { Avatar } from "@/components/ui/bits";
 
 export const metadata: Metadata = { title: "Developers" };
 
 export default function DevelopersPage() {
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Developers</h1>
-          <p className="mt-1 text-muted-foreground">
-            The studios and teams behind every free game on PlayBound. Follow them to hear the
-            moment they ship.
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="flex items-center gap-2 text-sm font-bold">
-            <Upload className="size-4 text-primary" /> Publish on PlayBound
-          </p>
-          <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-            Upload a build, add artwork and metadata, pick a launch method, submit for review.
-            Publishing a game should feel like publishing a blog post.
-          </p>
-          <button className="mt-3 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground transition-all hover:brightness-110">
-            Open Developer Portal
-          </button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight">Developers</h1>
+        <p className="mt-1 text-muted-foreground">The studios and teams behind every free game on PlayBound.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -43,17 +26,13 @@ export default function DevelopersPage() {
               <div className="flex items-center gap-3">
                 <Avatar name={dev.name} hue={dev.artHue} size="lg" />
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 font-bold">
-                    <span className="truncate">{dev.name}</span>
-                    {dev.firstParty && <Badge tone="brand">First-Party</Badge>}
-                  </p>
+                  <p className="truncate font-bold">{dev.name}</p>
                   <p className="truncate text-xs text-muted-foreground">{dev.tagline}</p>
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  {devGames.length} game{devGames.length === 1 ? "" : "s"} ·{" "}
-                  {Intl.NumberFormat("en", { notation: "compact" }).format(dev.followers)} followers
+                  {devGames.length} game{devGames.length === 1 ? "" : "s"} on PlayBound
                 </span>
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
               </div>

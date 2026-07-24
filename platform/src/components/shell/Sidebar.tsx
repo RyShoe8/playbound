@@ -2,19 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  CalendarDays,
-  Compass,
-  FolderHeart,
-  Hammer,
-  House,
-  LibraryBig,
-  Play,
-  Shield,
-  Users,
-} from "lucide-react";
+import { useSession } from "next-auth/react";
+import { CalendarDays, Compass, FolderHeart, Hammer, House, LibraryBig, Play, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { currentUser, friendsPlaying, totalPlayersOnline } from "@/lib/data";
 import { Avatar } from "@/components/ui/bits";
 
 const nav = [
@@ -29,8 +19,8 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const { data: session } = useSession();
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
@@ -59,46 +49,53 @@ export function Sidebar() {
             {label}
           </Link>
         ))}
-        <div className="pt-4">
-          <Link
-            href="/admin"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
-              isActive("/admin")
-                ? "bg-sidebar-accent text-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
-            )}
-          >
-            <Shield className={cn("size-4.5", isActive("/admin") && "text-primary")} />
-            Admin
-          </Link>
-        </div>
+        {session?.user?.role === "admin" && (
+          <div className="pt-4">
+            <Link
+              href="/admin"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
+                isActive("/admin")
+                  ? "bg-sidebar-accent text-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+              )}
+            >
+              <Shield className={cn("size-4.5", isActive("/admin") && "text-primary")} />
+              Admin
+            </Link>
+          </div>
+        )}
       </nav>
 
-      <div className="border-t border-sidebar-border px-5 py-3 text-xs text-muted-foreground">
-        <p className="flex items-center gap-1.5">
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-play opacity-60" />
-            <span className="relative inline-flex size-2 rounded-full bg-play" />
-          </span>
-          <span className="font-semibold text-foreground">
-            {Intl.NumberFormat("en").format(totalPlayersOnline)}
-          </span>
-          players online now
-        </p>
-        <p className="mt-1">{friendsPlaying.length} friends in game</p>
+      <div className="border-t border-sidebar-border p-3">
+        {session?.user ? (
+          <Link
+            href="/profile"
+            className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-sidebar-accent/60"
+          >
+            <Avatar name={session.user.username ?? session.user.email ?? "?"} hue={265} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{session.user.username}</p>
+              <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
+            </div>
+          </Link>
+        ) : (
+          <div className="flex gap-2 px-2 py-2">
+            <Link
+              href="/login"
+              className="flex-1 rounded-full bg-secondary py-2 text-center text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
+              className="flex-1 rounded-full bg-primary py-2 text-center text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+            >
+              Sign Up
+            </Link>
+          </div>
+        )}
       </div>
-
-      <Link
-        href="/profile"
-        className="flex items-center gap-3 border-t border-sidebar-border px-5 py-4 transition-colors hover:bg-sidebar-accent/60"
-      >
-        <Avatar name={currentUser.name} hue={currentUser.avatarHue} status="Online" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold">{currentUser.name}</p>
-          <p className="text-xs text-muted-foreground">Level {currentUser.level}</p>
-        </div>
-      </Link>
     </aside>
   );
 }
