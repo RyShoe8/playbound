@@ -1,5 +1,5 @@
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const FROM_EMAIL = process.env.MAIL_FROM_EMAIL || "no-reply@playbound.gg";
+const FROM_EMAIL = process.env.MAIL_FROM_EMAIL || "playboundclub@gmail.com";
 const FROM_NAME = process.env.MAIL_FROM_NAME || "PlayBound";
 
 /**
