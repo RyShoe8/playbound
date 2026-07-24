@@ -1,0 +1,109 @@
+import {
+  Blocks,
+  Bomb,
+  Bug,
+  Cog,
+  Crosshair,
+  Factory,
+  Flag,
+  Flame,
+  Gamepad2,
+  Landmark,
+  Mountain,
+  Orbit,
+  Pill,
+  Radar,
+  Rocket,
+  Skull,
+  Snowflake,
+  Sparkles,
+  Swords,
+  Target,
+  TrainFront,
+  Truck,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import type { Game } from "@/lib/data/types";
+import { cn } from "@/lib/utils";
+
+const icons: Record<string, LucideIcon> = {
+  Blocks,
+  Bomb,
+  Bug,
+  Cog,
+  Crosshair,
+  Factory,
+  Flag,
+  Flame,
+  Landmark,
+  Mountain,
+  Orbit,
+  Pill,
+  Radar,
+  Rocket,
+  Skull,
+  Snowflake,
+  Sparkles,
+  Swords,
+  Target,
+  TrainFront,
+  Truck,
+  Zap,
+};
+
+/**
+ * Generated cover art: every game gets a deterministic gradient + icon treatment
+ * so the catalog looks cohesive without shipping image assets.
+ */
+export function GameArt({
+  game,
+  className,
+  showTitle = true,
+  iconSize = "lg",
+}: {
+  game: Game;
+  className?: string;
+  showTitle?: boolean;
+  iconSize?: "sm" | "md" | "lg";
+}) {
+  const Icon = icons[game.art.icon] ?? Gamepad2;
+  const iconClass =
+    iconSize === "sm" ? "size-8" : iconSize === "md" ? "size-14" : "size-20";
+
+  return (
+    <div
+      className={cn("relative flex items-center justify-center overflow-hidden", className)}
+      style={{
+        background: `linear-gradient(135deg, ${game.art.from} 0%, ${game.art.to} 100%)`,
+      }}
+    >
+      {/* soft lighting */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(80% 60% at 30% 20%, rgba(255,255,255,0.22), transparent 60%), radial-gradient(90% 70% at 80% 90%, rgba(0,0,0,0.38), transparent 55%)",
+        }}
+      />
+      {/* subtle grid texture */}
+      <div
+        className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      />
+      <Icon
+        className={cn(iconClass, "relative text-white/85 drop-shadow-[0_4px_14px_rgba(0,0,0,0.45)]")}
+        strokeWidth={1.5}
+      />
+      {showTitle && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pt-8 pb-2.5">
+          <p className="truncate text-sm font-bold text-white drop-shadow">{game.title}</p>
+        </div>
+      )}
+    </div>
+  );
+}
