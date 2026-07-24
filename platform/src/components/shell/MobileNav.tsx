@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Compass, House, LibraryBig, Users } from "lucide-react";
+import { Compass, House, LibraryBig, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -10,13 +10,11 @@ const items = [
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/community", label: "Community", icon: Users },
-  { href: "/events", label: "Events", icon: CalendarDays },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-sidebar/95 backdrop-blur-md lg:hidden">

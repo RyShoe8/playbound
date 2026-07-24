@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { Bell, Play, Search, Users } from "lucide-react";
-import { currentUser, friendsPlaying } from "@/lib/data";
+import { useSession } from "next-auth/react";
+import { Play, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
 
 export function TopBar() {
+  const { data: session } = useSession();
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
@@ -22,37 +26,32 @@ export function TopBar() {
           <input
             type="search"
             name="q"
-            placeholder="Search games, developers, collections, players, servers…"
+            placeholder="Search games, developers, collections…"
             className="h-9 w-full rounded-full border border-input bg-secondary/60 pr-4 pl-10 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40"
           />
         </form>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <Link
-            href="/community"
-            className="relative flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            title="Friends"
-          >
-            <Users className="size-4.5" />
-            {friendsPlaying.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-play text-[10px] font-bold text-play-foreground">
-                {friendsPlaying.length}
-              </span>
-            )}
-          </Link>
-          <Link
-            href="/profile#notifications"
-            className="relative flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            title="Notifications"
-          >
-            <Bell className="size-4.5" />
-            <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              3
-            </span>
-          </Link>
-          <Link href="/profile" className="ml-1" title="Profile">
-            <Avatar name={currentUser.name} hue={currentUser.avatarHue} size="sm" status="Online" />
-          </Link>
+        <div className="ml-auto flex items-center gap-2">
+          {session?.user ? (
+            <Link href="/profile" title="Profile">
+              <Avatar name={session.user.username ?? "?"} hue={265} size="sm" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="hidden rounded-full px-3.5 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

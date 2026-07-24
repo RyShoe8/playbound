@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { Download, MonitorPlay, Play, TrendingUp } from "lucide-react";
+import { Download, MonitorPlay } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "./GameArt";
-import { Badge, PlayersOnline, Rating } from "./ui/bits";
+import { Badge } from "./ui/bits";
 import { cn } from "@/lib/utils";
+
+function sizeLabel(sizeMB: number) {
+  return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
+}
 
 export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" | "lg" }) {
   const sizes = {
@@ -19,8 +23,8 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
         sizes[size]
       )}
     >
-      <Play className={cn("fill-current", size === "lg" ? "size-5" : "size-4")} />
-      Play
+      <Download className={cn(size === "lg" ? "size-5" : "size-4")} />
+      Get It Free
     </Link>
   );
 }
@@ -35,47 +39,23 @@ export function LaunchBadge({ game }: { game: Game }) {
   }
   return (
     <Badge tone="neutral">
-      <Download className="size-3" /> {game.sizeMB && game.sizeMB >= 1000 ? `${(game.sizeMB / 1000).toFixed(1)} GB` : `${game.sizeMB} MB`}
+      <Download className="size-3" /> {sizeLabel(game.sizeMB)}
     </Badge>
   );
 }
 
-export function GameCard({
-  game,
-  showGrowth = false,
-  className,
-}: {
-  game: Game;
-  showGrowth?: boolean;
-  className?: string;
-}) {
+export function GameCard({ game, className }: { game: Game; className?: string }) {
   return (
-    <Link
-      href={`/games/${game.slug}`}
-      className={cn(
-        "group w-44 shrink-0 snap-start sm:w-48",
-        className
-      )}
-    >
+    <Link href={`/games/${game.slug}`} className={cn("group w-44 shrink-0 snap-start sm:w-48", className)}>
       <div className="relative overflow-hidden rounded-xl border border-border transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]">
         <GameArt game={game} className="aspect-[3/4]" />
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-          {showGrowth && game.weeklyGrowth > 10 && (
-            <Badge tone="warn" className="backdrop-blur">
-              <TrendingUp className="size-3" /> +{game.weeklyGrowth}%
-            </Badge>
-          )}
-        </div>
         <div className="absolute top-2 right-2">
           <LaunchBadge game={game} />
         </div>
       </div>
-      <div className="mt-2 space-y-1 px-0.5">
-        <div className="flex items-center justify-between gap-2">
-          <Rating value={game.rating} />
-          <span className="truncate text-xs text-muted-foreground">{game.genres[0]}</span>
-        </div>
-        <PlayersOnline count={game.playersOnline} className="text-xs" />
+      <div className="mt-2 space-y-0.5 px-0.5">
+        <p className="truncate text-sm font-semibold">{game.title}</p>
+        <p className="truncate text-xs text-muted-foreground">{game.genres.join(" · ")}</p>
       </div>
     </Link>
   );
@@ -83,9 +63,5 @@ export function GameCard({
 
 /** Horizontally scrolling card row with snap. */
 export function CardRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="no-scrollbar -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pt-1 pb-2">
-      {children}
-    </div>
-  );
+  return <div className="no-scrollbar -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pt-1 pb-2">{children}</div>;
 }

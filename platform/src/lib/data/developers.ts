@@ -2,31 +2,14 @@ import type { Developer } from "./types";
 
 export const developers: Developer[] = [
   {
-    slug: "playbound-studios",
-    name: "PlayBound Studios",
-    tagline: "First-party games built for instant play.",
-    about:
-      "PlayBound Studios is the platform's in-house team, building browser-native games designed around one idea: you should be playing within five seconds of clicking. Every title ships with cloud saves, platform achievements, and live events from day one.",
-    founded: 2025,
-    location: "Remote · Worldwide",
-    website: "/developers/playbound-studios",
-    discord: "playbound",
-    followers: 18400,
-    firstParty: true,
-    artHue: 265,
-  },
-  {
     slug: "openra-team",
     name: "OpenRA Team",
     tagline: "Reimagining classic RTS games for the modern era.",
     about:
-      "A global volunteer team maintaining OpenRA — a modernized engine for early Westwood-style real-time strategy. Fifteen years of releases, an active ranked community, and one of the healthiest modding scenes in open source gaming.",
+      "A global volunteer team maintaining OpenRA — a modernized engine for early Westwood-style real-time strategy. Fifteen years of releases and one of the healthiest modding scenes in open source gaming.",
     founded: 2007,
     location: "Worldwide",
     website: "https://www.openra.net",
-    discord: "openra",
-    followers: 9200,
-    firstParty: false,
     artHue: 25,
   },
   {
@@ -34,13 +17,10 @@ export const developers: Developer[] = [
     name: "Team Xonotic",
     tagline: "Keepers of the arena shooter flame.",
     about:
-      "Team Xonotic develops the free arena FPS Xonotic, carrying the torch of fast-movement shooters. Community-run servers, community-made maps, and a competitive scene that never went away.",
+      "Team Xonotic develops the free arena FPS Xonotic, carrying the torch of fast-movement shooters with community-run servers and community-made maps.",
     founded: 2010,
     location: "Worldwide",
     website: "https://xonotic.org",
-    discord: "xonotic",
-    followers: 6100,
-    firstParty: false,
     artHue: 195,
   },
   {
@@ -52,9 +32,6 @@ export const developers: Developer[] = [
     founded: 2003,
     location: "Worldwide",
     website: "https://www.wesnoth.org",
-    discord: "wesnoth",
-    followers: 11300,
-    firstParty: false,
     artHue: 275,
   },
   {
@@ -62,13 +39,10 @@ export const developers: Developer[] = [
     name: "SuperTuxKart Team",
     tagline: "Karts, chaos, and open-source mascots.",
     about:
-      "The team behind SuperTuxKart, the free kart racer featuring mascots from across the open-source world. Focused on couch multiplayer, online racing, and staying genuinely fun for all ages.",
+      "The team behind SuperTuxKart, the free kart racer featuring mascots from across the open-source world, focused on couch multiplayer and online racing.",
     founded: 2006,
     location: "Worldwide",
     website: "https://supertuxkart.net",
-    discord: null,
-    followers: 7800,
-    firstParty: false,
     artHue: 140,
   },
   {
@@ -76,13 +50,10 @@ export const developers: Developer[] = [
     name: "Wildfire Games",
     tagline: "Historical RTS craftsmanship since 2001.",
     about:
-      "Wildfire Games is the independent studio of volunteers behind 0 A.D., pursuing historically grounded real-time strategy with an obsessive eye for detail — every unit, building, and civilization researched and hand-crafted.",
+      "Wildfire Games is the independent studio of volunteers behind 0 A.D., pursuing historically grounded real-time strategy with an obsessive eye for detail.",
     founded: 2001,
     location: "Worldwide",
     website: "https://play0ad.com",
-    discord: "0ad",
-    followers: 8600,
-    firstParty: false,
     artHue: 45,
   },
   {
@@ -90,13 +61,10 @@ export const developers: Developer[] = [
     name: "Veloren Team",
     tagline: "Building an open voxel world in Rust.",
     about:
-      "Hundreds of contributors building Veloren, an open-world voxel RPG, entirely in the open. Weekly devlogs, public roadmaps, and playtests where the developers are on the server with you.",
+      "Hundreds of contributors building Veloren, an open-world voxel RPG, entirely in the open with weekly devlogs and public roadmaps.",
     founded: 2018,
     location: "Worldwide",
     website: "https://veloren.net",
-    discord: "veloren",
-    followers: 13900,
-    firstParty: false,
     artHue: 160,
   },
   {
@@ -104,13 +72,10 @@ export const developers: Developer[] = [
     name: "Anuke",
     tagline: "One developer. One factory. Endless waves.",
     about:
-      "Anuke is the solo developer of Mindustry, one of the most-played open-source games in the world — famous for shipping updates at a pace whole studios envy.",
+      "Anuke is the solo developer of Mindustry, one of the most-played open-source games in the world.",
     founded: 2017,
     location: "United States",
     website: "https://mindustrygame.github.io",
-    discord: "mindustry",
-    followers: 24100,
-    firstParty: false,
     artHue: 30,
   },
   {
@@ -118,13 +83,10 @@ export const developers: Developer[] = [
     name: "OpenTTD Team",
     tagline: "Twenty years of trains running on time.",
     about:
-      "The maintainers of OpenTTD, the definitive open-source transport sim. Home of NewGRF, one of gaming's longest-running mod ecosystems.",
+      "The maintainers of OpenTTD, the definitive open-source transport sim and home of the long-running NewGRF modding ecosystem.",
     founded: 2004,
     location: "Worldwide",
     website: "https://www.openttd.org",
-    discord: "openttd",
-    followers: 10800,
-    firstParty: false,
     artHue: 200,
   },
   {
@@ -136,9 +98,6 @@ export const developers: Developer[] = [
     founded: 2014,
     location: "Worldwide",
     website: "https://endless-sky.github.io",
-    discord: "endless-sky",
-    followers: 5400,
-    firstParty: false,
     artHue: 250,
   },
   {
@@ -146,13 +105,10 @@ export const developers: Developer[] = [
     name: "Shattered Pixel",
     tagline: "Roguelike design, sharpened to a point.",
     about:
-      "Shattered Pixel is the one-developer studio behind Shattered Pixel Dungeon, refining the same roguelike for over a decade into something close to perfect.",
+      "Shattered Pixel is the one-developer studio behind Shattered Pixel Dungeon, refining the same roguelike for over a decade.",
     founded: 2014,
     location: "Canada",
     website: "https://shatteredpixel.com",
-    discord: "shattered-pixel",
-    followers: 19700,
-    firstParty: false,
     artHue: 300,
   },
   {
@@ -164,23 +120,16 @@ export const developers: Developer[] = [
     founded: 2019,
     location: "Worldwide",
     website: "https://www.beyondallreason.info",
-    discord: "beyond-all-reason",
-    followers: 15200,
-    firstParty: false,
     artHue: 10,
   },
   {
     slug: "luanti-team",
     name: "Luanti Team",
     tagline: "The open voxel game platform.",
-    about:
-      "Maintainers of Luanti, the engine and platform hosting thousands of community-made voxel games and mods.",
+    about: "Maintainers of Luanti, the engine and platform hosting thousands of community-made voxel games and mods.",
     founded: 2010,
     location: "Worldwide",
     website: "https://www.luanti.org",
-    discord: "luanti",
-    followers: 9900,
-    firstParty: false,
     artHue: 110,
   },
   {
@@ -192,9 +141,6 @@ export const developers: Developer[] = [
     founded: 2004,
     location: "Worldwide",
     website: "https://wz2100.net",
-    discord: "warzone2100",
-    followers: 4300,
-    firstParty: false,
     artHue: 40,
   },
   {
@@ -205,9 +151,6 @@ export const developers: Developer[] = [
     founded: 2003,
     location: "Worldwide",
     website: "https://www.supertux.org",
-    discord: null,
-    followers: 6200,
-    firstParty: false,
     artHue: 205,
   },
   {
@@ -218,9 +161,6 @@ export const developers: Developer[] = [
     founded: 2010,
     location: "Worldwide",
     website: "https://zero-k.info",
-    discord: "zero-k",
-    followers: 3800,
-    firstParty: false,
     artHue: 220,
   },
   {
@@ -231,9 +171,6 @@ export const developers: Developer[] = [
     founded: 2004,
     location: "Worldwide",
     website: "https://naev.org",
-    discord: "naev",
-    followers: 2100,
-    firstParty: false,
     artHue: 230,
   },
   {
@@ -244,9 +181,6 @@ export const developers: Developer[] = [
     founded: 2006,
     location: "Worldwide",
     website: "https://hedgewars.org",
-    discord: null,
-    followers: 3400,
-    firstParty: false,
     artHue: 55,
   },
   {
@@ -257,9 +191,6 @@ export const developers: Developer[] = [
     founded: 2011,
     location: "Worldwide",
     website: "https://unvanquished.net",
-    discord: "unvanquished",
-    followers: 1900,
-    firstParty: false,
     artHue: 130,
   },
 ];

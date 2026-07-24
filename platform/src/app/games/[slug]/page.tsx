@@ -1,54 +1,37 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  Bell,
-  Download,
-  Gamepad2,
-  Heart,
-  MessagesSquare,
-  Monitor,
-  Server,
-  Share2,
-  Star,
-  Trophy,
-} from "lucide-react";
-import {
-  achievementsFor,
-  collectionsFeaturing,
-  developersBySlug,
-  discussionsFor,
-  getGame,
-  games,
-  guidesFor,
-  modsFor,
-  newsFor,
-  reviewsFor,
-  serversFor,
-} from "@/lib/data";
-import type { Game } from "@/lib/data/types";
+import { getServerSession } from "next-auth/next";
+import { Gamepad2, MessagesSquare, Newspaper, Server, Star, Trophy, Wrench } from "lucide-react";
+import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/db";
+import Review from "@/lib/models/Review";
+import GuidePost from "@/lib/models/GuidePost";
+import DiscussionPost from "@/lib/models/DiscussionPost";
+import { fetchGithubReleases } from "@/lib/github";
+import { collectionsFeaturing, developersBySlug, games, getGame } from "@/lib/data";
 import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
-import { Avatar, Badge, EmptyHint, PlayersOnline, Rating, SectionHeader } from "@/components/ui/bits";
+import { ContentForm } from "@/components/ContentForm";
+import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-  "overview",
-  "servers",
-  "mods",
-  "guides",
-  "achievements",
-  "news",
-  "discussion",
-  "reviews",
-  "media",
-  "updates",
-] as const;
+const tabs = ["overview", "servers", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
 type Tab = (typeof tabs)[number];
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const game = getGame(slug);
   return { title: game ? game.title : "Game Not Found" };
+}
+
+async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    await dbConnect();
+    return await fn();
+  } catch (err) {
+    console.error("DB query failed:", err);
+    return fallback;
+  }
 }
 
 export default async function GamePage({
@@ -64,6 +47,8 @@ export default async function GamePage({
   if (!game) notFound();
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
+  const session = await getServerSession(authOptions);
+  const developer = developersBySlug.get(game.developerSlug);
 
   return (
     <div>
@@ -75,7 +60,6 @@ export default async function GamePage({
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
               <div className="flex flex-wrap items-center gap-2">
-                {game.firstParty && <Badge tone="brand">PlayBound Original</Badge>}
                 <LaunchBadge game={game} />
                 {game.genres.map((g) => (
                   <Badge key={g} tone="outline">
@@ -85,44 +69,8 @@ export default async function GamePage({
               </div>
               <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
               <p className="mt-2 text-muted-foreground sm:text-lg">{game.tagline}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-                <Rating value={game.rating} count={game.ratingCount} />
-                <PlayersOnline count={game.playersOnline} />
-                {game.activeServers > 0 && (
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <Server className="size-3.5" /> {game.activeServers} active servers
-                  </span>
-                )}
-              </div>
             </div>
-            <div className="flex flex-col items-start gap-3">
-              <div className="flex items-center gap-3">
-                <PlayCta game={game} size="lg" />
-                {!game.browserPlayable && (
-                  <Link
-                    href={`/games/${game.slug}/play`}
-                    className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-secondary px-6 text-base font-bold transition-colors hover:bg-secondary/70"
-                  >
-                    <Download className="size-4.5" /> Install
-                  </Link>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                {[
-                  { icon: Heart, label: "Favorite" },
-                  { icon: Bell, label: "Follow" },
-                  { icon: Share2, label: "Share" },
-                  { icon: MessagesSquare, label: "Community" },
-                ].map(({ icon: Icon, label }) => (
-                  <button
-                    key={label}
-                    className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <Icon className="size-3.5" /> {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <PlayCta game={game} size="lg" />
           </div>
         </div>
       </section>
@@ -135,9 +83,7 @@ export default async function GamePage({
             href={`/games/${game.slug}${t === "overview" ? "" : `?tab=${t}`}`}
             className={cn(
               "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
-              tab === t
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+              tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
             {t}
@@ -146,16 +92,40 @@ export default async function GamePage({
       </nav>
 
       <div className="px-4 py-8 sm:px-6 lg:px-8">
-        {tab === "overview" && <OverviewTab game={game} />}
+        {tab === "overview" && (
+          <OverviewTab game={game} developer={developer} featuring={collectionsFeaturing(game.slug)} similar={games.filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre))).slice(0, 6)} />
+        )}
         {tab === "servers" && <ServersTab game={game} />}
         {tab === "mods" && <ModsTab game={game} />}
-        {tab === "guides" && <GuidesTab game={game} />}
-        {tab === "achievements" && <AchievementsTab game={game} />}
-        {tab === "news" && <NewsTab game={game} />}
-        {tab === "discussion" && <DiscussionTab game={game} />}
-        {tab === "reviews" && <ReviewsTab game={game} />}
+        {tab === "guides" && (
+          <GuidesTab
+            gameSlug={game.slug}
+            isSignedIn={Boolean(session?.user)}
+            items={await safeQuery(() => GuidePost.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+          />
+        )}
+        {tab === "achievements" && <AchievementsTab />}
+        {tab === "news" && (
+          <NewsTab
+            game={game}
+            releases={game.githubRepo ? await fetchGithubReleases(game.githubRepo) : []}
+          />
+        )}
+        {tab === "discussion" && (
+          <DiscussionTab
+            gameSlug={game.slug}
+            isSignedIn={Boolean(session?.user)}
+            items={await safeQuery(() => DiscussionPost.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+          />
+        )}
+        {tab === "reviews" && (
+          <ReviewsTab
+            gameSlug={game.slug}
+            isSignedIn={Boolean(session?.user)}
+            items={await safeQuery(() => Review.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+          />
+        )}
         {tab === "media" && <MediaTab game={game} />}
-        {tab === "updates" && <UpdatesTab game={game} />}
       </div>
     </div>
   );
@@ -163,13 +133,18 @@ export default async function GamePage({
 
 /* ────────────────────────── Tabs ────────────────────────── */
 
-function OverviewTab({ game }: { game: Game }) {
-  const developer = developersBySlug.get(game.developerSlug);
-  const featuring = collectionsFeaturing(game.slug);
-  const similar = games
-    .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
-    .slice(0, 6);
-
+function OverviewTab({
+  game,
+  developer,
+  featuring,
+  similar,
+}: {
+  game: ReturnType<typeof getGame>;
+  developer: ReturnType<typeof developersBySlug.get>;
+  featuring: ReturnType<typeof collectionsFeaturing>;
+  similar: ReturnType<typeof getGame>[];
+}) {
+  if (!game) return null;
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
@@ -190,24 +165,6 @@ function OverviewTab({ game }: { game: Game }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Screenshots</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <GameArt
-                key={i}
-                game={game}
-                showTitle={false}
-                iconSize="md"
-                className={cn("aspect-video rounded-lg", i === 1 && "brightness-90", i === 2 && "brightness-110 saturate-150")}
-              />
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Generated placeholder art — final screenshots arrive with the media pipeline.
-          </p>
-        </section>
-
-        <section>
           <h2 className="text-lg font-bold">System Requirements</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-border bg-card p-4">
@@ -223,17 +180,14 @@ function OverviewTab({ game }: { game: Game }) {
 
         {similar.length > 0 && (
           <section>
-            <SectionHeader title="More Like This" href="/discover" />
+            <h2 className="mb-4 text-lg font-bold">More Like This</h2>
             <CardRow>
-              {similar.map((g) => (
-                <GameCard key={g.slug} game={g} />
-              ))}
+              {similar.map((g) => g && <GameCard key={g.slug} game={g} />)}
             </CardRow>
           </section>
         )}
       </div>
 
-      {/* Info sidebar */}
       <aside className="space-y-4">
         {developer && (
           <Link
@@ -243,20 +197,17 @@ function OverviewTab({ game }: { game: Game }) {
             <Avatar name={developer.name} hue={developer.artHue} size="lg" />
             <div className="min-w-0">
               <p className="truncate font-bold">{developer.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {Intl.NumberFormat("en", { notation: "compact" }).format(developer.followers)} followers · Follow for updates
-              </p>
+              <p className="text-xs text-muted-foreground">{developer.tagline}</p>
             </div>
           </Link>
         )}
         <div className="space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
           {[
             ["Released", String(game.releaseYear)],
-            ["Last update", game.lastUpdate],
             ["License", game.license],
             ["Platforms", game.platforms.join(", ")],
-            ["Download size", game.sizeMB ? (game.sizeMB >= 1000 ? `${(game.sizeMB / 1000).toFixed(1)} GB` : `${game.sizeMB} MB`) : "None — runs in browser"],
-            ["Launch", game.launchMethods.map((m) => ({ browser: "Browser Play", install: "PlayBound Install", server: "Dedicated Servers" })[m]).join(" · ")],
+            ["Download size", game.sizeMB >= 1000 ? `${(game.sizeMB / 1000).toFixed(1)} GB` : `${game.sizeMB} MB`],
+            ["Launch", game.launchMethods.map((m) => (m === "install" ? "Install" : m === "server" ? "Dedicated Servers" : "Browser")).join(" · ")],
             ["Steam Deck", game.steamDeck ? "Compatible" : "Untested"],
           ].map(([k, v]) => (
             <div key={k} className="flex items-start justify-between gap-4">
@@ -264,12 +215,17 @@ function OverviewTab({ game }: { game: Game }) {
               <span className="text-right font-medium">{v}</span>
             </div>
           ))}
+          <a href={game.website} target="_blank" rel="noreferrer" className="block pt-1 text-sm font-semibold text-primary hover:underline">
+            Official website →
+          </a>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tags</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {game.tags.map((t) => (
-              <Badge key={t} tone="neutral">{t}</Badge>
+              <Badge key={t} tone="neutral">
+                {t}
+              </Badge>
             ))}
           </div>
         </div>
@@ -290,124 +246,135 @@ function OverviewTab({ game }: { game: Game }) {
   );
 }
 
-function ServersTab({ game }: { game: Game }) {
-  const list = serversFor(game.slug);
+function ServersTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold">Server Browser</h2>
-          <p className="text-sm text-muted-foreground">
-            {game.activeServers > 0
-              ? `${game.activeServers} servers online · quick join drops you into the best match`
-              : "This game doesn't use dedicated servers."}
-          </p>
-        </div>
-        {game.launchMethods.includes("server") && (
-          <div className="flex gap-2">
-            <button className="rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground transition-all hover:brightness-110">
-              Quick Join
-            </button>
-            <button className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70">
-              Host Server
-            </button>
-          </div>
-        )}
-      </div>
-      {list.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border border-border">
-          {list.map((s, i) => (
-            <div
-              key={s.name}
-              className={cn("flex flex-wrap items-center gap-3 bg-card px-4 py-3", i > 0 && "border-t border-border")}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{s.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {s.map} · {s.region} · created {s.createdAgo}
-                </p>
-              </div>
-              <span className={cn("text-sm font-semibold", s.players >= s.maxPlayers ? "text-amber-400" : "text-play")}>
-                {s.players}/{s.maxPlayers}
-              </span>
-              <button
-                className="rounded-full bg-secondary px-4 py-1.5 text-xs font-bold transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
-                disabled={s.players >= s.maxPlayers}
-              >
-                {s.players >= s.maxPlayers ? "Full" : "Join"}
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint icon={Server}>No live servers right now — host one and friends can join in one click.</EmptyHint>
-      )}
+    <div className="mx-auto max-w-2xl">
+      <EmptyHint icon={Server}>
+        {game.launchMethods.includes("server")
+          ? `${game.title} supports dedicated servers, but PlayBound doesn't have a live server browser for it yet. Use the game's in-app server browser after installing.`
+          : `${game.title} doesn't use dedicated servers.`}
+      </EmptyHint>
     </div>
   );
 }
 
-function ModsTab({ game }: { game: Game }) {
-  const list = modsFor(game.slug);
+function ModsTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h2 className="text-lg font-bold">Mods</h2>
-        <p className="text-sm text-muted-foreground">
-          One-click install · automatic updates · dependencies handled for you
-        </p>
-      </div>
-      {list.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {list.map((m) => (
-            <div key={m.name} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-bold">{m.name}</p>
-                <Rating value={m.rating} />
+    <div className="mx-auto max-w-2xl">
+      <EmptyHint icon={Wrench}>
+        {game.features.some((f) => f.toLowerCase().includes("mod"))
+          ? `${game.title} supports mods. PlayBound doesn't host a mod browser yet — check the official site's community hub.`
+          : `${game.title} doesn't have documented mod support.`}
+      </EmptyHint>
+    </div>
+  );
+}
+
+function AchievementsTab() {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <EmptyHint icon={Trophy}>Platform-wide achievements are planned but not tracked yet.</EmptyHint>
+    </div>
+  );
+}
+
+function NewsTab({
+  game,
+  releases,
+}: {
+  game: NonNullable<ReturnType<typeof getGame>>;
+  releases: Awaited<ReturnType<typeof fetchGithubReleases>>;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <h2 className="text-lg font-bold">Releases</h2>
+      {releases.length > 0 ? (
+        <div className="space-y-3">
+          {releases.map((r) => (
+            <a
+              key={r.tagName}
+              href={r.url}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
+            >
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge tone="brand">
+                  <Newspaper className="size-3" /> GitHub Release
+                </Badge>
+                {r.publishedAt && new Date(r.publishedAt).toLocaleDateString()}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{m.summary}</p>
-              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  by {m.author} · {Intl.NumberFormat("en").format(m.downloads)} downloads · updated {m.updatedAgo}
-                </span>
-                <button className="rounded-full bg-secondary px-3 py-1 font-bold text-foreground transition-colors hover:bg-primary hover:text-primary-foreground">
-                  Install
-                </button>
-              </div>
-            </div>
+              <h3 className="mt-2 font-bold">{r.name}</h3>
+              {r.body && <p className="mt-1 line-clamp-3 whitespace-pre-line text-sm text-muted-foreground">{r.body}</p>}
+            </a>
           ))}
         </div>
       ) : (
-        <EmptyHint>
-          {game.modsCount > 0
-            ? `${game.modsCount} mods exist for this game — the browser is being indexed.`
-            : "This game doesn't support mods yet."}
+        <EmptyHint icon={Newspaper}>
+          No release notes available from GitHub for {game.title}.{" "}
+          <a href={game.website} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
+            Check the official site
+          </a>{" "}
+          for updates.
         </EmptyHint>
       )}
     </div>
   );
 }
 
-function GuidesTab({ game }: { game: Game }) {
-  const list = guidesFor(game.slug);
+interface PostDoc {
+  _id: string;
+  username: string;
+  title: string;
+  body: string;
+  createdAt: string | Date;
+  rating?: number;
+}
+
+function DiscussionTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h2 className="text-lg font-bold">Guides</h2>
-        <p className="text-sm text-muted-foreground">Community and developer wisdom, from first launch to top of the ladder</p>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Discussion</h2>
+        <ContentForm kind="discussion" gameSlug={gameSlug} isSignedIn={isSignedIn} />
       </div>
-      {list.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border border-border">
-          {list.map((g, i) => (
-            <div key={g.title} className={cn("flex flex-wrap items-center gap-3 bg-card px-4 py-3", i > 0 && "border-t border-border")}>
-              <Badge tone={g.kind === "Beginner" ? "play" : "brand"}>{g.kind}</Badge>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">
-                  {g.title} {g.trending && <Badge tone="warn" className="ml-1">Trending</Badge>}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  by {g.author} · {Intl.NumberFormat("en", { notation: "compact" }).format(g.views)} views · {g.timeAgo}
-                </p>
-              </div>
+      {items.length > 0 ? (
+        <div className="space-y-3">
+          {items.map((d) => (
+            <div key={String(d._id)} className="rounded-xl border border-border bg-card p-4">
+              <p className="flex items-center gap-2 font-semibold">
+                <MessagesSquare className="size-4 shrink-0 text-muted-foreground" /> {d.title}
+              </p>
+              <p className="mt-1.5 whitespace-pre-line text-sm text-muted-foreground">{d.body}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {d.username} · {new Date(d.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyHint icon={MessagesSquare}>No discussion yet — be the first.</EmptyHint>
+      )}
+    </div>
+  );
+}
+
+function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Guides</h2>
+        <ContentForm kind="guide" gameSlug={gameSlug} isSignedIn={isSignedIn} />
+      </div>
+      {items.length > 0 ? (
+        <div className="space-y-3">
+          {items.map((g) => (
+            <div key={String(g._id)} className="rounded-xl border border-border bg-card p-4">
+              <p className="font-semibold">{g.title}</p>
+              <p className="mt-1.5 line-clamp-4 whitespace-pre-line text-sm text-muted-foreground">{g.body}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {g.username} · {new Date(g.createdAt).toLocaleDateString()}
+              </p>
             </div>
           ))}
         </div>
@@ -418,147 +385,53 @@ function GuidesTab({ game }: { game: Game }) {
   );
 }
 
-function AchievementsTab({ game }: { game: Game }) {
-  const list = achievementsFor(game.slug);
+function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
+  const avg = items.length > 0 ? items.reduce((s, r) => s + (r.rating ?? 0), 0) / items.length : 0;
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h2 className="text-lg font-bold">Achievements</h2>
-        <p className="text-sm text-muted-foreground">
-          {game.achievementsCount} platform achievements · earn XP, levels, and badges across PlayBound
-        </p>
-      </div>
-      {list.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {list.map((a) => (
-            <div key={a.name} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/15">
-                <Trophy className="size-5 text-primary" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">{a.name}</p>
-                <p className="text-sm text-muted-foreground">{a.description}</p>
-              </div>
-              <div className="shrink-0 text-right text-xs text-muted-foreground">
-                <p className="font-bold text-foreground">+{a.xp} XP</p>
-                <p>{a.rarity}% of players</p>
-              </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center gap-4">
+          <div className="text-center">
+            <p className="text-4xl font-extrabold">{items.length > 0 ? avg.toFixed(1) : "—"}</p>
+            <div className="mt-1 flex justify-center">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} className={cn("size-4", i <= Math.round(avg) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint icon={Trophy}>Achievements for this game are being configured.</EmptyHint>
-      )}
-    </div>
-  );
-}
-
-function NewsTab({ game }: { game: Game }) {
-  const list = newsFor(game.slug);
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <h2 className="text-lg font-bold">News & Devlogs</h2>
-      {list.length > 0 ? (
-        <div className="space-y-3">
-          {list.map((n) => (
-            <article key={n.title} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Badge tone="brand">{n.kind}</Badge> {n.date}
-              </div>
-              <h3 className="mt-2 font-bold">{n.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{n.summary}</p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint>No news yet — follow the developer to get notified the moment something ships.</EmptyHint>
-      )}
-    </div>
-  );
-}
-
-function DiscussionTab({ game }: { game: Game }) {
-  const list = discussionsFor(game.slug);
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Discussion</h2>
-        <button className="rounded-full bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-primary hover:text-primary-foreground">
-          New Thread
-        </button>
-      </div>
-      {list.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border border-border">
-          {list.map((d, i) => (
-            <div key={d.title} className={cn("flex items-center gap-3 bg-card px-4 py-3", i > 0 && "border-t border-border")}>
-              <MessagesSquare className="size-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{d.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  by {d.author} · {d.replies} replies · active {d.lastActive}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint icon={MessagesSquare}>Quiet in here. Start the first thread.</EmptyHint>
-      )}
-    </div>
-  );
-}
-
-function ReviewsTab({ game }: { game: Game }) {
-  const list = reviewsFor(game.slug);
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center gap-6 rounded-xl border border-border bg-card p-5">
-        <div className="text-center">
-          <p className="text-4xl font-extrabold">{game.rating.toFixed(1)}</p>
-          <div className="mt-1 flex justify-center">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Star
-                key={i}
-                className={cn("size-4", i <= Math.round(game.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")}
-              />
-            ))}
           </div>
-        </div>
-        <div className="text-sm text-muted-foreground">
-          <p>
-            <span className="font-bold text-foreground">
-              {Intl.NumberFormat("en").format(game.ratingCount)}
-            </span>{" "}
-            player ratings
+          <p className="text-sm text-muted-foreground">
+            {items.length} player review{items.length === 1 ? "" : "s"}
           </p>
-          <p className="mt-1">Every review comes from someone who actually played — playtime is shown on each one.</p>
         </div>
+        <ContentForm kind="review" gameSlug={gameSlug} isSignedIn={isSignedIn} />
       </div>
-      {list.length > 0 ? (
+      {items.length > 0 ? (
         <div className="space-y-3">
-          {list.map((r) => (
-            <article key={r.title} className="rounded-xl border border-border bg-card p-5">
+          {items.map((r) => (
+            <article key={String(r._id)} className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-bold">“{r.title}”</p>
-                <Rating value={r.rating} />
+                <p className="font-bold">&ldquo;{r.title}&rdquo;</p>
+                <span className="flex items-center gap-1 text-sm font-semibold">
+                  <Star className="size-3.5 fill-amber-400 text-amber-400" /> {r.rating}
+                </span>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{r.body}</p>
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{r.body}</p>
               <p className="mt-3 text-xs text-muted-foreground">
-                {r.author} · {r.timeAgo} · {r.helpful} found this helpful
+                {r.username} · {new Date(r.createdAt).toLocaleDateString()}
               </p>
             </article>
           ))}
         </div>
       ) : (
-        <EmptyHint icon={Star}>No written reviews yet — rate it after your first session.</EmptyHint>
+        <EmptyHint icon={Star}>No reviews yet — rate it after your first session.</EmptyHint>
       )}
     </div>
   );
 }
 
-function MediaTab({ game }: { game: Game }) {
+function MediaTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <h2 className="text-lg font-bold">Media</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -567,48 +440,17 @@ function MediaTab({ game }: { game: Game }) {
             game={game}
             showTitle={false}
             iconSize="md"
-            className={cn(
-              "aspect-video rounded-lg",
-              i % 3 === 1 && "brightness-90 hue-rotate-15",
-              i % 3 === 2 && "brightness-110 saturate-150 -hue-rotate-15"
-            )}
+            className={cn("aspect-video rounded-lg", i % 3 === 1 && "brightness-90", i % 3 === 2 && "brightness-110 saturate-150")}
           />
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Generated placeholder art — screenshots, trailers, and community clips land here once the media pipeline is connected.
+        Generated placeholder art. Real screenshots pull from{" "}
+        <a href={game.website} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
+          the official site
+        </a>{" "}
+        until a media pipeline is connected.
       </p>
-    </div>
-  );
-}
-
-function UpdatesTab({ game }: { game: Game }) {
-  const updates = newsFor(game.slug).filter((n) => n.kind === "Update" || n.kind === "Devlog");
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h2 className="text-lg font-bold">Updates</h2>
-        <p className="text-sm text-muted-foreground">
-          Last updated {game.lastUpdate} · PlayBound keeps installs current automatically
-        </p>
-      </div>
-      {updates.length > 0 ? (
-        <div className="space-y-3">
-          {updates.map((n) => (
-            <article key={n.title} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Badge tone="play">{n.kind}</Badge> {n.date}
-              </div>
-              <h3 className="mt-2 font-bold">{n.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{n.summary}</p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint icon={Monitor}>
-          Version history will appear here — automatic update checks run daily.
-        </EmptyHint>
-      )}
     </div>
   );
 }

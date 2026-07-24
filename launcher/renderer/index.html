@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+    <title>PlayBound Launcher</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <span class="logo-mark">▶</span>
+        <span>Play<em>Bound</em> Launcher</span>
+      </div>
+      <span class="beta">beta</span>
+    </header>
+    <p class="strapline">
+      One-click installs for free PC games. Downloads come straight from each project's official
+      releases.
+    </p>
+    <main id="games"></main>
+    <footer>
+      Games install to <code id="install-path">~/PlayBound/Games</code> · PlayBound never bundles or
+      modifies game files.
+    </footer>
+    <script src="renderer.js"></script>
+  </body>
+</html>
