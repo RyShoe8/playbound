@@ -15,6 +15,7 @@ export const GENRES = [
   "Tower Defense",
   "Space",
   "Arcade",
+  "Pirate",
 ] as const;
 
 export const LAUNCH_METHODS = ["browser", "install", "server"] as const;
@@ -83,6 +84,7 @@ const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> =
   "Tower Defense": { from: "#7c2d12", to: "#fb923c", icon: "Landmark" },
   Space: { from: "#0f172a", to: "#6366f1", icon: "Rocket" },
   Arcade: { from: "#831843", to: "#f472b6", icon: "Target" },
+  Pirate: { from: "#0c4a6e", to: "#f59e0b", icon: "Flag" },
 };
 
 export function defaultArtFor(genres: string[] = [], slug = ""): { from: string; to: string; icon: string } {

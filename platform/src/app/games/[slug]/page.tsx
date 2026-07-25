@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Gamepad2, MessagesSquare, Newspaper, Server, Star, Trophy, Wrench } from "lucide-react";
+import { Gamepad2, MessagesSquare, Newspaper, Star, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
@@ -13,6 +13,7 @@ import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
 import { ContentForm } from "@/components/ContentForm";
+import { ServerBrowser } from "@/components/ServerBrowser";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 
@@ -253,13 +254,11 @@ function OverviewTab({
 
 function ServersTab({ game }: { game: Game }) {
   return (
-    <div className="mx-auto max-w-2xl">
-      <EmptyHint icon={Server}>
-        {game.launchMethods.includes("server")
-          ? `${game.title} supports dedicated servers, but PlayBound doesn't have a live server browser for it yet. Use the game's in-app server browser after installing.`
-          : `${game.title} doesn't use dedicated servers.`}
-      </EmptyHint>
-    </div>
+    <ServerBrowser
+      slug={game.slug}
+      title={game.title}
+      supportsServers={game.launchMethods.includes("server")}
+    />
   );
 }
 
