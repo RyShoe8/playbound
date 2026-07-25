@@ -24,7 +24,7 @@ After deploy (or when Mongo is empty), upsert the seed games from `src/lib/data/
 npx vercel env run -e production -- npm run seed:games
 ```
 
-Run this once per environment. After seed, edit/publish games from **Admin → Games** (no code deploy for catalog metadata).
+Run this once per environment from `platform/`. Requires a non-empty `MONGODB_URI` in that environment (if `.env.local` has an empty `MONGODB_URI=`, remove or fill it first — `vercel env run` loads that file). After seed, edit/publish games from **Admin → Games** (no code deploy for catalog metadata).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
