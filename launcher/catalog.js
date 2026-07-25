@@ -177,5 +177,6 @@ module.exports = [
     kind: "external",
     url: "https://unvanquished.net/",
     art: ["#052e16", "#86efac"],
+    connectArgs: ["+connect", "{host}:{port}"],
   },
 ];
