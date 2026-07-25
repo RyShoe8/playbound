@@ -16,10 +16,10 @@ export type Genre =
   | "Arcade";
 
 export interface GameArt {
-  /** CSS color stops for the generated cover gradient */
+  /** CSS color stops for the generated cover gradient (fallback) */
   from: string;
   to: string;
-  /** Lucide icon name rendered as the cover watermark */
+  /** Lucide icon name rendered as the cover watermark when no image */
   icon: string;
 }
 
@@ -52,6 +52,10 @@ export interface Game {
   gameOfWeek: boolean;
   hiddenGem: boolean;
   art: GameArt;
+  /** Local cover under /public, e.g. /games/openra/cover.jpg */
+  coverImage?: string;
+  /** Local or absolute screenshot URLs for the Media tab */
+  screenshots?: string[];
   systemRequirements: { min: string; recommended: string };
 }
 

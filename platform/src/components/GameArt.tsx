@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   Blocks,
   Bomb,
@@ -53,8 +54,7 @@ const icons: Record<string, LucideIcon> = {
 };
 
 /**
- * Generated cover art: every game gets a deterministic gradient + icon treatment
- * so the catalog looks cohesive without shipping image assets.
+ * Game cover: prefers a real coverImage, falls back to gradient + Lucide icon.
  */
 export function GameArt({
   game,
@@ -71,6 +71,25 @@ export function GameArt({
   const iconClass =
     iconSize === "sm" ? "size-8" : iconSize === "md" ? "size-14" : "size-20";
 
+  if (game.coverImage) {
+    return (
+      <div className={cn("relative overflow-hidden bg-secondary", className)}>
+        <Image
+          src={game.coverImage}
+          alt={`${game.title} cover`}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 50vw, 25vw"
+        />
+        {showTitle && (
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-8 pb-2.5">
+            <p className="truncate text-sm font-bold text-white drop-shadow">{game.title}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn("relative flex items-center justify-center overflow-hidden", className)}
@@ -78,7 +97,6 @@ export function GameArt({
         background: `linear-gradient(135deg, ${game.art.from} 0%, ${game.art.to} 100%)`,
       }}
     >
-      {/* soft lighting */}
       <div
         className="absolute inset-0"
         style={{
@@ -86,7 +104,6 @@ export function GameArt({
             "radial-gradient(80% 60% at 30% 20%, rgba(255,255,255,0.22), transparent 60%), radial-gradient(90% 70% at 80% 90%, rgba(0,0,0,0.38), transparent 55%)",
         }}
       />
-      {/* subtle grid texture */}
       <div
         className="absolute inset-0 opacity-[0.07]"
         style={{
