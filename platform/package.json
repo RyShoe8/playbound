@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npm run seed:games",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",

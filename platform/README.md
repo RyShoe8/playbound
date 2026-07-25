@@ -18,13 +18,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ### Seed the game catalog (production Mongo)
 
-After deploy (or when Mongo is empty), upsert the seed games from `src/lib/data/games.ts`:
+`npm run build` runs `seed:games` after Next.js builds. On Vercel, the first deploy with an empty Mongo catalog upserts games from `src/lib/data/games.ts`. Later builds skip seeding once any catalog docs exist (so Admin CMS edits are not overwritten).
+
+To force a manual seed against an empty DB:
 
 ```bash
 npx vercel env run -e production -- npm run seed:games
 ```
-
-Run this once per environment from `platform/`. Requires a non-empty `MONGODB_URI` in that environment (if `.env.local` has an empty `MONGODB_URI=`, remove or fill it first — `vercel env run` loads that file). After seed, edit/publish games from **Admin → Games** (no code deploy for catalog metadata).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
