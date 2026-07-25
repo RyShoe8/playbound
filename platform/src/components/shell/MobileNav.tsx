@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, House, LibraryBig, Users } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Compass, House, LibraryBig, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -14,7 +15,9 @@ const items = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-sidebar/95 backdrop-blur-md lg:hidden">
@@ -31,6 +34,18 @@ export function MobileNav() {
           {label}
         </Link>
       ))}
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className={cn(
+            "flex flex-1 flex-col items-center gap-0.5 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-[10px] font-semibold",
+            isActive("/admin") ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          <Shield className="size-5" />
+          Admin
+        </Link>
+      )}
     </nav>
   );
 }
