@@ -41,6 +41,8 @@ export async function POST(req: Request) {
       screenshots: body.screenshots ?? [],
       developerName,
       submissionId: body.submissionId || null,
+      managedBy: body.managedBy || "admin",
+      ownerUserId: body.ownerUserId || null,
     });
 
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });

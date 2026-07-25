@@ -619,6 +619,29 @@ export function GameEditorForm({
           ))}
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label}>Managed by</label>
+            <select
+              value={form.managedBy}
+              onChange={(e) => patch("managedBy", e.target.value as GamePayload["managedBy"])}
+              className={field}
+            >
+              <option value="admin">admin</option>
+              <option value="developer">developer</option>
+            </select>
+          </div>
+          <div>
+            <label className={label}>Owner user id (optional)</label>
+            <input
+              value={form.ownerUserId ?? ""}
+              onChange={(e) => patch("ownerUserId", e.target.value || null)}
+              placeholder="When developer-managed"
+              className={field}
+            />
+          </div>
+        </div>
+
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex flex-wrap gap-2">

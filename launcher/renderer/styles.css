@@ -330,13 +330,20 @@ footer {
 }
 
 .account-msg {
-  margin-top: 6px;
-  font-size: 11px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
   color: #8b8699;
   min-height: 14px;
+  line-height: 1.45;
+}
+
+.account-msg.ok {
+  color: #34d27b;
 }
 
 .account-msg.err {
   color: #f07178;
+  font-weight: 600;
 }
 

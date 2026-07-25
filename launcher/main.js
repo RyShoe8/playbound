@@ -46,6 +46,7 @@ if (!gotLock) {
 
 function parseDeepLink(url) {
   // playbound://install/openra
+  // playbound://install-mod/my-mod
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
   // playbound://link?token=...
@@ -58,7 +59,7 @@ function parseDeepLink(url) {
       return { action: "link", token: u.searchParams.get("token") || "" };
     }
     const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (!slug || !["install", "play", "uninstall", "join"].includes(action)) return null;
+    if (!slug || !["install", "play", "uninstall", "join", "install-mod"].includes(action)) return null;
     /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string }} */
     const parsed = { action, slug };
     if (action === "join") {
@@ -72,13 +73,16 @@ function parseDeepLink(url) {
   }
 }
 
-function notifyAccount() {
+const CONNECTED_LIBRARY_MSG =
+  "Connected. Close this window and refresh your library page.";
+
+function notifyAccount(payload = {}) {
   if (win && !win.isDestroyed()) {
-    win.webContents.send("account");
+    win.webContents.send("account", payload);
   }
 }
 
-function persistLauncherToken(token) {
+function persistLauncherToken(token, { notify = true } = {}) {
   const settings = loadSettings();
   const trimmed = String(token || "").trim();
   if (!trimmed) {
@@ -88,8 +92,81 @@ function persistLauncherToken(token) {
   }
   if (!settings.apiBase) settings.apiBase = DEFAULT_API_BASE;
   saveSettings(settings);
-  notifyAccount();
+  if (notify) notifyAccount({ connected: Boolean(settings.launcherToken) });
   return { connected: Boolean(settings.launcherToken) };
+}
+
+/** Sync every game in installed.json (skip __mods__) to the library. */
+async function syncAllInstalledGames() {
+  const settings = loadSettings();
+  const token = settings.launcherToken;
+  if (!token) return { synced: 0 };
+
+  const state = loadState();
+  const installs = [];
+  for (const [slug, info] of Object.entries(state)) {
+    if (slug === "__mods__") continue;
+    if (!info || typeof info !== "object" || !info.dir) continue;
+    installs.push({
+      slug,
+      ...(info.version ? { version: String(info.version) } : {}),
+    });
+  }
+  if (!installs.length) return { synced: 0 };
+
+  try {
+    const res = await fetch(`${getApiBase()}/api/library/sync/batch`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+        "user-agent": "playbound-launcher",
+      },
+      body: JSON.stringify({ installs }),
+    });
+    if (!res.ok) {
+      console.warn(`Library batch sync failed: HTTP ${res.status}`);
+      // Fallback: one-by-one so partial sync still helps
+      let synced = 0;
+      for (const item of installs) {
+        try {
+          const one = await fetch(`${getApiBase()}/api/library/sync`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              authorization: `Bearer ${token}`,
+              "user-agent": "playbound-launcher",
+            },
+            body: JSON.stringify({
+              slug: item.slug,
+              action: "install",
+              version: item.version,
+            }),
+          });
+          if (one.ok) synced += 1;
+        } catch {
+          /* ignore individual */
+        }
+      }
+      return { synced };
+    }
+    const data = await res.json();
+    return { synced: Number(data.synced) || 0 };
+  } catch (err) {
+    console.warn("Library batch sync error:", err?.message || err);
+    return { synced: 0 };
+  }
+}
+
+async function connectWithToken(token) {
+  persistLauncherToken(token, { notify: false });
+  const { synced } = await syncAllInstalledGames();
+  const message =
+    synced > 0
+      ? `${CONNECTED_LIBRARY_MSG} Synced ${synced} game${synced === 1 ? "" : "s"}.`
+      : CONNECTED_LIBRARY_MSG;
+  notifyAccount({ connected: true, synced, message });
+  return { connected: true, synced };
 }
 
 function closeAuthWindow() {
@@ -146,11 +223,13 @@ function handleDeepLink(parsed) {
     return;
   }
   if (parsed.action === "link") {
-    if (parsed.token) persistLauncherToken(parsed.token);
     closeAuthWindow();
     if (win) {
       if (win.isMinimized()) win.restore();
       win.focus();
+    }
+    if (parsed.token) {
+      void connectWithToken(parsed.token);
     }
     return;
   }
@@ -159,8 +238,40 @@ function handleDeepLink(parsed) {
 
 function setContext(parsed) {
   context = parsed;
-  if (win && !win.webContents.isLoading()) {
+  pushContext();
+  if (parsed?.action === "install-mod" && parsed.slug && !parsed.mod && !parsed.modError) {
+    void loadModIntoContext(parsed.slug);
+  }
+}
+
+function pushContext() {
+  if (win && !win.isDestroyed() && !win.webContents.isLoading()) {
     win.webContents.send("context", buildContextPayload());
+  }
+}
+
+async function fetchModInstall(slug) {
+  const res = await fetch(`${getApiBase()}/api/mods/${encodeURIComponent(slug)}`, {
+    headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`Couldn't load mod (${res.status})`);
+  const data = await res.json();
+  if (!data?.install) throw new Error("Invalid mod response");
+  return data.install;
+}
+
+async function loadModIntoContext(slug) {
+  try {
+    const install = await fetchModInstall(slug);
+    if (context?.action === "install-mod" && context.slug === slug) {
+      context = { ...context, mod: install, modError: null };
+      pushContext();
+    }
+  } catch (err) {
+    if (context?.action === "install-mod" && context.slug === slug) {
+      context = { ...context, mod: null, modError: err.message || String(err) };
+      pushContext();
+    }
   }
 }
 
@@ -222,6 +333,40 @@ async function syncLibrary(slug, action, version) {
 
 function buildContextPayload() {
   if (!context) return null;
+
+  if (context.action === "install-mod") {
+    const state = loadState();
+    const baseSlug = context.mod?.baseGameSlug || null;
+    const base = baseSlug ? state[baseSlug] : null;
+    const basePath = base?.dir && fs.existsSync(base.dir) ? base.dir : null;
+    const baseEntry = baseSlug ? catalog.find((e) => e.slug === baseSlug) : null;
+    const modInstalled = Boolean(state.__mods__?.[context.slug]);
+    return {
+      action: "install-mod",
+      slug: context.slug,
+      entry: context.mod
+        ? {
+            slug: context.mod.slug,
+            title: context.mod.title,
+            blurb: `Mod for ${context.mod.baseGameSlug}`,
+            kind: context.mod.downloadKind,
+            art: context.mod.art || ["#312e81", "#a78bfa"],
+            approxSize: context.mod.approxSize || "",
+          }
+        : null,
+      mod: context.mod || null,
+      modError: context.modError || null,
+      baseGameSlug: baseSlug,
+      baseInstalled: Boolean(basePath),
+      basePath,
+      baseInCatalog: Boolean(baseEntry),
+      installed: modInstalled,
+      installedPath: modInstalled ? state.__mods__[context.slug].dir : null,
+      defaultDir: baseSlug ? path.join(DEFAULT_GAMES_DIR, baseSlug) : null,
+      join: null,
+    };
+  }
+
   const entry = catalog.find((e) => e.slug === context.slug);
   if (!entry) return { action: context.action, slug: context.slug, entry: null };
   const state = loadState();
@@ -253,6 +398,26 @@ async function resolveDownload(entry) {
   const pattern = new RegExp(entry.assetPattern, "i");
   const asset = (release.assets || []).find((a) => pattern.test(a.name));
   if (!asset) throw new Error(`No asset matching /${entry.assetPattern}/ in ${entry.repo} ${release.tag_name}`);
+  return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
+}
+
+async function resolveModDownload(install) {
+  if (install.downloadKind === "direct-zip") {
+    if (!install.url) throw new Error("Mod has no direct download URL");
+    return { url: install.url, name: path.basename(new URL(install.url).pathname) || "mod.zip", version: "fixed" };
+  }
+  if (install.downloadKind !== "github-zip") {
+    throw new Error(`Unsupported mod download kind: ${install.downloadKind}`);
+  }
+  if (!install.repo) throw new Error("Mod is missing a GitHub repo");
+  const res = await fetch(`https://api.github.com/repos/${install.repo}/releases/latest`, {
+    headers: { "user-agent": "playbound-launcher", accept: "application/vnd.github+json" },
+  });
+  if (!res.ok) throw new Error(`GitHub API ${res.status} for ${install.repo}`);
+  const release = await res.json();
+  const pattern = new RegExp(install.assetPattern || "\\.zip$", "i");
+  const asset = (release.assets || []).find((a) => pattern.test(a.name));
+  if (!asset) throw new Error(`No zip asset matching pattern for ${install.repo}`);
   return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
 }
 
@@ -367,6 +532,50 @@ async function installGame(slug, targetDir) {
   return { status: "installed", version: dl.version, dir: gameDir };
 }
 
+async function installMod(slug, baseDirOverride) {
+  sendProgress({ phase: "resolving" });
+  const install = await fetchModInstall(slug);
+
+  if (install.downloadKind === "external") {
+    await shell.openExternal(install.url || `${getApiBase()}/mods/${slug}`);
+    return { status: "external" };
+  }
+
+  let baseDir = baseDirOverride || null;
+  if (!baseDir) {
+    const state = loadState();
+    const info = state[install.baseGameSlug];
+    if (info?.dir && fs.existsSync(info.dir)) baseDir = info.dir;
+  }
+  if (!baseDir) {
+    throw new Error("Base game folder not found — install the game first or choose its folder.");
+  }
+
+  const rel = String(install.installRelativePath || "").replace(/^[/\\]+|[/\\]+$/g, "");
+  const targetDir = rel ? path.join(baseDir, ...rel.split(/[/\\]+/)) : baseDir;
+  await fsp.mkdir(targetDir, { recursive: true });
+
+  const dl = await resolveModDownload(install);
+  const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", "mods", dl.name);
+  await downloadTo(dl.url, downloadPath);
+
+  sendProgress({ phase: "extracting" });
+  await extractZip(downloadPath, targetDir);
+  await fsp.rm(downloadPath, { force: true });
+
+  const state = loadState();
+  if (!state.__mods__ || typeof state.__mods__ !== "object") state.__mods__ = {};
+  state.__mods__[slug] = {
+    version: dl.version,
+    dir: targetDir,
+    baseGameSlug: install.baseGameSlug,
+    installedAt: new Date().toISOString(),
+  };
+  saveState(state);
+  sendProgress({ phase: "done" });
+  return { status: "installed", version: dl.version, dir: targetDir, baseGameSlug: install.baseGameSlug };
+}
+
 async function playGame(slug, join = null) {
   const state = loadState();
   const info = state[slug];
@@ -417,9 +626,14 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
 });
 
 ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetDir));
+ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("open-external", (_event, url) => shell.openExternal(url));
+ipcMain.handle("open-deep-link", (_event, url) => {
+  handleDeepLink(parseDeepLink(url));
+  return true;
+});
 ipcMain.handle("close-window", () => win?.close());
 ipcMain.handle("clipboard-write", (_event, text) => {
   const { clipboard } = require("electron");
@@ -433,7 +647,7 @@ ipcMain.handle("get-account", () => {
     apiBase: getApiBase(),
   };
 });
-ipcMain.handle("set-launcher-token", (_event, token) => persistLauncherToken(token));
+ipcMain.handle("set-launcher-token", (_event, token) => connectWithToken(token));
 ipcMain.handle("clear-launcher-token", async () => {
   const settings = loadSettings();
   const token = settings.launcherToken;
@@ -452,7 +666,7 @@ ipcMain.handle("clear-launcher-token", async () => {
   }
   delete settings.launcherToken;
   saveSettings(settings);
-  notifyAccount();
+  notifyAccount({ connected: false });
   return { connected: false };
 });
 ipcMain.handle("sign-in", () => {
@@ -537,6 +751,7 @@ function testDeepLink() {
     ],
     ["playbound://auth", { action: "auth" }],
     ["playbound://link?token=abc", { action: "link", token: "abc" }],
+    ["playbound://install-mod/cool-mod", { action: "install-mod", slug: "cool-mod" }],
     ["not-a-deep-link", null],
   ];
   let failures = 0;
@@ -584,13 +799,11 @@ if (gotLock) {
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;
+    createWindow();
     if (parsedLaunch && (parsedLaunch.action === "auth" || parsedLaunch.action === "link")) {
-      context = null;
-      createWindow();
       handleDeepLink(parsedLaunch);
-    } else {
-      context = parsedLaunch;
-      createWindow();
+    } else if (parsedLaunch) {
+      setContext(parsedLaunch);
     }
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

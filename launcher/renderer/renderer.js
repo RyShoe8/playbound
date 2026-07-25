@@ -31,12 +31,13 @@ const fmtBytes = (n) =>
 function setAccountMsg(text, isError = false) {
   accountMsgEl.textContent = text || "";
   accountMsgEl.classList.toggle("err", isError);
+  if (isError) accountMsgEl.classList.remove("ok");
 }
 
 async function refreshAccount() {
   try {
     const account = await window.playbound.getAccount();
-    accountStatusEl.textContent = account.connected ? "Signed in" : "Not signed in";
+    accountStatusEl.textContent = account.connected ? "Connected" : "Not connected";
     accountStatusEl.classList.toggle("on", Boolean(account.connected));
     btnSignIn.classList.toggle("hidden", Boolean(account.connected));
     btnSignOut.classList.toggle("hidden", !account.connected);
@@ -73,17 +74,30 @@ btnSaveToken.addEventListener("click", async () => {
     return;
   }
   try {
-    await window.playbound.setLauncherToken(token);
+    setAccountMsg("Connecting and syncing installs…");
+    const result = await window.playbound.setLauncherToken(token);
     tokenInputEl.value = "";
-    setAccountMsg("Saved. New installs will sync to your library.");
+    const synced = result?.synced || 0;
+    setAccountMsg(
+      synced > 0
+        ? `Connected. Close this window and refresh your library page. Synced ${synced} game${synced === 1 ? "" : "s"}.`
+        : "Connected. Close this window and refresh your library page."
+    );
+    accountMsgEl.classList.add("ok");
     await refreshAccount();
   } catch (err) {
     setAccountMsg(err.message || String(err), true);
   }
 });
 
-window.playbound.onAccount(() => {
-  setAccountMsg("Signed in — library sync is on.");
+window.playbound.onAccount((data) => {
+  if (data?.message) {
+    setAccountMsg(data.message);
+    accountMsgEl.classList.add("ok");
+  } else if (data?.connected === false) {
+    setAccountMsg("");
+    accountMsgEl.classList.remove("ok");
+  }
   void refreshAccount();
 });
 
@@ -201,8 +215,75 @@ async function runUninstall() {
   }
 }
 
+async function runInstallMod() {
+  if (!ctx || ctx.action !== "install-mod" || busy) return;
+  if (!ctx.mod) {
+    setStatus(ctx.modError || "Mod details not loaded yet.", true);
+    return;
+  }
+  setBusy(true);
+  setStatus(ctx.mod.downloadKind === "external" ? "Opening mod page…" : "Installing mod…");
+  try {
+    const baseDir = ctx.baseInstalled ? ctx.basePath : targetDir;
+    const result = await window.playbound.installMod(ctx.slug, baseDir || null);
+    if (result.status === "external") {
+      setStatus("Opened the mod page.");
+    } else if (result.status === "installed") {
+      setStatus(`Installed ${result.version} into ${result.dir}`);
+      ctx.installed = true;
+      ctx.installedPath = result.dir;
+      ctx.baseInstalled = true;
+      ctx.basePath = baseDir || ctx.basePath;
+      renderActions();
+    }
+  } catch (err) {
+    setStatus(err.message || String(err), true);
+  } finally {
+    setBusy(false);
+    setProgress(null);
+  }
+}
+
 function renderActions() {
   actionsEl.replaceChildren();
+
+  if (ctx?.action === "install-mod") {
+    if (ctx.modError) {
+      actionsEl.append(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+      return;
+    }
+    if (!ctx.mod) {
+      actionsEl.append(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+      return;
+    }
+    if (ctx.mod.downloadKind === "external") {
+      actionsEl.append(
+        makeButton("Open mod page", "btn-install", () => runInstallMod()),
+        makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+      );
+      return;
+    }
+    if (!ctx.baseInstalled) {
+      if (ctx.baseInCatalog && ctx.baseGameSlug) {
+        actionsEl.append(
+          makeButton("Install base game", "btn-install", () => {
+            void window.playbound.openDeepLink(`playbound://install/${ctx.baseGameSlug}`);
+          })
+        );
+      }
+      actionsEl.append(
+        makeButton("Install mod here", "btn-play", () => runInstallMod()),
+        makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+      );
+      return;
+    }
+    actionsEl.append(
+      makeButton(ctx.installed ? "Reinstall mod" : "Install mod", "btn-install", () => runInstallMod()),
+      makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+    );
+    return;
+  }
+
   if (!ctx?.entry) return;
 
   const entry = ctx.entry;
@@ -232,19 +313,70 @@ function renderActions() {
 
 function applyContext(next) {
   ctx = next;
-  if (!ctx || !ctx.entry) {
-    if (ctx && !ctx.entry) {
-      showGame();
-      titleEl.textContent = ctx.slug || "Unknown game";
-      blurbEl.textContent = "This game isn’t in the launcher catalog yet.";
+  if (!ctx) {
+    showEmpty();
+    return;
+  }
+
+  if (ctx.action === "install-mod") {
+    showGame();
+    if (ctx.modError) {
+      titleEl.textContent = ctx.slug || "Mod";
+      blurbEl.textContent = "Couldn't load this mod from PlayBound.";
       tileEl.textContent = "?";
       tileEl.style.background = "#2a2733";
       pathRowEl.classList.add("hidden");
-      setStatus("Unknown game slug.", true);
+      setStatus(ctx.modError, true);
+      renderActions();
+      return;
+    }
+    if (!ctx.mod || !ctx.entry) {
+      titleEl.textContent = ctx.slug || "Mod";
+      blurbEl.textContent = "Loading mod details…";
+      tileEl.textContent = "…";
+      tileEl.style.background = "#2a2733";
+      pathRowEl.classList.add("hidden");
+      setStatus("Fetching mod from playbound.club…");
       actionsEl.replaceChildren(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
       return;
     }
-    showEmpty();
+
+    const entry = ctx.entry;
+    titleEl.textContent = entry.title;
+    blurbEl.textContent = `${entry.blurb}${entry.approxSize ? ` · ${entry.approxSize}` : ""}`;
+    tileEl.textContent = entry.title.charAt(0);
+    tileEl.style.background = `linear-gradient(135deg, ${entry.art[0]}, ${entry.art[1]})`;
+
+    pathRowEl.classList.remove("hidden");
+    document.querySelector(".path-label").textContent = "Game folder";
+    targetDir = ctx.basePath || ctx.defaultDir;
+    installPathEl.textContent = targetDir || "(choose base game folder)";
+
+    setProgress(null);
+    if (ctx.baseInstalled) {
+      setStatus(
+        ctx.installed
+          ? "Mod already installed here — you can reinstall."
+          : `Ready to install into ${ctx.basePath}`
+      );
+    } else {
+      setStatus("Base game not detected — install it, or choose its folder, then install the mod.");
+    }
+    renderActions();
+    return;
+  }
+
+  document.querySelector(".path-label").textContent = "Install to";
+
+  if (!ctx.entry) {
+    showGame();
+    titleEl.textContent = ctx.slug || "Unknown game";
+    blurbEl.textContent = "This game isn’t in the launcher catalog yet.";
+    tileEl.textContent = "?";
+    tileEl.style.background = "#2a2733";
+    pathRowEl.classList.add("hidden");
+    setStatus("Unknown game slug.", true);
+    actionsEl.replaceChildren(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
     return;
   }
 

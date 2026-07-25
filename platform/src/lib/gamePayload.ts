@@ -147,6 +147,11 @@ export const gamePayloadSchema = z.object({
   }),
   published: z.boolean().default(false),
   submissionId: z.string().optional().nullable(),
+  managedBy: z.enum(["admin", "developer"]).default("admin"),
+  ownerUserId: z
+    .union([z.string().trim().min(1), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? null : v)),
 });
 
 export type GamePayload = z.infer<typeof gamePayloadSchema>;
@@ -196,4 +201,6 @@ export const emptyGameDraft = (): GamePayload => ({
   },
   published: false,
   submissionId: null,
+  managedBy: "admin",
+  ownerUserId: null,
 });

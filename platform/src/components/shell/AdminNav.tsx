@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Gamepad2, Inbox, LayoutDashboard, Users } from "lucide-react";
+import { CalendarDays, Gamepad2, Inbox, LayoutDashboard, Puzzle, Users } from "lucide-react";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/games", label: "Games", icon: Gamepad2 },
+  { href: "/admin/mods", label: "Mods", icon: Puzzle },
   { href: "/admin/submissions", label: "Submissions", icon: Inbox },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/events/new", label: "Events", icon: CalendarDays },

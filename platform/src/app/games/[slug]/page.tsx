@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Gamepad2, MessagesSquare, Newspaper, Star, Trophy, Wrench } from "lucide-react";
+import { Download, Gamepad2, MessagesSquare, Newspaper, Star, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
@@ -18,6 +18,8 @@ import { ContentForm } from "@/components/ContentForm";
 import { ServerBrowser } from "@/components/ServerBrowser";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
+import { modsForGame, type CatalogModPublic } from "@/lib/mods";
+import { launcherInstallModUrl } from "@/lib/launcher";
 
 const tabs = ["overview", "servers", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
 type Tab = (typeof tabs)[number];
@@ -287,14 +289,63 @@ function ServersTab({ game }: { game: Game }) {
   );
 }
 
-function ModsTab({ game }: { game: Game }) {
+async function ModsTab({ game }: { game: Game }) {
+  const mods = await modsForGame(game.slug);
+
+  if (mods.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <EmptyHint icon={Wrench}>
+          {game.features.some((f) => f.toLowerCase().includes("mod"))
+            ? `No PlayBound-listed mods for ${game.title} yet — check back soon or the official community hub.`
+            : `${game.title} doesn't have documented mods on PlayBound yet.`}
+        </EmptyHint>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-2xl">
-      <EmptyHint icon={Wrench}>
-        {game.features.some((f) => f.toLowerCase().includes("mod"))
-          ? `${game.title} supports mods. PlayBound doesn't host a mod browser yet — check the official site's community hub.`
-          : `${game.title} doesn't have documented mod support.`}
-      </EmptyHint>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold">Mods for {game.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          One-click install via the PlayBound Launcher into your {game.title} folder.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {mods.map((mod) => (
+          <ModCard key={mod.slug} mod={mod} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ModCard({ mod }: { mod: CatalogModPublic }) {
+  return (
+    <div className="flex flex-col rounded-xl border border-border bg-card p-4">
+      <Link href={`/mods/${mod.slug}`} className="font-bold hover:text-primary">
+        {mod.title}
+      </Link>
+      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{mod.tagline}</p>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Installs to <code className="text-play">{mod.installRelativePath || "(game root)"}</code>
+        {mod.sizeMB ? ` · ~${mod.sizeMB} MB` : ""}
+      </p>
+      <div className="mt-auto flex flex-wrap gap-2 pt-4">
+        <a
+          href={launcherInstallModUrl(mod.slug)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-play px-3 py-1.5 text-xs font-bold text-play-foreground"
+        >
+          <Download className="size-3.5" /> Install
+        </a>
+        <Link
+          href={`/mods/${mod.slug}`}
+          className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
+        >
+          Details
+        </Link>
+      </div>
     </div>
   );
 }

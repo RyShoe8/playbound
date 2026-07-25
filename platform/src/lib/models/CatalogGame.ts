@@ -45,6 +45,8 @@ const CatalogGameSchema = new Schema(
     systemRequirements: { type: SystemRequirementsSchema, required: true },
     published: { type: Boolean, default: true, index: true },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
+    managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
+    ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true }
 );

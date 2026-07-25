@@ -45,6 +45,8 @@ export async function PATCH(
           screenshots: body.screenshots ?? [],
           developerName,
           submissionId: body.submissionId || null,
+          managedBy: body.managedBy || "admin",
+          ownerUserId: body.ownerUserId || null,
         },
       },
       { new: true }
