@@ -1,6 +1,11 @@
 export type ServerLocation = {
   countryCode: string;
   region?: string;
+  /** US state / admin code from GeoIP when available (e.g. CA). */
+  regionCode?: string;
+  /** WGS84 degrees from GeoIP when available. */
+  lat?: number;
+  lon?: number;
 };
 
 export type GameServer = {
