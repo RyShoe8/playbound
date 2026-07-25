@@ -4,7 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
-import { getGame } from "@/lib/data";
+import { getGame } from "@/lib/catalog";
 
 const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -14,7 +14,7 @@ const reviewSchema = z.object({
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!getGame(slug)) {
+  if (!(await getGame(slug))) {
     return NextResponse.json({ error: "Unknown game" }, { status: 404 });
   }
 

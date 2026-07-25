@@ -7,7 +7,7 @@ import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
-import { getGame } from "@/lib/data";
+import { getGame } from "@/lib/catalog";
 import { Avatar, EmptyHint, SectionHeader, StatTile } from "@/components/ui/bits";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -88,28 +88,34 @@ export default async function ProfilePage() {
         <section>
           <SectionHeader title="Recent Activity" />
           <div className="space-y-2">
-            {[
-              ...reviews.map((r) => ({ icon: Star, kind: "review", ...r })),
-              ...guides.map((g) => ({ icon: BookOpen, kind: "guide", ...g })),
-              ...posts.map((p) => ({ icon: MessagesSquare, kind: "post", ...p })),
-            ]
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map((item, i) => {
-                const game = getGame(item.gameSlug);
-                return (
-                  <Link
-                    key={i}
-                    href={`/games/${item.gameSlug}?tab=${item.kind === "review" ? "reviews" : item.kind === "guide" ? "guides" : "discussion"}`}
-                    className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
-                  >
-                    <item.icon className="size-4 shrink-0 text-primary" />
-                    <p className="min-w-0 flex-1 truncate text-sm">
-                      &ldquo;{item.title}&rdquo; on {game?.title ?? item.gameSlug}
-                    </p>
-                    <span className="shrink-0 text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</span>
-                  </Link>
-                );
-              })}
+            {(
+              await Promise.all(
+                [
+                  ...reviews.map((r) => ({ icon: Star, kind: "review" as const, ...r })),
+                  ...guides.map((g) => ({ icon: BookOpen, kind: "guide" as const, ...g })),
+                  ...posts.map((p) => ({ icon: MessagesSquare, kind: "post" as const, ...p })),
+                ]
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map(async (item, i) => {
+                    const game = await getGame(item.gameSlug);
+                    return (
+                      <Link
+                        key={i}
+                        href={`/games/${item.gameSlug}?tab=${item.kind === "review" ? "reviews" : item.kind === "guide" ? "guides" : "discussion"}`}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
+                      >
+                        <item.icon className="size-4 shrink-0 text-primary" />
+                        <p className="min-w-0 flex-1 truncate text-sm">
+                          &ldquo;{item.title}&rdquo; on {game?.title ?? item.gameSlug}
+                        </p>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </span>
+                      </Link>
+                    );
+                  })
+              )
+            )}
           </div>
         </section>
       ) : (

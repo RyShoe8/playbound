@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { FolderHeart, Hammer, Search } from "lucide-react";
-import { searchAll } from "@/lib/data";
+import { searchAll } from "@/lib/catalog";
 import { GameCard } from "@/components/GameCard";
 import { Avatar, EmptyHint, SectionHeader } from "@/components/ui/bits";
 
@@ -13,7 +13,7 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q = "" } = await searchParams;
-  const results = searchAll(q);
+  const results = await searchAll(q);
   const total = results.games.length + results.developers.length + results.collections.length;
 
   return (

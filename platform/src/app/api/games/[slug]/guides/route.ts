@@ -4,7 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import GuidePost from "@/lib/models/GuidePost";
-import { getGame } from "@/lib/data";
+import { getGame } from "@/lib/catalog";
 
 const guideSchema = z.object({
   title: z.string().min(3).max(150),
@@ -13,7 +13,7 @@ const guideSchema = z.object({
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!getGame(slug)) {
+  if (!(await getGame(slug))) {
     return NextResponse.json({ error: "Unknown game" }, { status: 404 });
   }
 

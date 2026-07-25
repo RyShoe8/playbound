@@ -1,9 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth/next";
-import { CalendarDays, Inbox, Plus, Shield } from "lucide-react";
-import { authOptions } from "@/lib/auth";
+import { CalendarDays, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Review from "@/lib/models/Review";
@@ -12,7 +9,7 @@ import DiscussionPost from "@/lib/models/DiscussionPost";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import GameSubmission from "@/lib/models/GameSubmission";
-import { developers, games } from "@/lib/data";
+import { developers, listAllGames } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
 
@@ -58,10 +55,7 @@ async function getCounts() {
 }
 
 export default async function AdminPage() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") redirect("/");
-
-  const counts = await getCounts();
+  const [counts, games] = await Promise.all([getCounts(), listAllGames()]);
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -69,7 +63,7 @@ export default async function AdminPage() {
         <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
           <Shield className="size-7 text-primary" /> Administration
         </h1>
-        <p className="mt-1 text-muted-foreground">Real counts, pulled live from MongoDB and the game catalog.</p>
+        <p className="mt-1 text-muted-foreground">Live MongoDB counts and the editable game catalog.</p>
       </div>
 
       <section>
@@ -91,9 +85,21 @@ export default async function AdminPage() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight">Games Catalog</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">Managed in code at src/lib/data/games.ts</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">Managed in Admin → Games (MongoDB)</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/games"
+              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              <Gamepad2 className="size-4" /> Manage games
+            </Link>
+            <Link
+              href="/admin/users"
+              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              <Users className="size-4" /> Users
+            </Link>
             <Link
               href="/admin/submissions"
               className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
@@ -115,23 +121,21 @@ export default async function AdminPage() {
               <tr className="border-b border-border bg-secondary/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
                 <th className="px-4 py-3 font-semibold">Game</th>
                 <th className="px-4 py-3 font-semibold">Genres</th>
-                <th className="px-4 py-3 font-semibold">Launch</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">License</th>
               </tr>
             </thead>
             <tbody>
-              {games.map((g) => (
+              {games.slice(0, 12).map((g) => (
                 <tr key={g.slug} className="border-b border-border bg-card last:border-0">
                   <td className="px-4 py-2.5">
-                    <Link href={`/games/${g.slug}`} className="flex items-center gap-2.5 hover:underline">
+                    <Link href={`/admin/games/${g.slug}/edit`} className="flex items-center gap-2.5 hover:underline">
                       <GameArt game={g} showTitle={false} iconSize="sm" className="size-8 rounded-md" />
                       <span className="font-semibold">{g.title}</span>
                     </Link>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{g.genres.join(", ")}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
-                    {g.launchMethods.map((m) => (m === "install" ? "Install" : m === "server" ? "Servers" : "Browser")).join(" · ")}
-                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{g.published ? "Published" : "Draft"}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{g.license}</td>
                 </tr>
               ))}
@@ -141,9 +145,9 @@ export default async function AdminPage() {
       </section>
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <CalendarDays className="size-3.5" /> To add or edit games, developers, and collections, edit the
-        files in <code className="rounded bg-secondary px-1 py-0.5">src/lib/data</code>. Reviews, guides,
-        discussion posts, and events are stored in MongoDB and reflected above in real time.
+        <CalendarDays className="size-3.5" /> Catalog text and metadata publish from Admin without a code deploy.
+        Cover files can still live under <code className="rounded bg-secondary px-1 py-0.5">public/games</code> or as
+        absolute URLs. One-click launcher installs still need a desktop catalog entry.
       </p>
     </div>
   );

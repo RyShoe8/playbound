@@ -8,7 +8,8 @@ import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
 import { fetchGithubReleases } from "@/lib/github";
-import { collectionsFeaturing, developersBySlug, games, getGame } from "@/lib/data";
+import { collectionsFeaturing, developersBySlug, listGames, getGame } from "@/lib/catalog";
+import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
 import { ContentForm } from "@/components/ContentForm";
@@ -20,7 +21,7 @@ type Tab = (typeof tabs)[number];
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = getGame(slug);
+  const game = await getGame(slug);
   return { title: game ? game.title : "Game Not Found" };
 }
 
@@ -43,12 +44,16 @@ export default async function GamePage({
 }) {
   const { slug } = await params;
   const { tab: rawTab } = await searchParams;
-  const game = getGame(slug);
+  const game = await getGame(slug);
   if (!game) notFound();
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const session = await getServerSession(authOptions);
   const developer = developersBySlug.get(game.developerSlug);
+  const allGames = await listGames();
+  const similar = allGames
+    .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
+    .slice(0, 6);
 
   return (
     <div>
@@ -93,7 +98,7 @@ export default async function GamePage({
 
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         {tab === "overview" && (
-          <OverviewTab game={game} developer={developer} featuring={collectionsFeaturing(game.slug)} similar={games.filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre))).slice(0, 6)} />
+          <OverviewTab game={game} developer={developer} featuring={collectionsFeaturing(game.slug)} similar={similar} />
         )}
         {tab === "servers" && <ServersTab game={game} />}
         {tab === "mods" && <ModsTab game={game} />}
@@ -139,10 +144,10 @@ function OverviewTab({
   featuring,
   similar,
 }: {
-  game: ReturnType<typeof getGame>;
+  game: Game;
   developer: ReturnType<typeof developersBySlug.get>;
   featuring: ReturnType<typeof collectionsFeaturing>;
-  similar: ReturnType<typeof getGame>[];
+  similar: Game[];
 }) {
   if (!game) return null;
   return (
@@ -246,7 +251,7 @@ function OverviewTab({
   );
 }
 
-function ServersTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
+function ServersTab({ game }: { game: Game }) {
   return (
     <div className="mx-auto max-w-2xl">
       <EmptyHint icon={Server}>
@@ -258,7 +263,7 @@ function ServersTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> })
   );
 }
 
-function ModsTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
+function ModsTab({ game }: { game: Game }) {
   return (
     <div className="mx-auto max-w-2xl">
       <EmptyHint icon={Wrench}>
@@ -282,7 +287,7 @@ function NewsTab({
   game,
   releases,
 }: {
-  game: NonNullable<ReturnType<typeof getGame>>;
+  game: Game;
   releases: Awaited<ReturnType<typeof fetchGithubReleases>>;
 }) {
   return (
@@ -429,7 +434,7 @@ function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigne
   );
 }
 
-function MediaTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
+function MediaTab({ game }: { game: Game }) {
   const shots = game.screenshots?.length
     ? game.screenshots
     : game.coverImage

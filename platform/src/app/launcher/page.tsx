@@ -11,7 +11,7 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react";
-import { games, gamesFor } from "@/lib/data";
+import { listGames, gamesFor } from "@/lib/catalog";
 import { ONE_CLICK_SLUGS, launcherInstallUrl } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
 import { Badge, SectionHeader } from "@/components/ui/bits";
@@ -27,8 +27,8 @@ const features = [
   { icon: Wrench, title: "Mod management", text: "Coming soon — install and update mods without touching a config file." },
 ];
 
-export default function LauncherPage() {
-  const oneClick = gamesFor([...ONE_CLICK_SLUGS]);
+export default async function LauncherPage() {
+  const [oneClick, games] = await Promise.all([gamesFor([...ONE_CLICK_SLUGS]), listGames()]);
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">

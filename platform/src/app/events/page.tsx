@@ -5,7 +5,7 @@ import { CalendarDays, Plus } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
-import { getGame } from "@/lib/data";
+import { getGame } from "@/lib/catalog";
 import { EmptyHint } from "@/components/ui/bits";
 
 export const metadata: Metadata = { title: "Events" };
@@ -31,6 +31,12 @@ async function getUpcomingEvents(): Promise<EventDoc[]> {
 export default async function EventsPage() {
   const [events, session] = await Promise.all([getUpcomingEvents(), getServerSession(authOptions)]);
   const isAdmin = session?.user?.role === "admin";
+  const rows = await Promise.all(
+    events.map(async (e) => ({
+      e,
+      game: e.gameSlug ? await getGame(e.gameSlug) : undefined,
+    }))
+  );
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -49,25 +55,22 @@ export default async function EventsPage() {
         )}
       </div>
 
-      {events.length > 0 ? (
+      {rows.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {events.map((e) => {
-            const game = e.gameSlug ? getGame(e.gameSlug) : undefined;
-            return (
-              <div key={String(e._id)} className="flex flex-col rounded-xl border border-border bg-card p-5">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <CalendarDays className="size-3" /> {new Date(e.startsAt).toLocaleString()}
-                </p>
-                <p className="mt-2 font-bold">{e.title}</p>
-                <p className="mt-1 line-clamp-3 flex-1 text-sm text-muted-foreground">{e.description}</p>
-                {game && (
-                  <Link href={`/games/${game.slug}`} className="mt-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline">
-                    {game.title}
-                  </Link>
-                )}
-              </div>
-            );
-          })}
+          {rows.map(({ e, game }) => (
+            <div key={String(e._id)} className="flex flex-col rounded-xl border border-border bg-card p-5">
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CalendarDays className="size-3" /> {new Date(e.startsAt).toLocaleString()}
+              </p>
+              <p className="mt-2 font-bold">{e.title}</p>
+              <p className="mt-1 line-clamp-3 flex-1 text-sm text-muted-foreground">{e.description}</p>
+              {game && (
+                <Link href={`/games/${game.slug}`} className="mt-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline">
+                  {game.title}
+                </Link>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
         <EmptyHint icon={CalendarDays}>

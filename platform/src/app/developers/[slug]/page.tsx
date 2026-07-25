@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Globe, MapPin, Newspaper } from "lucide-react";
-import { developersBySlug, gamesByDeveloper } from "@/lib/data";
+import { developersBySlug } from "@/lib/data";
+import { gamesByDeveloper } from "@/lib/catalog";
 import { fetchGithubReleases } from "@/lib/github";
 import { CardRow, GameCard } from "@/components/GameCard";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
@@ -16,7 +17,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
   const dev = developersBySlug.get(slug);
   if (!dev) notFound();
 
-  const devGames = gamesByDeveloper(dev.slug);
+  const devGames = await gamesByDeveloper(dev.slug);
   const repo = devGames.find((g) => g.githubRepo)?.githubRepo;
   const releases = repo ? await fetchGithubReleases(repo, 3) : [];
 
