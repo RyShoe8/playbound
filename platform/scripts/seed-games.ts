@@ -8,6 +8,12 @@ import { loadEnvConfig } from "@next/env";
 loadEnvConfig(process.cwd());
 
 async function main() {
+  if (!process.env.MONGODB_URI) {
+    throw new Error(
+      "MONGODB_URI is not set. Run via: npx vercel env run -e production -- npm run seed:games"
+    );
+  }
+
   const dbConnect = (await import("../src/lib/db")).default;
   const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
   const { games } = await import("../src/lib/data/games");
