@@ -1,20 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Copy, KeyRound } from "lucide-react";
+import { launcherLinkUrl } from "@/lib/launcher";
 
 type Props = {
   token: string;
   username: string;
 };
 
+const HANDOFF_DELAY_MS = 1800;
+
 export function LauncherAuthHandoff({ token, username }: Props) {
   const [copied, setCopied] = useState(false);
-  const linkUrl = `playbound://link?token=${encodeURIComponent(token)}`;
+  const linkUrl = launcherLinkUrl(token);
+  const started = useRef(false);
 
   useEffect(() => {
-    // Hand off to the desktop launcher; copy UI remains as fallback.
-    window.location.href = linkUrl;
+    if (started.current) return;
+    started.current = true;
+
+    // Trigger protocol without navigating this tab away
+    const a = document.createElement("a");
+    a.href = linkUrl;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    const t = window.setTimeout(() => {
+      window.location.assign("/library?linked=1");
+    }, HANDOFF_DELAY_MS);
+    return () => window.clearTimeout(t);
   }, [linkUrl]);
 
   async function copyToken() {
@@ -32,14 +49,17 @@ export function LauncherAuthHandoff({ token, username }: Props) {
       <KeyRound className="size-10 text-primary" />
       <h1 className="text-2xl font-extrabold">Connected as {username}</h1>
       <p className="text-sm text-muted-foreground">
-        Handing off to the PlayBound Launcher. You can close this window once the launcher shows
-        Connected.
+        Opening the PlayBound Launcher to sync your installs. You&apos;ll return to your library in a
+        moment — close the launcher when it says Connected.
       </p>
       <a
         href={linkUrl}
         className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
       >
-        Open launcher
+        Open launcher again
+      </a>
+      <a href="/library?linked=1" className="text-sm font-semibold text-primary hover:underline">
+        Go to library now
       </a>
       <div className="mt-2 w-full space-y-2 text-left">
         <p className="text-xs font-semibold text-muted-foreground">
