@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, MonitorPlay } from "lucide-react";
 import type { Game } from "@/lib/data/types";
+import { isBrowserGame } from "@/lib/gameLaunch";
 import { GameArt } from "./GameArt";
 import { Badge } from "./ui/bits";
 import { cn } from "@/lib/utils";
@@ -9,28 +10,38 @@ function sizeLabel(sizeMB: number) {
   return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
 }
 
+const ctaSizes = {
+  sm: "h-8 px-3 text-xs",
+  md: "h-9 px-4 text-sm",
+  lg: "h-12 px-7 text-base",
+};
+
 export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" | "lg" }) {
-  const sizes = {
-    sm: "h-8 px-3 text-xs",
-    md: "h-9 px-4 text-sm",
-    lg: "h-12 px-7 text-base",
-  };
+  const className = cn(
+    "inline-flex items-center gap-2 rounded-full bg-play font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px",
+    ctaSizes[size]
+  );
+  const iconClass = cn(size === "lg" ? "size-5" : "size-4");
+
+  if (isBrowserGame(game)) {
+    return (
+      <a href={game.website} target="_blank" rel="noreferrer" className={className}>
+        <MonitorPlay className={iconClass} />
+        Play Free
+      </a>
+    );
+  }
+
   return (
-    <Link
-      href={`/games/${game.slug}/play`}
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full bg-play font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px",
-        sizes[size]
-      )}
-    >
-      <Download className={cn(size === "lg" ? "size-5" : "size-4")} />
+    <Link href={`/games/${game.slug}/play`} className={className}>
+      <Download className={iconClass} />
       Get It Free
     </Link>
   );
 }
 
 export function LaunchBadge({ game }: { game: Game }) {
-  if (game.browserPlayable) {
+  if (isBrowserGame(game) || game.browserPlayable) {
     return (
       <Badge tone="play">
         <MonitorPlay className="size-3" /> Instant

@@ -193,6 +193,17 @@ export const developers: Developer[] = [
     website: "https://unvanquished.net",
     artHue: 130,
   },
+  {
+    slug: "indie-web",
+    name: "Indie Web",
+    tagline: "Browser and indie games on the open web.",
+    about:
+      "A PlayBound curator bucket for free browser-based and indie web games that don’t have a dedicated studio page yet.",
+    founded: 2026,
+    location: "Worldwide",
+    website: "https://playbound-five.vercel.app",
+    artHue: 200,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

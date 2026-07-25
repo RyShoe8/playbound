@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
-import { gamePayloadSchema } from "@/lib/gamePayload";
+import { gamePayloadSchema, withDefaultArt } from "@/lib/gamePayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 export async function PATCH(
@@ -15,7 +15,7 @@ export async function PATCH(
     if (error) return error;
 
     const { slug } = await params;
-    const body = gamePayloadSchema.parse(await req.json());
+    const body = withDefaultArt(gamePayloadSchema.parse(await req.json()));
     await dbConnect();
 
     if (body.slug !== slug) {

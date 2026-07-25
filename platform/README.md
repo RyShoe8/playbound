@@ -26,6 +26,15 @@ To force a manual seed against an empty DB:
 npx vercel env run -e production -- npm run seed:games
 ```
 
+### Admin media (covers / screenshots)
+
+On Vercel, add:
+
+- `BLOB_READ_WRITE_TOKEN` — required for Admin image uploads (Vercel Blob)
+- `MICROLINK_API_KEY` — optional; enables **Capture screenshot** from a game URL
+
+Without Blob, you can still **Fetch from website** (Open Graph images) and paste remote cover/screenshot URLs. Website import (e.g. `https://tinywind.io/`) prefills a browser-playable draft.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
