@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { isFounderAdminEmail } from "@/lib/admin";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 
@@ -32,6 +33,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!user.emailVerified) {
           throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+        }
+
+        if (isFounderAdminEmail(user.email) && user.role !== "admin") {
+          user.role = "admin";
+          await user.save();
         }
 
         return {

@@ -187,20 +187,19 @@ function applyContext(next) {
   if (ctx.action === "install") {
     if (entry.kind === "external") {
       runInstall();
-    } else if (!ctx.installed) {
-      runInstall();
-    } else {
-      setStatus("Already installed.");
+    } else if (ctx.installed) {
+      setStatus("Already installed — choose Play or Uninstall.");
       ctx.action = "play";
       renderActions();
+    } else {
+      setStatus("Choose a folder if you want, then click Install.");
     }
   } else if (ctx.action === "play") {
     if (ctx.installed) runPlay();
     else {
-      setStatus("Not installed yet — installing first…");
-      runInstall().then(() => {
-        if (ctx?.installed) runPlay();
-      });
+      setStatus("Not installed yet — choose a folder if you want, then click Install.");
+      ctx.action = "install";
+      renderActions();
     }
   } else if (ctx.action === "uninstall") {
     setStatus("Confirm uninstall below.");

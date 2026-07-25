@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { isFounderAdminEmail } from "@/lib/admin";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import { sendMail, verificationEmailHtml } from "@/lib/mailer";
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
       username,
       email,
       password: hashedPassword,
-      role: "user",
+      role: isFounderAdminEmail(email) ? "admin" : "user",
       emailVerified: false,
       verificationTokenHash: tokenHash,
       verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
