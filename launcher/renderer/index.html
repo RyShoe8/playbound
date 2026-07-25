@@ -19,7 +19,7 @@
       <div id="empty" class="panel empty hidden">
         <p class="empty-title">Waiting for a game</p>
         <p class="empty-text">
-          Open an install link from playbound.gg — or click One-click install on a game page — and
+          Open an install link from playbound.club — or click One-click install on a game page — and
           this window will handle the rest.
         </p>
         <button type="button" class="btn-site" id="btn-close-empty">Close</button>
@@ -48,6 +48,28 @@
         </div>
 
         <div class="actions" id="actions"></div>
+      </div>
+
+      <div id="account" class="panel account-panel">
+        <div class="account-header">
+          <strong>Library sync</strong>
+          <span id="account-status" class="account-status">Not connected</span>
+        </div>
+        <p class="account-hint">
+          Paste the token from playbound.club/library so installs appear in your online library.
+        </p>
+        <div class="account-row">
+          <input
+            id="token-input"
+            type="password"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="Launcher token"
+          />
+          <button type="button" class="btn-site btn-sm" id="btn-save-token">Save</button>
+          <button type="button" class="btn-site btn-sm" id="btn-clear-token">Disconnect</button>
+        </div>
+        <p id="account-msg" class="account-msg"></p>
       </div>
     </main>
 

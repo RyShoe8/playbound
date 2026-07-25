@@ -11,6 +11,11 @@ const barEl = document.getElementById("bar");
 const actionsEl = document.getElementById("actions");
 const btnChoose = document.getElementById("btn-choose");
 const btnCloseEmpty = document.getElementById("btn-close-empty");
+const accountStatusEl = document.getElementById("account-status");
+const tokenInputEl = document.getElementById("token-input");
+const btnSaveToken = document.getElementById("btn-save-token");
+const btnClearToken = document.getElementById("btn-clear-token");
+const accountMsgEl = document.getElementById("account-msg");
 
 /** @type {{ action: string, entry: object | null, installed: boolean, installedPath: string | null, defaultDir: string } | null} */
 let ctx = null;
@@ -21,6 +26,51 @@ let autoKey = null;
 
 const fmtBytes = (n) =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${Math.round(n / 1e3)} KB`;
+
+function setAccountMsg(text, isError = false) {
+  accountMsgEl.textContent = text || "";
+  accountMsgEl.classList.toggle("err", isError);
+}
+
+async function refreshAccount() {
+  try {
+    const account = await window.playbound.getAccount();
+    accountStatusEl.textContent = account.connected ? "Connected" : "Not connected";
+    accountStatusEl.classList.toggle("on", Boolean(account.connected));
+    if (account.connected) tokenInputEl.placeholder = "Token saved · paste a new one to replace";
+  } catch {
+    /* ignore */
+  }
+}
+
+btnSaveToken.addEventListener("click", async () => {
+  const token = tokenInputEl.value.trim();
+  if (!token) {
+    setAccountMsg("Paste a token from playbound.club/library first.", true);
+    return;
+  }
+  try {
+    await window.playbound.setLauncherToken(token);
+    tokenInputEl.value = "";
+    setAccountMsg("Saved. New installs will sync to your library.");
+    await refreshAccount();
+  } catch (err) {
+    setAccountMsg(err.message || String(err), true);
+  }
+});
+
+btnClearToken.addEventListener("click", async () => {
+  try {
+    await window.playbound.clearLauncherToken();
+    tokenInputEl.value = "";
+    setAccountMsg("Disconnected from library sync.");
+    await refreshAccount();
+  } catch (err) {
+    setAccountMsg(err.message || String(err), true);
+  }
+});
+
+void refreshAccount();
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text || "";
