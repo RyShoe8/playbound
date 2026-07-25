@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, Gamepad2, Inbox, LayoutDashboard, Users } from "lucide-react";

@@ -1,7 +1,7 @@
 /**
- * Upsert the static seed catalog into MongoDB.
- *
- *   npx vercel env run -e production -- npm run seed:games
+ * Upsert the static seed catalog into MongoDB when empty.
+ * Runs after `next build` on Vercel so the first deploy seeds production.
+ * Subsequent builds skip once any CatalogGame docs exist (won't overwrite CMS edits).
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -9,9 +9,8 @@ loadEnvConfig(process.cwd());
 
 async function main() {
   if (!process.env.MONGODB_URI) {
-    throw new Error(
-      "MONGODB_URI is not set. Run via: npx vercel env run -e production -- npm run seed:games"
-    );
+    console.warn("seed:games skipped — MONGODB_URI is not set.");
+    process.exit(0);
   }
 
   const dbConnect = (await import("../src/lib/db")).default;
@@ -20,6 +19,12 @@ async function main() {
   const { developersBySlug } = await import("../src/lib/data/developers");
 
   await dbConnect();
+
+  const existing = await CatalogGame.countDocuments();
+  if (existing > 0) {
+    console.log(`seed:games skipped — catalog already has ${existing} game(s).`);
+    process.exit(0);
+  }
 
   let upserted = 0;
   for (const g of games) {
