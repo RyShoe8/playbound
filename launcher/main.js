@@ -8,6 +8,8 @@ const catalog = require("./catalog");
 const PROTOCOL = "playbound";
 const DEFAULT_GAMES_DIR = path.join(app.getPath("home"), "PlayBound", "Games");
 const STATE_FILE = path.join(app.getPath("userData"), "installed.json");
+const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
+const DEFAULT_API_BASE = "https://playbound.club";
 
 let win = null;
 /** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
@@ -82,6 +84,47 @@ function loadState() {
 function saveState(state) {
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+function loadSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveSettings(settings) {
+  fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+}
+
+function getApiBase() {
+  const settings = loadSettings();
+  return String(settings.apiBase || process.env.PLAYBOUND_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "");
+}
+
+/** Fire-and-forget library sync. Never throws to callers. */
+async function syncLibrary(slug, action, version) {
+  const settings = loadSettings();
+  const token = settings.launcherToken;
+  if (!token) return;
+  try {
+    const res = await fetch(`${getApiBase()}/api/library/sync`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+        "user-agent": "playbound-launcher",
+      },
+      body: JSON.stringify({ slug, action, version }),
+    });
+    if (!res.ok) {
+      console.warn(`Library sync ${action} failed: HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.warn("Library sync error:", err?.message || err);
+  }
 }
 
 function buildContextPayload() {
@@ -226,6 +269,7 @@ async function installGame(slug, targetDir) {
   const state = loadState();
   state[slug] = { version: dl.version, exe, dir: gameDir, installedAt: new Date().toISOString() };
   saveState(state);
+  void syncLibrary(slug, "install", dl.version);
   sendProgress({ phase: "done" });
   return { status: "installed", version: dl.version, dir: gameDir };
 }
@@ -261,6 +305,7 @@ async function uninstallGame(slug) {
   if (info.dir) await fsp.rm(info.dir, { recursive: true, force: true });
   delete state[slug];
   saveState(state);
+  void syncLibrary(slug, "uninstall");
   return { status: "uninstalled", dir: info.dir };
 }
 
@@ -288,13 +333,38 @@ ipcMain.handle("clipboard-write", (_event, text) => {
   clipboard.writeText(String(text || ""));
   return true;
 });
+ipcMain.handle("get-account", () => {
+  const settings = loadSettings();
+  return {
+    connected: Boolean(settings.launcherToken),
+    apiBase: getApiBase(),
+  };
+});
+ipcMain.handle("set-launcher-token", (_event, token) => {
+  const settings = loadSettings();
+  const trimmed = String(token || "").trim();
+  if (!trimmed) {
+    delete settings.launcherToken;
+  } else {
+    settings.launcherToken = trimmed;
+  }
+  if (!settings.apiBase) settings.apiBase = DEFAULT_API_BASE;
+  saveSettings(settings);
+  return { connected: Boolean(settings.launcherToken) };
+});
+ipcMain.handle("clear-launcher-token", () => {
+  const settings = loadSettings();
+  delete settings.launcherToken;
+  saveSettings(settings);
+  return { connected: false };
+});
 
 /* ── window ────────────────────────────────────────────────── */
 
 function createWindow() {
   win = new BrowserWindow({
     width: 480,
-    height: 420,
+    height: 520,
     resizable: false,
     backgroundColor: "#131118",
     title: "PlayBound Launcher",

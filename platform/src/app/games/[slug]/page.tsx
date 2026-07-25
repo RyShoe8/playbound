@@ -7,11 +7,13 @@ import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
+import LibraryEntry from "@/lib/models/LibraryEntry";
 import { fetchGithubReleases } from "@/lib/github";
 import { collectionsFeaturing, developersBySlug, listGames, getGame } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
+import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 import { ContentForm } from "@/components/ContentForm";
 import { ServerBrowser } from "@/components/ServerBrowser";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
@@ -56,6 +58,21 @@ export default async function GamePage({
     .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
     .slice(0, 6);
 
+  let initiallySaved = false;
+  if (session?.user) {
+    try {
+      await dbConnect();
+      const entry = await LibraryEntry.findOne({
+        userId: session.user.id,
+        gameSlug: game.slug,
+        saved: true,
+      }).lean();
+      initiallySaved = Boolean(entry);
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <div>
       {/* ── Hero ───────────────────────────────────────────────── */}
@@ -76,7 +93,15 @@ export default async function GamePage({
               <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
               <p className="mt-2 text-muted-foreground sm:text-lg">{game.tagline}</p>
             </div>
-            <PlayCta game={game} size="lg" />
+            <div className="flex flex-wrap items-center gap-2">
+              <PlayCta game={game} size="lg" />
+              <AddToLibraryButton
+                slug={game.slug}
+                initiallySaved={initiallySaved}
+                signedIn={Boolean(session?.user)}
+                size="lg"
+              />
+            </div>
           </div>
         </div>
       </section>

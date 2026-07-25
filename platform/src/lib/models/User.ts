@@ -9,6 +9,8 @@ const UserSchema = new Schema({
   emailVerified: { type: Boolean, default: false },
   verificationTokenHash: { type: String, select: false },
   verificationTokenExpires: { type: Date, select: false },
+  launcherTokenHash: { type: String, select: false },
+  launcherTokenCreatedAt: { type: Date, select: false },
   createdAt: { type: Date, default: Date.now },
 });
 
