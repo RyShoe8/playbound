@@ -24,7 +24,7 @@ const features = [
   { icon: RefreshCw, title: "Automatic updates", text: "The launcher resolves the latest release every time, so installs never go stale." },
   { icon: Cloud, title: "Cloud saves", text: "Coming soon — sync your saves across machines for supported games." },
   { icon: Server, title: "Server hosting", text: "Coming soon — host dedicated servers for supported games in one click." },
-  { icon: Wrench, title: "Mod management", text: "Coming soon — install and update mods without touching a config file." },
+  { icon: Wrench, title: "Mod management", text: "Install community mods into your game folder with one click — the launcher finds where the base game lives." },
 ];
 
 export default async function LauncherPage() {

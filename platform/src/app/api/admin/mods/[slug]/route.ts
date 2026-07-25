@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
-import CatalogGame from "@/lib/models/CatalogGame";
+import CatalogMod from "@/lib/models/CatalogMod";
 import { developersBySlug } from "@/lib/data";
-import { gamePayloadSchema, withDefaultArt } from "@/lib/gamePayload";
+import { getGame } from "@/lib/catalog";
+import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 export async function PATCH(
@@ -15,38 +16,36 @@ export async function PATCH(
     if (error) return error;
 
     const { slug } = await params;
-    const body = withDefaultArt(gamePayloadSchema.parse(await req.json()));
+    const body = withDefaultModArt(modPayloadSchema.parse(await req.json()));
+    if (!(await getGame(body.baseGameSlug, { includeUnpublished: true }))) {
+      return NextResponse.json({ error: "Unknown base game slug" }, { status: 400 });
+    }
+
     await dbConnect();
 
     if (body.slug !== slug) {
-      const clash = await CatalogGame.findOne({ slug: body.slug }).lean();
+      const clash = await CatalogMod.findOne({ slug: body.slug }).lean();
       if (clash) {
         return NextResponse.json({ error: "New slug already exists" }, { status: 409 });
       }
     }
 
-    if (body.gameOfWeek) {
-      await CatalogGame.updateMany(
-        { gameOfWeek: true, slug: { $ne: slug } },
-        { $set: { gameOfWeek: false } }
-      );
-    }
-
     const developerName =
       body.developerName || developersBySlug.get(body.developerSlug)?.name || null;
 
-    const doc = await CatalogGame.findOneAndUpdate(
+    const doc = await CatalogMod.findOneAndUpdate(
       { slug },
       {
         $set: {
           ...body,
           githubRepo: body.githubRepo || null,
+          assetPattern: body.assetPattern || null,
+          directUrl: body.directUrl || null,
           coverImage: body.coverImage || null,
           screenshots: body.screenshots ?? [],
           developerName,
-          submissionId: body.submissionId || null,
-          managedBy: body.managedBy || "admin",
           ownerUserId: body.ownerUserId || null,
+          managedBy: body.managedBy || "admin",
         },
       },
       { new: true }
@@ -61,7 +60,7 @@ export async function PATCH(
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
     }
-    console.error("Admin update game error:", err);
+    console.error("Admin update mod error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -76,13 +75,13 @@ export async function DELETE(
 
     const { slug } = await params;
     await dbConnect();
-    const doc = await CatalogGame.findOneAndDelete({ slug });
+    const doc = await CatalogMod.findOneAndDelete({ slug });
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("Admin delete game error:", err);
+    console.error("Admin delete mod error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

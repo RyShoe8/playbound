@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, ChevronDown, Copy, KeyRound, Link2Off, MonitorPlay } from "lucide-react";
-import { launcherAuthUrl } from "@/lib/launcher";
+import { useRouter } from "next/navigation";
+import { Check, ChevronDown, Copy, KeyRound, Link2Off, MonitorPlay, RefreshCw } from "lucide-react";
+import { launcherLinkUrl } from "@/lib/launcher";
 
 export function ConnectLauncherPanel() {
+  const router = useRouter();
   const [connected, setConnected] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [freshToken, setFreshToken] = useState<string | null>(null);
@@ -12,6 +14,7 @@ export function ConnectLauncherPanel() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [handingOff, setHandingOff] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -28,6 +31,38 @@ export function ConnectLauncherPanel() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refresh]);
+
+  async function connectLauncher() {
+    setBusy(true);
+    setError(null);
+    setHandingOff(true);
+    try {
+      const res = await fetch("/api/library/token", { method: "POST" });
+      const data = (await res.json()) as { token?: string; error?: string };
+      if (!res.ok || !data.token) {
+        setError(data.error || "Couldn't connect launcher");
+        setHandingOff(false);
+        return;
+      }
+      setFreshToken(data.token);
+      setConnected(true);
+      setCreatedAt(new Date().toISOString());
+      window.location.href = launcherLinkUrl(data.token);
+    } catch {
+      setError("Couldn't connect launcher");
+      setHandingOff(false);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function generate() {
     setBusy(true);
@@ -54,6 +89,7 @@ export function ConnectLauncherPanel() {
   async function revoke() {
     setBusy(true);
     setError(null);
+    setHandingOff(false);
     try {
       const res = await fetch("/api/library/token", { method: "DELETE" });
       if (!res.ok) {
@@ -90,18 +126,20 @@ export function ConnectLauncherPanel() {
             Connect launcher
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Optional — sign in through the launcher to sync installs to this library. You can still
-            install games without an account.
+            Optional — link the PlayBound Launcher so installs appear here. You can still install games
+            without connecting.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a
-            href={launcherAuthUrl()}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground"
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void connectLauncher()}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
           >
             <MonitorPlay className="size-3.5" />
-            Connect in launcher
-          </a>
+            {connected ? "Reconnect launcher" : "Connect launcher"}
+          </button>
           {connected && (
             <button
               type="button"
@@ -113,13 +151,32 @@ export function ConnectLauncherPanel() {
               Revoke
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              void refresh();
+              router.refresh();
+            }}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold"
+          >
+            <RefreshCw className="size-3.5" />
+            Refresh
+          </button>
         </div>
       </div>
 
-      {connected && (
+      {handingOff && (
+        <p className="mt-3 rounded-lg border border-play/30 bg-play/10 px-3 py-2 text-sm text-foreground">
+          Opening the launcher… When it says <strong>Connected</strong>, close the launcher window and
+          click <strong>Refresh</strong> (or reload this page) to see your installs.
+        </p>
+      )}
+
+      {connected && !handingOff && (
         <p className="mt-3 text-xs text-muted-foreground">
-          A launcher token is active on your account
-          {createdAt ? ` · created ${new Date(createdAt).toLocaleString()}` : ""}.
+          Launcher linked
+          {createdAt ? ` · ${new Date(createdAt).toLocaleString()}` : ""}. New and existing installs
+          sync when you connect. Just linked? Hit Refresh to load them.
         </p>
       )}
 

@@ -19,12 +19,16 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
 
   let published = true;
   let submissionId: string | null = null;
+  let managedBy: "admin" | "developer" = "admin";
+  let ownerUserId: string | null = null;
   try {
     await dbConnect();
     const doc = await CatalogGame.findOne({ slug }).lean();
     if (doc) {
       published = Boolean(doc.published);
       submissionId = doc.submissionId ? String(doc.submissionId) : null;
+      managedBy = (doc.managedBy as "admin" | "developer") || "admin";
+      ownerUserId = doc.ownerUserId ? String(doc.ownerUserId) : null;
     }
   } catch {
     /* seed-only */
@@ -38,6 +42,8 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     developerName: null,
     published,
     submissionId,
+    managedBy,
+    ownerUserId,
   };
 
   return (

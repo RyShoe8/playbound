@@ -30,6 +30,11 @@ export function launcherJoinUrl(slug: string, host: string, port: number, name?:
   return `playbound://join/${slug}?${q.toString()}`;
 }
 
+/** One-click mod install into the base game folder. */
+export function launcherInstallModUrl(slug: string): string {
+  return `playbound://install-mod/${slug}`;
+}
+
 /** Deep link that opens the launcher auth / library sync flow. */
 export function launcherAuthUrl(): string {
   return "playbound://auth";

@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
-import CatalogGame from "@/lib/models/CatalogGame";
+import CatalogMod from "@/lib/models/CatalogMod";
 import { developersBySlug } from "@/lib/data";
-import { gamePayloadSchema, withDefaultArt } from "@/lib/gamePayload";
+import { getGame } from "@/lib/catalog";
+import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
-import { listAllGames } from "@/lib/catalog";
+import { listAllMods } from "@/lib/mods";
 
 export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
-  const games = await listAllGames();
-  return NextResponse.json({ games });
+  const mods = await listAllMods();
+  return NextResponse.json({ mods });
 }
 
 export async function POST(req: Request) {
@@ -19,10 +20,13 @@ export async function POST(req: Request) {
     const { error } = await requireAdminSession();
     if (error) return error;
 
-    const body = withDefaultArt(gamePayloadSchema.parse(await req.json()));
-    await dbConnect();
+    const body = withDefaultModArt(modPayloadSchema.parse(await req.json()));
+    if (!(await getGame(body.baseGameSlug, { includeUnpublished: true }))) {
+      return NextResponse.json({ error: "Unknown base game slug" }, { status: 400 });
+    }
 
-    const exists = await CatalogGame.findOne({ slug: body.slug }).lean();
+    await dbConnect();
+    const exists = await CatalogMod.findOne({ slug: body.slug }).lean();
     if (exists) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
     }
@@ -30,19 +34,16 @@ export async function POST(req: Request) {
     const developerName =
       body.developerName || developersBySlug.get(body.developerSlug)?.name || null;
 
-    if (body.gameOfWeek) {
-      await CatalogGame.updateMany({ gameOfWeek: true }, { $set: { gameOfWeek: false } });
-    }
-
-    const doc = await CatalogGame.create({
+    const doc = await CatalogMod.create({
       ...body,
       githubRepo: body.githubRepo || null,
+      assetPattern: body.assetPattern || null,
+      directUrl: body.directUrl || null,
       coverImage: body.coverImage || null,
       screenshots: body.screenshots ?? [],
       developerName,
-      submissionId: body.submissionId || null,
-      managedBy: body.managedBy || "admin",
       ownerUserId: body.ownerUserId || null,
+      managedBy: body.managedBy || "admin",
     });
 
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
     }
-    console.error("Admin create game error:", err);
+    console.error("Admin create mod error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
