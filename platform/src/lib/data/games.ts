@@ -23,6 +23,7 @@ export const games: Game[] = [
     gameOfWeek: true,
     hiddenGem: false,
     art: { from: "#7f1d1d", to: "#f59e0b", icon: "Radar" },
+    coverImage: "/games/openra/cover.svg",
     systemRequirements: {
       min: "2 GHz dual-core CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
       recommended: "3 GHz quad-core CPU · 4 GB RAM · Dedicated GPU · 2 GB storage",
@@ -49,6 +50,7 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#0c4a6e", to: "#22d3ee", icon: "Crosshair" },
+    coverImage: "/games/xonotic/cover.svg",
     systemRequirements: {
       min: "2 GHz CPU · 2 GB RAM · OpenGL 2.0 GPU · 2 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 4 GB storage",
@@ -75,6 +77,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#312e81", to: "#a78bfa", icon: "Swords" },
+    coverImage: "/games/battle-for-wesnoth/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/599390/header.jpg"],
     systemRequirements: {
       min: "1.6 GHz CPU · 2 GB RAM · Any GPU · 1 GB storage",
       recommended: "2.4 GHz CPU · 4 GB RAM · Any modern GPU · 2 GB storage",
@@ -102,6 +106,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#14532d", to: "#4ade80", icon: "Flag" },
+    coverImage: "/games/supertuxkart/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/746560/header.jpg"],
     systemRequirements: {
       min: "2 GHz CPU · 2 GB RAM · OpenGL 3.3 GPU · 1 GB storage",
       recommended: "3 GHz CPU · 4 GB RAM · GTX 750 or better · 2 GB storage",
@@ -129,6 +135,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#713f12", to: "#eab308", icon: "Landmark" },
+    coverImage: "/games/0ad/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/2188200/header.jpg"],
     systemRequirements: {
       min: "2.5 GHz dual-core CPU · 4 GB RAM · 1 GB VRAM GPU · 5 GB storage",
       recommended: "3.5 GHz quad-core CPU · 8 GB RAM · 2 GB VRAM GPU · 6 GB storage",
@@ -156,6 +164,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#1e3a5f", to: "#34d399", icon: "Mountain" },
+    coverImage: "/games/veloren/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/1687530/header.jpg"],
     systemRequirements: {
       min: "2.5 GHz quad-core CPU · 4 GB RAM · Vulkan-capable GPU · 2 GB storage",
       recommended: "3.5 GHz quad-core CPU · 8 GB RAM · GTX 1060 or better · 3 GB storage",
@@ -183,6 +193,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#3f1d0b", to: "#fb923c", icon: "Factory" },
+    coverImage: "/games/mindustry/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/1127400/header.jpg"],
     systemRequirements: {
       min: "1.5 GHz CPU · 1 GB RAM · Any GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
@@ -210,6 +222,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#164e63", to: "#67e8f9", icon: "TrainFront" },
+    coverImage: "/games/openttd/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/1536610/header.jpg"],
     systemRequirements: {
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 500 MB storage",
       recommended: "2 GHz CPU · 4 GB RAM · Any GPU · 1 GB storage",
@@ -237,6 +251,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#1e1b4b", to: "#818cf8", icon: "Rocket" },
+    coverImage: "/games/endless-sky/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/404410/header.jpg"],
     systemRequirements: {
       min: "1.5 GHz CPU · 1 GB RAM · OpenGL 3.0 GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 2 GB RAM · Any modern GPU · 1 GB storage",
@@ -264,6 +280,7 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#3b0764", to: "#e879f9", icon: "Skull" },
+    coverImage: "/games/shattered-pixel-dungeon/cover.svg",
     systemRequirements: {
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 200 MB storage",
       recommended: "Any modern machine",
@@ -290,6 +307,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#450a0a", to: "#f87171", icon: "Bomb" },
+    coverImage: "/games/beyond-all-reason/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/2507950/header.jpg"],
     systemRequirements: {
       min: "3 GHz quad-core CPU · 8 GB RAM · GTX 960 · 4 GB storage",
       recommended: "4 GHz 8-core CPU · 16 GB RAM · RTX 2060 or better · 6 GB storage",
@@ -317,6 +336,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#14532d", to: "#a3e635", icon: "Blocks" },
+    coverImage: "/games/luanti/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/2561990/header.jpg"],
     systemRequirements: {
       min: "1.5 GHz CPU · 2 GB RAM · OpenGL 2.0 GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
@@ -344,6 +365,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#422006", to: "#fbbf24", icon: "Truck" },
+    coverImage: "/games/warzone-2100/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/1241950/header.jpg"],
     systemRequirements: {
       min: "1.8 GHz CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 2 GB storage",
@@ -371,6 +394,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#0c4a6e", to: "#e0f2fe", icon: "Snowflake" },
+    coverImage: "/games/supertux/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/1135850/header.jpg"],
     systemRequirements: {
       min: "1 GHz CPU · 512 MB RAM · Any GPU · 300 MB storage",
       recommended: "Any modern machine",
@@ -397,6 +422,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#111827", to: "#94a3b8", icon: "Cog" },
+    coverImage: "/games/zero-k/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/334920/header.jpg"],
     systemRequirements: {
       min: "2.2 GHz dual-core CPU · 4 GB RAM · 1 GB VRAM GPU · 3 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · 2 GB VRAM GPU · 4 GB storage",
@@ -424,6 +451,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#0f172a", to: "#38bdf8", icon: "Orbit" },
+    coverImage: "/games/naev/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/598530/header.jpg"],
     systemRequirements: {
       min: "1.5 GHz CPU · 2 GB RAM · OpenGL 3.1 GPU · 600 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
@@ -450,6 +479,8 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#3f2d0c", to: "#fde047", icon: "Target" },
+    coverImage: "/games/hedgewars/cover.jpg",
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/346940/header.jpg"],
     systemRequirements: {
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 250 MB storage",
       recommended: "Any modern machine",
@@ -477,6 +508,7 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#052e16", to: "#86efac", icon: "Bug" },
+    coverImage: "/games/unvanquished/cover.svg",
     systemRequirements: {
       min: "2 GHz dual-core CPU · 4 GB RAM · OpenGL 3.2 GPU · 2 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 3 GB storage",

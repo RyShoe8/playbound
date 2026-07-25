@@ -430,26 +430,46 @@ function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigne
 }
 
 function MediaTab({ game }: { game: NonNullable<ReturnType<typeof getGame>> }) {
+  const shots = game.screenshots?.length
+    ? game.screenshots
+    : game.coverImage
+      ? [game.coverImage]
+      : [];
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h2 className="text-lg font-bold">Media</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <GameArt
-            key={i}
-            game={game}
-            showTitle={false}
-            iconSize="md"
-            className={cn("aspect-video rounded-lg", i % 3 === 1 && "brightness-90", i % 3 === 2 && "brightness-110 saturate-150")}
-          />
-        ))}
-      </div>
+      {shots.length > 0 ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {shots.map((src) => (
+            <a
+              key={src}
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`${game.title} screenshot`} className="h-full w-full object-cover" />
+            </a>
+          ))}
+          {game.coverImage && !shots.includes(game.coverImage) && (
+            <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
+              <GameArt game={game} showTitle={false} className="absolute inset-0" />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <GameArt game={game} showTitle={false} iconSize="md" className="aspect-video rounded-lg" />
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">
-        Generated placeholder art. Real screenshots pull from{" "}
+        More screenshots and trailers live on{" "}
         <a href={game.website} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
-          the official site
-        </a>{" "}
-        until a media pipeline is connected.
+          the official {game.title} site
+        </a>
+        .
       </p>
     </div>
   );

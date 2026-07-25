@@ -1,0 +1,19 @@
+import type { Metadata } from "next";
+import { SubmitGameForm } from "@/components/SubmitGameForm";
+
+export const metadata: Metadata = { title: "Submit a Game" };
+
+export default function SubmitGamePage() {
+  return (
+    <div className="mx-auto max-w-lg space-y-6 px-4 py-10 sm:px-6">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight">Submit a game</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Know a great free game that should be on PlayBound? Tell us about it. Submissions are
+          reviewed by the team — approved titles are added to the curated catalog manually.
+        </p>
+      </div>
+      <SubmitGameForm />
+    </div>
+  );
+}

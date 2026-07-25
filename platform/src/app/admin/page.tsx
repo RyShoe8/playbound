@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { CalendarDays, Plus, Shield } from "lucide-react";
+import { CalendarDays, Inbox, Plus, Shield } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
@@ -11,6 +11,7 @@ import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
+import GameSubmission from "@/lib/models/GameSubmission";
 import { developers, games } from "@/lib/data";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
@@ -20,19 +21,39 @@ export const metadata: Metadata = { title: "Admin" };
 async function getCounts() {
   try {
     await dbConnect();
-    const [totalUsers, verifiedUsers, reviews, guides, discussions, events, newsletter] = await Promise.all([
-      User.countDocuments(),
-      User.countDocuments({ emailVerified: true }),
-      Review.countDocuments(),
-      GuidePost.countDocuments(),
-      DiscussionPost.countDocuments(),
-      PlatformEvent.countDocuments({ startsAt: { $gte: new Date() } }),
-      NewsletterSubscriber.countDocuments(),
-    ]);
-    return { totalUsers, verifiedUsers, reviews, guides, discussions, events, newsletter };
+    const [totalUsers, verifiedUsers, reviews, guides, discussions, events, newsletter, pendingSubs] =
+      await Promise.all([
+        User.countDocuments(),
+        User.countDocuments({ emailVerified: true }),
+        Review.countDocuments(),
+        GuidePost.countDocuments(),
+        DiscussionPost.countDocuments(),
+        PlatformEvent.countDocuments({ startsAt: { $gte: new Date() } }),
+        NewsletterSubscriber.countDocuments(),
+        GameSubmission.countDocuments({ status: "pending" }),
+      ]);
+    return {
+      totalUsers,
+      verifiedUsers,
+      reviews,
+      guides,
+      discussions,
+      events,
+      newsletter,
+      pendingSubs,
+    };
   } catch (err) {
     console.error("Failed to load admin counts:", err);
-    return { totalUsers: 0, verifiedUsers: 0, reviews: 0, guides: 0, discussions: 0, events: 0, newsletter: 0 };
+    return {
+      totalUsers: 0,
+      verifiedUsers: 0,
+      reviews: 0,
+      guides: 0,
+      discussions: 0,
+      events: 0,
+      newsletter: 0,
+      pendingSubs: 0,
+    };
   }
 }
 
@@ -62,21 +83,31 @@ export default async function AdminPage() {
           <StatTile label="Guides" value={String(counts.guides)} />
           <StatTile label="Discussion Posts" value={String(counts.discussions)} />
           <StatTile label="Upcoming Events" value={String(counts.events)} />
+          <StatTile label="Pending Submissions" value={String(counts.pendingSubs)} />
         </div>
       </section>
 
       <section>
-        <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight">Games Catalog</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">Managed in code at src/lib/data/games.ts</p>
           </div>
-          <Link
-            href="/admin/events/new"
-            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
-          >
-            <Plus className="size-4" /> New Event
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/submissions"
+              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              <Inbox className="size-4" /> Submissions
+              {counts.pendingSubs > 0 ? ` (${counts.pendingSubs})` : ""}
+            </Link>
+            <Link
+              href="/admin/events/new"
+              className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+            >
+              <Plus className="size-4" /> New Event
+            </Link>
+          </div>
         </div>
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[560px] text-sm">

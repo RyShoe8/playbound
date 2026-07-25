@@ -41,7 +41,7 @@ export default function LauncherPage() {
           The PlayBound Launcher
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Install, update, and launch free PC games with one click. Game pages hand off via{" "}
+          Install, update, and launch free games with one click. Game pages hand off via{" "}
           <code className="text-play">playbound://</code> deep links — the launcher grabs the latest
           official build and puts it on your machine.
         </p>

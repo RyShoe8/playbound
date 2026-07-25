@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { MobileNav } from "@/components/shell/MobileNav";
+import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 
 const geistSans = Geist({
@@ -18,11 +19,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "PlayBound — The Home of Free PC Gaming",
+    default: "PlayBound — The Home of Free Gaming",
     template: "%s · PlayBound",
   },
   description:
-    "Discover, play, and share the best free PC games. Instant browser play, one-click installs, thriving communities. Discover. Click Play. Have Fun.",
+    "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities. Discover. Click Play. Have Fun.",
 };
 
 export default function RootLayout({
@@ -41,9 +42,7 @@ export default function RootLayout({
           <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
             <TopBar />
             <main className="flex-1">{children}</main>
-            <footer className="border-t border-border px-6 py-6 text-center text-xs text-muted-foreground">
-              PlayBound — the home of free PC gaming. Discover. Click Play. Have Fun.
-            </footer>
+            <Footer />
           </div>
           <MobileNav />
         </SessionProvider>
