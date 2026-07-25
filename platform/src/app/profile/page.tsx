@@ -9,6 +9,8 @@ import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
 import { getGame } from "@/lib/data";
 import { Avatar, EmptyHint, SectionHeader, StatTile } from "@/components/ui/bits";
+import { ProfileSettings } from "@/components/ProfileSettings";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export const metadata: Metadata = { title: "Profile" };
 
@@ -25,6 +27,9 @@ export default async function ProfilePage() {
           className="mt-2 flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
         >
           Sign In
+        </Link>
+        <Link href="/signup" className="text-sm font-semibold text-primary hover:underline">
+          Create an account
         </Link>
       </div>
     );
@@ -60,9 +65,15 @@ export default async function ProfilePage() {
             {session.user.role === "admin" && (
               <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">Admin</span>
             )}
+            <SignOutButton className="ml-auto rounded-full border border-border bg-secondary px-4 py-1.5 hover:bg-secondary/70" />
           </div>
         </div>
       </section>
+
+      <ProfileSettings
+        initialUsername={session.user.username}
+        email={session.user.email ?? ""}
+      />
 
       <section>
         <SectionHeader title="Your Contributions" />

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Play, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export function TopBar() {
   const { data: session } = useSession();
@@ -31,22 +32,25 @@ export function TopBar() {
           />
         </form>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           {session?.user ? (
-            <Link href="/profile" title="Profile">
-              <Avatar name={session.user.username ?? "?"} hue={265} size="sm" />
-            </Link>
+            <>
+              <Link href="/profile" title="Profile" className="rounded-full">
+                <Avatar name={session.user.username ?? "?"} hue={265} size="sm" />
+              </Link>
+              <SignOutButton className="hidden sm:inline" />
+            </>
           ) : (
             <>
               <Link
                 href="/login"
-                className="hidden rounded-full px-3.5 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+                className="rounded-full bg-primary px-3.5 py-1.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110 sm:px-4"
               >
                 Sign Up
               </Link>

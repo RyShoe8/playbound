@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { CalendarDays, Compass, FolderHeart, Hammer, House, LibraryBig, Play, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
+import { SignOutButton } from "@/components/SignOutButton";
 
 const nav = [
   { href: "/", label: "Home", icon: House },
@@ -69,16 +70,19 @@ export function Sidebar() {
 
       <div className="border-t border-sidebar-border p-3">
         {session?.user ? (
-          <Link
-            href="/profile"
-            className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-sidebar-accent/60"
-          >
-            <Avatar name={session.user.username ?? session.user.email ?? "?"} hue={265} />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{session.user.username}</p>
-              <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
-            </div>
-          </Link>
+          <div className="space-y-1">
+            <Link
+              href="/profile"
+              className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-sidebar-accent/60"
+            >
+              <Avatar name={session.user.username ?? session.user.email ?? "?"} hue={265} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">{session.user.username}</p>
+                <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
+              </div>
+            </Link>
+            <SignOutButton className="w-full px-2 py-2 text-left hover:bg-sidebar-accent/60" />
+          </div>
         ) : (
           <div className="flex gap-2 px-2 py-2">
             <Link
