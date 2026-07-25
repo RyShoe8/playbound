@@ -29,3 +29,13 @@ export function launcherJoinUrl(slug: string, host: string, port: number, name?:
   if (name) q.set("name", name.slice(0, 80));
   return `playbound://join/${slug}?${q.toString()}`;
 }
+
+/** Deep link that opens the launcher auth / library sync flow. */
+export function launcherAuthUrl(): string {
+  return "playbound://auth";
+}
+
+/** Deep link that hands a launcher token to the desktop app. */
+export function launcherLinkUrl(token: string): string {
+  return `playbound://link?token=${encodeURIComponent(token)}`;
+}

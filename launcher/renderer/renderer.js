@@ -14,7 +14,8 @@ const btnCloseEmpty = document.getElementById("btn-close-empty");
 const accountStatusEl = document.getElementById("account-status");
 const tokenInputEl = document.getElementById("token-input");
 const btnSaveToken = document.getElementById("btn-save-token");
-const btnClearToken = document.getElementById("btn-clear-token");
+const btnSignIn = document.getElementById("btn-sign-in");
+const btnSignOut = document.getElementById("btn-sign-out");
 const accountMsgEl = document.getElementById("account-msg");
 
 /** @type {{ action: string, entry: object | null, installed: boolean, installedPath: string | null, defaultDir: string } | null} */
@@ -35,18 +36,40 @@ function setAccountMsg(text, isError = false) {
 async function refreshAccount() {
   try {
     const account = await window.playbound.getAccount();
-    accountStatusEl.textContent = account.connected ? "Connected" : "Not connected";
+    accountStatusEl.textContent = account.connected ? "Signed in" : "Not signed in";
     accountStatusEl.classList.toggle("on", Boolean(account.connected));
-    if (account.connected) tokenInputEl.placeholder = "Token saved · paste a new one to replace";
+    btnSignIn.classList.toggle("hidden", Boolean(account.connected));
+    btnSignOut.classList.toggle("hidden", !account.connected);
+    if (account.connected) tokenInputEl.placeholder = "Paste a new token to replace";
   } catch {
     /* ignore */
   }
 }
 
+btnSignIn.addEventListener("click", async () => {
+  setAccountMsg("Opening sign-in…");
+  try {
+    await window.playbound.signIn();
+  } catch (err) {
+    setAccountMsg(err.message || String(err), true);
+  }
+});
+
+btnSignOut.addEventListener("click", async () => {
+  try {
+    await window.playbound.clearLauncherToken();
+    tokenInputEl.value = "";
+    setAccountMsg("Signed out. Installs still work locally.");
+    await refreshAccount();
+  } catch (err) {
+    setAccountMsg(err.message || String(err), true);
+  }
+});
+
 btnSaveToken.addEventListener("click", async () => {
   const token = tokenInputEl.value.trim();
   if (!token) {
-    setAccountMsg("Paste a token from playbound.club/library first.", true);
+    setAccountMsg("Paste a launcher token first.", true);
     return;
   }
   try {
@@ -59,15 +82,9 @@ btnSaveToken.addEventListener("click", async () => {
   }
 });
 
-btnClearToken.addEventListener("click", async () => {
-  try {
-    await window.playbound.clearLauncherToken();
-    tokenInputEl.value = "";
-    setAccountMsg("Disconnected from library sync.");
-    await refreshAccount();
-  } catch (err) {
-    setAccountMsg(err.message || String(err), true);
-  }
+window.playbound.onAccount(() => {
+  setAccountMsg("Signed in — library sync is on.");
+  void refreshAccount();
 });
 
 void refreshAccount();

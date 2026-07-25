@@ -41,9 +41,9 @@ export default async function LauncherPage() {
           The PlayBound Launcher
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Install, update, and launch free games with one click. Game pages hand off via{" "}
-          <code className="text-play">playbound://</code> deep links — the launcher grabs the latest
-          official build and puts it on your machine.
+          Install, update, and launch free games with one click — no account required. Game pages hand
+          off via <code className="text-play">playbound://</code> deep links. Sign in only if you want
+          optional extras like library sync.
         </p>
         <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
           <p className="flex items-center gap-2 text-sm font-bold">

@@ -12,6 +12,8 @@ const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const DEFAULT_API_BASE = "https://playbound.club";
 
 let win = null;
+/** Auth BrowserWindow for optional sign-in (library sync). */
+let authWin = null;
 /** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
 let context = null;
 
@@ -34,7 +36,7 @@ if (!gotLock) {
 } else {
   app.on("second-instance", (_event, argv) => {
     const url = argv.find((a) => a.startsWith(`${PROTOCOL}://`));
-    if (url) setContext(parseDeepLink(url));
+    if (url) handleDeepLink(parseDeepLink(url));
     if (win) {
       if (win.isMinimized()) win.restore();
       win.focus();
@@ -45,10 +47,16 @@ if (!gotLock) {
 function parseDeepLink(url) {
   // playbound://install/openra
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
+  // playbound://auth
+  // playbound://link?token=...
   try {
     const normalized = String(url).replace(/^playbound:\/\//i, "https://playbound.local/");
     const u = new URL(normalized);
     const action = u.hostname.toLowerCase();
+    if (action === "auth") return { action: "auth" };
+    if (action === "link") {
+      return { action: "link", token: u.searchParams.get("token") || "" };
+    }
     const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
     if (!slug || !["install", "play", "uninstall", "join"].includes(action)) return null;
     /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string }} */
@@ -62,6 +70,91 @@ function parseDeepLink(url) {
   } catch {
     return null;
   }
+}
+
+function notifyAccount() {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("account");
+  }
+}
+
+function persistLauncherToken(token) {
+  const settings = loadSettings();
+  const trimmed = String(token || "").trim();
+  if (!trimmed) {
+    delete settings.launcherToken;
+  } else {
+    settings.launcherToken = trimmed;
+  }
+  if (!settings.apiBase) settings.apiBase = DEFAULT_API_BASE;
+  saveSettings(settings);
+  notifyAccount();
+  return { connected: Boolean(settings.launcherToken) };
+}
+
+function closeAuthWindow() {
+  if (authWin && !authWin.isDestroyed()) {
+    authWin.close();
+  }
+  authWin = null;
+}
+
+function openAuthWindow() {
+  if (authWin && !authWin.isDestroyed()) {
+    authWin.focus();
+    return;
+  }
+  authWin = new BrowserWindow({
+    width: 520,
+    height: 720,
+    backgroundColor: "#131118",
+    title: "PlayBound — Sign in",
+    autoHideMenuBar: true,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  const authUrl = `${getApiBase()}/launcher/auth`;
+  authWin.loadURL(authUrl);
+
+  const intercept = (targetUrl) => {
+    if (!String(targetUrl).toLowerCase().startsWith(`${PROTOCOL}://`)) return false;
+    handleDeepLink(parseDeepLink(targetUrl));
+    return true;
+  };
+
+  authWin.webContents.on("will-navigate", (event, targetUrl) => {
+    if (intercept(targetUrl)) event.preventDefault();
+  });
+  authWin.webContents.on("will-redirect", (event, targetUrl) => {
+    if (intercept(targetUrl)) event.preventDefault();
+  });
+  authWin.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
+    if (intercept(targetUrl)) return { action: "deny" };
+    return { action: "allow" };
+  });
+  authWin.on("closed", () => {
+    authWin = null;
+  });
+}
+
+function handleDeepLink(parsed) {
+  if (!parsed) return;
+  if (parsed.action === "auth") {
+    openAuthWindow();
+    return;
+  }
+  if (parsed.action === "link") {
+    if (parsed.token) persistLauncherToken(parsed.token);
+    closeAuthWindow();
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+    return;
+  }
+  setContext(parsed);
 }
 
 function setContext(parsed) {
@@ -340,23 +433,31 @@ ipcMain.handle("get-account", () => {
     apiBase: getApiBase(),
   };
 });
-ipcMain.handle("set-launcher-token", (_event, token) => {
+ipcMain.handle("set-launcher-token", (_event, token) => persistLauncherToken(token));
+ipcMain.handle("clear-launcher-token", async () => {
   const settings = loadSettings();
-  const trimmed = String(token || "").trim();
-  if (!trimmed) {
-    delete settings.launcherToken;
-  } else {
-    settings.launcherToken = trimmed;
+  const token = settings.launcherToken;
+  if (token) {
+    try {
+      await fetch(`${getApiBase()}/api/library/token`, {
+        method: "DELETE",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "user-agent": "playbound-launcher",
+        },
+      });
+    } catch {
+      /* offline / ignore */
+    }
   }
-  if (!settings.apiBase) settings.apiBase = DEFAULT_API_BASE;
-  saveSettings(settings);
-  return { connected: Boolean(settings.launcherToken) };
-});
-ipcMain.handle("clear-launcher-token", () => {
-  const settings = loadSettings();
   delete settings.launcherToken;
   saveSettings(settings);
+  notifyAccount();
   return { connected: false };
+});
+ipcMain.handle("sign-in", () => {
+  openAuthWindow();
+  return true;
 });
 
 /* ── window ────────────────────────────────────────────────── */
@@ -364,7 +465,7 @@ ipcMain.handle("clear-launcher-token", () => {
 function createWindow() {
   win = new BrowserWindow({
     width: 480,
-    height: 520,
+    height: 560,
     resizable: false,
     backgroundColor: "#131118",
     title: "PlayBound Launcher",
@@ -434,6 +535,8 @@ function testDeepLink() {
       "playbound://join/openra?host=1.2.3.4&port=1234&name=Test",
       { action: "join", slug: "openra", host: "1.2.3.4", port: 1234, name: "Test" },
     ],
+    ["playbound://auth", { action: "auth" }],
+    ["playbound://link?token=abc", { action: "link", token: "abc" }],
     ["not-a-deep-link", null],
   ];
   let failures = 0;
@@ -480,9 +583,15 @@ if (gotLock) {
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
-    context = launchUrl ? parseDeepLink(launchUrl) : null;
-
-    createWindow();
+    const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;
+    if (parsedLaunch && (parsedLaunch.action === "auth" || parsedLaunch.action === "link")) {
+      context = null;
+      createWindow();
+      handleDeepLink(parsedLaunch);
+    } else {
+      context = parsedLaunch;
+      createWindow();
+    }
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
@@ -495,6 +604,6 @@ if (gotLock) {
   // macOS deep-link event (Windows/Linux use argv + second-instance instead).
   app.on("open-url", (event, url) => {
     event.preventDefault();
-    setContext(parseDeepLink(url));
+    handleDeepLink(parseDeepLink(url));
   });
 }
