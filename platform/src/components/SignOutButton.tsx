@@ -1,0 +1,24 @@
+"use client";
+
+import { signOut } from "next-auth/react";
+import { cn } from "@/lib/utils";
+
+type Props = {
+  className?: string;
+  label?: string;
+};
+
+export function SignOutButton({ className, label = "Sign out" }: Props) {
+  return (
+    <button
+      type="button"
+      onClick={() => signOut({ callbackUrl: "/" })}
+      className={cn(
+        "rounded-full px-3 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground",
+        className
+      )}
+    >
+      {label}
+    </button>
+  );
+}

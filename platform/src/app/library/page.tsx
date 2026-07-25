@@ -23,6 +23,9 @@ export default async function LibraryPage() {
         >
           <LogIn className="size-4" /> Sign In
         </Link>
+        <Link href="/signup" className="text-sm font-semibold text-primary hover:underline">
+          Create an account
+        </Link>
       </div>
     );
   }
