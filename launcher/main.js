@@ -1,14 +1,58 @@
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
 const catalog = require("./catalog");
 
-const GAMES_DIR = path.join(app.getPath("home"), "PlayBound", "Games");
+const PROTOCOL = "playbound";
+const DEFAULT_GAMES_DIR = path.join(app.getPath("home"), "PlayBound", "Games");
 const STATE_FILE = path.join(app.getPath("userData"), "installed.json");
 
 let win = null;
+/** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
+let context = null;
+
+/* ── protocol registration ─────────────────────────────────── */
+/* Lets website links like playbound://install/openra hand off to this app. */
+
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient(PROTOCOL);
+}
+
+/* ── single instance: a new deep link replaces the current window's context ── */
+
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const url = argv.find((a) => a.startsWith(`${PROTOCOL}://`));
+    if (url) setContext(parseDeepLink(url));
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
+
+function parseDeepLink(url) {
+  // playbound://install/openra  |  playbound://play/openra  |  playbound://uninstall/openra
+  const match = url.match(/^playbound:\/\/(install|play|uninstall)\/([a-z0-9-]+)\/?$/i);
+  if (!match) return null;
+  return { action: match[1].toLowerCase(), slug: match[2].toLowerCase() };
+}
+
+function setContext(parsed) {
+  context = parsed;
+  if (win && !win.webContents.isLoading()) {
+    win.webContents.send("context", buildContextPayload());
+  }
+}
 
 /* ── install state ─────────────────────────────────────────── */
 
@@ -23,6 +67,22 @@ function loadState() {
 function saveState(state) {
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+function buildContextPayload() {
+  if (!context) return null;
+  const entry = catalog.find((e) => e.slug === context.slug);
+  if (!entry) return { action: context.action, slug: context.slug, entry: null };
+  const state = loadState();
+  const installed = state[entry.slug];
+  return {
+    action: context.action,
+    slug: entry.slug,
+    entry,
+    installed: Boolean(installed),
+    installedPath: installed?.dir ?? null,
+    defaultDir: path.join(DEFAULT_GAMES_DIR, entry.slug),
+  };
 }
 
 /* ── release resolution ────────────────────────────────────── */
@@ -44,11 +104,11 @@ async function resolveDownload(entry) {
 
 /* ── download with progress ────────────────────────────────── */
 
-function sendProgress(slug, payload) {
-  if (win && !win.isDestroyed()) win.webContents.send("progress", { slug, ...payload });
+function sendProgress(payload) {
+  if (win && !win.isDestroyed()) win.webContents.send("progress", payload);
 }
 
-async function downloadTo(url, dest, slug) {
+async function downloadTo(url, dest) {
   const res = await fetch(url, { headers: { "user-agent": "playbound-launcher" } });
   if (!res.ok || !res.body) throw new Error(`Download failed: HTTP ${res.status}`);
   const total = Number(res.headers.get("content-length")) || 0;
@@ -67,11 +127,11 @@ async function downloadTo(url, dest, slug) {
     const now = Date.now();
     if (now - lastSent > 250) {
       lastSent = now;
-      sendProgress(slug, { phase: "downloading", received, total });
+      sendProgress({ phase: "downloading", received, total });
     }
   }
   await new Promise((r, j) => file.end((err) => (err ? j(err) : r())));
-  sendProgress(slug, { phase: "downloading", received, total: total || received });
+  sendProgress({ phase: "downloading", received, total: total || received });
 }
 
 function extractZip(zipPath, destDir) {
@@ -113,20 +173,9 @@ function findExecutable(dir, exeHint) {
   return exes.sort((a, b) => b.size - a.size)[0].full;
 }
 
-/* ── IPC ───────────────────────────────────────────────────── */
+/* ── core actions ──────────────────────────────────────────── */
 
-function catalogWithState() {
-  const state = loadState();
-  return catalog.map((entry) => ({
-    ...entry,
-    installed: Boolean(state[entry.slug]),
-    version: state[entry.slug]?.version ?? null,
-  }));
-}
-
-ipcMain.handle("catalog", () => catalogWithState());
-
-ipcMain.handle("install", async (_event, slug) => {
+async function installGame(slug, targetDir) {
   const entry = catalog.find((e) => e.slug === slug);
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
@@ -135,20 +184,20 @@ ipcMain.handle("install", async (_event, slug) => {
     return { status: "external" };
   }
 
-  sendProgress(slug, { phase: "resolving" });
+  const gameDir = targetDir || path.join(DEFAULT_GAMES_DIR, entry.slug);
+
+  sendProgress({ phase: "resolving" });
   const dl = await resolveDownload(entry);
-  const downloadPath = path.join(GAMES_DIR, ".downloads", dl.name);
-  await downloadTo(dl.url, downloadPath, slug);
+  const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", dl.name);
+  await downloadTo(dl.url, downloadPath);
 
   if (entry.kind === "github-installer") {
-    // Setup wizards manage their own install location; hand off to the user.
-    sendProgress(slug, { phase: "done" });
+    sendProgress({ phase: "done" });
     await shell.openPath(downloadPath);
     return { status: "installer-opened" };
   }
 
-  sendProgress(slug, { phase: "extracting" });
-  const gameDir = path.join(GAMES_DIR, entry.slug);
+  sendProgress({ phase: "extracting" });
   await fsp.rm(gameDir, { recursive: true, force: true });
   await extractZip(downloadPath, gameDir);
   await fsp.rm(downloadPath, { force: true });
@@ -159,36 +208,55 @@ ipcMain.handle("install", async (_event, slug) => {
   const state = loadState();
   state[slug] = { version: dl.version, exe, dir: gameDir, installedAt: new Date().toISOString() };
   saveState(state);
-  sendProgress(slug, { phase: "done" });
-  return { status: "installed", version: dl.version };
-});
+  sendProgress({ phase: "done" });
+  return { status: "installed", version: dl.version, dir: gameDir };
+}
 
-ipcMain.handle("play", async (_event, slug) => {
+async function playGame(slug) {
   const state = loadState();
   const info = state[slug];
   if (!info || !fs.existsSync(info.exe)) throw new Error("Not installed");
   spawn(info.exe, [], { cwd: path.dirname(info.exe), detached: true, stdio: "ignore" }).unref();
   return { status: "launched" };
-});
+}
 
-ipcMain.handle("uninstall", async (_event, slug) => {
+async function uninstallGame(slug) {
   const state = loadState();
-  if (state[slug]?.dir) await fsp.rm(state[slug].dir, { recursive: true, force: true });
+  const info = state[slug];
+  if (!info) return { status: "not-installed" };
+  if (info.dir) await fsp.rm(info.dir, { recursive: true, force: true });
   delete state[slug];
   saveState(state);
-  return { status: "uninstalled" };
+  return { status: "uninstalled", dir: info.dir };
+}
+
+/* ── IPC ───────────────────────────────────────────────────── */
+
+ipcMain.handle("get-context", () => buildContextPayload());
+
+ipcMain.handle("choose-directory", async (_event, defaultPath) => {
+  const result = await dialog.showOpenDialog(win, {
+    title: "Choose install location",
+    defaultPath,
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
 });
 
+ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetDir));
+ipcMain.handle("play", (_event, slug) => playGame(slug));
+ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("open-external", (_event, url) => shell.openExternal(url));
+ipcMain.handle("close-window", () => win?.close());
 
 /* ── window ────────────────────────────────────────────────── */
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 1080,
-    height: 720,
-    minWidth: 760,
-    minHeight: 520,
+    width: 480,
+    height: 420,
+    resizable: false,
     backgroundColor: "#131118",
     title: "PlayBound Launcher",
     autoHideMenuBar: true,
@@ -199,6 +267,9 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  win.webContents.once("did-finish-load", () => {
+    win.webContents.send("context", buildContextPayload());
+  });
 }
 
 /* ── headless self-test: verify every GitHub/direct entry resolves ── */
@@ -232,22 +303,9 @@ async function testInstall(slug) {
     return;
   }
   try {
-    const dl = await resolveDownload(entry);
-    console.log(`Resolved: ${dl.name} (${dl.version})`);
-    const downloadPath = path.join(GAMES_DIR, ".downloads", dl.name);
-    await downloadTo(dl.url, downloadPath, slug);
-    console.log(`Downloaded: ${(fs.statSync(downloadPath).size / 1e6).toFixed(1)} MB`);
-    const gameDir = path.join(GAMES_DIR, entry.slug);
-    await fsp.rm(gameDir, { recursive: true, force: true });
-    await extractZip(downloadPath, gameDir);
-    await fsp.rm(downloadPath, { force: true });
-    const exe = findExecutable(gameDir, entry.exeHint);
-    console.log(`Executable: ${exe}`);
-    if (!exe) throw new Error("no exe found");
-    const state = loadState();
-    state[slug] = { version: dl.version, exe, dir: gameDir, installedAt: new Date().toISOString() };
-    saveState(state);
-    console.log("Install pipeline OK");
+    const result = await installGame(slug);
+    console.log(`Install result: ${JSON.stringify(result)}`);
+    if (result.status !== "installed") throw new Error("unexpected status");
     app.exit(0);
   } catch (err) {
     console.log(`FAIL: ${err.message}`);
@@ -255,22 +313,71 @@ async function testInstall(slug) {
   }
 }
 
-app.whenReady().then(() => {
-  if (process.argv.includes("--test-resolve")) {
-    testResolve();
-    return;
-  }
-  const installIdx = process.argv.indexOf("--test-install");
-  if (installIdx !== -1) {
-    testInstall(process.argv[installIdx + 1]);
-    return;
-  }
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
+/* ── headless self-test: deep link parsing ───────────────────────────── */
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+function testDeepLink() {
+  const cases = [
+    ["playbound://install/openra", { action: "install", slug: "openra" }],
+    ["playbound://play/warzone-2100", { action: "play", slug: "warzone-2100" }],
+    ["playbound://uninstall/openra", { action: "uninstall", slug: "openra" }],
+    ["playbound://install/openra/", { action: "install", slug: "openra" }],
+    ["not-a-deep-link", null],
+  ];
+  let failures = 0;
+  for (const [input, expected] of cases) {
+    const got = parseDeepLink(input);
+    const ok = JSON.stringify(got) === JSON.stringify(expected);
+    console.log(`${ok ? "OK  " : "FAIL"}  ${input} -> ${JSON.stringify(got)}`);
+    if (!ok) failures++;
+  }
+  console.log(failures === 0 ? "All deep link cases OK" : `${failures} failure(s)`);
+  app.exit(failures === 0 ? 0 : 1);
+}
+
+/* ── headless self-test: uninstall pipeline ──────────────────────────── */
+
+async function testUninstall(slug) {
+  try {
+    const before = loadState();
+    console.log(`Before: ${JSON.stringify(before[slug] ?? null)}`);
+    const result = await uninstallGame(slug);
+    console.log(`Uninstall result: ${JSON.stringify(result)}`);
+    const after = loadState();
+    if (after[slug]) throw new Error("state still present after uninstall");
+    if (result.dir && fs.existsSync(result.dir)) throw new Error("directory still exists after uninstall");
+    console.log("Uninstall pipeline OK");
+    app.exit(0);
+  } catch (err) {
+    console.log(`FAIL: ${err.message}`);
+    app.exit(1);
+  }
+}
+
+if (gotLock) {
+  app.whenReady().then(() => {
+    if (process.argv.includes("--test-resolve")) return testResolve();
+    const installIdx = process.argv.indexOf("--test-install");
+    if (installIdx !== -1) return testInstall(process.argv[installIdx + 1]);
+    if (process.argv.includes("--test-deep-link")) return testDeepLink();
+    const uninstallIdx = process.argv.indexOf("--test-uninstall");
+    if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
+
+    const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
+    context = launchUrl ? parseDeepLink(launchUrl) : null;
+
+    createWindow();
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+
+  // macOS deep-link event (Windows/Linux use argv + second-instance instead).
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    setContext(parseDeepLink(url));
+  });
+}

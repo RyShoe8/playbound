@@ -1,6 +1,5 @@
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const FROM_EMAIL = process.env.MAIL_FROM_EMAIL || "playboundclub@gmail.com";
-const FROM_NAME = process.env.MAIL_FROM_NAME || "PlayBound";
+const FROM_EMAIL_DEFAULT = "playboundclub@gmail.com";
+const FROM_NAME_DEFAULT = "PlayBound";
 
 /**
  * Sends a transactional email via Brevo when BREVO_API_KEY is configured.
@@ -8,7 +7,11 @@ const FROM_NAME = process.env.MAIL_FROM_NAME || "PlayBound";
  * remain usable without a mail provider.
  */
 export async function sendMail(to: string, subject: string, html: string) {
-  if (!BREVO_API_KEY) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.MAIL_FROM_EMAIL || FROM_EMAIL_DEFAULT;
+  const fromName = process.env.MAIL_FROM_NAME || FROM_NAME_DEFAULT;
+
+  if (!apiKey) {
     console.log(`[mailer] BREVO_API_KEY not set — logging email instead of sending.\nTo: ${to}\nSubject: ${subject}\n${html}`);
     return;
   }
@@ -17,11 +20,11 @@ export async function sendMail(to: string, subject: string, html: string) {
     method: "POST",
     headers: {
       accept: "application/json",
-      "api-key": BREVO_API_KEY,
+      "api-key": apiKey,
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      sender: { email: FROM_EMAIL, name: FROM_NAME },
+      sender: { email: fromEmail, name: fromName },
       to: [{ email: to }],
       subject,
       htmlContent: html,

@@ -5,11 +5,36 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test:resolve": "electron . --test-resolve"
+    "test:resolve": "electron . --test-resolve",
+    "test:deep-link": "electron . --test-deep-link",
+    "dist": "electron-builder --win"
   },
   "author": "PlayBound",
   "license": "MIT",
+  "build": {
+    "appId": "gg.playbound.launcher",
+    "productName": "PlayBound Launcher",
+    "files": ["main.js", "preload.js", "catalog.js", "renderer/**/*"],
+    "protocols": {
+      "name": "PlayBound Deep Link",
+      "schemes": ["playbound"]
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "PlayBound-Launcher-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "PlayBound-Launcher-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "PlayBound-Launcher-Portable-${version}.${ext}"
+    }
+  },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
   }
 }

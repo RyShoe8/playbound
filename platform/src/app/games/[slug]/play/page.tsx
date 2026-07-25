@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Server } from "lucide-react";
 import { developersBySlug, getGame } from "@/lib/data";
+import { isOneClickSlug, launcherInstallUrl } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
 import { Badge } from "@/components/ui/bits";
 
@@ -17,6 +18,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
   if (!game) notFound();
 
   const developer = developersBySlug.get(game.developerSlug);
+  const oneClick = isOneClickSlug(game.slug);
 
   return (
     <div>
@@ -52,12 +54,26 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
             <Download className="size-4" /> Download from{" "}
             {new URL(game.website).hostname.replace(/^www\./, "")}
           </a>
-          <Link
-            href="/launcher"
-            className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-bold transition-colors hover:bg-secondary/70"
-          >
-            One-click install with the PlayBound Launcher →
-          </Link>
+          {oneClick ? (
+            <>
+              <a
+                href={launcherInstallUrl(game.slug)}
+                className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-bold transition-colors hover:bg-secondary/70"
+              >
+                One-click install with the PlayBound Launcher →
+              </a>
+              <Link href="/launcher" className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                Need the launcher?
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/launcher"
+              className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              Get the PlayBound Launcher →
+            </Link>
+          )}
           {game.launchMethods.includes("server") && (
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Server className="size-3.5" /> Supports dedicated servers for multiplayer

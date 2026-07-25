@@ -14,14 +14,45 @@
       </div>
       <span class="beta">beta</span>
     </header>
-    <p class="strapline">
-      One-click installs for free PC games. Downloads come straight from each project's official
-      releases.
-    </p>
-    <main id="games"></main>
+
+    <main id="app">
+      <div id="empty" class="panel empty hidden">
+        <p class="empty-title">Waiting for a game</p>
+        <p class="empty-text">
+          Open an install link from playbound.gg — or click One-click install on a game page — and
+          this window will handle the rest.
+        </p>
+        <button type="button" class="btn-site" id="btn-close-empty">Close</button>
+      </div>
+
+      <div id="game" class="panel game-panel hidden">
+        <div class="game-header">
+          <div class="tile" id="tile"></div>
+          <div class="meta">
+            <h1 id="title"></h1>
+            <p id="blurb"></p>
+          </div>
+        </div>
+
+        <div id="path-row" class="path-row">
+          <label class="path-label" for="install-path">Install to</label>
+          <div class="path-controls">
+            <code id="install-path"></code>
+            <button type="button" class="btn-site btn-sm" id="btn-choose">Choose folder</button>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="progress" id="progress" style="display: none">
+          <div id="bar"></div>
+        </div>
+
+        <div class="actions" id="actions"></div>
+      </div>
+    </main>
+
     <footer>
-      Games install to <code id="install-path">~/PlayBound/Games</code> · PlayBound never bundles or
-      modifies game files.
+      PlayBound only downloads official builds · never bundles or modifies game files
     </footer>
     <script src="renderer.js"></script>
   </body>
