@@ -52,23 +52,30 @@
 
       <div id="account" class="panel account-panel">
         <div class="account-header">
-          <strong>Library sync</strong>
-          <span id="account-status" class="account-status">Not connected</span>
+          <strong>Account</strong>
+          <span id="account-status" class="account-status">Not signed in</span>
         </div>
         <p class="account-hint">
-          Paste the token from playbound.club/library so installs appear in your online library.
+          Optional — sign in to sync installs to your PlayBound library. You can install games without
+          an account.
         </p>
-        <div class="account-row">
-          <input
-            id="token-input"
-            type="password"
-            spellcheck="false"
-            autocomplete="off"
-            placeholder="Launcher token"
-          />
-          <button type="button" class="btn-site btn-sm" id="btn-save-token">Save</button>
-          <button type="button" class="btn-site btn-sm" id="btn-clear-token">Disconnect</button>
+        <div class="account-actions">
+          <button type="button" class="btn-play btn-sm" id="btn-sign-in">Sign in</button>
+          <button type="button" class="btn-site btn-sm" id="btn-sign-out">Sign out</button>
         </div>
+        <details class="account-advanced">
+          <summary>Advanced — paste token</summary>
+          <div class="account-row">
+            <input
+              id="token-input"
+              type="password"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="Launcher token"
+            />
+            <button type="button" class="btn-site btn-sm" id="btn-save-token">Save</button>
+          </div>
+        </details>
         <p id="account-msg" class="account-msg"></p>
       </div>
     </main>

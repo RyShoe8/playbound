@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld("playbound", {
   getAccount: () => ipcRenderer.invoke("get-account"),
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
+  signIn: () => ipcRenderer.invoke("sign-in"),
   onContext: (cb) => ipcRenderer.on("context", (_event, data) => cb(data)),
   onProgress: (cb) => ipcRenderer.on("progress", (_event, data) => cb(data)),
+  onAccount: (cb) => ipcRenderer.on("account", () => cb()),
 });

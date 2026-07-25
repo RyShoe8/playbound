@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
-import { hashLauncherToken, mintLauncherToken } from "@/lib/library";
+import { hashLauncherToken, issueLauncherTokenForUser } from "@/lib/library";
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -12,14 +12,7 @@ export async function POST() {
   }
 
   try {
-    await dbConnect();
-    const token = mintLauncherToken();
-    const tokenHash = hashLauncherToken(token);
-    await User.findByIdAndUpdate(session.user.id, {
-      launcherTokenHash: tokenHash,
-      launcherTokenCreatedAt: new Date(),
-    });
-
+    const token = await issueLauncherTokenForUser(session.user.id);
     return NextResponse.json({
       token,
       createdAt: new Date().toISOString(),
@@ -30,15 +23,30 @@ export async function POST() {
   }
 }
 
-export async function DELETE() {
+async function userIdFromBearer(req: Request): Promise<string | null> {
+  const header = req.headers.get("authorization") || "";
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  if (!match?.[1]) return null;
+  await dbConnect();
+  const user = await User.findOne({
+    launcherTokenHash: hashLauncherToken(match[1].trim()),
+  }).select("+launcherTokenHash _id");
+  return user?._id?.toString() ?? null;
+}
+
+export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  let userId = session?.user?.id ?? null;
+  if (!userId) {
+    userId = await userIdFromBearer(req);
+  }
+  if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
 
   try {
     await dbConnect();
-    await User.findByIdAndUpdate(session.user.id, {
+    await User.findByIdAndUpdate(userId, {
       $unset: { launcherTokenHash: 1, launcherTokenCreatedAt: 1 },
     });
     return NextResponse.json({ success: true });

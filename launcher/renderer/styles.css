@@ -282,10 +282,32 @@ footer {
   line-height: 1.4;
 }
 
-.account-row {
+.account-actions {
   display: flex;
   gap: 6px;
   margin-top: 10px;
+}
+
+.account-advanced {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #8b8699;
+}
+
+.account-advanced summary {
+  cursor: pointer;
+  font-weight: 700;
+  user-select: none;
+}
+
+.account-advanced[open] summary {
+  margin-bottom: 8px;
+  color: #c4bfd4;
+}
+
+.account-row {
+  display: flex;
+  gap: 6px;
   align-items: center;
 }
 

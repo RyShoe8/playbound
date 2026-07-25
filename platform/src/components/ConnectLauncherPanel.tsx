@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, KeyRound, Link2Off } from "lucide-react";
+import { Check, ChevronDown, Copy, KeyRound, Link2Off, MonitorPlay } from "lucide-react";
+import { launcherAuthUrl } from "@/lib/launcher";
 
 export function ConnectLauncherPanel() {
   const [connected, setConnected] = useState(false);
@@ -10,6 +11,7 @@ export function ConnectLauncherPanel() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -31,6 +33,7 @@ export function ConnectLauncherPanel() {
     setBusy(true);
     setError(null);
     setCopied(false);
+    setAdvancedOpen(true);
     try {
       const res = await fetch("/api/library/token", { method: "POST" });
       const data = (await res.json()) as { token?: string; error?: string };
@@ -87,19 +90,18 @@ export function ConnectLauncherPanel() {
             Connect launcher
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Generate a token, paste it into the PlayBound Launcher, and installs sync to this library.
-            The token is shown once — store it safely.
+            Optional — sign in through the launcher to sync installs to this library. You can still
+            install games without an account.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void generate()}
-            className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
+          <a
+            href={launcherAuthUrl()}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground"
           >
-            {connected ? "Regenerate token" : "Generate token"}
-          </button>
+            <MonitorPlay className="size-3.5" />
+            Connect in launcher
+          </a>
           {connected && (
             <button
               type="button"
@@ -114,32 +116,58 @@ export function ConnectLauncherPanel() {
         </div>
       </div>
 
-      {connected && !freshToken && (
+      {connected && (
         <p className="mt-3 text-xs text-muted-foreground">
-          Launcher connected
-          {createdAt ? ` · token created ${new Date(createdAt).toLocaleString()}` : ""}. Regenerate
-          if you lost the token.
+          A launcher token is active on your account
+          {createdAt ? ` · created ${new Date(createdAt).toLocaleString()}` : ""}.
         </p>
       )}
 
-      {freshToken && (
-        <div className="mt-3 space-y-2">
-          <p className="text-xs font-semibold text-play">Copy this token into the launcher now:</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <code className="max-w-full flex-1 overflow-x-auto rounded-lg border border-border bg-secondary/60 px-3 py-2 text-[11px] break-all">
-              {freshToken}
-            </code>
+      <div className="mt-4 border-t border-border pt-3">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((o) => !o)}
+          className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground"
+        >
+          <ChevronDown className={`size-3.5 transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+          Advanced — manual token
+        </button>
+
+        {advancedOpen && (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Generate a token and paste it into the launcher if the deep link doesn&apos;t open.
+            </p>
             <button
               type="button"
-              onClick={() => void copyToken()}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
+              disabled={busy}
+              onClick={() => void generate()}
+              className="rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold disabled:opacity-60"
             >
-              {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-              {copied ? "Copied" : "Copy"}
+              {connected ? "Regenerate token" : "Generate token"}
             </button>
+
+            {freshToken && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-play">Copy this token into the launcher:</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <code className="max-w-full flex-1 overflow-x-auto rounded-lg border border-border bg-secondary/60 px-3 py-2 text-[11px] break-all">
+                    {freshToken}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => void copyToken()}
+                    className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
+                  >
+                    {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
     </section>
