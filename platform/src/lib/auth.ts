@@ -31,6 +31,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
+        if (user.disabled) {
+          throw new Error("This account has been disabled. Contact support if you think this is a mistake.");
+        }
+
         if (!user.emailVerified) {
           throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
         }

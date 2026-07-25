@@ -5,7 +5,7 @@ import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
-import { getGame } from "@/lib/data";
+import { getGame } from "@/lib/catalog";
 import { EmptyHint, SectionHeader } from "@/components/ui/bits";
 
 export const metadata: Metadata = { title: "Community" };
@@ -43,6 +43,12 @@ const kindLabel = { review: "reviewed", guide: "published a guide for", discussi
 
 export default async function CommunityPage() {
   const activity = await getRecentActivity();
+  const rows = await Promise.all(
+    activity.map(async (a) => ({
+      a,
+      game: await getGame(a.gameSlug),
+    }))
+  );
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -55,11 +61,10 @@ export default async function CommunityPage() {
 
       <section>
         <SectionHeader title="Recent Activity" subtitle="Live from reviews, guides, and discussions across the platform" />
-        {activity.length > 0 ? (
+        {rows.length > 0 ? (
           <div className="overflow-hidden rounded-xl border border-border">
-            {activity.map((a, i) => {
+            {rows.map(({ a, game }, i) => {
               const Icon = kindIcon[a.kind];
-              const game = getGame(a.gameSlug);
               return (
                 <div key={i} className={`flex items-center gap-3 bg-card px-4 py-3 ${i > 0 ? "border-t border-border" : ""}`}>
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary">

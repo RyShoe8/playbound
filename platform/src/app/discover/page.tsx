@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { MonitorPlay } from "lucide-react";
-import { games, hiddenGems } from "@/lib/data";
+import { listGames, hiddenGems } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
 import { GameCard } from "@/components/GameCard";
 import { EmptyHint, SectionHeader } from "@/components/ui/bits";
@@ -40,6 +40,7 @@ export default async function DiscoverPage({
 }) {
   const { filter } = await searchParams;
   const active = filters.find((f) => f.key === filter);
+  const [games, gems] = await Promise.all([listGames(), hiddenGems()]);
 
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
@@ -98,7 +99,7 @@ export default async function DiscoverPage({
           <section>
             <SectionHeader title="Hidden Gems" subtitle="Underplayed and outstanding" href="/discover?filter=hidden" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-              {hiddenGems.map((g) => (
+              {gems.map((g) => (
                 <GameCard key={g.slug} game={g} className="w-full sm:w-full" />
               ))}
             </div>

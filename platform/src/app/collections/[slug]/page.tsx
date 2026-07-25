@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { collectionsBySlug, gamesFor } from "@/lib/data";
+import { collectionsBySlug } from "@/lib/data";
+import { gamesFor } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { Badge } from "@/components/ui/bits";
@@ -16,7 +17,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   const collection = collectionsBySlug.get(slug);
   if (!collection) notFound();
 
-  const games = gamesFor(collection.gameSlugs);
+  const games = await gamesFor(collection.gameSlugs);
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">

@@ -1,20 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, Server } from "lucide-react";
-import { developersBySlug, getGame } from "@/lib/data";
+import { developersBySlug, getGame } from "@/lib/catalog";
 import { isOneClickSlug, launcherInstallUrl } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
 import { Badge } from "@/components/ui/bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = getGame(slug);
+  const game = await getGame(slug);
   return { title: game ? `Play ${game.title}` : "Play" };
 }
 
 export default async function PlayPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = getGame(slug);
+  const game = await getGame(slug);
   if (!game) notFound();
 
   const developer = developersBySlug.get(game.developerSlug);

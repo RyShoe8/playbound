@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { Compass, Gem, Newspaper, Sparkles } from "lucide-react";
-import { collections, gameOfTheWeek, games, hiddenGems } from "@/lib/data";
+import { collections } from "@/lib/data";
+import { gameOfTheWeek, listGames, hiddenGems } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, PlayCta } from "@/components/GameCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
-export default function HomePage() {
-  const hero = gameOfTheWeek;
+export default async function HomePage() {
+  const [hero, games, gems] = await Promise.all([gameOfTheWeek(), listGames(), hiddenGems()]);
+  if (!hero) return null;
   const featuredCollections = collections.slice(0, 3);
 
   return (
@@ -46,7 +48,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Hidden gems ────────────────────────────────────────── */}
-      {hiddenGems.length > 0 && (
+      {gems.length > 0 && (
         <section>
           <SectionHeader
             title="Hidden Gems"
@@ -54,7 +56,7 @@ export default function HomePage() {
             href="/discover?filter=hidden"
           />
           <CardRow>
-            {hiddenGems.map((g) => (
+            {gems.map((g) => (
               <GameCard key={g.slug} game={g} />
             ))}
           </CardRow>

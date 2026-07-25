@@ -4,7 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
-import { getGame } from "@/lib/data";
+import { getGame } from "@/lib/catalog";
 
 const eventSchema = z.object({
   title: z.string().min(3).max(150),
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   try {
     const body = eventSchema.parse(await req.json());
-    if (body.gameSlug && !getGame(body.gameSlug)) {
+    if (body.gameSlug && !(await getGame(body.gameSlug))) {
       return NextResponse.json({ error: "Unknown game" }, { status: 400 });
     }
 

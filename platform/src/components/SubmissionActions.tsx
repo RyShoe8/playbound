@@ -38,7 +38,13 @@ export function SubmissionActions({ item }: { item: Item }) {
         setBusy(false);
         return;
       }
+      if (status === "approved") {
+        router.push(`/admin/games/new?fromSubmission=${item._id}`);
+        router.refresh();
+        return;
+      }
       router.refresh();
+      setBusy(false);
     } catch {
       setError("Couldn't reach the server.");
       setBusy(false);
@@ -47,10 +53,21 @@ export function SubmissionActions({ item }: { item: Item }) {
 
   if (item.status !== "pending") {
     return (
-      <p className="text-xs text-muted-foreground">
-        {item.status}
-        {item.adminNotes ? ` — ${item.adminNotes}` : ""}
-      </p>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          {item.status}
+          {item.adminNotes ? ` — ${item.adminNotes}` : ""}
+        </p>
+        {item.status === "approved" && (
+          <button
+            type="button"
+            onClick={() => router.push(`/admin/games/new?fromSubmission=${item._id}`)}
+            className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
+          >
+            Open create draft
+          </button>
+        )}
+      </div>
     );
   }
 
@@ -70,7 +87,7 @@ export function SubmissionActions({ item }: { item: Item }) {
           onClick={() => decide("approved")}
           className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
         >
-          Approve
+          Approve & create draft
         </button>
         <button
           type="button"
@@ -82,8 +99,7 @@ export function SubmissionActions({ item }: { item: Item }) {
         </button>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Approve marks the queue only — add the game to <code className="text-play">src/lib/data/games.ts</code> to
-        publish it on the site.
+        Approve opens the game editor prefilled from this submission. Publish from Admin → Games when ready.
       </p>
     </div>
   );
