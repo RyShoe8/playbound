@@ -23,7 +23,7 @@ export const games: Game[] = [
     gameOfWeek: true,
     hiddenGem: false,
     art: { from: "#7f1d1d", to: "#f59e0b", icon: "Radar" },
-    coverImage: "/games/openra/cover.svg",
+    coverImage: "/games/openra/cover.png",
     systemRequirements: {
       min: "2 GHz dual-core CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
       recommended: "3 GHz quad-core CPU · 4 GB RAM · Dedicated GPU · 2 GB storage",
@@ -50,7 +50,7 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#0c4a6e", to: "#22d3ee", icon: "Crosshair" },
-    coverImage: "/games/xonotic/cover.svg",
+    coverImage: "/games/xonotic/cover.jpg",
     systemRequirements: {
       min: "2 GHz CPU · 2 GB RAM · OpenGL 2.0 GPU · 2 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 4 GB storage",
@@ -280,7 +280,7 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#3b0764", to: "#e879f9", icon: "Skull" },
-    coverImage: "/games/shattered-pixel-dungeon/cover.svg",
+    coverImage: "/games/shattered-pixel-dungeon/cover.jpg",
     systemRequirements: {
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 200 MB storage",
       recommended: "Any modern machine",
@@ -508,7 +508,7 @@ export const games: Game[] = [
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#052e16", to: "#86efac", icon: "Bug" },
-    coverImage: "/games/unvanquished/cover.svg",
+    coverImage: "/games/unvanquished/cover.jpg",
     systemRequirements: {
       min: "2 GHz dual-core CPU · 4 GB RAM · OpenGL 3.2 GPU · 2 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 3 GB storage",
