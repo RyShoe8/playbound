@@ -5,11 +5,13 @@ import { Download, LibraryBig, LogIn, MonitorPlay } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
+import User from "@/lib/models/User";
 import { gamesFor } from "@/lib/catalog";
 import { GameCard } from "@/components/GameCard";
 import { ConnectLauncherPanel } from "@/components/ConnectLauncherPanel";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
 export const metadata: Metadata = { title: "Library" };
 
@@ -18,7 +20,7 @@ type Filter = "all" | "saved" | "installed";
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; linked?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   const { filter: raw } = await searchParams;
@@ -46,19 +48,28 @@ export default async function LibraryPage({
   }
 
   let entries: { gameSlug: string; saved: boolean; installed: boolean }[] = [];
+  let launcherConnected = false;
+  let launcherCreatedAt: string | null = null;
   try {
     await dbConnect();
-    const rows = await LibraryEntry.find({
-      userId: session.user.id,
-      $or: [{ saved: true }, { installed: true }],
-    })
-      .sort({ updatedAt: -1 })
-      .lean();
+    const [rows, user] = await Promise.all([
+      LibraryEntry.find({
+        userId: session.user.id,
+        $or: [{ saved: true }, { installed: true }],
+      })
+        .sort({ updatedAt: -1 })
+        .lean(),
+      User.findById(session.user.id).select("+launcherTokenHash +launcherTokenCreatedAt").lean(),
+    ]);
     entries = rows.map((r) => ({
       gameSlug: r.gameSlug,
       saved: Boolean(r.saved),
       installed: Boolean(r.installed),
     }));
+    launcherConnected = Boolean(user?.launcherTokenHash);
+    launcherCreatedAt = user?.launcherTokenCreatedAt
+      ? new Date(user.launcherTokenCreatedAt).toISOString()
+      : null;
   } catch (err) {
     console.error("Library page load failed:", err);
   }
@@ -90,7 +101,12 @@ export default async function LibraryPage({
         </p>
       </div>
 
-      <ConnectLauncherPanel />
+      <Suspense fallback={null}>
+        <ConnectLauncherPanel
+          initiallyConnected={launcherConnected}
+          initiallyCreatedAt={launcherCreatedAt}
+        />
+      </Suspense>
 
       <div className="flex flex-wrap gap-2">
         {chips.map((c) => (
@@ -112,8 +128,9 @@ export default async function LibraryPage({
       {!hasAny ? (
         <div className="space-y-4">
           <EmptyHint icon={LibraryBig}>
-            Your library is empty. Save games from any game page, or connect the launcher to sync
-            installs.
+            {launcherConnected
+              ? "No games here yet. Install a game with the launcher, or hit Refresh above if you just connected — synced installs should show up shortly."
+              : "Your library is empty. Save games from any game page, or connect the launcher to sync installs."}
           </EmptyHint>
           <div className="flex flex-wrap justify-center gap-2">
             <Link
@@ -122,19 +139,23 @@ export default async function LibraryPage({
             >
               Browse Discover
             </Link>
-            <Link
-              href="/launcher"
-              className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
-            >
-              Get the Launcher
-            </Link>
+            {!launcherConnected && (
+              <Link
+                href="/launcher"
+                className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
+              >
+                Get the Launcher
+              </Link>
+            )}
           </div>
         </div>
       ) : games.length === 0 ? (
         <EmptyHint icon={MonitorPlay}>
           No games match this filter.
           {!hasInstalled && filter === "installed"
-            ? " Connect the launcher and install a game to see it here."
+            ? launcherConnected
+              ? " Install a game with the launcher, then refresh."
+              : " Connect the launcher and install a game to see it here."
             : ""}
         </EmptyHint>
       ) : (
@@ -162,10 +183,9 @@ export default async function LibraryPage({
         </div>
       )}
 
-      {hasAny && !hasInstalled && filter !== "installed" && (
+      {hasAny && !hasInstalled && !launcherConnected && filter !== "installed" && (
         <p className="text-sm text-muted-foreground">
-          Tip: generate a launcher token above and paste it into the PlayBound Launcher so installs
-          appear here automatically.{" "}
+          Tip: connect the launcher above so installs appear here automatically.{" "}
           <Link href="/launcher" className="font-semibold text-primary hover:underline">
             Launcher page →
           </Link>

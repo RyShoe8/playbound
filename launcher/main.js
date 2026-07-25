@@ -12,8 +12,6 @@ const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const DEFAULT_API_BASE = "https://playbound.club";
 
 let win = null;
-/** Auth BrowserWindow for optional sign-in (library sync). */
-let authWin = null;
 /** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
 let context = null;
 
@@ -169,61 +167,18 @@ async function connectWithToken(token) {
   return { connected: true, synced };
 }
 
-function closeAuthWindow() {
-  if (authWin && !authWin.isDestroyed()) {
-    authWin.close();
-  }
-  authWin = null;
-}
-
-function openAuthWindow() {
-  if (authWin && !authWin.isDestroyed()) {
-    authWin.focus();
-    return;
-  }
-  authWin = new BrowserWindow({
-    width: 520,
-    height: 720,
-    backgroundColor: "#131118",
-    title: "PlayBound — Sign in",
-    autoHideMenuBar: true,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
+function openAuthInBrowser() {
   const authUrl = `${getApiBase()}/launcher/auth`;
-  authWin.loadURL(authUrl);
-
-  const intercept = (targetUrl) => {
-    if (!String(targetUrl).toLowerCase().startsWith(`${PROTOCOL}://`)) return false;
-    handleDeepLink(parseDeepLink(targetUrl));
-    return true;
-  };
-
-  authWin.webContents.on("will-navigate", (event, targetUrl) => {
-    if (intercept(targetUrl)) event.preventDefault();
-  });
-  authWin.webContents.on("will-redirect", (event, targetUrl) => {
-    if (intercept(targetUrl)) event.preventDefault();
-  });
-  authWin.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
-    if (intercept(targetUrl)) return { action: "deny" };
-    return { action: "allow" };
-  });
-  authWin.on("closed", () => {
-    authWin = null;
-  });
+  void shell.openExternal(authUrl);
 }
 
 function handleDeepLink(parsed) {
   if (!parsed) return;
   if (parsed.action === "auth") {
-    openAuthWindow();
+    openAuthInBrowser();
     return;
   }
   if (parsed.action === "link") {
-    closeAuthWindow();
     if (win) {
       if (win.isMinimized()) win.restore();
       win.focus();
@@ -670,7 +625,7 @@ ipcMain.handle("clear-launcher-token", async () => {
   return { connected: false };
 });
 ipcMain.handle("sign-in", () => {
-  openAuthWindow();
+  openAuthInBrowser();
   return true;
 });
 
