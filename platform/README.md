@@ -35,6 +35,16 @@ On Vercel, add:
 
 Without Blob, you can still **Fetch from website** (Open Graph images) and paste remote cover/screenshot URLs. Website import (e.g. `https://tinywind.io/`) prefills a browser-playable draft.
 
+### Live servers (UDP masters)
+
+HTTP masters (OpenRA, Luanti, SuperTuxKart) are queried directly from Vercel. **Xonotic** and **Unvanquished** use a UDP Master Adapter:
+
+1. Deploy [`platform/master-adapter`](master-adapter/README.md) on Render (Docker).
+2. Set on the adapter: `MASTER_ADAPTER_KEY`
+3. Set on Vercel Production:
+   - `MASTER_ADAPTER_URL` — Render service URL (no trailing slash)
+   - `MASTER_ADAPTER_KEY` — same secret
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
