@@ -17,13 +17,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = new URL(
+  process.env.NEXTAUTH_URL || "https://playbound.club",
+);
+
 export const metadata: Metadata = {
+  metadataBase: siteUrl,
   title: {
     default: "PlayBound — The Home of Free Gaming",
     template: "%s · PlayBound",
   },
   description:
     "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities. Discover. Click Play. Have Fun.",
+  applicationName: "PlayBound",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "PlayBound",
+    title: "PlayBound — The Home of Free Gaming",
+    description:
+      "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PlayBound — The Home of Free Gaming",
+    description:
+      "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities.",
+  },
 };
 
 export default function RootLayout({
