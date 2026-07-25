@@ -44,13 +44,20 @@ export async function POST(req: Request) {
 
     const verifyUrl = `${baseUrl(req)}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
+    let emailSent = true;
+    let emailError: string | undefined;
     try {
       await sendMail(email, "Verify your PlayBound account", verificationEmailHtml(username, verifyUrl));
     } catch (mailErr) {
+      emailSent = false;
+      emailError = mailErr instanceof Error ? mailErr.message : String(mailErr);
       console.error("Failed to send verification email:", mailErr);
     }
 
-    return NextResponse.json({ success: true, userId: user._id }, { status: 201 });
+    return NextResponse.json(
+      { success: true, userId: user._id, emailSent, ...(emailError ? { emailError } : {}) },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });

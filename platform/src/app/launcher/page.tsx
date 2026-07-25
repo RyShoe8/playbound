@@ -12,21 +12,11 @@ import {
   Wrench,
 } from "lucide-react";
 import { games, gamesFor } from "@/lib/data";
+import { ONE_CLICK_SLUGS, launcherInstallUrl } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
 export const metadata: Metadata = { title: "PlayBound Launcher" };
-
-/** Games with working one-click install in the launcher beta. */
-const oneClickSlugs = [
-  "openra",
-  "endless-sky",
-  "warzone-2100",
-  "supertuxkart",
-  "luanti",
-  "xonotic",
-  "naev",
-];
 
 const features = [
   { icon: Download, title: "One-click installs", text: "Portable builds pulled straight from each project's official releases — no wizards, no toolbars, no surprises." },
@@ -38,7 +28,7 @@ const features = [
 ];
 
 export default function LauncherPage() {
-  const oneClick = gamesFor(oneClickSlugs);
+  const oneClick = gamesFor([...ONE_CLICK_SLUGS]);
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
@@ -51,13 +41,24 @@ export default function LauncherPage() {
           The PlayBound Launcher
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Install, update, and launch free PC games with one click. The website is where you
-          discover — the launcher is how installed games get effortless. Optional, lightweight, and
-          it only ever downloads official builds.
+          Install, update, and launch free PC games with one click. Game pages hand off via{" "}
+          <code className="text-play">playbound://</code> deep links — the launcher grabs the latest
+          official build and puts it on your machine.
         </p>
         <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
           <p className="flex items-center gap-2 text-sm font-bold">
-            <Terminal className="size-4 text-play" /> Run the beta from source
+            <Download className="size-4 text-play" /> Packaged Windows builds
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            From the repo, run <code className="text-play">npm run dist</code> in{" "}
+            <code className="text-play">launcher/</code> to produce{" "}
+            <code className="text-play">PlayBound-Launcher-Setup-0.1.0.exe</code> (installer) and{" "}
+            <code className="text-play">PlayBound-Launcher-Portable-0.1.0.exe</code>. Install or run
+            once — the app registers <code className="text-play">playbound://</code> so one-click
+            links from this site open the launcher.
+          </p>
+          <p className="mt-4 flex items-center gap-2 text-sm font-bold">
+            <Terminal className="size-4 text-play" /> Or run the beta from source
           </p>
           <pre className="mt-2 overflow-x-auto rounded-lg bg-black/40 p-3 text-xs leading-relaxed text-play">
             {`git clone https://github.com/RyShoe8/playbound
@@ -65,10 +66,6 @@ cd playbound/launcher
 npm install
 npm start`}
           </pre>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Windows-first for now. Packaged one-file downloads (.exe) arrive with the launcher&apos;s
-            1.0 release.
-          </p>
         </div>
       </section>
 
@@ -76,22 +73,26 @@ npm start`}
       <section>
         <SectionHeader
           title="One-Click Install Today"
-          subtitle="These games install and launch through the beta right now"
+          subtitle="Click a tile to open the launcher and start installing (requires the beta running once)"
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
           {oneClick.map((g) => (
-            <Link key={g.slug} href={`/games/${g.slug}`} className="group">
+            <a key={g.slug} href={launcherInstallUrl(g.slug)} className="group">
               <GameArt
                 game={g}
                 iconSize="md"
                 className="aspect-[3/4] rounded-xl border border-border transition-all group-hover:-translate-y-1 group-hover:border-primary/40"
               />
-            </Link>
+            </a>
           ))}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Every other game in the catalog gets an official-site button in the launcher, and moves to
-          one-click as we add it.
+          Every other game in the catalog gets an official-site button, and moves to one-click as we
+          add it. Prefer browsing first?{" "}
+          <Link href="/games" className="font-semibold text-primary hover:underline">
+            Browse the catalog
+          </Link>
+          .
         </p>
       </section>
 
