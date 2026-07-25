@@ -22,3 +22,10 @@ export function isOneClickSlug(slug: string): slug is OneClickSlug {
 export function launcherInstallUrl(slug: string): string {
   return `playbound://install/${slug}`;
 }
+
+/** Join a multiplayer server via the PlayBound Launcher. */
+export function launcherJoinUrl(slug: string, host: string, port: number, name?: string): string {
+  const q = new URLSearchParams({ host, port: String(port) });
+  if (name) q.set("name", name.slice(0, 80));
+  return `playbound://join/${slug}?${q.toString()}`;
+}

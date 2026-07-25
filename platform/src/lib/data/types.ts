@@ -13,7 +13,8 @@ export type Genre =
   | "Sandbox"
   | "Tower Defense"
   | "Space"
-  | "Arcade";
+  | "Arcade"
+  | "Pirate";
 
 export interface GameArt {
   /** CSS color stops for the generated cover gradient (fallback) */

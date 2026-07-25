@@ -41,10 +41,25 @@ if (!gotLock) {
 }
 
 function parseDeepLink(url) {
-  // playbound://install/openra  |  playbound://play/openra  |  playbound://uninstall/openra
-  const match = url.match(/^playbound:\/\/(install|play|uninstall)\/([a-z0-9-]+)\/?$/i);
-  if (!match) return null;
-  return { action: match[1].toLowerCase(), slug: match[2].toLowerCase() };
+  // playbound://install/openra
+  // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
+  try {
+    const normalized = String(url).replace(/^playbound:\/\//i, "https://playbound.local/");
+    const u = new URL(normalized);
+    const action = u.hostname.toLowerCase();
+    const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+    if (!slug || !["install", "play", "uninstall", "join"].includes(action)) return null;
+    /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string }} */
+    const parsed = { action, slug };
+    if (action === "join") {
+      parsed.host = u.searchParams.get("host") || "";
+      parsed.port = Number(u.searchParams.get("port") || 0);
+      parsed.name = u.searchParams.get("name") || "";
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 function setContext(parsed) {
@@ -82,6 +97,9 @@ function buildContextPayload() {
     installed: Boolean(installed),
     installedPath: installed?.dir ?? null,
     defaultDir: path.join(DEFAULT_GAMES_DIR, entry.slug),
+    join: context.action === "join"
+      ? { host: context.host || "", port: context.port || 0, name: context.name || "" }
+      : null,
   };
 }
 
@@ -212,12 +230,28 @@ async function installGame(slug, targetDir) {
   return { status: "installed", version: dl.version, dir: gameDir };
 }
 
-async function playGame(slug) {
+async function playGame(slug, join = null) {
   const state = loadState();
   const info = state[slug];
   if (!info || !fs.existsSync(info.exe)) throw new Error("Not installed");
-  spawn(info.exe, [], { cwd: path.dirname(info.exe), detached: true, stdio: "ignore" }).unref();
-  return { status: "launched" };
+  const entry = catalog.find((e) => e.slug === slug);
+  const args = [];
+  if (join?.host && join?.port && Array.isArray(entry?.connectArgs)) {
+    for (const template of entry.connectArgs) {
+      args.push(
+        String(template)
+          .replaceAll("{host}", join.host)
+          .replaceAll("{port}", String(join.port))
+          .replaceAll("{name}", join.name || "")
+      );
+    }
+  }
+  spawn(info.exe, args, { cwd: path.dirname(info.exe), detached: true, stdio: "ignore" }).unref();
+  return {
+    status: "launched",
+    connect: args.length > 0 ? `${join.host}:${join.port}` : null,
+    manualConnect: Boolean(join?.host && join?.port && !entry?.connectArgs?.length),
+  };
 }
 
 async function uninstallGame(slug) {
@@ -245,10 +279,15 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
 });
 
 ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetDir));
-ipcMain.handle("play", (_event, slug) => playGame(slug));
+ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("open-external", (_event, url) => shell.openExternal(url));
 ipcMain.handle("close-window", () => win?.close());
+ipcMain.handle("clipboard-write", (_event, text) => {
+  const { clipboard } = require("electron");
+  clipboard.writeText(String(text || ""));
+  return true;
+});
 
 /* ── window ────────────────────────────────────────────────── */
 
@@ -321,16 +360,24 @@ function testDeepLink() {
     ["playbound://play/warzone-2100", { action: "play", slug: "warzone-2100" }],
     ["playbound://uninstall/openra", { action: "uninstall", slug: "openra" }],
     ["playbound://install/openra/", { action: "install", slug: "openra" }],
+    [
+      "playbound://join/openra?host=1.2.3.4&port=1234&name=Test",
+      { action: "join", slug: "openra", host: "1.2.3.4", port: 1234, name: "Test" },
+    ],
     ["not-a-deep-link", null],
   ];
   let failures = 0;
-  for (const [input, expected] of cases) {
-    const got = parseDeepLink(input);
+  for (const [url, expected] of cases) {
+    const got = parseDeepLink(url);
     const ok = JSON.stringify(got) === JSON.stringify(expected);
-    console.log(`${ok ? "OK  " : "FAIL"}  ${input} -> ${JSON.stringify(got)}`);
-    if (!ok) failures++;
+    if (!ok) {
+      failures++;
+      console.log(`FAIL  ${url}\n  expected ${JSON.stringify(expected)}\n  got      ${JSON.stringify(got)}`);
+    } else {
+      console.log(`OK    ${url}`);
+    }
   }
-  console.log(failures === 0 ? "All deep link cases OK" : `${failures} failure(s)`);
+  console.log(failures === 0 ? "Deep link parsing OK" : `${failures} deep-link failure(s)`);
   app.exit(failures === 0 ? 0 : 1);
 }
 

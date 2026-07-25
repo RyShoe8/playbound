@@ -83,13 +83,29 @@ async function runInstall() {
   }
 }
 
-async function runPlay() {
+async function runPlay(join = null) {
   if (!ctx?.entry || busy) return;
   setBusy(true);
-  setStatus("Launching…");
+  const target = join || ctx.join;
+  if (target?.host && target?.port) {
+    setStatus(`Joining ${target.host}:${target.port}…`);
+    try {
+      await window.playbound.clipboardWrite(`${target.host}:${target.port}`);
+    } catch {
+      /* ignore */
+    }
+  } else {
+    setStatus("Launching…");
+  }
   try {
-    await window.playbound.play(ctx.entry.slug);
-    setStatus("Launched.");
+    const result = await window.playbound.play(ctx.entry.slug, target);
+    if (result.manualConnect) {
+      setStatus(`Launched. Address copied — connect to ${target.host}:${target.port} in Multiplayer.`);
+    } else if (result.connect) {
+      setStatus(`Launched and connecting to ${result.connect}.`);
+    } else {
+      setStatus("Launched.");
+    }
   } catch (err) {
     setStatus(err.message || String(err), true);
   } finally {
@@ -134,7 +150,11 @@ function renderActions() {
   if (ctx.action === "uninstall") {
     actionsEl.append(makeButton("Uninstall", "btn-remove", () => runUninstall()));
   } else if (ctx.installed) {
-    actionsEl.append(makeButton("Play", "btn-play", () => runPlay()));
+    if (ctx.action === "join" && ctx.join?.host) {
+      actionsEl.append(makeButton("Join server", "btn-play", () => runPlay(ctx.join)));
+    } else {
+      actionsEl.append(makeButton("Play", "btn-play", () => runPlay()));
+    }
     actionsEl.append(makeButton("Uninstall", "btn-remove", () => runUninstall()));
   } else {
     actionsEl.append(makeButton("Install", "btn-install", () => runInstall()));
@@ -198,6 +218,20 @@ function applyContext(next) {
     if (ctx.installed) runPlay();
     else {
       setStatus("Not installed yet — choose a folder if you want, then click Install.");
+      ctx.action = "install";
+      renderActions();
+    }
+  } else if (ctx.action === "join") {
+    const addr = ctx.join?.host && ctx.join?.port ? `${ctx.join.host}:${ctx.join.port}` : null;
+    if (ctx.installed) {
+      setStatus(addr ? `Ready to join ${addr}.` : "Ready to join.");
+      runPlay(ctx.join);
+    } else {
+      setStatus(
+        addr
+          ? `Install first, then Join will connect to ${addr}.`
+          : "Not installed yet — install first, then join again from the site."
+      );
       ctx.action = "install";
       renderActions();
     }

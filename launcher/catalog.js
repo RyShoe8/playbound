@@ -19,6 +19,7 @@ module.exports = [
     exeHint: "RedAlert|OpenRA",
     approxSize: "~350 MB",
     art: ["#7f1d1d", "#f59e0b"],
+    connectArgs: ["Game.Connect={host}:{port}"],
   },
   {
     slug: "endless-sky",
@@ -52,6 +53,7 @@ module.exports = [
     exeHint: "supertuxkart",
     approxSize: "~900 MB",
     art: ["#14532d", "#4ade80"],
+    // STK online lobbies are best joined from the in-game browser; we still launch + copy address.
   },
   {
     slug: "luanti",
@@ -63,6 +65,7 @@ module.exports = [
     exeHint: "luanti|minetest",
     approxSize: "~150 MB",
     art: ["#14532d", "#a3e635"],
+    connectArgs: ["--go", "--address", "{host}", "--port", "{port}"],
   },
   {
     slug: "naev",
@@ -83,6 +86,7 @@ module.exports = [
     exeHint: "xonotic.*x64|xonotic",
     approxSize: "~1.1 GB",
     art: ["#0c4a6e", "#22d3ee"],
+    connectArgs: ["+connect", "{host}:{port}"],
   },
   {
     slug: "mindustry",
