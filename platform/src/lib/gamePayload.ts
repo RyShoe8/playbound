@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Genre } from "@/lib/data/types";
 
 export const GENRES = [
   "Strategy",
@@ -17,6 +18,81 @@ export const GENRES = [
 ] as const;
 
 export const LAUNCH_METHODS = ["browser", "install", "server"] as const;
+
+export const PLATFORMS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"] as const;
+
+export const FEATURES = [
+  "Multiplayer",
+  "Singleplayer",
+  "Co-op",
+  "Split-Screen Co-op",
+  "Hotseat",
+  "LAN Support",
+  "Dedicated Servers",
+  "Cross-play",
+  "Controller Support",
+  "Family Friendly",
+  "Mod Support",
+  "Map Editor",
+  "Level Editor",
+  "Custom Maps",
+  "Community Content",
+  "Replays",
+  "Ranked Ladder",
+  "Spectator Mode",
+  "Story Campaign",
+  "Daily Runs",
+  "Procedural Worlds",
+  "Team Play",
+] as const;
+
+export const TAGS = [
+  "2D",
+  "Pixel Art",
+  "Classic",
+  "Competitive",
+  "Co-op",
+  "LAN",
+  "Mods",
+  "Open World",
+  "Sandbox",
+  "Sci-Fi",
+  "Fantasy",
+  "Space Trading",
+  "Turn-Based",
+  "Arena Shooter",
+  "Kart Racing",
+  "Family Friendly",
+  "Browser",
+  "Indie",
+  "Multiplayer",
+  "Singleplayer",
+] as const;
+
+const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> = {
+  Strategy: { from: "#312e81", to: "#a78bfa", icon: "Swords" },
+  RTS: { from: "#7f1d1d", to: "#f59e0b", icon: "Radar" },
+  FPS: { from: "#0c4a6e", to: "#22d3ee", icon: "Crosshair" },
+  Racing: { from: "#14532d", to: "#84cc16", icon: "Flag" },
+  Puzzle: { from: "#4c1d95", to: "#c084fc", icon: "Sparkles" },
+  RPG: { from: "#1e3a5f", to: "#38bdf8", icon: "Sparkles" },
+  Roguelike: { from: "#3b0764", to: "#e879f9", icon: "Skull" },
+  Simulation: { from: "#1e293b", to: "#94a3b8", icon: "Cog" },
+  Platformer: { from: "#0e7490", to: "#67e8f9", icon: "Zap" },
+  Sandbox: { from: "#365314", to: "#a3e635", icon: "Blocks" },
+  "Tower Defense": { from: "#7c2d12", to: "#fb923c", icon: "Landmark" },
+  Space: { from: "#0f172a", to: "#6366f1", icon: "Rocket" },
+  Arcade: { from: "#831843", to: "#f472b6", icon: "Target" },
+};
+
+export function defaultArtFor(genres: string[] = [], slug = ""): { from: string; to: string; icon: string } {
+  const primary = genres[0];
+  if (primary && ART_BY_GENRE[primary]) return ART_BY_GENRE[primary];
+  const palettes = Object.values(ART_BY_GENRE);
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) hash = (hash + slug.charCodeAt(i) * (i + 1)) % palettes.length;
+  return palettes[hash] ?? { from: "#1e293b", to: "#0ea5e9", icon: "Gamepad2" };
+}
 
 export const gamePayloadSchema = z.object({
   slug: z
@@ -51,11 +127,13 @@ export const gamePayloadSchema = z.object({
     .transform((v) => (!v ? null : v)),
   gameOfWeek: z.boolean().default(false),
   hiddenGem: z.boolean().default(false),
-  art: z.object({
-    from: z.string().trim().min(1).max(40),
-    to: z.string().trim().min(1).max(40),
-    icon: z.string().trim().min(1).max(40),
-  }),
+  art: z
+    .object({
+      from: z.string().trim().min(1).max(40),
+      to: z.string().trim().min(1).max(40),
+      icon: z.string().trim().min(1).max(40),
+    })
+    .optional(),
   coverImage: z
     .union([z.string().trim().max(500), z.literal(""), z.null()])
     .optional()
@@ -71,6 +149,13 @@ export const gamePayloadSchema = z.object({
 
 export type GamePayload = z.infer<typeof gamePayloadSchema>;
 
+export function withDefaultArt(payload: GamePayload): GamePayload & { art: NonNullable<GamePayload["art"]> } {
+  return {
+    ...payload,
+    art: payload.art ?? defaultArtFor(payload.genres as Genre[], payload.slug),
+  };
+}
+
 export function slugifyTitle(title: string): string {
   return title
     .toLowerCase()
@@ -84,7 +169,7 @@ export const emptyGameDraft = (): GamePayload => ({
   title: "",
   tagline: "",
   description: "",
-  developerSlug: "openra-team",
+  developerSlug: "indie-web",
   developerName: null,
   genres: [],
   tags: [],
@@ -100,7 +185,7 @@ export const emptyGameDraft = (): GamePayload => ({
   githubRepo: null,
   gameOfWeek: false,
   hiddenGem: false,
-  art: { from: "#1e293b", to: "#0ea5e9", icon: "Gamepad2" },
+  art: defaultArtFor([], ""),
   coverImage: null,
   screenshots: [],
   systemRequirements: {

@@ -72,12 +72,14 @@ export function GameArt({
     iconSize === "sm" ? "size-8" : iconSize === "md" ? "size-14" : "size-20";
 
   if (game.coverImage) {
+    const remote = /^https?:\/\//i.test(game.coverImage);
     return (
       <div className={cn("relative overflow-hidden bg-secondary", className)}>
         <Image
           src={game.coverImage}
           alt={`${game.title} cover`}
           fill
+          unoptimized={remote}
           className="object-cover"
           sizes="(max-width: 768px) 50vw, 25vw"
         />

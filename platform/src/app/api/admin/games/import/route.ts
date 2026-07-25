@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { emptyGameDraft, slugifyTitle, type GamePayload } from "@/lib/gamePayload";
+import {
+  defaultArtFor,
+  emptyGameDraft,
+  slugifyTitle,
+  type GamePayload,
+} from "@/lib/gamePayload";
+import { fetchPageMeta, stripHtml } from "@/lib/pageMeta";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 const importSchema = z.object({
@@ -21,20 +27,6 @@ function parseGithubRepo(url: string): string | null {
   return null;
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
 async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
   const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`, {
     headers: { "user-agent": "PlayBoundAdmin/1.0" },
@@ -53,24 +45,35 @@ async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
   const detailed = stripHtml(String(data.detailed_description ?? short));
   const website = (data.website as string) || `https://store.steampowered.com/app/${appId}`;
   const header = (data.header_image as string) || null;
-  const genres = Array.isArray(data.genres)
+  const screenshots = Array.isArray(data.screenshots)
+    ? (data.screenshots as { path_full?: string }[])
+        .map((s) => s.path_full)
+        .filter((u): u is string => Boolean(u))
+        .slice(0, 8)
+    : [];
+  const genreTags = Array.isArray(data.genres)
     ? (data.genres as { description?: string }[])
         .map((g) => g.description)
-        .filter(Boolean)
+        .filter((x): x is string => Boolean(x))
         .slice(0, 8)
     : [];
 
+  const slug = slugifyTitle(title);
   return {
     ...emptyGameDraft(),
-    slug: slugifyTitle(title),
+    slug,
     title,
     tagline: short.slice(0, 200) || title,
     description: detailed.slice(0, 8000) || short,
     website,
     coverImage: header,
-    tags: genres as string[],
+    screenshots,
+    tags: genreTags,
     platforms: ["Windows"],
+    launchMethods: ["install"],
+    browserPlayable: false,
     license: "See Steam store page",
+    art: defaultArtFor([], slug),
     published: false,
   };
 }
@@ -87,7 +90,6 @@ async function fromGithub(repo: string): Promise<Partial<GamePayload>> {
   if (!res.ok) throw new Error("GitHub API request failed");
   const data = (await res.json()) as {
     name?: string;
-    full_name?: string;
     description?: string | null;
     homepage?: string | null;
     html_url?: string;
@@ -101,10 +103,11 @@ async function fromGithub(repo: string): Promise<Partial<GamePayload>> {
   const license = data.license?.spdx_id
     ? `Open Source (${data.license.spdx_id})`
     : data.license?.name || "Open Source";
+  const slug = slugifyTitle(title);
 
   return {
     ...emptyGameDraft(),
-    slug: slugifyTitle(title),
+    slug,
     title,
     tagline: description.slice(0, 200),
     description,
@@ -114,6 +117,41 @@ async function fromGithub(repo: string): Promise<Partial<GamePayload>> {
     license,
     tags: (data.topics ?? []).slice(0, 12),
     platforms: ["Windows", "macOS", "Linux"],
+    launchMethods: ["install"],
+    browserPlayable: false,
+    art: defaultArtFor([], slug),
+    published: false,
+  };
+}
+
+async function fromWebsite(url: string): Promise<Partial<GamePayload>> {
+  const meta = await fetchPageMeta(url);
+  const title = meta.title || new URL(url).hostname.replace(/^www\./, "");
+  const description = meta.description || `Play ${title} free in your browser.`;
+  const slug = slugifyTitle(title);
+  const cover = meta.images[0] ?? null;
+
+  return {
+    ...emptyGameDraft(),
+    slug,
+    title,
+    tagline: description.slice(0, 200),
+    description,
+    website: url,
+    developerSlug: "indie-web",
+    coverImage: cover,
+    screenshots: meta.images.slice(0, 8),
+    platforms: ["Web"],
+    launchMethods: ["browser"],
+    browserPlayable: true,
+    sizeMB: 0,
+    license: "Free to play",
+    tags: ["Browser", "Indie"],
+    systemRequirements: {
+      min: "Modern web browser",
+      recommended: "Modern web browser",
+    },
+    art: defaultArtFor(["Arcade"], slug),
     published: false,
   };
 }
@@ -130,15 +168,12 @@ export async function POST(req: Request) {
     let draft: Partial<GamePayload>;
     if (steamId && (url.includes("steam") || /^\d+$/.test(url.trim()))) {
       draft = await fromSteam(steamId);
-    } else if (github) {
-      draft = await fromGithub(github);
+    } else if (url.includes("github.com") || (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()) && github)) {
+      draft = await fromGithub(github!);
     } else if (steamId) {
       draft = await fromSteam(steamId);
     } else {
-      return NextResponse.json(
-        { error: "Provide a Steam store URL/app id or a GitHub owner/repo URL" },
-        { status: 400 }
-      );
+      draft = await fromWebsite(url);
     }
 
     return NextResponse.json({ draft });
