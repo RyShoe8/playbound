@@ -100,6 +100,17 @@ export async function getGame(
   return seedGames.find((g) => g.slug === slug);
 }
 
+/**
+ * Resolve a game for launcher library sync.
+ * Accepts published Mongo games, unpublished CMS drafts, or static seed catalog slugs
+ * so launcher installs still sync when CMS is incomplete.
+ */
+export async function resolveGameForSync(slug: string): Promise<Game | undefined> {
+  const fromCms = await getGame(slug, { includeUnpublished: true });
+  if (fromCms) return fromCms;
+  return seedGames.find((g) => g.slug === slug);
+}
+
 export async function gamesFor(slugs: string[]): Promise<Game[]> {
   const all = await listGames();
   const map = new Map(all.map((g) => [g.slug, g]));

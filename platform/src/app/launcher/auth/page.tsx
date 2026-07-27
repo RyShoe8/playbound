@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { KeyRound, LogIn } from "lucide-react";
 import { authOptions } from "@/lib/auth";
-import { issueLauncherTokenForUser } from "@/lib/library";
 import { LauncherAuthHandoff } from "@/components/LauncherAuthHandoff";
 
 export const metadata: Metadata = { title: "Connect Launcher" };
@@ -33,21 +32,5 @@ export default async function LauncherAuthPage() {
     );
   }
 
-  let token: string;
-  try {
-    token = await issueLauncherTokenForUser(session.user.id);
-  } catch (err) {
-    console.error("Launcher auth mint failed:", err);
-    return (
-      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-        <h1 className="text-2xl font-extrabold">Couldn&apos;t connect</h1>
-        <p className="text-sm text-muted-foreground">Something went wrong minting a launcher token. Try again.</p>
-        <Link href="/launcher/auth" className="text-sm font-semibold text-primary hover:underline">
-          Retry
-        </Link>
-      </div>
-    );
-  }
-
-  return <LauncherAuthHandoff token={token} username={session.user.username} />;
+  return <LauncherAuthHandoff username={session.user.username} />;
 }

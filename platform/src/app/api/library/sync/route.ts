@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
-import { getGame } from "@/lib/catalog";
+import { resolveGameForSync } from "@/lib/catalog";
 import { hashLauncherToken } from "@/lib/library";
 
 const syncSchema = z.object({
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     const body = syncSchema.parse(await req.json());
-    if (!(await getGame(body.slug))) {
+    if (!(await resolveGameForSync(body.slug))) {
       return NextResponse.json({ error: "Unknown game" }, { status: 404 });
     }
 

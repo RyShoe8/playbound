@@ -56,7 +56,26 @@ export async function DELETE(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const header = req.headers.get("authorization") || "";
+  const bearer = /^Bearer\s+(.+)$/i.exec(header)?.[1]?.trim();
+
+  if (bearer) {
+    try {
+      await dbConnect();
+      const user = await User.findOne({
+        launcherTokenHash: hashLauncherToken(bearer),
+      }).select("+launcherTokenHash _id");
+      if (!user) {
+        return NextResponse.json({ connected: false, valid: false }, { status: 401 });
+      }
+      return NextResponse.json({ connected: true, valid: true });
+    } catch (error) {
+      console.error("Launcher token validate error:", error);
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });

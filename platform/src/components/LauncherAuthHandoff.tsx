@@ -1,26 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, KeyRound } from "lucide-react";
+import { Check, Copy, KeyRound, MonitorPlay } from "lucide-react";
 import { launcherLinkUrl } from "@/lib/launcher";
 
 type Props = {
-  token: string;
   username: string;
 };
 
-const HANDOFF_DELAY_MS = 1800;
+const HANDOFF_DELAY_MS = 2500;
 
-export function LauncherAuthHandoff({ token, username }: Props) {
+export function LauncherAuthHandoff({ username }: Props) {
+  const [token, setToken] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const linkUrl = launcherLinkUrl(token);
   const started = useRef(false);
 
+  const linkUrl = token ? launcherLinkUrl(token) : null;
+
   useEffect(() => {
-    if (started.current) return;
+    if (!token || !linkUrl || started.current) return;
     started.current = true;
 
-    // Trigger protocol without navigating this tab away
     const a = document.createElement("a");
     a.href = linkUrl;
     a.style.display = "none";
@@ -32,9 +34,29 @@ export function LauncherAuthHandoff({ token, username }: Props) {
       window.location.assign("/library?linked=1");
     }, HANDOFF_DELAY_MS);
     return () => window.clearTimeout(t);
-  }, [linkUrl]);
+  }, [token, linkUrl]);
+
+  async function connect() {
+    setBusy(true);
+    setError(null);
+    started.current = false;
+    try {
+      const res = await fetch("/api/library/token", { method: "POST" });
+      const data = (await res.json()) as { token?: string; error?: string };
+      if (!res.ok || !data.token) {
+        setError(data.error || "Couldn't mint launcher token");
+        return;
+      }
+      setToken(data.token);
+    } catch {
+      setError("Couldn't mint launcher token");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function copyToken() {
+    if (!token) return;
     try {
       await navigator.clipboard.writeText(token);
       setCopied(true);
@@ -44,20 +66,46 @@ export function LauncherAuthHandoff({ token, username }: Props) {
     }
   }
 
+  if (!token) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
+        <KeyRound className="size-10 text-primary" />
+        <h1 className="text-2xl font-extrabold">Connect as {username}</h1>
+        <p className="text-sm text-muted-foreground">
+          Click once to mint a launcher token and open the PlayBound Launcher. Your installs will sync
+          to your library. Visiting this page alone does not change your existing connection.
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void connect()}
+          className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+        >
+          <MonitorPlay className="size-4" />
+          {busy ? "Connecting…" : "Connect launcher"}
+        </button>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
       <KeyRound className="size-10 text-primary" />
       <h1 className="text-2xl font-extrabold">Connected as {username}</h1>
       <p className="text-sm text-muted-foreground">
         Opening the PlayBound Launcher to sync your installs. You&apos;ll return to your library in a
-        moment — close the launcher when it says Connected.
+        moment — close the launcher when it says Connected. If the library looks empty, open the
+        launcher and wait for sync, then refresh.
       </p>
-      <a
-        href={linkUrl}
-        className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
-      >
-        Open launcher again
-      </a>
+      {linkUrl && (
+        <a
+          href={linkUrl}
+          className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+        >
+          Open launcher again
+        </a>
+      )}
       <a href="/library?linked=1" className="text-sm font-semibold text-primary hover:underline">
         Go to library now
       </a>

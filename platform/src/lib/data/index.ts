@@ -1,10 +1,21 @@
 import { games, gamesBySlug } from "./games";
 import { developers, developersBySlug } from "./developers";
 import { collections, collectionsBySlug } from "./collections";
+import { mods, modsBySlug, modsForBaseGame } from "./mods";
 import type { Game } from "./types";
 
 export * from "./types";
-export { games, gamesBySlug, developers, developersBySlug, collections, collectionsBySlug };
+export {
+  games,
+  gamesBySlug,
+  developers,
+  developersBySlug,
+  collections,
+  collectionsBySlug,
+  mods,
+  modsBySlug,
+  modsForBaseGame,
+};
 
 export function getGame(slug: string): Game | undefined {
   return gamesBySlug.get(slug);

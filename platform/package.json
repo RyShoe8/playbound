@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run seed:games",
+    "build": "next build && npm run seed:games && npm run seed:mods",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
-    "seed:games": "tsx scripts/seed-games.ts"
+    "seed:games": "tsx scripts/seed-games.ts",
+    "seed:mods": "tsx scripts/seed-mods.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

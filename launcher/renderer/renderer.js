@@ -102,8 +102,9 @@ btnSaveToken.addEventListener("click", async () => {
 
 window.playbound.onAccount((data) => {
   if (data?.message) {
-    setAccountMsg(data.message);
-    accountMsgEl.classList.add("ok");
+    const isError = data.connected === false || /reconnect|invalid|rejected|expired|issue/i.test(data.message);
+    setAccountMsg(data.message, isError);
+    if (!isError) accountMsgEl.classList.add("ok");
   } else if (data?.connected === false) {
     setAccountMsg("");
     accountMsgEl.classList.remove("ok");

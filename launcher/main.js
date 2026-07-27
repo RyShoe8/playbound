@@ -98,7 +98,7 @@ function persistLauncherToken(token, { notify = true } = {}) {
 async function syncAllInstalledGames() {
   const settings = loadSettings();
   const token = settings.launcherToken;
-  if (!token) return { synced: 0 };
+  if (!token) return { synced: 0, skipped: [], error: null };
 
   const state = loadState();
   const installs = [];
@@ -110,7 +110,7 @@ async function syncAllInstalledGames() {
       ...(info.version ? { version: String(info.version) } : {}),
     });
   }
-  if (!installs.length) return { synced: 0 };
+  if (!installs.length) return { synced: 0, skipped: [], error: null };
 
   try {
     const res = await fetch(`${getApiBase()}/api/library/sync/batch`, {
@@ -122,10 +122,13 @@ async function syncAllInstalledGames() {
       },
       body: JSON.stringify({ installs }),
     });
+    if (res.status === 401) {
+      return { synced: 0, skipped: [], error: "unauthorized" };
+    }
     if (!res.ok) {
       console.warn(`Library batch sync failed: HTTP ${res.status}`);
-      // Fallback: one-by-one so partial sync still helps
       let synced = 0;
+      const skipped = [];
       for (const item of installs) {
         try {
           const one = await fetch(`${getApiBase()}/api/library/sync`, {
@@ -141,30 +144,110 @@ async function syncAllInstalledGames() {
               version: item.version,
             }),
           });
+          if (one.status === 401) {
+            return { synced: 0, skipped: [], error: "unauthorized" };
+          }
           if (one.ok) synced += 1;
+          else skipped.push(item.slug);
         } catch {
-          /* ignore individual */
+          skipped.push(item.slug);
         }
       }
-      return { synced };
+      return { synced, skipped, error: null };
     }
     const data = await res.json();
-    return { synced: Number(data.synced) || 0 };
+    return {
+      synced: Number(data.synced) || 0,
+      skipped: Array.isArray(data.skipped) ? data.skipped : [],
+      error: null,
+    };
   } catch (err) {
     console.warn("Library batch sync error:", err?.message || err);
-    return { synced: 0 };
+    return { synced: 0, skipped: [], error: err?.message || String(err) };
   }
+}
+
+async function validateLauncherToken(token) {
+  try {
+    const res = await fetch(`${getApiBase()}/api/library/token`, {
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "user-agent": "playbound-launcher",
+      },
+    });
+    if (res.status === 401) return false;
+    if (!res.ok) return true; // don't wipe token on transient errors
+    const data = await res.json();
+    return data.valid !== false;
+  } catch {
+    return true;
+  }
+}
+
+function clearLocalToken(message) {
+  const settings = loadSettings();
+  delete settings.launcherToken;
+  saveSettings(settings);
+  notifyAccount({
+    connected: false,
+    message: message || "Token expired — reconnect from playbound.club/library.",
+  });
 }
 
 async function connectWithToken(token) {
   persistLauncherToken(token, { notify: false });
-  const { synced } = await syncAllInstalledGames();
-  const message =
-    synced > 0
-      ? `${CONNECTED_LIBRARY_MSG} Synced ${synced} game${synced === 1 ? "" : "s"}.`
-      : CONNECTED_LIBRARY_MSG;
-  notifyAccount({ connected: true, synced, message });
-  return { connected: true, synced };
+  const valid = await validateLauncherToken(token);
+  if (!valid) {
+    clearLocalToken("Invalid launcher token — reconnect from your library page.");
+    return { connected: false, synced: 0, skipped: [], error: "unauthorized" };
+  }
+  const { synced, skipped, error } = await syncAllInstalledGames();
+  if (error === "unauthorized") {
+    clearLocalToken("Token rejected — reconnect from your library page.");
+    return { connected: false, synced: 0, skipped: [], error };
+  }
+  let message = CONNECTED_LIBRARY_MSG;
+  if (synced > 0) {
+    message = `${CONNECTED_LIBRARY_MSG} Synced ${synced} game${synced === 1 ? "" : "s"}.`;
+  }
+  if (skipped?.length) {
+    message += ` Skipped ${skipped.length}: ${skipped.slice(0, 3).join(", ")}${skipped.length > 3 ? "…" : ""}.`;
+  }
+  if (error) {
+    message = `Connected, but sync had issues: ${error}`;
+  }
+  notifyAccount({ connected: true, synced, skipped, message });
+  return { connected: true, synced, skipped, error };
+}
+
+async function startupLibrarySync() {
+  const settings = loadSettings();
+  const token = settings.launcherToken;
+  if (!token) return;
+  const valid = await validateLauncherToken(token);
+  if (!valid) {
+    clearLocalToken("Saved token is no longer valid — reconnect from playbound.club/library.");
+    return;
+  }
+  const { synced, skipped, error } = await syncAllInstalledGames();
+  if (error === "unauthorized") {
+    clearLocalToken("Token rejected — reconnect from your library page.");
+    return;
+  }
+  let message = "Library sync complete.";
+  if (synced > 0) {
+    message = `Synced ${synced} installed game${synced === 1 ? "" : "s"} to your library.`;
+  } else if (!error) {
+    message = "Connected — no local installs to sync yet.";
+  }
+  if (skipped?.length) {
+    message += ` Skipped ${skipped.length}.`;
+  }
+  if (error) {
+    message = `Library sync issue: ${error}`;
+  }
+  notifyAccount({ connected: true, synced, skipped, message });
 }
 
 function openAuthInBrowser() {
@@ -826,6 +909,9 @@ if (gotLock) {
       handleDeepLink(parsedLaunch);
     } else if (parsedLaunch) {
       setContext(parsedLaunch);
+      void startupLibrarySync();
+    } else {
+      void startupLibrarySync();
     }
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
