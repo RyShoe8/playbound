@@ -39,6 +39,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     githubRepo: game.githubRepo ?? null,
     coverImage: game.coverImage ?? null,
     screenshots: game.screenshots ?? [],
+    launcherInstall: game.launcherInstall ?? null,
     developerName: null,
     published,
     submissionId,

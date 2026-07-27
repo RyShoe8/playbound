@@ -35,6 +35,18 @@ On Vercel, add:
 
 Without Blob, you can still **Fetch from website** (Open Graph images) and paste remote cover/screenshot URLs. Website import (e.g. `https://tinywind.io/`) prefills a browser-playable draft.
 
+### PlayBound Launcher download (Windows)
+
+1. Build the installer: `cd launcher && npm run dist`
+2. From `platform/`, with `BLOB_READ_WRITE_TOKEN` available:
+   ```bash
+   npm run upload:launcher -- ../launcher/dist/PlayBound-Launcher-Setup-0.1.0.exe
+   ```
+3. Set the printed URL on Vercel (Production + Preview) as:
+   - `NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL` — public Blob URL for `PlayBound-Launcher-Setup.exe`
+
+The site `/launcher` page and install fallbacks use that URL for one-click download.
+
 ### Live servers (UDP masters)
 
 HTTP masters (OpenRA, Luanti, SuperTuxKart) are queried directly from Vercel. **Xonotic** and **Unvanquished** use a UDP Master Adapter:

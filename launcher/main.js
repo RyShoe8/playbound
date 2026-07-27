@@ -3,7 +3,10 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
-const catalog = require("./catalog");
+const bundledCatalog = require("./catalog");
+
+/** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
+let catalog = bundledCatalog.map((e) => ({ ...e }));
 
 const PROTOCOL = "playbound";
 const DEFAULT_GAMES_DIR = path.join(app.getPath("home"), "PlayBound", "Games");
@@ -271,11 +274,25 @@ function handleDeepLink(parsed) {
     }
     return;
   }
-  setContext(parsed);
+  void setContext(parsed);
 }
 
-function setContext(parsed) {
+async function setContext(parsed) {
   context = parsed;
+  if (parsed?.slug && ["install", "play", "join", "uninstall"].includes(parsed.action)) {
+    await ensureCatalogEntry(parsed.slug);
+  }
+  if (parsed?.action === "install-mod" && parsed.slug) {
+    void loadModIntoContext(parsed.slug);
+  }
+  pushContext();
+}
+
+async function setContext(parsed) {
+  context = parsed;
+  if (parsed?.slug && ["install", "play", "join", "uninstall"].includes(parsed.action)) {
+    await ensureCatalogEntry(parsed.slug);
+  }
   pushContext();
   if (parsed?.action === "install-mod" && parsed.slug && !parsed.mod && !parsed.modError) {
     void loadModIntoContext(parsed.slug);
@@ -344,6 +361,45 @@ function saveSettings(settings) {
 function getApiBase() {
   const settings = loadSettings();
   return String(settings.apiBase || process.env.PLAYBOUND_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "");
+}
+
+async function refreshRemoteCatalog() {
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const remote = Array.isArray(data.games) ? data.games : [];
+    if (remote.length === 0) return;
+    const bySlug = new Map(bundledCatalog.map((e) => [e.slug, { ...e }]));
+    for (const entry of remote) {
+      if (!entry?.slug) continue;
+      bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
+    }
+    catalog = [...bySlug.values()];
+    console.log(`Remote catalog: ${remote.length} game(s) merged (${catalog.length} total).`);
+  } catch (err) {
+    console.warn("Remote catalog refresh failed:", err.message || err);
+  }
+}
+
+async function ensureCatalogEntry(slug) {
+  const existing = catalog.find((e) => e.slug === slug);
+  if (existing) return existing;
+  try {
+    const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/install`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const entry = await res.json();
+    if (!entry?.slug) return null;
+    catalog = [...catalog.filter((e) => e.slug !== entry.slug), entry];
+    return entry;
+  } catch (err) {
+    console.warn(`ensureCatalogEntry(${slug}) failed:`, err.message || err);
+    return null;
+  }
 }
 
 /** Fire-and-forget library sync. Never throws to callers. */
@@ -425,9 +481,41 @@ function buildContextPayload() {
 /* ── release resolution ────────────────────────────────────── */
 
 async function resolveDownload(entry) {
-  if (entry.kind === "direct-zip") {
-    return { url: entry.url, name: path.basename(new URL(entry.url).pathname), version: "fixed" };
+  if (entry.kind === "direct-zip" || entry.kind === "direct-installer" || entry.kind === "direct-exe") {
+    let name = entry.fileName || path.basename(new URL(entry.url).pathname) || `${entry.slug}.bin`;
+    if (name === "download" || !name.includes(".")) {
+      const parts = new URL(entry.url).pathname.split("/").filter(Boolean);
+      const fromPath = parts.find((p) => /\.(exe|zip|msi)$/i.test(p));
+      name = entry.fileName || fromPath || `${entry.slug}.exe`;
+    }
+    return { url: entry.url, name, version: entry.versionLabel || "fixed" };
   }
+
+  if (entry.kind === "openttd-zip") {
+    const res = await fetch("https://cdn.openttd.org/openttd-releases/latest.yaml", {
+      headers: { "user-agent": "playbound-launcher" },
+    });
+    if (!res.ok) throw new Error(`OpenTTD CDN ${res.status}`);
+    const yaml = await res.text();
+    const blocks = yaml.split(/\n-\s+/);
+    let version = null;
+    for (const block of blocks) {
+      if (!/\bname:\s*stable\b/i.test(block)) continue;
+      const m = block.match(/version:\s*([^\s]+)/i);
+      if (m) {
+        version = m[1].trim();
+        break;
+      }
+    }
+    if (!version) throw new Error("Could not parse OpenTTD stable version from latest.yaml");
+    const name = `openttd-${version}-windows-win64.zip`;
+    return {
+      url: `https://cdn.openttd.org/openttd-releases/${version}/${name}`,
+      name,
+      version,
+    };
+  }
+
   const res = await fetch(`https://api.github.com/repos/${entry.repo}/releases/latest`, {
     headers: { "user-agent": "playbound-launcher", accept: "application/vnd.github+json" },
   });
@@ -530,10 +618,51 @@ function findExecutable(dir, exeHint) {
   return exes.sort((a, b) => b.size - a.size)[0].full;
 }
 
+function expandWinPath(p) {
+  return String(p || "")
+    .replace(/%LOCALAPPDATA%/gi, process.env.LOCALAPPDATA || "")
+    .replace(/%APPDATA%/gi, process.env.APPDATA || "")
+    .replace(/%PROGRAMFILES%/gi, process.env.PROGRAMFILES || "")
+    .replace(/%PROGRAMFILES\(X86\)%/gi, process.env["ProgramFiles(x86)"] || "")
+    .replace(/%USERPROFILE%/gi, process.env.USERPROFILE || "");
+}
+
+function findKnownExecutable(entry) {
+  for (const raw of entry.knownExePaths || []) {
+    const full = expandWinPath(raw);
+    if (full && fs.existsSync(full)) return full;
+  }
+  return null;
+}
+
+function markInstalled(slug, { version, exe, dir }) {
+  const state = loadState();
+  state[slug] = { version, exe, dir, installedAt: new Date().toISOString() };
+  saveState(state);
+  void syncLibrary(slug, "install", version);
+}
+
+async function writeJarLauncher(gameDir, jarName) {
+  const cmdPath = path.join(gameDir, "play.cmd");
+  const body = [
+    "@echo off",
+    `javaw -jar "%~dp0${jarName}" %*`,
+    "if errorlevel 1 (",
+    "  echo.",
+    "  echo Java is required to run this game.",
+    "  echo Install JDK 17+ from https://adoptium.net/ then try again.",
+    "  pause",
+    ")",
+    "",
+  ].join("\r\n");
+  await fsp.writeFile(cmdPath, body, "utf8");
+  return cmdPath;
+}
+
 /* ── core actions ──────────────────────────────────────────── */
 
 async function installGame(slug, targetDir) {
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   if (entry.kind === "external") {
@@ -548,10 +677,39 @@ async function installGame(slug, targetDir) {
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", dl.name);
   await downloadTo(dl.url, downloadPath);
 
-  if (entry.kind === "github-installer") {
+  if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
     sendProgress({ phase: "done" });
     await shell.openPath(downloadPath);
-    return { status: "installer-opened" };
+    const known = findKnownExecutable(entry);
+    if (known) {
+      markInstalled(slug, { version: dl.version, exe: known, dir: path.dirname(known) });
+      return { status: "installed", version: dl.version, dir: path.dirname(known) };
+    }
+    return { status: "installer-opened", version: dl.version };
+  }
+
+  if (entry.kind === "direct-exe") {
+    sendProgress({ phase: "extracting" });
+    await fsp.mkdir(gameDir, { recursive: true });
+    const destName = dl.name.toLowerCase().endsWith(".exe") ? dl.name : `${entry.slug}.exe`;
+    const exe = path.join(gameDir, destName);
+    await fsp.copyFile(downloadPath, exe);
+    await fsp.rm(downloadPath, { force: true });
+    markInstalled(slug, { version: dl.version, exe, dir: gameDir });
+    sendProgress({ phase: "done" });
+    return { status: "installed", version: dl.version, dir: gameDir };
+  }
+
+  if (entry.kind === "github-jar") {
+    sendProgress({ phase: "extracting" });
+    await fsp.mkdir(gameDir, { recursive: true });
+    const jarPath = path.join(gameDir, dl.name);
+    await fsp.copyFile(downloadPath, jarPath);
+    await fsp.rm(downloadPath, { force: true });
+    const exe = await writeJarLauncher(gameDir, dl.name);
+    markInstalled(slug, { version: dl.version, exe, dir: gameDir });
+    sendProgress({ phase: "done" });
+    return { status: "installed", version: dl.version, dir: gameDir };
   }
 
   sendProgress({ phase: "extracting" });
@@ -562,12 +720,31 @@ async function installGame(slug, targetDir) {
   const exe = findExecutable(gameDir, entry.exeHint);
   if (!exe) throw new Error("Extracted, but no executable found");
 
-  const state = loadState();
-  state[slug] = { version: dl.version, exe, dir: gameDir, installedAt: new Date().toISOString() };
-  saveState(state);
-  void syncLibrary(slug, "install", dl.version);
+  markInstalled(slug, { version: dl.version, exe, dir: gameDir });
   sendProgress({ phase: "done" });
   return { status: "installed", version: dl.version, dir: gameDir };
+}
+
+async function locateGameExecutable(slug) {
+  const entry = catalog.find((e) => e.slug === slug);
+  if (!entry) throw new Error(`Unknown game: ${slug}`);
+
+  const known = findKnownExecutable(entry);
+  if (known) {
+    markInstalled(slug, { version: "located", exe: known, dir: path.dirname(known) });
+    return { status: "installed", exe: known, dir: path.dirname(known) };
+  }
+
+  const result = await dialog.showOpenDialog(win, {
+    title: `Locate ${entry.title} executable`,
+    filters: [{ name: "Executables", extensions: ["exe", "cmd", "bat"] }],
+    properties: ["openFile"],
+  });
+  if (result.canceled || result.filePaths.length === 0) return { status: "cancelled" };
+
+  const exe = result.filePaths[0];
+  markInstalled(slug, { version: "located", exe, dir: path.dirname(exe) });
+  return { status: "installed", exe, dir: path.dirname(exe) };
 }
 
 async function installMod(slug, baseDirOverride) {
@@ -630,7 +807,13 @@ async function playGame(slug, join = null) {
       );
     }
   }
-  spawn(info.exe, args, { cwd: path.dirname(info.exe), detached: true, stdio: "ignore" }).unref();
+  const useShell = /\.(cmd|bat)$/i.test(info.exe);
+  spawn(info.exe, args, {
+    cwd: path.dirname(info.exe),
+    detached: true,
+    stdio: "ignore",
+    shell: useShell,
+  }).unref();
   return {
     status: "launched",
     connect: args.length > 0 ? `${join.host}:${join.port}` : null,
@@ -721,6 +904,7 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
 
 ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetDir));
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
+ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("get-installed", () => listInstalledGames());
@@ -894,7 +1078,7 @@ async function testUninstall(slug) {
 }
 
 if (gotLock) {
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     if (process.argv.includes("--test-resolve")) return testResolve();
     const installIdx = process.argv.indexOf("--test-install");
     if (installIdx !== -1) return testInstall(process.argv[installIdx + 1]);
@@ -902,13 +1086,15 @@ if (gotLock) {
     const uninstallIdx = process.argv.indexOf("--test-uninstall");
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
 
+    await refreshRemoteCatalog();
+
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;
     createWindow();
     if (parsedLaunch && (parsedLaunch.action === "auth" || parsedLaunch.action === "link")) {
       handleDeepLink(parsedLaunch);
     } else if (parsedLaunch) {
-      setContext(parsedLaunch);
+      await setContext(parsedLaunch);
       void startupLibrarySync();
     } else {
       void startupLibrarySync();

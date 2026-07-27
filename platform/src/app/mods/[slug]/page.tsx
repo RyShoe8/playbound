@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Puzzle } from "lucide-react";
 import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
-import { isOneClickSlug } from "@/lib/launcher";
+import { isLauncherInstallable } from "@/lib/launcher";
 import { Badge } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 
@@ -20,7 +20,7 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
   if (!mod) notFound();
 
   const baseGame = await getGame(mod.baseGameSlug);
-  const canOneClickBase = isOneClickSlug(mod.baseGameSlug);
+  const canOneClickBase = baseGame ? isLauncherInstallable(baseGame) : false;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">

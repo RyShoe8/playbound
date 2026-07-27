@@ -1,18 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  Bell,
   Cloud,
   Download,
   MonitorPlay,
   Play,
   RefreshCw,
   Server,
-  Terminal,
   Wrench,
 } from "lucide-react";
-import { listGames, gamesFor } from "@/lib/catalog";
-import { ONE_CLICK_SLUGS, launcherInstallUrl } from "@/lib/launcher";
+import { listGames } from "@/lib/catalog";
+import { isLauncherInstallable, launcherInstallUrl } from "@/lib/launcher";
+import { getLauncherDownloadUrl } from "@/lib/launcherDownload";
 import { GameArt } from "@/components/GameArt";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
@@ -28,11 +27,11 @@ const features = [
 ];
 
 export default async function LauncherPage() {
-  const [oneClick, games] = await Promise.all([gamesFor([...ONE_CLICK_SLUGS]), listGames()]);
+  const [games, downloadUrl] = await Promise.all([listGames(), Promise.resolve(getLauncherDownloadUrl())]);
+  const installable = games.filter((g) => isLauncherInstallable(g));
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
-      {/* Hero */}
       <section className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/25 via-card to-card p-6 sm:p-10">
         <Badge tone="brand">
           <MonitorPlay className="size-3" /> Desktop App · Beta
@@ -41,43 +40,38 @@ export default async function LauncherPage() {
           The PlayBound Launcher
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Install, update, and launch free games with one click — no account required. Game pages hand
-          off via <code className="text-play">playbound://</code> deep links. Install the app and run
-          it once so Windows registers those links; otherwise one-click buttons do nothing. Sign in
-          only if you want optional extras like library sync.
+          Install, update, and launch free games with one click — no account required. Download the
+          Windows app, run it once so <code className="text-play">playbound://</code> deep links work,
+          then install any game from this site in a single click.
         </p>
-        <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
-          <p className="flex items-center gap-2 text-sm font-bold">
-            <Download className="size-4 text-play" /> Packaged Windows builds
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          {downloadUrl ? (
+            <a
+              href={downloadUrl}
+              className="inline-flex items-center gap-2 rounded-full bg-play px-6 py-3 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
+            >
+              <Download className="size-4" /> Download for Windows
+            </a>
+          ) : (
+            <p className="rounded-lg border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+              Download URL not configured. Set{" "}
+              <code className="text-play">NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL</code> after uploading the
+              Setup.exe to Vercel Blob.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Windows 10/11 · ~78 MB · run once to register deep links
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            From the repo, run <code className="text-play">npm run dist</code> in{" "}
-            <code className="text-play">launcher/</code> to produce{" "}
-            <code className="text-play">PlayBound-Launcher-Setup-0.1.0.exe</code> (installer) and{" "}
-            <code className="text-play">PlayBound-Launcher-Portable-0.1.0.exe</code>. Install or run
-            once — the app registers <code className="text-play">playbound://</code> so one-click
-            links from this site open the launcher.
-          </p>
-          <p className="mt-4 flex items-center gap-2 text-sm font-bold">
-            <Terminal className="size-4 text-play" /> Or run the beta from source
-          </p>
-          <pre className="mt-2 overflow-x-auto rounded-lg bg-black/40 p-3 text-xs leading-relaxed text-play">
-            {`git clone https://github.com/RyShoe8/playbound
-cd playbound/launcher
-npm install
-npm start`}
-          </pre>
         </div>
       </section>
 
-      {/* One-click games */}
       <section>
         <SectionHeader
-          title="One-Click Install Today"
-          subtitle="Click a tile to open the launcher and start installing. Requires the launcher installed and run once so playbound:// is registered."
+          title="One-Click Install"
+          subtitle="Click a tile to open the launcher and start installing. Requires the launcher downloaded and run once."
         />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
-          {oneClick.map((g) => (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+          {installable.map((g) => (
             <a key={g.slug} href={launcherInstallUrl(g.slug)} className="group">
               <GameArt
                 game={g}
@@ -88,8 +82,7 @@ npm start`}
           ))}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Every other game in the catalog gets an official-site button, and moves to one-click as we
-          add it. Prefer browsing first?{" "}
+          Prefer browsing first?{" "}
           <Link href="/games" className="font-semibold text-primary hover:underline">
             Browse the catalog
           </Link>
@@ -97,29 +90,18 @@ npm start`}
         </p>
       </section>
 
-      {/* Feature grid */}
       <section>
-        <SectionHeader title="What It Does" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <SectionHeader title="What it does" subtitle="Built for discovering, installing, and playing free games fast." />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-xl border border-border bg-card p-5">
-              <Icon className="size-5 text-primary" />
-              <p className="mt-2.5 font-bold">{title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+            <div key={title} className="rounded-xl border border-border bg-card/40 p-4">
+              <p className="flex items-center gap-2 text-sm font-bold">
+                <Icon className="size-4 text-play" /> {title}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{text}</p>
             </div>
           ))}
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-card p-6 text-center">
-        <Bell className="mx-auto size-6 text-primary" />
-        <p className="mt-2 font-bold">The website stays the primary experience.</p>
-        <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">
-          Browser games launch instantly with no launcher at all, and everything on PlayBound —
-          discovery, community, servers, events — lives right here. The launcher just makes native
-          installs painless. {games.filter((g) => g.browserPlayable).length} games need nothing but
-          this tab.
-        </p>
       </section>
     </div>
   );

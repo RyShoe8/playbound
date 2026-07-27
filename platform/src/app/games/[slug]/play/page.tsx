@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Download, ExternalLink, MonitorPlay, Server } from "lucide-react";
 import { developersBySlug, getGame } from "@/lib/catalog";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { isOneClickSlug } from "@/lib/launcher";
+import { isLauncherInstallable } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { Badge } from "@/components/ui/bits";
@@ -20,7 +20,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
   if (!game) notFound();
 
   const developer = developersBySlug.get(game.developerSlug);
-  const oneClick = isOneClickSlug(game.slug);
+  const oneClick = isLauncherInstallable(game);
   const browser = isBrowserGame(game);
   const host = (() => {
     try {
@@ -88,32 +88,31 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
           <Download className="size-10 text-primary" />
           <h1 className="text-2xl font-extrabold">Install {game.title} for free</h1>
           <p className="text-sm text-muted-foreground">
-            {game.title} is {game.license.toLowerCase()}. Download it directly from the official
-            project
+            {game.title} is {game.license.toLowerCase()}.{" "}
             {oneClick
-              ? ", or install with the PlayBound Launcher (if you already have it, this opens the app)."
-              : ". Launcher one-click install is not available for this title yet."}{" "}
+              ? "Install with the PlayBound Launcher for the simplest path — or grab it from the official project."
+              : "Download it from the official project."}{" "}
             {game.sizeMB >= 1000 ? `${(game.sizeMB / 1000).toFixed(1)} GB` : `${game.sizeMB} MB`}{" "}
             download.
           </p>
+          {oneClick ? (
+            <LauncherInstallButton
+              slug={game.slug}
+              className="mt-2 border-transparent bg-play px-6 py-2.5 text-play-foreground hover:brightness-110"
+            />
+          ) : null}
           <a
             href={developer?.website ?? game.website}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+            className={
+              oneClick
+                ? "flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                : "mt-2 flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+            }
           >
             <Download className="size-4" /> Download from {host}
           </a>
-          {oneClick ? (
-            <LauncherInstallButton slug={game.slug} />
-          ) : (
-            <p className="max-w-sm text-xs text-muted-foreground">
-              Prefer a desktop helper for other free games?{" "}
-              <Link href="/launcher" className="font-semibold text-primary hover:underline">
-                PlayBound Launcher
-              </Link>
-            </p>
-          )}
           {game.launchMethods.includes("server") && (
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Server className="size-3.5" /> Supports dedicated servers for multiplayer
