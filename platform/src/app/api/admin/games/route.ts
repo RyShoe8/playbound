@@ -36,6 +36,7 @@ export async function POST(req: Request) {
 
     const doc = await CatalogGame.create({
       ...body,
+      steamAppId: body.steamAppId || null,
       githubRepo: body.githubRepo || null,
       coverImage: body.coverImage || null,
       screenshots: body.screenshots ?? [],

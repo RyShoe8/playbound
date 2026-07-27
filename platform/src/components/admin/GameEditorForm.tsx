@@ -66,6 +66,7 @@ export function GameEditorForm({
   const [error, setError] = useState("");
   const [captureAvailable, setCaptureAvailable] = useState(false);
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
+  const [launcherDiscoverNote, setLauncherDiscoverNote] = useState("");
 
   const genreSet = useMemo(() => new Set(form.genres), [form.genres]);
   const launchSet = useMemo(() => new Set(form.launchMethods), [form.launchMethods]);
@@ -90,13 +91,58 @@ export function GameEditorForm({
     });
   }
 
-  function addToPlayboundLauncher() {
-    const next = enableInstallerSupportFields(form);
+  async function addToPlayboundLauncher() {
+    setBusy(true);
+    setError("");
+    setLauncherDiscoverNote("");
+    const base = enableInstallerSupportFields(form);
+    let recipe = toPayloadLauncherInstall(base.launcherInstall);
+    let note = "Opening official site via the launcher.";
+
+    try {
+      const res = await fetch("/api/admin/games/discover-install", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          website: form.website,
+          steamAppId: form.steamAppId,
+          githubRepo: form.githubRepo,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.recipe?.kind) {
+        recipe = toPayloadLauncherInstall(data.recipe);
+        if (data.source === "direct") note = "Found installer download — PlayBound will fetch and run it.";
+        else if (data.source === "steam") note = "Using Steam install link — opens Steam to install.";
+        else note = "No public installer found — opens the official site via the launcher.";
+      } else if (form.steamAppId) {
+        recipe = toPayloadLauncherInstall({
+          enabled: true,
+          kind: "external",
+          url: `steam://install/${form.steamAppId}`,
+          note: "Opens Steam to install this game",
+        });
+        note = "Using Steam install link — opens Steam to install.";
+      }
+    } catch {
+      if (form.steamAppId) {
+        recipe = toPayloadLauncherInstall({
+          enabled: true,
+          kind: "external",
+          url: `steam://install/${form.steamAppId}`,
+          note: "Opens Steam to install this game",
+        });
+        note = "Using Steam install link — opens Steam to install.";
+      }
+    }
+
     setForm((prev) => ({
       ...prev,
-      ...next,
-      launcherInstall: toPayloadLauncherInstall(next.launcherInstall),
+      ...base,
+      launcherInstall: recipe,
     }));
+    setLauncherDiscoverNote(note);
+    setBusy(false);
   }
 
   useEffect(() => {
@@ -137,6 +183,7 @@ export function GameEditorForm({
         // Prefill never arms launcher — admin uses Add to PlayBound Launcher.
         launcherInstall: null,
       }));
+      setLauncherDiscoverNote("");
       setBusy(false);
     } catch {
       setError("Couldn't reach the server.");
@@ -644,23 +691,27 @@ export function GameEditorForm({
               <p className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-xs font-semibold">
                 On PlayBound Launcher — save the game to publish it to the desktop catalog.
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                Defaults to opening the official site via the launcher. Customize below only if you have
-                a direct download or GitHub release recipe.
-              </p>
+              {launcherDiscoverNote ? (
+                <p className="text-[11px] text-muted-foreground">{launcherDiscoverNote}</p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  Recipe is set. Customize below only if you need a different download or GitHub release.
+                </p>
+              )}
             </>
           ) : (
             <>
               <p className="text-[11px] text-muted-foreground">
-                One click adds Install + Windows and an external launcher recipe from the website. No
-                other fields required.
+                One click looks for a public installer, then falls back to Steam (if known) or the
+                website. No other fields required.
               </p>
               <button
                 type="button"
+                disabled={busy}
                 onClick={addToPlayboundLauncher}
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background"
+                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background disabled:opacity-60"
               >
-                Add to PlayBound Launcher
+                {busy ? "Discovering install…" : "Add to PlayBound Launcher"}
               </button>
             </>
           )}

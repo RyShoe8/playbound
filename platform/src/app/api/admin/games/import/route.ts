@@ -76,6 +76,7 @@ async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
     art: defaultArtFor([], slug),
     published: false,
     launcherInstall: null,
+    steamAppId: appId,
   };
 }
 

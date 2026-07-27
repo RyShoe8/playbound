@@ -40,6 +40,7 @@ export async function PATCH(
       {
         $set: {
           ...body,
+          steamAppId: body.steamAppId || null,
           githubRepo: body.githubRepo || null,
           coverImage: body.coverImage || null,
           screenshots: body.screenshots ?? [],
