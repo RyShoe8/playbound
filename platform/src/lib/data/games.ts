@@ -308,7 +308,7 @@ export const games: Game[] = [
     hiddenGem: false,
     art: { from: "#450a0a", to: "#f87171", icon: "Bomb" },
     coverImage: "/games/beyond-all-reason/cover.jpg",
-    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/2507950/header.jpg"],
+    screenshots: ["/games/beyond-all-reason/cover.jpg"],
     systemRequirements: {
       min: "3 GHz quad-core CPU · 8 GB RAM · GTX 960 · 4 GB storage",
       recommended: "4 GHz 8-core CPU · 16 GB RAM · RTX 2060 or better · 6 GB storage",
@@ -337,7 +337,10 @@ export const games: Game[] = [
     hiddenGem: false,
     art: { from: "#14532d", to: "#a3e635", icon: "Blocks" },
     coverImage: "/games/luanti/cover.jpg",
-    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/2561990/header.jpg"],
+    screenshots: [
+      "https://www.luanti.org/media/gallery/1.jpg",
+      "https://www.luanti.org/media/gallery/2.jpg",
+    ],
     systemRequirements: {
       min: "1.5 GHz CPU · 2 GB RAM · OpenGL 2.0 GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
@@ -480,7 +483,7 @@ export const games: Game[] = [
     hiddenGem: false,
     art: { from: "#3f2d0c", to: "#fde047", icon: "Target" },
     coverImage: "/games/hedgewars/cover.jpg",
-    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/346940/header.jpg"],
+    screenshots: ["https://cdn.cloudflare.steamstatic.com/steam/apps/2223810/header.jpg"],
     systemRequirements: {
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 250 MB storage",
       recommended: "Any modern machine",

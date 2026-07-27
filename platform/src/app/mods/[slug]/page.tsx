@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Download, Puzzle } from "lucide-react";
+import { Puzzle } from "lucide-react";
 import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
-import { launcherInstallModUrl, isOneClickSlug, launcherInstallUrl } from "@/lib/launcher";
+import { isOneClickSlug } from "@/lib/launcher";
 import { Badge } from "@/components/ui/bits";
+import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -51,20 +52,18 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
           </code>
           .
         </p>
-        <div className="flex flex-wrap gap-2">
-          <a
-            href={launcherInstallModUrl(mod.slug)}
-            className="inline-flex items-center gap-2 rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground"
-          >
-            <Download className="size-4" /> Install mod
-          </a>
+        <div className="flex flex-wrap items-start gap-4">
+          <LauncherInstallButton
+            slug={mod.slug}
+            kind="install-mod"
+            label="Install mod"
+            className="bg-play text-play-foreground border-transparent"
+          />
           {canOneClickBase && (
-            <a
-              href={launcherInstallUrl(mod.baseGameSlug)}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
-            >
-              Install {baseGame?.title ?? "base game"}
-            </a>
+            <LauncherInstallButton
+              slug={mod.baseGameSlug}
+              label={`Install ${baseGame?.title ?? "base game"}`}
+            />
           )}
           {baseGame && (
             <Link

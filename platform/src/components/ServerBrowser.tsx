@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Lock, RefreshCw, Server, Users } from "lucide-react";
-import { launcherJoinUrl, launcherInstallUrl, isOneClickSlug } from "@/lib/launcher";
+import { launcherJoinUrl, isOneClickSlug } from "@/lib/launcher";
 import type { GameServer } from "@/lib/servers/types";
 import { estimateLatencyMs } from "@/lib/servers/latencyEstimate";
 import { EmptyHint } from "@/components/ui/bits";
+import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 
 type Props = {
   slug: string;
@@ -244,12 +245,11 @@ export function ServerBrowser({ slug, title, supportsServers }: Props) {
             Get {title}
           </Link>
           {isOneClickSlug(slug) && (
-            <a
-              href={launcherInstallUrl(slug)}
-              className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
-            >
-              One-click install
-            </a>
+            <LauncherInstallButton
+              slug={slug}
+              label="Install with PlayBound Launcher"
+              className="px-4 py-2"
+            />
           )}
         </div>
       </div>

@@ -42,8 +42,9 @@ export default async function LauncherPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           Install, update, and launch free games with one click — no account required. Game pages hand
-          off via <code className="text-play">playbound://</code> deep links. Sign in only if you want
-          optional extras like library sync.
+          off via <code className="text-play">playbound://</code> deep links. Install the app and run
+          it once so Windows registers those links; otherwise one-click buttons do nothing. Sign in
+          only if you want optional extras like library sync.
         </p>
         <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
           <p className="flex items-center gap-2 text-sm font-bold">
@@ -73,7 +74,7 @@ npm start`}
       <section>
         <SectionHeader
           title="One-Click Install Today"
-          subtitle="Click a tile to open the launcher and start installing (requires the beta running once)"
+          subtitle="Click a tile to open the launcher and start installing. Requires the launcher installed and run once so playbound:// is registered."
         />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
           {oneClick.map((g) => (
