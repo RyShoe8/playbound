@@ -75,18 +75,18 @@ export function defaultLauncherInstallForWebsite(website: string): LauncherInsta
 }
 
 /** One-click: make a draft PC-installable with an enabled external launcher recipe. */
-export function enableInstallerSupportFields(game: {
-  launchMethods: string[];
+export function enableInstallerSupportFields<M extends string>(game: {
+  launchMethods: M[];
   platforms: string[];
   website: string;
   launcherInstall?: LauncherInstall | null;
 }): {
-  launchMethods: string[];
+  launchMethods: Array<M | "install">;
   platforms: string[];
   browserPlayable: false;
   launcherInstall: LauncherInstall;
 } {
-  const launchMethods = game.launchMethods.includes("install")
+  const launchMethods: Array<M | "install"> = game.launchMethods.includes("install" as M)
     ? [...game.launchMethods]
     : [...game.launchMethods, "install"];
   const platforms = game.platforms.some((p) => /windows/i.test(p))
