@@ -49,6 +49,8 @@ export interface Game {
   browserPlayable: boolean;
   steamDeck: boolean;
   website: string;
+  /** Steam store app id when the game was imported from Steam (for steam:// install). */
+  steamAppId?: string;
   /** owner/repo on GitHub, for games whose official releases are published there. */
   githubRepo?: string;
   /** Editorial curation flags chosen by PlayBound */

@@ -39,6 +39,7 @@ function toGame(doc: LeanGame): Game {
     browserPlayable: Boolean(doc.browserPlayable),
     steamDeck: Boolean(doc.steamDeck),
     website: String(doc.website),
+    steamAppId: (doc.steamAppId as string) || undefined,
     githubRepo: (doc.githubRepo as string) || undefined,
     gameOfWeek: Boolean(doc.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem),
