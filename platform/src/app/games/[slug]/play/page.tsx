@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Download, ExternalLink, MonitorPlay, Server } from "lucide-react";
 import { developersBySlug, getGame } from "@/lib/catalog";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { isOneClickSlug, launcherInstallUrl } from "@/lib/launcher";
+import { isOneClickSlug } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
+import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { Badge } from "@/components/ui/bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -88,7 +89,10 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
           <h1 className="text-2xl font-extrabold">Install {game.title} for free</h1>
           <p className="text-sm text-muted-foreground">
             {game.title} is {game.license.toLowerCase()}. Download it directly from the official
-            project, or let the PlayBound Launcher grab the latest build automatically —{" "}
+            project
+            {oneClick
+              ? ", or install with the PlayBound Launcher (if you already have it, this opens the app)."
+              : ". Launcher one-click install is not available for this title yet."}{" "}
             {game.sizeMB >= 1000 ? `${(game.sizeMB / 1000).toFixed(1)} GB` : `${game.sizeMB} MB`}{" "}
             download.
           </p>
@@ -101,24 +105,14 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
             <Download className="size-4" /> Download from {host}
           </a>
           {oneClick ? (
-            <>
-              <a
-                href={launcherInstallUrl(game.slug)}
-                className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-bold transition-colors hover:bg-secondary/70"
-              >
-                One-click install with the PlayBound Launcher →
-              </a>
-              <Link href="/launcher" className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-                Need the launcher?
-              </Link>
-            </>
+            <LauncherInstallButton slug={game.slug} />
           ) : (
-            <Link
-              href="/launcher"
-              className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-bold transition-colors hover:bg-secondary/70"
-            >
-              Get the PlayBound Launcher →
-            </Link>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              Prefer a desktop helper for other free games?{" "}
+              <Link href="/launcher" className="font-semibold text-primary hover:underline">
+                PlayBound Launcher
+              </Link>
+            </p>
           )}
           {game.launchMethods.includes("server") && (
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
