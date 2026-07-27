@@ -27,6 +27,9 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PlayBound Launcher",
       "artifactName": "PlayBound-Launcher-Setup-${version}.${ext}"
     },
     "portable": {

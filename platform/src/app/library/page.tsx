@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { Download, LibraryBig, LogIn, MonitorPlay } from "lucide-react";
+import { Download, LibraryBig, LogIn, MonitorPlay, Play } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import User from "@/lib/models/User";
 import { gamesFor } from "@/lib/catalog";
+import { launcherPlayUrl } from "@/lib/launcher";
 import { GameCard } from "@/components/GameCard";
 import { ConnectLauncherPanel } from "@/components/ConnectLauncherPanel";
 import { Badge, EmptyHint } from "@/components/ui/bits";
@@ -165,7 +166,7 @@ export default async function LibraryPage({
             return (
               <div key={game.slug} className="space-y-2">
                 <GameCard game={game} />
-                <div className="flex flex-wrap gap-1 px-0.5">
+                <div className="flex flex-wrap items-center gap-1 px-0.5">
                   {meta?.saved && (
                     <Badge tone="brand">
                       <LibraryBig className="size-3" /> Saved
@@ -175,6 +176,14 @@ export default async function LibraryPage({
                     <Badge tone="play">
                       <Download className="size-3" /> Installed
                     </Badge>
+                  )}
+                  {meta?.installed && (
+                    <a
+                      href={launcherPlayUrl(game.slug)}
+                      className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
+                    >
+                      <Play className="size-3 fill-current" /> Play
+                    </a>
                   )}
                 </div>
               </div>

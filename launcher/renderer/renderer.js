@@ -1,4 +1,7 @@
-const emptyEl = document.getElementById("empty");
+const libraryEl = document.getElementById("library");
+const libraryListEl = document.getElementById("library-list");
+const libraryEmptyEl = document.getElementById("library-empty");
+const libraryMsgEl = document.getElementById("library-msg");
 const gameEl = document.getElementById("game");
 const tileEl = document.getElementById("tile");
 const titleEl = document.getElementById("title");
@@ -10,7 +13,8 @@ const progressEl = document.getElementById("progress");
 const barEl = document.getElementById("bar");
 const actionsEl = document.getElementById("actions");
 const btnChoose = document.getElementById("btn-choose");
-const btnCloseEmpty = document.getElementById("btn-close-empty");
+const btnBackLibrary = document.getElementById("btn-back-library");
+const btnBrowseSite = document.getElementById("btn-browse-site");
 const accountStatusEl = document.getElementById("account-status");
 const tokenInputEl = document.getElementById("token-input");
 const btnSaveToken = document.getElementById("btn-save-token");
@@ -32,6 +36,12 @@ function setAccountMsg(text, isError = false) {
   accountMsgEl.textContent = text || "";
   accountMsgEl.classList.toggle("err", isError);
   if (isError) accountMsgEl.classList.remove("ok");
+}
+
+function setLibraryMsg(text, isError = false) {
+  libraryMsgEl.textContent = text || "";
+  libraryMsgEl.classList.toggle("err", isError);
+  libraryMsgEl.classList.toggle("ok", Boolean(text) && !isError);
 }
 
 async function refreshAccount() {
@@ -80,7 +90,7 @@ btnSaveToken.addEventListener("click", async () => {
     const synced = result?.synced || 0;
     setAccountMsg(
       synced > 0
-        ? `Connected. Close this window and refresh your library page. Synced ${synced} game${synced === 1 ? "" : "s"}.`
+        ? `Connected. Synced ${synced} game${synced === 1 ? "" : "s"}.`
         : "Connected. Close this window and refresh your library page."
     );
     accountMsgEl.classList.add("ok");
@@ -116,16 +126,18 @@ function setProgress(pct) {
 function setBusy(next) {
   busy = next;
   for (const btn of actionsEl.querySelectorAll("button")) btn.disabled = next;
+  for (const btn of libraryListEl.querySelectorAll("button")) btn.disabled = next;
   btnChoose.disabled = next;
 }
 
-function showEmpty() {
-  emptyEl.classList.remove("hidden");
+function showLibrary() {
+  libraryEl.classList.remove("hidden");
   gameEl.classList.add("hidden");
+  void loadLibrary();
 }
 
 function showGame() {
-  emptyEl.classList.add("hidden");
+  libraryEl.classList.add("hidden");
   gameEl.classList.remove("hidden");
 }
 
@@ -137,6 +149,127 @@ function makeButton(label, className, onClick) {
   btn.addEventListener("click", onClick);
   return btn;
 }
+
+async function loadLibrary() {
+  try {
+    const games = await window.playbound.getInstalled();
+    libraryListEl.replaceChildren();
+    const empty = !games || games.length === 0;
+    libraryEmptyEl.classList.toggle("hidden", !empty);
+    if (empty) return;
+
+    for (const game of games) {
+      const row = document.createElement("div");
+      row.className = "library-row";
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.textContent = String(game.title || "?").charAt(0);
+      tile.style.background = `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`;
+
+      const meta = document.createElement("div");
+      meta.className = "library-row-meta";
+      const name = document.createElement("strong");
+      name.textContent = game.title;
+      const ver = document.createElement("span");
+      ver.textContent = game.version ? `v${game.version}` : "Installed";
+      meta.append(name, ver);
+
+      const actions = document.createElement("div");
+      actions.className = "library-row-actions";
+      actions.append(
+        makeButton("Play", "btn-play btn-sm", () => void playFromLibrary(game.slug)),
+        makeButton("Shortcut", "btn-site btn-sm", () => void createShortcut(game.slug)),
+        makeButton("Folder", "btn-site btn-sm", () => void openGameFolder(game.dir)),
+        makeButton("Uninstall", "btn-remove btn-sm", () => void uninstallFromLibrary(game))
+      );
+
+      row.append(tile, meta, actions);
+      libraryListEl.append(row);
+    }
+  } catch (err) {
+    setLibraryMsg(err.message || String(err), true);
+  }
+}
+
+async function playFromLibrary(slug) {
+  if (busy) return;
+  setBusy(true);
+  setLibraryMsg("Launching…");
+  try {
+    await window.playbound.play(slug);
+    setLibraryMsg("Launched.");
+  } catch (err) {
+    setLibraryMsg(err.message || String(err), true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function createShortcut(slug) {
+  if (busy) return;
+  setBusy(true);
+  try {
+    const result = await window.playbound.createShortcut(slug);
+    setLibraryMsg(`Desktop shortcut created for ${result.title}.`);
+  } catch (err) {
+    setLibraryMsg(err.message || String(err), true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function openGameFolder(dir) {
+  if (!dir) {
+    setLibraryMsg("Install folder not found.", true);
+    return;
+  }
+  try {
+    await window.playbound.openFolder(dir);
+  } catch (err) {
+    setLibraryMsg(err.message || String(err), true);
+  }
+}
+
+async function uninstallFromLibrary(game) {
+  if (busy) return;
+  if (!confirm(`Uninstall ${game.title}? This deletes the install folder.`)) return;
+  setBusy(true);
+  setLibraryMsg("Uninstalling…");
+  try {
+    await window.playbound.uninstall(game.slug);
+    setLibraryMsg(`Uninstalled ${game.title}.`);
+    await loadLibrary();
+  } catch (err) {
+    setLibraryMsg(err.message || String(err), true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function runCreateShortcut() {
+  if (!ctx?.entry || busy) return;
+  setBusy(true);
+  try {
+    const result = await window.playbound.createShortcut(ctx.entry.slug);
+    setStatus(`Desktop shortcut created: ${result.title}`);
+  } catch (err) {
+    setStatus(err.message || String(err), true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function goBackToLibrary() {
+  autoKey = null;
+  await window.playbound.clearContext();
+  showLibrary();
+}
+
+btnBackLibrary.addEventListener("click", () => void goBackToLibrary());
+btnBrowseSite.addEventListener("click", () => {
+  void window.playbound.openExternal("https://playbound.club/discover");
+});
 
 async function runInstall() {
   if (!ctx?.entry || busy) return;
@@ -150,7 +283,7 @@ async function runInstall() {
     } else if (result.status === "installer-opened") {
       setStatus("Installer opened — finish setup in the wizard, then you can play.");
     } else if (result.status === "installed") {
-      setStatus(`Installed ${result.version}. Ready to play.`);
+      setStatus(`Installed ${result.version}. Ready to play — or create a desktop shortcut.`);
       ctx.installed = true;
       ctx.installedPath = result.dir;
       ctx.action = "play";
@@ -249,17 +382,17 @@ function renderActions() {
 
   if (ctx?.action === "install-mod") {
     if (ctx.modError) {
-      actionsEl.append(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+      actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
       return;
     }
     if (!ctx.mod) {
-      actionsEl.append(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+      actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
       return;
     }
     if (ctx.mod.downloadKind === "external") {
       actionsEl.append(
         makeButton("Open mod page", "btn-install", () => runInstallMod()),
-        makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+        makeButton("Back to library", "btn-site", () => void goBackToLibrary())
       );
       return;
     }
@@ -273,13 +406,13 @@ function renderActions() {
       }
       actionsEl.append(
         makeButton("Install mod here", "btn-play", () => runInstallMod()),
-        makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+        makeButton("Back to library", "btn-site", () => void goBackToLibrary())
       );
       return;
     }
     actionsEl.append(
       makeButton(ctx.installed ? "Reinstall mod" : "Install mod", "btn-install", () => runInstallMod()),
-      makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+      makeButton("Back to library", "btn-site", () => void goBackToLibrary())
     );
     return;
   }
@@ -290,7 +423,7 @@ function renderActions() {
   if (entry.kind === "external") {
     actionsEl.append(
       makeButton("Open official site", "btn-install", () => runInstall()),
-      makeButton("Close", "btn-site", () => window.playbound.closeWindow())
+      makeButton("Back to library", "btn-site", () => void goBackToLibrary())
     );
     return;
   }
@@ -303,18 +436,21 @@ function renderActions() {
     } else {
       actionsEl.append(makeButton("Play", "btn-play", () => runPlay()));
     }
-    actionsEl.append(makeButton("Uninstall", "btn-remove", () => runUninstall()));
+    actionsEl.append(
+      makeButton("Create shortcut", "btn-site", () => void runCreateShortcut()),
+      makeButton("Uninstall", "btn-remove", () => runUninstall())
+    );
   } else {
     actionsEl.append(makeButton("Install", "btn-install", () => runInstall()));
   }
 
-  actionsEl.append(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+  actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
 }
 
 function applyContext(next) {
   ctx = next;
   if (!ctx) {
-    showEmpty();
+    showLibrary();
     return;
   }
 
@@ -337,7 +473,7 @@ function applyContext(next) {
       tileEl.style.background = "#2a2733";
       pathRowEl.classList.add("hidden");
       setStatus("Fetching mod from playbound.club…");
-      actionsEl.replaceChildren(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+      actionsEl.replaceChildren(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
       return;
     }
 
@@ -376,7 +512,7 @@ function applyContext(next) {
     tileEl.style.background = "#2a2733";
     pathRowEl.classList.add("hidden");
     setStatus("Unknown game slug.", true);
-    actionsEl.replaceChildren(makeButton("Close", "btn-site", () => window.playbound.closeWindow()));
+    actionsEl.replaceChildren(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
     return;
   }
 
@@ -407,7 +543,7 @@ function applyContext(next) {
     if (entry.kind === "external") {
       runInstall();
     } else if (ctx.installed) {
-      setStatus("Already installed — choose Play or Uninstall.");
+      setStatus("Already installed — choose Play or create a shortcut.");
       ctx.action = "play";
       renderActions();
     } else {
@@ -463,7 +599,5 @@ btnChoose.addEventListener("click", async () => {
     installPathEl.textContent = targetDir;
   }
 });
-
-btnCloseEmpty.addEventListener("click", () => window.playbound.closeWindow());
 
 window.playbound.getContext().then((data) => applyContext(data));

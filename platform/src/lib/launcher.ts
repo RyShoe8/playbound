@@ -44,3 +44,8 @@ export function launcherAuthUrl(): string {
 export function launcherLinkUrl(token: string): string {
   return `playbound://link?token=${encodeURIComponent(token)}`;
 }
+
+/** Launch an installed game via the PlayBound Launcher. */
+export function launcherPlayUrl(slug: string): string {
+  return `playbound://play/${slug}`;
+}
