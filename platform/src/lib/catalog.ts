@@ -1,7 +1,9 @@
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import type { Game, Genre, LaunchMethod } from "@/lib/data/types";
+import type { LauncherInstall } from "@/lib/launcherInstall";
 import { games as seedGames } from "@/lib/data/games";
+import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { developers, developersBySlug, collections, collectionsBySlug } from "@/lib/data";
 
 export type { Game } from "@/lib/data/types";
@@ -9,8 +11,18 @@ export { developers, developersBySlug, collections, collectionsBySlug };
 
 type LeanGame = Record<string, unknown>;
 
+function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
+  const fromDoc = doc?.launcherInstall as LauncherInstall | null | undefined;
+  if (fromDoc?.kind) {
+    return { ...game, launcherInstall: fromDoc };
+  }
+  const seed = launcherInstallBySlug[game.slug];
+  if (seed) return { ...game, launcherInstall: seed };
+  return game;
+}
+
 function toGame(doc: LeanGame): Game {
-  return {
+  const base: Game = {
     slug: String(doc.slug),
     title: String(doc.title),
     tagline: String(doc.tagline),
@@ -35,6 +47,11 @@ function toGame(doc: LeanGame): Game {
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     systemRequirements: doc.systemRequirements as Game["systemRequirements"],
   };
+  return attachLauncherInstall(base, doc);
+}
+
+function seedGameWithInstall(g: Game): Game {
+  return attachLauncherInstall(g);
 }
 
 async function mongoHasCatalog(): Promise<boolean> {
@@ -62,7 +79,7 @@ export async function listGames(): Promise<Game[]> {
   if (await mongoHasCatalog()) {
     return fromMongo({ published: true });
   }
-  return seedGames;
+  return seedGames.map(seedGameWithInstall);
 }
 
 /** All games including drafts (admin). */
@@ -71,7 +88,7 @@ export async function listAllGames(): Promise<(Game & { published: boolean; upda
     await dbConnect();
     const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
     if (docs.length === 0) {
-      return seedGames.map((g) => ({ ...g, published: true }));
+      return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true }));
     }
     return docs.map((d) => ({
       ...toGame(d as LeanGame),
@@ -79,7 +96,7 @@ export async function listAllGames(): Promise<(Game & { published: boolean; upda
       updatedAt: (d as { updatedAt?: Date }).updatedAt?.toISOString(),
     }));
   } catch {
-    return seedGames.map((g) => ({ ...g, published: true }));
+    return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true }));
   }
 }
 
@@ -97,7 +114,8 @@ export async function getGame(
   } catch (err) {
     console.error("[catalog] getGame failed:", err);
   }
-  return seedGames.find((g) => g.slug === slug);
+  const seed = seedGames.find((g) => g.slug === slug);
+  return seed ? seedGameWithInstall(seed) : undefined;
 }
 
 /**
@@ -108,7 +126,8 @@ export async function getGame(
 export async function resolveGameForSync(slug: string): Promise<Game | undefined> {
   const fromCms = await getGame(slug, { includeUnpublished: true });
   if (fromCms) return fromCms;
-  return seedGames.find((g) => g.slug === slug);
+  const seed = seedGames.find((g) => g.slug === slug);
+  return seed ? seedGameWithInstall(seed) : undefined;
 }
 
 export async function gamesFor(slugs: string[]): Promise<Game[]> {

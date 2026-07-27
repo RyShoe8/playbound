@@ -144,12 +144,12 @@ export default async function LibraryPage({
               Browse Discover
             </Link>
             {!launcherConnected && (
-              <Link
-                href="/launcher"
+              <a
+                href={process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher"}
                 className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
               >
-                Get the Launcher
-              </Link>
+                Download the Launcher
+              </a>
             )}
           </div>
         </div>

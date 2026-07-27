@@ -147,7 +147,8 @@ export default async function AdminPage() {
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <CalendarDays className="size-3.5" /> Catalog text and metadata publish from Admin without a code deploy.
         Cover files can still live under <code className="rounded bg-secondary px-1 py-0.5">public/games</code> or as
-        absolute URLs. One-click launcher installs still need a desktop catalog entry.
+        absolute URLs. Launcher install recipes are edited on each game (Admin) and sync to the desktop
+        app via API — no launcher rebuild needed for new titles.
       </p>
     </div>
   );

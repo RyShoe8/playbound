@@ -1,21 +1,30 @@
 /**
- * Games the desktop launcher can one-click install (non-external catalog entries).
- * Keep in sync with launcher/catalog.js kinds: github-zip | github-installer | direct-zip.
+ * Deep links and installability for the PlayBound Launcher.
  */
-export const ONE_CLICK_SLUGS = [
-  "openra",
-  "endless-sky",
-  "warzone-2100",
-  "supertuxkart",
-  "luanti",
-  "xonotic",
-  "naev",
-] as const;
+import type { Game } from "@/lib/data/types";
+import { isPcInstallCandidate, type LauncherInstall } from "@/lib/launcherInstall";
+import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
+import { isBrowserGame } from "@/lib/gameLaunch";
 
-export type OneClickSlug = (typeof ONE_CLICK_SLUGS)[number];
+export function resolveLauncherInstall(game: Pick<Game, "slug" | "launcherInstall" | "website">): LauncherInstall | null {
+  if (game.launcherInstall?.kind) return game.launcherInstall;
+  return launcherInstallBySlug[game.slug] ?? null;
+}
 
-export function isOneClickSlug(slug: string): slug is OneClickSlug {
-  return (ONE_CLICK_SLUGS as readonly string[]).includes(slug);
+/** True when the site should show Install with PlayBound Launcher. */
+export function isLauncherInstallable(
+  game: Pick<Game, "slug" | "platforms" | "launchMethods" | "browserPlayable" | "launcherInstall" | "website">
+): boolean {
+  if (isBrowserGame(game)) return false;
+  if (!isPcInstallCandidate(game)) return false;
+  const recipe = resolveLauncherInstall(game);
+  return Boolean(recipe?.enabled && recipe.kind);
+}
+
+/** @deprecated Prefer isLauncherInstallable(game). Kept for callers that only have a slug. */
+export function isOneClickSlug(slug: string): boolean {
+  const seed = launcherInstallBySlug[slug];
+  return Boolean(seed?.enabled && seed.kind);
 }
 
 /** Deep link that hands off to the installed PlayBound Launcher. */

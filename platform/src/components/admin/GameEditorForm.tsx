@@ -6,12 +6,15 @@ import {
   FEATURES,
   GENRES,
   LAUNCH_METHODS,
+  LAUNCHER_KINDS,
   PLATFORMS,
   TAGS,
   defaultArtFor,
   slugifyTitle,
   type GamePayload,
 } from "@/lib/gamePayload";
+import { defaultLauncherInstallForWebsite, isPcInstallCandidate } from "@/lib/launcherInstall";
+import type { LauncherInstallKind } from "@/lib/launcherInstall";
 
 type DevOption = { slug: string; name: string };
 
@@ -65,6 +68,25 @@ export function GameEditorForm({
   const featureSet = useMemo(() => new Set(form.features), [form.features]);
   const tagSet = useMemo(() => new Set(form.tags), [form.tags]);
   const extraTags = form.tags.filter((t) => !(TAGS as readonly string[]).includes(t));
+  const showLauncher = isPcInstallCandidate(form);
+
+  function patchLauncher(partial: Partial<NonNullable<GamePayload["launcherInstall"]>>) {
+    setForm((prev) => {
+      const base =
+        prev.launcherInstall ??
+        defaultLauncherInstallForWebsite(prev.website || "https://example.com");
+      return { ...prev, launcherInstall: { ...base, ...partial } };
+    });
+  }
+
+  useEffect(() => {
+    if (!showLauncher) return;
+    if (form.launcherInstall?.kind) return;
+    setForm((prev) => ({
+      ...prev,
+      launcherInstall: defaultLauncherInstallForWebsite(prev.website || "https://example.com"),
+    }));
+  }, [showLauncher, form.launcherInstall?.kind, form.website]);
 
   useEffect(() => {
     fetch("/api/admin/games/capture")
@@ -601,6 +623,146 @@ export function GameEditorForm({
             />
           </div>
         </div>
+
+        {showLauncher && (
+          <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-bold">Launcher install (Windows)</p>
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  checked={form.launcherInstall?.enabled !== false}
+                  onChange={(e) => patchLauncher({ enabled: e.target.checked })}
+                />
+                Enabled
+              </label>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Syncs to the desktop app via API. New PC games default to opening the official site until
+              you set a real install recipe.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={label}>Install kind</label>
+                <select
+                  value={form.launcherInstall?.kind ?? "external"}
+                  onChange={(e) =>
+                    patchLauncher({ kind: e.target.value as LauncherInstallKind })
+                  }
+                  className={field}
+                >
+                  {LAUNCHER_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {k}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={label}>Note (optional)</label>
+                <input
+                  value={form.launcherInstall?.note ?? ""}
+                  onChange={(e) => patchLauncher({ note: e.target.value || null })}
+                  className={field}
+                />
+              </div>
+            </div>
+            {(form.launcherInstall?.kind === "github-zip" ||
+              form.launcherInstall?.kind === "github-installer" ||
+              form.launcherInstall?.kind === "github-jar") && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={label}>GitHub repo (owner/repo)</label>
+                  <input
+                    value={form.launcherInstall?.repo ?? form.githubRepo ?? ""}
+                    onChange={(e) => patchLauncher({ repo: e.target.value || null })}
+                    placeholder={form.githubRepo || "owner/repo"}
+                    className={field}
+                  />
+                </div>
+                <div>
+                  <label className={label}>Asset pattern (regex)</label>
+                  <input
+                    value={form.launcherInstall?.assetPattern ?? ""}
+                    onChange={(e) => patchLauncher({ assetPattern: e.target.value || null })}
+                    placeholder="win64.*\\.zip$"
+                    className={field}
+                  />
+                </div>
+              </div>
+            )}
+            {(form.launcherInstall?.kind === "direct-zip" ||
+              form.launcherInstall?.kind === "direct-installer" ||
+              form.launcherInstall?.kind === "direct-exe" ||
+              form.launcherInstall?.kind === "external") && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={label}>Download URL</label>
+                  <input
+                    value={form.launcherInstall?.url ?? ""}
+                    onChange={(e) => patchLauncher({ url: e.target.value || null })}
+                    className={field}
+                  />
+                </div>
+                <div>
+                  <label className={label}>File name (optional)</label>
+                  <input
+                    value={form.launcherInstall?.fileName ?? ""}
+                    onChange={(e) => patchLauncher({ fileName: e.target.value || null })}
+                    placeholder="setup.exe"
+                    className={field}
+                  />
+                </div>
+              </div>
+            )}
+            {(form.launcherInstall?.kind === "github-zip" ||
+              form.launcherInstall?.kind === "direct-zip" ||
+              form.launcherInstall?.kind === "openttd-zip") && (
+              <div>
+                <label className={label}>Exe hint (optional regex)</label>
+                <input
+                  value={form.launcherInstall?.exeHint ?? ""}
+                  onChange={(e) => patchLauncher({ exeHint: e.target.value || null })}
+                  className={field}
+                />
+              </div>
+            )}
+            <div>
+              <label className={label}>Known exe paths (one per line, optional)</label>
+              <textarea
+                value={(form.launcherInstall?.knownExePaths ?? []).join("\n")}
+                onChange={(e) =>
+                  patchLauncher({
+                    knownExePaths: e.target.value
+                      .split("\n")
+                      .map((l) => l.trim())
+                      .filter(Boolean),
+                  })
+                }
+                rows={3}
+                className={area}
+                placeholder="%LOCALAPPDATA%\Programs\MyGame\game.exe"
+              />
+            </div>
+            <div>
+              <label className={label}>Connect args (one per line, optional)</label>
+              <textarea
+                value={(form.launcherInstall?.connectArgs ?? []).join("\n")}
+                onChange={(e) =>
+                  patchLauncher({
+                    connectArgs: e.target.value
+                      .split("\n")
+                      .map((l) => l.trim())
+                      .filter(Boolean),
+                  })
+                }
+                rows={2}
+                className={area}
+                placeholder="+connect {host}:{port}"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-4 text-sm">
           {(

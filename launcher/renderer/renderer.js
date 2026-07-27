@@ -282,11 +282,16 @@ async function runInstall() {
     if (result.status === "external") {
       setStatus("Opened the official download page.");
     } else if (result.status === "installer-opened") {
-      setStatus("Installer opened — finish setup in the wizard, then you can play.");
+      setStatus(
+        "Installer opened — finish setup in the wizard, then click Locate executable if Play is not available yet."
+      );
+      ctx.installerOpened = true;
+      renderActions();
     } else if (result.status === "installed") {
       setStatus(`Installed ${result.version}. Ready to play — or create a desktop shortcut.`);
       ctx.installed = true;
       ctx.installedPath = result.dir;
+      ctx.installerOpened = false;
       ctx.action = "play";
       renderActions();
     }
@@ -295,6 +300,29 @@ async function runInstall() {
   } finally {
     setBusy(false);
     setProgress(null);
+  }
+}
+
+async function runLocate() {
+  if (!ctx?.entry || busy) return;
+  setBusy(true);
+  setStatus("Looking for the game…");
+  try {
+    const result = await window.playbound.locateExe(ctx.entry.slug);
+    if (result.status === "cancelled") {
+      setStatus("Locate cancelled.");
+    } else if (result.status === "installed") {
+      setStatus("Found it — ready to play.");
+      ctx.installed = true;
+      ctx.installedPath = result.dir;
+      ctx.installerOpened = false;
+      ctx.action = "play";
+      renderActions();
+    }
+  } catch (err) {
+    setStatus(err.message || String(err), true);
+  } finally {
+    setBusy(false);
   }
 }
 
@@ -443,6 +471,13 @@ function renderActions() {
     );
   } else {
     actionsEl.append(makeButton("Install", "btn-install", () => runInstall()));
+    if (
+      ctx.installerOpened ||
+      entry.kind === "github-installer" ||
+      entry.kind === "direct-installer"
+    ) {
+      actionsEl.append(makeButton("Locate executable", "btn-site", () => void runLocate()));
+    }
   }
 
   actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
@@ -527,7 +562,12 @@ function applyContext(next) {
   tileEl.textContent = entry.title.charAt(0);
   tileEl.style.background = `linear-gradient(135deg, ${entry.art[0]}, ${entry.art[1]})`;
 
-  const showPath = entry.kind === "github-zip" || entry.kind === "direct-zip";
+  const showPath =
+    entry.kind === "github-zip" ||
+    entry.kind === "direct-zip" ||
+    entry.kind === "openttd-zip" ||
+    entry.kind === "direct-exe" ||
+    entry.kind === "github-jar";
   pathRowEl.classList.toggle("hidden", !showPath);
   targetDir = ctx.installedPath || ctx.defaultDir;
   installPathEl.textContent = targetDir;

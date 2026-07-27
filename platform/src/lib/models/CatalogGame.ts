@@ -17,6 +17,36 @@ const SystemRequirementsSchema = new Schema(
   { _id: false }
 );
 
+const LauncherInstallSchema = new Schema(
+  {
+    enabled: { type: Boolean, default: true },
+    kind: {
+      type: String,
+      enum: [
+        "github-zip",
+        "github-installer",
+        "github-jar",
+        "direct-zip",
+        "direct-installer",
+        "direct-exe",
+        "openttd-zip",
+        "external",
+      ],
+      required: true,
+    },
+    repo: { type: String, default: null },
+    assetPattern: { type: String, default: null },
+    exeHint: { type: String, default: null },
+    url: { type: String, default: null },
+    fileName: { type: String, default: null },
+    versionLabel: { type: String, default: null },
+    knownExePaths: { type: [String], default: [] },
+    connectArgs: { type: [String], default: [] },
+    note: { type: String, default: null },
+  },
+  { _id: false }
+);
+
 const CatalogGameSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, index: true },
@@ -43,6 +73,7 @@ const CatalogGameSchema = new Schema(
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },
     systemRequirements: { type: SystemRequirementsSchema, required: true },
+    launcherInstall: { type: LauncherInstallSchema, default: null },
     published: { type: Boolean, default: true, index: true },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },

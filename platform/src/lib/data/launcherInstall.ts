@@ -1,0 +1,157 @@
+import type { LauncherInstall } from "@/lib/launcherInstall";
+
+/**
+ * Seed recipes mirrored from launcher/catalog.js.
+ * Used by seed:launcher-install and as fallback when Mongo has no recipe yet.
+ */
+export const launcherInstallBySlug: Record<string, LauncherInstall> = {
+  openra: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "OpenRA/OpenRA",
+    assetPattern: "x64-winportable\\.zip$",
+    exeHint: "RedAlert|OpenRA",
+    connectArgs: ["Game.Connect={host}:{port}"],
+  },
+  "endless-sky": {
+    enabled: true,
+    kind: "github-zip",
+    repo: "endless-sky/endless-sky",
+    assetPattern: "^EndlessSky-win64-.*\\.zip$",
+    exeHint: "EndlessSky",
+  },
+  "warzone-2100": {
+    enabled: true,
+    kind: "github-zip",
+    repo: "Warzone2100/warzone2100",
+    assetPattern: "win_x64_archive\\.zip$",
+    exeHint: "warzone2100",
+  },
+  supertuxkart: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "supertuxkart/stk-code",
+    assetPattern: "-win\\.zip$",
+    exeHint: "supertuxkart",
+  },
+  luanti: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "luanti-org/luanti",
+    assetPattern: "-win64\\.zip$",
+    exeHint: "luanti|minetest",
+    connectArgs: ["--go", "--address", "{host}", "--port", "{port}"],
+  },
+  naev: {
+    enabled: true,
+    kind: "github-installer",
+    repo: "naev/naev",
+    assetPattern: "win64\\.exe$",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\naev\\naev.exe",
+      "%PROGRAMFILES%\\naev\\naev.exe",
+    ],
+  },
+  xonotic: {
+    enabled: true,
+    kind: "direct-zip",
+    url: "https://dl.xonotic.org/xonotic-0.8.6.zip",
+    exeHint: "xonotic.*x64|xonotic",
+    connectArgs: ["+connect", "{host}:{port}"],
+  },
+  mindustry: {
+    enabled: true,
+    kind: "github-jar",
+    repo: "Anuken/Mindustry",
+    assetPattern: "^Mindustry\\.jar$",
+    note: "Requires Java 17+ (Adoptium Temurin).",
+  },
+  "battle-for-wesnoth": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://sourceforge.net/projects/wesnoth/files/wesnoth-1.18/wesnoth-1.18.7/wesnoth-1.18.7-win64.exe/download",
+    fileName: "wesnoth-1.18.7-win64.exe",
+    versionLabel: "1.18.7",
+    knownExePaths: [
+      "%PROGRAMFILES%\\Battle for Wesnoth 1.18\\wesnoth.exe",
+      "%PROGRAMFILES(X86)%\\Battle for Wesnoth 1.18\\wesnoth.exe",
+    ],
+  },
+  "0ad": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://downloads.sourceforge.net/project/zero-ad/releases/0ad-0.28.0-win64.exe",
+    fileName: "0ad-0.28.0-win64.exe",
+    versionLabel: "0.28.0",
+    knownExePaths: [
+      "%PROGRAMFILES%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
+      "%PROGRAMFILES(X86)%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
+    ],
+  },
+  veloren: {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://gitlab.com/veloren/airshipper/-/releases/v0.17.0/downloads/binaries/windows-installer-x86_64",
+    fileName: "airshipper-installer.exe",
+    versionLabel: "0.17.0",
+    note: "Installs Airshipper, which downloads and updates Veloren.",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\Airshipper\\airshipper.exe",
+      "%LOCALAPPDATA%\\airshipper\\airshipper.exe",
+    ],
+  },
+  openttd: {
+    enabled: true,
+    kind: "openttd-zip",
+    exeHint: "openttd",
+  },
+  "beyond-all-reason": {
+    enabled: true,
+    kind: "github-installer",
+    repo: "beyond-all-reason/BYAR-Chobby",
+    assetPattern: "Beyond-All-Reason-.*\\.exe$",
+    note: "Opens the BAR launcher — click Update, then Start.",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\Beyond-All-Reason\\Beyond All Reason.exe",
+      "%LOCALAPPDATA%\\Programs\\Beyond All Reason\\Beyond All Reason.exe",
+    ],
+  },
+  "shattered-pixel-dungeon": {
+    enabled: true,
+    kind: "github-zip",
+    repo: "00-Evan/shattered-pixel-dungeon",
+    assetPattern: "Windows\\.zip$",
+    exeHint: "ShatteredPD|Shattered",
+  },
+  supertux: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "SuperTux/supertux",
+    assetPattern: "win64-portable\\.zip$",
+    exeHint: "supertux",
+  },
+  "zero-k": {
+    enabled: true,
+    kind: "direct-exe",
+    url: "https://zero-k.info/lobby/Zero-K.exe",
+    note: "Downloads the Zero-K lobby, which fetches the game on first run.",
+  },
+  hedgewars: {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://www.hedgewars.org/download/releases/Hedgewars-1.0.0.exe",
+    knownExePaths: [
+      "%PROGRAMFILES%\\Hedgewars\\hedgewars.exe",
+      "%PROGRAMFILES(X86)%\\Hedgewars\\hedgewars.exe",
+    ],
+  },
+  unvanquished: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "Unvanquished/updater",
+    assetPattern: "UnvUpdaterWin\\.zip$",
+    exeHint: "UnvanquishedUpdater|updater",
+    note: "Installs the Unvanquished updater, which downloads the game.",
+    connectArgs: ["+connect", "{host}:{port}"],
+  },
+};

@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
-import { gamePayloadSchema, withDefaultArt } from "@/lib/gamePayload";
+import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 export async function PATCH(
@@ -15,7 +15,7 @@ export async function PATCH(
     if (error) return error;
 
     const { slug } = await params;
-    const body = withDefaultArt(gamePayloadSchema.parse(await req.json()));
+    const body = withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(await req.json())));
     await dbConnect();
 
     if (body.slug !== slug) {
@@ -43,6 +43,7 @@ export async function PATCH(
           githubRepo: body.githubRepo || null,
           coverImage: body.coverImage || null,
           screenshots: body.screenshots ?? [],
+          launcherInstall: body.launcherInstall || null,
           developerName,
           submissionId: body.submissionId || null,
           managedBy: body.managedBy || "admin",

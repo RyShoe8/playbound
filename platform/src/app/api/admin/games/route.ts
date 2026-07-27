@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
-import { gamePayloadSchema, withDefaultArt } from "@/lib/gamePayload";
+import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { listAllGames } from "@/lib/catalog";
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const { error } = await requireAdminSession();
     if (error) return error;
 
-    const body = withDefaultArt(gamePayloadSchema.parse(await req.json()));
+    const body = withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(await req.json())));
     await dbConnect();
 
     const exists = await CatalogGame.findOne({ slug: body.slug }).lean();
@@ -39,6 +39,7 @@ export async function POST(req: Request) {
       githubRepo: body.githubRepo || null,
       coverImage: body.coverImage || null,
       screenshots: body.screenshots ?? [],
+      launcherInstall: body.launcherInstall || null,
       developerName,
       submissionId: body.submissionId || null,
       managedBy: body.managedBy || "admin",

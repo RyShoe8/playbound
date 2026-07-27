@@ -1,5 +1,11 @@
 import { z } from "zod";
 import type { Genre } from "@/lib/data/types";
+import {
+  LAUNCHER_INSTALL_KINDS,
+  defaultLauncherInstallForWebsite,
+  isPcInstallCandidate,
+  type LauncherInstall,
+} from "@/lib/launcherInstall";
 
 export const GENRES = [
   "Strategy",
@@ -46,6 +52,52 @@ export const FEATURES = [
   "Procedural Worlds",
   "Team Play",
 ] as const;
+
+export const LAUNCHER_KINDS = LAUNCHER_INSTALL_KINDS;
+
+const optionalTrimmed = z
+  .union([z.string().trim().max(500), z.literal(""), z.null()])
+  .optional()
+  .transform((v) => (!v ? null : v));
+
+export const launcherInstallSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    kind: z.enum(LAUNCHER_INSTALL_KINDS),
+    repo: optionalTrimmed,
+    assetPattern: optionalTrimmed,
+    exeHint: optionalTrimmed,
+    url: optionalTrimmed,
+    fileName: optionalTrimmed,
+    versionLabel: optionalTrimmed,
+    knownExePaths: z.array(z.string().trim().min(1).max(400)).max(20).default([]),
+    connectArgs: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
+    note: optionalTrimmed,
+  })
+  .superRefine((val, ctx) => {
+    if (!val.enabled) return;
+    if (val.kind === "github-zip" || val.kind === "github-installer" || val.kind === "github-jar") {
+      if (!val.repo) {
+        ctx.addIssue({ code: "custom", message: "GitHub install kinds need owner/repo", path: ["repo"] });
+      }
+      if (!val.assetPattern) {
+        ctx.addIssue({
+          code: "custom",
+          message: "GitHub install kinds need an assetPattern",
+          path: ["assetPattern"],
+        });
+      }
+    }
+    if (
+      (val.kind === "direct-zip" ||
+        val.kind === "direct-installer" ||
+        val.kind === "direct-exe" ||
+        val.kind === "external") &&
+      !val.url
+    ) {
+      ctx.addIssue({ code: "custom", message: "This install kind needs a URL", path: ["url"] });
+    }
+  });
 
 export const TAGS = [
   "2D",
@@ -145,6 +197,7 @@ export const gamePayloadSchema = z.object({
     min: z.string().trim().min(1).max(500),
     recommended: z.string().trim().min(1).max(500),
   }),
+  launcherInstall: launcherInstallSchema.optional().nullable(),
   published: z.boolean().default(false),
   submissionId: z.string().optional().nullable(),
   managedBy: z.enum(["admin", "developer"]).default("admin"),
@@ -160,6 +213,29 @@ export function withDefaultArt(payload: GamePayload): GamePayload & { art: NonNu
   return {
     ...payload,
     art: payload.art ?? defaultArtFor(payload.genres as Genre[], payload.slug),
+  };
+}
+
+/** Ensure PC installable games always get a launcherInstall recipe. */
+export function withDefaultLauncherInstall(
+  payload: GamePayload
+): GamePayload & { launcherInstall: LauncherInstall | null } {
+  if (!isPcInstallCandidate(payload)) {
+    return { ...payload, launcherInstall: payload.launcherInstall ?? null };
+  }
+  if (payload.launcherInstall?.kind) {
+    const li = { ...payload.launcherInstall };
+    if ((li.kind === "github-zip" || li.kind === "github-installer" || li.kind === "github-jar") && !li.repo) {
+      li.repo = payload.githubRepo || null;
+    }
+    if (li.kind === "external" && !li.url) {
+      li.url = payload.website;
+    }
+    return { ...payload, launcherInstall: li };
+  }
+  return {
+    ...payload,
+    launcherInstall: defaultLauncherInstallForWebsite(payload.website),
   };
 }
 
@@ -199,6 +275,7 @@ export const emptyGameDraft = (): GamePayload => ({
     min: "See official site",
     recommended: "See official site",
   },
+  launcherInstall: defaultLauncherInstallForWebsite("https://example.com"),
   published: false,
   submissionId: null,
   managedBy: "admin",

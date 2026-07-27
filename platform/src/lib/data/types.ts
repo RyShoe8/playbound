@@ -1,3 +1,5 @@
+import type { LauncherInstall } from "@/lib/launcherInstall";
+
 export type LaunchMethod = "browser" | "install" | "server";
 
 export type Genre =
@@ -58,6 +60,8 @@ export interface Game {
   /** Local or absolute screenshot URLs for the Media tab */
   screenshots?: string[];
   systemRequirements: { min: string; recommended: string };
+  /** Desktop launcher install recipe (CMS / seed). */
+  launcherInstall?: LauncherInstall;
 }
 
 export interface Developer {
