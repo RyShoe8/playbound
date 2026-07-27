@@ -17,6 +17,9 @@ const DEFAULT_API_BASE = "https://playbound.club";
 let win = null;
 /** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
 let context = null;
+/** Background poll after opening a Windows installer wizard */
+let installerPollTimer = null;
+let installerPollSlug = null;
 
 /* ── protocol registration ─────────────────────────────────── */
 /* Lets website links like playbound://install/openra hand off to this app. */
@@ -362,6 +365,9 @@ async function fetchModInstall(slug) {
 async function loadModIntoContext(slug) {
   try {
     const install = await fetchModInstall(slug);
+    if (install.baseGameSlug) {
+      await ensureCatalogEntry(install.baseGameSlug);
+    }
     if (context?.action === "install-mod" && context.slug === slug) {
       context = { ...context, mod: install, modError: null };
       pushContext();
@@ -574,7 +580,9 @@ async function resolveDownload(entry) {
 async function resolveModDownload(install) {
   if (install.downloadKind === "direct-zip") {
     if (!install.url) throw new Error("Mod has no direct download URL");
-    return { url: install.url, name: path.basename(new URL(install.url).pathname) || "mod.zip", version: "fixed" };
+    let name = path.basename(new URL(install.url).pathname) || "mod.zip";
+    if (!/\.(zip|jar)$/i.test(name)) name = `${install.slug || "mod"}.zip`;
+    return { url: install.url, name, version: "fixed" };
   }
   if (install.downloadKind !== "github-zip") {
     throw new Error(`Unsupported mod download kind: ${install.downloadKind}`);
@@ -679,6 +687,144 @@ function findKnownExecutable(entry) {
   return null;
 }
 
+/** Game/content root for mods — prefer installRoot, else walk up from binaries/system. */
+function resolveInstallDir(entry, exePath) {
+  if (entry?.installRoot) {
+    const root = expandWinPath(entry.installRoot);
+    if (root && fs.existsSync(root)) return root;
+  }
+  const dir = path.dirname(exePath);
+  if (/binaries[/\\]system$/i.test(dir)) {
+    return path.resolve(dir, "..", "..");
+  }
+  return dir;
+}
+
+function notifyInstallDetected(slug) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-detected", { slug });
+  }
+  if (
+    context?.slug === slug ||
+    context?.mod?.baseGameSlug === slug ||
+    (context?.action === "install-mod" && context?.baseGameSlug === slug)
+  ) {
+    pushContext();
+  }
+  void maybeResumePendingMod(slug);
+}
+
+function markInstalledFromExe(slug, entry, exe, version) {
+  const dir = resolveInstallDir(entry, exe);
+  markInstalled(slug, { version, exe, dir });
+  notifyInstallDetected(slug);
+  return { status: "installed", version, exe, dir };
+}
+
+function stopInstallerPoll() {
+  if (installerPollTimer) {
+    clearInterval(installerPollTimer);
+    installerPollTimer = null;
+    installerPollSlug = null;
+  }
+}
+
+function startInstallerPoll(slug, entry, version) {
+  stopInstallerPoll();
+  installerPollSlug = slug;
+  const started = Date.now();
+  const maxMs = 10 * 60 * 1000;
+  installerPollTimer = setInterval(() => {
+    if (Date.now() - started > maxMs) {
+      stopInstallerPoll();
+      return;
+    }
+    const known = findKnownExecutable(entry);
+    if (!known) return;
+    stopInstallerPoll();
+    markInstalledFromExe(slug, entry, known, version || "located");
+  }, 3000);
+}
+
+/** One-shot: pick up games already installed via knownExePaths but missing from state. */
+function scanKnownInstalls() {
+  const state = loadState();
+  let found = 0;
+  for (const entry of catalog) {
+    if (!entry?.slug || !entry.knownExePaths?.length) continue;
+    const existing = state[entry.slug];
+    if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    const known = findKnownExecutable(entry);
+    if (!known) continue;
+    markInstalled(entry.slug, {
+      version: existing?.version || "detected",
+      exe: known,
+      dir: resolveInstallDir(entry, known),
+    });
+    found += 1;
+  }
+  if (found > 0 && win && !win.isDestroyed()) {
+    win.webContents.send("install-detected", { slug: null, scanned: found });
+  }
+  return found;
+}
+
+function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride) {
+  const appData = process.env.APPDATA || "";
+  if (baseGameSlug === "mindustry") {
+    return path.join(appData, "Mindustry", "mods");
+  }
+  if (baseGameSlug === "0ad") {
+    return path.join(appData, "0ad", "mods");
+  }
+
+  let baseDir = baseDirOverride || null;
+  if (!baseDir) {
+    const state = loadState();
+    const info = state[baseGameSlug];
+    if (info?.dir && fs.existsSync(info.dir)) baseDir = info.dir;
+  }
+  if (!baseDir) return null;
+  const rel = String(installRelativePath || "").replace(/^[/\\]+|[/\\]+$/g, "");
+  return rel ? path.join(baseDir, ...rel.split(/[/\\]+/)) : baseDir;
+}
+
+function isBaseGameReady(baseGameSlug) {
+  const state = loadState();
+  const info = state[baseGameSlug];
+  return Boolean(info?.exe && fs.existsSync(info.exe));
+}
+
+async function maybeResumePendingMod(justInstalledBaseSlug) {
+  const settings = loadSettings();
+  const pending = settings.pendingModSlug;
+  if (!pending) return;
+  try {
+    const install = await fetchModInstall(pending);
+    if (justInstalledBaseSlug && install.baseGameSlug !== justInstalledBaseSlug) return;
+    if (!isBaseGameReady(install.baseGameSlug) && !["mindustry", "0ad"].includes(install.baseGameSlug)) {
+      return;
+    }
+    delete settings.pendingModSlug;
+    saveSettings(settings);
+    context = { action: "install-mod", slug: pending, mod: install };
+    pushContext();
+    const result = await placeModFiles(pending, install, null);
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("mod-install-finished", { slug: pending, result });
+    }
+    pushContext();
+  } catch (err) {
+    console.warn("Pending mod resume failed:", err?.message || err);
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("mod-install-finished", {
+        slug: pending,
+        error: err?.message || String(err),
+      });
+    }
+  }
+}
+
 function markInstalled(slug, { version, exe, dir }) {
   const state = loadState();
   state[slug] = { version, exe, dir, installedAt: new Date().toISOString() };
@@ -722,13 +868,13 @@ async function installGame(slug, targetDir) {
   await downloadTo(dl.url, downloadPath);
 
   if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
-    sendProgress({ phase: "done" });
+    sendProgress({ phase: "installer-ready" });
     await shell.openPath(downloadPath);
     const known = findKnownExecutable(entry);
     if (known) {
-      markInstalled(slug, { version: dl.version, exe: known, dir: path.dirname(known) });
-      return { status: "installed", version: dl.version, dir: path.dirname(known) };
+      return markInstalledFromExe(slug, entry, known, dl.version);
     }
+    startInstallerPoll(slug, entry, dl.version);
     return { status: "installer-opened", version: dl.version };
   }
 
@@ -770,13 +916,12 @@ async function installGame(slug, targetDir) {
 }
 
 async function locateGameExecutable(slug) {
-  const entry = catalog.find((e) => e.slug === slug);
+  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   const known = findKnownExecutable(entry);
   if (known) {
-    markInstalled(slug, { version: "located", exe: known, dir: path.dirname(known) });
-    return { status: "installed", exe: known, dir: path.dirname(known) };
+    return markInstalledFromExe(slug, entry, known, "located");
   }
 
   const result = await dialog.showOpenDialog(win, {
@@ -787,39 +932,32 @@ async function locateGameExecutable(slug) {
   if (result.canceled || result.filePaths.length === 0) return { status: "cancelled" };
 
   const exe = result.filePaths[0];
-  markInstalled(slug, { version: "located", exe, dir: path.dirname(exe) });
-  return { status: "installed", exe, dir: path.dirname(exe) };
+  return markInstalledFromExe(slug, entry, exe, "located");
 }
 
-async function installMod(slug, baseDirOverride) {
-  sendProgress({ phase: "resolving" });
-  const install = await fetchModInstall(slug);
-
-  if (install.downloadKind === "external") {
-    await shell.openExternal(install.url || `${getApiBase()}/mods/${slug}`);
-    return { status: "external" };
+async function placeModFiles(slug, install, baseDirOverride) {
+  const dl = await resolveModDownload(install);
+  let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
+  // Full portable clients (OpenRA-style) install beside other PlayBound games.
+  if (/winportable/i.test(dl.name || "")) {
+    targetDir = path.join(DEFAULT_GAMES_DIR, slug);
   }
-
-  let baseDir = baseDirOverride || null;
-  if (!baseDir) {
-    const state = loadState();
-    const info = state[install.baseGameSlug];
-    if (info?.dir && fs.existsSync(info.dir)) baseDir = info.dir;
-  }
-  if (!baseDir) {
+  if (!targetDir) {
     throw new Error("Base game folder not found — install the game first or choose its folder.");
   }
-
-  const rel = String(install.installRelativePath || "").replace(/^[/\\]+|[/\\]+$/g, "");
-  const targetDir = rel ? path.join(baseDir, ...rel.split(/[/\\]+/)) : baseDir;
   await fsp.mkdir(targetDir, { recursive: true });
-
-  const dl = await resolveModDownload(install);
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", "mods", dl.name);
   await downloadTo(dl.url, downloadPath);
 
-  sendProgress({ phase: "extracting" });
-  await extractZip(downloadPath, targetDir);
+  const isZip = /\.zip$/i.test(dl.name) || install.downloadKind === "github-zip" || install.downloadKind === "direct-zip";
+  if (isZip && !/\.jar$/i.test(dl.name)) {
+    sendProgress({ phase: "extracting" });
+    await extractZip(downloadPath, targetDir);
+  } else {
+    sendProgress({ phase: "extracting" });
+    const dest = path.join(targetDir, path.basename(dl.name));
+    await fsp.copyFile(downloadPath, dest);
+  }
   await fsp.rm(downloadPath, { force: true });
 
   const state = loadState();
@@ -833,6 +971,40 @@ async function installMod(slug, baseDirOverride) {
   saveState(state);
   sendProgress({ phase: "done" });
   return { status: "installed", version: dl.version, dir: targetDir, baseGameSlug: install.baseGameSlug };
+}
+
+async function installMod(slug, baseDirOverride) {
+  sendProgress({ phase: "resolving" });
+  const install = await fetchModInstall(slug);
+
+  if (install.downloadKind === "external") {
+    await shell.openExternal(install.url || `${getApiBase()}/mods/${slug}`);
+    return { status: "external" };
+  }
+
+  const appDataMods = install.baseGameSlug === "mindustry" || install.baseGameSlug === "0ad";
+  let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
+  const baseReady = isBaseGameReady(install.baseGameSlug) || Boolean(baseDirOverride && fs.existsSync(baseDirOverride));
+
+  if (!targetDir || (!baseReady && !appDataMods && !baseDirOverride)) {
+    const settings = loadSettings();
+    settings.pendingModSlug = slug;
+    saveSettings(settings);
+    await ensureCatalogEntry(install.baseGameSlug);
+    sendProgress({ phase: "installing-base" });
+    const baseResult = await installGame(install.baseGameSlug);
+    if (baseResult.status === "installed") {
+      delete settings.pendingModSlug;
+      saveSettings(settings);
+      return placeModFiles(slug, install, null);
+    }
+    if (baseResult.status === "installer-opened") {
+      return { status: "waiting-base", baseGameSlug: install.baseGameSlug };
+    }
+    throw new Error("Couldn't install the base game first.");
+  }
+
+  return placeModFiles(slug, install, baseDirOverride);
 }
 
 async function playGame(slug, join = null) {
@@ -1025,7 +1197,11 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
   win.webContents.once("did-finish-load", () => {
+    const n = scanKnownInstalls();
     win.webContents.send("context", buildContextPayload());
+    if (n > 0) {
+      win.webContents.send("install-detected", { slug: null, scanned: n });
+    }
   });
 }
 
@@ -1132,6 +1308,7 @@ if (gotLock) {
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
 
     await refreshRemoteCatalog();
+    scanKnownInstalls();
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;

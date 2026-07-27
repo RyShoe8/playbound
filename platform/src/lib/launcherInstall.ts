@@ -23,6 +23,8 @@ export type LauncherInstall = {
   fileName?: string | null;
   versionLabel?: string | null;
   knownExePaths?: string[];
+  /** Expanded game/content root for mods (installer games where exe is nested). */
+  installRoot?: string | null;
   connectArgs?: string[];
   note?: string | null;
 };
@@ -40,6 +42,7 @@ export type LauncherCatalogEntry = {
   fileName?: string;
   versionLabel?: string;
   knownExePaths?: string[];
+  installRoot?: string;
   connectArgs?: string[];
   note?: string;
   approxSize?: string;
@@ -95,6 +98,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.fileName) entry.fileName = li.fileName;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
+  if (li.installRoot) entry.installRoot = li.installRoot;
   if (li.connectArgs?.length) entry.connectArgs = li.connectArgs;
   if (li.note) entry.note = li.note;
   return entry;

@@ -133,6 +133,7 @@ module.exports = [
       "%PROGRAMFILES%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
       "%PROGRAMFILES(X86)%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
     ],
+    installRoot: "%PROGRAMFILES%\\0 A.D. alpha",
   },
   {
     slug: "veloren",

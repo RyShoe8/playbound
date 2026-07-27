@@ -87,6 +87,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%PROGRAMFILES%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
       "%PROGRAMFILES(X86)%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
     ],
+    installRoot: "%PROGRAMFILES%\\0 A.D. alpha",
   },
   veloren: {
     enabled: true,

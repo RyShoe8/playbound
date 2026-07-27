@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-    "version": "0.1.2",
+  "version": "0.1.3",
   "description": "PlayBound Launcher — install, update, and launch free PC games with one click.",
   "main": "main.js",
   "scripts": {
@@ -19,6 +19,7 @@
       "name": "PlayBound Deep Link",
       "schemes": ["playbound"]
     },
+    "forceCodeSigning": false,
     "win": {
       "target": ["nsis", "portable"],
       "artifactName": "PlayBound-Launcher-Setup-${version}.${ext}",
