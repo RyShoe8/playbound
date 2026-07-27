@@ -297,7 +297,7 @@ export const emptyGameDraft = (): GamePayload => ({
     min: "See official site",
     recommended: "See official site",
   },
-  launcherInstall: toPayloadLauncherInstall(defaultLauncherInstallForWebsite("https://example.com")),
+  launcherInstall: null,
   published: false,
   submissionId: null,
   managedBy: "admin",

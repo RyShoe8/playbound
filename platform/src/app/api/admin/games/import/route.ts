@@ -75,6 +75,7 @@ async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
     license: "See Steam store page",
     art: defaultArtFor([], slug),
     published: false,
+    launcherInstall: null,
   };
 }
 
@@ -121,6 +122,7 @@ async function fromGithub(repo: string): Promise<Partial<GamePayload>> {
     browserPlayable: false,
     art: defaultArtFor([], slug),
     published: false,
+    launcherInstall: null,
   };
 }
 
@@ -153,6 +155,7 @@ async function fromWebsite(url: string): Promise<Partial<GamePayload>> {
     },
     art: defaultArtFor(["Arcade"], slug),
     published: false,
+    launcherInstall: null,
   };
 }
 
