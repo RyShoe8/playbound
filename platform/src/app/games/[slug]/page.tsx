@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Download, Gamepad2, MessagesSquare, Newspaper, Star, Trophy, Wrench } from "lucide-react";
+import { Gamepad2, MessagesSquare, Newspaper, Star, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
@@ -19,7 +19,7 @@ import { ServerBrowser } from "@/components/ServerBrowser";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame, type CatalogModPublic } from "@/lib/mods";
-import { launcherInstallModUrl } from "@/lib/launcher";
+import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 
 const tabs = ["overview", "servers", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
 type Tab = (typeof tabs)[number];
@@ -309,7 +309,7 @@ async function ModsTab({ game }: { game: Game }) {
       <div>
         <h2 className="text-lg font-bold">Mods for {game.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          One-click install via the PlayBound Launcher into your {game.title} folder.
+          Install packageable mods with the PlayBound Launcher, or open hub pages for browse-only content.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -322,6 +322,7 @@ async function ModsTab({ game }: { game: Game }) {
 }
 
 function ModCard({ mod }: { mod: CatalogModPublic }) {
+  const isExternal = mod.downloadKind === "external";
   return (
     <div className="flex flex-col rounded-xl border border-border bg-card p-4">
       <Link href={`/mods/${mod.slug}`} className="font-bold hover:text-primary">
@@ -329,16 +330,18 @@ function ModCard({ mod }: { mod: CatalogModPublic }) {
       </Link>
       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{mod.tagline}</p>
       <p className="mt-2 text-[11px] text-muted-foreground">
-        Installs to <code className="text-play">{mod.installRelativePath || "(game root)"}</code>
+        {isExternal
+          ? "Opens in your browser via the launcher"
+          : `Installs to ${mod.installRelativePath || "(game root)"}`}
         {mod.sizeMB ? ` · ~${mod.sizeMB} MB` : ""}
       </p>
-      <div className="mt-auto flex flex-wrap gap-2 pt-4">
-        <a
-          href={launcherInstallModUrl(mod.slug)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-play px-3 py-1.5 text-xs font-bold text-play-foreground"
-        >
-          <Download className="size-3.5" /> Install
-        </a>
+      <div className="mt-auto flex flex-wrap items-start gap-2 pt-4">
+        <LauncherInstallButton
+          slug={mod.slug}
+          kind="install-mod"
+          label={isExternal ? "Open with launcher" : "Install mod"}
+          className="bg-play text-play-foreground border-transparent px-3 py-1.5 text-xs"
+        />
         <Link
           href={`/mods/${mod.slug}`}
           className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"

@@ -63,6 +63,12 @@ export default async function LauncherPage() {
             Windows 10/11 · ~78 MB · run once to register deep links
           </p>
         </div>
+        <p className="mt-4 max-w-xl text-xs text-muted-foreground">
+          Windows may show an &quot;unrecognized app&quot; SmartScreen warning because the installer is still
+          building reputation. Choose <span className="font-semibold text-foreground">More info</span>, then{" "}
+          <span className="font-semibold text-foreground">Run anyway</span>. Once we ship signed builds, the
+          publisher will show as PlayBound.
+        </p>
       </section>
 
       <section>

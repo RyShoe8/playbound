@@ -71,6 +71,7 @@ export const launcherInstallSchema = z
     fileName: optionalTrimmed,
     versionLabel: optionalTrimmed,
     knownExePaths: z.array(z.string().trim().min(1).max(400)).max(20).default([]),
+    installRoot: optionalTrimmed,
     connectArgs: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
     note: optionalTrimmed,
   })
@@ -226,6 +227,7 @@ export function toPayloadLauncherInstall(
     fileName: li.fileName ?? null,
     versionLabel: li.versionLabel ?? null,
     knownExePaths: li.knownExePaths ?? [],
+    installRoot: li.installRoot ?? null,
     connectArgs: li.connectArgs ?? [],
     note: li.note ?? null,
   };

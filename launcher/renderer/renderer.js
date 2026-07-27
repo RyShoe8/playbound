@@ -283,7 +283,7 @@ async function runInstall() {
       setStatus("Opened the official download page.");
     } else if (result.status === "installer-opened") {
       setStatus(
-        "Installer opened — finish setup in the wizard, then click Locate executable if Play is not available yet."
+        "Download finished — complete the installer window (Next / Install). When it finishes, this app will detect the game."
       );
       ctx.installerOpened = true;
       renderActions();
@@ -294,6 +294,7 @@ async function runInstall() {
       ctx.installerOpened = false;
       ctx.action = "play";
       renderActions();
+      void loadLibrary();
     }
   } catch (err) {
     setStatus(err.message || String(err), true);
@@ -318,6 +319,7 @@ async function runLocate() {
       ctx.installerOpened = false;
       ctx.action = "play";
       renderActions();
+      void loadLibrary();
     }
   } catch (err) {
     setStatus(err.message || String(err), true);
@@ -390,6 +392,12 @@ async function runInstallMod() {
     const result = await window.playbound.installMod(ctx.slug, baseDir || null);
     if (result.status === "external") {
       setStatus("Opened the mod page.");
+    } else if (result.status === "waiting-base") {
+      setStatus(
+        "Installing the base game first — finish the installer window (Next / Install). The mod will continue automatically."
+      );
+      ctx.installerOpened = true;
+      renderActions();
     } else if (result.status === "installed") {
       setStatus(`Installed ${result.version} into ${result.dir}`);
       ctx.installed = true;
@@ -519,22 +527,28 @@ function applyContext(next) {
     tileEl.textContent = entry.title.charAt(0);
     tileEl.style.background = `linear-gradient(135deg, ${entry.art[0]}, ${entry.art[1]})`;
 
-    pathRowEl.classList.remove("hidden");
+    const showPath = !ctx.baseInstalled && ctx.mod.downloadKind !== "external";
+    pathRowEl.classList.toggle("hidden", !showPath);
     document.querySelector(".path-label").textContent = "Game folder";
     targetDir = ctx.basePath || ctx.defaultDir;
     installPathEl.textContent = targetDir || "(choose base game folder)";
 
     setProgress(null);
-    if (ctx.baseInstalled) {
-      setStatus(
-        ctx.installed
-          ? "Mod already installed here — you can reinstall."
-          : `Ready to install into ${ctx.basePath}`
-      );
-    } else {
-      setStatus("Base game not detected — install it, or choose its folder, then install the mod.");
-    }
     renderActions();
+
+    const key = `install-mod:${ctx.slug}:${ctx.mod.downloadKind}:${ctx.baseInstalled ? "1" : "0"}`;
+    if (autoKey === key) return;
+    autoKey = key;
+
+    if (ctx.mod.downloadKind === "external") {
+      setStatus("Opening mod page…");
+      runInstallMod();
+    } else if (ctx.installed) {
+      setStatus("Mod already installed here — you can reinstall.");
+    } else {
+      setStatus(ctx.baseInstalled ? "Starting mod install…" : "Preparing install (base game if needed)…");
+      runInstallMod();
+    }
     return;
   }
 
@@ -617,6 +631,7 @@ function applyContext(next) {
 
 window.playbound.onProgress(({ phase, received, total }) => {
   if (phase === "resolving") setStatus("Finding the latest release…");
+  if (phase === "installing-base") setStatus("Installing the base game first…");
   if (phase === "downloading") {
     const pct = total ? Math.round((received / total) * 100) : null;
     setStatus(`Downloading… ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
@@ -626,7 +641,45 @@ window.playbound.onProgress(({ phase, received, total }) => {
     setStatus("Extracting…");
     setProgress(100);
   }
+  if (phase === "installer-ready") {
+    setProgress(null);
+    setStatus(
+      "Download finished — complete the installer window (Next / Install). When it finishes, this app will detect the game."
+    );
+  }
   if (phase === "done") setProgress(null);
+});
+
+window.playbound.onInstallDetected((data) => {
+  void loadLibrary();
+  if (data?.slug && ctx?.entry?.slug === data.slug) {
+    ctx.installed = true;
+    ctx.installerOpened = false;
+    ctx.action = "play";
+    setStatus("Installed — ready to play.");
+    renderActions();
+  } else if (data?.scanned) {
+    setLibraryMsg(`Detected ${data.scanned} installed game${data.scanned === 1 ? "" : "s"}.`);
+  } else if (!ctx) {
+    void loadLibrary();
+  }
+});
+
+window.playbound.onModInstallFinished((data) => {
+  void loadLibrary();
+  if (data?.error) {
+    setStatus(data.error, true);
+    return;
+  }
+  if (data?.result?.status === "installed") {
+    setStatus(`Installed ${data.result.version} into ${data.result.dir}`);
+    if (ctx?.action === "install-mod" && ctx.slug === data.slug) {
+      ctx.installed = true;
+      ctx.installedPath = data.result.dir;
+      ctx.baseInstalled = true;
+      renderActions();
+    }
+  }
 });
 
 window.playbound.onContext((data) => applyContext(data));

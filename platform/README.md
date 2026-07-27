@@ -47,6 +47,13 @@ Without Blob, you can still **Fetch from website** (Open Graph images) and paste
 
 The site `/launcher` page and install fallbacks use that URL for one-click download.
 
+To Authenticode-sign the Setup.exe (clears Windows SmartScreen over time), set before `npm run dist`:
+
+- `CSC_LINK` — path to a `.pfx` (or base64-encoded cert)
+- `CSC_KEY_PASSWORD` — certificate password
+
+Then set `build.win.signAndEditExecutable` to `true` (or remove the `false` override) in `launcher/package.json`. Without a cert, keep `signAndEditExecutable: false` so unsigned builds succeed on Windows without Developer Mode / symlink privileges.
+
 ### Live servers (UDP masters)
 
 HTTP masters (OpenRA, Luanti, SuperTuxKart) are queried directly from Vercel. **Xonotic** and **Unvanquished** use a UDP Master Adapter:

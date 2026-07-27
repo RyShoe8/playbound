@@ -43,20 +43,29 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
       <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{mod.description}</p>
 
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-        <p className="text-sm font-semibold">Install with the PlayBound Launcher</p>
+        <p className="text-sm font-semibold">
+          {mod.downloadKind === "external" ? "Open with the PlayBound Launcher" : "Install with the PlayBound Launcher"}
+        </p>
         <p className="text-sm text-muted-foreground">
-          Requires {baseGame?.title ?? "the base game"} installed (or pick its folder). The launcher
-          extracts into{" "}
-          <code className="text-play">
-            {mod.installRelativePath ? `${mod.installRelativePath}/` : "(game root)"}
-          </code>
-          .
+          {mod.downloadKind === "external" ? (
+            <>
+              This entry opens the official page in your browser. The launcher does not download a package for it.
+            </>
+          ) : (
+            <>
+              The launcher installs this into{" "}
+              <code className="text-play">
+                {mod.installRelativePath ? `${mod.installRelativePath}/` : "(game root)"}
+              </code>
+              {baseGame ? ` for ${baseGame.title}` : ""}. If the base game is missing, it will install that first.
+            </>
+          )}
         </p>
         <div className="flex flex-wrap items-start gap-4">
           <LauncherInstallButton
             slug={mod.slug}
             kind="install-mod"
-            label="Install mod"
+            label={mod.downloadKind === "external" ? "Open with launcher" : "Install mod"}
             className="bg-play text-play-foreground border-transparent"
           />
           {canOneClickBase && (
