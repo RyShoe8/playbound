@@ -209,6 +209,28 @@ export const gamePayloadSchema = z.object({
 
 export type GamePayload = z.infer<typeof gamePayloadSchema>;
 
+export type GamePayloadLauncherInstall = NonNullable<GamePayload["launcherInstall"]>;
+
+/** Coerce CMS/seed LauncherInstall into the Zod/GamePayload shape (no undefined). */
+export function toPayloadLauncherInstall(
+  li: LauncherInstall | null | undefined
+): GamePayloadLauncherInstall | null {
+  if (!li?.kind) return null;
+  return {
+    enabled: li.enabled !== false,
+    kind: li.kind,
+    repo: li.repo ?? null,
+    assetPattern: li.assetPattern ?? null,
+    exeHint: li.exeHint ?? null,
+    url: li.url ?? null,
+    fileName: li.fileName ?? null,
+    versionLabel: li.versionLabel ?? null,
+    knownExePaths: li.knownExePaths ?? [],
+    connectArgs: li.connectArgs ?? [],
+    note: li.note ?? null,
+  };
+}
+
 export function withDefaultArt(payload: GamePayload): GamePayload & { art: NonNullable<GamePayload["art"]> } {
   return {
     ...payload,
@@ -217,11 +239,9 @@ export function withDefaultArt(payload: GamePayload): GamePayload & { art: NonNu
 }
 
 /** Ensure PC installable games always get a launcherInstall recipe. */
-export function withDefaultLauncherInstall(
-  payload: GamePayload
-): GamePayload & { launcherInstall: LauncherInstall | null } {
+export function withDefaultLauncherInstall(payload: GamePayload): GamePayload {
   if (!isPcInstallCandidate(payload)) {
-    return { ...payload, launcherInstall: payload.launcherInstall ?? null };
+    return { ...payload, launcherInstall: toPayloadLauncherInstall(payload.launcherInstall) };
   }
   if (payload.launcherInstall?.kind) {
     const li = { ...payload.launcherInstall };
@@ -231,11 +251,11 @@ export function withDefaultLauncherInstall(
     if (li.kind === "external" && !li.url) {
       li.url = payload.website;
     }
-    return { ...payload, launcherInstall: li };
+    return { ...payload, launcherInstall: toPayloadLauncherInstall(li) };
   }
   return {
     ...payload,
-    launcherInstall: defaultLauncherInstallForWebsite(payload.website),
+    launcherInstall: toPayloadLauncherInstall(defaultLauncherInstallForWebsite(payload.website)),
   };
 }
 
@@ -275,7 +295,7 @@ export const emptyGameDraft = (): GamePayload => ({
     min: "See official site",
     recommended: "See official site",
   },
-  launcherInstall: defaultLauncherInstallForWebsite("https://example.com"),
+  launcherInstall: toPayloadLauncherInstall(defaultLauncherInstallForWebsite("https://example.com")),
   published: false,
   submissionId: null,
   managedBy: "admin",
