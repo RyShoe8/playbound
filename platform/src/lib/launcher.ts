@@ -44,9 +44,14 @@ export function launcherInstallModUrl(slug: string): string {
   return `playbound://install-mod/${slug}`;
 }
 
-/** Deep link that opens the launcher auth / library sync flow. */
+/** Deep link that opens the browser connect page (remint). Prefer launcherSyncUrl for sync. */
 export function launcherAuthUrl(): string {
   return "playbound://auth";
+}
+
+/** Deep link that syncs local installs with the saved launcher token (no remint). */
+export function launcherSyncUrl(): string {
+  return "playbound://sync";
 }
 
 /** Deep link that hands a launcher token to the desktop app. */

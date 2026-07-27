@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-    "version": "0.1.1",
+    "version": "0.1.2",
   "description": "PlayBound Launcher — install, update, and launch free PC games with one click.",
   "main": "main.js",
   "scripts": {
