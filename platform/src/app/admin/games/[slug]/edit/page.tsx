@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { developers } from "@/lib/data";
 import { getGame } from "@/lib/catalog";
 import type { GamePayload } from "@/lib/gamePayload";
+import { toPayloadLauncherInstall } from "@/lib/gamePayload";
 import { GameEditorForm } from "@/components/admin/GameEditorForm";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
@@ -39,7 +40,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     githubRepo: game.githubRepo ?? null,
     coverImage: game.coverImage ?? null,
     screenshots: game.screenshots ?? [],
-    launcherInstall: game.launcherInstall ?? null,
+    launcherInstall: toPayloadLauncherInstall(game.launcherInstall),
     developerName: null,
     published,
     submissionId,

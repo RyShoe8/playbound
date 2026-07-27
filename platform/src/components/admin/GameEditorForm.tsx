@@ -11,6 +11,7 @@ import {
   TAGS,
   defaultArtFor,
   slugifyTitle,
+  toPayloadLauncherInstall,
   type GamePayload,
 } from "@/lib/gamePayload";
 import { defaultLauncherInstallForWebsite, isPcInstallCandidate } from "@/lib/launcherInstall";
@@ -74,8 +75,11 @@ export function GameEditorForm({
     setForm((prev) => {
       const base =
         prev.launcherInstall ??
-        defaultLauncherInstallForWebsite(prev.website || "https://example.com");
-      return { ...prev, launcherInstall: { ...base, ...partial } };
+        toPayloadLauncherInstall(defaultLauncherInstallForWebsite(prev.website || "https://example.com"))!;
+      return {
+        ...prev,
+        launcherInstall: toPayloadLauncherInstall({ ...base, ...partial }),
+      };
     });
   }
 
@@ -84,7 +88,9 @@ export function GameEditorForm({
     if (form.launcherInstall?.kind) return;
     setForm((prev) => ({
       ...prev,
-      launcherInstall: defaultLauncherInstallForWebsite(prev.website || "https://example.com"),
+      launcherInstall: toPayloadLauncherInstall(
+        defaultLauncherInstallForWebsite(prev.website || "https://example.com")
+      ),
     }));
   }, [showLauncher, form.launcherInstall?.kind, form.website]);
 
