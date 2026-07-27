@@ -84,8 +84,11 @@ export default async function LibraryPage({
 
   const bySlug = new Map(filtered.map((e) => [e.gameSlug, e]));
   const games = await gamesFor(filtered.map((e) => e.gameSlug));
+  const knownSlugs = new Set(games.map((g) => g.slug));
+  const orphanEntries = filtered.filter((e) => !knownSlugs.has(e.gameSlug));
   const hasAny = entries.length > 0;
   const hasInstalled = entries.some((e) => e.installed);
+  const hasVisible = games.length > 0 || orphanEntries.length > 0;
 
   const chips: { key: Filter; label: string }[] = [
     { key: "all", label: "All" },
@@ -150,7 +153,7 @@ export default async function LibraryPage({
             )}
           </div>
         </div>
-      ) : games.length === 0 ? (
+      ) : !hasVisible ? (
         <EmptyHint icon={MonitorPlay}>
           No games match this filter.
           {!hasInstalled && filter === "installed"
@@ -180,6 +183,43 @@ export default async function LibraryPage({
                   {meta?.installed && (
                     <a
                       href={launcherPlayUrl(game.slug)}
+                      className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
+                    >
+                      <Play className="size-3 fill-current" /> Play
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {orphanEntries.map((entry) => {
+            const title = entry.gameSlug
+              .split("-")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" ");
+            return (
+              <div
+                key={entry.gameSlug}
+                className="w-[160px] space-y-2 rounded-xl border border-border bg-card p-3"
+              >
+                <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-secondary text-2xl font-extrabold text-muted-foreground">
+                  {title.charAt(0)}
+                </div>
+                <p className="truncate text-sm font-bold">{title}</p>
+                <div className="flex flex-wrap items-center gap-1">
+                  {entry.saved && (
+                    <Badge tone="brand">
+                      <LibraryBig className="size-3" /> Saved
+                    </Badge>
+                  )}
+                  {entry.installed && (
+                    <Badge tone="play">
+                      <Download className="size-3" /> Installed
+                    </Badge>
+                  )}
+                  {entry.installed && (
+                    <a
+                      href={launcherPlayUrl(entry.gameSlug)}
                       className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
                     >
                       <Play className="size-3 fill-current" /> Play

@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
-import { getGame } from "@/lib/catalog";
+import { resolveGameForSync } from "@/lib/catalog";
 import { hashLauncherToken } from "@/lib/library";
 
 const batchSchema = z.object({
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const skipped: string[] = [];
 
     for (const item of body.installs) {
-      if (!(await getGame(item.slug))) {
+      if (!(await resolveGameForSync(item.slug))) {
         skipped.push(item.slug);
         continue;
       }

@@ -65,13 +65,14 @@ export function ConnectLauncherPanel({
   // After /launcher/auth handoff returns here with ?linked=1
   useEffect(() => {
     if (searchParams.get("linked") !== "1") return;
-    setConnected(true);
-    void refresh();
-    router.refresh();
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("linked");
-    const q = next.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    void (async () => {
+      await refresh();
+      router.refresh();
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete("linked");
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    })();
   }, [searchParams, pathname, router, refresh]);
 
   async function generate() {
@@ -148,6 +149,13 @@ export function ConnectLauncherPanel({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link
+              href="/launcher/auth"
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
+            >
+              <MonitorPlay className="size-3.5" />
+              Sync installs
+            </Link>
             <button
               type="button"
               onClick={refreshAll}
@@ -167,6 +175,9 @@ export function ConnectLauncherPanel({
             </button>
           </div>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Opens the launcher to re-sync local installs. Then hit Refresh here.
+        </p>
 
         <div className="mt-2">
           <button
