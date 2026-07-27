@@ -581,14 +581,13 @@ function applyContext(next) {
   autoKey = key;
 
   if (ctx.action === "install") {
-    if (entry.kind === "external") {
-      runInstall();
-    } else if (ctx.installed) {
+    if (ctx.installed) {
       setStatus("Already installed — choose Play or create a shortcut.");
       ctx.action = "play";
       renderActions();
     } else {
-      setStatus("Choose a folder if you want, then click Install.");
+      setStatus("Starting install…");
+      runInstall();
     }
   } else if (ctx.action === "play") {
     if (ctx.installed) runPlay();

@@ -72,8 +72,10 @@ export function LauncherAuthHandoff({ username }: Props) {
         <KeyRound className="size-10 text-primary" />
         <h1 className="text-2xl font-extrabold">Connect as {username}</h1>
         <p className="text-sm text-muted-foreground">
-          Click once to mint a launcher token and open the PlayBound Launcher. Your installs will sync
-          to your library. Visiting this page alone does not change your existing connection.
+          Use this for first connect or reconnect. Clicking Connect creates a new link and disconnects
+          any previously linked launcher until you finish handing it off. Visiting this page alone does
+          not change your existing connection. To push installs without reminting, use Sync installs on
+          your library page.
         </p>
         <button
           type="button"

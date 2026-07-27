@@ -50,12 +50,14 @@ function parseDeepLink(url) {
   // playbound://install-mod/my-mod
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
+  // playbound://sync
   // playbound://link?token=...
   try {
-    const normalized = String(url).replace(/^playbound:\/\//i, "https://playbound.local/");
+    const normalized = String(url).replace(/^playbound:\/\//i, "https://");
     const u = new URL(normalized);
     const action = u.hostname.toLowerCase();
     if (action === "auth") return { action: "auth" };
+    if (action === "sync") return { action: "sync" };
     if (action === "link") {
       return { action: "link", token: u.searchParams.get("token") || "" };
     }
@@ -258,10 +260,63 @@ function openAuthInBrowser() {
   void shell.openExternal(authUrl);
 }
 
+async function handleSyncDeepLink() {
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  }
+  context = null;
+  pushContext();
+
+  const settings = loadSettings();
+  const token = settings.launcherToken;
+  if (!token) {
+    notifyAccount({
+      connected: false,
+      message: "Not connected — opening Connect in your browser.",
+    });
+    openAuthInBrowser();
+    return;
+  }
+
+  notifyAccount({ connected: true, message: "Syncing installs to your library…" });
+  const valid = await validateLauncherToken(token);
+  if (!valid) {
+    clearLocalToken("Saved token is no longer valid — reconnect from playbound.club/library.");
+    openAuthInBrowser();
+    return;
+  }
+
+  const { synced, skipped, error } = await syncAllInstalledGames();
+  if (error === "unauthorized") {
+    clearLocalToken("Token rejected — reconnect from your library page.");
+    openAuthInBrowser();
+    return;
+  }
+
+  let message = "Library sync complete.";
+  if (synced > 0) {
+    message = `Synced ${synced} installed game${synced === 1 ? "" : "s"} to your library. Refresh the library page.`;
+  } else if (!error) {
+    message = "Connected — no local installs to sync yet.";
+  }
+  if (skipped?.length) {
+    message += ` Skipped ${skipped.length}.`;
+  }
+  if (error) {
+    message = `Library sync issue: ${error}`;
+  }
+  notifyAccount({ connected: true, synced, skipped, message });
+}
+
 function handleDeepLink(parsed) {
   if (!parsed) return;
   if (parsed.action === "auth") {
     openAuthInBrowser();
+    return;
+  }
+  if (parsed.action === "sync") {
+    void handleSyncDeepLink();
     return;
   }
   if (parsed.action === "link") {
@@ -275,17 +330,6 @@ function handleDeepLink(parsed) {
     return;
   }
   void setContext(parsed);
-}
-
-async function setContext(parsed) {
-  context = parsed;
-  if (parsed?.slug && ["install", "play", "join", "uninstall"].includes(parsed.action)) {
-    await ensureCatalogEntry(parsed.slug);
-  }
-  if (parsed?.action === "install-mod" && parsed.slug) {
-    void loadModIntoContext(parsed.slug);
-  }
-  pushContext();
 }
 
 async function setContext(parsed) {
@@ -1039,6 +1083,7 @@ function testDeepLink() {
       { action: "join", slug: "openra", host: "1.2.3.4", port: 1234, name: "Test" },
     ],
     ["playbound://auth", { action: "auth" }],
+    ["playbound://sync", { action: "sync" }],
     ["playbound://link?token=abc", { action: "link", token: "abc" }],
     ["playbound://install-mod/cool-mod", { action: "install-mod", slug: "cool-mod" }],
     ["not-a-deep-link", null],

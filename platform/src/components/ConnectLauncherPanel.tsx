@@ -13,6 +13,9 @@ import {
   MonitorPlay,
   RefreshCw,
 } from "lucide-react";
+import { launcherSyncUrl } from "@/lib/launcher";
+
+const SYNC_FALLBACK_MS = 1500;
 
 type Props = {
   /** Server-known token status so Connected UI is correct on first paint. */
@@ -34,6 +37,7 @@ export function ConnectLauncherPanel({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
+  const [showSyncFallback, setShowSyncFallback] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -133,6 +137,17 @@ export function ConnectLauncherPanel({
     router.refresh();
   }
 
+  function openSync() {
+    setShowSyncFallback(false);
+    const a = document.createElement("a");
+    a.href = launcherSyncUrl();
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => setShowSyncFallback(true), SYNC_FALLBACK_MS);
+  }
+
   if (connected) {
     return (
       <section className="rounded-xl border border-play/25 bg-play/5 px-4 py-3 sm:px-5">
@@ -149,13 +164,14 @@ export function ConnectLauncherPanel({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              href="/launcher/auth"
+            <button
+              type="button"
+              onClick={openSync}
               className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
             >
               <MonitorPlay className="size-3.5" />
               Sync installs
-            </Link>
+            </button>
             <button
               type="button"
               onClick={refreshAll}
@@ -176,8 +192,29 @@ export function ConnectLauncherPanel({
           </div>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Opens the launcher to re-sync local installs. Then hit Refresh here.
+          Sync pushes installs from the launcher you already linked — it does not create a new token.
+          Then hit Refresh here. If the launcher says not connected, use Connect / Reconnect instead.
         </p>
+        {showSyncFallback && (
+          <div className="mt-3 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+            <p className="font-semibold text-foreground">Didn&apos;t open?</p>
+            <p className="mt-1">
+              Make sure the PlayBound Launcher is installed and running once so Windows registers the
+              protocol. If the app says not connected, reconnect (creates a new link).
+            </p>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <button type="button" onClick={openSync} className="font-bold text-foreground hover:underline">
+                Try sync again
+              </button>
+              <Link href="/launcher/auth" className="font-bold text-primary hover:underline">
+                Connect / Reconnect
+              </Link>
+              <button type="button" onClick={refreshAll} className="font-bold text-foreground hover:underline">
+                Refresh library
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-2">
           <button
