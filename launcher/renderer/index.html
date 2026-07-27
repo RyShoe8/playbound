@@ -16,16 +16,23 @@
     </header>
 
     <main id="app">
-      <div id="empty" class="panel empty hidden">
-        <p class="empty-title">Waiting for a game</p>
-        <p class="empty-text">
-          Open an install link from playbound.club — or click One-click install on a game page — and
-          this window will handle the rest.
+      <div id="library" class="panel library-panel">
+        <div class="library-header">
+          <div>
+            <p class="library-title">Your games</p>
+            <p class="library-sub">Play installed games or create a desktop shortcut.</p>
+          </div>
+          <button type="button" class="btn-site btn-sm" id="btn-browse-site">Browse site</button>
+        </div>
+        <div id="library-list" class="library-list"></div>
+        <p id="library-empty" class="library-empty hidden">
+          No games installed yet — use One-click install on playbound.club.
         </p>
-        <button type="button" class="btn-site" id="btn-close-empty">Close</button>
+        <p id="library-msg" class="library-msg"></p>
       </div>
 
       <div id="game" class="panel game-panel hidden">
+        <button type="button" class="btn-back" id="btn-back-library">← Back to library</button>
         <div class="game-header">
           <div class="tile" id="tile"></div>
           <div class="meta">

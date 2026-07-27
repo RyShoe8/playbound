@@ -566,6 +566,62 @@ async function uninstallGame(slug) {
   return { status: "uninstalled", dir: info.dir };
 }
 
+function listInstalledGames() {
+  const state = loadState();
+  const games = [];
+  for (const [slug, info] of Object.entries(state)) {
+    if (slug === "__mods__") continue;
+    if (!info || typeof info !== "object") continue;
+    if (!info.exe || !fs.existsSync(info.exe)) continue;
+    const entry = catalog.find((e) => e.slug === slug);
+    games.push({
+      slug,
+      title: entry?.title || slug,
+      art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
+      version: info.version || null,
+      dir: info.dir || null,
+      exe: info.exe,
+    });
+  }
+  games.sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  return games;
+}
+
+function sanitizeShortcutName(name) {
+  return String(name || "Game")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "Game";
+}
+
+function createGameShortcut(slug) {
+  const state = loadState();
+  const info = state[slug];
+  if (!info?.exe || !fs.existsSync(info.exe)) {
+    throw new Error("Not installed — no executable found");
+  }
+  const entry = catalog.find((e) => e.slug === slug);
+  const title = sanitizeShortcutName(entry?.title || slug);
+  const desktop = app.getPath("desktop");
+  const shortcutPath = path.join(desktop, `${title}.lnk`);
+  const ok = shell.writeShortcutLink(shortcutPath, {
+    target: info.exe,
+    cwd: path.dirname(info.exe),
+    description: `Play ${title}`,
+    icon: info.exe,
+    iconIndex: 0,
+  });
+  if (!ok) throw new Error("Couldn't create desktop shortcut");
+  return { path: shortcutPath, title };
+}
+
+function clearContext() {
+  context = null;
+  pushContext();
+  return true;
+}
+
 /* ── IPC ───────────────────────────────────────────────────── */
 
 ipcMain.handle("get-context", () => buildContextPayload());
@@ -584,6 +640,15 @@ ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetD
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
+ipcMain.handle("get-installed", () => listInstalledGames());
+ipcMain.handle("create-shortcut", (_event, slug) => createGameShortcut(slug));
+ipcMain.handle("open-folder", async (_event, dir) => {
+  const target = String(dir || "");
+  if (!target || !fs.existsSync(target)) throw new Error("Folder not found");
+  await shell.openPath(target);
+  return true;
+});
+ipcMain.handle("clear-context", () => clearContext());
 ipcMain.handle("open-external", (_event, url) => shell.openExternal(url));
 ipcMain.handle("open-deep-link", (_event, url) => {
   handleDeepLink(parseDeepLink(url));
@@ -633,9 +698,11 @@ ipcMain.handle("sign-in", () => {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 480,
-    height: 560,
-    resizable: false,
+    width: 560,
+    height: 640,
+    minWidth: 480,
+    minHeight: 520,
+    resizable: true,
     backgroundColor: "#131118",
     title: "PlayBound Launcher",
     autoHideMenuBar: true,
