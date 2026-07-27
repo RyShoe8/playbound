@@ -74,6 +74,43 @@ export function defaultLauncherInstallForWebsite(website: string): LauncherInsta
   };
 }
 
+/** One-click: make a draft PC-installable with an enabled external launcher recipe. */
+export function enableInstallerSupportFields(game: {
+  launchMethods: string[];
+  platforms: string[];
+  website: string;
+  launcherInstall?: LauncherInstall | null;
+}): {
+  launchMethods: string[];
+  platforms: string[];
+  browserPlayable: false;
+  launcherInstall: LauncherInstall;
+} {
+  const launchMethods = game.launchMethods.includes("install")
+    ? [...game.launchMethods]
+    : [...game.launchMethods, "install"];
+  const platforms = game.platforms.some((p) => /windows/i.test(p))
+    ? [...game.platforms]
+    : [...game.platforms, "Windows"];
+
+  const existing = game.launcherInstall;
+  const launcherInstall =
+    existing?.kind != null
+      ? {
+          ...existing,
+          enabled: true,
+          url: existing.url || game.website || existing.url,
+        }
+      : defaultLauncherInstallForWebsite(game.website || "https://example.com");
+
+  return {
+    launchMethods,
+    platforms,
+    browserPlayable: false,
+    launcherInstall,
+  };
+}
+
 export function toLauncherCatalogEntry(input: {
   slug: string;
   title: string;
