@@ -1,7 +1,7 @@
 {
   "name": "playbound-launcher",
   "version": "0.1.3",
-  "description": "PlayBound Launcher — install, update, and launch free PC games with one click.",
+  "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -13,7 +13,7 @@
   "license": "MIT",
   "build": {
     "appId": "gg.playbound.launcher",
-    "productName": "PlayBound Launcher",
+    "productName": "PlayBound",
     "files": ["main.js", "preload.js", "catalog.js", "renderer/**/*"],
     "protocols": {
       "name": "PlayBound Deep Link",
@@ -22,7 +22,7 @@
     "forceCodeSigning": false,
     "win": {
       "target": ["nsis", "portable"],
-      "artifactName": "PlayBound-Launcher-Setup-${version}.${ext}",
+      "artifactName": "PlayBound-Setup-${version}.${ext}",
       "signAndEditExecutable": false
     },
     "nsis": {
@@ -30,8 +30,8 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "PlayBound Launcher",
-      "artifactName": "PlayBound-Launcher-Setup-${version}.${ext}"
+      "shortcutName": "PlayBound",
+      "artifactName": "PlayBound-Setup-${version}.${ext}"
     },
     "portable": {
       "artifactName": "PlayBound-Launcher-Portable-${version}.${ext}"

@@ -1,696 +1,554 @@
-const libraryEl = document.getElementById("library");
-const libraryListEl = document.getElementById("library-list");
-const libraryEmptyEl = document.getElementById("library-empty");
-const libraryMsgEl = document.getElementById("library-msg");
-const gameEl = document.getElementById("game");
-const tileEl = document.getElementById("tile");
-const titleEl = document.getElementById("title");
-const blurbEl = document.getElementById("blurb");
-const pathRowEl = document.getElementById("path-row");
-const installPathEl = document.getElementById("install-path");
-const statusEl = document.getElementById("status");
-const progressEl = document.getElementById("progress");
-const barEl = document.getElementById("bar");
-const actionsEl = document.getElementById("actions");
-const btnChoose = document.getElementById("btn-choose");
-const btnBackLibrary = document.getElementById("btn-back-library");
-const btnBrowseSite = document.getElementById("btn-browse-site");
-const accountStatusEl = document.getElementById("account-status");
-const tokenInputEl = document.getElementById("token-input");
-const btnSaveToken = document.getElementById("btn-save-token");
-const btnSignIn = document.getElementById("btn-sign-in");
-const btnSignOut = document.getElementById("btn-sign-out");
-const accountMsgEl = document.getElementById("account-msg");
+// State
+let currentView = "home";
+let accountState = { connected: false };
+let deepLinkCtx = null;
+let currentDetailSlug = null;
 
-/** @type {{ action: string, entry: object | null, installed: boolean, installedPath: string | null, defaultDir: string } | null} */
-let ctx = null;
-let targetDir = null;
-let busy = false;
-/** Prevents double auto-start when context is pushed twice for the same action+slug */
-let autoKey = null;
+// DOM Elements
+const navBtns = document.querySelectorAll(".nav-btn");
+const views = {
+  home: document.getElementById("view-home"),
+  library: document.getElementById("view-library"),
+  servers: document.getElementById("view-servers"),
+  store: document.getElementById("view-store"),
+  settings: document.getElementById("view-settings"),
+  gameDetail: document.getElementById("view-game-detail"),
+  deepLink: document.getElementById("view-deep-link"),
+};
+const connectionDot = document.getElementById("connection-dot");
+const connectionLabel = document.getElementById("connection-label");
+const statusMsg = document.getElementById("statusbar-msg");
+const statusProgress = document.getElementById("statusbar-progress");
+const statusBar = document.getElementById("statusbar-bar");
 
+// Helper: Format Bytes
 const fmtBytes = (n) =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${Math.round(n / 1e3)} KB`;
 
-function setAccountMsg(text, isError = false) {
-  accountMsgEl.textContent = text || "";
-  accountMsgEl.classList.toggle("err", isError);
-  if (isError) accountMsgEl.classList.remove("ok");
+// Navigation Router
+function navigateTo(viewName, params = {}) {
+  currentView = viewName;
+  navBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === viewName);
+  });
+  Object.keys(views).forEach((k) => {
+    views[k].classList.toggle("active", k === viewName);
+  });
+
+  if (viewName === "home") renderHomeView();
+  else if (viewName === "library") renderLibraryView();
+  else if (viewName === "servers") renderServersView();
+  else if (viewName === "store") renderStoreView();
+  else if (viewName === "settings") renderSettingsView();
+  else if (viewName === "gameDetail") renderGameDetailView(params.slug);
 }
 
-function setLibraryMsg(text, isError = false) {
-  libraryMsgEl.textContent = text || "";
-  libraryMsgEl.classList.toggle("err", isError);
-  libraryMsgEl.classList.toggle("ok", Boolean(text) && !isError);
-}
-
-async function refreshAccount() {
-  try {
-    const account = await window.playbound.getAccount();
-    accountStatusEl.textContent = account.connected ? "Connected" : "Not connected";
-    accountStatusEl.classList.toggle("on", Boolean(account.connected));
-    btnSignIn.classList.toggle("hidden", Boolean(account.connected));
-    btnSignOut.classList.toggle("hidden", !account.connected);
-    if (account.connected) tokenInputEl.placeholder = "Paste a new token to replace";
-  } catch {
-    /* ignore */
-  }
-}
-
-btnSignIn.addEventListener("click", async () => {
-  setAccountMsg("Opening sign-in…");
-  try {
-    await window.playbound.signIn();
-  } catch (err) {
-    setAccountMsg(err.message || String(err), true);
-  }
+navBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.view) navigateTo(btn.dataset.view);
+  });
 });
 
-btnSignOut.addEventListener("click", async () => {
-  try {
-    await window.playbound.clearLauncherToken();
-    tokenInputEl.value = "";
-    setAccountMsg("Signed out. Installs still work locally.");
-    await refreshAccount();
-  } catch (err) {
-    setAccountMsg(err.message || String(err), true);
-  }
-});
-
-btnSaveToken.addEventListener("click", async () => {
-  const token = tokenInputEl.value.trim();
-  if (!token) {
-    setAccountMsg("Paste a launcher token first.", true);
-    return;
-  }
-  try {
-    setAccountMsg("Connecting and syncing installs…");
-    const result = await window.playbound.setLauncherToken(token);
-    tokenInputEl.value = "";
-    const synced = result?.synced || 0;
-    setAccountMsg(
-      synced > 0
-        ? `Connected. Synced ${synced} game${synced === 1 ? "" : "s"}.`
-        : "Connected. Close this window and refresh your library page."
-    );
-    accountMsgEl.classList.add("ok");
-    await refreshAccount();
-  } catch (err) {
-    setAccountMsg(err.message || String(err), true);
-  }
-});
-
-window.playbound.onAccount((data) => {
-  if (data?.message) {
-    const isError = data.connected === false || /reconnect|invalid|rejected|expired|issue/i.test(data.message);
-    setAccountMsg(data.message, isError);
-    if (!isError) accountMsgEl.classList.add("ok");
-  } else if (data?.connected === false) {
-    setAccountMsg("");
-    accountMsgEl.classList.remove("ok");
-  }
-  void refreshAccount();
-});
-
-void refreshAccount();
-
+// Status Helpers
 function setStatus(text, isError = false) {
-  statusEl.textContent = text || "";
-  statusEl.classList.toggle("err", isError);
+  statusMsg.textContent = text || "";
+  statusMsg.style.color = isError ? "var(--danger)" : "var(--text-muted)";
 }
 
 function setProgress(pct) {
-  progressEl.style.display = pct === null ? "none" : "block";
-  if (pct !== null) barEl.style.width = `${pct}%`;
+  if (pct === null) {
+    statusProgress.classList.add("hidden");
+  } else {
+    statusProgress.classList.remove("hidden");
+    statusBar.style.width = `${pct}%`;
+  }
 }
 
-function setBusy(next) {
-  busy = next;
-  for (const btn of actionsEl.querySelectorAll("button")) btn.disabled = next;
-  for (const btn of libraryListEl.querySelectorAll("button")) btn.disabled = next;
-  btnChoose.disabled = next;
-}
-
-function showLibrary() {
-  libraryEl.classList.remove("hidden");
-  gameEl.classList.add("hidden");
-  void loadLibrary();
-}
-
-function showGame() {
-  libraryEl.classList.add("hidden");
-  gameEl.classList.remove("hidden");
-}
-
-function makeButton(label, className, onClick) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = className;
-  btn.textContent = label;
-  btn.addEventListener("click", onClick);
-  return btn;
-}
-
-async function loadLibrary() {
+// ── Account & Connection Status ─────────────────────────────
+async function refreshAccountStatus() {
   try {
-    const games = await window.playbound.getInstalled();
-    libraryListEl.replaceChildren();
-    const empty = !games || games.length === 0;
-    libraryEmptyEl.classList.toggle("hidden", !empty);
-    if (empty) return;
-
-    for (const game of games) {
-      const row = document.createElement("div");
-      row.className = "library-row";
-
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      tile.textContent = String(game.title || "?").charAt(0);
-      tile.style.background = `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`;
-
-      const meta = document.createElement("div");
-      meta.className = "library-row-meta";
-      const name = document.createElement("strong");
-      name.textContent = game.title;
-      const ver = document.createElement("span");
-      ver.textContent = game.version ? `v${game.version}` : "Installed";
-      meta.append(name, ver);
-
-      const actions = document.createElement("div");
-      actions.className = "library-row-actions";
-      actions.append(
-        makeButton("Play", "btn-play btn-sm", () => void playFromLibrary(game.slug)),
-        makeButton("Shortcut", "btn-site btn-sm", () => void createShortcut(game.slug)),
-        makeButton("Folder", "btn-site btn-sm", () => void openGameFolder(game.dir)),
-        makeButton("Uninstall", "btn-remove btn-sm", () => void uninstallFromLibrary(game))
-      );
-
-      row.append(tile, meta, actions);
-      libraryListEl.append(row);
+    const acc = await window.playbound.getAccount();
+    accountState = acc;
+    if (acc.connected) {
+      connectionDot.className = "dot online";
+      connectionLabel.textContent = "Connected";
+    } else {
+      connectionDot.className = "dot";
+      connectionLabel.textContent = "Not connected";
     }
-  } catch (err) {
-    setLibraryMsg(err.message || String(err), true);
+  } catch {
+    connectionDot.className = "dot";
+    connectionLabel.textContent = "Offline";
   }
 }
 
-async function playFromLibrary(slug) {
-  if (busy) return;
-  setBusy(true);
-  setLibraryMsg("Launching…");
-  try {
-    await window.playbound.play(slug);
-    setLibraryMsg("Launched.");
-  } catch (err) {
-    setLibraryMsg(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function createShortcut(slug) {
-  if (busy) return;
-  setBusy(true);
-  try {
-    const result = await window.playbound.createShortcut(slug);
-    setLibraryMsg(`Desktop shortcut created for ${result.title}.`);
-  } catch (err) {
-    setLibraryMsg(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function openGameFolder(dir) {
-  if (!dir) {
-    setLibraryMsg("Install folder not found.", true);
-    return;
-  }
-  try {
-    await window.playbound.openFolder(dir);
-  } catch (err) {
-    setLibraryMsg(err.message || String(err), true);
-  }
-}
-
-async function uninstallFromLibrary(game) {
-  if (busy) return;
-  if (!confirm(`Uninstall ${game.title}? This deletes the install folder.`)) return;
-  setBusy(true);
-  setLibraryMsg("Uninstalling…");
-  try {
-    await window.playbound.uninstall(game.slug);
-    setLibraryMsg(`Uninstalled ${game.title}.`);
-    await loadLibrary();
-  } catch (err) {
-    setLibraryMsg(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function runCreateShortcut() {
-  if (!ctx?.entry || busy) return;
-  setBusy(true);
-  try {
-    const result = await window.playbound.createShortcut(ctx.entry.slug);
-    setStatus(`Desktop shortcut created: ${result.title}`);
-  } catch (err) {
-    setStatus(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function goBackToLibrary() {
-  autoKey = null;
-  await window.playbound.clearContext();
-  showLibrary();
-}
-
-btnBackLibrary.addEventListener("click", () => void goBackToLibrary());
-btnBrowseSite.addEventListener("click", () => {
-  void window.playbound.openExternal("https://playbound.club/discover");
+window.playbound.onAccount((data) => {
+  if (data?.message) setStatus(data.message, data.connected === false);
+  refreshAccountStatus();
+  if (currentView === "settings") renderSettingsView();
 });
 
-async function runInstall() {
-  if (!ctx?.entry || busy) return;
-  const entry = ctx.entry;
-  setBusy(true);
-  setStatus(entry.kind === "external" ? "Opening official site…" : "Starting install…");
-  try {
-    const result = await window.playbound.install(entry.slug, targetDir || ctx.defaultDir);
-    if (result.status === "external") {
-      setStatus("Opened the official download page.");
-    } else if (result.status === "installer-opened") {
-      setStatus(
-        "Download finished — complete the installer window (Next / Install). When it finishes, this app will detect the game."
-      );
-      ctx.installerOpened = true;
-      renderActions();
-    } else if (result.status === "installed") {
-      setStatus(`Installed ${result.version}. Ready to play — or create a desktop shortcut.`);
-      ctx.installed = true;
-      ctx.installedPath = result.dir;
-      ctx.installerOpened = false;
-      ctx.action = "play";
-      renderActions();
-      void loadLibrary();
-    }
-  } catch (err) {
-    setStatus(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-    setProgress(null);
-  }
-}
+// ── Views Implementation ────────────────────────────────────
 
-async function runLocate() {
-  if (!ctx?.entry || busy) return;
-  setBusy(true);
-  setStatus("Looking for the game…");
-  try {
-    const result = await window.playbound.locateExe(ctx.entry.slug);
-    if (result.status === "cancelled") {
-      setStatus("Locate cancelled.");
-    } else if (result.status === "installed") {
-      setStatus("Found it — ready to play.");
-      ctx.installed = true;
-      ctx.installedPath = result.dir;
-      ctx.installerOpened = false;
-      ctx.action = "play";
-      renderActions();
-      void loadLibrary();
-    }
-  } catch (err) {
-    setStatus(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
-}
+// 1. HOME VIEW
+async function renderHomeView() {
+  const container = views.home;
+  container.innerHTML = `
+    <h1 class="view-title">Welcome back</h1>
+    <p class="view-sub">Play your favorite titles or explore what's new on PlayBound.</p>
+    
+    <div id="home-recent-section" class="hidden">
+      <div class="section-header">Recently Played</div>
+      <div id="home-recent-grid" class="game-grid"></div>
+    </div>
 
-async function runPlay(join = null) {
-  if (!ctx?.entry || busy) return;
-  setBusy(true);
-  const target = join || ctx.join;
-  if (target?.host && target?.port) {
-    setStatus(`Joining ${target.host}:${target.port}…`);
-    try {
-      await window.playbound.clipboardWrite(`${target.host}:${target.port}`);
-    } catch {
-      /* ignore */
-    }
+    <div class="section-header">Installed Games</div>
+    <div id="home-installed-grid" class="game-grid"></div>
+
+    <div class="section-header">Featured Catalog</div>
+    <div id="home-catalog-grid" class="game-grid"></div>
+  `;
+
+  const [recent, installed, catalog] = await Promise.all([
+    window.playbound.getRecentlyPlayed(),
+    window.playbound.getInstalled(),
+    window.playbound.getCatalog(),
+  ]);
+
+  // Recently Played
+  const recentSec = document.getElementById("home-recent-section");
+  const recentGrid = document.getElementById("home-recent-grid");
+  if (recent && recent.length > 0) {
+    recentSec.classList.remove("hidden");
+    recentGrid.replaceChildren(...recent.map(createGameCard));
+  }
+
+  // Installed
+  const installedGrid = document.getElementById("home-installed-grid");
+  if (installed && installed.length > 0) {
+    installedGrid.replaceChildren(...installed.map(createGameCard));
   } else {
-    setStatus("Launching…");
+    installedGrid.innerHTML = `<p class="view-sub">No games installed yet. Check out the Store view!</p>`;
   }
-  try {
-    const result = await window.playbound.play(ctx.entry.slug, target);
-    if (result.manualConnect) {
-      setStatus(`Launched. Address copied — connect to ${target.host}:${target.port} in Multiplayer.`);
-    } else if (result.connect) {
-      setStatus(`Launched and connecting to ${result.connect}.`);
-    } else {
-      setStatus("Launched.");
-    }
-  } catch (err) {
-    setStatus(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
+
+  // Catalog
+  const catalogGrid = document.getElementById("home-catalog-grid");
+  catalogGrid.replaceChildren(...catalog.slice(0, 4).map(createGameCard));
 }
 
-async function runUninstall() {
-  if (!ctx?.entry || busy) return;
-  if (!confirm(`Uninstall ${ctx.entry.title}? This deletes the install folder.`)) return;
-  setBusy(true);
-  setStatus("Uninstalling…");
-  try {
-    await window.playbound.uninstall(ctx.entry.slug);
-    setStatus("Uninstalled.");
-    ctx.installed = false;
-    ctx.installedPath = null;
-    ctx.action = "install";
-    targetDir = ctx.defaultDir;
-    installPathEl.textContent = targetDir;
-    renderActions();
-  } catch (err) {
-    setStatus(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-  }
-}
+// 2. LIBRARY VIEW
+async function renderLibraryView() {
+  const container = views.library;
+  container.innerHTML = `
+    <div class="section-header" style="margin-top: 0">
+      <div>
+        <h1 class="view-title" style="margin: 0">My Library</h1>
+        <p class="view-sub" style="margin: 4px 0 0 0">Games installed on this PC.</p>
+      </div>
+      <button class="btn-secondary btn-sm" id="btn-sync-lib">Sync with Site</button>
+    </div>
+    <div id="library-grid" class="game-grid" style="margin-top: 20px"></div>
+  `;
 
-async function runInstallMod() {
-  if (!ctx || ctx.action !== "install-mod" || busy) return;
-  if (!ctx.mod) {
-    setStatus(ctx.modError || "Mod details not loaded yet.", true);
+  document.getElementById("btn-sync-lib").addEventListener("click", async () => {
+    setStatus("Syncing library with playbound.club...");
+    await window.playbound.openDeepLink("playbound://sync");
+  });
+
+  const installed = await window.playbound.getInstalled();
+  const grid = document.getElementById("library-grid");
+
+  if (!installed || installed.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px 0;">
+        <p class="view-sub">You don't have any games installed yet.</p>
+        <button class="btn-primary" id="btn-go-store">Browse Store</button>
+      </div>
+    `;
+    document.getElementById("btn-go-store")?.addEventListener("click", () => navigateTo("store"));
     return;
   }
-  setBusy(true);
-  setStatus(ctx.mod.downloadKind === "external" ? "Opening mod page…" : "Installing mod…");
-  try {
-    const baseDir = ctx.baseInstalled ? ctx.basePath : targetDir;
-    const result = await window.playbound.installMod(ctx.slug, baseDir || null);
-    if (result.status === "external") {
-      setStatus("Opened the mod page.");
-    } else if (result.status === "waiting-base") {
-      setStatus(
-        "Installing the base game first — finish the installer window (Next / Install). The mod will continue automatically."
-      );
-      ctx.installerOpened = true;
-      renderActions();
-    } else if (result.status === "installed") {
-      setStatus(`Installed ${result.version} into ${result.dir}`);
-      ctx.installed = true;
-      ctx.installedPath = result.dir;
-      ctx.baseInstalled = true;
-      ctx.basePath = baseDir || ctx.basePath;
-      renderActions();
-    }
-  } catch (err) {
-    setStatus(err.message || String(err), true);
-  } finally {
-    setBusy(false);
-    setProgress(null);
-  }
+
+  grid.replaceChildren(...installed.map(createGameCard));
 }
 
-function renderActions() {
-  actionsEl.replaceChildren();
+// 3. SERVER BROWSER VIEW
+async function renderServersView() {
+  const container = views.servers;
+  container.innerHTML = `
+    <h1 class="view-title">Server Browser</h1>
+    <p class="view-sub">Live multiplayer servers for your installed games.</p>
+    <div id="servers-container">
+      <p class="view-sub">Fetching active servers...</p>
+    </div>
+  `;
 
-  if (ctx?.action === "install-mod") {
-    if (ctx.modError) {
-      actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
-      return;
+  const serverGroups = await window.playbound.getAllServers();
+  const sec = document.getElementById("servers-container");
+
+  if (!serverGroups || serverGroups.length === 0) {
+    sec.innerHTML = `<p class="view-sub">No active dedicated servers found for your installed games.</p>`;
+    return;
+  }
+
+  sec.innerHTML = "";
+  for (const group of serverGroups) {
+    const groupEl = document.createElement("div");
+    groupEl.style.marginBottom = "28px";
+    groupEl.innerHTML = `
+      <div class="section-header" style="margin-top: 0">${group.title} (${group.servers.length})</div>
+      <table class="server-table">
+        <thead>
+          <tr>
+            <th>Server Name</th>
+            <th>Players</th>
+            <th>Map / Mode</th>
+            <th>Location</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    `;
+    const tbody = groupEl.querySelector("tbody");
+    for (const s of group.servers) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(s.name)}</strong></td>
+        <td>${s.players ?? 0}/${s.maxPlayers ?? 0}</td>
+        <td>${escapeHtml(s.map || "Standard")}</td>
+        <td>${escapeHtml(s.location?.countryCode || "—")}</td>
+        <td>
+          <button class="btn-primary btn-sm btn-join" data-slug="${group.slug}" data-host="${s.host}" data-port="${s.port}">Join</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
     }
-    if (!ctx.mod) {
-      actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
-      return;
-    }
-    if (ctx.mod.downloadKind === "external") {
-      actionsEl.append(
-        makeButton("Open mod page", "btn-install", () => runInstallMod()),
-        makeButton("Back to library", "btn-site", () => void goBackToLibrary())
-      );
-      return;
-    }
-    if (!ctx.baseInstalled) {
-      if (ctx.baseInCatalog && ctx.baseGameSlug) {
-        actionsEl.append(
-          makeButton("Install base game", "btn-install", () => {
-            void window.playbound.openDeepLink(`playbound://install/${ctx.baseGameSlug}`);
-          })
-        );
+    sec.appendChild(groupEl);
+  }
+
+  sec.querySelectorAll(".btn-join").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const slug = btn.dataset.slug;
+      const host = btn.dataset.host;
+      const port = Number(btn.dataset.port);
+      setStatus(`Joining ${host}:${port}...`);
+      try {
+        await window.playbound.play(slug, { host, port });
+      } catch (err) {
+        setStatus(err.message || String(err), true);
       }
-      actionsEl.append(
-        makeButton("Install mod here", "btn-play", () => runInstallMod()),
-        makeButton("Back to library", "btn-site", () => void goBackToLibrary())
-      );
-      return;
+    });
+  });
+}
+
+// 4. STORE VIEW
+async function renderStoreView() {
+  const container = views.store;
+  container.innerHTML = `
+    <div class="section-header" style="margin-top: 0">
+      <div>
+        <h1 class="view-title" style="margin: 0">Catalog & Games</h1>
+        <p class="view-sub" style="margin: 4px 0 0 0">Discover free open-source and community PC games.</p>
+      </div>
+      <button class="btn-secondary btn-sm" id="btn-open-web">Open playbound.club</button>
+    </div>
+    <div id="store-grid" class="game-grid" style="margin-top: 20px"></div>
+  `;
+
+  document.getElementById("btn-open-web").addEventListener("click", () => {
+    window.playbound.openExternal("https://playbound.club/discover");
+  });
+
+  const catalog = await window.playbound.getCatalog();
+  const grid = document.getElementById("store-grid");
+  grid.replaceChildren(...catalog.map(createGameCard));
+}
+
+// 5. SETTINGS VIEW
+async function renderSettingsView() {
+  const container = views.settings;
+  const settings = await window.playbound.getSettings();
+
+  container.innerHTML = `
+    <h1 class="view-title">Settings</h1>
+    <p class="view-sub">Manage launcher preferences and site connection.</p>
+
+    <div class="settings-group">
+      <label class="settings-label">Account Link</label>
+      <p class="settings-hint">Connecting to PlayBound allows library syncing between your desktop client and web profile.</p>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span class="dot ${accountState.connected ? "online" : ""}"></span>
+        <span style="font-size: 13px; font-weight: 600;">${accountState.connected ? "Connected to playbound.club" : "Not connected"}</span>
+      </div>
+      <div style="margin-top: 14px; display: flex; gap: 8px;">
+        <button class="btn-primary btn-sm" id="set-btn-signin">${accountState.connected ? "Reconnect" : "Sign In via Browser"}</button>
+        ${accountState.connected ? '<button class="btn-danger btn-sm" id="set-btn-signout">Disconnect</button>' : ""}
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <label class="settings-label">Default Installation Directory</label>
+      <p class="settings-hint">Where games will be installed when using one-click downloads.</p>
+      <input type="text" class="input-text" id="set-games-dir" value="${escapeHtml(settings.gamesDir)}" readonly />
+      <div style="margin-top: 10px;">
+        <button class="btn-secondary btn-sm" id="set-btn-dir">Change Directory</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("set-btn-signin").addEventListener("click", () => window.playbound.signIn());
+  document.getElementById("set-btn-signout")?.addEventListener("click", async () => {
+    await window.playbound.clearLauncherToken();
+    renderSettingsView();
+  });
+  document.getElementById("set-btn-dir").addEventListener("click", async () => {
+    const picked = await window.playbound.chooseDirectory(settings.gamesDir);
+    if (picked) {
+      await window.playbound.saveSettings({ gamesDir: picked });
+      renderSettingsView();
     }
-    actionsEl.append(
-      makeButton(ctx.installed ? "Reinstall mod" : "Install mod", "btn-install", () => runInstallMod()),
-      makeButton("Back to library", "btn-site", () => void goBackToLibrary())
-    );
+  });
+}
+
+// 6. GAME DETAIL VIEW
+async function renderGameDetailView(slug) {
+  currentDetailSlug = slug;
+  const container = views.gameDetail;
+  container.innerHTML = `<p class="view-sub">Loading game details...</p>`;
+
+  const detail = await window.playbound.getGameDetail(slug);
+  if (!detail) {
+    container.innerHTML = `<p class="view-sub">Game not found.</p>`;
     return;
   }
 
-  if (!ctx?.entry) return;
+  const bgGrad = Array.isArray(detail.art) && detail.art.length >= 2
+    ? `linear-gradient(135deg, ${detail.art[0]}, ${detail.art[1]})`
+    : `linear-gradient(135deg, #312e81, #a78bfa)`;
 
-  const entry = ctx.entry;
-  if (entry.kind === "external") {
-    actionsEl.append(
-      makeButton("Open official site", "btn-install", () => runInstall()),
-      makeButton("Back to library", "btn-site", () => void goBackToLibrary())
-    );
-    return;
-  }
+  container.innerHTML = `
+    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 20px">← Back</button>
+    
+    <div style="display: flex; gap: 24px; align-items: flex-start; margin-bottom: 28px;">
+      <div style="width: 100px; height: 100px; border-radius: 18px; background: ${bgGrad}; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 900; color: #fff; flex-shrink: 0;">
+        ${escapeHtml(detail.title.charAt(0))}
+      </div>
+      <div>
+        <h1 class="view-title" style="margin: 0">${escapeHtml(detail.title)}</h1>
+        <p class="view-sub" style="margin: 6px 0 16px 0">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;" id="detail-actions"></div>
+      </div>
+    </div>
 
-  if (ctx.action === "uninstall") {
-    actionsEl.append(makeButton("Uninstall", "btn-remove", () => runUninstall()));
-  } else if (ctx.installed) {
-    if (ctx.action === "join" && ctx.join?.host) {
-      actionsEl.append(makeButton("Join server", "btn-play", () => runPlay(ctx.join)));
-    } else {
-      actionsEl.append(makeButton("Play", "btn-play", () => runPlay()));
-    }
-    actionsEl.append(
-      makeButton("Create shortcut", "btn-site", () => void runCreateShortcut()),
-      makeButton("Uninstall", "btn-remove", () => runUninstall())
-    );
+    <div id="detail-servers-sec"></div>
+  `;
+
+  document.getElementById("detail-back").addEventListener("click", () => navigateTo("library"));
+
+  const actions = document.getElementById("detail-actions");
+  if (detail.installed) {
+    actions.innerHTML = `
+      <button class="btn-success" id="act-play">Play Now</button>
+      <button class="btn-secondary" id="act-shortcut">Create Shortcut</button>
+      <button class="btn-secondary" id="act-folder">Open Folder</button>
+      <button class="btn-danger" id="act-uninstall">Uninstall</button>
+    `;
+    document.getElementById("act-play").addEventListener("click", async () => {
+      setStatus("Launching...");
+      await window.playbound.play(slug);
+    });
+    document.getElementById("act-shortcut").addEventListener("click", async () => {
+      try {
+        const res = await window.playbound.createShortcut(slug);
+        setStatus(`Desktop shortcut created for ${res.title}`);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    document.getElementById("act-folder").addEventListener("click", () => {
+      if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
+    });
+    document.getElementById("act-uninstall").addEventListener("click", async () => {
+      if (!confirm(`Uninstall ${detail.title}?`)) return;
+      setStatus("Uninstalling...");
+      await window.playbound.uninstall(slug);
+      renderGameDetailView(slug);
+    });
   } else {
-    actionsEl.append(makeButton("Install", "btn-install", () => runInstall()));
-    if (
-      ctx.installerOpened ||
-      entry.kind === "github-installer" ||
-      entry.kind === "direct-installer"
-    ) {
-      actionsEl.append(makeButton("Locate executable", "btn-site", () => void runLocate()));
-    }
+    actions.innerHTML = `
+      <button class="btn-primary" id="act-install">Install Game</button>
+    `;
+    document.getElementById("act-install").addEventListener("click", async () => {
+      setStatus("Starting install...");
+      try {
+        const res = await window.playbound.install(slug);
+        if (res.status === "installed") {
+          setStatus("Install complete!");
+          renderGameDetailView(slug);
+        }
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
   }
 
-  actionsEl.append(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
+  // Load game servers if any
+  const serversRes = await window.playbound.getServers(slug);
+  const sSec = document.getElementById("detail-servers-sec");
+  if (serversRes.supported && serversRes.servers?.length > 0) {
+    sSec.innerHTML = `
+      <div class="section-header">Live Servers (${serversRes.servers.length})</div>
+      <table class="server-table">
+        <thead>
+          <tr>
+            <th>Server Name</th>
+            <th>Players</th>
+            <th>Map</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${serversRes.servers.map((s) => `
+            <tr>
+              <td><strong>${escapeHtml(s.name)}</strong></td>
+              <td>${s.players ?? 0}/${s.maxPlayers ?? 0}</td>
+              <td>${escapeHtml(s.map || "Standard")}</td>
+              <td>
+                <button class="btn-primary btn-sm btn-join-s" data-host="${s.host}" data-port="${s.port}">Join</button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+    sSec.querySelectorAll(".btn-join-s").forEach((b) => {
+      b.addEventListener("click", async () => {
+        await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
+      });
+    });
+  }
 }
 
-function applyContext(next) {
-  ctx = next;
-  if (!ctx) {
-    showLibrary();
-    return;
-  }
+// 7. DEEP LINK VIEW (Action context popped from site)
+function renderDeepLinkView(ctx) {
+  if (!ctx) return;
+  deepLinkCtx = ctx;
+  navigateTo("deepLink");
 
-  if (ctx.action === "install-mod") {
-    showGame();
-    if (ctx.modError) {
-      titleEl.textContent = ctx.slug || "Mod";
-      blurbEl.textContent = "Couldn't load this mod from PlayBound.";
-      tileEl.textContent = "?";
-      tileEl.style.background = "#2a2733";
-      pathRowEl.classList.add("hidden");
-      setStatus(ctx.modError, true);
-      renderActions();
-      return;
-    }
-    if (!ctx.mod || !ctx.entry) {
-      titleEl.textContent = ctx.slug || "Mod";
-      blurbEl.textContent = "Loading mod details…";
-      tileEl.textContent = "…";
-      tileEl.style.background = "#2a2733";
-      pathRowEl.classList.add("hidden");
-      setStatus("Fetching mod from playbound.club…");
-      actionsEl.replaceChildren(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
-      return;
-    }
-
-    const entry = ctx.entry;
-    titleEl.textContent = entry.title;
-    blurbEl.textContent = `${entry.blurb}${entry.approxSize ? ` · ${entry.approxSize}` : ""}`;
-    tileEl.textContent = entry.title.charAt(0);
-    tileEl.style.background = `linear-gradient(135deg, ${entry.art[0]}, ${entry.art[1]})`;
-
-    const showPath = !ctx.baseInstalled && ctx.mod.downloadKind !== "external";
-    pathRowEl.classList.toggle("hidden", !showPath);
-    document.querySelector(".path-label").textContent = "Game folder";
-    targetDir = ctx.basePath || ctx.defaultDir;
-    installPathEl.textContent = targetDir || "(choose base game folder)";
-
-    setProgress(null);
-    renderActions();
-
-    const key = `install-mod:${ctx.slug}:${ctx.mod.downloadKind}:${ctx.baseInstalled ? "1" : "0"}`;
-    if (autoKey === key) return;
-    autoKey = key;
-
-    if (ctx.mod.downloadKind === "external") {
-      setStatus("Opening mod page…");
-      runInstallMod();
-    } else if (ctx.installed) {
-      setStatus("Mod already installed here — you can reinstall.");
-    } else {
-      setStatus(ctx.baseInstalled ? "Starting mod install…" : "Preparing install (base game if needed)…");
-      runInstallMod();
-    }
-    return;
-  }
-
-  document.querySelector(".path-label").textContent = "Install to";
-
-  if (!ctx.entry) {
-    showGame();
-    titleEl.textContent = ctx.slug || "Unknown game";
-    blurbEl.textContent = "This game isn’t in the launcher catalog yet.";
-    tileEl.textContent = "?";
-    tileEl.style.background = "#2a2733";
-    pathRowEl.classList.add("hidden");
-    setStatus("Unknown game slug.", true);
-    actionsEl.replaceChildren(makeButton("Back to library", "btn-site", () => void goBackToLibrary()));
-    return;
-  }
-
-  showGame();
+  const container = views.deepLink;
   const entry = ctx.entry;
-  titleEl.textContent = entry.title;
-  blurbEl.textContent =
-    entry.kind === "external"
-      ? entry.note || entry.blurb
-      : `${entry.blurb} · ${entry.approxSize || ""}`.trim();
-  tileEl.textContent = entry.title.charAt(0);
-  tileEl.style.background = `linear-gradient(135deg, ${entry.art[0]}, ${entry.art[1]})`;
+  const title = entry?.title || ctx.slug || "Action";
 
-  const showPath =
-    entry.kind === "github-zip" ||
-    entry.kind === "direct-zip" ||
-    entry.kind === "openttd-zip" ||
-    entry.kind === "direct-exe" ||
-    entry.kind === "github-jar";
-  pathRowEl.classList.toggle("hidden", !showPath);
-  targetDir = ctx.installedPath || ctx.defaultDir;
-  installPathEl.textContent = targetDir;
+  container.innerHTML = `
+    <h1 class="view-title">PlayBound Action</h1>
+    <p class="view-sub">Requested action from playbound.club</p>
 
-  setStatus("");
-  setProgress(null);
-  renderActions();
+    <div class="settings-group">
+      <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 8px">${escapeHtml(title)}</h2>
+      <p class="settings-hint">${escapeHtml(entry?.blurb || "")}</p>
+      
+      <div style="margin-top: 20px; display: flex; gap: 10px;" id="dl-actions"></div>
+    </div>
+  `;
 
-  const key = `${ctx.action}:${entry.slug}`;
-  if (autoKey === key) return;
-  autoKey = key;
-
+  const actions = document.getElementById("dl-actions");
   if (ctx.action === "install") {
-    if (ctx.installed) {
-      setStatus("Already installed — choose Play or create a shortcut.");
-      ctx.action = "play";
-      renderActions();
-    } else {
-      setStatus("Starting install…");
-      runInstall();
-    }
+    actions.innerHTML = `
+      <button class="btn-primary" id="dl-act-run">Install Now</button>
+      <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
+    `;
+    document.getElementById("dl-act-run").addEventListener("click", async () => {
+      setStatus("Installing...");
+      try {
+        await window.playbound.install(ctx.slug);
+        navigateTo("library");
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
   } else if (ctx.action === "play") {
-    if (ctx.installed) runPlay();
-    else {
-      setStatus("Not installed yet — choose a folder if you want, then click Install.");
-      ctx.action = "install";
-      renderActions();
-    }
-  } else if (ctx.action === "join") {
-    const addr = ctx.join?.host && ctx.join?.port ? `${ctx.join.host}:${ctx.join.port}` : null;
-    if (ctx.installed) {
-      setStatus(addr ? `Ready to join ${addr}.` : "Ready to join.");
-      runPlay(ctx.join);
-    } else {
-      setStatus(
-        addr
-          ? `Install first, then Join will connect to ${addr}.`
-          : "Not installed yet — install first, then join again from the site."
-      );
-      ctx.action = "install";
-      renderActions();
-    }
-  } else if (ctx.action === "uninstall") {
-    setStatus("Confirm uninstall below.");
+    actions.innerHTML = `
+      <button class="btn-success" id="dl-act-run">Launch Game</button>
+      <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
+    `;
+    document.getElementById("dl-act-run").addEventListener("click", async () => {
+      await window.playbound.play(ctx.slug, ctx.join);
+      navigateTo("home");
+    });
+  } else {
+    actions.innerHTML = `<button class="btn-secondary" id="dl-act-cancel">Close</button>`;
   }
+
+  document.getElementById("dl-act-cancel")?.addEventListener("click", async () => {
+    await window.playbound.clearContext();
+    navigateTo("home");
+  });
 }
 
+// ── UI Helper: Create Game Card Element ─────────────────────
+function createGameCard(game) {
+  const card = document.createElement("div");
+  card.className = "game-card";
+  
+  const bgGrad = Array.isArray(game.art) && game.art.length >= 2
+    ? `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`
+    : `linear-gradient(135deg, #312e81, #a78bfa)`;
+
+  card.innerHTML = `
+    <div class="card-banner" style="background: ${bgGrad}">
+      ${escapeHtml(game.title.charAt(0))}
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escapeHtml(game.title)}</div>
+      <div class="card-blurb">${escapeHtml(game.blurb || "")}</div>
+      <div class="card-footer">
+        <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(game.approxSize || "")}</span>
+        <button class="btn-secondary btn-sm">View</button>
+      </div>
+    </div>
+  `;
+
+  card.addEventListener("click", () => navigateTo("gameDetail", { slug: game.slug }));
+  return card;
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// ── IPC Listeners ───────────────────────────────────────────
 window.playbound.onProgress(({ phase, received, total }) => {
-  if (phase === "resolving") setStatus("Finding the latest release…");
-  if (phase === "installing-base") setStatus("Installing the base game first…");
-  if (phase === "downloading") {
+  if (phase === "resolving") setStatus("Resolving download package...");
+  else if (phase === "downloading") {
     const pct = total ? Math.round((received / total) * 100) : null;
-    setStatus(`Downloading… ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
-    if (pct !== null) setProgress(pct);
-  }
-  if (phase === "extracting") {
-    setStatus("Extracting…");
+    setStatus(`Downloading... ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
+    setProgress(pct);
+  } else if (phase === "extracting") {
+    setStatus("Extracting game files...");
     setProgress(100);
-  }
-  if (phase === "installer-ready") {
+  } else if (phase === "done") {
+    setStatus("Complete!");
     setProgress(null);
-    setStatus(
-      "Download finished — complete the installer window (Next / Install). When it finishes, this app will detect the game."
-    );
-  }
-  if (phase === "done") setProgress(null);
-});
-
-window.playbound.onInstallDetected((data) => {
-  void loadLibrary();
-  if (data?.slug && ctx?.entry?.slug === data.slug) {
-    ctx.installed = true;
-    ctx.installerOpened = false;
-    ctx.action = "play";
-    setStatus("Installed — ready to play.");
-    renderActions();
-  } else if (data?.scanned) {
-    setLibraryMsg(`Detected ${data.scanned} installed game${data.scanned === 1 ? "" : "s"}.`);
-  } else if (!ctx) {
-    void loadLibrary();
   }
 });
 
-window.playbound.onModInstallFinished((data) => {
-  void loadLibrary();
-  if (data?.error) {
-    setStatus(data.error, true);
-    return;
-  }
-  if (data?.result?.status === "installed") {
-    setStatus(`Installed ${data.result.version} into ${data.result.dir}`);
-    if (ctx?.action === "install-mod" && ctx.slug === data.slug) {
-      ctx.installed = true;
-      ctx.installedPath = data.result.dir;
-      ctx.baseInstalled = true;
-      renderActions();
-    }
-  }
+window.playbound.onInstallDetected(() => {
+  if (currentView === "library") renderLibraryView();
+  else if (currentView === "home") renderHomeView();
 });
 
-window.playbound.onContext((data) => applyContext(data));
-
-btnChoose.addEventListener("click", async () => {
-  if (busy || !ctx) return;
-  const picked = await window.playbound.chooseDirectory(targetDir || ctx.defaultDir);
-  if (picked) {
-    targetDir = picked;
-    installPathEl.textContent = targetDir;
-  }
+window.playbound.onContext((data) => {
+  if (data) renderDeepLinkView(data);
 });
 
-window.playbound.getContext().then((data) => applyContext(data));
+// Initial boot
+refreshAccountStatus();
+window.playbound.getContext().then((data) => {
+  if (data) renderDeepLinkView(data);
+  else navigateTo("home");
+});

@@ -217,6 +217,9 @@ export function GameEditorForm({
         screenshots: [
           ...new Set([...(prev.screenshots ?? []), ...((data.screenshots as string[]) ?? [])]),
         ].slice(0, 20),
+        videos: [
+          ...new Set([...(prev.videos ?? []), ...((data.videos as string[]) ?? [])]),
+        ].slice(0, 10),
       }));
       setBusy(false);
     } catch {
@@ -566,6 +569,32 @@ export function GameEditorForm({
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+          {(form.videos?.length ?? 0) > 0 && (
+            <div>
+              <p className={label}>Videos ({form.videos!.length})</p>
+              <div className="mt-2 flex flex-col gap-2">
+                {form.videos!.map((src) => (
+                  <div key={src} className="flex items-center gap-2">
+                    <code className="flex-1 min-w-0 truncate rounded bg-secondary/70 px-2 py-1 text-[11px] text-muted-foreground">
+                      {src}
+                    </code>
+                    <button
+                      type="button"
+                      className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white"
+                      onClick={() =>
+                        patch(
+                          "videos",
+                          (form.videos ?? []).filter((s) => s !== src)
+                        )
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

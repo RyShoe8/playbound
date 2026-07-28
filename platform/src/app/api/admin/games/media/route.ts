@@ -19,6 +19,7 @@ export async function POST(req: Request) {
       title: meta.title,
       description: meta.description,
       images: meta.images,
+      videos: meta.videos,
       coverImage: meta.images[0] ?? null,
       screenshots: meta.images.slice(0, 8),
     });

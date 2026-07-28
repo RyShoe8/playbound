@@ -74,6 +74,7 @@ const CatalogGameSchema = new Schema(
     art: { type: GameArtSchema, required: true },
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },
+    videos: { type: [String], default: [] },
     systemRequirements: { type: SystemRequirementsSchema, required: true },
     launcherInstall: { type: LauncherInstallSchema, default: null },
     published: { type: Boolean, default: true, index: true },

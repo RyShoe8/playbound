@@ -10,6 +10,11 @@ export async function fetchRemoteMaster(slug: string): Promise<GameServer[]> {
   if (!base) {
     throw new Error("MASTER_ADAPTER_URL is not configured");
   }
+  try {
+    new URL(base);
+  } catch {
+    throw new Error("MASTER_ADAPTER_URL is not a valid URL");
+  }
 
   const headers: Record<string, string> = {
     accept: "application/json",

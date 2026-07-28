@@ -2,94 +2,70 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
-    <title>PlayBound Launcher</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: http:; media-src 'self' https: http:" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <title>PlayBound</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>
-      <div class="logo">
-        <span class="logo-mark">▶</span>
-        <span>Play<em>Bound</em> Launcher</span>
-      </div>
-      <span class="beta">beta</span>
-    </header>
-
-    <main id="app">
-      <div id="library" class="panel library-panel">
-        <div class="library-header">
-          <div>
-            <p class="library-title">Your games</p>
-            <p class="library-sub">Play installed games or create a desktop shortcut.</p>
-          </div>
-          <button type="button" class="btn-site btn-sm" id="btn-browse-site">Browse site</button>
+    <div id="app">
+      <!-- Sidebar -->
+      <nav id="sidebar">
+        <div class="sidebar-brand">
+          <span class="logo-mark">▶</span>
+          <span class="brand-text">Play<em>Bound</em></span>
         </div>
-        <div id="library-list" class="library-list"></div>
-        <p id="library-empty" class="library-empty hidden">
-          No games installed yet — use One-click install on playbound.club.
-        </p>
-        <p id="library-msg" class="library-msg"></p>
-      </div>
-
-      <div id="game" class="panel game-panel hidden">
-        <button type="button" class="btn-back" id="btn-back-library">← Back to library</button>
-        <div class="game-header">
-          <div class="tile" id="tile"></div>
-          <div class="meta">
-            <h1 id="title"></h1>
-            <p id="blurb"></p>
-          </div>
+        <div class="sidebar-nav">
+          <button class="nav-btn active" data-view="home">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+          </button>
+          <button class="nav-btn" data-view="library">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            Library
+          </button>
+          <button class="nav-btn" data-view="servers">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+            Servers
+          </button>
+          <button class="nav-btn" data-view="store">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            Store
+          </button>
         </div>
-
-        <div id="path-row" class="path-row">
-          <label class="path-label" for="install-path">Install to</label>
-          <div class="path-controls">
-            <code id="install-path"></code>
-            <button type="button" class="btn-site btn-sm" id="btn-choose">Choose folder</button>
+        <div class="sidebar-bottom">
+          <button class="nav-btn" data-view="settings">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Settings
+          </button>
+          <div class="sidebar-status">
+            <span id="connection-dot" class="dot"></span>
+            <span id="connection-label">Offline</span>
           </div>
         </div>
+      </nav>
 
-        <div class="status" id="status"></div>
-        <div class="progress" id="progress" style="display: none">
-          <div id="bar"></div>
+      <!-- Main Content -->
+      <main id="content">
+        <div id="view-home" class="view active"></div>
+        <div id="view-library" class="view"></div>
+        <div id="view-servers" class="view"></div>
+        <div id="view-store" class="view"></div>
+        <div id="view-settings" class="view"></div>
+        <div id="view-game-detail" class="view"></div>
+        <div id="view-deep-link" class="view"></div>
+      </main>
+
+      <!-- Status Bar -->
+      <footer id="statusbar">
+        <div id="statusbar-msg"></div>
+        <div id="statusbar-progress" class="hidden">
+          <div id="statusbar-bar"></div>
         </div>
-
-        <div class="actions" id="actions"></div>
-      </div>
-
-      <div id="account" class="panel account-panel">
-        <div class="account-header">
-          <strong>Account</strong>
-          <span id="account-status" class="account-status">Not signed in</span>
-        </div>
-        <p class="account-hint">
-          Optional — connect from playbound.club/library, or Sign in here (opens your browser). After
-          connecting, close this window; your library page will refresh.
-        </p>
-        <div class="account-actions">
-          <button type="button" class="btn-play btn-sm" id="btn-sign-in">Sign in</button>
-          <button type="button" class="btn-site btn-sm" id="btn-sign-out">Sign out</button>
-        </div>
-        <details class="account-advanced">
-          <summary>Advanced — paste token</summary>
-          <div class="account-row">
-            <input
-              id="token-input"
-              type="password"
-              spellcheck="false"
-              autocomplete="off"
-              placeholder="Launcher token"
-            />
-            <button type="button" class="btn-site btn-sm" id="btn-save-token">Save</button>
-          </div>
-        </details>
-        <p id="account-msg" class="account-msg"></p>
-      </div>
-    </main>
-
-    <footer>
-      PlayBound only downloads official builds · never bundles or modifies game files
-    </footer>
+      </footer>
+    </div>
     <script src="renderer.js"></script>
   </body>
 </html>

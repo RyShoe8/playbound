@@ -40,6 +40,7 @@ export interface PageMeta {
   title: string;
   description: string;
   images: string[];
+  videos: string[];
   siteName: string | null;
 }
 
@@ -75,10 +76,20 @@ export async function fetchPageMeta(url: string): Promise<PageMeta> {
     }
   }
 
+  const videos: string[] = [];
+  for (const key of ["og:video", "og:video:url", "og:video:secure_url", "twitter:player:stream"]) {
+    const raw = metaContent(html, key);
+    if (raw) {
+      const abs = absoluteUrl(finalUrl, raw);
+      if (!videos.includes(abs)) videos.push(abs);
+    }
+  }
+
   return {
     title,
     description,
     images,
+    videos,
     siteName: metaContent(html, "og:site_name"),
   };
 }
