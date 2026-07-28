@@ -61,6 +61,8 @@ export interface Game {
   coverImage?: string;
   /** Local or absolute screenshot URLs for the Media tab */
   screenshots?: string[];
+  /** Video URLs (trailers, gameplay clips) for the Media tab */
+  videos?: string[];
   systemRequirements: { min: string; recommended: string };
   /** Desktop launcher install recipe (CMS / seed). */
   launcherInstall?: LauncherInstall;

@@ -1030,6 +1030,13 @@ async function playGame(slug, join = null) {
     stdio: "ignore",
     shell: useShell,
   }).unref();
+
+  // Track recently played
+  const settings = loadSettings();
+  if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
+  settings.recentlyPlayed[slug] = { lastPlayed: new Date().toISOString() };
+  saveSettings(settings);
+
   return {
     status: "launched",
     connect: args.length > 0 ? `${join.host}:${join.port}` : null,
@@ -1176,18 +1183,108 @@ ipcMain.handle("sign-in", () => {
   openAuthInBrowser();
   return true;
 });
+ipcMain.handle("get-catalog", () => {
+  return catalog.map((e) => ({
+    slug: e.slug,
+    title: e.title,
+    blurb: e.blurb,
+    kind: e.kind,
+    approxSize: e.approxSize || "",
+    art: e.art,
+  }));
+});
+ipcMain.handle("get-servers", async (_event, slug) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (!res.ok) return { supported: false, servers: [] };
+    return await res.json();
+  } catch {
+    return { supported: false, servers: [] };
+  }
+});
+ipcMain.handle("get-all-servers", async () => {
+  const state = loadState();
+  const results = [];
+  for (const slug of Object.keys(state)) {
+    if (slug === "__mods__") continue;
+    try {
+      const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
+        headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.supported && Array.isArray(data.servers) && data.servers.length > 0) {
+        const entry = catalog.find((e) => e.slug === slug);
+        results.push({
+          slug,
+          title: entry?.title || slug,
+          servers: data.servers,
+        });
+      }
+    } catch { /* skip */ }
+  }
+  return results;
+});
+ipcMain.handle("get-settings", () => {
+  const settings = loadSettings();
+  return {
+    apiBase: settings.apiBase || DEFAULT_API_BASE,
+    gamesDir: settings.gamesDir || DEFAULT_GAMES_DIR,
+    connected: Boolean(settings.launcherToken),
+  };
+});
+ipcMain.handle("save-settings", (_event, patch) => {
+  const settings = loadSettings();
+  if (patch.apiBase != null) settings.apiBase = patch.apiBase;
+  if (patch.gamesDir != null) settings.gamesDir = patch.gamesDir;
+  saveSettings(settings);
+  return true;
+});
+ipcMain.handle("get-recently-played", () => {
+  const settings = loadSettings();
+  const recent = settings.recentlyPlayed || {};
+  const state = loadState();
+  const games = [];
+  for (const [slug, data] of Object.entries(recent)) {
+    const info = state[slug];
+    if (!info || !info.exe || !fs.existsSync(info.exe)) continue;
+    const entry = catalog.find((e) => e.slug === slug);
+    games.push({
+      slug,
+      title: entry?.title || slug,
+      art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
+      lastPlayed: data.lastPlayed || null,
+    });
+  }
+  games.sort((a, b) => (b.lastPlayed || "").localeCompare(a.lastPlayed || ""));
+  return games;
+});
+ipcMain.handle("get-game-detail", async (_event, slug) => {
+  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
+  if (!entry) return null;
+  const state = loadState();
+  const info = state[slug];
+  return {
+    ...entry,
+    installed: Boolean(info?.exe && fs.existsSync(info.exe)),
+    installedPath: info?.dir || null,
+    version: info?.version || null,
+  };
+});
 
 /* ── window ────────────────────────────────────────────────── */
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 560,
-    height: 640,
-    minWidth: 480,
-    minHeight: 520,
+    width: 1200,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
     resizable: true,
-    backgroundColor: "#131118",
-    title: "PlayBound Launcher",
+    backgroundColor: "#0c0a12",
+    title: "PlayBound",
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),

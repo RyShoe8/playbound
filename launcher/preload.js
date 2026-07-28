@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("playbound", {
+  // Existing
   getContext: () => ipcRenderer.invoke("get-context"),
   chooseDirectory: (defaultPath) => ipcRenderer.invoke("choose-directory", defaultPath),
   install: (slug, targetDir) => ipcRenderer.invoke("install", slug, targetDir),
@@ -20,6 +21,17 @@ contextBridge.exposeInMainWorld("playbound", {
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
   signIn: () => ipcRenderer.invoke("sign-in"),
+
+  // New for PlayBound App
+  getCatalog: () => ipcRenderer.invoke("get-catalog"),
+  getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
+  getAllServers: () => ipcRenderer.invoke("get-all-servers"),
+  getSettings: () => ipcRenderer.invoke("get-settings"),
+  saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),
+  getRecentlyPlayed: () => ipcRenderer.invoke("get-recently-played"),
+  getGameDetail: (slug) => ipcRenderer.invoke("get-game-detail", slug),
+
+  // Events
   onContext: (cb) => ipcRenderer.on("context", (_event, data) => cb(data)),
   onProgress: (cb) => ipcRenderer.on("progress", (_event, data) => cb(data)),
   onAccount: (cb) => ipcRenderer.on("account", (_event, data) => cb(data || {})),

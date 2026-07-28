@@ -17,9 +17,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = new URL(
-  process.env.NEXTAUTH_URL || "https://playbound.club",
-);
+function getSiteUrl(): URL {
+  try {
+    const urlStr = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+    if (urlStr && /^https?:\/\//i.test(urlStr)) return new URL(urlStr);
+  } catch {
+    /* fallback */
+  }
+  return new URL("https://playbound.club");
+}
+
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,

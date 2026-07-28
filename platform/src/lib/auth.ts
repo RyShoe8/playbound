@@ -5,6 +5,10 @@ import { isFounderAdminEmail } from "@/lib/admin";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 
+if (process.env.NEXTAUTH_URL && !/^https?:\/\/[a-zA-Z0-9.-]+/i.test(process.env.NEXTAUTH_URL)) {
+  process.env.NEXTAUTH_URL = "http://localhost:3000";
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({

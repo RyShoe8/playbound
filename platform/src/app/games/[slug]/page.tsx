@@ -518,30 +518,58 @@ function MediaTab({ game }: { game: Game }) {
     : game.coverImage
       ? [game.coverImage]
       : [];
+  const vids = game.videos ?? [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h2 className="text-lg font-bold">Media</h2>
-      {shots.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {shots.map((src) => (
-            <a
-              key={src}
-              href={src}
-              target="_blank"
-              rel="noreferrer"
-              className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`${game.title} screenshot`} className="h-full w-full object-cover" />
-            </a>
-          ))}
-          {game.coverImage && !shots.includes(game.coverImage) && (
-            <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
-              <GameArt game={game} showTitle={false} className="absolute inset-0" />
-            </div>
-          )}
+      {vids.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground">Videos</h3>
+          <div className="grid grid-cols-1 gap-3">
+            {vids.map((src) => (
+              <div
+                key={src}
+                className="relative aspect-video overflow-hidden rounded-lg border border-border bg-black"
+              >
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video
+                  src={src}
+                  controls
+                  preload="metadata"
+                  className="h-full w-full object-contain"
+                  poster={game.coverImage || undefined}
+                />
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+      {shots.length > 0 ? (
+        <>
+          {vids.length > 0 && (
+            <h3 className="text-sm font-semibold text-muted-foreground">Screenshots</h3>
+          )}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {shots.map((src) => (
+              <a
+                key={src}
+                href={src}
+                target="_blank"
+                rel="noreferrer"
+                className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`${game.title} screenshot`} className="h-full w-full object-cover" />
+              </a>
+            ))}
+            {game.coverImage && !shots.includes(game.coverImage) && (
+              <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
+                <GameArt game={game} showTitle={false} className="absolute inset-0" />
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <GameArt game={game} showTitle={false} iconSize="md" className="aspect-video rounded-lg" />

@@ -198,6 +198,7 @@ export const gamePayloadSchema = z.object({
     .optional()
     .transform((v) => (!v ? null : v)),
   screenshots: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
+  videos: z.array(z.string().trim().min(1).max(500)).max(10).default([]),
   systemRequirements: z.object({
     min: z.string().trim().min(1).max(500),
     recommended: z.string().trim().min(1).max(500),
@@ -298,6 +299,7 @@ export const emptyGameDraft = (): GamePayload => ({
   art: defaultArtFor([], ""),
   coverImage: null,
   screenshots: [],
+  videos: [],
   systemRequirements: {
     min: "See official site",
     recommended: "See official site",

@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FolderHeart, Hammer, Search } from "lucide-react";
-import { searchAll } from "@/lib/catalog";
+import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
+import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
 import { GameCard } from "@/components/GameCard";
+import { SearchFilters } from "@/components/SearchFilters";
 import { Avatar, EmptyHint, SectionHeader } from "@/components/ui/bits";
 
 export const metadata: Metadata = { title: "Search" };
@@ -10,30 +12,88 @@ export const metadata: Metadata = { title: "Search" };
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    genre?: string | string[];
+    tag?: string | string[];
+    platform?: string | string[];
+    feature?: string | string[];
+    sort?: string;
+    sortDir?: string;
+    maxSize?: string;
+  }>;
 }) {
-  const { q = "" } = await searchParams;
-  const results = await searchAll(q);
-  const total = results.games.length + results.developers.length + results.collections.length;
+  const params = await searchParams;
+  const q = params.q ?? "";
+
+  const toArray = (v: string | string[] | undefined): string[] => {
+    if (!v) return [];
+    return Array.isArray(v) ? v : [v];
+  };
+
+  const genres = toArray(params.genre);
+  const tags = toArray(params.tag);
+  const platforms = toArray(params.platform);
+  const features = toArray(params.feature);
+  const sort = (params.sort ?? "title") as GameFilter["sort"];
+  const sortDir = (params.sortDir ?? "asc") as GameFilter["sortDir"];
+  const maxSize = params.maxSize ? parseInt(params.maxSize, 10) : undefined;
+
+  const hasFilters = genres.length > 0 || tags.length > 0 || platforms.length > 0 || features.length > 0 || !!maxSize;
+  const hasSearch = !!q;
+  const hasAny = hasSearch || hasFilters;
+
+  // Run structured game filter
+  const filter: GameFilter = {
+    q: q || undefined,
+    genres: genres.length ? genres : undefined,
+    tags: tags.length ? tags : undefined,
+    platforms: platforms.length ? platforms : undefined,
+    features: features.length ? features : undefined,
+    sort,
+    sortDir,
+    maxSizeMB: maxSize,
+  };
+
+  const games = hasAny ? await searchGames(filter) : [];
+
+  // Also search developers and collections when there's a text query
+  const otherResults = hasSearch ? await searchAll(q) : null;
+  const developerResults = otherResults?.developers ?? [];
+  const collectionResults = otherResults?.collections ?? [];
+
+  const total = games.length + developerResults.length + collectionResults.length;
+
+  // Build a readable description of active filters
+  const filterParts: string[] = [];
+  if (genres.length) filterParts.push(`genres: ${genres.join(", ")}`);
+  if (tags.length) filterParts.push(`tags: ${tags.join(", ")}`);
+  if (platforms.length) filterParts.push(`platforms: ${platforms.join(", ")}`);
+  if (features.length) filterParts.push(`features: ${features.join(", ")}`);
+  if (maxSize) filterParts.push(`under ${maxSize >= 1000 ? `${maxSize / 1000} GB` : `${maxSize} MB`}`);
 
   return (
-    <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Search</h1>
         <p className="mt-1 text-muted-foreground">
-          {q
-            ? `${total} result${total === 1 ? "" : "s"} for "${q}" across games, developers, and collections`
-            : "Search games, developers, and collections from the bar above."}
+          {hasAny
+            ? `${total} result${total === 1 ? "" : "s"}${q ? ` for "${q}"` : ""}${filterParts.length ? ` · ${filterParts.join(" · ")}` : ""}`
+            : "Search games, developers, and collections — or use the filters below."}
         </p>
       </div>
 
-      {!q && (
-        <EmptyHint icon={Search}>Try searching for &ldquo;RTS&rdquo;, &ldquo;space&rdquo;, or a game title.</EmptyHint>
+      <Suspense fallback={null}>
+        <SearchFilters />
+      </Suspense>
+
+      {!hasAny && (
+        <EmptyHint icon={Search}>Try searching for &ldquo;RTS&rdquo;, &ldquo;space&rdquo;, a game title, or use the filters above.</EmptyHint>
       )}
 
-      {q && total === 0 && (
-        <EmptyHint icon={Search}>
-          Nothing matched &ldquo;{q}&rdquo;. Try a genre, a game title, or browse{" "}
+      {hasAny && total === 0 && (
+        <EmptyHint icon={SlidersHorizontal}>
+          Nothing matched your search. Try fewer filters, a different query, or browse{" "}
           <Link href="/discover" className="font-semibold text-primary hover:underline">
             Discover
           </Link>
@@ -41,22 +101,22 @@ export default async function SearchPage({
         </EmptyHint>
       )}
 
-      {results.games.length > 0 && (
+      {games.length > 0 && (
         <section>
-          <SectionHeader title={`Games (${results.games.length})`} />
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-            {results.games.map((g) => (
+          <SectionHeader title={`Games (${games.length})`} />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {games.map((g) => (
               <GameCard key={g.slug} game={g} className="w-full sm:w-full" />
             ))}
           </div>
         </section>
       )}
 
-      {results.developers.length > 0 && (
+      {developerResults.length > 0 && (
         <section>
-          <SectionHeader title={`Developers (${results.developers.length})`} />
+          <SectionHeader title={`Developers (${developerResults.length})`} />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {results.developers.map((d) => (
+            {developerResults.map((d) => (
               <Link
                 key={d.slug}
                 href={`/developers/${d.slug}`}
@@ -75,11 +135,11 @@ export default async function SearchPage({
         </section>
       )}
 
-      {results.collections.length > 0 && (
+      {collectionResults.length > 0 && (
         <section>
-          <SectionHeader title={`Collections (${results.collections.length})`} />
+          <SectionHeader title={`Collections (${collectionResults.length})`} />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {results.collections.map((c) => (
+            {collectionResults.map((c) => (
               <Link
                 key={c.slug}
                 href={`/collections/${c.slug}`}

@@ -46,6 +46,7 @@ function toGame(doc: LeanGame): Game {
     art: doc.art as Game["art"],
     coverImage: (doc.coverImage as string) || undefined,
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
+    videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : undefined,
     systemRequirements: doc.systemRequirements as Game["systemRequirements"],
   };
   return attachLauncherInstall(base, doc);
@@ -177,6 +178,79 @@ export async function searchAll(query: string): Promise<SearchResults> {
     developers: developers.filter((d) => has(d.name, d.tagline)),
     collections: collections.filter((c) => has(c.title, c.description)),
   };
+}
+
+export interface GameFilter {
+  q?: string;
+  genres?: string[];
+  tags?: string[];
+  platforms?: string[];
+  features?: string[];
+  sort?: "title" | "releaseYear" | "sizeMB";
+  sortDir?: "asc" | "desc";
+  maxSizeMB?: number;
+}
+
+export async function searchGames(filter: GameFilter): Promise<Game[]> {
+  let games = await listGames();
+
+  if (filter.q) {
+    const q = filter.q.trim().toLowerCase();
+    if (q) {
+      games = games.filter((g) => {
+        const haystack = [g.title, g.tagline, ...g.tags, ...g.genres, ...g.features]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+  }
+
+  if (filter.genres?.length) {
+    const set = new Set(filter.genres);
+    games = games.filter((g) => g.genres.some((genre) => set.has(genre)));
+  }
+
+  if (filter.tags?.length) {
+    const set = new Set(filter.tags.map((t) => t.toLowerCase()));
+    games = games.filter((g) =>
+      g.tags.some((tag) => set.has(tag.toLowerCase()))
+    );
+  }
+
+  if (filter.platforms?.length) {
+    const set = new Set(filter.platforms.map((p) => p.toLowerCase()));
+    games = games.filter((g) =>
+      g.platforms.some((p) => set.has(p.toLowerCase()))
+    );
+  }
+
+  if (filter.features?.length) {
+    const set = new Set(filter.features.map((f) => f.toLowerCase()));
+    games = games.filter((g) =>
+      g.features.some((f) => set.has(f.toLowerCase()))
+    );
+  }
+
+  if (filter.maxSizeMB != null && filter.maxSizeMB > 0) {
+    games = games.filter((g) => g.sizeMB <= filter.maxSizeMB!);
+  }
+
+  const sortKey = filter.sort ?? "title";
+  const dir = filter.sortDir ?? "asc";
+  games.sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === "title") {
+      cmp = a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    } else if (sortKey === "releaseYear") {
+      cmp = a.releaseYear - b.releaseYear;
+    } else if (sortKey === "sizeMB") {
+      cmp = a.sizeMB - b.sizeMB;
+    }
+    return dir === "desc" ? -cmp : cmp;
+  });
+
+  return games;
 }
 
 export { seedGames };

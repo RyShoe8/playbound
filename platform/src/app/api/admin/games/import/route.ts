@@ -58,6 +58,45 @@ async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
         .slice(0, 8)
     : [];
 
+  // Extract videos from Steam movies array
+  const videos: string[] = [];
+  if (Array.isArray(data.movies)) {
+    for (const movie of data.movies as { mp4?: { max?: string; "480"?: string }; webm?: { max?: string } }[]) {
+      const url = movie.mp4?.max || movie.mp4?.["480"] || movie.webm?.max;
+      if (url && !videos.includes(url)) videos.push(url);
+      if (videos.length >= 5) break;
+    }
+  }
+
+  // Extract sizeMB from pc_requirements disk space text
+  const pcReq = data.pc_requirements as { minimum?: string; recommended?: string } | string | null;
+  const pcReqMin = typeof pcReq === "object" && pcReq ? pcReq.minimum || "" : "";
+  const pcReqRec = typeof pcReq === "object" && pcReq ? pcReq.recommended || "" : "";
+  const diskText = stripHtml(pcReqMin) + " " + stripHtml(pcReqRec);
+  const diskMatch = diskText.match(/(\d+(?:\.\d+)?)\s*(GB|MB)\s*(?:available|free|disk|hard|storage|space)/i);
+  let sizeMB = 0;
+  if (diskMatch) {
+    const val = parseFloat(diskMatch[1]);
+    sizeMB = diskMatch[2].toUpperCase() === "GB" ? Math.round(val * 1000) : Math.round(val);
+  }
+
+  // Extract system requirements text
+  const sysMin = pcReqMin ? stripHtml(pcReqMin).slice(0, 500) || "See Steam store page" : "See Steam store page";
+  const sysRec = pcReqRec ? stripHtml(pcReqRec).slice(0, 500) || "See Steam store page" : "See Steam store page";
+
+  // Extract release year
+  const releaseDateStr = (data.release_date as { date?: string })?.date || "";
+  const yearMatch = releaseDateStr.match(/\b(19|20)\d{2}\b/);
+  const releaseYear = yearMatch ? parseInt(yearMatch[0], 10) : new Date().getFullYear();
+
+  // Extract platforms
+  const steamPlatforms = data.platforms as { windows?: boolean; mac?: boolean; linux?: boolean } | null;
+  const platforms: string[] = [];
+  if (steamPlatforms?.windows) platforms.push("Windows");
+  if (steamPlatforms?.mac) platforms.push("macOS");
+  if (steamPlatforms?.linux) platforms.push("Linux");
+  if (platforms.length === 0) platforms.push("Windows");
+
   const slug = slugifyTitle(title);
   return {
     ...emptyGameDraft(),
@@ -68,11 +107,15 @@ async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
     website,
     coverImage: header,
     screenshots,
+    videos,
     tags: genreTags,
-    platforms: ["Windows"],
+    platforms,
+    sizeMB,
+    releaseYear,
     launchMethods: ["install"],
     browserPlayable: false,
     license: "See Steam store page",
+    systemRequirements: { min: sysMin, recommended: sysRec },
     art: defaultArtFor([], slug),
     published: false,
     launcherInstall: null,
@@ -144,6 +187,7 @@ async function fromWebsite(url: string): Promise<Partial<GamePayload>> {
     developerSlug: "indie-web",
     coverImage: cover,
     screenshots: meta.images.slice(0, 8),
+    videos: meta.videos.slice(0, 5),
     platforms: ["Web"],
     launchMethods: ["browser"],
     browserPlayable: true,
