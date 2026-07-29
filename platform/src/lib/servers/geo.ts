@@ -170,9 +170,22 @@ export async function lookupLocations(hosts: string[]): Promise<Map<string, Serv
   return out;
 }
 
+function isUnknownCountryCode(code: string | null | undefined): boolean {
+  if (!code) return true;
+  const c = code.toUpperCase();
+  return c === "ZZ" || c === "XX" || c === "A1" || c === "A2" || c === "O1";
+}
+
 function needsGeoLookup(location: ServerLocation | null): boolean {
   if (!location) return true;
+  if (isUnknownCountryCode(location.countryCode)) return true;
   return location.lat == null || location.lon == null;
+}
+
+function preferCountryCode(existing: string | undefined, looked: string | undefined): string {
+  if (looked && !isUnknownCountryCode(looked)) return looked;
+  if (existing && !isUnknownCountryCode(existing)) return existing;
+  return looked || existing || "ZZ";
 }
 
 export async function attachGeo<T extends { host: string; location: ServerLocation | null }>(
@@ -197,7 +210,7 @@ export async function attachGeo<T extends { host: string; location: ServerLocati
     return {
       ...s,
       location: refineLocation({
-        countryCode: s.location.countryCode || looked.countryCode,
+        countryCode: preferCountryCode(s.location.countryCode, looked.countryCode),
         region: s.location.region || looked.region,
         regionCode: s.location.regionCode || looked.regionCode,
         lat: looked.lat ?? s.location.lat,
@@ -207,6 +220,116 @@ export async function attachGeo<T extends { host: string; location: ServerLocati
   });
 }
 
+/** Common country names returned by game masters (e.g. OpenRA). */
+const COUNTRY_NAME_TO_ISO: Record<string, string> = {
+  afghanistan: "AF",
+  albania: "AL",
+  algeria: "DZ",
+  argentina: "AR",
+  armenia: "AM",
+  australia: "AU",
+  austria: "AT",
+  azerbaijan: "AZ",
+  bahrain: "BH",
+  bangladesh: "BD",
+  belarus: "BY",
+  belgium: "BE",
+  bolivia: "BO",
+  "bosnia and herzegovina": "BA",
+  bosnia: "BA",
+  brazil: "BR",
+  bulgaria: "BG",
+  cambodia: "KH",
+  canada: "CA",
+  chile: "CL",
+  china: "CN",
+  colombia: "CO",
+  croatia: "HR",
+  cuba: "CU",
+  cyprus: "CY",
+  "czech republic": "CZ",
+  czechia: "CZ",
+  denmark: "DK",
+  ecuador: "EC",
+  egypt: "EG",
+  estonia: "EE",
+  finland: "FI",
+  france: "FR",
+  georgia: "GE",
+  germany: "DE",
+  greece: "GR",
+  "hong kong": "HK",
+  hungary: "HU",
+  iceland: "IS",
+  india: "IN",
+  indonesia: "ID",
+  iran: "IR",
+  iraq: "IQ",
+  ireland: "IE",
+  israel: "IL",
+  italy: "IT",
+  japan: "JP",
+  jordan: "JO",
+  kazakhstan: "KZ",
+  kenya: "KE",
+  kuwait: "KW",
+  latvia: "LV",
+  lebanon: "LB",
+  lithuania: "LT",
+  luxembourg: "LU",
+  malaysia: "MY",
+  mexico: "MX",
+  moldova: "MD",
+  morocco: "MA",
+  netherlands: "NL",
+  "new zealand": "NZ",
+  nigeria: "NG",
+  "north macedonia": "MK",
+  norway: "NO",
+  oman: "OM",
+  pakistan: "PK",
+  panama: "PA",
+  paraguay: "PY",
+  peru: "PE",
+  philippines: "PH",
+  poland: "PL",
+  portugal: "PT",
+  qatar: "QA",
+  romania: "RO",
+  russia: "RU",
+  "russian federation": "RU",
+  "saudi arabia": "SA",
+  serbia: "RS",
+  singapore: "SG",
+  slovakia: "SK",
+  slovenia: "SI",
+  "south africa": "ZA",
+  "south korea": "KR",
+  korea: "KR",
+  spain: "ES",
+  sweden: "SE",
+  switzerland: "CH",
+  taiwan: "TW",
+  thailand: "TH",
+  turkey: "TR",
+  türkiye: "TR",
+  ukraine: "UA",
+  "united arab emirates": "AE",
+  uae: "AE",
+  "united kingdom": "GB",
+  uk: "GB",
+  "great britain": "GB",
+  england: "GB",
+  scotland: "GB",
+  wales: "GB",
+  "united states": "US",
+  "united states of america": "US",
+  usa: "US",
+  uruguay: "UY",
+  venezuela: "VE",
+  vietnam: "VN",
+};
+
 /** Map a free-form country name to a display location (centroid applied). */
 export function locationFromCountryName(name: string | null | undefined): ServerLocation | null {
   if (!name?.trim()) return null;
@@ -214,6 +337,10 @@ export function locationFromCountryName(name: string | null | undefined): Server
   if (/^[A-Z]{2}$/i.test(trimmed)) {
     return refineLocation({ countryCode: trimmed.toUpperCase() });
   }
-  // Best-effort: keep region label; country code unknown → no Est. until GeoIP
+  const iso = COUNTRY_NAME_TO_ISO[trimmed.toLowerCase()];
+  if (iso) {
+    return refineLocation({ countryCode: iso, region: trimmed });
+  }
+  // Unknown name — keep label; GeoIP may replace ZZ via attachGeo
   return { countryCode: "ZZ", region: trimmed };
 }

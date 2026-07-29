@@ -1346,7 +1346,7 @@ ipcMain.handle("get-all-servers", async () => {
     /* fall through */
   }
   if (!providers.length) {
-    providers = ["openra", "luanti", "supertuxkart", "xonotic", "unvanquished"];
+    providers = ["openra", "luanti", "openttd", "supertuxkart", "xonotic", "unvanquished"];
   }
 
   const results = [];

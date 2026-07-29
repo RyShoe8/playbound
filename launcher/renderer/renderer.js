@@ -302,7 +302,7 @@ async function renderServersView() {
   await loadServersBrowser();
 }
 
-let _serversCache = { slug: null, servers: [], title: "", note: "" };
+let _serversCache = { slug: null, servers: [], title: "", note: "", error: "" };
 
 function fillModDropdown(baseSlug) {
   const modSelect = document.getElementById("servers-mod");
@@ -445,13 +445,15 @@ async function fetchAndShowServers(baseSlug, mod) {
     servers,
     title: mod?.title || baseSlug,
     note: noteExtra,
+    error: data.error || "",
   };
 
   const noteEl = document.getElementById("servers-note");
   if (noteEl) {
     const prev = (noteEl.dataset.baseNote || noteEl.textContent || "").trim();
     if (!noteEl.dataset.baseNote) noteEl.dataset.baseNote = prev;
-    noteEl.textContent = [noteEl.dataset.baseNote, noteExtra].filter(Boolean).join(" ").trim();
+    const errNote = data.error ? `Couldn’t refresh live list: ${data.error}` : "";
+    noteEl.textContent = [noteEl.dataset.baseNote, noteExtra, errNote].filter(Boolean).join(" ").trim();
   }
 
   paintServersTable();
@@ -494,6 +496,15 @@ function updateServersStats(rows) {
   el.textContent = `${totalPlayers} player${totalPlayers === 1 ? "" : "s"} · ${rows.length} server${rows.length === 1 ? "" : "s"}`;
 }
 
+function formatServerLocation(server) {
+  const loc = server?.location;
+  if (!loc) return "—";
+  const code = String(loc.countryCode || "").toUpperCase();
+  if (loc.region && String(loc.region).length > 2) return String(loc.region);
+  if (code && code !== "ZZ" && code !== "XX") return code;
+  return "—";
+}
+
 function paintServersTable() {
   const wrap = document.getElementById("servers-table-wrap");
   if (!wrap || !_serversCache.slug) return;
@@ -502,7 +513,10 @@ function paintServersTable() {
   updateServersStats(rows);
 
   if (!rows.length) {
-    wrap.innerHTML = `<p class="view-sub">No servers match.</p>`;
+    const err = _serversCache.error
+      ? `<p class="view-sub" style="color: var(--danger, #f87171)">${escapeHtml(_serversCache.error)}</p>`
+      : "";
+    wrap.innerHTML = `${err}<p class="view-sub">No servers match.</p>`;
     return;
   }
 
@@ -533,7 +547,7 @@ function paintServersTable() {
       <td><strong>${escapeHtml(s.name)}</strong>${s.gameType ? `<div class="server-meta">${escapeHtml(s.gameType)}</div>` : ""}</td>
       <td>${s.players ?? 0}/${s.maxPlayers ?? "—"}</td>
       <td>${escapeHtml(s.map || "—")}</td>
-      <td>${escapeHtml(s.location?.countryCode || "—")}</td>
+      <td>${escapeHtml(formatServerLocation(s))}</td>
       <td class="ping-cell" data-ping-id="${escapeHtml(id)}">${pingLabel}</td>
       <td>
         <button class="btn-primary btn-sm btn-join" data-slug="${escapeHtml(_serversCache.slug)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>

@@ -47,7 +47,9 @@ function formatLocation(server: GameServer): string {
   const loc = server.location;
   if (!loc) return "—";
   if (loc.region && loc.region.length > 2) return loc.region;
-  return loc.countryCode || "—";
+  const code = loc.countryCode?.toUpperCase();
+  if (code && code !== "ZZ" && code !== "XX") return code;
+  return "—";
 }
 
 function formatEstMs(ms: number | null): string {
@@ -290,6 +292,11 @@ export function GlobalServerBrowser({
         </p>
       )}
       {modNote && <p className="text-xs text-muted-foreground">{modNote}</p>}
+      {data?.error && (
+        <p className="text-xs font-semibold text-destructive">
+          Couldn&apos;t refresh live list: {data.error}
+        </p>
+      )}
 
       {!gameSlug || (installedOnly && !visibleGames.length) ? (
         <EmptyHint icon={Server}>
@@ -302,7 +309,9 @@ export function GlobalServerBrowser({
       ) : data && !data.supported ? (
         <EmptyHint icon={Server}>Live listings for {selectedTitle} aren&apos;t wired yet.</EmptyHint>
       ) : rows.length === 0 ? (
-        <EmptyHint icon={Server}>No servers match.</EmptyHint>
+        <EmptyHint icon={Server}>
+          {data?.error ? "No servers returned (see error above)." : "No servers match."}
+        </EmptyHint>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[720px] text-left text-sm">
