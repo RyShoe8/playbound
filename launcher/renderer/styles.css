@@ -402,8 +402,46 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: center;
+  align-items: flex-end;
   margin-top: 16px;
+}
+
+.servers-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  flex: 0 1 200px;
+}
+
+.servers-field-grow {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.servers-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.servers-toolbar .input-text,
+.games-filters .input-text {
+  width: 100%;
+  min-width: 0;
+}
+
+.servers-installed-check {
+  margin-bottom: 8px;
+}
+
+.servers-stats {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .games-filters {
@@ -411,19 +449,6 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-}
-
-.servers-toolbar .input-text,
-.games-filters .input-text {
-  width: auto;
-  min-width: 160px;
-  flex: 1;
-}
-
-.servers-toolbar #servers-game,
-.servers-toolbar #servers-mod {
-  max-width: 260px;
-  flex: 0 1 220px;
 }
 
 .filter-check {
@@ -463,16 +488,73 @@ body {
   border-radius: 20px;
 }
 
-.detail-hero {
+.detail-bleed-hero {
+  margin: 0 -28px 0;
+  min-height: 220px;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid var(--border);
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
-  margin-bottom: 28px;
+  align-items: flex-end;
 }
 
-.detail-hero-copy {
-  min-width: 0;
-  flex: 1;
+.detail-bleed-inner {
+  width: 100%;
+  padding: 28px 28px 20px;
+}
+
+.detail-bleed-title {
+  margin: 10px 0 0;
+  text-shadow: 0 2px 18px rgba(0,0,0,0.55);
+}
+
+.detail-bleed-sub {
+  margin: 8px 0 0;
+  max-width: 640px;
+}
+
+.detail-bleed-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.detail-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 -28px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-main);
+  z-index: 2;
+}
+
+.detail-tab {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.detail-tab.active {
+  color: var(--text-main);
+  border-bottom-color: var(--accent);
+}
+
+.detail-tab-panel {
+  display: none;
+  padding-top: 18px;
+}
+
+.detail-tab-panel.active {
+  display: block;
 }
 
 .chip-row {

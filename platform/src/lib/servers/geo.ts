@@ -1,3 +1,4 @@
+import { lookup as dnsLookup } from "dns/promises";
 import type { ServerLocation } from "./types";
 import { classifyUsDivision, usLocationLabel } from "./usRegion";
 
@@ -6,56 +7,129 @@ type CacheEntry = { location: ServerLocation | null; expires: number };
 const cache = new Map<string, CacheEntry>();
 const TTL_MS = 6 * 60 * 60 * 1000;
 
+/** Approximate country centroids for Est. when GeoIP has country but no coordinates. */
+const COUNTRY_CENTROIDS: Record<string, { lat: number; lon: number }> = {
+  US: { lat: 39.8, lon: -98.5 },
+  CA: { lat: 56.1, lon: -106.3 },
+  GB: { lat: 54.0, lon: -2.5 },
+  DE: { lat: 51.2, lon: 10.4 },
+  FR: { lat: 46.2, lon: 2.2 },
+  NL: { lat: 52.1, lon: 5.3 },
+  BE: { lat: 50.5, lon: 4.5 },
+  ES: { lat: 40.5, lon: -3.7 },
+  IT: { lat: 41.9, lon: 12.6 },
+  PL: { lat: 52.1, lon: 19.4 },
+  SE: { lat: 60.1, lon: 18.6 },
+  NO: { lat: 60.5, lon: 8.5 },
+  FI: { lat: 61.9, lon: 25.7 },
+  DK: { lat: 56.3, lon: 9.5 },
+  IE: { lat: 53.1, lon: -8.0 },
+  PT: { lat: 39.4, lon: -8.2 },
+  CH: { lat: 46.8, lon: 8.2 },
+  AT: { lat: 47.5, lon: 14.5 },
+  CZ: { lat: 49.8, lon: 15.5 },
+  RU: { lat: 61.5, lon: 105.3 },
+  UA: { lat: 48.4, lon: 31.2 },
+  BR: { lat: -14.2, lon: -51.9 },
+  AR: { lat: -38.4, lon: -63.6 },
+  MX: { lat: 23.6, lon: -102.5 },
+  AU: { lat: -25.3, lon: 133.8 },
+  NZ: { lat: -40.9, lon: 174.9 },
+  JP: { lat: 36.2, lon: 138.3 },
+  KR: { lat: 35.9, lon: 127.8 },
+  CN: { lat: 35.9, lon: 104.2 },
+  IN: { lat: 20.6, lon: 79.0 },
+  SG: { lat: 1.4, lon: 103.8 },
+  HK: { lat: 22.3, lon: 114.2 },
+  TW: { lat: 23.7, lon: 121.0 },
+  ZA: { lat: -30.6, lon: 22.9 },
+  TR: { lat: 39.0, lon: 35.2 },
+  IL: { lat: 31.0, lon: 34.9 },
+  AE: { lat: 23.4, lon: 53.8 },
+};
+
+function isIpv4(host: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+}
+
 function isIp(host: string): boolean {
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
+  return isIpv4(host) || host.includes(":");
+}
+
+export function applyCountryCentroid(location: ServerLocation): ServerLocation {
+  if (location.lat != null && location.lon != null) return location;
+  const code = location.countryCode?.toUpperCase();
+  if (!code) return location;
+  const c = COUNTRY_CENTROIDS[code === "USA" ? "US" : code];
+  if (!c) return location;
+  return { ...location, lat: c.lat, lon: c.lon };
 }
 
 function refineLocation(location: ServerLocation): ServerLocation {
   const code = location.countryCode.toUpperCase();
-  if (code !== "US" && code !== "USA") return { ...location, countryCode: code };
+  let next: ServerLocation = { ...location, countryCode: code === "USA" ? "US" : code };
 
-  if (/^US (East|Central|West)$/i.test(location.region ?? "")) {
-    return { ...location, countryCode: "US", region: location.region };
+  if (next.countryCode === "US") {
+    if (/^US (East|Central|West)$/i.test(next.region ?? "")) {
+      next = { ...next, countryCode: "US", region: next.region };
+    } else {
+      const division = classifyUsDivision({
+        region: next.region,
+        regionCode: next.regionCode,
+        lat: next.lat,
+        lon: next.lon,
+      });
+      if (division) {
+        next = {
+          ...next,
+          countryCode: "US",
+          region: usLocationLabel(division),
+        };
+      }
+    }
   }
 
-  const division = classifyUsDivision({
-    region: location.region,
-    regionCode: location.regionCode,
-    lat: location.lat,
-    lon: location.lon,
-  });
-  if (!division) {
-    return { ...location, countryCode: "US" };
-  }
-  return {
-    ...location,
-    countryCode: "US",
-    region: usLocationLabel(division),
-  };
+  return applyCountryCentroid(next);
 }
 
-/** Best-effort GeoIP for IPv4 hosts. Uses ipwho.is (no key, rate-limited). */
+async function resolveLookupHost(host: string): Promise<string | null> {
+  if (isIpv4(host)) return host;
+  if (host.includes(":")) return null; // skip raw IPv6 for free IPv4 GeoIP
+  try {
+    const res = await dnsLookup(host, { family: 4 });
+    return res.address || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Best-effort GeoIP. Resolves hostnames to IPv4 first. Uses ipwho.is (no key, rate-limited). */
 export async function lookupLocations(hosts: string[]): Promise<Map<string, ServerLocation | null>> {
   const out = new Map<string, ServerLocation | null>();
-  const unique = [...new Set(hosts.filter(isIp))];
+  const unique = [...new Set(hosts.filter(Boolean))];
   const now = Date.now();
   const missing: string[] = [];
 
   for (const host of unique) {
     const hit = cache.get(host);
     if (hit && hit.expires > now) {
-      out.set(host, hit.location);
+      out.set(host, hit.location ? refineLocation(hit.location) : null);
     } else {
       missing.push(host);
     }
   }
 
-  // Cap lookups per request to stay polite with the free API.
-  const batch = missing.slice(0, 40);
+  const batch = missing.slice(0, 50);
   await Promise.all(
     batch.map(async (host) => {
       try {
-        const res = await fetch(`https://ipwho.is/${host}`, {
+        const lookupHost = await resolveLookupHost(host);
+        if (!lookupHost) {
+          cache.set(host, { location: null, expires: now + 60_000 });
+          out.set(host, null);
+          return;
+        }
+        const res = await fetch(`https://ipwho.is/${lookupHost}`, {
           signal: AbortSignal.timeout(4000),
           next: { revalidate: 3600 },
         });
@@ -133,12 +207,13 @@ export async function attachGeo<T extends { host: string; location: ServerLocati
   });
 }
 
-/** Map a free-form country name to a display location. */
+/** Map a free-form country name to a display location (centroid applied). */
 export function locationFromCountryName(name: string | null | undefined): ServerLocation | null {
   if (!name?.trim()) return null;
   const trimmed = name.trim();
   if (/^[A-Z]{2}$/i.test(trimmed)) {
-    return { countryCode: trimmed.toUpperCase() };
+    return refineLocation({ countryCode: trimmed.toUpperCase() });
   }
-  return { countryCode: trimmed.slice(0, 3).toUpperCase(), region: trimmed };
+  // Best-effort: keep region label; country code unknown → no Est. until GeoIP
+  return { countryCode: "ZZ", region: trimmed };
 }

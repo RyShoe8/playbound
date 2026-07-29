@@ -266,12 +266,22 @@ async function renderServersView() {
     </div>
 
     <div class="servers-toolbar">
-      <select class="input-text" id="servers-game" aria-label="Base game"></select>
-      <select class="input-text" id="servers-mod" aria-label="Mod"></select>
-      <input type="search" class="input-text" id="servers-search" placeholder="Filter by name, map, players…" value="${escapeHtml(serversState.search)}" />
-      <label class="filter-check"><input type="checkbox" id="servers-installed-only" ${serversState.installedOnly ? "checked" : ""} /> Installed only</label>
+      <label class="servers-field">
+        <span class="servers-field-label">Game</span>
+        <select class="input-text" id="servers-game" aria-label="Base game"></select>
+      </label>
+      <label class="servers-field">
+        <span class="servers-field-label">Mod</span>
+        <select class="input-text" id="servers-mod" aria-label="Mod"></select>
+      </label>
+      <label class="servers-field servers-field-grow">
+        <span class="servers-field-label">Search</span>
+        <input type="search" class="input-text" id="servers-search" placeholder="Name, map, players…" value="${escapeHtml(serversState.search)}" />
+      </label>
+      <label class="filter-check servers-installed-check"><input type="checkbox" id="servers-installed-only" ${serversState.installedOnly ? "checked" : ""} /> Installed only</label>
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
+    <p class="servers-stats" id="servers-stats"></p>
     <div id="servers-table-wrap"><p class="view-sub">Loading…</p></div>
   `;
 
@@ -461,18 +471,35 @@ function filterServersForMod(servers, mod) {
   return { matched: false, servers };
 }
 
-function paintServersTable() {
-  const wrap = document.getElementById("servers-table-wrap");
-  if (!wrap || !_serversCache.slug) return;
-
+function filteredServerRows() {
   const q = serversState.search.trim().toLowerCase();
-  let rows = _serversCache.servers;
+  let rows = _serversCache.servers || [];
   if (q) {
     rows = rows.filter((s) => {
       const blob = `${s.name || ""} ${s.map || ""} ${s.players ?? ""}/${s.maxPlayers ?? ""} ${s.gameType || ""}`.toLowerCase();
       return blob.includes(q);
     });
   }
+  return rows;
+}
+
+function updateServersStats(rows) {
+  const el = document.getElementById("servers-stats");
+  if (!el) return;
+  if (!_serversCache.slug) {
+    el.textContent = "";
+    return;
+  }
+  const totalPlayers = rows.reduce((sum, s) => sum + (Number(s.players) || 0), 0);
+  el.textContent = `${totalPlayers} player${totalPlayers === 1 ? "" : "s"} · ${rows.length} server${rows.length === 1 ? "" : "s"}`;
+}
+
+function paintServersTable() {
+  const wrap = document.getElementById("servers-table-wrap");
+  if (!wrap || !_serversCache.slug) return;
+
+  const rows = filteredServerRows();
+  updateServersStats(rows);
 
   if (!rows.length) {
     wrap.innerHTML = `<p class="view-sub">No servers match.</p>`;
@@ -488,7 +515,7 @@ function paintServersTable() {
         <th>Players</th>
         <th>Map / Mode</th>
         <th>Location</th>
-        <th title="ICMP host RTT from this PC">Ping</th>
+        <th title="Host ping from this PC (ICMP, or TCP 443/80 fallback)">Ping</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -779,6 +806,8 @@ async function renderSettingsView() {
   });
 }
 
+let detailActiveTab = "overview";
+
 async function renderGameDetailView(slug) {
   currentDetailSlug = slug;
   const container = views.gameDetail;
@@ -794,11 +823,7 @@ async function renderGameDetailView(slug) {
     Array.isArray(detail.art) && detail.art.length >= 2
       ? `linear-gradient(135deg, ${detail.art[0]}, ${detail.art[1]})`
       : `linear-gradient(135deg, #312e81, #a78bfa)`;
-
-  const coverHtml = detail.coverImage
-    ? `<img class="detail-cover" src="${escapeHtml(detail.coverImage)}" alt="" data-fallback-letter="${escapeHtml(detail.title.charAt(0))}" data-fallback-grad="${escapeHtml(bgGrad)}" />`
-    : `<div class="detail-cover-fallback" style="background: ${bgGrad}">${escapeHtml(detail.title.charAt(0))}</div>`;
-
+  const coverUrl = detail.coverImage || "";
   const genreChips = (detail.genres || [])
     .map((g) => `<span class="chip">${escapeHtml(g)}</span>`)
     .join("");
@@ -813,62 +838,55 @@ async function renderGameDetailView(slug) {
     )
     .join("");
 
+  const heroStyle = coverUrl
+    ? `background-image: linear-gradient(180deg, rgba(12,10,18,0.25) 0%, rgba(12,10,18,0.92) 70%, var(--bg-main) 100%), url('${coverUrl.replace(/'/g, "%27")}');`
+    : `background-image: linear-gradient(180deg, rgba(12,10,18,0.2) 0%, rgba(12,10,18,0.95) 100%), ${bgGrad};`;
+
   container.innerHTML = `
-    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 16px">← Back</button>
+    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 12px">← Back</button>
 
-    <div class="detail-hero">
-      <div class="detail-cover-wrap detail-cover-lg">${coverHtml}</div>
-      <div class="detail-hero-copy">
+    <section class="detail-bleed-hero" style="${heroStyle}">
+      <div class="detail-bleed-inner">
         <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}</div>
-        <h1 class="view-title" style="margin: 8px 0 0 0">${escapeHtml(detail.title)}</h1>
-        <p class="view-sub" style="margin: 8px 0 0 0">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;" id="detail-actions"></div>
+        <h1 class="view-title detail-bleed-title">${escapeHtml(detail.title)}</h1>
+        <p class="view-sub detail-bleed-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+        <div class="detail-bleed-actions" id="detail-actions"></div>
       </div>
-    </div>
-
-    <section class="detail-section">
-      <h2 class="detail-section-title">About</h2>
-      <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
     </section>
 
-    ${
-      featureItems
-        ? `<section class="detail-section"><h2 class="detail-section-title">Features</h2><ul class="feature-list">${featureItems}</ul></section>`
-        : ""
-    }
+    <nav class="detail-tabs" id="detail-tabs">
+      <button type="button" class="detail-tab ${detailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>
+    </nav>
 
-    ${
-      detail.systemRequirements
-        ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
-        <div class="req-grid">
-          <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
-          <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
-        </div></section>`
-        : ""
-    }
-
-    ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
-
-    <section class="detail-section" id="detail-mods-sec"></section>
-    <section class="detail-section" id="detail-servers-sec"></section>
-
-    <p class="view-sub" style="margin-top: 8px">
-      <a href="#" id="detail-open-site">Open full page on playbound.club</a>
-    </p>
+    <div class="detail-tab-panels">
+      <div class="detail-tab-panel ${detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
+        <section class="detail-section">
+          <h2 class="detail-section-title">About</h2>
+          <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
+        </section>
+        ${
+          featureItems
+            ? `<section class="detail-section"><h2 class="detail-section-title">Features</h2><ul class="feature-list">${featureItems}</ul></section>`
+            : ""
+        }
+        ${
+          detail.systemRequirements
+            ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
+            <div class="req-grid">
+              <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
+              <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
+            </div></section>`
+            : ""
+        }
+        ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
+        <p class="view-sub"><a href="#" id="detail-open-site">Open full page on playbound.club</a></p>
+      </div>
+      <div class="detail-tab-panel ${detailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="detail-servers-sec"></div>
+      <div class="detail-tab-panel ${detailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="detail-mods-sec"></div>
+    </div>
   `;
-
-  const coverImg = container.querySelector("img.detail-cover");
-  if (coverImg) {
-    coverImg.addEventListener("error", () => {
-      const letter = coverImg.dataset.fallbackLetter || "?";
-      const grad = coverImg.dataset.fallbackGrad || bgGrad;
-      const fallback = document.createElement("div");
-      fallback.className = "detail-cover-fallback";
-      fallback.style.background = grad;
-      fallback.textContent = letter;
-      coverImg.replaceWith(fallback);
-    });
-  }
 
   document.getElementById("detail-back").addEventListener("click", () => {
     const back = ["games", "library", "home", "servers"].includes(detailReturnView)
@@ -884,6 +902,17 @@ async function renderGameDetailView(slug) {
     a.addEventListener("click", (e) => {
       e.preventDefault();
       window.playbound.openExternal(a.dataset.ext);
+    });
+  });
+  document.getElementById("detail-tabs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-tab]");
+    if (!btn) return;
+    detailActiveTab = btn.dataset.tab;
+    container.querySelectorAll(".detail-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.tab === detailActiveTab);
+    });
+    container.querySelectorAll(".detail-tab-panel").forEach((p) => {
+      p.classList.toggle("active", p.dataset.panel === detailActiveTab);
     });
   });
 
@@ -917,9 +946,7 @@ async function renderGameDetailView(slug) {
       renderGameDetailView(slug);
     });
   } else {
-    actions.innerHTML = `
-      <button class="btn-primary" id="act-install">Install Game</button>
-    `;
+    actions.innerHTML = `<button class="btn-primary" id="act-install">Install Game</button>`;
     document.getElementById("act-install").addEventListener("click", async () => {
       setStatus("Starting install...");
       try {
@@ -937,10 +964,7 @@ async function renderGameDetailView(slug) {
   const modsSec = document.getElementById("detail-mods-sec");
   const mods = Array.isArray(detail.mods) ? detail.mods : [];
   if (mods.length) {
-    modsSec.innerHTML = `
-      <h2 class="detail-section-title">Mods</h2>
-      <div class="mods-list"></div>
-    `;
+    modsSec.innerHTML = `<div class="mods-list"></div>`;
     const modsList = modsSec.querySelector(".mods-list");
     for (const mod of mods) {
       const row = document.createElement("div");
@@ -974,13 +998,16 @@ async function renderGameDetailView(slug) {
       }
       modsList.appendChild(row);
     }
+  } else {
+    modsSec.innerHTML = `<p class="view-sub">No catalog mods for this title yet.</p>`;
   }
 
   const serversRes = await window.playbound.getServers(slug);
   const sSec = document.getElementById("detail-servers-sec");
   if (serversRes.supported && serversRes.servers?.length > 0) {
+    const totalPlayers = serversRes.servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
     sSec.innerHTML = `
-      <h2 class="detail-section-title">Live Servers (${serversRes.servers.length})</h2>
+      <p class="servers-stats" style="margin-top:0">${totalPlayers} players · ${serversRes.servers.length} servers</p>
       <table class="server-table">
         <thead>
           <tr>
@@ -1015,16 +1042,16 @@ async function renderGameDetailView(slug) {
       });
     });
   } else if (detail.multiplayer) {
-    sSec.innerHTML = `<h2 class="detail-section-title">Servers</h2><p class="view-sub">No live servers listed right now — try the Servers tab.</p>`;
+    sSec.innerHTML = `<p class="view-sub">No live servers listed right now — try the Servers view.</p>`;
+  } else {
+    sSec.innerHTML = `<p class="view-sub">This title doesn't list dedicated servers.</p>`;
   }
 }
 
-function openGameDetail(slug) {
-  if (["games", "library", "home", "servers"].includes(currentView)) {
-    detailReturnView = currentView;
-  } else if (!detailReturnView) {
-    detailReturnView = "games";
-  }
+function openGameDetail(slug, fromView) {
+  const origin = fromView || currentView;
+  detailReturnView = ["games", "library", "home", "servers"].includes(origin) ? origin : "games";
+  detailActiveTab = "overview";
   navigateTo("gameDetail", { slug });
 }
 
@@ -1125,7 +1152,7 @@ function createGameCard(game) {
   `;
   card.appendChild(body);
 
-  card.addEventListener("click", () => openGameDetail(game.slug));
+  card.addEventListener("click", () => openGameDetail(game.slug, currentView));
   return card;
 }
 

@@ -3,6 +3,7 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
+const net = require("net");
 const bundledCatalog = require("./catalog");
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
@@ -1384,32 +1385,50 @@ ipcMain.handle("ping-hosts", async (_event, hosts) => {
 
   function isSafeHost(host) {
     if (!host || host.length > 253) return false;
-    // Allow IPv4, IPv6, and hostnames — reject shell metacharacters.
     if (/[\s"'`;&|<>$(){}[\]\\]/.test(host)) return false;
     return true;
   }
 
   function parsePingMs(stdout) {
     const text = String(stdout || "");
-    // Windows: time=42ms / time<1ms ; Unix: time=42.1 ms
-    const reply = text.match(/\btime[=<]([\d.]+)\s*ms/i);
+    const reply = text.match(/\b(?:time|zeit|temps|tiempo)[=<]\s*([\d.]+)\s*ms/i);
     if (reply) return Math.round(Number(reply[1]));
-    const avg = text.match(/Average\s*=\s*([\d.]+)\s*ms/i);
+    const avg = text.match(/(?:Average|Mittelwert|Moyenne|Media)\s*=\s*([\d.]+)\s*ms/i);
     if (avg) return Math.round(Number(avg[1]));
     return null;
   }
 
-  function pingOne(item) {
+  function tcpConnectMs(host, port, timeoutMs) {
     return new Promise((resolve) => {
-      const host = String(item?.host || "").trim();
-      const port = Number(item?.port) || 0;
-      const id = String(item?.id || (host && port ? `${host}:${port}` : "") || "");
-      if (!id || !host || !isSafeHost(host)) {
-        resolve({ id: id || null, ms: null });
-        return;
-      }
-
+      const start = Date.now();
+      const socket = new net.Socket();
       let settled = false;
+      const finish = (ms) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try {
+          socket.destroy();
+        } catch {
+          /* ignore */
+        }
+        resolve(ms);
+      };
+      const timer = setTimeout(() => finish(null), timeoutMs);
+      socket.once("connect", () => finish(Date.now() - start));
+      socket.once("error", () => finish(null));
+      try {
+        socket.connect(port, host);
+      } catch {
+        finish(null);
+      }
+    });
+  }
+
+  function icmpPingMs(host) {
+    return new Promise((resolve) => {
+      let settled = false;
+      let child;
       const finish = (ms) => {
         if (settled) return;
         settled = true;
@@ -1419,23 +1438,19 @@ ipcMain.handle("ping-hosts", async (_event, hosts) => {
         } catch {
           /* ignore */
         }
-        resolve({ id, ms });
+        resolve(ms);
       };
-
-      const timer = setTimeout(() => finish(null), TIMEOUT_MS + 400);
+      const timer = setTimeout(() => finish(null), TIMEOUT_MS + 500);
       const isWin = process.platform === "win32";
       const args = isWin
-        ? ["-n", "1", "-w", String(TIMEOUT_MS), host]
-        : ["-c", "1", "-W", String(Math.ceil(TIMEOUT_MS / 1000)), host];
-
-      let child;
+        ? ["-n", "1", "-4", "-w", String(TIMEOUT_MS), host]
+        : ["-c", "1", "-4", "-W", String(Math.ceil(TIMEOUT_MS / 1000)), host];
       try {
         child = spawn("ping", args, { windowsHide: true });
       } catch {
         finish(null);
         return;
       }
-
       let stdout = "";
       child.stdout?.on("data", (buf) => {
         stdout += String(buf);
@@ -1444,47 +1459,51 @@ ipcMain.handle("ping-hosts", async (_event, hosts) => {
         stdout += String(buf);
       });
       child.on("error", () => finish(null));
-      child.on("close", () => {
-        finish(parsePingMs(stdout));
-      });
+      child.on("close", () => finish(parsePingMs(stdout)));
     });
   }
 
-  // Deduplicate by host so many servers on one IP share one ICMP probe.
+  async function pingHost(host) {
+    const icmp = await icmpPingMs(host);
+    if (icmp != null) return icmp;
+    for (const port of [443, 80]) {
+      const ms = await tcpConnectMs(host, port, TIMEOUT_MS);
+      if (ms != null) return ms;
+    }
+    return null;
+  }
+
   const byHost = new Map();
   for (const item of list) {
     const host = String(item?.host || "").trim();
     const port = Number(item?.port) || 0;
     const id = String(item?.id || (host && port ? `${host}:${port}` : "") || "");
-    if (!id || !host) continue;
+    if (!id || !host || !isSafeHost(host)) continue;
     if (!byHost.has(host)) byHost.set(host, []);
     byHost.get(host).push(id);
   }
 
-  const hostEntries = [...byHost.entries()];
+  const hostEntries = [...byHost.keys()];
   const hostMs = new Map();
   const concurrency = 8;
   let cursor = 0;
   async function worker() {
     while (cursor < hostEntries.length) {
       const i = cursor++;
-      const [host, ids] = hostEntries[i];
-      const result = await pingOne({ id: ids[0], host, port: 1 });
-      hostMs.set(host, result.ms);
+      const host = hostEntries[i];
+      hostMs.set(host, await pingHost(host));
     }
   }
   await Promise.all(
     Array.from({ length: Math.min(concurrency, Math.max(hostEntries.length, 1)) }, () => worker())
   );
 
-  const out = [];
-  for (const item of list) {
+  return list.map((item) => {
     const host = String(item?.host || "").trim();
     const port = Number(item?.port) || 0;
     const id = String(item?.id || (host && port ? `${host}:${port}` : "") || "");
-    out.push({ id, ms: hostMs.has(host) ? hostMs.get(host) : null });
-  }
-  return out;
+    return { id, ms: hostMs.has(host) ? hostMs.get(host) : null };
+  });
 });
 ipcMain.handle("get-settings", () => {
   const settings = loadSettings();
