@@ -3,7 +3,9 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
+import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { resolveGameForSync } from "@/lib/catalog";
+import { getMod } from "@/lib/mods";
 import { hashLauncherToken } from "@/lib/library";
 
 const batchSchema = z.object({
@@ -14,7 +16,19 @@ const batchSchema = z.object({
         version: z.string().max(80).optional(),
       })
     )
-    .max(100),
+    .max(100)
+    .default([]),
+  modInstalls: z
+    .array(
+      z.object({
+        slug: z.string().min(1).max(80),
+        baseGameSlug: z.string().min(1).max(80),
+        version: z.string().max(80).optional(),
+      })
+    )
+    .max(100)
+    .optional()
+    .default([]),
 });
 
 async function userFromBearer(req: Request) {
@@ -65,7 +79,41 @@ export async function POST(req: Request) {
       synced += 1;
     }
 
-    return NextResponse.json({ success: true, synced, skipped });
+    let modsSynced = 0;
+    const modsSkipped: string[] = [];
+    for (const item of body.modInstalls || []) {
+      const mod = await getMod(item.slug);
+      if (!mod || mod.baseGameSlug !== item.baseGameSlug) {
+        modsSkipped.push(item.slug);
+        continue;
+      }
+      await LibraryModEntry.findOneAndUpdate(
+        { userId: user._id, modSlug: item.slug },
+        {
+          $set: {
+            installed: true,
+            baseGameSlug: item.baseGameSlug,
+            version: item.version || undefined,
+            installedAt: now,
+            updatedAt: now,
+          },
+          $setOnInsert: {
+            userId: user._id,
+            modSlug: item.slug,
+          },
+        },
+        { upsert: true, new: true }
+      );
+      modsSynced += 1;
+    }
+
+    return NextResponse.json({
+      success: true,
+      synced,
+      skipped,
+      modsSynced,
+      modsSkipped,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });

@@ -3,11 +3,15 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
+import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { resolveGameForSync } from "@/lib/catalog";
+import { getMod } from "@/lib/mods";
 import { hashLauncherToken } from "@/lib/library";
 
 const syncSchema = z.object({
+  kind: z.enum(["game", "mod"]).optional().default("game"),
   slug: z.string().min(1).max(80),
+  baseGameSlug: z.string().min(1).max(80).optional(),
   action: z.enum(["install", "uninstall"]),
   version: z.string().max(80).optional(),
 });
@@ -29,12 +33,52 @@ export async function POST(req: Request) {
     }
 
     const body = syncSchema.parse(await req.json());
+    await dbConnect();
+    const now = new Date();
+
+    if (body.kind === "mod") {
+      if (!body.baseGameSlug) {
+        return NextResponse.json({ error: "baseGameSlug required for mods" }, { status: 400 });
+      }
+      const mod = await getMod(body.slug);
+      if (!mod || mod.baseGameSlug !== body.baseGameSlug) {
+        return NextResponse.json({ error: "Unknown mod" }, { status: 404 });
+      }
+
+      if (body.action === "install") {
+        const entry = await LibraryModEntry.findOneAndUpdate(
+          { userId: user._id, modSlug: body.slug },
+          {
+            $set: {
+              installed: true,
+              baseGameSlug: body.baseGameSlug,
+              version: body.version || undefined,
+              installedAt: now,
+              updatedAt: now,
+            },
+            $setOnInsert: {
+              userId: user._id,
+              modSlug: body.slug,
+            },
+          },
+          { upsert: true, new: true }
+        );
+        return NextResponse.json({
+          success: true,
+          kind: "mod",
+          modSlug: entry.modSlug,
+          baseGameSlug: entry.baseGameSlug,
+          installed: true,
+        });
+      }
+
+      await LibraryModEntry.deleteOne({ userId: user._id, modSlug: body.slug });
+      return NextResponse.json({ success: true, kind: "mod", deleted: true });
+    }
+
     if (!(await resolveGameForSync(body.slug))) {
       return NextResponse.json({ error: "Unknown game" }, { status: 404 });
     }
-
-    await dbConnect();
-    const now = new Date();
 
     if (body.action === "install") {
       const entry = await LibraryEntry.findOneAndUpdate(

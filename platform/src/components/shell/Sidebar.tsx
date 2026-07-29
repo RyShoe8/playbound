@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { CalendarDays, Compass, FolderHeart, Hammer, House, LibraryBig, Play, Shield, Users } from "lucide-react";
+import { CalendarDays, Compass, FolderHeart, Hammer, House, LibraryBig, Play, Server, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -11,6 +11,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 const nav = [
   { href: "/", label: "Home", icon: House },
   { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/servers", label: "Servers", icon: Server },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/developers", label: "Developers", icon: Hammer },
   { href: "/collections", label: "Collections", icon: FolderHeart },
