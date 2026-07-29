@@ -6,10 +6,14 @@ const PORT = 8200;
 
 /**
  * Zero-K ZKS lobby. Always returns online presence from Welcome.
- * With ZEROK_LOBBY_USER + ZEROK_LOBBY_PASS, attempts Login and collects BattleAdded.
+ * With lobby credentials (request headers or env), attempts Login and collects BattleAdded.
+ * @param {{ username?: string, password?: string } | null} [creds]
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
-export async function pollZeroK() {
+export async function pollZeroK(creds = null) {
+  const user = creds?.username || process.env.ZEROK_LOBBY_USER;
+  const pass = creds?.password || process.env.ZEROK_LOBBY_PASS;
+
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host: HOST, port: PORT });
     let buf = "";
@@ -77,8 +81,6 @@ export async function pollZeroK() {
 
         if (cmd === "Welcome") {
           welcome = payload;
-          const user = process.env.ZEROK_LOBBY_USER;
-          const pass = process.env.ZEROK_LOBBY_PASS;
           if (user && pass && !loginSent) {
             loginSent = true;
             socket.write(

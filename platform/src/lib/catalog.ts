@@ -120,6 +120,27 @@ export async function getGame(
   return seed ? seedGameWithInstall(seed) : undefined;
 }
 
+/** Lobby credentials for Zero-K / 0 A.D. listings — never expose on public Game. */
+export async function getServerLobbyAuth(
+  slug: string
+): Promise<{ username: string; password: string } | null> {
+  try {
+    await dbConnect();
+    const doc = await CatalogGame.findOne({ slug }).select("serverLobbyAuth").lean();
+    const auth = (doc as LeanGame | null)?.serverLobbyAuth as
+      | { username?: string | null; password?: string | null }
+      | null
+      | undefined;
+    const username = auth?.username?.trim();
+    const password = auth?.password?.trim();
+    if (!username || !password) return null;
+    return { username, password };
+  } catch (err) {
+    console.error("[catalog] getServerLobbyAuth failed:", err);
+    return null;
+  }
+}
+
 /**
  * Resolve a game for launcher library sync.
  * Accepts published Mongo games, unpublished CMS drafts, or static seed catalog slugs

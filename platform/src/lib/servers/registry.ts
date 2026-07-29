@@ -1,3 +1,4 @@
+import { getServerLobbyAuth } from "@/lib/catalog";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenRaServers } from "./providers/openra";
@@ -6,6 +7,11 @@ import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchVelorenServers } from "./providers/veloren";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
+
+async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
+  const auth = await getServerLobbyAuth(slug);
+  return fetchRemoteMaster(slug, auth);
+}
 
 const providers: Record<string, ServerProvider> = {
   openra: { slug: "openra", fetchServers: fetchOpenRaServers },
@@ -29,8 +35,8 @@ const providers: Record<string, ServerProvider> = {
     slug: "warzone-2100",
     fetchServers: () => fetchRemoteMaster("warzone-2100"),
   },
-  "zero-k": { slug: "zero-k", fetchServers: () => fetchRemoteMaster("zero-k") },
-  "0ad": { slug: "0ad", fetchServers: () => fetchRemoteMaster("0ad") },
+  "zero-k": { slug: "zero-k", fetchServers: () => fetchRemoteWithLobbyAuth("zero-k") },
+  "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
 };
 
 /** Slugs that support multiplayer servers but have no adapter yet. */

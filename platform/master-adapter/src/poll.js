@@ -134,9 +134,10 @@ async function pollDpmaster(game) {
 
 /**
  * @param {GameMasterConfig} game
+ * @param {{ username?: string, password?: string } | null} [creds]
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
-export async function pollGame(game) {
+export async function pollGame(game, creds = null) {
   switch (game.kind) {
     case "dpmaster":
       return pollDpmaster(game);
@@ -149,9 +150,9 @@ export async function pollGame(game) {
     case "warzone":
       return pollWarzone();
     case "zerok":
-      return pollZeroK();
+      return pollZeroK(creds);
     case "zerod":
-      return pollZeroAd();
+      return pollZeroAd(creds);
     default:
       throw new Error(`Unknown poller kind: ${game.kind}`);
   }

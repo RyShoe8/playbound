@@ -68,15 +68,25 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: "Unknown slug", servers: [] }));
       return;
     }
-    let entry = cache.get(slug);
-    if (!entry) {
+
+    const lobbyUser = String(req.headers["x-playbound-lobby-user"] || "").trim();
+    const lobbyPass = String(req.headers["x-playbound-lobby-pass"] || "").trim();
+    const liveCreds =
+      lobbyUser && lobbyPass && (game.kind === "zerok" || game.kind === "zerod")
+        ? { username: lobbyUser, password: lobbyPass }
+        : null;
+
+    /** @type {{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }} */
+    let entry;
+    if (liveCreds) {
       try {
-        const servers = await pollGame(game);
+        const servers = await pollGame(game, liveCreds);
         entry = {
           servers,
           updatedAt: new Date().toISOString(),
           source: gameSource(game),
         };
+        // Prefer authenticated snapshot in background cache when available
         cache.set(slug, entry);
       } catch (err) {
         entry = {
@@ -86,10 +96,30 @@ const server = http.createServer(async (req, res) => {
           source: gameSource(game),
         };
       }
+    } else {
+      entry = cache.get(slug);
+      if (!entry) {
+        try {
+          const servers = await pollGame(game);
+          entry = {
+            servers,
+            updatedAt: new Date().toISOString(),
+            source: gameSource(game),
+          };
+          cache.set(slug, entry);
+        } catch (err) {
+          entry = {
+            servers: [],
+            updatedAt: new Date().toISOString(),
+            error: err instanceof Error ? err.message : String(err),
+            source: gameSource(game),
+          };
+        }
+      }
     }
     res.writeHead(200, {
       "content-type": "application/json",
-      "cache-control": "public, max-age=15",
+      "cache-control": liveCreds ? "private, no-store" : "public, max-age=15",
     });
     res.end(JSON.stringify(entry));
     return;

@@ -48,6 +48,15 @@ const LauncherInstallSchema = new Schema(
   { _id: false }
 );
 
+/** Lobby login for Zero-K / 0 A.D. server listings (admin-only; not public). */
+const ServerLobbyAuthSchema = new Schema(
+  {
+    username: { type: String, default: null },
+    password: { type: String, default: null },
+  },
+  { _id: false }
+);
+
 const CatalogGameSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, index: true },
@@ -77,6 +86,7 @@ const CatalogGameSchema = new Schema(
     videos: { type: [String], default: [] },
     systemRequirements: { type: SystemRequirementsSchema, required: true },
     launcherInstall: { type: LauncherInstallSchema, default: null },
+    serverLobbyAuth: { type: ServerLobbyAuthSchema, default: null },
     published: { type: Boolean, default: true, index: true },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
