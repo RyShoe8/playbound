@@ -209,6 +209,11 @@ export function GlobalServerBrowser({
     return list;
   }, [data, search]);
 
+  const totalPlayers = useMemo(
+    () => rows.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
+    [rows]
+  );
+
   const selectedTitle = games.find((g) => g.slug === gameSlug)?.title || gameSlug;
 
   return (
@@ -297,6 +302,12 @@ export function GlobalServerBrowser({
           Couldn&apos;t refresh live list: {data.error}
         </p>
       )}
+      {gameSlug && data?.supported ? (
+        <p className="text-sm font-semibold text-muted-foreground">
+          {totalPlayers} player{totalPlayers === 1 ? "" : "s"} · {rows.length} server
+          {rows.length === 1 ? "" : "s"}
+        </p>
+      ) : null}
 
       {!gameSlug || (installedOnly && !visibleGames.length) ? (
         <EmptyHint icon={Server}>
