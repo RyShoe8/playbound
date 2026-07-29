@@ -25,6 +25,10 @@ export const UNSUPPORTED_SERVER_SLUGS = [
   "mindustry",
 ] as const;
 
+export function listProviderSlugs(): string[] {
+  return Object.keys(providers);
+}
+
 export function hasServerProvider(slug: string): boolean {
   return Boolean(providers[slug]);
 }

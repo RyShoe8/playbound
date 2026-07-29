@@ -22,14 +22,20 @@ contextBridge.exposeInMainWorld("playbound", {
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
   signIn: () => ipcRenderer.invoke("sign-in"),
 
-  // New for PlayBound App
+  // Catalog / servers / mods
   getCatalog: () => ipcRenderer.invoke("get-catalog"),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),
+  getServerIndex: () => ipcRenderer.invoke("get-server-index"),
+  getModsCatalog: () => ipcRenderer.invoke("get-mods-catalog"),
+  pingHosts: (hosts) => ipcRenderer.invoke("ping-hosts", hosts),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),
   getRecentlyPlayed: () => ipcRenderer.invoke("get-recently-played"),
   getGameDetail: (slug) => ipcRenderer.invoke("get-game-detail", slug),
+  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  installUpdate: () => ipcRenderer.invoke("install-update"),
 
   // Events
   onContext: (cb) => ipcRenderer.on("context", (_event, data) => cb(data)),
@@ -38,4 +44,5 @@ contextBridge.exposeInMainWorld("playbound", {
   onInstallDetected: (cb) => ipcRenderer.on("install-detected", (_event, data) => cb(data || {})),
   onModInstallFinished: (cb) =>
     ipcRenderer.on("mod-install-finished", (_event, data) => cb(data || {})),
+  onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
 });

@@ -3,6 +3,7 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
+const net = require("net");
 const bundledCatalog = require("./catalog");
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
@@ -13,6 +14,8 @@ const DEFAULT_GAMES_DIR = path.join(app.getPath("home"), "PlayBound", "Games");
 const STATE_FILE = path.join(app.getPath("userData"), "installed.json");
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const DEFAULT_API_BASE = "https://playbound.club";
+/** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
+const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
 
 let win = null;
 /** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
@@ -20,6 +23,8 @@ let context = null;
 /** Background poll after opening a Windows installer wizard */
 let installerPollTimer = null;
 let installerPollSlug = null;
+/** @type {import('electron-updater').UpdateInfo | null} */
+let pendingUpdate = null;
 
 /* ── protocol registration ─────────────────────────────────── */
 /* Lets website links like playbound://install/openra hand off to this app. */
@@ -1066,7 +1071,13 @@ function listInstalledGames() {
     games.push({
       slug,
       title: entry?.title || slug,
+      blurb: entry?.blurb || "",
       art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
+      coverImage: entry?.coverImage || null,
+      approxSize: entry?.approxSize || "",
+      genres: entry?.genres || [],
+      tags: entry?.tags || [],
+      multiplayer: Boolean(entry?.multiplayer),
       version: info.version || null,
       dir: info.dir || null,
       exe: info.exe,
@@ -1191,6 +1202,10 @@ ipcMain.handle("get-catalog", () => {
     kind: e.kind,
     approxSize: e.approxSize || "",
     art: e.art,
+    coverImage: e.coverImage || null,
+    genres: Array.isArray(e.genres) ? e.genres : [],
+    tags: Array.isArray(e.tags) ? e.tags : [],
+    multiplayer: Boolean(e.multiplayer),
   }));
 });
 ipcMain.handle("get-servers", async (_event, slug) => {
@@ -1204,28 +1219,124 @@ ipcMain.handle("get-servers", async (_event, slug) => {
     return { supported: false, servers: [] };
   }
 });
+ipcMain.handle("get-server-index", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/servers`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (!res.ok) return { games: [], providers: [] };
+    return await res.json();
+  } catch {
+    return { games: [], providers: [] };
+  }
+});
+ipcMain.handle("get-mods-catalog", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/mods`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (!res.ok) return { mods: [] };
+    return await res.json();
+  } catch {
+    return { mods: [] };
+  }
+});
 ipcMain.handle("get-all-servers", async () => {
-  const state = loadState();
+  let providers = [];
+  try {
+    const idxRes = await fetch(`${getApiBase()}/api/launcher/servers`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (idxRes.ok) {
+      const idx = await idxRes.json();
+      providers = Array.isArray(idx.providers) ? idx.providers : [];
+      if (!providers.length && Array.isArray(idx.games)) {
+        providers = idx.games.filter((g) => g.supported).map((g) => g.slug);
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  if (!providers.length) {
+    providers = ["openra", "luanti", "supertuxkart", "xonotic", "unvanquished"];
+  }
+
   const results = [];
-  for (const slug of Object.keys(state)) {
-    if (slug === "__mods__") continue;
-    try {
-      const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
-        headers: { "user-agent": "playbound-launcher", accept: "application/json" },
-      });
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (data.supported && Array.isArray(data.servers) && data.servers.length > 0) {
+  const concurrency = 3;
+  let cursor = 0;
+  async function worker() {
+    while (cursor < providers.length) {
+      const i = cursor++;
+      const slug = providers[i];
+      try {
+        const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
+          headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data.supported) continue;
         const entry = catalog.find((e) => e.slug === slug);
         results.push({
           slug,
           title: entry?.title || slug,
-          servers: data.servers,
+          servers: Array.isArray(data.servers) ? data.servers : [],
+          error: data.error || null,
         });
+      } catch {
+        /* skip */
       }
-    } catch { /* skip */ }
+    }
   }
+  await Promise.all(Array.from({ length: Math.min(concurrency, providers.length) }, () => worker()));
+  results.sort((a, b) => String(a.title).localeCompare(String(b.title)));
   return results;
+});
+ipcMain.handle("ping-hosts", async (_event, hosts) => {
+  const list = Array.isArray(hosts) ? hosts : [];
+  const pingOne = (item) =>
+    new Promise((resolve) => {
+      const id = item?.id;
+      const host = String(item?.host || "").trim();
+      const port = Number(item?.port) || 0;
+      if (!id || !host || !port) {
+        resolve({ id, ms: null });
+        return;
+      }
+      const start = Date.now();
+      const socket = new net.Socket();
+      let settled = false;
+      const finish = (ms) => {
+        if (settled) return;
+        settled = true;
+        try {
+          socket.destroy();
+        } catch {
+          /* ignore */
+        }
+        resolve({ id, ms });
+      };
+      socket.setTimeout(1500);
+      socket.once("connect", () => finish(Date.now() - start));
+      socket.once("timeout", () => finish(null));
+      socket.once("error", () => finish(null));
+      try {
+        socket.connect(port, host);
+      } catch {
+        finish(null);
+      }
+    });
+
+  const out = [];
+  const concurrency = 12;
+  let cursor = 0;
+  async function worker() {
+    while (cursor < list.length) {
+      const i = cursor++;
+      out[i] = await pingOne(list[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(list.length, 1)) }, () => worker()));
+  return out;
 });
 ipcMain.handle("get-settings", () => {
   const settings = loadSettings();
@@ -1233,7 +1344,43 @@ ipcMain.handle("get-settings", () => {
     apiBase: settings.apiBase || DEFAULT_API_BASE,
     gamesDir: settings.gamesDir || DEFAULT_GAMES_DIR,
     connected: Boolean(settings.launcherToken),
+    version: app.getVersion(),
+    packaged: app.isPackaged,
   };
+});
+ipcMain.handle("get-app-version", () => ({
+  version: app.getVersion(),
+  packaged: app.isPackaged,
+  updateAvailable: pendingUpdate
+    ? { version: pendingUpdate.version, releaseDate: pendingUpdate.releaseDate || null }
+    : null,
+}));
+ipcMain.handle("check-for-updates", async () => {
+  if (!app.isPackaged) {
+    return { ok: false, reason: "dev", message: "Updates only run in packaged builds." };
+  }
+  try {
+    const { autoUpdater } = require("electron-updater");
+    const result = await autoUpdater.checkForUpdates();
+    const info = result?.updateInfo || null;
+    if (info && info.version && info.version !== app.getVersion()) {
+      pendingUpdate = info;
+      return { ok: true, updateAvailable: true, version: info.version };
+    }
+    return { ok: true, updateAvailable: false, version: app.getVersion() };
+  } catch (err) {
+    return { ok: false, reason: "error", message: err?.message || String(err) };
+  }
+});
+ipcMain.handle("install-update", () => {
+  if (!app.isPackaged) return { ok: false, message: "Not packaged" };
+  try {
+    const { autoUpdater } = require("electron-updater");
+    autoUpdater.quitAndInstall(false, true);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, message: err?.message || String(err) };
+  }
 });
 ipcMain.handle("save-settings", (_event, patch) => {
   const settings = loadSettings();
@@ -1254,7 +1401,9 @@ ipcMain.handle("get-recently-played", () => {
     games.push({
       slug,
       title: entry?.title || slug,
+      blurb: entry?.blurb || "",
       art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
+      coverImage: entry?.coverImage || null,
       lastPlayed: data.lastPlayed || null,
     });
   }
@@ -1268,11 +1417,54 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   const info = state[slug];
   return {
     ...entry,
+    coverImage: entry.coverImage || null,
+    genres: Array.isArray(entry.genres) ? entry.genres : [],
+    tags: Array.isArray(entry.tags) ? entry.tags : [],
+    multiplayer: Boolean(entry.multiplayer),
     installed: Boolean(info?.exe && fs.existsSync(info.exe)),
     installedPath: info?.dir || null,
     version: info?.version || null,
   };
 });
+
+function setupAutoUpdater() {
+  if (!app.isPackaged) return;
+  let autoUpdater;
+  try {
+    ({ autoUpdater } = require("electron-updater"));
+  } catch (err) {
+    console.warn("electron-updater unavailable:", err?.message || err);
+    return;
+  }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.setFeedURL({ provider: "generic", url: UPDATER_FEED_URL });
+
+  const emit = (payload) => {
+    if (win && !win.isDestroyed()) win.webContents.send("update-status", payload);
+  };
+
+  autoUpdater.on("checking-for-update", () => emit({ phase: "checking" }));
+  autoUpdater.on("update-available", (info) => {
+    pendingUpdate = info;
+    emit({ phase: "available", version: info.version });
+  });
+  autoUpdater.on("update-not-available", () => emit({ phase: "none", version: app.getVersion() }));
+  autoUpdater.on("download-progress", (p) =>
+    emit({ phase: "downloading", percent: Math.round(p.percent || 0) })
+  );
+  autoUpdater.on("update-downloaded", (info) => {
+    pendingUpdate = info;
+    emit({ phase: "ready", version: info.version });
+  });
+  autoUpdater.on("error", (err) => emit({ phase: "error", message: err?.message || String(err) }));
+
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+      console.warn("update check failed:", err?.message || err);
+    });
+  }, 4000);
+}
 
 /* ── window ────────────────────────────────────────────────── */
 
@@ -1406,6 +1598,7 @@ if (gotLock) {
 
     await refreshRemoteCatalog();
     scanKnownInstalls();
+    setupAutoUpdater();
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;

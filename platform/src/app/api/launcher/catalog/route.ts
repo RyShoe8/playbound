@@ -7,8 +7,9 @@ import {
   type LauncherInstall,
 } from "@/lib/launcherInstall";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const origin = new URL(req.url).origin || "https://playbound.club";
     const games = await listGames();
     const entries = games
       .filter((g) => isPcInstallCandidate(g))
@@ -25,6 +26,11 @@ export async function GET() {
           sizeMB: g.sizeMB,
           art: g.art,
           launcherInstall: recipe,
+          coverImage: g.coverImage,
+          genres: g.genres,
+          tags: g.tags,
+          launchMethods: g.launchMethods,
+          origin,
         });
       })
       .filter(Boolean);
