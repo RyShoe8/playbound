@@ -1,30 +1,40 @@
+import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenRaServers } from "./providers/openra";
 import { fetchOpenTtdServers } from "./providers/openttd";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
+import { fetchVelorenServers } from "./providers/veloren";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 const providers: Record<string, ServerProvider> = {
   openra: { slug: "openra", fetchServers: fetchOpenRaServers },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
   openttd: { slug: "openttd", fetchServers: fetchOpenTtdServers },
+  veloren: { slug: "veloren", fetchServers: fetchVelorenServers },
+  "beyond-all-reason": {
+    slug: "beyond-all-reason",
+    fetchServers: fetchBeyondAllReasonServers,
+  },
   supertuxkart: { slug: "supertuxkart", fetchServers: fetchSuperTuxKartServers },
   xonotic: { slug: "xonotic", fetchServers: () => fetchRemoteMaster("xonotic") },
   unvanquished: { slug: "unvanquished", fetchServers: () => fetchRemoteMaster("unvanquished") },
+  mindustry: { slug: "mindustry", fetchServers: () => fetchRemoteMaster("mindustry") },
+  hedgewars: { slug: "hedgewars", fetchServers: () => fetchRemoteMaster("hedgewars") },
+  "battle-for-wesnoth": {
+    slug: "battle-for-wesnoth",
+    fetchServers: () => fetchRemoteMaster("battle-for-wesnoth"),
+  },
+  "warzone-2100": {
+    slug: "warzone-2100",
+    fetchServers: () => fetchRemoteMaster("warzone-2100"),
+  },
+  "zero-k": { slug: "zero-k", fetchServers: () => fetchRemoteMaster("zero-k") },
+  "0ad": { slug: "0ad", fetchServers: () => fetchRemoteMaster("0ad") },
 };
 
 /** Slugs that support multiplayer servers but have no adapter yet. */
-export const UNSUPPORTED_SERVER_SLUGS = [
-  "0ad",
-  "veloren",
-  "beyond-all-reason",
-  "zero-k",
-  "hedgewars",
-  "battle-for-wesnoth",
-  "warzone-2100",
-  "mindustry",
-] as const;
+export const UNSUPPORTED_SERVER_SLUGS = [] as const;
 
 export function listProviderSlugs(): string[] {
   return Object.keys(providers);

@@ -1,9 +1,11 @@
-# PlayBound UDP master adapter — queries dpmaster-style UDP masters for Xonotic / Unvanquished.
+# PlayBound master adapter — UDP masters + TCP/XMPP lobbies for multiplayer lists.
 FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 COPY src ./src
 
 ENV NODE_ENV=production
