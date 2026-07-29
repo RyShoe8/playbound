@@ -23,7 +23,7 @@ type ServerPreviewRow = {
 
 async function loadServerPreviews(): Promise<ServerPreviewRow[]> {
   const settled = await Promise.allSettled(
-    HOME_SERVER_SLUGS.map(async (slug) => {
+    HOME_SERVER_SLUGS.map(async (slug): Promise<ServerPreviewRow | null> => {
       const [game, result] = await Promise.all([getGame(slug), listServersForGame(slug)]);
       if (!game || !result.supported) return null;
       const servers = result.servers ?? [];
@@ -33,13 +33,15 @@ async function loadServerPreviews(): Promise<ServerPreviewRow[]> {
         title: game.title,
         serverCount: servers.length,
         playerCount,
-      } satisfies ServerPreviewRow;
+      };
     })
   );
 
-  return settled
-    .map((r) => (r.status === "fulfilled" ? r.value : null))
-    .filter((row): row is ServerPreviewRow => Boolean(row));
+  const rows: ServerPreviewRow[] = [];
+  for (const result of settled) {
+    if (result.status === "fulfilled" && result.value) rows.push(result.value);
+  }
+  return rows;
 }
 
 function pickFeaturedGames<T extends { slug: string; gameOfWeek?: boolean; hiddenGem?: boolean }>(
