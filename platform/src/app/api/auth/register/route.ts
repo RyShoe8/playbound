@@ -3,7 +3,9 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { isFounderAdminEmail } from "@/lib/admin";
+import { newsletterListId, upsertBrevoContact } from "@/lib/brevo";
 import dbConnect from "@/lib/db";
+import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import User from "@/lib/models/User";
 import { sendMail, verificationEmailHtml } from "@/lib/mailer";
 
@@ -11,6 +13,7 @@ const registerSchema = z.object({
   username: z.string().min(3).max(20),
   email: z.string().email(),
   password: z.string().min(8),
+  newsletterOptIn: z.boolean().optional().default(false),
 });
 
 function baseUrl(req: Request) {
@@ -20,13 +23,19 @@ function baseUrl(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { username, email, password } = registerSchema.parse(body);
+    const { username, email, password, newsletterOptIn } = registerSchema.parse(body);
+    const normalizedEmail = email.trim().toLowerCase();
 
     await dbConnect();
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({
+      $or: [{ email: normalizedEmail }, { username }],
+    });
     if (existingUser) {
-      return NextResponse.json({ error: "An account with this email or username already exists" }, { status: 400 });
+      return NextResponse.json(
+        { error: "An account with this email or username already exists" },
+        { status: 400 }
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,20 +44,53 @@ export async function POST(req: Request) {
 
     const user = await User.create({
       username,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
-      role: isFounderAdminEmail(email) ? "admin" : "user",
+      role: isFounderAdminEmail(normalizedEmail) ? "admin" : "user",
       emailVerified: false,
       verificationTokenHash: tokenHash,
       verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
-    const verifyUrl = `${baseUrl(req)}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    const listId = newsletterListId();
+    const brevoOpts = {
+      email: normalizedEmail,
+      attributes: { USERNAME: username },
+      ...(newsletterOptIn ? { listIds: [listId] } : {}),
+    };
+    await upsertBrevoContact(brevoOpts);
+
+    if (newsletterOptIn) {
+      try {
+        const existingSub = await NewsletterSubscriber.findOne({ email: normalizedEmail });
+        if (existingSub) {
+          existingSub.subscribed = true;
+          existingSub.listId = listId;
+          existingSub.userId = user._id;
+          await existingSub.save();
+        } else {
+          await NewsletterSubscriber.create({
+            email: normalizedEmail,
+            subscribed: true,
+            listId,
+            userId: user._id,
+          });
+        }
+      } catch (subErr) {
+        console.error("Newsletter subscribe on register failed:", subErr);
+      }
+    }
+
+    const verifyUrl = `${baseUrl(req)}/verify-email?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
 
     let emailSent = true;
     let emailError: string | undefined;
     try {
-      await sendMail(email, "Verify your PlayBound account", verificationEmailHtml(username, verifyUrl));
+      await sendMail(
+        normalizedEmail,
+        "Verify your PlayBound account",
+        verificationEmailHtml(username, verifyUrl)
+      );
     } catch (mailErr) {
       emailSent = false;
       emailError = mailErr instanceof Error ? mailErr.message : String(mailErr);
