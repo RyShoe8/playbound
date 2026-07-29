@@ -8,6 +8,7 @@ export default function SignupPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -18,7 +19,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, newsletterOptIn }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
@@ -92,6 +93,24 @@ export default function SignupPage() {
           />
           <p className="mt-1 text-[11px] text-muted-foreground">At least 8 characters.</p>
         </div>
+        <label className="flex items-start gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2.5 text-sm">
+          <input
+            type="checkbox"
+            checked={newsletterOptIn}
+            onChange={(e) => setNewsletterOptIn(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="font-semibold">Email me the PlayBound Weekly newsletter</span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+              One email Fridays with what&apos;s worth playing. Unsubscribe any time. See our{" "}
+              <Link href="/privacy" className="underline hover:text-foreground">
+                privacy policy
+              </Link>
+              .
+            </span>
+          </span>
+        </label>
         {state === "error" && <p className="text-xs text-destructive">{message}</p>}
         <button
           type="submit"
