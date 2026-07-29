@@ -37,15 +37,16 @@ Without Blob, you can still **Fetch from website** (Open Graph images) and paste
 
 ### PlayBound Launcher download (Windows)
 
-1. Build the installer: `cd launcher && npm run dist`
+1. Bump `version` in `launcher/package.json`, then build: `cd launcher && npm run dist`
 2. From `platform/`, with `BLOB_READ_WRITE_TOKEN` available:
    ```bash
-   npm run upload:launcher -- ../launcher/dist/PlayBound-Launcher-Setup-0.1.0.exe
+   npm run upload:launcher -- ../launcher/dist/PlayBound-Setup-0.1.5.exe
    ```
-3. Set the printed URL on Vercel (Production + Preview) as:
+   This uploads the versioned Setup.exe, `latest.yml`, `.blockmap` (for in-app auto-update), and overwrites the stable site alias `launcher/PlayBound-Launcher-Setup.exe`.
+3. Set the printed site-alias URL on Vercel (Production + Preview) as:
    - `NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL` — public Blob URL for `PlayBound-Launcher-Setup.exe`
 
-The site `/launcher` page and install fallbacks use that URL for one-click download.
+The site `/launcher` page and install fallbacks use that URL for one-click download. Packaged installs then check `…/launcher/latest.yml` via electron-updater.
 
 To Authenticode-sign the Setup.exe (clears Windows SmartScreen over time), set before `npm run dist`:
 

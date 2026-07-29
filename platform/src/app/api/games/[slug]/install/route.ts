@@ -9,10 +9,11 @@ import {
 } from "@/lib/launcherInstall";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const origin = new URL(req.url).origin || "https://playbound.club";
   const game = await getGame(slug);
   if (!game) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -38,6 +39,11 @@ export async function GET(
       sizeMB: game.sizeMB,
       art: game.art,
       launcherInstall: recipe,
+      coverImage: game.coverImage,
+      genres: game.genres,
+      tags: game.tags,
+      launchMethods: game.launchMethods,
+      origin,
     }),
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
   );

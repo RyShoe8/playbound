@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "main.js",
   "scripts": {
@@ -14,14 +14,30 @@
   "build": {
     "appId": "gg.playbound.launcher",
     "productName": "PlayBound",
-    "files": ["main.js", "preload.js", "catalog.js", "renderer/**/*"],
+    "files": [
+      "main.js",
+      "preload.js",
+      "catalog.js",
+      "renderer/**/*"
+    ],
     "protocols": {
       "name": "PlayBound Deep Link",
-      "schemes": ["playbound"]
+      "schemes": [
+        "playbound"
+      ]
     },
     "forceCodeSigning": false,
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/"
+      }
+    ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "artifactName": "PlayBound-Setup-${version}.${ext}",
       "signAndEditExecutable": false
     },
@@ -36,6 +52,9 @@
     "portable": {
       "artifactName": "PlayBound-Launcher-Portable-${version}.${ext}"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "electron": "^33.0.0",

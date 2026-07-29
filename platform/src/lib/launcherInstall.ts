@@ -47,7 +47,21 @@ export type LauncherCatalogEntry = {
   note?: string;
   approxSize?: string;
   art: [string, string];
+  coverImage?: string | null;
+  genres?: string[];
+  tags?: string[];
+  multiplayer?: boolean;
 };
+
+export function absoluteMediaUrl(pathOrUrl: string | null | undefined, origin: string): string | null {
+  if (!pathOrUrl) return null;
+  const s = String(pathOrUrl).trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("//")) return `https:${s}`;
+  const base = origin.replace(/\/$/, "");
+  return s.startsWith("/") ? `${base}${s}` : `${base}/${s}`;
+}
 
 export function sizeLabelFromMB(sizeMB: number): string | undefined {
   if (!sizeMB || sizeMB <= 0) return undefined;
@@ -118,6 +132,11 @@ export function toLauncherCatalogEntry(input: {
   sizeMB: number;
   art: { from: string; to: string };
   launcherInstall: LauncherInstall;
+  coverImage?: string | null;
+  genres?: string[];
+  tags?: string[];
+  launchMethods?: string[];
+  origin?: string;
 }): LauncherCatalogEntry {
   const li = input.launcherInstall;
   const entry: LauncherCatalogEntry = {
@@ -127,7 +146,12 @@ export function toLauncherCatalogEntry(input: {
     kind: li.kind,
     art: [input.art.from, input.art.to],
     approxSize: sizeLabelFromMB(input.sizeMB),
+    genres: Array.isArray(input.genres) ? input.genres : [],
+    tags: Array.isArray(input.tags) ? input.tags : [],
+    multiplayer: Boolean(input.launchMethods?.includes("server")),
   };
+  const cover = absoluteMediaUrl(input.coverImage, input.origin || "https://playbound.club");
+  if (cover) entry.coverImage = cover;
   if (li.repo) entry.repo = li.repo;
   if (li.assetPattern) entry.assetPattern = li.assetPattern;
   if (li.exeHint) entry.exeHint = li.exeHint;
