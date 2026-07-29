@@ -28,9 +28,17 @@ const WIRED_SERVER_PROVIDERS = new Set([
   "openra",
   "luanti",
   "openttd",
+  "veloren",
+  "beyond-all-reason",
   "supertuxkart",
   "xonotic",
   "unvanquished",
+  "mindustry",
+  "hedgewars",
+  "battle-for-wesnoth",
+  "warzone-2100",
+  "zero-k",
+  "0ad",
 ]);
 
 type DevOption = { slug: string; name: string };

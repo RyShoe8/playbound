@@ -6,14 +6,22 @@ import {
   stripQuakeColors,
   udpQueryMaster,
 } from "./udp.js";
+import { pollMindustry } from "./mindustry.js";
+import { pollHedgewars } from "./hedgewars.js";
+import { pollWesnoth } from "./wesnoth.js";
+import { pollWarzone } from "./warzone.js";
+import { pollZeroK } from "./zerok.js";
+import { pollZeroAd } from "./zerod.js";
 
 /**
  * @typedef {{
  *   slug: string,
- *   masterHost: string,
- *   masterPort: number,
- *   query: string,
+ *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod',
+ *   masterHost?: string,
+ *   masterPort?: number,
+ *   query?: string,
  *   nameKeys?: string[],
+ *   source?: string,
  * }} GameMasterConfig
  */
 
@@ -21,6 +29,7 @@ import {
 export const GAMES = [
   {
     slug: "xonotic",
+    kind: "dpmaster",
     masterHost: "dpmaster.deathmask.net",
     masterPort: 27950,
     query: "getserversExt Xonotic 3 empty full ipv4",
@@ -28,12 +37,18 @@ export const GAMES = [
   },
   {
     slug: "unvanquished",
+    kind: "dpmaster",
     masterHost: "master.unvanquished.net",
     masterPort: 27950,
-    // Protocol 0 = any (master filters exact protocol otherwise)
     query: "getservers 0 empty full",
     nameKeys: ["sv_hostname", "hostname", "host"],
   },
+  { slug: "mindustry", kind: "mindustry", source: "github:MindustryServerList" },
+  { slug: "hedgewars", kind: "hedgewars", source: "netserver.hedgewars.org:46631" },
+  { slug: "battle-for-wesnoth", kind: "wesnoth", source: "server.wesnoth.org:15000" },
+  { slug: "warzone-2100", kind: "warzone", source: "wzlobby.wz2100.net" },
+  { slug: "zero-k", kind: "zerok", source: "zero-k.info:8200" },
+  { slug: "0ad", kind: "zerod", source: "lobby.wildfiregames.com" },
 ];
 
 /**
@@ -68,7 +83,7 @@ function pickPlayers(info) {
  * @param {GameMasterConfig} game
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
-export async function pollGame(game) {
+async function pollDpmaster(game) {
   const packets = await udpQueryMaster(game.masterHost, game.masterPort, game.query, 8000);
   /** @type {{ host: string, port: number }[]} */
   const addresses = [];
@@ -115,4 +130,35 @@ export async function pollGame(game) {
 
   servers.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
   return servers.slice(0, MAX_SERVERS);
+}
+
+/**
+ * @param {GameMasterConfig} game
+ * @returns {Promise<import('./types.js').GameServer[]>}
+ */
+export async function pollGame(game) {
+  switch (game.kind) {
+    case "dpmaster":
+      return pollDpmaster(game);
+    case "mindustry":
+      return pollMindustry();
+    case "hedgewars":
+      return pollHedgewars();
+    case "wesnoth":
+      return pollWesnoth();
+    case "warzone":
+      return pollWarzone();
+    case "zerok":
+      return pollZeroK();
+    case "zerod":
+      return pollZeroAd();
+    default:
+      throw new Error(`Unknown poller kind: ${game.kind}`);
+  }
+}
+
+export function gameSource(game) {
+  if (game.source) return game.source;
+  if (game.masterHost && game.masterPort) return `${game.masterHost}:${game.masterPort}`;
+  return game.kind;
 }
