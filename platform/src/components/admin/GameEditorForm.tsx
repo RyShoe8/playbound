@@ -16,10 +16,22 @@ import {
 } from "@/lib/gamePayload";
 import {
   defaultLauncherInstallForWebsite,
+  disableServerSupportFields,
   enableInstallerSupportFields,
+  enableServerSupportFields,
   isPcInstallCandidate,
 } from "@/lib/launcherInstall";
 import type { LauncherInstallKind } from "@/lib/launcherInstall";
+
+/** Games with a live PlayBound server list provider (keep in sync with registry). */
+const WIRED_SERVER_PROVIDERS = new Set([
+  "openra",
+  "luanti",
+  "openttd",
+  "supertuxkart",
+  "xonotic",
+  "unvanquished",
+]);
 
 type DevOption = { slug: string; name: string };
 
@@ -711,6 +723,49 @@ export function GameEditorForm({
               className={field}
             />
           </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
+          <p className="text-sm font-bold">Dedicated servers</p>
+          <p className="text-[11px] text-muted-foreground">
+            Turns on the Servers tab and multiplayer listing APIs for this game (
+            <code className="text-[10px]">launchMethods: server</code>).
+          </p>
+          {launchSet.has("server") ? (
+            <>
+              <p className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-xs font-semibold">
+                Dedicated servers enabled
+                {!WIRED_SERVER_PROVIDERS.has(form.slug)
+                  ? " — live listings aren't wired for this slug yet."
+                  : " — live listings are available when a provider is online."}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = disableServerSupportFields(form);
+                  setForm((prev) => ({ ...prev, launchMethods: next.launchMethods }));
+                }}
+                className="rounded-full border border-border bg-secondary px-4 py-2 text-xs font-bold"
+              >
+                Disable dedicated servers
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const next = enableServerSupportFields(form);
+                setForm((prev) => ({
+                  ...prev,
+                  launchMethods: next.launchMethods,
+                  features: next.features,
+                }));
+              }}
+              className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background"
+            >
+              Enable dedicated servers
+            </button>
+          )}
         </div>
 
         <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">

@@ -38,7 +38,9 @@ function formatLocation(server: GameServer): string {
   const loc = server.location;
   if (!loc) return "—";
   if (loc.region && loc.region.length > 2) return loc.region;
-  return loc.countryCode || "—";
+  const code = loc.countryCode?.toUpperCase();
+  if (code && code !== "ZZ" && code !== "XX") return code;
+  return "—";
 }
 
 /** Filter key: US East/Central/West when classified, else country code. */

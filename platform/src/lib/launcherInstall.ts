@@ -88,6 +88,34 @@ export function defaultLauncherInstallForWebsite(website: string): LauncherInsta
   };
 }
 
+/** One-click: enable dedicated / multiplayer server support on a catalog game. */
+export function enableServerSupportFields<M extends string>(game: {
+  launchMethods: M[];
+  features: string[];
+}): {
+  launchMethods: Array<M | "server">;
+  features: string[];
+} {
+  const launchMethods: Array<M | "server"> = game.launchMethods.includes("server" as M)
+    ? [...game.launchMethods]
+    : [...game.launchMethods, "server"];
+  const features = [...game.features];
+  for (const f of ["Multiplayer", "Dedicated Servers"] as const) {
+    if (!features.includes(f)) features.push(f);
+  }
+  return { launchMethods, features };
+}
+
+export function disableServerSupportFields<M extends string>(game: {
+  launchMethods: M[];
+}): {
+  launchMethods: M[];
+} {
+  return {
+    launchMethods: game.launchMethods.filter((m) => m !== ("server" as M)),
+  };
+}
+
 /** One-click: make a draft PC-installable with an enabled external launcher recipe. */
 export function enableInstallerSupportFields<M extends string>(game: {
   launchMethods: M[];

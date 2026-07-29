@@ -1,5 +1,6 @@
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenRaServers } from "./providers/openra";
+import { fetchOpenTtdServers } from "./providers/openttd";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -7,6 +8,7 @@ import type { GameServer, ServerListResult, ServerProvider } from "./types";
 const providers: Record<string, ServerProvider> = {
   openra: { slug: "openra", fetchServers: fetchOpenRaServers },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
+  openttd: { slug: "openttd", fetchServers: fetchOpenTtdServers },
   supertuxkart: { slug: "supertuxkart", fetchServers: fetchSuperTuxKartServers },
   xonotic: { slug: "xonotic", fetchServers: () => fetchRemoteMaster("xonotic") },
   unvanquished: { slug: "unvanquished", fetchServers: () => fetchRemoteMaster("unvanquished") },
@@ -14,7 +16,6 @@ const providers: Record<string, ServerProvider> = {
 
 /** Slugs that support multiplayer servers but have no adapter yet. */
 export const UNSUPPORTED_SERVER_SLUGS = [
-  "openttd",
   "0ad",
   "veloren",
   "beyond-all-reason",
