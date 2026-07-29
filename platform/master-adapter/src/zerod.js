@@ -2,13 +2,14 @@ import { MAX_SERVERS } from "./types.js";
 
 /**
  * 0 A.D. XpartaMuPP lobby.
- * With ZEROAD_LOBBY_JID + ZEROAD_LOBBY_PASSWORD, queries the XMPP game list.
+ * With lobby credentials (request headers or env), queries the XMPP game list.
  * Without credentials, returns a lobby pointer so the title stays wired.
+ * @param {{ username?: string, password?: string } | null} [creds]
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
-export async function pollZeroAd() {
-  const jid = process.env.ZEROAD_LOBBY_JID;
-  const password = process.env.ZEROAD_LOBBY_PASSWORD;
+export async function pollZeroAd(creds = null) {
+  const jid = creds?.username || process.env.ZEROAD_LOBBY_JID;
+  const password = creds?.password || process.env.ZEROAD_LOBBY_PASSWORD;
   if (!jid || !password) {
     return [
       {

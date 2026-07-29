@@ -19,13 +19,16 @@ MASTER_ADAPTER_KEY=dev npm start
 2. Env:
    - `MASTER_ADAPTER_KEY` — long random secret (required in production)
    - `PORT` — set by Render
-   - Optional lobby credentials:
+   - Optional env fallbacks (prefer setting lobby login on the admin game page → Dedicated servers):
      - `ZEROK_LOBBY_USER` / `ZEROK_LOBBY_PASS` — Zero-K account (PasswordHash as used by Chobby)
      - `ZEROAD_LOBBY_JID` / `ZEROAD_LOBBY_PASSWORD` — 0 A.D. lobby account
 3. Health check: `/health`
 4. On Vercel:
    - `MASTER_ADAPTER_URL` — service URL (no trailing slash)
    - `MASTER_ADAPTER_KEY` — same secret
+
+Lobby credentials from the catalog are forwarded as `x-playbound-lobby-user` /
+`x-playbound-lobby-pass` on Zero-K and 0 A.D. requests.
 
 ## Games
 

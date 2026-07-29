@@ -204,6 +204,21 @@ export const gamePayloadSchema = z.object({
     recommended: z.string().trim().min(1).max(500),
   }),
   launcherInstall: launcherInstallSchema.optional().nullable(),
+  /** Zero-K / 0 A.D. lobby credentials for richer server listings (admin only). */
+  serverLobbyAuth: z
+    .object({
+      username: z.string().trim().max(120).optional().nullable(),
+      password: z.string().trim().max(200).optional().nullable(),
+    })
+    .optional()
+    .nullable()
+    .transform((v) => {
+      if (!v) return null;
+      const username = (v.username || "").trim();
+      const password = (v.password || "").trim();
+      if (!username && !password) return null;
+      return { username: username || null, password: password || null };
+    }),
   published: z.boolean().default(false),
   submissionId: z.string().optional().nullable(),
   managedBy: z.enum(["admin", "developer"]).default("admin"),
@@ -305,6 +320,7 @@ export const emptyGameDraft = (): GamePayload => ({
     recommended: "See official site",
   },
   launcherInstall: null,
+  serverLobbyAuth: null,
   published: false,
   submissionId: null,
   managedBy: "admin",

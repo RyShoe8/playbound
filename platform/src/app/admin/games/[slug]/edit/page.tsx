@@ -22,6 +22,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
   let submissionId: string | null = null;
   let managedBy: "admin" | "developer" = "admin";
   let ownerUserId: string | null = null;
+  let serverLobbyAuth: GamePayload["serverLobbyAuth"] = null;
   try {
     await dbConnect();
     const doc = await CatalogGame.findOne({ slug }).lean();
@@ -30,6 +31,16 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
       submissionId = doc.submissionId ? String(doc.submissionId) : null;
       managedBy = (doc.managedBy as "admin" | "developer") || "admin";
       ownerUserId = doc.ownerUserId ? String(doc.ownerUserId) : null;
+      const auth = doc.serverLobbyAuth as
+        | { username?: string | null; password?: string | null }
+        | null
+        | undefined;
+      if (auth?.username || auth?.password) {
+        serverLobbyAuth = {
+          username: auth.username ?? null,
+          password: auth.password ?? null,
+        };
+      }
     }
   } catch {
     /* seed-only */
@@ -43,6 +54,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     screenshots: game.screenshots ?? [],
     videos: game.videos ?? [],
     launcherInstall: toPayloadLauncherInstall(game.launcherInstall),
+    serverLobbyAuth,
     developerName: null,
     published,
     submissionId,

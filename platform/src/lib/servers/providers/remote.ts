@@ -2,10 +2,19 @@ import type { GameServer } from "../types";
 import { attachGeo } from "../geo";
 import { MAX_SERVERS } from "../types";
 
+export type RemoteMasterAuth = {
+  username: string;
+  password: string;
+};
+
 /**
  * Fetch a UDP-backed list from the always-on Master Adapter (Render).
+ * Optional lobby auth is forwarded for Zero-K / 0 A.D. battle lists.
  */
-export async function fetchRemoteMaster(slug: string): Promise<GameServer[]> {
+export async function fetchRemoteMaster(
+  slug: string,
+  auth?: RemoteMasterAuth | null
+): Promise<GameServer[]> {
   const base = process.env.MASTER_ADAPTER_URL?.replace(/\/$/, "");
   if (!base) {
     throw new Error("MASTER_ADAPTER_URL is not configured");
@@ -23,11 +32,15 @@ export async function fetchRemoteMaster(slug: string): Promise<GameServer[]> {
   if (process.env.MASTER_ADAPTER_KEY) {
     headers["x-playbound-adapter-key"] = process.env.MASTER_ADAPTER_KEY;
   }
+  if (auth?.username && auth?.password) {
+    headers["x-playbound-lobby-user"] = auth.username;
+    headers["x-playbound-lobby-pass"] = auth.password;
+  }
 
   const res = await fetch(`${base}/v1/${slug}/servers`, {
     headers,
-    signal: AbortSignal.timeout(8_000),
-    next: { revalidate: 30 },
+    signal: AbortSignal.timeout(auth ? 18_000 : 8_000),
+    ...(auth ? { cache: "no-store" as const } : { next: { revalidate: 30 } }),
   });
 
   if (!res.ok) {

@@ -45,6 +45,7 @@ export async function PATCH(
           coverImage: body.coverImage || null,
           screenshots: body.screenshots ?? [],
           launcherInstall: body.launcherInstall || null,
+          serverLobbyAuth: body.serverLobbyAuth || null,
           developerName,
           submissionId: body.submissionId || null,
           managedBy: body.managedBy || "admin",

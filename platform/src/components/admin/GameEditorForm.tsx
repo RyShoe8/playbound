@@ -747,6 +747,53 @@ export function GameEditorForm({
                   ? " — live listings aren't wired for this slug yet."
                   : " — live listings are available when a provider is online."}
               </p>
+              {(form.slug === "zero-k" || form.slug === "0ad") && (
+                <div className="space-y-3 rounded-lg border border-border bg-background/40 p-3">
+                  <p className="text-xs font-bold">
+                    {form.slug === "zero-k" ? "Zero-K lobby login" : "0 A.D. lobby login"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {form.slug === "zero-k"
+                      ? "Optional. Without this, listings show lobby presence only. Password must be the Chobby PasswordHash (not the plain account password)."
+                      : "Optional. Without this, listings show a lobby pointer only. Use your Wildfire Games lobby username (or JID) and password."}
+                  </p>
+                  <div>
+                    <label className={label}>
+                      {form.slug === "zero-k" ? "Lobby username" : "Lobby username / JID"}
+                    </label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={form.serverLobbyAuth?.username ?? ""}
+                      onChange={(e) =>
+                        patch("serverLobbyAuth", {
+                          username: e.target.value,
+                          password: form.serverLobbyAuth?.password ?? "",
+                        })
+                      }
+                      className={field}
+                      placeholder={form.slug === "0ad" ? "player or player@lobby…" : "username"}
+                    />
+                  </div>
+                  <div>
+                    <label className={label}>
+                      {form.slug === "zero-k" ? "Lobby password hash" : "Lobby password"}
+                    </label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={form.serverLobbyAuth?.password ?? ""}
+                      onChange={(e) =>
+                        patch("serverLobbyAuth", {
+                          username: form.serverLobbyAuth?.username ?? "",
+                          password: e.target.value,
+                        })
+                      }
+                      className={field}
+                    />
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {
