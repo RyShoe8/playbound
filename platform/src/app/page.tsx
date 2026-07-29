@@ -65,7 +65,7 @@ export default async function HomePage() {
 
       {/* ── Collections ────────────────────────────────────────── */}
       <section>
-        <SectionHeader title="Curated Collections" subtitle="Hand-picked groupings from PlayBound" href="/collections" />
+        <SectionHeader title="Curated Collections" subtitle="Hand-picked groupings from PlayBound" href="/discover#collections" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featuredCollections.map((c) => (
             <Link

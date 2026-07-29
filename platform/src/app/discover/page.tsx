@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { MonitorPlay } from "lucide-react";
-import { listGames, hiddenGems } from "@/lib/catalog";
+import { collections } from "@/lib/data";
+import { gamesFor, listGames, hiddenGems } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
+import { GameArt } from "@/components/GameArt";
 import { GameCard } from "@/components/GameCard";
-import { EmptyHint, SectionHeader } from "@/components/ui/bits";
+import { Badge, EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Discover" };
@@ -40,7 +42,16 @@ export default async function DiscoverPage({
 }) {
   const { filter } = await searchParams;
   const active = filters.find((f) => f.key === filter);
-  const [games, gems] = await Promise.all([listGames(), hiddenGems()]);
+  const [games, gems, collectionPreviews] = await Promise.all([
+    listGames(),
+    hiddenGems(),
+    Promise.all(
+      collections.map(async (c) => ({
+        collection: c,
+        preview: (await gamesFor(c.gameSlugs)).slice(0, 4),
+      }))
+    ),
+  ]);
 
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
@@ -76,6 +87,33 @@ export default async function DiscoverPage({
           </Link>
         ))}
       </div>
+
+      {!active && (
+        <section id="collections">
+          <SectionHeader title="Collections" subtitle="Curated groupings of free games, hand-picked by PlayBound" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {collectionPreviews.map(({ collection: c, preview }) => (
+              <Link
+                key={c.slug}
+                href={`/collections/${c.slug}`}
+                className="group overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:border-primary/40"
+              >
+                <div className="grid grid-cols-4 gap-px">
+                  {preview.map((g) => (
+                    <GameArt key={g.slug} game={g} showTitle={false} iconSize="sm" className="aspect-square" />
+                  ))}
+                </div>
+                <div className="p-4">
+                  <Badge tone="brand">PlayBound Curated</Badge>
+                  <p className="mt-2 font-bold">{c.title}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{c.gameSlugs.length} games</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {active ? (
         <section>
