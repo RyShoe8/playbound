@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Compass, House, LibraryBig, Shield, Users } from "lucide-react";
+import { Compass, House, LibraryBig, Server, Shield, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Home", icon: House },
   { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/servers", label: "Servers", icon: Server },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/community", label: "Community", icon: Users },
 ];

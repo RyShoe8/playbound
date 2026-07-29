@@ -6,7 +6,8 @@ import { hasServerProvider, isKnownServerGame } from "@/lib/servers/registry";
 export async function GET(req: Request) {
   try {
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const mods = await listMods();
+    const baseGameSlug = new URL(req.url).searchParams.get("baseGameSlug") || undefined;
+    const mods = await listMods(baseGameSlug ? { baseGameSlug } : undefined);
 
     const entries = mods.map((m) => ({
       slug: m.slug,

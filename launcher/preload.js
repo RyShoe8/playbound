@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("playbound", {
   play: (slug, join) => ipcRenderer.invoke("play", slug, join || null),
   uninstall: (slug) => ipcRenderer.invoke("uninstall", slug),
   getInstalled: () => ipcRenderer.invoke("get-installed"),
+  getInstalledMods: () => ipcRenderer.invoke("get-installed-mods"),
+  uninstallMod: (slug) => ipcRenderer.invoke("uninstall-mod", slug),
   createShortcut: (slug) => ipcRenderer.invoke("create-shortcut", slug),
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   clearContext: () => ipcRenderer.invoke("clear-context"),

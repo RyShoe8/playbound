@@ -3,7 +3,6 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
-const net = require("net");
 const bundledCatalog = require("./catalog");
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
@@ -107,7 +106,7 @@ function persistLauncherToken(token, { notify = true } = {}) {
   return { connected: Boolean(settings.launcherToken) };
 }
 
-/** Sync every game in installed.json (skip __mods__) to the library. */
+/** Sync every game + mod in installed.json to the library. */
 async function syncAllInstalledGames() {
   const settings = loadSettings();
   const token = settings.launcherToken;
@@ -123,7 +122,20 @@ async function syncAllInstalledGames() {
       ...(info.version ? { version: String(info.version) } : {}),
     });
   }
-  if (!installs.length) return { synced: 0, skipped: [], error: null };
+
+  const modInstalls = [];
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  for (const [slug, info] of Object.entries(mods)) {
+    if (!info || typeof info !== "object") continue;
+    if (!info.baseGameSlug) continue;
+    modInstalls.push({
+      slug,
+      baseGameSlug: String(info.baseGameSlug),
+      ...(info.version ? { version: String(info.version) } : {}),
+    });
+  }
+
+  if (!installs.length && !modInstalls.length) return { synced: 0, skipped: [], error: null };
 
   try {
     const res = await fetch(`${getApiBase()}/api/library/sync/batch`, {
@@ -133,7 +145,7 @@ async function syncAllInstalledGames() {
         authorization: `Bearer ${token}`,
         "user-agent": "playbound-launcher",
       },
-      body: JSON.stringify({ installs }),
+      body: JSON.stringify({ installs, modInstalls }),
     });
     if (res.status === 401) {
       return { synced: 0, skipped: [], error: "unauthorized" };
@@ -166,12 +178,38 @@ async function syncAllInstalledGames() {
           skipped.push(item.slug);
         }
       }
+      for (const item of modInstalls) {
+        try {
+          const one = await fetch(`${getApiBase()}/api/library/sync`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              authorization: `Bearer ${token}`,
+              "user-agent": "playbound-launcher",
+            },
+            body: JSON.stringify({
+              kind: "mod",
+              slug: item.slug,
+              baseGameSlug: item.baseGameSlug,
+              action: "install",
+              version: item.version,
+            }),
+          });
+          if (one.ok) synced += 1;
+          else skipped.push(item.slug);
+        } catch {
+          skipped.push(item.slug);
+        }
+      }
       return { synced, skipped, error: null };
     }
     const data = await res.json();
     return {
-      synced: Number(data.synced) || 0,
-      skipped: Array.isArray(data.skipped) ? data.skipped : [],
+      synced: (Number(data.synced) || 0) + (Number(data.modsSynced) || 0),
+      skipped: [
+        ...(Array.isArray(data.skipped) ? data.skipped : []),
+        ...(Array.isArray(data.modsSkipped) ? data.modsSkipped : []),
+      ],
       error: null,
     };
   } catch (err) {
@@ -458,11 +496,21 @@ async function ensureCatalogEntry(slug) {
 }
 
 /** Fire-and-forget library sync. Never throws to callers. */
-async function syncLibrary(slug, action, version) {
+async function syncLibrary(slug, action, version, opts = {}) {
   const settings = loadSettings();
   const token = settings.launcherToken;
   if (!token) return;
   try {
+    const body =
+      opts.kind === "mod"
+        ? {
+            kind: "mod",
+            slug,
+            baseGameSlug: opts.baseGameSlug,
+            action,
+            version,
+          }
+        : { slug, action, version };
     const res = await fetch(`${getApiBase()}/api/library/sync`, {
       method: "POST",
       headers: {
@@ -470,7 +518,7 @@ async function syncLibrary(slug, action, version) {
         authorization: `Bearer ${token}`,
         "user-agent": "playbound-launcher",
       },
-      body: JSON.stringify({ slug, action, version }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       console.warn(`Library sync ${action} failed: HTTP ${res.status}`);
@@ -968,12 +1016,17 @@ async function placeModFiles(slug, install, baseDirOverride) {
   const state = loadState();
   if (!state.__mods__ || typeof state.__mods__ !== "object") state.__mods__ = {};
   state.__mods__[slug] = {
+    title: install.title || slug,
     version: dl.version,
     dir: targetDir,
     baseGameSlug: install.baseGameSlug,
     installedAt: new Date().toISOString(),
   };
   saveState(state);
+  void syncLibrary(slug, "install", dl.version, {
+    kind: "mod",
+    baseGameSlug: install.baseGameSlug,
+  });
   sendProgress({ phase: "done" });
   return { status: "installed", version: dl.version, dir: targetDir, baseGameSlug: install.baseGameSlug };
 }
@@ -1087,6 +1140,38 @@ function listInstalledGames() {
   return games;
 }
 
+function listInstalledMods() {
+  const state = loadState();
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const out = [];
+  for (const [slug, info] of Object.entries(mods)) {
+    if (!info || typeof info !== "object") continue;
+    out.push({
+      slug,
+      title: info.title || slug,
+      baseGameSlug: info.baseGameSlug || null,
+      version: info.version || null,
+      dir: info.dir || null,
+      installedAt: info.installedAt || null,
+    });
+  }
+  out.sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  return out;
+}
+
+async function uninstallMod(slug) {
+  const state = loadState();
+  if (!state.__mods__ || !state.__mods__[slug]) return { status: "not-installed" };
+  const info = state.__mods__[slug];
+  const baseGameSlug = info.baseGameSlug || null;
+  delete state.__mods__[slug];
+  saveState(state);
+  if (baseGameSlug) {
+    void syncLibrary(slug, "uninstall", undefined, { kind: "mod", baseGameSlug });
+  }
+  return { status: "uninstalled", dir: info.dir || null, baseGameSlug };
+}
+
 function sanitizeShortcutName(name) {
   return String(name || "Game")
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "")
@@ -1142,6 +1227,8 @@ ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("get-installed", () => listInstalledGames());
+ipcMain.handle("get-installed-mods", () => listInstalledMods());
+ipcMain.handle("uninstall-mod", (_event, slug) => uninstallMod(slug));
 ipcMain.handle("create-shortcut", (_event, slug) => createGameShortcut(slug));
 ipcMain.handle("open-folder", async (_event, dir) => {
   const target = String(dir || "");
@@ -1293,49 +1380,110 @@ ipcMain.handle("get-all-servers", async () => {
 });
 ipcMain.handle("ping-hosts", async (_event, hosts) => {
   const list = Array.isArray(hosts) ? hosts : [];
-  const pingOne = (item) =>
-    new Promise((resolve) => {
-      const id = item?.id;
+  const TIMEOUT_MS = 1500;
+
+  function isSafeHost(host) {
+    if (!host || host.length > 253) return false;
+    // Allow IPv4, IPv6, and hostnames — reject shell metacharacters.
+    if (/[\s"'`;&|<>$(){}[\]\\]/.test(host)) return false;
+    return true;
+  }
+
+  function parsePingMs(stdout) {
+    const text = String(stdout || "");
+    // Windows: time=42ms / time<1ms ; Unix: time=42.1 ms
+    const reply = text.match(/\btime[=<]([\d.]+)\s*ms/i);
+    if (reply) return Math.round(Number(reply[1]));
+    const avg = text.match(/Average\s*=\s*([\d.]+)\s*ms/i);
+    if (avg) return Math.round(Number(avg[1]));
+    return null;
+  }
+
+  function pingOne(item) {
+    return new Promise((resolve) => {
       const host = String(item?.host || "").trim();
       const port = Number(item?.port) || 0;
-      if (!id || !host || !port) {
-        resolve({ id, ms: null });
+      const id = String(item?.id || (host && port ? `${host}:${port}` : "") || "");
+      if (!id || !host || !isSafeHost(host)) {
+        resolve({ id: id || null, ms: null });
         return;
       }
-      const start = Date.now();
-      const socket = new net.Socket();
+
       let settled = false;
       const finish = (ms) => {
         if (settled) return;
         settled = true;
+        clearTimeout(timer);
         try {
-          socket.destroy();
+          if (child && !child.killed) child.kill();
         } catch {
           /* ignore */
         }
         resolve({ id, ms });
       };
-      socket.setTimeout(1500);
-      socket.once("connect", () => finish(Date.now() - start));
-      socket.once("timeout", () => finish(null));
-      socket.once("error", () => finish(null));
+
+      const timer = setTimeout(() => finish(null), TIMEOUT_MS + 400);
+      const isWin = process.platform === "win32";
+      const args = isWin
+        ? ["-n", "1", "-w", String(TIMEOUT_MS), host]
+        : ["-c", "1", "-W", String(Math.ceil(TIMEOUT_MS / 1000)), host];
+
+      let child;
       try {
-        socket.connect(port, host);
+        child = spawn("ping", args, { windowsHide: true });
       } catch {
         finish(null);
+        return;
       }
-    });
 
-  const out = [];
-  const concurrency = 12;
+      let stdout = "";
+      child.stdout?.on("data", (buf) => {
+        stdout += String(buf);
+      });
+      child.stderr?.on("data", (buf) => {
+        stdout += String(buf);
+      });
+      child.on("error", () => finish(null));
+      child.on("close", () => {
+        finish(parsePingMs(stdout));
+      });
+    });
+  }
+
+  // Deduplicate by host so many servers on one IP share one ICMP probe.
+  const byHost = new Map();
+  for (const item of list) {
+    const host = String(item?.host || "").trim();
+    const port = Number(item?.port) || 0;
+    const id = String(item?.id || (host && port ? `${host}:${port}` : "") || "");
+    if (!id || !host) continue;
+    if (!byHost.has(host)) byHost.set(host, []);
+    byHost.get(host).push(id);
+  }
+
+  const hostEntries = [...byHost.entries()];
+  const hostMs = new Map();
+  const concurrency = 8;
   let cursor = 0;
   async function worker() {
-    while (cursor < list.length) {
+    while (cursor < hostEntries.length) {
       const i = cursor++;
-      out[i] = await pingOne(list[i]);
+      const [host, ids] = hostEntries[i];
+      const result = await pingOne({ id: ids[0], host, port: 1 });
+      hostMs.set(host, result.ms);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(list.length, 1)) }, () => worker()));
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, Math.max(hostEntries.length, 1)) }, () => worker())
+  );
+
+  const out = [];
+  for (const item of list) {
+    const host = String(item?.host || "").trim();
+    const port = Number(item?.port) || 0;
+    const id = String(item?.id || (host && port ? `${host}:${port}` : "") || "");
+    out.push({ id, ms: hostMs.has(host) ? hostMs.get(host) : null });
+  }
   return out;
 });
 ipcMain.handle("get-settings", () => {
@@ -1415,12 +1563,42 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   if (!entry) return null;
   const state = loadState();
   const info = state[slug];
+
+  let rich = null;
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (res.ok) rich = await res.json();
+  } catch {
+    /* offline */
+  }
+
+  const modsBag = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const mods = Array.isArray(rich?.mods)
+    ? rich.mods.map((m) => ({
+        ...m,
+        installed: Boolean(modsBag[m.slug]),
+        installedPath: modsBag[m.slug]?.dir || null,
+      }))
+    : [];
+
   return {
     ...entry,
-    coverImage: entry.coverImage || null,
-    genres: Array.isArray(entry.genres) ? entry.genres : [],
-    tags: Array.isArray(entry.tags) ? entry.tags : [],
-    multiplayer: Boolean(entry.multiplayer),
+    ...(rich || {}),
+    slug: entry.slug,
+    title: rich?.title || entry.title,
+    blurb: rich?.blurb || entry.blurb,
+    description: rich?.description || entry.blurb || "",
+    features: Array.isArray(rich?.features) ? rich.features : [],
+    genres: Array.isArray(rich?.genres) ? rich.genres : entry.genres || [],
+    tags: Array.isArray(rich?.tags) ? rich.tags : entry.tags || [],
+    screenshots: Array.isArray(rich?.screenshots) ? rich.screenshots : [],
+    systemRequirements: rich?.systemRequirements || null,
+    coverImage: rich?.coverImage || entry.coverImage || null,
+    approxSize: rich?.approxSize || entry.approxSize || "",
+    multiplayer: Boolean(rich?.multiplayer ?? entry.multiplayer),
+    mods,
     installed: Boolean(info?.exe && fs.existsSync(info.exe)),
     installedPath: info?.dir || null,
     version: info?.version || null,

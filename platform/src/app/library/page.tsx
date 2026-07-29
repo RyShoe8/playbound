@@ -1,12 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { Download, LibraryBig, LogIn, MonitorPlay, Play } from "lucide-react";
+import { Download, LibraryBig, LogIn, MonitorPlay, Play, Puzzle } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
+import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import User from "@/lib/models/User";
 import { gamesFor } from "@/lib/catalog";
+import { listMods } from "@/lib/mods";
 import { launcherPlayUrl } from "@/lib/launcher";
 import { GameCard } from "@/components/GameCard";
 import { ConnectLauncherPanel } from "@/components/ConnectLauncherPanel";
@@ -49,14 +51,21 @@ export default async function LibraryPage({
   }
 
   let entries: { gameSlug: string; saved: boolean; installed: boolean }[] = [];
+  let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
   let launcherConnected = false;
   let launcherCreatedAt: string | null = null;
   try {
     await dbConnect();
-    const [rows, user] = await Promise.all([
+    const [rows, modRows, user] = await Promise.all([
       LibraryEntry.find({
         userId: session.user.id,
         $or: [{ saved: true }, { installed: true }],
+      })
+        .sort({ updatedAt: -1 })
+        .lean(),
+      LibraryModEntry.find({
+        userId: session.user.id,
+        installed: true,
       })
         .sort({ updatedAt: -1 })
         .lean(),
@@ -66,6 +75,10 @@ export default async function LibraryPage({
       gameSlug: r.gameSlug,
       saved: Boolean(r.saved),
       installed: Boolean(r.installed),
+    }));
+    modEntries = modRows.map((r) => ({
+      modSlug: String(r.modSlug),
+      baseGameSlug: String(r.baseGameSlug),
     }));
     launcherConnected = Boolean(user?.launcherTokenHash);
     launcherCreatedAt = user?.launcherTokenCreatedAt
@@ -90,6 +103,17 @@ export default async function LibraryPage({
   const hasInstalled = entries.some((e) => e.installed);
   const hasVisible = games.length > 0 || orphanEntries.length > 0;
 
+  const allMods = await listMods();
+  const modBySlug = new Map(allMods.map((m) => [m.slug, m]));
+  const modsByBase = new Map<string, { slug: string; title: string }[]>();
+  for (const entry of modEntries) {
+    const mod = modBySlug.get(entry.modSlug);
+    const title = mod?.title || entry.modSlug;
+    const list = modsByBase.get(entry.baseGameSlug) || [];
+    list.push({ slug: entry.modSlug, title });
+    modsByBase.set(entry.baseGameSlug, list);
+  }
+
   const chips: { key: Filter; label: string }[] = [
     { key: "all", label: "All" },
     { key: "saved", label: "Saved" },
@@ -101,7 +125,8 @@ export default async function LibraryPage({
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
         <p className="mt-1 text-muted-foreground">
-          Games you saved on PlayBound and installs synced from the launcher.
+          Games you saved on PlayBound and installs synced from the launcher — including mods under
+          each game.
         </p>
       </div>
 
@@ -166,6 +191,7 @@ export default async function LibraryPage({
         <div className="flex flex-wrap gap-4 sm:gap-5">
           {games.map((game) => {
             const meta = bySlug.get(game.slug);
+            const gameMods = modsByBase.get(game.slug) || [];
             return (
               <div key={game.slug} className="space-y-2">
                 <GameCard game={game} />
@@ -189,6 +215,21 @@ export default async function LibraryPage({
                     </a>
                   )}
                 </div>
+                {gameMods.length > 0 && (
+                  <ul className="space-y-1 px-0.5">
+                    {gameMods.map((m) => (
+                      <li key={m.slug}>
+                        <Link
+                          href={`/mods/${m.slug}`}
+                          className="inline-flex max-w-[160px] items-center gap-1 truncate text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                        >
+                          <Puzzle className="size-3 shrink-0 text-primary" />
+                          {m.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}
@@ -197,6 +238,7 @@ export default async function LibraryPage({
               .split("-")
               .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
               .join(" ");
+            const gameMods = modsByBase.get(entry.gameSlug) || [];
             return (
               <div
                 key={entry.gameSlug}
@@ -226,6 +268,15 @@ export default async function LibraryPage({
                     </a>
                   )}
                 </div>
+                {gameMods.length > 0 && (
+                  <ul className="space-y-1">
+                    {gameMods.map((m) => (
+                      <li key={m.slug} className="truncate text-[11px] font-semibold text-muted-foreground">
+                        {m.title}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}

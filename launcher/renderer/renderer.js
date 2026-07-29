@@ -3,6 +3,7 @@ let currentView = "home";
 let accountState = { connected: false };
 let deepLinkCtx = null;
 let currentDetailSlug = null;
+let detailReturnView = "games";
 let updateStatus = { phase: "idle" };
 
 /** Games catalog filter state (persists across re-renders of the view). */
@@ -16,12 +17,17 @@ const gamesFilters = {
 
 /** Servers browser state */
 const serversState = {
-  mode: "games", // games | mods
   selectedSlug: null,
-  selectedModSlug: null,
+  selectedModSlug: "", // "" = Base game (no mod filter)
   search: "",
   pingById: {},
+  installedOnly: false,
 };
+/** Cached mods list for the mod dropdown (from getModsCatalog). */
+let _modsCatalog = [];
+let _supportedServerGames = [];
+let _installedGameSlugs = new Set();
+let _installedModsList = [];
 
 // DOM Elements
 const navBtns = document.querySelectorAll(".nav-btn");
@@ -174,11 +180,11 @@ async function renderLibraryView() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">My Library</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Games installed on this PC.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Games and mods installed on this PC.</p>
       </div>
       <button class="btn-secondary btn-sm" id="btn-sync-lib">Sync with Site</button>
     </div>
-    <div id="library-grid" class="game-grid" style="margin-top: 20px"></div>
+    <div id="library-list" style="margin-top: 20px"></div>
   `;
 
   document.getElementById("btn-sync-lib").addEventListener("click", async () => {
@@ -186,12 +192,17 @@ async function renderLibraryView() {
     await window.playbound.openDeepLink("playbound://sync");
   });
 
-  const installed = await window.playbound.getInstalled();
-  const grid = document.getElementById("library-grid");
+  const [installed, installedMods, modsCat] = await Promise.all([
+    window.playbound.getInstalled(),
+    window.playbound.getInstalledMods?.() || Promise.resolve([]),
+    window.playbound.getModsCatalog(),
+  ]);
+  const modTitles = new Map((modsCat.mods || []).map((m) => [m.slug, m.title]));
+  const list = document.getElementById("library-list");
 
   if (!installed || installed.length === 0) {
-    grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 40px 0;">
+    list.innerHTML = `
+      <div style="text-align: center; padding: 40px 0;">
         <p class="view-sub">You don't have any games installed yet.</p>
         <button class="btn-primary" id="btn-go-games">Browse Games</button>
       </div>
@@ -200,10 +211,48 @@ async function renderLibraryView() {
     return;
   }
 
-  grid.replaceChildren(...installed.map(createGameCard));
+  list.replaceChildren();
+  for (const game of installed) {
+    const block = document.createElement("div");
+    block.className = "library-game-block";
+    const card = createGameCard(game);
+    block.appendChild(card);
+
+    const gameMods = (installedMods || []).filter((m) => m.baseGameSlug === game.slug);
+    if (gameMods.length) {
+      const modsWrap = document.createElement("div");
+      modsWrap.className = "library-mods";
+      modsWrap.innerHTML = `<div class="library-mods-label">Installed mods</div>`;
+      for (const mod of gameMods) {
+        const row = document.createElement("div");
+        row.className = "library-mod-row";
+        const title = modTitles.get(mod.slug) || mod.title || mod.slug;
+        row.innerHTML = `
+          <span class="library-mod-title">${escapeHtml(title)}</span>
+          <div class="library-mod-actions">
+            ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
+            <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
+          </div>
+        `;
+        row.querySelector(".btn-mod-folder")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          window.playbound.openFolder(mod.dir);
+        });
+        row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          if (!confirm(`Remove mod ${title} from library tracking?`)) return;
+          await window.playbound.uninstallMod(mod.slug);
+          renderLibraryView();
+        });
+        modsWrap.appendChild(row);
+      }
+      block.appendChild(modsWrap);
+    }
+    list.appendChild(block);
+  }
 }
 
-// ── Servers (Games | Mods) ───────────────────────────────────
+// ── Servers (Game + Mod dropdowns) ───────────────────────────
 
 async function renderServersView() {
   const container = views.servers;
@@ -211,19 +260,16 @@ async function renderServersView() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Server Browser</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Live multiplayer for all PlayBound titles — TCP ping from this PC.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Live multiplayer for PlayBound titles — host ping from this PC.</p>
       </div>
       <button class="btn-secondary btn-sm" id="servers-refresh">Refresh</button>
     </div>
 
-    <div class="mode-toggle" id="servers-mode">
-      <button type="button" class="mode-btn ${serversState.mode === "games" ? "active" : ""}" data-mode="games">Games</button>
-      <button type="button" class="mode-btn ${serversState.mode === "mods" ? "active" : ""}" data-mode="mods">Mods</button>
-    </div>
-
     <div class="servers-toolbar">
+      <select class="input-text" id="servers-game" aria-label="Base game"></select>
+      <select class="input-text" id="servers-mod" aria-label="Mod"></select>
       <input type="search" class="input-text" id="servers-search" placeholder="Filter by name, map, players…" value="${escapeHtml(serversState.search)}" />
-      <select class="input-text" id="servers-picker"></select>
+      <label class="filter-check"><input type="checkbox" id="servers-installed-only" ${serversState.installedOnly ? "checked" : ""} /> Installed only</label>
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
     <div id="servers-table-wrap"><p class="view-sub">Loading…</p></div>
@@ -233,107 +279,131 @@ async function renderServersView() {
     serversState.pingById = {};
     renderServersView();
   });
-  document.getElementById("servers-mode").addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-mode]");
-    if (!btn) return;
-    serversState.mode = btn.dataset.mode;
-    serversState.selectedSlug = null;
-    serversState.selectedModSlug = null;
-    serversState.pingById = {};
-    renderServersView();
-  });
   document.getElementById("servers-search").addEventListener("input", (e) => {
     serversState.search = e.target.value;
     paintServersTable();
   });
+  document.getElementById("servers-installed-only").addEventListener("change", (e) => {
+    serversState.installedOnly = e.target.checked;
+    serversState.pingById = {};
+    void refreshServersPickersAndList();
+  });
 
-  if (serversState.mode === "mods") {
-    await loadServersModsMode();
-  } else {
-    await loadServersGamesMode();
-  }
+  await loadServersBrowser();
 }
 
 let _serversCache = { slug: null, servers: [], title: "", note: "" };
 
-async function loadServersGamesMode() {
-  const index = await window.playbound.getServerIndex();
-  const games = Array.isArray(index.games) ? index.games : [];
-  const supported = games.filter((g) => g.supported);
-  const picker = document.getElementById("servers-picker");
+function fillModDropdown(baseSlug) {
+  const modSelect = document.getElementById("servers-mod");
+  if (!modSelect) return;
+  let modsForGame = (_modsCatalog || []).filter(
+    (m) => m.baseGameSlug === baseSlug && (m.baseSupported || m.baseHasServers)
+  );
+  if (serversState.installedOnly) {
+    const installedModSlugs = new Set(
+      (_installedModsList || []).filter((m) => m.baseGameSlug === baseSlug).map((m) => m.slug)
+    );
+    modsForGame = modsForGame.filter((m) => installedModSlugs.has(m.slug));
+  }
+  if (
+    serversState.selectedModSlug &&
+    !modsForGame.some((m) => m.slug === serversState.selectedModSlug)
+  ) {
+    serversState.selectedModSlug = "";
+  }
+  const options = [`<option value="">Base game</option>`].concat(
+    modsForGame.map(
+      (m) =>
+        `<option value="${escapeHtml(m.slug)}" ${m.slug === serversState.selectedModSlug ? "selected" : ""}>${escapeHtml(m.title)}</option>`
+    )
+  );
+  modSelect.innerHTML = options.join("");
+  modSelect.value = serversState.selectedModSlug || "";
+}
+
+function selectedModOrNull() {
+  if (!serversState.selectedModSlug) return null;
+  return (_modsCatalog || []).find((m) => m.slug === serversState.selectedModSlug) || null;
+}
+
+function gamesForServerPicker() {
+  let list = _supportedServerGames.slice();
+  if (serversState.installedOnly) {
+    list = list.filter((g) => _installedGameSlugs.has(g.slug));
+  }
+  return list;
+}
+
+async function refreshServersPickersAndList() {
+  const gameSelect = document.getElementById("servers-game");
   const note = document.getElementById("servers-note");
+  const supported = gamesForServerPicker();
 
   if (!supported.length) {
-    document.getElementById("servers-table-wrap").innerHTML =
-      `<p class="view-sub">No server providers available right now.</p>`;
+    document.getElementById("servers-table-wrap").innerHTML = serversState.installedOnly
+      ? `<p class="view-sub">No installed games have live server browsers. Install a multiplayer title, or turn off Installed only.</p>`
+      : `<p class="view-sub">No server providers available right now.</p>`;
+    if (gameSelect) gameSelect.innerHTML = "";
+    fillModDropdown("");
+    if (note) {
+      note.textContent = "";
+      note.dataset.baseNote = "";
+    }
     return;
   }
 
   if (!serversState.selectedSlug || !supported.some((g) => g.slug === serversState.selectedSlug)) {
     serversState.selectedSlug = supported[0].slug;
+    serversState.selectedModSlug = "";
   }
 
-  picker.innerHTML = supported
+  gameSelect.innerHTML = supported
     .map(
       (g) =>
         `<option value="${escapeHtml(g.slug)}" ${g.slug === serversState.selectedSlug ? "selected" : ""}>${escapeHtml(g.title)}</option>`
     )
     .join("");
 
-  const unsupported = games.filter((g) => !g.supported);
-  note.textContent = unsupported.length
-    ? `${supported.length} live browser(s). ${unsupported.length} multiplayer title(s) not yet wired for lists.`
-    : `${supported.length} live browser(s).`;
+  fillModDropdown(serversState.selectedSlug);
 
-  picker.onchange = () => {
-    serversState.selectedSlug = picker.value;
+  const totalSupported = _supportedServerGames.length;
+  note.textContent = serversState.installedOnly
+    ? `Showing ${supported.length} installed title(s) with live browsers.`
+    : `${totalSupported} live browser(s).`;
+  note.dataset.baseNote = note.textContent;
+
+  await fetchAndShowServers(serversState.selectedSlug, selectedModOrNull());
+}
+
+async function loadServersBrowser() {
+  const [index, modsRes, installed, installedMods] = await Promise.all([
+    window.playbound.getServerIndex(),
+    window.playbound.getModsCatalog(),
+    window.playbound.getInstalled(),
+    window.playbound.getInstalledMods?.() || Promise.resolve([]),
+  ]);
+  _modsCatalog = Array.isArray(modsRes.mods) ? modsRes.mods : [];
+  _supportedServerGames = (Array.isArray(index.games) ? index.games : []).filter((g) => g.supported);
+  _installedGameSlugs = new Set((installed || []).map((g) => g.slug));
+  _installedModsList = installedMods || [];
+
+  const gameSelect = document.getElementById("servers-game");
+  gameSelect.onchange = () => {
+    serversState.selectedSlug = gameSelect.value;
+    serversState.selectedModSlug = "";
     serversState.pingById = {};
+    fillModDropdown(serversState.selectedSlug);
     void fetchAndShowServers(serversState.selectedSlug, null);
   };
 
-  await fetchAndShowServers(serversState.selectedSlug, null);
-}
-
-async function loadServersModsMode() {
-  const [modsRes, index] = await Promise.all([
-    window.playbound.getModsCatalog(),
-    window.playbound.getServerIndex(),
-  ]);
-  const mods = (modsRes.mods || []).filter((m) => m.baseSupported || m.baseHasServers);
-  const picker = document.getElementById("servers-picker");
-  const note = document.getElementById("servers-note");
-
-  if (!mods.length) {
-    document.getElementById("servers-table-wrap").innerHTML =
-      `<p class="view-sub">No catalog mods with a multiplayer base game yet.</p>`;
-    picker.innerHTML = "";
-    note.textContent = "";
-    return;
-  }
-
-  if (!serversState.selectedModSlug || !mods.some((m) => m.slug === serversState.selectedModSlug)) {
-    serversState.selectedModSlug = mods[0].slug;
-  }
-
-  picker.innerHTML = mods
-    .map(
-      (m) =>
-        `<option value="${escapeHtml(m.slug)}" ${m.slug === serversState.selectedModSlug ? "selected" : ""}>${escapeHtml(m.title)} (${escapeHtml(m.baseGameSlug)})</option>`
-    )
-    .join("");
-
-  note.textContent =
-    "Join uses the base game. Rows filter by gameType when the server list exposes it (e.g. OpenRA).";
-
-  picker.onchange = () => {
-    serversState.selectedModSlug = picker.value;
+  document.getElementById("servers-mod").onchange = (e) => {
+    serversState.selectedModSlug = e.target.value || "";
     serversState.pingById = {};
-    const mod = mods.find((m) => m.slug === serversState.selectedModSlug);
-    if (mod) void fetchAndShowServers(mod.baseGameSlug, mod);
+    void fetchAndShowServers(serversState.selectedSlug, selectedModOrNull());
   };
 
-  const mod = mods.find((m) => m.slug === serversState.selectedModSlug);
-  if (mod) await fetchAndShowServers(mod.baseGameSlug, mod);
+  await refreshServersPickersAndList();
 }
 
 async function fetchAndShowServers(baseSlug, mod) {
@@ -368,9 +438,10 @@ async function fetchAndShowServers(baseSlug, mod) {
   };
 
   const noteEl = document.getElementById("servers-note");
-  if (noteEl && noteExtra) {
-    const base = noteEl.textContent || "";
-    if (!base.includes(noteExtra)) noteEl.textContent = `${base} ${noteExtra}`.trim();
+  if (noteEl) {
+    const prev = (noteEl.dataset.baseNote || noteEl.textContent || "").trim();
+    if (!noteEl.dataset.baseNote) noteEl.dataset.baseNote = prev;
+    noteEl.textContent = [noteEl.dataset.baseNote, noteExtra].filter(Boolean).join(" ").trim();
   }
 
   paintServersTable();
@@ -417,7 +488,7 @@ function paintServersTable() {
         <th>Players</th>
         <th>Map / Mode</th>
         <th>Location</th>
-        <th title="TCP connect RTT from this PC">Ping</th>
+        <th title="ICMP host RTT from this PC">Ping</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -426,7 +497,7 @@ function paintServersTable() {
   const tbody = table.querySelector("tbody");
 
   for (const s of rows) {
-    const id = s.id || `${s.host}:${s.port}`;
+    const id = `${s.host}:${s.port}`;
     const ping = serversState.pingById[id];
     const pingLabel =
       ping === undefined ? "…" : ping == null ? "—" : `${ping} ms`;
@@ -478,7 +549,7 @@ async function pingVisibleServers() {
   const servers = _serversCache.servers || [];
   if (!servers.length || !window.playbound.pingHosts) return;
   const hosts = servers.map((s) => ({
-    id: s.id || `${s.host}:${s.port}`,
+    id: `${s.host}:${s.port}`,
     host: s.host,
     port: s.port,
   }));
@@ -728,19 +799,62 @@ async function renderGameDetailView(slug) {
     ? `<img class="detail-cover" src="${escapeHtml(detail.coverImage)}" alt="" data-fallback-letter="${escapeHtml(detail.title.charAt(0))}" data-fallback-grad="${escapeHtml(bgGrad)}" />`
     : `<div class="detail-cover-fallback" style="background: ${bgGrad}">${escapeHtml(detail.title.charAt(0))}</div>`;
 
+  const genreChips = (detail.genres || [])
+    .map((g) => `<span class="chip">${escapeHtml(g)}</span>`)
+    .join("");
+  const featureItems = (detail.features || [])
+    .map((f) => `<li>${escapeHtml(f)}</li>`)
+    .join("");
+  const shots = (detail.screenshots || [])
+    .slice(0, 8)
+    .map(
+      (src) =>
+        `<a class="shot-thumb" href="${escapeHtml(src)}" data-ext="${escapeHtml(src)}"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></a>`
+    )
+    .join("");
+
   container.innerHTML = `
-    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 20px">← Back</button>
-    
-    <div style="display: flex; gap: 24px; align-items: flex-start; margin-bottom: 28px;">
-      <div class="detail-cover-wrap">${coverHtml}</div>
-      <div>
-        <h1 class="view-title" style="margin: 0">${escapeHtml(detail.title)}</h1>
-        <p class="view-sub" style="margin: 6px 0 16px 0">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}</p>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;" id="detail-actions"></div>
+    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 16px">← Back</button>
+
+    <div class="detail-hero">
+      <div class="detail-cover-wrap detail-cover-lg">${coverHtml}</div>
+      <div class="detail-hero-copy">
+        <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}</div>
+        <h1 class="view-title" style="margin: 8px 0 0 0">${escapeHtml(detail.title)}</h1>
+        <p class="view-sub" style="margin: 8px 0 0 0">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;" id="detail-actions"></div>
       </div>
     </div>
 
-    <div id="detail-servers-sec"></div>
+    <section class="detail-section">
+      <h2 class="detail-section-title">About</h2>
+      <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
+    </section>
+
+    ${
+      featureItems
+        ? `<section class="detail-section"><h2 class="detail-section-title">Features</h2><ul class="feature-list">${featureItems}</ul></section>`
+        : ""
+    }
+
+    ${
+      detail.systemRequirements
+        ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
+        <div class="req-grid">
+          <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
+          <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
+        </div></section>`
+        : ""
+    }
+
+    ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
+
+    <section class="detail-section" id="detail-mods-sec"></section>
+    <section class="detail-section" id="detail-servers-sec"></section>
+
+    <p class="view-sub" style="margin-top: 8px">
+      <a href="#" id="detail-open-site">Open full page on playbound.club</a>
+    </p>
   `;
 
   const coverImg = container.querySelector("img.detail-cover");
@@ -756,7 +870,22 @@ async function renderGameDetailView(slug) {
     });
   }
 
-  document.getElementById("detail-back").addEventListener("click", () => navigateTo("library"));
+  document.getElementById("detail-back").addEventListener("click", () => {
+    const back = ["games", "library", "home", "servers"].includes(detailReturnView)
+      ? detailReturnView
+      : "games";
+    navigateTo(back);
+  });
+  document.getElementById("detail-open-site")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}`);
+  });
+  container.querySelectorAll("a.shot-thumb").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.playbound.openExternal(a.dataset.ext);
+    });
+  });
 
   const actions = document.getElementById("detail-actions");
   if (detail.installed) {
@@ -805,11 +934,53 @@ async function renderGameDetailView(slug) {
     });
   }
 
+  const modsSec = document.getElementById("detail-mods-sec");
+  const mods = Array.isArray(detail.mods) ? detail.mods : [];
+  if (mods.length) {
+    modsSec.innerHTML = `
+      <h2 class="detail-section-title">Mods</h2>
+      <div class="mods-list"></div>
+    `;
+    const modsList = modsSec.querySelector(".mods-list");
+    for (const mod of mods) {
+      const row = document.createElement("div");
+      row.className = "mod-row";
+      row.innerHTML = `
+        <div>
+          <div class="mod-row-title">${escapeHtml(mod.title)}</div>
+          <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
+        </div>
+        <button class="btn-sm ${mod.installed ? "btn-secondary" : "btn-primary"}" type="button">
+          ${mod.installed ? "Installed" : "Install"}
+        </button>
+      `;
+      const btn = row.querySelector("button");
+      if (!mod.installed) {
+        btn.addEventListener("click", async () => {
+          setStatus(`Installing ${mod.title}…`);
+          try {
+            await window.playbound.installMod(mod.slug);
+            setStatus("Mod install complete");
+            renderGameDetailView(slug);
+          } catch (err) {
+            setStatus(err.message || String(err), true);
+          }
+        });
+      } else if (mod.installedPath) {
+        btn.textContent = "Folder";
+        btn.addEventListener("click", () => window.playbound.openFolder(mod.installedPath));
+      } else {
+        btn.disabled = true;
+      }
+      modsList.appendChild(row);
+    }
+  }
+
   const serversRes = await window.playbound.getServers(slug);
   const sSec = document.getElementById("detail-servers-sec");
   if (serversRes.supported && serversRes.servers?.length > 0) {
     sSec.innerHTML = `
-      <div class="section-header">Live Servers (${serversRes.servers.length})</div>
+      <h2 class="detail-section-title">Live Servers (${serversRes.servers.length})</h2>
       <table class="server-table">
         <thead>
           <tr>
@@ -821,6 +992,7 @@ async function renderGameDetailView(slug) {
         </thead>
         <tbody>
           ${serversRes.servers
+            .slice(0, 40)
             .map(
               (s) => `
             <tr>
@@ -842,7 +1014,18 @@ async function renderGameDetailView(slug) {
         await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
       });
     });
+  } else if (detail.multiplayer) {
+    sSec.innerHTML = `<h2 class="detail-section-title">Servers</h2><p class="view-sub">No live servers listed right now — try the Servers tab.</p>`;
   }
+}
+
+function openGameDetail(slug) {
+  if (["games", "library", "home", "servers"].includes(currentView)) {
+    detailReturnView = currentView;
+  } else if (!detailReturnView) {
+    detailReturnView = "games";
+  }
+  navigateTo("gameDetail", { slug });
 }
 
 function renderDeepLinkView(ctx) {
@@ -942,7 +1125,7 @@ function createGameCard(game) {
   `;
   card.appendChild(body);
 
-  card.addEventListener("click", () => navigateTo("gameDetail", { slug: game.slug }));
+  card.addEventListener("click", () => openGameDetail(game.slug));
   return card;
 }
 

@@ -4,6 +4,7 @@ const year = new Date().getFullYear();
 
 const links = [
   { href: "/discover", label: "Discover" },
+  { href: "/servers", label: "Servers" },
   { href: "/launcher", label: "Launcher" },
   { href: "/submit-game", label: "Submit a game" },
   { href: "/privacy", label: "Privacy" },
