@@ -10,7 +10,7 @@ import {
   editorialReadiness,
   publishBlockedMessage,
 } from "@/lib/enrich";
-import type { Game } from "@/lib/data/types";
+import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
 
 export async function PATCH(
   req: Request,
@@ -77,6 +77,10 @@ export async function PATCH(
 
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (doc.published && !hasPlayboundDiscordChannel(doc)) {
+      void requestDiscordProvision(doc.slug);
     }
 
     return NextResponse.json({ success: true, slug: doc.slug });

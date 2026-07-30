@@ -19,6 +19,16 @@ https://discord.com/oauth2/authorize?client_id=CLIENT_ID&permissions=268446720&s
 
 If slash-command registration logs `Missing Access`, the bot is missing `applications.commands` — re-invite with that URL. Channel provisioning still works once the bot is in the server with Manage Channels.
 
+## Auto channel provisioning
+
+On boot the bot backfills every **published** catalog game missing `communityLinks.playboundDiscord.channelId` (rate-limited). Publishing a game from admin also triggers a single-game provision.
+
+Manual triggers:
+
+- Per game: admin game editor → **Provision PlayBound Channel**
+- All missing: admin Games list → **Provision missing channels**
+- HTTP: `POST /provision-all` with `Authorization: Bearer $BOT_WEBHOOK_SECRET`
+
 ## Provision from admin
 
 `POST /api/admin/games/[slug]/provision-discord` on the Next app forwards to this worker when `DISCORD_BOT_WEBHOOK_URL` + `BOT_WEBHOOK_SECRET` are set on Vercel.
