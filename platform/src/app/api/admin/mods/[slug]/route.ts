@@ -7,6 +7,12 @@ import { getGame } from "@/lib/catalog";
 import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
+import {
+  ensureDerivedModFields,
+  modEditorialReadiness,
+  publishBlockedMessage,
+} from "@/lib/enrich";
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -16,9 +22,22 @@ export async function PATCH(
     if (error) return error;
 
     const { slug } = await params;
-    const body = withDefaultModArt(modPayloadSchema.parse(await req.json()));
-    if (!(await getGame(body.baseGameSlug, { includeUnpublished: true }))) {
+    const parsed = withDefaultModArt(modPayloadSchema.parse(await req.json()));
+    const baseGame = await getGame(parsed.baseGameSlug, { includeUnpublished: true });
+    if (!baseGame) {
       return NextResponse.json({ error: "Unknown base game slug" }, { status: 400 });
+    }
+
+    const body = ensureDerivedModFields(parsed, baseGame.title);
+
+    if (body.published) {
+      const readiness = modEditorialReadiness(body);
+      if (!readiness.ready) {
+        return NextResponse.json(
+          { error: publishBlockedMessage("mod", readiness.missing), readiness },
+          { status: 422 }
+        );
+      }
     }
 
     await dbConnect();

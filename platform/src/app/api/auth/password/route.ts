@@ -31,8 +31,20 @@ export async function POST(req: Request) {
     await dbConnect();
 
     const user = await User.findById(session.user.id).select("+password");
-    if (!user || !user.password) {
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Google-only accounts have no password to change. Say so plainly rather
+    // than returning "User not found", which reads like a bug.
+    if (!user.password) {
+      return NextResponse.json(
+        {
+          error:
+            "This account signs in with Google and has no password. Password sign-in isn't set up for it.",
+        },
+        { status: 400 }
+      );
     }
 
     const ok = await bcrypt.compare(currentPassword, user.password);

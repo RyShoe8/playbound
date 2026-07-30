@@ -26,8 +26,13 @@ async function main() {
     process.exit(0);
   }
 
+  // Same derivation the admin importer and save routes apply, so a seeded
+  // game and an imported one end up with identical shape in the database.
+  const { ensureDerivedGameFields } = await import("../src/lib/enrich");
+
   let upserted = 0;
-  for (const g of games) {
+  for (const seed of games) {
+    const g = ensureDerivedGameFields(seed);
     const developerName = developersBySlug.get(g.developerSlug)?.name ?? null;
     await CatalogGame.findOneAndUpdate(
       { slug: g.slug },

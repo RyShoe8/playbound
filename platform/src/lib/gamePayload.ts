@@ -149,6 +149,41 @@ export function defaultArtFor(genres: string[] = [], slug = ""): { from: string;
   return palettes[hash] ?? { from: "#1e293b", to: "#0ea5e9", icon: "Gamepad2" };
 }
 
+/** Shared shapes for the deeper editorial fields. */
+export const installStepSchema = z.object({
+  platform: z.enum(["all", "windows", "macos", "linux"]).default("all"),
+  text: z.string().trim().min(1).max(2000),
+  // Wrapped in z.optional so the key itself is optional in the inferred type,
+  // matching InstallStep. A bare .transform() would make it required-but-
+  // possibly-undefined, which is a different (and incompatible) shape.
+  command: z.optional(
+    z
+      .union([z.string().trim().max(500), z.literal(""), z.null()])
+      .transform((v) => (!v ? undefined : v))
+  ),
+});
+
+export const faqEntrySchema = z.object({
+  q: z.string().trim().min(1).max(300),
+  a: z.string().trim().min(1).max(3000),
+});
+
+export const qualityBarSchema = z.object({
+  genuinelyFree: z.boolean().default(false),
+  finished: z.boolean().default(false),
+  activelyMaintained: z.boolean().default(false),
+  standsAlone: z.boolean().default(false),
+  wontDisappear: z.boolean().default(false),
+  verdict: z.string().trim().max(1000).default(""),
+  lastVerified: z.string().trim().max(40).default(""),
+});
+
+const optionalProse = (max: number) =>
+  z
+    .union([z.string().trim().max(max), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? undefined : v));
+
 export const gamePayloadSchema = z.object({
   slug: z
     .string()
@@ -226,6 +261,19 @@ export const gamePayloadSchema = z.object({
     .union([z.string().trim().min(1), z.literal(""), z.null()])
     .optional()
     .transform((v) => (!v ? null : v)),
+
+  // ── Editorial depth ──────────────────────────────────────────
+  // installSteps and faq are auto-derived at import (see lib/enrich.ts).
+  // The rest is human judgement and is gated by editorialReadiness() before
+  // a game can be published.
+  qualityBar: qualityBarSchema.optional().nullable(),
+  longDescription: optionalProse(20000),
+  whyWePickedIt: optionalProse(4000),
+  installSteps: z.array(installStepSchema).max(30).default([]),
+  faq: z.array(faqEntrySchema).max(30).default([]),
+  bestFor: z.array(z.string().trim().min(1).max(300)).max(20).default([]),
+  notFor: z.array(z.string().trim().min(1).max(300)).max(20).default([]),
+  comparableTo: z.array(z.string().trim().min(1).max(120)).max(20).default([]),
 });
 
 export type GamePayload = z.infer<typeof gamePayloadSchema>;
@@ -325,4 +373,12 @@ export const emptyGameDraft = (): GamePayload => ({
   submissionId: null,
   managedBy: "admin",
   ownerUserId: null,
+  qualityBar: null,
+  longDescription: undefined,
+  whyWePickedIt: undefined,
+  installSteps: [],
+  faq: [],
+  bestFor: [],
+  notFor: [],
+  comparableTo: [],
 });

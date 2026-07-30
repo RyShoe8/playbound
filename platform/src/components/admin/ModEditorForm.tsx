@@ -3,6 +3,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DOWNLOAD_KINDS, MANAGED_BY, slugifyTitle, type ModPayload } from "@/lib/modPayload";
+import { ensureDerivedModFields, modEditorialReadiness } from "@/lib/enrich";
+import {
+  DerivedContentEditor,
+  EvidencePanel,
+  ProseField,
+  ReadinessPanel,
+  SourceMaterialPanel,
+} from "@/components/admin/EditorialFields";
 
 type DevOption = { slug: string; name: string };
 type GameOption = { slug: string; title: string };
@@ -26,14 +34,64 @@ export function ModEditorForm({
   const [form, setForm] = useState<ModPayload>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
+  const [evidence, setEvidence] = useState<string[]>([]);
+  const [sourceMaterial, setSourceMaterial] = useState<string | null>(null);
 
   const gameOptions = useMemo(
     () => [...games].sort((a, b) => a.title.localeCompare(b.title)),
     [games]
   );
 
+  // Mirrors the server-side publish gate, including the derivation the server
+  // applies first — otherwise install steps and the FAQ read as missing here.
+  const readiness = useMemo(() => {
+    const baseTitle = games.find((g) => g.slug === form.baseGameSlug)?.title;
+    return modEditorialReadiness(ensureDerivedModFields(form, baseTitle));
+  }, [form, games]);
+
   function patch<K extends keyof ModPayload>(key: K, value: ModPayload[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function runImport() {
+    if (!importUrl.trim()) return;
+    if (!form.baseGameSlug) {
+      setError("Pick a base game first — install steps and the FAQ are written against it.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/mods/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: importUrl, baseGameSlug: form.baseGameSlug }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Import failed");
+        setBusy(false);
+        return;
+      }
+      const draft = data.draft as ModPayload;
+      setForm((prev) => ({
+        ...prev,
+        ...draft,
+        slug: mode === "edit" ? prev.slug : draft.slug || prev.slug,
+        baseGameSlug: prev.baseGameSlug,
+        published: false,
+        // Never clobber prose the editor has already written.
+        longDescription: prev.longDescription || draft.longDescription,
+        whatItChanges: prev.whatItChanges || draft.whatItChanges,
+      }));
+      setEvidence((data.evidence as string[]) ?? []);
+      setSourceMaterial((data.sourceMaterial as string | null) ?? null);
+      setBusy(false);
+    } catch {
+      setError("Couldn't reach the server.");
+      setBusy(false);
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -80,7 +138,32 @@ export function ModEditorForm({
   }
 
   return (
-    <form onSubmit={save} className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div className="rounded-xl border border-border bg-card p-4">
+        <p className={label}>Import from a GitHub repo or project page</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <input
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            placeholder="https://github.com/owner/repo or a project page URL"
+            className={`${field} mt-0 flex-1`}
+          />
+          <button
+            type="button"
+            disabled={busy || !importUrl.trim()}
+            onClick={runImport}
+            className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold disabled:opacity-60"
+          >
+            Prefill
+          </button>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Pick the base game below first — install steps and the FAQ are generated
+          against it.
+        </p>
+      </div>
+
+      <form onSubmit={save} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Title</label>
@@ -117,14 +200,81 @@ export function ModEditorForm({
 
       <div>
         <label className={label}>Description</label>
+        <p className="text-[11px] normal-case text-muted-foreground">
+          Short summary for cards and meta descriptions. The long description below is
+          the one that has to be original.
+        </p>
         <textarea
           required
-          rows={5}
+          rows={4}
           value={form.description}
           onChange={(e) => patch("description", e.target.value)}
           className={field}
         />
       </div>
+
+      {/* ── Editorial depth ─────────────────────────────────── */}
+      <details open className="rounded-xl border border-border bg-card p-4">
+        <summary className="cursor-pointer text-sm font-bold">
+          Editorial — required to publish
+          {!readiness.ready && (
+            <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+              {readiness.missing.length} missing
+            </span>
+          )}
+        </summary>
+
+        <div className="mt-4 space-y-5">
+          <ReadinessPanel fields={readiness.fields} ready={readiness.ready} kind="mod" />
+
+          {evidence.length > 0 && <EvidencePanel evidence={evidence} />}
+
+          {sourceMaterial && (
+            <SourceMaterialPanel
+              text={sourceMaterial}
+              onDismiss={() => setSourceMaterial(null)}
+            />
+          )}
+
+          <ProseField
+            title="What it changes"
+            hint="The single most useful thing to say about a mod, and the thing people actually search for. Be concrete: which units, which maps, which systems."
+            value={form.whatItChanges ?? ""}
+            minWords={10}
+            rows={4}
+            onChange={(v) => patch("whatItChanges", v)}
+          />
+
+          <ProseField
+            title="Long description"
+            hint="80+ words of original editorial. Do not paste the project README — that is duplicate content and will not rank."
+            value={form.longDescription ?? ""}
+            minWords={80}
+            rows={10}
+            onChange={(v) => patch("longDescription", v)}
+          />
+
+          <div>
+            <label className={label}>Compatibility</label>
+            <p className="text-[11px] normal-case text-muted-foreground">
+              Base game versions this works with, if it matters. Optional.
+            </p>
+            <input
+              value={form.compatibility ?? ""}
+              placeholder="e.g. Requires OpenRA release-20231010 or newer"
+              onChange={(e) => patch("compatibility", e.target.value)}
+              className={field}
+            />
+          </div>
+
+          <DerivedContentEditor
+            installSteps={form.installSteps ?? []}
+            faq={form.faq ?? []}
+            onInstallStepsChange={(next) => patch("installSteps", next)}
+            onFaqChange={(next) => patch("faq", next)}
+          />
+        </div>
+      </details>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -277,9 +427,26 @@ export function ModEditorForm({
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm font-semibold">
-        <input type="checkbox" checked={form.published} onChange={(e) => patch("published", e.target.checked)} />
+      {/* Same gate as the server; disabling here is a courtesy, not the guard. */}
+      <label
+        className={`flex items-center gap-2 text-sm font-semibold ${
+          !readiness.ready && !form.published ? "opacity-50" : ""
+        }`}
+        title={readiness.ready ? undefined : `Still needs: ${readiness.missing.join(", ")}`}
+      >
+        <input
+          type="checkbox"
+          checked={form.published}
+          disabled={!readiness.ready && !form.published}
+          onChange={(e) => patch("published", e.target.checked)}
+        />
         Published
+        {!readiness.ready && !form.published && (
+          <span className="text-[11px] font-normal text-muted-foreground">
+            ({readiness.missing.length} field
+            {readiness.missing.length === 1 ? "" : "s"} missing)
+          </span>
+        )}
       </label>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -303,6 +470,7 @@ export function ModEditorForm({
           </button>
         )}
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

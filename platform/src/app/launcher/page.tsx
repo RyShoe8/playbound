@@ -14,8 +14,14 @@ import { isLauncherInstallable, launcherInstallUrl } from "@/lib/launcher";
 import { getLauncherDownloadUrl } from "@/lib/launcherDownload";
 import { GameArt } from "@/components/GameArt";
 import { Badge, SectionHeader } from "@/components/ui/bits";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "PlayBound Launcher" };
+export const metadata: Metadata = pageMetadata({
+  title: "PlayBound Launcher — One-Click Free Game Installs",
+  description:
+    "Install and launch free games in one click. The PlayBound Launcher fetches official releases only — no third-party mirrors, no bundled extras.",
+  path: "/launcher",
+});
 
 const features = [
   { icon: Download, title: "One-click installs", text: "Portable builds pulled straight from each project's official releases — no wizards, no toolbars, no surprises." },

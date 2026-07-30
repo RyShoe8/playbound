@@ -1,6 +1,12 @@
 import type { Game } from "./types";
+import { withEditorial } from "./editorial";
 
-export const games: Game[] = [
+/**
+ * Factual catalog entries. Editorial content (quality assessment, long-form
+ * writing, FAQs) lives in editorial.ts and is merged on export, so a factual
+ * re-import can never silently overwrite the writing.
+ */
+const facts: Game[] = [
   {
     slug: "openra",
     title: "OpenRA",
@@ -518,5 +524,7 @@ export const games: Game[] = [
     },
   },
 ];
+
+export const games: Game[] = facts.map(withEditorial);
 
 export const gamesBySlug = new Map(games.map((g) => [g.slug, g]));

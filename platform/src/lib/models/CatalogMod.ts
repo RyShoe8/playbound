@@ -9,6 +9,23 @@ const GameArtSchema = new Schema(
   { _id: false }
 );
 
+const InstallStepSchema = new Schema(
+  {
+    platform: { type: String, enum: ["all", "windows", "macos", "linux"], default: "all" },
+    text: { type: String, required: true },
+    command: { type: String, default: null },
+  },
+  { _id: false }
+);
+
+const FaqSchema = new Schema(
+  {
+    q: { type: String, required: true },
+    a: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 const CatalogModSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, index: true },
@@ -39,6 +56,13 @@ const CatalogModSchema = new Schema(
     published: { type: Boolean, default: true, index: true },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
     ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+
+    // Editorial depth — see src/lib/enrich.ts.
+    longDescription: { type: String, default: null },
+    whatItChanges: { type: String, default: null },
+    compatibility: { type: String, default: null },
+    installSteps: { type: [InstallStepSchema], default: [] },
+    faq: { type: [FaqSchema], default: [] },
   },
   { timestamps: true }
 );

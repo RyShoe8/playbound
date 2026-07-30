@@ -5,6 +5,12 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import {
+  ensureDerivedGameFields,
+  editorialReadiness,
+  publishBlockedMessage,
+} from "@/lib/enrich";
+import type { Game } from "@/lib/data/types";
 
 export async function PATCH(
   req: Request,
@@ -15,7 +21,21 @@ export async function PATCH(
     if (error) return error;
 
     const { slug } = await params;
-    const body = withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(await req.json())));
+    const body = ensureDerivedGameFields(
+      withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(await req.json())))
+    );
+
+    // Drafts save freely; publishing requires the human-written fields.
+    if (body.published) {
+      const readiness = editorialReadiness(body);
+      if (!readiness.ready) {
+        return NextResponse.json(
+          { error: publishBlockedMessage("game", readiness.missing), readiness },
+          { status: 422 }
+        );
+      }
+    }
+
     await dbConnect();
 
     if (body.slug !== slug) {

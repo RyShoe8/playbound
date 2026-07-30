@@ -22,6 +22,17 @@ import {
   isPcInstallCandidate,
 } from "@/lib/launcherInstall";
 import type { LauncherInstallKind } from "@/lib/launcherInstall";
+import { editorialReadiness, ensureDerivedGameFields } from "@/lib/enrich";
+import type { QualityBar } from "@/lib/data/types";
+import {
+  DerivedContentEditor,
+  EvidencePanel,
+  ProseField,
+  QualityBarEditor,
+  ReadinessPanel,
+  SourceMaterialPanel,
+  StringListEditor,
+} from "@/components/admin/EditorialFields";
 
 /** Games with a live PlayBound server list provider (keep in sync with registry). */
 const WIRED_SERVER_PROVIDERS = new Set([
@@ -87,6 +98,18 @@ export function GameEditorForm({
   const [captureAvailable, setCaptureAvailable] = useState(false);
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
   const [launcherDiscoverNote, setLauncherDiscoverNote] = useState("");
+  const [evidence, setEvidence] = useState<string[]>([]);
+  const [sourceMaterial, setSourceMaterial] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<{ bestFor: string[]; notFor: string[] }>({
+    bestFor: [],
+    notFor: [],
+  });
+
+  // Mirrors the server-side publish gate so nothing is a surprise on save.
+  // Must apply the same derivation first — the server fills install steps and
+  // the FAQ before checking readiness, so evaluating the raw form here would
+  // report them missing and wrongly disable the Published toggle.
+  const readiness = useMemo(() => editorialReadiness(ensureDerivedGameFields(form)), [form]);
 
   const genreSet = useMemo(() => new Set(form.genres), [form.genres]);
   const launchSet = useMemo(() => new Set(form.launchMethods), [form.launchMethods]);
@@ -202,7 +225,20 @@ export function GameEditorForm({
         art: draft.art ?? defaultArtFor(draft.genres ?? [], draft.slug || prev.slug),
         // Prefill never arms launcher — admin uses Add to PlayBound Launcher.
         launcherInstall: null,
+        // Never clobber prose the editor has already written.
+        longDescription: prev.longDescription || draft.longDescription,
+        whyWePickedIt: prev.whyWePickedIt || draft.whyWePickedIt,
+        bestFor: prev.bestFor?.length ? prev.bestFor : (draft.bestFor ?? []),
+        notFor: prev.notFor?.length ? prev.notFor : (draft.notFor ?? []),
       }));
+      setEvidence((data.evidence as string[]) ?? []);
+      setSourceMaterial((data.sourceMaterial as string | null) ?? null);
+      setSuggestions(
+        (data.suggestions as { bestFor: string[]; notFor: string[] }) ?? {
+          bestFor: [],
+          notFor: [],
+        }
+      );
       setLauncherDiscoverNote("");
       setBusy(false);
     } catch {
@@ -434,14 +470,96 @@ export function GameEditorForm({
 
         <div>
           <label className={label}>Description</label>
+          <p className="text-[11px] text-muted-foreground">
+            Short summary for cards and meta descriptions. Scraped copy is fine here —
+            the long description below is the one that has to be original.
+          </p>
           <textarea
             required
-            rows={6}
+            rows={4}
             value={form.description}
             onChange={(e) => patch("description", e.target.value)}
             className={area}
           />
         </div>
+
+        {/* ── Editorial depth ─────────────────────────────────── */}
+        <details open className="rounded-xl border border-border bg-card p-4">
+          <summary className="cursor-pointer text-sm font-bold">
+            Editorial — required to publish
+            {!readiness.ready && (
+              <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+                {readiness.missing.length} missing
+              </span>
+            )}
+          </summary>
+
+          <div className="mt-4 space-y-5">
+            <ReadinessPanel fields={readiness.fields} ready={readiness.ready} kind="game" />
+
+            {evidence.length > 0 && <EvidencePanel evidence={evidence} />}
+
+            {sourceMaterial && (
+              <SourceMaterialPanel
+                text={sourceMaterial}
+                onDismiss={() => setSourceMaterial(null)}
+              />
+            )}
+
+            <QualityBarEditor
+              value={form.qualityBar ?? null}
+              onChange={(next: QualityBar) => patch("qualityBar", next)}
+            />
+
+            <ProseField
+              title="Long description"
+              hint="400–600 words of original editorial. This replaces the scraped summary on the public page — do not paste store or README copy, it is duplicate content and will not rank. Blank line between paragraphs."
+              value={form.longDescription ?? ""}
+              minWords={150}
+              rows={14}
+              onChange={(v) => patch("longDescription", v)}
+            />
+
+            <ProseField
+              title="Why we picked it"
+              hint="~100 words in your own voice. The curation rationale — this is what separates PlayBound from a directory listing."
+              value={form.whyWePickedIt ?? ""}
+              minWords={20}
+              rows={5}
+              onChange={(v) => patch("whyWePickedIt", v)}
+            />
+
+            <StringListEditor
+              title="Best for"
+              hint="Concrete situations this game suits. At least two."
+              values={form.bestFor ?? []}
+              suggestions={suggestions.bestFor}
+              onChange={(next) => patch("bestFor", next)}
+            />
+
+            <StringListEditor
+              title="Not for"
+              hint="Honest limitations. At least two. This is the strongest trust signal on the page — nobody else in this niche publishes it, so resist softening them."
+              values={form.notFor ?? []}
+              suggestions={suggestions.notFor}
+              onChange={(next) => patch("notFor", next)}
+            />
+
+            <StringListEditor
+              title="Comparable to"
+              hint="Commercial games this resembles. Powers the /alternatives pages."
+              values={form.comparableTo ?? []}
+              onChange={(next) => patch("comparableTo", next)}
+            />
+
+            <DerivedContentEditor
+              installSteps={form.installSteps ?? []}
+              faq={form.faq ?? []}
+              onInstallStepsChange={(next) => patch("installSteps", next)}
+              onFaqChange={(next) => patch("faq", next)}
+            />
+          </div>
+        </details>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -992,9 +1110,35 @@ export function GameEditorForm({
         </div>
 
         <div className="flex flex-wrap gap-4 text-sm">
+          {/* Publishing is gated on editorial completeness — the same check runs
+              server-side, so disabling here is a courtesy rather than the guard. */}
+          <label
+            className={`flex items-center gap-2 font-semibold ${
+              !readiness.ready && !form.published ? "opacity-50" : ""
+            }`}
+            title={
+              readiness.ready
+                ? undefined
+                : `Still needs: ${readiness.missing.join(", ")}`
+            }
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(form.published)}
+              disabled={!readiness.ready && !form.published}
+              onChange={(e) => patch("published", e.target.checked)}
+            />
+            Published
+            {!readiness.ready && !form.published && (
+              <span className="text-[11px] font-normal text-muted-foreground">
+                ({readiness.missing.length} field
+                {readiness.missing.length === 1 ? "" : "s"} missing)
+              </span>
+            )}
+          </label>
+
           {(
             [
-              ["published", "Published"],
               ["browserPlayable", "Browser playable"],
               ["steamDeck", "Steam Deck"],
               ["gameOfWeek", "Game of the week"],

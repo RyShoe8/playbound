@@ -7,8 +7,14 @@ import GuidePost from "@/lib/models/GuidePost";
 import DiscussionPost from "@/lib/models/DiscussionPost";
 import { getGame } from "@/lib/catalog";
 import { EmptyHint, SectionHeader } from "@/components/ui/bits";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Community" };
+export const metadata: Metadata = pageMetadata({
+  title: "Community",
+  description:
+    "Guides, discussion and reviews from players of the free games in the PlayBound catalog.",
+  path: "/community",
+});
 
 interface Activity {
   kind: "review" | "guide" | "discussion";

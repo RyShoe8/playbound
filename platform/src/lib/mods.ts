@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
-import type { GameArt } from "@/lib/data/types";
+import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
 
 export type CatalogModPublic = {
   slug: string;
@@ -22,6 +22,19 @@ export type CatalogModPublic = {
   coverImage?: string;
   screenshots?: string[];
   managedBy: "admin" | "developer";
+
+  // ── Editorial depth ──────────────────────────────────────────
+  // Optional so existing documents stay valid. installSteps and faq are
+  // auto-derived at import; longDescription and whatItChanges need a person.
+  /** 80+ words of original editorial. Not scraped project copy. */
+  longDescription?: string;
+  /** What this mod actually does to the base game — the thing people search. */
+  whatItChanges?: string;
+  /** Base game version compatibility, when it matters. */
+  compatibility?: string;
+  installSteps?: InstallStep[];
+  faq?: GameFaq[];
+  updatedAt?: string;
 };
 
 export type ModInstallMeta = {
@@ -60,6 +73,17 @@ function toMod(doc: LeanMod): CatalogModPublic {
     coverImage: (doc.coverImage as string) || undefined,
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     managedBy: (doc.managedBy as "admin" | "developer") || "admin",
+
+    longDescription: (doc.longDescription as string) || undefined,
+    whatItChanges: (doc.whatItChanges as string) || undefined,
+    compatibility: (doc.compatibility as string) || undefined,
+    installSteps: (doc.installSteps as InstallStep[])?.length
+      ? (doc.installSteps as InstallStep[])
+      : undefined,
+    faq: (doc.faq as GameFaq[])?.length ? (doc.faq as GameFaq[]) : undefined,
+    updatedAt: (doc as { updatedAt?: Date }).updatedAt
+      ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
+      : undefined,
   };
 }
 

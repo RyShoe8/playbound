@@ -5,11 +5,20 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { LogIn } from "lucide-react";
+import {
+  AuthDivider,
+  GoogleSignInButton,
+  authErrorMessage,
+} from "@/components/GoogleSignInButton";
+import { RecaptchaNotice } from "@/components/RecaptchaNotice";
+import { getRecaptchaToken } from "@/lib/recaptchaClient";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/profile";
+  // NextAuth redirects OAuth failures back here with ?error=<code>.
+  const oauthError = authErrorMessage(params.get("error"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +29,14 @@ function LoginForm() {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const res = await signIn("credentials", { email, password, redirect: false });
+    // Passed through NextAuth into the credentials authorize() callback.
+    const recaptchaToken = (await getRecaptchaToken("login")) ?? "";
+    const res = await signIn("credentials", {
+      email,
+      password,
+      recaptchaToken,
+      redirect: false,
+    });
     setBusy(false);
     if (res?.error) {
       setError(res.error);
@@ -36,6 +52,16 @@ function LoginForm() {
         <LogIn className="mx-auto size-8 text-primary" />
         <h1 className="mt-3 text-2xl font-extrabold tracking-tight">Sign in to PlayBound</h1>
       </div>
+
+      {oauthError && (
+        <p className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {oauthError}
+        </p>
+      )}
+
+      <GoogleSignInButton callbackUrl={callbackUrl} label="Sign in with Google" />
+      <AuthDivider />
+
       <form onSubmit={submit} className="space-y-3">
         <div>
           <label className="text-xs font-semibold text-muted-foreground">Email</label>
@@ -66,6 +92,9 @@ function LoginForm() {
           {busy ? "Signing in…" : "Sign In"}
         </button>
       </form>
+
+      <RecaptchaNotice className="mt-4 text-center" />
+
       <p className="mt-5 text-center text-sm text-muted-foreground">
         New to PlayBound?{" "}
         <Link href="/signup" className="font-semibold text-primary hover:underline">

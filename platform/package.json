@@ -12,7 +12,9 @@
     "fix:game-media": "tsx scripts/fix-game-media.ts",
     "seed:launcher-install": "tsx scripts/seed-launcher-install.ts",
     "upload:launcher": "tsx scripts/upload-launcher.ts",
-    "seed:mods": "tsx scripts/seed-mods.ts"
+    "seed:mods": "tsx scripts/seed-mods.ts",
+    "typecheck": "tsc --noEmit",
+    "verify:maintenance": "tsx scripts/verify-maintenance.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

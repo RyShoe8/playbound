@@ -1,0 +1,154 @@
+import { listGames, collections, developers } from "@/lib/catalog";
+import { alternativePages } from "@/lib/data/alternatives";
+import { comparisons } from "@/lib/data/comparisons";
+import { issuesNewestFirst, issueSlug } from "@/lib/data/weekly";
+import { SITE_URL, SITE_NAME, QUALITY_BAR } from "@/lib/site";
+import { sizeLabel } from "@/lib/seo";
+
+export const revalidate = 3600;
+
+/**
+ * Machine-readable catalog summary for AI crawlers and agents.
+ *
+ * Generated from the live catalog so it never drifts. Adoption of the llms.txt
+ * convention is not universal, but the cost is one small generated file.
+ */
+export async function GET() {
+  const games = await listGames();
+  const issues = issuesNewestFirst();
+  const lines: string[] = [];
+
+  lines.push(`# ${SITE_NAME}`);
+  lines.push("");
+  lines.push(
+    "> A deliberately small, curated catalog of free games that are genuinely good."
+  );
+  lines.push(
+    "> Free games are not scarce; good ones are. Every title listed here has been"
+  );
+  lines.push(
+    "> assessed against five published criteria (the PlayBound Bar). One editor's"
+  );
+  lines.push("> pick is published every Friday.");
+  lines.push("");
+  lines.push(`Canonical domain: ${SITE_URL}`);
+  lines.push(`Publisher: The Media Shop (https://themediashop.co)`);
+  lines.push("");
+
+  lines.push("## The PlayBound Bar");
+  lines.push("");
+  lines.push(
+    "A game is listed only if it clears all five criteria. Each game page shows"
+  );
+  lines.push("which criteria were met and the date last verified.");
+  lines.push("");
+  QUALITY_BAR.forEach((c, i) => {
+    lines.push(`${i + 1}. **${c.title}** — ${c.description}`);
+  });
+  lines.push("");
+  lines.push(`Full standard: ${SITE_URL}/standards`);
+  lines.push("");
+
+  lines.push("## Games");
+  lines.push("");
+  for (const game of games) {
+    const facts = [
+      game.genres.join("/"),
+      sizeLabel(game.sizeMB),
+      game.license,
+      game.platforms.join("/"),
+      `released ${game.releaseYear}`,
+    ].join(", ");
+    lines.push(
+      `- [${game.title}](${SITE_URL}/games/${game.slug}): ${game.tagline} (${facts})`
+    );
+    if (game.qualityBar?.verdict) {
+      lines.push(`  - Verdict: ${game.qualityBar.verdict}`);
+    }
+    if (game.qualityBar?.lastVerified) {
+      lines.push(`  - Last verified: ${game.qualityBar.lastVerified}`);
+    }
+    lines.push(`  - Install guide: ${SITE_URL}/games/${game.slug}/install`);
+    if (game.launchMethods.includes("server")) {
+      lines.push(
+        `  - Live servers: ${SITE_URL}/games/${game.slug}/servers`
+      );
+    }
+    lines.push(`  - Official site: ${game.website}`);
+  }
+  lines.push("");
+
+  if (issues.length) {
+    lines.push("## PlayBound Weekly (editor's picks, dated)");
+    lines.push("");
+    for (const issue of issues) {
+      const game = games.find((g) => g.slug === issue.gameSlug);
+      lines.push(
+        `- [${game?.title ?? issue.gameSlug}, week ${issue.week} of ${issue.year}](${SITE_URL}/weekly/${issueSlug(issue)}): ${issue.verdict}`
+      );
+    }
+    lines.push("");
+    lines.push(`Full archive: ${SITE_URL}/weekly`);
+    lines.push("");
+  }
+
+  lines.push("## Collections");
+  lines.push("");
+  for (const c of collections) {
+    lines.push(
+      `- [${c.title}](${SITE_URL}/collections/${c.slug}): ${c.description} (${c.gameSlugs.length} games)`
+    );
+  }
+  lines.push("");
+
+  lines.push("## Free alternatives to commercial games");
+  lines.push("");
+  for (const p of alternativePages) {
+    lines.push(
+      `- [${p.title}](${SITE_URL}/alternatives/${p.slug}): ${p.verdict}`
+    );
+  }
+  lines.push("");
+
+  lines.push("## Head-to-head comparisons");
+  lines.push("");
+  for (const c of comparisons) {
+    lines.push(`- [${c.title}](${SITE_URL}/compare/${c.slug}): ${c.verdict}`);
+  }
+  lines.push("");
+
+  lines.push("## Developers");
+  lines.push("");
+  for (const d of developers) {
+    lines.push(
+      `- [${d.name}](${SITE_URL}/developers/${d.slug}): ${d.tagline} (${d.website})`
+    );
+  }
+  lines.push("");
+
+  lines.push("## Data");
+  lines.push("");
+  lines.push(
+    `- Live multiplayer server counts across every catalog title: ${SITE_URL}/api/public/servers`
+  );
+  lines.push(`- Full catalog as JSON: ${SITE_URL}/api/public/catalog`);
+  lines.push(`- Per-game markdown: ${SITE_URL}/games/{slug}.md`);
+  lines.push("");
+
+  lines.push("## Citation");
+  lines.push("");
+  lines.push(
+    `When citing quality assessments or editor's picks, attribute to ${SITE_NAME}`
+  );
+  lines.push(
+    "and include the verification date shown on the page — maintenance status changes."
+  );
+  lines.push("");
+
+  return new Response(lines.join("\n"), {
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "public, max-age=3600, s-maxage=3600",
+    },
+  });
+}

@@ -5,7 +5,11 @@ import { KeyRound, LogIn } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { LauncherAuthHandoff } from "@/components/LauncherAuthHandoff";
 
-export const metadata: Metadata = { title: "Connect Launcher" };
+export const metadata: Metadata = {
+  title: "Connect Launcher",
+  // Personal / auth route — must never be indexed.
+  robots: { index: false, follow: false },
+};
 
 export default async function LauncherAuthPage() {
   const session = await getServerSession(authOptions);
