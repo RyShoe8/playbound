@@ -8,6 +8,8 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 const patchSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
   disabled: z.boolean().optional(),
+  suspendedUntil: z.union([z.string().min(1), z.null()]).optional(),
+  warnings: z.number().int().min(0).max(100).optional(),
 });
 
 export async function PATCH(
@@ -21,7 +23,7 @@ export async function PATCH(
     const { id } = await params;
     const body = patchSchema.parse(await req.json());
 
-    if (body.role === undefined && body.disabled === undefined) {
+    if (body.role === undefined && body.disabled === undefined && body.suspendedUntil === undefined && body.warnings === undefined) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
@@ -49,6 +51,15 @@ export async function PATCH(
 
     if (body.role !== undefined) user.role = body.role;
     if (body.disabled !== undefined) user.disabled = body.disabled;
+    if (body.suspendedUntil !== undefined) {
+      user.community = user.community ?? {};
+      user.community.suspendedUntil =
+        body.suspendedUntil === null ? null : new Date(body.suspendedUntil);
+    }
+    if (body.warnings !== undefined) {
+      user.community = user.community ?? {};
+      user.community.warnings = body.warnings;
+    }
     await user.save();
 
     return NextResponse.json({
@@ -57,6 +68,8 @@ export async function PATCH(
         id: String(user._id),
         role: user.role,
         disabled: Boolean(user.disabled),
+        suspendedUntil: user.community?.suspendedUntil ?? null,
+        warnings: user.community?.warnings ?? 0,
       },
     });
   } catch (err) {

@@ -22,7 +22,9 @@ export type RecaptchaAction =
   | "signup"
   | "login"
   | "newsletter"
-  | "game_submission";
+  | "game_submission"
+  | "discussion_topic"
+  | "discussion_report";
 
 export type RecaptchaResult =
   | { ok: true; score: number | null; skipped: boolean }

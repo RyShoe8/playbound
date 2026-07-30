@@ -6,12 +6,11 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Kind = "review" | "guide" | "discussion";
+type Kind = "review" | "guide";
 
 const endpoints: Record<Kind, (slug: string) => string> = {
   review: (slug) => `/api/games/${slug}/reviews`,
   guide: (slug) => `/api/games/${slug}/guides`,
-  discussion: (slug) => `/api/games/${slug}/discussion`,
 };
 
 const copy: Record<Kind, { cta: string; titlePlaceholder: string; bodyPlaceholder: string; bodyRows: number }> = {
@@ -27,12 +26,6 @@ const copy: Record<Kind, { cta: string; titlePlaceholder: string; bodyPlaceholde
     titlePlaceholder: "Guide title",
     bodyPlaceholder: "Write your guide. Markdown-style plain text is fine.",
     bodyRows: 8,
-  },
-  discussion: {
-    cta: "Start Discussion",
-    titlePlaceholder: "Thread title",
-    bodyPlaceholder: "What's on your mind?",
-    bodyRows: 4,
   },
 };
 
@@ -57,12 +50,12 @@ export function ContentForm({
     return (
       <p className="text-sm text-muted-foreground">
         <Link
-          href={`/login?callbackUrl=/games/${gameSlug}?tab=${kind === "review" ? "reviews" : kind === "guide" ? "guides" : "discussion"}`}
+          href={`/login?callbackUrl=/games/${gameSlug}?tab=${kind === "review" ? "reviews" : "guides"}`}
           className="font-semibold text-primary hover:underline"
         >
           Sign in
         </Link>{" "}
-        to {kind === "review" ? "rate and review this game" : kind === "guide" ? "publish a guide" : "start a discussion"}.
+        to {kind === "review" ? "rate and review this game" : "publish a guide"}.
       </p>
     );
   }

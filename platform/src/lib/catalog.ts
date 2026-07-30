@@ -75,8 +75,57 @@ function toGame(doc: LeanGame): Game {
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,
+    communityLinks: mapCommunityLinks(doc.communityLinks),
   };
   return attachLauncherInstall(base, doc);
+}
+
+function mapCommunityLinks(raw: unknown): Game["communityLinks"] | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const links = raw as {
+    officialDiscord?: {
+      inviteUrl?: string | null;
+      serverName?: string | null;
+      verified?: boolean;
+      verifiedSourceUrl?: string | null;
+      verifiedAt?: Date | string | null;
+    };
+    playboundDiscord?: {
+      guildId?: string | null;
+      channelId?: string | null;
+      channelName?: string | null;
+      inviteCode?: string | null;
+      inviteUrl?: string | null;
+      provisionedAt?: Date | string | null;
+    };
+  };
+  const official = links.officialDiscord;
+  const playbound = links.playboundDiscord;
+  const out: NonNullable<Game["communityLinks"]> = {};
+  if (official?.inviteUrl) {
+    out.officialDiscord = {
+      inviteUrl: official.inviteUrl,
+      serverName: official.serverName || undefined,
+      verified: Boolean(official.verified),
+      verifiedSourceUrl: official.verifiedSourceUrl || undefined,
+      verifiedAt: official.verifiedAt
+        ? new Date(official.verifiedAt).toISOString()
+        : undefined,
+    };
+  }
+  if (playbound?.inviteUrl && playbound.channelName) {
+    out.playboundDiscord = {
+      guildId: playbound.guildId || undefined,
+      channelId: playbound.channelId || undefined,
+      channelName: playbound.channelName,
+      inviteCode: playbound.inviteCode || undefined,
+      inviteUrl: playbound.inviteUrl,
+      provisionedAt: playbound.provisionedAt
+        ? new Date(playbound.provisionedAt).toISOString()
+        : undefined,
+    };
+  }
+  return out.officialDiscord || out.playboundDiscord ? out : undefined;
 }
 
 /** Seed lookup, used to backfill editorial fields absent from DB documents. */

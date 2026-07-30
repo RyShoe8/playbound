@@ -5,7 +5,7 @@ import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
-import DiscussionPost from "@/lib/models/DiscussionPost";
+import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import GameSubmission from "@/lib/models/GameSubmission";
@@ -25,7 +25,7 @@ async function getCounts() {
         User.countDocuments({ emailVerified: true }),
         Review.countDocuments(),
         GuidePost.countDocuments(),
-        DiscussionPost.countDocuments(),
+        DiscussionTopic.countDocuments({ status: { $ne: "removed" } }),
         PlatformEvent.countDocuments({ startsAt: { $gte: new Date() } }),
         NewsletterSubscriber.countDocuments(),
         GameSubmission.countDocuments({ status: "pending" }),

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Gamepad2, MessagesSquare, Newspaper, Star, Trophy, Wrench } from "lucide-react";
+import { Gamepad2, Newspaper, Star, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
-import DiscussionPost from "@/lib/models/DiscussionPost";
+import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { fetchGithubReleases } from "@/lib/github";
 import { collectionsFeaturing, developersBySlug, listGames, getGame } from "@/lib/catalog";
@@ -15,6 +15,11 @@ import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
 import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 import { ContentForm } from "@/components/ContentForm";
+import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
+import { CommunityCard } from "@/components/discussion/CommunityCard";
+import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
+import { visibleCategories } from "@/lib/discussion/categories";
+import { getDiscordPresence } from "@/lib/discordPresence";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame, type CatalogModPublic } from "@/lib/mods";
@@ -78,10 +83,17 @@ export default async function GamePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    category?: string;
+    sort?: string;
+    filter?: string;
+    q?: string;
+  }>;
 }) {
   const { slug } = await params;
-  const { tab: rawTab } = await searchParams;
+  const sp = await searchParams;
+  const { tab: rawTab } = sp;
   const game = await getGame(slug);
   if (!game) notFound();
 
@@ -92,6 +104,25 @@ export default async function GamePage({
   const similar = allGames
     .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
     .slice(0, 6);
+
+  const discussionCount = await safeQuery(
+    () =>
+      DiscussionTopic.countDocuments({
+        gameSlug: game.slug,
+        status: { $ne: "removed" },
+      }),
+    0
+  );
+  const reviewCount = await safeQuery(
+    () => Review.countDocuments({ gameSlug: game.slug }),
+    0
+  );
+  const mediaCount =
+    (game.screenshots?.length ?? 0) + (game.videos?.length ?? 0);
+
+  const discordPresence = await getDiscordPresence(
+    game.communityLinks?.playboundDiscord?.guildId
+  );
 
   let initiallySaved = false;
   if (session?.user) {
@@ -172,8 +203,10 @@ export default async function GamePage({
 
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <nav className="no-scrollbar sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+        <ScrollActiveTab activeKey={tab} />
         <Link
           href={`/games/${game.slug}`}
+          data-tab="overview"
           className={cn(
             "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
             tab === "overview"
@@ -189,24 +222,41 @@ export default async function GamePage({
           <Link
             key={r.key}
             href={r.href(game.slug)}
+            data-tab={r.key}
             className="border-b-2 border-transparent px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize text-muted-foreground transition-colors hover:text-foreground"
           >
             {r.label}
           </Link>
         ))}
 
-        {PARAM_TABS.filter((t) => t !== "overview").map((t) => (
-          <Link
-            key={t}
-            href={`/games/${game.slug}?tab=${t}`}
-            className={cn(
-              "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
-              tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t}
-          </Link>
-        ))}
+        {PARAM_TABS.filter((t) => t !== "overview").map((t) => {
+          const count =
+            t === "discussion"
+              ? discussionCount
+              : t === "reviews"
+                ? reviewCount
+                : t === "media"
+                  ? mediaCount
+                  : null;
+          return (
+            <Link
+              key={t}
+              href={`/games/${game.slug}?tab=${t}`}
+              data-tab={t}
+              className={cn(
+                "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
+                tab === t
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t}
+              {count != null && count > 0 ? (
+                <span className="ml-1 text-xs font-normal text-muted-foreground">{count}</span>
+              ) : null}
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="px-4 py-8 sm:px-6 lg:px-8">
@@ -217,6 +267,7 @@ export default async function GamePage({
             featuring={collectionsFeaturing(game.slug)}
             similar={similar}
             weeklyIssue={weeklyIssue}
+            discordPresence={discordPresence}
           />
         )}
         {tab === "mods" && <ModsTab game={game} />}
@@ -235,10 +286,16 @@ export default async function GamePage({
           />
         )}
         {tab === "discussion" && (
-          <DiscussionTab
-            gameSlug={game.slug}
+          <DiscussionTabSection
+            game={game}
             isSignedIn={Boolean(session?.user)}
-            items={await safeQuery(() => DiscussionPost.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+            query={{
+              category: sp.category,
+              sort: sp.sort,
+              filter: sp.filter,
+              q: sp.q,
+            }}
+            presence={discordPresence}
           />
         )}
         {tab === "reviews" && (
@@ -262,12 +319,14 @@ function OverviewTab({
   featuring,
   similar,
   weeklyIssue,
+  discordPresence,
 }: {
   game: Game;
   developer: ReturnType<typeof developersBySlug.get>;
   featuring: ReturnType<typeof collectionsFeaturing>;
   similar: Game[];
   weeklyIssue?: WeeklyIssue;
+  discordPresence?: { online?: number; members?: number } | null;
 }) {
   if (!game) return null;
 
@@ -470,6 +529,12 @@ function OverviewTab({
             Official website →
           </a>
         </div>
+        <CommunityCard
+          gameSlug={game.slug}
+          gameTitle={game.title}
+          communityLinks={game.communityLinks}
+          presence={discordPresence}
+        />
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tags</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -622,31 +687,77 @@ interface PostDoc {
   rating?: number;
 }
 
-function DiscussionTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
+async function DiscussionTabSection({
+  game,
+  isSignedIn,
+  query,
+  presence,
+}: {
+  game: Game;
+  isSignedIn: boolean;
+  query: { category?: string; sort?: string; filter?: string; q?: string };
+  presence?: { online?: number; members?: number } | null;
+}) {
+  const categories = visibleCategories(game);
+  const filter = query.filter ?? "all";
+  const sort = query.sort ?? "activity";
+  const category = query.category;
+  const q = query.q?.trim() ?? "";
+
+  const mongoQuery: Record<string, unknown> = {
+    gameSlug: game.slug,
+    status: { $ne: "removed" },
+  };
+  if (category && category !== "all") mongoQuery.category = category;
+  if (filter === "unanswered") {
+    mongoQuery.replyCount = 0;
+    mongoQuery.isSolved = false;
+  } else if (filter === "solved") {
+    mongoQuery.isSolved = true;
+  } else if (filter === "pinned") {
+    mongoQuery.isPinned = true;
+  }
+  if (q) mongoQuery.$text = { $search: q };
+
+  let sortSpec: Record<string, 1 | -1> = { isPinned: -1, lastReplyAt: -1, createdAt: -1 };
+  if (sort === "newest") sortSpec = { isPinned: -1, createdAt: -1 };
+  else if (sort === "replies") sortSpec = { isPinned: -1, replyCount: -1, lastReplyAt: -1 };
+
+  const all = await safeQuery(
+    () => DiscussionTopic.find(mongoQuery).sort(sortSpec).limit(40).lean(),
+    []
+  );
+  const pinned = all.filter((t) => t.isPinned);
+  const topics = all.filter((t) => !t.isPinned || filter === "pinned");
+
+  const mapTopic = (t: (typeof all)[number]) => ({
+    _id: String(t._id),
+    slug: t.slug,
+    title: t.title,
+    category: t.category,
+    replyCount: t.replyCount,
+    viewCount: t.viewCount,
+    isPinned: Boolean(t.isPinned),
+    isSolved: Boolean(t.isSolved),
+    status: t.status,
+    lastReplyAt: t.lastReplyAt,
+    createdAt: t.createdAt,
+    authorUsername: t.authorUsername,
+    lastReplyUsername: t.lastReplyUsername,
+  });
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Discussion</h2>
-        <ContentForm kind="discussion" gameSlug={gameSlug} isSignedIn={isSignedIn} />
-      </div>
-      {items.length > 0 ? (
-        <div className="space-y-3">
-          {items.map((d) => (
-            <div key={String(d._id)} className="rounded-xl border border-border bg-card p-4">
-              <p className="flex items-center gap-2 font-semibold">
-                <MessagesSquare className="size-4 shrink-0 text-muted-foreground" /> {d.title}
-              </p>
-              <p className="mt-1.5 whitespace-pre-line text-sm text-muted-foreground">{d.body}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {d.username} · {new Date(d.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint icon={MessagesSquare}>No discussion yet — be the first.</EmptyHint>
-      )}
-    </div>
+    <DiscussionBoard
+      gameSlug={game.slug}
+      gameTitle={game.title}
+      isSignedIn={isSignedIn}
+      categories={categories}
+      topics={topics.map(mapTopic)}
+      pinned={filter === "pinned" ? [] : pinned.map(mapTopic)}
+      communityLinks={game.communityLinks}
+      query={query}
+      presence={presence}
+    />
   );
 }
 

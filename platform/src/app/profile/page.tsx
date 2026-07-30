@@ -6,11 +6,13 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
-import DiscussionPost from "@/lib/models/DiscussionPost";
+import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getGame } from "@/lib/catalog";
 import { Avatar, EmptyHint, SectionHeader, StatTile } from "@/components/ui/bits";
 import { ProfileSettings } from "@/components/ProfileSettings";
+import { DiscordLinkCard } from "@/components/DiscordLinkCard";
 import { SignOutButton } from "@/components/SignOutButton";
+import User from "@/lib/models/User";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -42,15 +44,42 @@ export default async function ProfilePage() {
   const userId = session.user.id;
   let reviews: { gameSlug: string; title: string; createdAt: Date }[] = [];
   let guides: { gameSlug: string; title: string; createdAt: Date }[] = [];
-  let posts: { gameSlug: string; title: string; createdAt: Date }[] = [];
+  let posts: { gameSlug: string; title: string; slug: string; createdAt: Date }[] = [];
+  let community = { topicCount: 0, replyCount: 0, helpfulCount: 0 };
+  let discordLinked: { username: string; avatarUrl?: string | null } | null = null;
 
   try {
     await dbConnect();
-    [reviews, guides, posts] = await Promise.all([
+    const [r, g, p, user] = await Promise.all([
       Review.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
       GuidePost.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
-      DiscussionPost.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
+      DiscussionTopic.find({ authorId: userId, status: { $ne: "removed" } })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+      User.findById(userId).select("community connectedAccounts").lean(),
     ]);
+    reviews = r;
+    guides = g;
+    posts = p.map((t) => ({
+      gameSlug: t.gameSlug,
+      title: t.title,
+      slug: t.slug,
+      createdAt: t.createdAt,
+    }));
+    if (user?.community) {
+      community = {
+        topicCount: user.community.topicCount ?? 0,
+        replyCount: user.community.replyCount ?? 0,
+        helpfulCount: user.community.helpfulCount ?? 0,
+      };
+    }
+    if (user?.connectedAccounts?.discord?.discordUserId) {
+      discordLinked = {
+        username: user.connectedAccounts.discord.username ?? "Discord",
+        avatarUrl: user.connectedAccounts.discord.avatarUrl,
+      };
+    }
   } catch (err) {
     console.error("Failed to load profile activity:", err);
   }
@@ -79,13 +108,21 @@ export default async function ProfilePage() {
         email={session.user.email ?? ""}
       />
 
+      <DiscordLinkCard linked={discordLinked} />
+
       <section>
         <SectionHeader title="Your Contributions" />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile label="Reviews" value={String(reviews.length)} />
           <StatTile label="Guides" value={String(guides.length)} />
-          <StatTile label="Discussion Posts" value={String(posts.length)} />
+          <StatTile label="Topics" value={String(community.topicCount || posts.length)} />
+          <StatTile label="Helpful" value={String(community.helpfulCount)} />
         </div>
+        {community.replyCount > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {community.replyCount} replies across discussions
+          </p>
+        )}
       </section>
 
       {reviews.length + guides.length + posts.length > 0 ? (
@@ -95,17 +132,21 @@ export default async function ProfilePage() {
             {(
               await Promise.all(
                 [
-                  ...reviews.map((r) => ({ icon: Star, kind: "review" as const, ...r })),
-                  ...guides.map((g) => ({ icon: BookOpen, kind: "guide" as const, ...g })),
+                  ...reviews.map((r) => ({ icon: Star, kind: "review" as const, slug: undefined as string | undefined, ...r })),
+                  ...guides.map((g) => ({ icon: BookOpen, kind: "guide" as const, slug: undefined as string | undefined, ...g })),
                   ...posts.map((p) => ({ icon: MessagesSquare, kind: "post" as const, ...p })),
                 ]
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                   .map(async (item, i) => {
                     const game = await getGame(item.gameSlug);
+                    const href =
+                      item.kind === "post" && item.slug
+                        ? `/games/${item.gameSlug}/discussion/${item.slug}`
+                        : `/games/${item.gameSlug}?tab=${item.kind === "review" ? "reviews" : item.kind === "guide" ? "guides" : "discussion"}`;
                     return (
                       <Link
                         key={i}
-                        href={`/games/${item.gameSlug}?tab=${item.kind === "review" ? "reviews" : item.kind === "guide" ? "guides" : "discussion"}`}
+                        href={href}
                         className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
                       >
                         <item.icon className="size-4 shrink-0 text-primary" />

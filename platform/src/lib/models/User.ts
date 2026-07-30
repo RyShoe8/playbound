@@ -36,6 +36,23 @@ const UserSchema = new Schema({
   verificationTokenExpires: { type: Date, select: false },
   launcherTokenHash: { type: String, select: false },
   launcherTokenCreatedAt: { type: Date, select: false },
+  /** Denormalized community counters and moderation state. */
+  community: {
+    topicCount: { type: Number, default: 0 },
+    replyCount: { type: Number, default: 0 },
+    helpfulCount: { type: Number, default: 0 },
+    warnings: { type: Number, default: 0 },
+    suspendedUntil: { type: Date, default: null },
+  },
+  /** Optional linked Discord identity (Phase 5). */
+  connectedAccounts: {
+    discord: {
+      discordUserId: { type: String, default: null },
+      username: { type: String, default: null },
+      avatarUrl: { type: String, default: null },
+      connectedAt: { type: Date, default: null },
+    },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

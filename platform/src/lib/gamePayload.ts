@@ -223,6 +223,62 @@ export const gamePayloadSchema = z.object({
     ])
     .optional()
     .transform((v) => (!v ? null : v)),
+  communityLinks: z
+    .object({
+      officialDiscord: z
+        .object({
+          inviteUrl: z
+            .union([z.string().trim().url().max(500), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          serverName: z
+            .union([z.string().trim().max(120), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          verified: z.boolean().default(false),
+          verifiedSourceUrl: z
+            .union([z.string().trim().url().max(500), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          verifiedAt: z
+            .union([z.string().trim().max(40), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+        })
+        .optional()
+        .nullable(),
+      playboundDiscord: z
+        .object({
+          guildId: z
+            .union([z.string().trim().max(40), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          channelId: z
+            .union([z.string().trim().max(40), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          channelName: z
+            .union([z.string().trim().max(80), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          inviteCode: z
+            .union([z.string().trim().max(40), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          inviteUrl: z
+            .union([z.string().trim().url().max(500), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+          provisionedAt: z
+            .union([z.string().trim().max(40), z.literal(""), z.null()])
+            .optional()
+            .transform((v) => (!v ? null : v)),
+        })
+        .optional()
+        .nullable(),
+    })
+    .optional()
+    .nullable(),
   gameOfWeek: z.boolean().default(false),
   hiddenGem: z.boolean().default(false),
   art: z
@@ -283,6 +339,77 @@ export const gamePayloadSchema = z.object({
 export type GamePayload = z.infer<typeof gamePayloadSchema>;
 
 export type GamePayloadLauncherInstall = NonNullable<GamePayload["launcherInstall"]>;
+
+export type CommunityLinksPayload = NonNullable<GamePayload["communityLinks"]>;
+
+export function toPayloadCommunityLinks(
+  links?: import("@/lib/data/types").GameCommunityLinks | null
+): CommunityLinksPayload | null {
+  if (!links) return null;
+  return {
+    officialDiscord: links.officialDiscord
+      ? {
+          inviteUrl: links.officialDiscord.inviteUrl ?? null,
+          serverName: links.officialDiscord.serverName ?? null,
+          verified: Boolean(links.officialDiscord.verified),
+          verifiedSourceUrl: links.officialDiscord.verifiedSourceUrl ?? null,
+          verifiedAt: links.officialDiscord.verifiedAt ?? null,
+        }
+      : null,
+    playboundDiscord: links.playboundDiscord
+      ? {
+          guildId: links.playboundDiscord.guildId ?? null,
+          channelId: links.playboundDiscord.channelId ?? null,
+          channelName: links.playboundDiscord.channelName ?? null,
+          inviteCode: links.playboundDiscord.inviteCode ?? null,
+          inviteUrl: links.playboundDiscord.inviteUrl ?? null,
+          provisionedAt: links.playboundDiscord.provisionedAt ?? null,
+        }
+      : null,
+  };
+}
+
+function emptyOfficial() {
+  return {
+    inviteUrl: null as string | null,
+    serverName: null as string | null,
+    verified: false,
+    verifiedSourceUrl: null as string | null,
+    verifiedAt: null as string | null,
+  };
+}
+
+function emptyPlaybound() {
+  return {
+    guildId: null as string | null,
+    channelId: null as string | null,
+    channelName: null as string | null,
+    inviteCode: null as string | null,
+    inviteUrl: null as string | null,
+    provisionedAt: null as string | null,
+  };
+}
+
+export function patchCommunityLinks(
+  current: CommunityLinksPayload | null | undefined,
+  patch: {
+    officialDiscord?: Partial<ReturnType<typeof emptyOfficial>>;
+    playboundDiscord?: Partial<ReturnType<typeof emptyPlaybound>>;
+  }
+): CommunityLinksPayload {
+  return {
+    officialDiscord: {
+      ...emptyOfficial(),
+      ...(current?.officialDiscord ?? {}),
+      ...(patch.officialDiscord ?? {}),
+    },
+    playboundDiscord: {
+      ...emptyPlaybound(),
+      ...(current?.playboundDiscord ?? {}),
+      ...(patch.playboundDiscord ?? {}),
+    },
+  };
+}
 
 /** Coerce CMS/seed LauncherInstall into the Zod/GamePayload shape (no undefined). */
 export function toPayloadLauncherInstall(
@@ -365,6 +492,7 @@ export const emptyGameDraft = (): GamePayload => ({
   website: "https://example.com",
   steamAppId: null,
   githubRepo: null,
+  communityLinks: null,
   gameOfWeek: false,
   hiddenGem: false,
   art: defaultArtFor([], ""),
