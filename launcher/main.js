@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
@@ -775,12 +775,115 @@ function expandWinPath(p) {
     .replace(/%USERPROFILE%/gi, process.env.USERPROFILE || "");
 }
 
+function stripRegQuotes(value) {
+  let v = String(value || "").trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1);
+  }
+  // DisplayIcon often ends with ,0
+  v = v.replace(/,\d+$/, "");
+  return v.trim();
+}
+
+/** Cache registry lookups briefly so installer polls don't spawn PowerShell every tick. */
+const uninstallExeCache = new Map();
+
+function findExeFromUninstallRegistry(entry) {
+  if (process.platform !== "win32" || !entry?.title) return null;
+  const title = String(entry.title).trim();
+  if (!title) return null;
+
+  const cached = uninstallExeCache.get(title);
+  if (cached && Date.now() - cached.at < 5_000) return cached.exe;
+
+  let exe = null;
+  try {
+    const ps = `
+$ErrorActionPreference = 'SilentlyContinue'
+$title = ${JSON.stringify(title)}
+$paths = @(
+  'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+  'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+  'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+)
+$hit = Get-ItemProperty $paths |
+  Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
+  Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+if (-not $hit) { return }
+@{
+  DisplayName = $hit.DisplayName
+  InstallLocation = $hit.InstallLocation
+  DisplayIcon = $hit.DisplayIcon
+} | ConvertTo-Json -Compress
+`;
+    const out = execFileSync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", ps],
+      { encoding: "utf8", timeout: 10_000, windowsHide: true, maxBuffer: 1024 * 1024 }
+    ).trim();
+    if (out) {
+      const hit = JSON.parse(out);
+      const icon = stripRegQuotes(hit.DisplayIcon);
+      if (icon && /\.exe$/i.test(icon) && fs.existsSync(icon)) {
+        exe = icon;
+      } else {
+        const root = stripRegQuotes(hit.InstallLocation);
+        if (root && fs.existsSync(root)) {
+          const candidates = [];
+          if (entry.exeHint) candidates.push(path.join(root, entry.exeHint));
+          candidates.push(path.join(root, "binaries", "system", "pyrogenesis.exe"));
+          for (const raw of entry.knownExePaths || []) {
+            const base = path.basename(expandWinPath(raw));
+            if (base) candidates.push(path.join(root, base), path.join(root, "binaries", "system", base));
+          }
+          for (const c of candidates) {
+            if (c && fs.existsSync(c)) {
+              exe = c;
+              break;
+            }
+          }
+          if (!exe) {
+            // Shallow walk for a matching exe name from known paths / hint
+            const want = new Set(
+              [
+                entry.exeHint && path.basename(entry.exeHint),
+                ...(entry.knownExePaths || []).map((p) => path.basename(expandWinPath(p))),
+              ].filter(Boolean).map((n) => n.toLowerCase())
+            );
+            const walk = (dir, depth) => {
+              if (exe || depth > 4) return;
+              let entries;
+              try {
+                entries = fs.readdirSync(dir, { withFileTypes: true });
+              } catch {
+                return;
+              }
+              for (const ent of entries) {
+                if (exe) break;
+                const full = path.join(dir, ent.name);
+                if (ent.isDirectory()) walk(full, depth + 1);
+                else if (ent.isFile() && want.has(ent.name.toLowerCase())) exe = full;
+              }
+            };
+            if (want.size) walk(root, 0);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[install] uninstall registry lookup failed:", err instanceof Error ? err.message : err);
+  }
+
+  uninstallExeCache.set(title, { at: Date.now(), exe });
+  return exe;
+}
+
 function findKnownExecutable(entry) {
   for (const raw of entry.knownExePaths || []) {
     const full = expandWinPath(raw);
     if (full && fs.existsSync(full)) return full;
   }
-  return null;
+  return findExeFromUninstallRegistry(entry);
 }
 
 /** Game/content root for mods — prefer installRoot, else walk up from binaries/system. */
@@ -814,6 +917,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
   const dir = resolveInstallDir(entry, exe);
   markInstalled(slug, { version, exe, dir });
   notifyInstallDetected(slug);
+  sendProgress({ phase: "done" });
   return { status: "installed", version, exe, dir };
 }
 
