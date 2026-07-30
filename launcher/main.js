@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage } = require("electron");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const fsp = require("fs/promises");
@@ -18,6 +18,8 @@ const DEFAULT_API_BASE = "https://playbound.club";
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
 
 let win = null;
+/** @type {import("electron").Tray | null} */
+let tray = null;
 /** The single action this launch is for: { action: 'install'|'play'|'uninstall', slug } | null */
 let context = null;
 /** Background poll after opening a Windows installer wizard */
@@ -46,10 +48,7 @@ if (!gotLock) {
   app.on("second-instance", (_event, argv) => {
     const url = argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     if (url) handleDeepLink(parseDeepLink(url));
-    if (win) {
-      if (win.isMinimized()) win.restore();
-      win.focus();
-    }
+    showMainWindow();
   });
 }
 
@@ -308,10 +307,7 @@ function openAuthInBrowser() {
 }
 
 async function handleSyncDeepLink() {
-  if (win) {
-    if (win.isMinimized()) win.restore();
-    win.focus();
-  }
+  showMainWindow();
   context = null;
   pushContext();
 
@@ -367,10 +363,7 @@ function handleDeepLink(parsed) {
     return;
   }
   if (parsed.action === "link") {
-    if (win) {
-      if (win.isMinimized()) win.restore();
-      win.focus();
-    }
+    showMainWindow();
     if (parsed.token) {
       void connectWithToken(parsed.token);
     }
@@ -1878,6 +1871,41 @@ function setupAutoUpdater() {
 
 /* ── window ────────────────────────────────────────────────── */
 
+function showMainWindow() {
+  if (!win || win.isDestroyed()) {
+    createWindow();
+    return;
+  }
+  win.setSkipTaskbar(false);
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
+function ensureTray() {
+  if (tray) return;
+  void (async () => {
+    if (tray) return;
+    let icon = nativeImage.createEmpty();
+    try {
+      icon = await app.getFileIcon(process.execPath, { size: "small" });
+    } catch {
+      /* empty fallback */
+    }
+    if (tray) return;
+    tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
+    tray.setToolTip("PlayBound");
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: "Open PlayBound", click: () => showMainWindow() },
+        { type: "separator" },
+        { label: "Quit", click: () => app.quit() },
+      ])
+    );
+    tray.on("click", () => showMainWindow());
+  })();
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1200,
@@ -1895,6 +1923,12 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  win.on("minimize", (e) => {
+    e.preventDefault();
+    win.hide();
+    win.setSkipTaskbar(true);
+    ensureTray();
+  });
   win.webContents.once("did-finish-load", () => {
     const n = scanKnownInstalls();
     win.webContents.send("context", buildContextPayload());
@@ -2022,12 +2056,19 @@ if (gotLock) {
       void startupLibrarySync();
     }
     app.on("activate", () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      showMainWindow();
     });
   });
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
+  });
+
+  app.on("before-quit", () => {
+    if (tray) {
+      tray.destroy();
+      tray = null;
+    }
   });
 
   // macOS deep-link event (Windows/Linux use argv + second-instance instead).
