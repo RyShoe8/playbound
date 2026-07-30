@@ -597,7 +597,12 @@ function paintServersTable() {
         if (!go) return;
         setStatus(`Installing ${slug}…`);
         try {
-          await window.playbound.install(slug);
+          const res = await window.playbound.install(slug);
+          if (res.status === "installer-opened") {
+            setStatus("Installer opened — finish setup, then try Join again.");
+            setProgress(null);
+            return;
+          }
         } catch (err) {
           setStatus(err.message || String(err), true);
           return;
@@ -994,10 +999,18 @@ async function renderGameDetailView(slug) {
         const res = await window.playbound.install(slug);
         if (res.status === "installed") {
           setStatus("Install complete!");
+          setProgress(null);
           renderGameDetailView(slug);
+        } else if (res.status === "installer-opened") {
+          setStatus("Installer opened — we'll add it to your library when setup finishes.");
+          setProgress(null);
+        } else if (res.status === "external") {
+          setStatus("Opened download page.");
+          setProgress(null);
         }
       } catch (err) {
         setStatus(err.message || String(err), true);
+        setProgress(null);
       }
     });
   }
@@ -1126,10 +1139,20 @@ function renderDeepLinkView(ctx) {
     document.getElementById("dl-act-run").addEventListener("click", async () => {
       setStatus("Installing...");
       try {
-        await window.playbound.install(ctx.slug);
+        const res = await window.playbound.install(ctx.slug);
+        if (res.status === "installer-opened") {
+          setStatus("Installer opened — we'll add it to your library when setup finishes.");
+          setProgress(null);
+          return;
+        }
+        if (res.status === "installed") {
+          setStatus("Install complete!");
+          setProgress(null);
+        }
         navigateTo("library");
       } catch (err) {
         setStatus(err.message || String(err), true);
+        setProgress(null);
       }
     });
   } else if (ctx.action === "play") {
@@ -1214,15 +1237,32 @@ window.playbound.onProgress(({ phase, received, total }) => {
   } else if (phase === "extracting") {
     setStatus("Extracting game files...");
     setProgress(100);
+  } else if (phase === "installer-ready") {
+    setStatus("Installer opened — finish the setup wizard…");
+    setProgress(null);
+  } else if (phase === "installing-base") {
+    setStatus("Installing required base game…");
+    setProgress(null);
   } else if (phase === "done") {
     setStatus("Complete!");
     setProgress(null);
   }
 });
 
-window.playbound.onInstallDetected(() => {
+window.playbound.onInstallDetected((data) => {
+  setProgress(null);
+  if (data?.slug) {
+    setStatus("Install detected — added to library.");
+  } else if (data?.scanned != null) {
+    setStatus(`Library scan found ${data.scanned} install(s).`);
+  } else {
+    setStatus("Installs updated.");
+  }
   if (currentView === "library") renderLibraryView();
   else if (currentView === "home") renderHomeView();
+  else if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
+    renderGameDetailView(data.slug);
+  }
 });
 
 window.playbound.onContext((data) => {
