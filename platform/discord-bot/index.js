@@ -15,7 +15,6 @@ import {
   Client,
   GatewayIntentBits,
   ChannelType,
-  PermissionFlagsBits,
   REST,
   Routes,
   SlashCommandBuilder,
@@ -28,6 +27,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const SITE_URL = (process.env.SITE_URL || "https://playbound.club").replace(/\/$/, "");
 const WEBHOOK_SECRET = process.env.BOT_WEBHOOK_SECRET || "";
 const PORT = Number(process.env.PORT || 8787);
+const PROVISION_DELAY_MS = 1500;
 
 if (!TOKEN || !GUILD_ID || !MONGODB_URI) {
   console.error("Missing DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, or MONGODB_URI");
@@ -37,6 +37,11 @@ if (!TOKEN || !GUILD_ID || !MONGODB_URI) {
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const mongo = new MongoClient(MONGODB_URI);
 let games;
+let backfillRunning = false;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function categoryNameForSlug(slug) {
   const ch = (slug[0] || "a").toLowerCase();
@@ -59,6 +64,17 @@ function welcomeBody(game) {
   ].join("\n");
 }
 
+function missingChannelQuery() {
+  return {
+    published: true,
+    $or: [
+      { "communityLinks.playboundDiscord.channelId": { $exists: false } },
+      { "communityLinks.playboundDiscord.channelId": null },
+      { "communityLinks.playboundDiscord.channelId": "" },
+    ],
+  };
+}
+
 async function ensureCategory(guild, name) {
   const existing = guild.channels.cache.find(
     (c) => c.type === ChannelType.GuildCategory && c.name === name
@@ -67,6 +83,10 @@ async function ensureCategory(guild, name) {
   return guild.channels.create({ name, type: ChannelType.GuildCategory });
 }
 
+/**
+ * Idempotent: reuses existing channel by stored channelId or by #slug name.
+ * Only sends/pins welcome when the channel is newly created.
+ */
 async function provisionChannel(slug) {
   const game = await games.findOne({ slug, published: true });
   if (!game) throw new Error(`Unknown or unpublished game: ${slug}`);
@@ -74,19 +94,31 @@ async function provisionChannel(slug) {
   const guild = await client.guilds.fetch(GUILD_ID);
   await guild.channels.fetch();
 
-  const cat = await ensureCategory(guild, categoryNameForSlug(slug));
-  const channelName = slug.slice(0, 90);
+  const existingId = game.communityLinks?.playboundDiscord?.channelId;
+  let channel = existingId ? guild.channels.cache.get(existingId) : null;
+  let created = false;
 
-  let channel = guild.channels.cache.find(
-    (c) => c.type === ChannelType.GuildText && c.name === channelName
-  );
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    const channelName = slug.slice(0, 90);
+    channel = guild.channels.cache.find(
+      (c) => c.type === ChannelType.GuildText && c.name === channelName
+    );
+  }
+
   if (!channel) {
+    const cat = await ensureCategory(guild, categoryNameForSlug(slug));
     channel = await guild.channels.create({
-      name: channelName,
+      name: slug.slice(0, 90),
       type: ChannelType.GuildText,
       parent: cat.id,
       topic: `${game.title} on PlayBound — ${SITE_URL}/games/${slug}`,
     });
+    created = true;
+  } else {
+    const topic = `${game.title} on PlayBound — ${SITE_URL}/games/${slug}`;
+    if (channel.topic !== topic) {
+      await channel.setTopic(topic).catch(() => {});
+    }
   }
 
   const invite = await channel.createInvite({
@@ -96,23 +128,70 @@ async function provisionChannel(slug) {
     reason: "PlayBound permanent game invite",
   });
 
-  const msg = await channel.send(welcomeBody(game));
-  await msg.pin().catch(() => {});
+  if (created) {
+    const msg = await channel.send(welcomeBody(game));
+    await msg.pin().catch(() => {});
+  }
+
+  const playboundDiscord = {
+    guildId: GUILD_ID,
+    channelId: channel.id,
+    channelName: channel.name,
+    inviteCode: invite.code,
+    inviteUrl: invite.url,
+    provisionedAt: game.communityLinks?.playboundDiscord?.provisionedAt || new Date(),
+  };
 
   const links = {
     ...(game.communityLinks || {}),
     playboundDiscord: {
-      guildId: GUILD_ID,
-      channelId: channel.id,
-      channelName: channel.name,
-      inviteCode: invite.code,
-      inviteUrl: invite.url,
-      provisionedAt: new Date(),
+      ...playboundDiscord,
+      provisionedAt: created ? new Date() : playboundDiscord.provisionedAt || new Date(),
     },
   };
 
   await games.updateOne({ slug }, { $set: { communityLinks: links } });
-  return links.playboundDiscord;
+  return { playboundDiscord: links.playboundDiscord, created, skipped: !created };
+}
+
+async function provisionMissing() {
+  if (backfillRunning) {
+    return { provisioned: 0, skipped: 0, failed: [], note: "already running" };
+  }
+  backfillRunning = true;
+  const provisioned = [];
+  const skipped = [];
+  const failed = [];
+
+  try {
+    const cursor = games.find(missingChannelQuery()).project({ slug: 1, title: 1 });
+    const list = await cursor.toArray();
+    console.log(`Discord backfill: ${list.length} published game(s) missing a channel`);
+
+    for (const doc of list) {
+      try {
+        const result = await provisionChannel(doc.slug);
+        if (result.created) {
+          provisioned.push(doc.slug);
+          console.log(`Provisioned #${doc.slug}`);
+        } else {
+          skipped.push(doc.slug);
+          console.log(`Linked existing #${doc.slug}`);
+        }
+      } catch (err) {
+        failed.push({ slug: doc.slug, error: String(err?.message || err) });
+        console.error(`Failed to provision ${doc.slug}:`, err?.message || err);
+      }
+      await sleep(PROVISION_DELAY_MS);
+    }
+  } finally {
+    backfillRunning = false;
+  }
+
+  console.log(
+    `Discord backfill done: provisioned=${provisioned.length} linked=${skipped.length} failed=${failed.length}`
+  );
+  return { provisioned, skipped, failed };
 }
 
 async function postGameOfTheWeek() {
@@ -150,8 +229,6 @@ client.once("clientReady", async () => {
     await rest.put(Routes.applicationGuildCommands(client.user.id, GUILD_ID), { body: commands });
     console.log(`Registered guild slash commands for ${GUILD_ID}`);
   } catch (err) {
-    // Missing Access (50001) usually means the bot was invited without the
-    // applications.commands scope, or DISCORD_GUILD_ID is wrong / bot not in server.
     console.error(
       "Slash command registration failed (bot stays up for channel provisioning):",
       err?.rawError || err?.message || err
@@ -160,6 +237,13 @@ client.once("clientReady", async () => {
       "Re-invite with both bot + applications.commands scopes, e.g.\n" +
         `https://discord.com/oauth2/authorize?client_id=${client.user.id}&permissions=268446720&scope=bot%20applications.commands&guild_id=${GUILD_ID}`
     );
+  }
+
+  // One-shot catalog backfill on boot — never crash the process.
+  try {
+    await provisionMissing();
+  } catch (err) {
+    console.error("Startup Discord backfill failed:", err?.message || err);
   }
 });
 
@@ -181,20 +265,29 @@ client.on("interactionCreate", async (interaction) => {
   await interaction.reply(`${game.title}: ${SITE_URL}${path}`);
 });
 
+function unauthorized(res) {
+  res.writeHead(401);
+  res.end("Unauthorized");
+}
+
+function requireSecret(req, res) {
+  const auth = req.headers.authorization || "";
+  if (!WEBHOOK_SECRET || auth !== `Bearer ${WEBHOOK_SECRET}`) {
+    unauthorized(res);
+    return false;
+  }
+  return true;
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, backfillRunning }));
     return;
   }
 
   if (req.method === "POST" && req.url === "/provision") {
-    const auth = req.headers.authorization || "";
-    if (!WEBHOOK_SECRET || auth !== `Bearer ${WEBHOOK_SECRET}`) {
-      res.writeHead(401);
-      res.end("Unauthorized");
-      return;
-    }
+    if (!requireSecret(req, res)) return;
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
@@ -212,7 +305,27 @@ const server = http.createServer(async (req, res) => {
       }
       const result = await provisionChannel(slug);
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ success: true, playboundDiscord: result }));
+      res.end(
+        JSON.stringify({
+          success: true,
+          playboundDiscord: result.playboundDiscord,
+          created: result.created,
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/provision-all") {
+    if (!requireSecret(req, res)) return;
+    try {
+      const result = await provisionMissing();
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, ...result }));
     } catch (err) {
       console.error(err);
       res.writeHead(500);

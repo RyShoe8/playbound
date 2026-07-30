@@ -11,7 +11,7 @@ import {
   editorialReadiness,
   publishBlockedMessage,
 } from "@/lib/enrich";
-import type { Game } from "@/lib/data/types";
+import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -67,6 +67,10 @@ export async function POST(req: Request) {
       managedBy: body.managedBy || "admin",
       ownerUserId: body.ownerUserId || null,
     });
+
+    if (doc.published && !hasPlayboundDiscordChannel(doc)) {
+      void requestDiscordProvision(doc.slug);
+    }
 
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {

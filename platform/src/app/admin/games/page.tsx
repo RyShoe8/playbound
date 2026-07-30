@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllGames } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
+import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
@@ -16,12 +17,15 @@ export default async function AdminGamesPage() {
           <h1 className="text-3xl font-extrabold tracking-tight">Games</h1>
           <p className="mt-1 text-muted-foreground">Create, edit, and publish catalog entries in MongoDB.</p>
         </div>
-        <Link
-          href="/admin/games/new"
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
-        >
-          <Plus className="size-4" /> New game
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <ProvisionDiscordAllButton />
+          <Link
+            href="/admin/games/new"
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
+          >
+            <Plus className="size-4" /> New game
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
