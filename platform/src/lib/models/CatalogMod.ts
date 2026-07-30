@@ -57,6 +57,16 @@ const CatalogModSchema = new Schema(
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
     ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
 
+    detectedVersion: { type: String, default: null },
+    lastVersionCheckAt: { type: Date, default: null },
+    versionCheckStatus: {
+      type: String,
+      enum: ["ok", "stale", "broken", "skipped", "updated"],
+      default: null,
+    },
+    versionCheckNote: { type: String, default: null },
+    autoUpdatePinned: { type: Boolean, default: true },
+
     // Editorial depth — see src/lib/enrich.ts.
     longDescription: { type: String, default: null },
     whatItChanges: { type: String, default: null },

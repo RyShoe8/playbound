@@ -49,6 +49,7 @@ export const modPayloadSchema = z.object({
     .max(200)
     .default("mods")
     .transform((v) => v.replace(/^\/+|\/+$/g, "").replace(/\\/g, "/")),
+  autoUpdatePinned: z.boolean().optional().default(true),
   art: z
     .object({
       from: z.string().trim().min(1).max(40),
@@ -114,6 +115,7 @@ export const emptyModDraft = (baseGameSlug = ""): ModPayload => ({
   assetPattern: "\\.zip$",
   directUrl: null,
   installRelativePath: "mods",
+  autoUpdatePinned: true,
   art: defaultArtFor([], ""),
   coverImage: null,
   screenshots: [],

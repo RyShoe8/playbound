@@ -635,22 +635,41 @@ async function resolveModDownload(install) {
   if (install.downloadKind === "direct-zip") {
     if (!install.url) throw new Error("Mod has no direct download URL");
     let name = path.basename(new URL(install.url).pathname) || "mod.zip";
-    if (!/\.(zip|jar)$/i.test(name)) name = `${install.slug || "mod"}.zip`;
-    return { url: install.url, name, version: "fixed" };
+    // ContentDB and similar end with /download/
+    if (!/\.(zip|jar)$/i.test(name) || /^download$/i.test(name)) {
+      name = `${install.slug || "mod"}.zip`;
+    }
+    return { url: install.url, name, version: install.versionLabel || "fixed" };
   }
   if (install.downloadKind !== "github-zip") {
     throw new Error(`Unsupported mod download kind: ${install.downloadKind}`);
   }
   if (!install.repo) throw new Error("Mod is missing a GitHub repo");
+
+  const ghHeaders = { "user-agent": "playbound-launcher", accept: "application/vnd.github+json" };
   const res = await fetch(`https://api.github.com/repos/${install.repo}/releases/latest`, {
-    headers: { "user-agent": "playbound-launcher", accept: "application/vnd.github+json" },
+    headers: ghHeaders,
   });
-  if (!res.ok) throw new Error(`GitHub API ${res.status} for ${install.repo}`);
-  const release = await res.json();
-  const pattern = new RegExp(install.assetPattern || "\\.zip$", "i");
-  const asset = (release.assets || []).find((a) => pattern.test(a.name));
-  if (!asset) throw new Error(`No zip asset matching pattern for ${install.repo}`);
-  return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
+  if (res.ok) {
+    const release = await res.json();
+    const pattern = new RegExp(install.assetPattern || "\\.zip$", "i");
+    const asset = (release.assets || []).find((a) => pattern.test(a.name));
+    if (asset) {
+      return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
+    }
+  }
+
+  // No matching release asset — fall back to default-branch source archive.
+  const repoRes = await fetch(`https://api.github.com/repos/${install.repo}`, { headers: ghHeaders });
+  if (!repoRes.ok) throw new Error(`GitHub API ${repoRes.status} for ${install.repo}`);
+  const repo = await repoRes.json();
+  const branch = repo.default_branch || "master";
+  const shortName = String(install.repo).split("/").pop() || "mod";
+  return {
+    url: `https://github.com/${install.repo}/archive/refs/heads/${encodeURIComponent(branch)}.zip`,
+    name: `${shortName}-${branch}.zip`,
+    version: branch,
+  };
 }
 
 /* ── download with progress ────────────────────────────────── */
@@ -971,11 +990,30 @@ function scanKnownInstalls() {
 
 function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride) {
   const appData = process.env.APPDATA || "";
+  const home = process.env.USERPROFILE || app.getPath("home");
+  const rel = String(installRelativePath || "mods").replace(/^[/\\]+|[/\\]+$/g, "") || "mods";
+  const under = (root) => path.join(root, ...rel.split(/[/\\]+/));
+
   if (baseGameSlug === "mindustry") {
-    return path.join(appData, "Mindustry", "mods");
+    return under(path.join(appData, "Mindustry"));
   }
   if (baseGameSlug === "0ad") {
-    return path.join(appData, "0ad", "mods");
+    return under(path.join(home, "Documents", "My Games", "0ad"));
+  }
+  if (baseGameSlug === "openttd") {
+    return under(path.join(appData, "OpenTTD"));
+  }
+  if (baseGameSlug === "endless-sky") {
+    return under(path.join(appData, "endless-sky"));
+  }
+  if (baseGameSlug === "luanti" || baseGameSlug === "minetest") {
+    const luantiRoot = path.join(appData, "Luanti");
+    const minetestRoot = path.join(appData, "Minetest");
+    const root = fs.existsSync(luantiRoot) ? luantiRoot : minetestRoot;
+    return under(root);
+  }
+  if (baseGameSlug === "naev") {
+    return under(path.join(appData, "naev"));
   }
 
   let baseDir = baseDirOverride || null;
@@ -985,8 +1023,13 @@ function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride)
     if (info?.dir && fs.existsSync(info.dir)) baseDir = info.dir;
   }
   if (!baseDir) return null;
-  const rel = String(installRelativePath || "").replace(/^[/\\]+|[/\\]+$/g, "");
-  return rel ? path.join(baseDir, ...rel.split(/[/\\]+/)) : baseDir;
+  return under(baseDir);
+}
+
+function modUsesUserDataFolder(baseGameSlug) {
+  return ["mindustry", "0ad", "openttd", "endless-sky", "luanti", "minetest", "naev"].includes(
+    baseGameSlug
+  );
 }
 
 function isBaseGameReady(baseGameSlug) {
@@ -1002,7 +1045,7 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
   try {
     const install = await fetchModInstall(pending);
     if (justInstalledBaseSlug && install.baseGameSlug !== justInstalledBaseSlug) return;
-    if (!isBaseGameReady(install.baseGameSlug) && !["mindustry", "0ad"].includes(install.baseGameSlug)) {
+    if (!isBaseGameReady(install.baseGameSlug) && !modUsesUserDataFolder(install.baseGameSlug)) {
       return;
     }
     delete settings.pendingModSlug;
@@ -1190,14 +1233,14 @@ async function installMod(slug, baseDirOverride) {
 
   if (install.downloadKind === "external") {
     await shell.openExternal(install.url || `${getApiBase()}/mods/${slug}`);
-    return { status: "external" };
+    return { status: "external", url: install.url || null };
   }
 
-  const appDataMods = install.baseGameSlug === "mindustry" || install.baseGameSlug === "0ad";
+  const userDataMod = modUsesUserDataFolder(install.baseGameSlug);
   let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
   const baseReady = isBaseGameReady(install.baseGameSlug) || Boolean(baseDirOverride && fs.existsSync(baseDirOverride));
 
-  if (!targetDir || (!baseReady && !appDataMods && !baseDirOverride)) {
+  if (!targetDir || (!baseReady && !userDataMod && !baseDirOverride)) {
     const settings = loadSettings();
     settings.pendingModSlug = slug;
     saveSettings(settings);

@@ -41,6 +41,23 @@ async function main() {
     const m = ensureDerivedModFields(seed, baseTitles.get(seed.baseGameSlug));
     const developerName = developersBySlug.get(m.developerSlug)?.name ?? null;
     const art = m.art ?? defaultArtFor([], m.slug);
+    const existing = await CatalogMod.findOne({ slug: m.slug })
+      .select("directUrl detectedVersion lastVersionCheckAt versionCheckStatus autoUpdatePinned")
+      .lean();
+    const prev = existing as {
+      directUrl?: string;
+      detectedVersion?: string;
+      lastVersionCheckAt?: Date;
+      versionCheckStatus?: string;
+      autoUpdatePinned?: boolean;
+    } | null;
+    const preserveDirect =
+      Boolean(prev?.lastVersionCheckAt) &&
+      prev?.autoUpdatePinned !== false &&
+      typeof prev?.directUrl === "string" &&
+      prev.directUrl.length > 0 &&
+      m.downloadKind === "direct-zip";
+
     await CatalogMod.findOneAndUpdate(
       { slug: m.slug },
       {
@@ -59,7 +76,7 @@ async function main() {
           githubRepo: m.githubRepo ?? null,
           downloadKind: m.downloadKind,
           assetPattern: m.assetPattern ?? null,
-          directUrl: m.directUrl ?? null,
+          directUrl: preserveDirect ? prev!.directUrl : m.directUrl ?? null,
           installRelativePath: m.installRelativePath || "mods",
           art,
           coverImage: null,
@@ -68,6 +85,14 @@ async function main() {
           managedBy: m.managedBy,
           installSteps: m.installSteps ?? [],
           faq: m.faq ?? [],
+          ...(prev?.detectedVersion
+            ? {
+                detectedVersion: prev.detectedVersion,
+                lastVersionCheckAt: prev.lastVersionCheckAt,
+                versionCheckStatus: prev.versionCheckStatus,
+                autoUpdatePinned: prev.autoUpdatePinned ?? true,
+              }
+            : {}),
         },
       },
       { upsert: true, new: true }

@@ -27,6 +27,11 @@ export type LauncherInstall = {
   installRoot?: string | null;
   connectArgs?: string[];
   note?: string | null;
+  detectedVersion?: string | null;
+  lastVersionCheckAt?: string | Date | null;
+  versionCheckStatus?: string | null;
+  versionCheckNote?: string | null;
+  autoUpdatePinned?: boolean;
 };
 
 /** Shape returned to the Electron launcher (catalog row). */
