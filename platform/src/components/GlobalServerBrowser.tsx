@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Lock, RefreshCw, Server, Users } from "lucide-react";
 import { launcherJoinUrl, isOneClickSlug } from "@/lib/launcher";
 import type { GameServer } from "@/lib/servers/types";
@@ -82,13 +83,17 @@ export function GlobalServerBrowser({
   installedModSlugs,
   signedIn,
 }: Props) {
+  const searchParams = useSearchParams();
+  const queryGame = searchParams.get("game")?.trim() || "";
+  const queryMod = searchParams.get("mod")?.trim() || "";
+
   const installedGames = useMemo(() => new Set(installedGameSlugs), [installedGameSlugs]);
   const installedMods = useMemo(() => new Set(installedModSlugs), [installedModSlugs]);
 
   const [games, setGames] = useState<IndexGame[]>([]);
   const [mods, setMods] = useState<CatalogMod[]>([]);
-  const [gameSlug, setGameSlug] = useState("");
-  const [modSlug, setModSlug] = useState("");
+  const [gameSlug, setGameSlug] = useState(queryGame);
+  const [modSlug, setModSlug] = useState(queryMod);
   const [installedOnly, setInstalledOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -111,7 +116,12 @@ export function GlobalServerBrowser({
         const supported = (serversJson.games || []).filter((g: IndexGame) => g.supported);
         setGames(supported);
         setMods(modsJson.mods || []);
-        if (supported[0]?.slug) setGameSlug(supported[0].slug);
+        const preferred =
+          (queryGame && supported.find((g: IndexGame) => g.slug === queryGame)?.slug) ||
+          supported[0]?.slug ||
+          "";
+        setGameSlug(preferred);
+        if (queryMod) setModSlug(queryMod);
       } catch {
         /* ignore */
       }
@@ -119,7 +129,7 @@ export function GlobalServerBrowser({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryGame, queryMod]);
 
   const visibleGames = useMemo(() => {
     if (!installedOnly) return games;

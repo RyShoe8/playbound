@@ -2,7 +2,7 @@ import { getGame, developersBySlug } from "@/lib/catalog";
 import { modsForGame } from "@/lib/mods";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
-import { issueForGame, issueSlug } from "@/lib/data/weekly";
+import { issueForGame } from "@/lib/weekly";
 import { SITE_URL, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
 
@@ -34,7 +34,7 @@ export async function GET(
 
   const developer = developersBySlug.get(game.developerSlug);
   const mods = await modsForGame(game.slug);
-  const issue = issueForGame(game.slug);
+  const issue = await issueForGame(game.slug);
   const cmps = comparisonsFeaturing(game.slug);
   const alts = alternativePages.filter((p) =>
     p.picks.some((pick) => pick.slug === game.slug)
@@ -169,7 +169,7 @@ export async function GET(
     out.push("## PlayBound Weekly");
     out.push("");
     out.push(
-      `Featured in week ${issue.week} of ${issue.year} (${issue.publishedAt}): ${SITE_URL}/weekly/${issueSlug(issue)}`
+      `Featured in week ${issue.week} of ${issue.year} (${issue.publishedAt}): ${SITE_URL}/weekly/${issue.slug}`
     );
     out.push("");
   }

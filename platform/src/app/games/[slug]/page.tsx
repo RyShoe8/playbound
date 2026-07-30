@@ -15,7 +15,6 @@ import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
 import { AddToLibraryButton } from "@/components/AddToLibraryButton";
 import { ContentForm } from "@/components/ContentForm";
-import { ServerBrowser } from "@/components/ServerBrowser";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame, type CatalogModPublic } from "@/lib/mods";
@@ -32,24 +31,23 @@ import {
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
-import { issueForGame } from "@/lib/data/weekly";
+import { issueForGame, type WeeklyIssue } from "@/lib/weekly";
+import { classifyMediaUrl } from "@/lib/mediaEmbed";
 
-const tabs = ["overview", "servers", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
+const tabs = ["overview", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
 type Tab = (typeof tabs)[number];
 
 /**
  * High-intent sections promoted out of `?tab=` into real indexable URLs.
- * Query params cannot rank, and install/servers are the most commercially
- * valuable content on a game page. The remaining tabs stay as params behind
- * the canonical.
+ * Servers deep-link into the global browser with the game pre-selected.
  */
 const PROMOTED_ROUTES = [
   { key: "install", label: "install", href: (slug: string) => `/games/${slug}/install` },
-  { key: "servers", label: "servers", href: (slug: string) => `/games/${slug}/servers` },
+  { key: "servers", label: "servers", href: (slug: string) => `/servers?game=${encodeURIComponent(slug)}` },
 ] as const;
 
 /** Tabs that remain as query params — low search value, app-like content. */
-const PARAM_TABS = tabs.filter((t) => t !== "servers");
+const PARAM_TABS = tabs;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -123,6 +121,8 @@ export default async function GamePage({
         reviewCount: rated.length,
       }
     : undefined;
+
+  const weeklyIssue = await issueForGame(game.slug);
 
   return (
     <div>
@@ -211,9 +211,14 @@ export default async function GamePage({
 
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         {tab === "overview" && (
-          <OverviewTab game={game} developer={developer} featuring={collectionsFeaturing(game.slug)} similar={similar} />
+          <OverviewTab
+            game={game}
+            developer={developer}
+            featuring={collectionsFeaturing(game.slug)}
+            similar={similar}
+            weeklyIssue={weeklyIssue}
+          />
         )}
-        {tab === "servers" && <ServersTab game={game} />}
         {tab === "mods" && <ModsTab game={game} />}
         {tab === "guides" && (
           <GuidesTab
@@ -256,15 +261,17 @@ function OverviewTab({
   developer,
   featuring,
   similar,
+  weeklyIssue,
 }: {
   game: Game;
   developer: ReturnType<typeof developersBySlug.get>;
   featuring: ReturnType<typeof collectionsFeaturing>;
   similar: Game[];
+  weeklyIssue?: WeeklyIssue;
 }) {
   if (!game) return null;
 
-  const issue = issueForGame(game.slug);
+  const issue = weeklyIssue;
   const relatedComparisons = comparisonsFeaturing(game.slug);
   const relatedAlternatives = alternativePages.filter((p) =>
     p.picks.some((pick) => pick.slug === game.slug)
@@ -299,7 +306,7 @@ function OverviewTab({
             {issue && (
               <p className="mt-3 text-sm">
                 <Link
-                  href={`/weekly/${issue.year}-w${String(issue.week).padStart(2, "0")}-${issue.gameSlug}`}
+                  href={`/weekly/${issue.slug}`}
                   className="font-semibold text-primary hover:underline"
                 >
                   Featured in PlayBound Weekly, week {issue.week} of {issue.year} →
@@ -487,16 +494,6 @@ function OverviewTab({
         )}
       </aside>
     </div>
-  );
-}
-
-function ServersTab({ game }: { game: Game }) {
-  return (
-    <ServerBrowser
-      slug={game.slug}
-      title={game.title}
-      supportsServers={game.launchMethods.includes("server")}
-    />
   );
 }
 
@@ -697,6 +694,9 @@ function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigne
             {items.length} player review{items.length === 1 ? "" : "s"}
           </p>
         </div>
+      </div>
+      <div>
+        <h3 className="mb-3 text-sm font-bold">Write a review</h3>
         <ContentForm kind="review" gameSlug={gameSlug} isSignedIn={isSignedIn} />
       </div>
       {items.length > 0 ? (
@@ -724,12 +724,8 @@ function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigne
 }
 
 function MediaTab({ game }: { game: Game }) {
-  const shots = game.screenshots?.length
-    ? game.screenshots
-    : game.coverImage
-      ? [game.coverImage]
-      : [];
-  const vids = game.videos ?? [];
+  const shots = game.screenshots?.filter(Boolean) ?? [];
+  const vids = (game.videos ?? []).map(classifyMediaUrl);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -738,19 +734,29 @@ function MediaTab({ game }: { game: Game }) {
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-muted-foreground">Videos</h3>
           <div className="grid grid-cols-1 gap-3">
-            {vids.map((src) => (
+            {vids.map((v) => (
               <div
-                key={src}
+                key={v.src}
                 className="relative aspect-video overflow-hidden rounded-lg border border-border bg-black"
               >
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                <video
-                  src={src}
-                  controls
-                  preload="metadata"
-                  className="h-full w-full object-contain"
-                  poster={game.coverImage || undefined}
-                />
+                {v.kind === "youtube" || v.kind === "vimeo" ? (
+                  <iframe
+                    src={v.embedUrl}
+                    title={`${game.title} video`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="h-full w-full"
+                  />
+                ) : (
+                  /* eslint-disable-next-line jsx-a11y/media-has-caption */
+                  <video
+                    src={v.src}
+                    controls
+                    preload="metadata"
+                    className="h-full w-full object-contain"
+                    poster={game.coverImage || undefined}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -774,16 +780,19 @@ function MediaTab({ game }: { game: Game }) {
                 <img src={src} alt={`${game.title} screenshot`} className="h-full w-full object-cover" />
               </a>
             ))}
-            {game.coverImage && !shots.includes(game.coverImage) && (
-              <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
-                <GameArt game={game} showTitle={false} className="absolute inset-0" />
-              </div>
-            )}
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <GameArt game={game} showTitle={false} iconSize="md" className="aspect-video rounded-lg" />
+        <div className="space-y-3">
+          <EmptyHint icon={Gamepad2}>
+            No screenshots uploaded for {game.title} yet.
+            {game.coverImage ? " Showing cover art below." : ""}
+          </EmptyHint>
+          {game.coverImage ? (
+            <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
+              <GameArt game={game} showTitle={false} className="absolute inset-0" />
+            </div>
+          ) : null}
         </div>
       )}
       <p className="text-xs text-muted-foreground">

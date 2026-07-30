@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run seed:games && npm run fix:game-media && npm run seed:launcher-install && npm run seed:mods",
+    "build": "next build && npm run seed:games && npm run fix:game-media && npm run seed:launcher-install && npm run seed:mods && npm run seed:weekly",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
@@ -13,6 +13,7 @@
     "seed:launcher-install": "tsx scripts/seed-launcher-install.ts",
     "upload:launcher": "tsx scripts/upload-launcher.ts",
     "seed:mods": "tsx scripts/seed-mods.ts",
+    "seed:weekly": "tsx scripts/seed-weekly.ts",
     "typecheck": "tsc --noEmit",
     "verify:maintenance": "tsx scripts/verify-maintenance.ts"
   },

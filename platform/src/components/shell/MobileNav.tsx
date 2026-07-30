@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Compass, House, LibraryBig, Server, Shield, Users } from "lucide-react";
+import { Gamepad2, House, LibraryBig, Puzzle, Server, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Home", icon: House },
-  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/discover", label: "Games", icon: Gamepad2 },
+  { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/library", label: "Library", icon: LibraryBig },
-  { href: "/community", label: "Community", icon: Users },
 ];
 
 export function MobileNav() {

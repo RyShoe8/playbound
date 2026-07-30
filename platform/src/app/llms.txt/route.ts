@@ -1,7 +1,7 @@
 import { listGames, collections, developers } from "@/lib/catalog";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
-import { issuesNewestFirst, issueSlug } from "@/lib/data/weekly";
+import { listWeeklyIssues } from "@/lib/weekly";
 import { SITE_URL, SITE_NAME, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
 
@@ -15,7 +15,7 @@ export const revalidate = 3600;
  */
 export async function GET() {
   const games = await listGames();
-  const issues = issuesNewestFirst();
+  const issues = await listWeeklyIssues();
   const lines: string[] = [];
 
   lines.push(`# ${SITE_NAME}`);
@@ -29,7 +29,7 @@ export async function GET() {
   lines.push(
     "> assessed against five published criteria (the PlayBound Bar). One editor's"
   );
-  lines.push("> pick is published every Friday.");
+  lines.push("> pick is published every Wednesday.");
   lines.push("");
   lines.push(`Canonical domain: ${SITE_URL}`);
   lines.push(`Publisher: The Media Shop (https://themediashop.co)`);
@@ -84,7 +84,7 @@ export async function GET() {
     for (const issue of issues) {
       const game = games.find((g) => g.slug === issue.gameSlug);
       lines.push(
-        `- [${game?.title ?? issue.gameSlug}, week ${issue.week} of ${issue.year}](${SITE_URL}/weekly/${issueSlug(issue)}): ${issue.verdict}`
+        `- [${game?.title ?? issue.gameSlug}, week ${issue.week} of ${issue.year}](${SITE_URL}/weekly/${issue.slug}): ${game?.tagline ?? "PlayBound Weekly pick"}`
       );
     }
     lines.push("");

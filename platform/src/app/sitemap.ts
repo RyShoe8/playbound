@@ -3,7 +3,7 @@ import { listGames, collections, developers } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
-import { weeklyIssues, issueSlug } from "@/lib/data/weekly";
+import { listWeeklyIssues } from "@/lib/weekly";
 import { SITE_URL } from "@/lib/site";
 
 /**
@@ -13,7 +13,11 @@ import { SITE_URL } from "@/lib/site";
  * no standalone value that would compete with the game page itself.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [games, mods] = await Promise.all([listGames(), listMods()]);
+  const [games, mods, weekly] = await Promise.all([
+    listGames(),
+    listMods(),
+    listWeeklyIssues(),
+  ]);
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -46,23 +50,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
       lastModified: now,
     },
-    ...(g.launchMethods.includes("server")
-      ? [
-          {
-            url: `${SITE_URL}/games/${g.slug}/servers`,
-            changeFrequency: "daily" as const,
-            priority: 0.6,
-            lastModified: now,
-          },
-        ]
-      : []),
   ]);
 
   return [
     ...staticRoutes,
     ...gameRoutes,
-    ...weeklyIssues.map((i) => ({
-      url: `${SITE_URL}/weekly/${issueSlug(i)}`,
+    ...weekly.map((i) => ({
+      url: `${SITE_URL}/weekly/${i.slug}`,
       changeFrequency: "yearly" as const,
       priority: 0.7,
       lastModified: new Date(i.publishedAt),

@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   CalendarDays,
-  Compass,
+  Gamepad2,
   House,
-  Layers,
   LibraryBig,
   Mail,
   Play,
@@ -15,25 +14,20 @@ import {
   Server,
   Shield,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 
-// /collections and /mods were previously orphaned — reachable only from a
-// handful of homepage cards, so crawlers never saw most of that content.
 const nav = [
   { href: "/", label: "Home", icon: House },
-  { href: "/discover", label: "Discover", icon: Compass },
-  { href: "/weekly", label: "Weekly", icon: Mail },
-  { href: "/collections", label: "Collections", icon: Layers },
-  { href: "/servers", label: "Servers", icon: Server },
+  { href: "/discover", label: "Games", icon: Gamepad2 },
   { href: "/mods", label: "Mods", icon: Puzzle },
-  { href: "/standards", label: "Our Standard", icon: ShieldCheck },
-  { href: "/library", label: "Library", icon: LibraryBig },
-  { href: "/community", label: "Community", icon: Users },
+  { href: "/servers", label: "Servers", icon: Server },
   { href: "/events", label: "Events", icon: CalendarDays },
+  { href: "/library", label: "Library", icon: LibraryBig },
+  { href: "/weekly", label: "Weekly", icon: Mail },
+  { href: "/standards", label: "Our Standard", icon: ShieldCheck },
 ];
 
 export function Sidebar() {

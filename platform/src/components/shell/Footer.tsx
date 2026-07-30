@@ -3,15 +3,15 @@ import Link from "next/link";
 const year = new Date().getFullYear();
 
 const links = [
-  { href: "/discover", label: "Discover" },
+  { href: "/discover", label: "Games" },
+  { href: "/mods", label: "Mods" },
+  { href: "/servers", label: "Servers" },
+  { href: "/events", label: "Events" },
   { href: "/weekly", label: "Weekly" },
-  { href: "/collections", label: "Collections" },
+  { href: "/standards", label: "Our Standard" },
   { href: "/compare", label: "Compare" },
   { href: "/alternatives", label: "Alternatives" },
-  { href: "/servers", label: "Servers" },
-  { href: "/mods", label: "Mods" },
   { href: "/developers", label: "Developers" },
-  { href: "/standards", label: "Our Standard" },
   { href: "/launcher", label: "Launcher" },
   { href: "/submit-game", label: "Submit a game" },
   { href: "/privacy", label: "Privacy" },

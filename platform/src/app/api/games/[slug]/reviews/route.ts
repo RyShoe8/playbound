@@ -9,7 +9,7 @@ import { getGame } from "@/lib/catalog";
 const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().min(3).max(120),
-  body: z.string().min(10).max(4000),
+  body: z.string().min(40).max(4000),
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {

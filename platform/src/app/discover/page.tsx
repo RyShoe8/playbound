@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Discover Free Games Worth Playing",
+  title: "Games — Free Catalog Worth Playing",
   description:
     "Browse every game in the PlayBound catalog. A deliberately small list — each title clears five published criteria for whether a free game is actually good.",
   path: "/discover",
@@ -62,7 +62,7 @@ export default async function DiscoverPage({
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Discover</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Games</h1>
         <p className="mt-1 text-muted-foreground">
           {games.length} free games. Zero checkout pages. Find your next favorite.
         </p>
