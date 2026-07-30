@@ -112,13 +112,40 @@ window.playbound.onAccount((data) => {
 
 window.playbound.onUpdateStatus?.((data) => {
   updateStatus = data || { phase: "idle" };
-  if (data?.phase === "available") setStatus(`Update ${data.version} available…`);
-  if (data?.phase === "downloading") setStatus(`Downloading update… ${data.percent || 0}%`);
-  if (data?.phase === "ready") {
-    setStatus(`Update ${data.version} ready — install from Settings`);
+  const phase = data?.phase;
+  const refreshSettings = () => {
     if (currentView === "settings") renderSettingsView();
+  };
+  const patchSettingsHint = (text) => {
+    const el = document.getElementById("set-update-hint");
+    if (el) el.textContent = text;
+  };
+
+  if (phase === "checking") {
+    setStatus("Checking for updates…");
+    setProgress(null);
+  } else if (phase === "available") {
+    setStatus(`Update ${data.version} available…`);
+    setProgress(null);
+    patchSettingsHint(`Update ${data.version} available.`);
+  } else if (phase === "downloading") {
+    const pct = Math.max(0, Math.min(100, Number(data.percent) || 0));
+    setStatus(`Downloading update… ${pct}%`);
+    setProgress(pct);
+    patchSettingsHint(`Downloading… ${pct}%`);
+  } else if (phase === "ready") {
+    setStatus(`Update ${data.version} ready — install from Settings`);
+    setProgress(null);
+    refreshSettings();
+  } else if (phase === "none") {
+    setStatus(data.version ? `You're up to date (v${data.version}).` : "You're up to date.");
+    setProgress(null);
+    refreshSettings();
+  } else if (phase === "error") {
+    setStatus(data.message || "Update error", true);
+    setProgress(null);
+    refreshSettings();
   }
-  if (data?.phase === "error") setStatus(data.message || "Update error", true);
 });
 
 // ── Views ────────────────────────────────────────────────────
@@ -778,7 +805,7 @@ async function renderSettingsView() {
 
     <div class="settings-group">
       <label class="settings-label">Updates</label>
-      <p class="settings-hint">Current version: <strong>${escapeHtml(version)}</strong>. ${escapeHtml(updateHint)} First install still uses Setup from the site; later updates install in-app. Unsigned builds may show SmartScreen.</p>
+      <p class="settings-hint">Current version: <strong>${escapeHtml(version)}</strong>. <span id="set-update-hint">${escapeHtml(updateHint)}</span> First install still uses Setup from the site; later updates install in-app. Unsigned builds may show SmartScreen.</p>
       <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn-secondary btn-sm" id="set-btn-check-update" ${packaged ? "" : "disabled"}>Check for updates</button>
         <button class="btn-primary btn-sm" id="set-btn-install-update" ${ready ? "" : "disabled"}>Install and restart</button>

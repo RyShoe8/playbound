@@ -1698,6 +1698,9 @@ function setupAutoUpdater() {
   }
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  // Blob hosts + stale local blockmaps make NSIS delta updates flaky; always pull full Setup.
+  autoUpdater.disableDifferentialDownload = true;
+  autoUpdater.disableWebInstaller = true;
   autoUpdater.setFeedURL({ provider: "generic", url: UPDATER_FEED_URL });
 
   const emit = (payload) => {
