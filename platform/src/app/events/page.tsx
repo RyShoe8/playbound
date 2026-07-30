@@ -7,8 +7,14 @@ import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { getGame } from "@/lib/catalog";
 import { EmptyHint } from "@/components/ui/bits";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Events" };
+export const metadata: Metadata = pageMetadata({
+  title: "Free Game Events & Tournaments",
+  description:
+    "Upcoming tournaments, LAN nights and community events for free open-source games.",
+  path: "/events",
+});
 
 interface EventDoc {
   _id: string;

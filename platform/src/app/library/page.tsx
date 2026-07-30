@@ -16,7 +16,11 @@ import { Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 
-export const metadata: Metadata = { title: "Library" };
+export const metadata: Metadata = {
+  title: "Library",
+  // Personal / auth route — must never be indexed.
+  robots: { index: false, follow: false },
+};
 
 type Filter = "all" | "saved" | "installed";
 

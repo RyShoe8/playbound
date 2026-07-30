@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Mail } from "lucide-react";
+import { getRecaptchaToken } from "@/lib/recaptchaClient";
 
 export function NewsletterForm() {
   const [email, setEmail] = useState("");
@@ -12,10 +13,13 @@ export function NewsletterForm() {
     e.preventDefault();
     setState("busy");
     try {
+      // Minted at submit time — v3 tokens expire after two minutes, so this
+      // must not be hoisted to mount.
+      const recaptchaToken = await getRecaptchaToken("newsletter");
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, recaptchaToken }),
       });
       if (res.ok) {
         setState("done");

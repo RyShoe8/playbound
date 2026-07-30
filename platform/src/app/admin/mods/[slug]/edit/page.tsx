@@ -40,6 +40,13 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
     published: Boolean(doc.published),
     managedBy: (doc.managedBy as ModPayload["managedBy"]) || "admin",
     ownerUserId: doc.ownerUserId ? String(doc.ownerUserId) : null,
+    // Editorial depth — installSteps and faq are auto-derived on save, the
+    // prose fields gate publishing.
+    longDescription: doc.longDescription ? String(doc.longDescription) : undefined,
+    whatItChanges: doc.whatItChanges ? String(doc.whatItChanges) : undefined,
+    compatibility: doc.compatibility ? String(doc.compatibility) : undefined,
+    installSteps: (doc.installSteps as ModPayload["installSteps"]) ?? [],
+    faq: (doc.faq as ModPayload["faq"]) ?? [],
   };
 
   return (

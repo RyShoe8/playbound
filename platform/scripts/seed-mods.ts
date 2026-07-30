@@ -18,6 +18,8 @@ async function main() {
   const { mods } = await import("../src/lib/data/mods");
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
+  // Same derivation the admin importer and save routes apply.
+  const { ensureDerivedModFields } = await import("../src/lib/enrich");
 
   await dbConnect();
 
@@ -27,8 +29,16 @@ async function main() {
     process.exit(0);
   }
 
+  // Base game titles, so generated install steps say "OpenRA" not "openra".
+  const baseTitles = new Map<string, string>(
+    (
+      await CatalogGame.find({}).select("slug title").lean<{ slug: string; title: string }[]>()
+    ).map((g) => [g.slug, g.title])
+  );
+
   let upserted = 0;
-  for (const m of mods) {
+  for (const seed of mods) {
+    const m = ensureDerivedModFields(seed, baseTitles.get(seed.baseGameSlug));
     const developerName = developersBySlug.get(m.developerSlug)?.name ?? null;
     const art = m.art ?? defaultArtFor([], m.slug);
     await CatalogMod.findOneAndUpdate(
@@ -56,6 +66,8 @@ async function main() {
           screenshots: [],
           published: m.published,
           managedBy: m.managedBy,
+          installSteps: m.installSteps ?? [],
+          faq: m.faq ?? [],
         },
       },
       { upsert: true, new: true }

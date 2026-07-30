@@ -8,12 +8,14 @@ import dbConnect from "@/lib/db";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import User from "@/lib/models/User";
 import { sendMail, verificationEmailHtml } from "@/lib/mailer";
+import { clientIpFrom, recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
 
 const registerSchema = z.object({
   username: z.string().min(3).max(20),
   email: z.string().email(),
   password: z.string().min(8),
   newsletterOptIn: z.boolean().optional().default(false),
+  recaptchaToken: z.string().optional(),
 });
 
 function baseUrl(req: Request) {
@@ -23,8 +25,23 @@ function baseUrl(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { username, email, password, newsletterOptIn } = registerSchema.parse(body);
+    const { username, email, password, newsletterOptIn, recaptchaToken } =
+      registerSchema.parse(body);
     const normalizedEmail = email.trim().toLowerCase();
+
+    // Bot check before any write, and before we spend a Brevo call or an email.
+    const captcha = await verifyRecaptcha(recaptchaToken, "signup", {
+      remoteIp: clientIpFrom(req),
+    });
+    if (!captcha.ok) {
+      console.warn(
+        `[register] reCAPTCHA rejected: ${captcha.reason}${captcha.score !== null ? ` (score ${captcha.score})` : ""}`
+      );
+      return NextResponse.json(
+        { error: recaptchaErrorMessage(captcha.reason) },
+        { status: 400 }
+      );
+    }
 
     await dbConnect();
 

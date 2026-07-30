@@ -48,9 +48,39 @@ function toGame(doc: LeanGame): Game {
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : undefined,
     systemRequirements: doc.systemRequirements as Game["systemRequirements"],
+
+    // Editorial depth. Falls back to the seed entry so hand-written content
+    // survives a DB import that does not yet carry these fields.
+    qualityBar: (doc.qualityBar as Game["qualityBar"]) ?? seedBySlug.get(String(doc.slug))?.qualityBar,
+    longDescription:
+      (doc.longDescription as string) || seedBySlug.get(String(doc.slug))?.longDescription,
+    whyWePickedIt:
+      (doc.whyWePickedIt as string) || seedBySlug.get(String(doc.slug))?.whyWePickedIt,
+    installSteps:
+      (doc.installSteps as Game["installSteps"])?.length
+        ? (doc.installSteps as Game["installSteps"])
+        : seedBySlug.get(String(doc.slug))?.installSteps,
+    faq: (doc.faq as Game["faq"])?.length
+      ? (doc.faq as Game["faq"])
+      : seedBySlug.get(String(doc.slug))?.faq,
+    bestFor: (doc.bestFor as string[])?.length
+      ? (doc.bestFor as string[])
+      : seedBySlug.get(String(doc.slug))?.bestFor,
+    notFor: (doc.notFor as string[])?.length
+      ? (doc.notFor as string[])
+      : seedBySlug.get(String(doc.slug))?.notFor,
+    comparableTo: (doc.comparableTo as string[])?.length
+      ? (doc.comparableTo as string[])
+      : seedBySlug.get(String(doc.slug))?.comparableTo,
+    updatedAt: (doc as { updatedAt?: Date }).updatedAt
+      ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
+      : undefined,
   };
   return attachLauncherInstall(base, doc);
 }
+
+/** Seed lookup, used to backfill editorial fields absent from DB documents. */
+const seedBySlug = new Map(seedGames.map((g) => [g.slug, g]));
 
 function seedGameWithInstall(g: Game): Game {
   return attachLauncherInstall(g);

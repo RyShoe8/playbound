@@ -20,14 +20,49 @@ import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame, type CatalogModPublic } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { QualityBarPanel } from "@/components/QualityBarPanel";
+import {
+  JsonLd,
+  graph,
+  videoGameSchema,
+  qualityReviewSchema,
+  faqSchema,
+  breadcrumbSchema,
+} from "@/components/JsonLd";
+import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
+import { comparisonsFeaturing } from "@/lib/data/comparisons";
+import { alternativePages } from "@/lib/data/alternatives";
+import { issueForGame } from "@/lib/data/weekly";
 
 const tabs = ["overview", "servers", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
 type Tab = (typeof tabs)[number];
 
+/**
+ * High-intent sections promoted out of `?tab=` into real indexable URLs.
+ * Query params cannot rank, and install/servers are the most commercially
+ * valuable content on a game page. The remaining tabs stay as params behind
+ * the canonical.
+ */
+const PROMOTED_ROUTES = [
+  { key: "install", label: "install", href: (slug: string) => `/games/${slug}/install` },
+  { key: "servers", label: "servers", href: (slug: string) => `/games/${slug}/servers` },
+] as const;
+
+/** Tabs that remain as query params — low search value, app-like content. */
+const PARAM_TABS = tabs.filter((t) => t !== "servers");
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const game = await getGame(slug);
-  return { title: game ? game.title : "Game Not Found" };
+  if (!game) return privateMetadata("Game Not Found");
+
+  // The canonical collapses all nine ?tab= variants into one indexable URL.
+  return pageMetadata({
+    title: gameTitle(game),
+    description: gameDescription(game),
+    path: `/games/${game.slug}`,
+    images: game.coverImage ? [game.coverImage] : undefined,
+  });
 }
 
 async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -75,8 +110,35 @@ export default async function GamePage({
     }
   }
 
+  // Real review data only — aggregateRating is never synthesised.
+  const reviewDocs = await safeQuery(
+    () => Review.find({ gameSlug: game.slug }).select("rating").lean(),
+    [] as { rating?: number }[]
+  );
+  const rated = reviewDocs.filter((r) => typeof r.rating === "number");
+  const aggregateRating = rated.length
+    ? {
+        ratingValue:
+          Math.round((rated.reduce((sum, r) => sum + (r.rating ?? 0), 0) / rated.length) * 10) / 10,
+        reviewCount: rated.length,
+      }
+    : undefined;
+
   return (
     <div>
+      <JsonLd
+        data={graph(
+          videoGameSchema(game, developer, { aggregateRating }),
+          qualityReviewSchema(game),
+          faqSchema(game.faq ?? []),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Games", path: "/discover" },
+            { name: game.title, path: `/games/${game.slug}` },
+          ])
+        )}
+      />
+
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-border">
         <GameArt game={game} showTitle={false} className="absolute inset-0" />
@@ -110,10 +172,33 @@ export default async function GamePage({
 
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <nav className="no-scrollbar sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-        {tabs.map((t) => (
+        <Link
+          href={`/games/${game.slug}`}
+          className={cn(
+            "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
+            tab === "overview"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          overview
+        </Link>
+
+        {/* Real URLs — these can rank. */}
+        {PROMOTED_ROUTES.map((r) => (
+          <Link
+            key={r.key}
+            href={r.href(game.slug)}
+            className="border-b-2 border-transparent px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {r.label}
+          </Link>
+        ))}
+
+        {PARAM_TABS.filter((t) => t !== "overview").map((t) => (
           <Link
             key={t}
-            href={`/games/${game.slug}${t === "overview" ? "" : `?tab=${t}`}`}
+            href={`/games/${game.slug}?tab=${t}`}
             className={cn(
               "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
               tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
@@ -178,13 +263,91 @@ function OverviewTab({
   similar: Game[];
 }) {
   if (!game) return null;
+
+  const issue = issueForGame(game.slug);
+  const relatedComparisons = comparisonsFeaturing(game.slug);
+  const relatedAlternatives = alternativePages.filter((p) =>
+    p.picks.some((pick) => pick.slug === game.slug)
+  );
+
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
+        {/* Quality assessment leads the page — it is the reason to trust
+            everything below it, and the block most likely to be cited. */}
+        {game.qualityBar && (
+          <QualityBarPanel bar={game.qualityBar} gameTitle={game.title} />
+        )}
+
         <section>
-          <h2 className="text-lg font-bold">About</h2>
-          <p className="mt-2 leading-relaxed text-muted-foreground">{game.description}</p>
+          <h2 className="text-lg font-bold">About {game.title}</h2>
+          {game.longDescription ? (
+            <div className="mt-2 space-y-4 leading-relaxed text-muted-foreground">
+              {game.longDescription.split("\n\n").map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 leading-relaxed text-muted-foreground">{game.description}</p>
+          )}
         </section>
+
+        {game.whyWePickedIt && (
+          <section className="rounded-xl border-l-4 border-primary bg-card p-5">
+            <h2 className="text-lg font-bold">Why we picked it</h2>
+            <p className="mt-2 leading-relaxed text-muted-foreground">{game.whyWePickedIt}</p>
+            {issue && (
+              <p className="mt-3 text-sm">
+                <Link
+                  href={`/weekly/${issue.year}-w${String(issue.week).padStart(2, "0")}-${issue.gameSlug}`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Featured in PlayBound Weekly, week {issue.week} of {issue.year} →
+                </Link>
+              </p>
+            )}
+          </section>
+        )}
+
+        {(game.bestFor?.length || game.notFor?.length) && (
+          <section>
+            <h2 className="text-lg font-bold">Who it&apos;s for</h2>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              {game.bestFor?.length ? (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-xs font-semibold tracking-wide text-primary uppercase">
+                    Great if you want
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                    {game.bestFor.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span aria-hidden className="text-primary">
+                          +
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {game.notFor?.length ? (
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Look elsewhere if
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                    {game.notFor.map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <span aria-hidden>−</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        )}
 
         <section>
           <h2 className="text-lg font-bold">Features</h2>
@@ -210,6 +373,54 @@ function OverviewTab({
             </div>
           </div>
         </section>
+
+        {/* Question-shaped headings that mirror real queries. Paired with
+            FAQPage schema, this is the highest-yield block for AI citation. */}
+        {game.faq?.length ? (
+          <section>
+            <h2 className="text-lg font-bold">
+              Frequently asked questions about {game.title}
+            </h2>
+            <div className="mt-3 divide-y divide-border rounded-xl border border-border bg-card">
+              {game.faq.map((item) => (
+                <div key={item.q} className="p-4">
+                  <h3 className="font-semibold">{item.q}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                    {item.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {(relatedComparisons.length > 0 || relatedAlternatives.length > 0) && (
+          <section>
+            <h2 className="text-lg font-bold">Compare and decide</h2>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {relatedComparisons.map((c) => (
+                <li key={c.slug}>
+                  <Link
+                    href={`/compare/${c.slug}`}
+                    className="block rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-semibold transition-colors hover:border-primary/40"
+                  >
+                    {c.title} →
+                  </Link>
+                </li>
+              ))}
+              {relatedAlternatives.map((p) => (
+                <li key={p.slug}>
+                  <Link
+                    href={`/alternatives/${p.slug}`}
+                    className="block rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-semibold transition-colors hover:border-primary/40"
+                  >
+                    {p.title} →
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {similar.length > 0 && (
           <section>

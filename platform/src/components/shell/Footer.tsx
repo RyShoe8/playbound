@@ -4,7 +4,14 @@ const year = new Date().getFullYear();
 
 const links = [
   { href: "/discover", label: "Discover" },
+  { href: "/weekly", label: "Weekly" },
+  { href: "/collections", label: "Collections" },
+  { href: "/compare", label: "Compare" },
+  { href: "/alternatives", label: "Alternatives" },
   { href: "/servers", label: "Servers" },
+  { href: "/mods", label: "Mods" },
+  { href: "/developers", label: "Developers" },
+  { href: "/standards", label: "Our Standard" },
   { href: "/launcher", label: "Launcher" },
   { href: "/submit-game", label: "Submit a game" },
   { href: "/privacy", label: "Privacy" },
@@ -20,7 +27,11 @@ export function Footer() {
             Play<span className="text-primary">Bound</span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            The home of free gaming. Discover. Click Play. Have Fun.
+            High-quality free games, actually worth your time. Every title clears{" "}
+            <Link href="/standards" className="font-semibold text-foreground/80 hover:text-primary">
+              the PlayBound Bar
+            </Link>
+            .
           </p>
         </div>
         <nav className="flex flex-wrap gap-x-4 gap-y-2">

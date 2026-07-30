@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Terms of Use" };
+export const metadata: Metadata = pageMetadata({
+  title: "Terms of Use",
+  description: "Terms governing use of PlayBound.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

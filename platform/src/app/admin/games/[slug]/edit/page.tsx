@@ -60,6 +60,16 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     submissionId,
     managedBy,
     ownerUserId,
+    // Editorial depth. Present on the payload so the form can edit it and the
+    // publish gate can evaluate it.
+    qualityBar: game.qualityBar ?? null,
+    longDescription: game.longDescription,
+    whyWePickedIt: game.whyWePickedIt,
+    installSteps: game.installSteps ?? [],
+    faq: game.faq ?? [],
+    bestFor: game.bestFor ?? [],
+    notFor: game.notFor ?? [],
+    comparableTo: game.comparableTo ?? [],
   };
 
   return (

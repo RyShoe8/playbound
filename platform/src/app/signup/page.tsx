@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Mail, UserPlus } from "lucide-react";
+import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { RecaptchaNotice } from "@/components/RecaptchaNotice";
+import { getRecaptchaToken } from "@/lib/recaptchaClient";
 
 export default function SignupPage() {
   const [username, setUsername] = useState("");
@@ -16,10 +19,17 @@ export default function SignupPage() {
     e.preventDefault();
     setState("busy");
     try {
+      const recaptchaToken = await getRecaptchaToken("signup");
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, email, password, newsletterOptIn }),
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          newsletterOptIn,
+          recaptchaToken,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
@@ -59,6 +69,12 @@ export default function SignupPage() {
           Free forever. Just like every game on PlayBound.
         </p>
       </div>
+
+      {/* Google signups skip email verification entirely — Google has already
+          verified the address — and pick a username on /welcome. */}
+      <GoogleSignInButton callbackUrl="/welcome" label="Sign up with Google" />
+      <AuthDivider />
+
       <form onSubmit={submit} className="space-y-3">
         <div>
           <label className="text-xs font-semibold text-muted-foreground">Username</label>
@@ -120,6 +136,9 @@ export default function SignupPage() {
           {state === "busy" ? "Creating account…" : "Sign Up"}
         </button>
       </form>
+
+      <RecaptchaNotice className="mt-4 text-center" />
+
       <p className="mt-5 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/login" className="font-semibold text-primary hover:underline">

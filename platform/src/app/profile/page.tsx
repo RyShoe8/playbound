@@ -12,7 +12,11 @@ import { Avatar, EmptyHint, SectionHeader, StatTile } from "@/components/ui/bits
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { SignOutButton } from "@/components/SignOutButton";
 
-export const metadata: Metadata = { title: "Profile" };
+export const metadata: Metadata = {
+  title: "Profile",
+  // Personal / auth route — must never be indexed.
+  robots: { index: false, follow: false },
+};
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);

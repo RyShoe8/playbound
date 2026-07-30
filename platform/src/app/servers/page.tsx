@@ -6,8 +6,14 @@ import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { GlobalServerBrowser } from "@/components/GlobalServerBrowser";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Servers" };
+export const metadata: Metadata = pageMetadata({
+  title: "Live Free Game Servers — Player Counts Right Now",
+  description:
+    "Live public multiplayer servers across every free game on PlayBound, with current player counts, maps and locations. Free to join, no account needed.",
+  path: "/servers",
+});
 
 export default async function ServersPage() {
   const session = await getServerSession(authOptions);

@@ -8,8 +8,14 @@ import { GameArt } from "@/components/GameArt";
 import { GameCard } from "@/components/GameCard";
 import { Badge, EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Discover" };
+export const metadata: Metadata = pageMetadata({
+  title: "Discover Free Games Worth Playing",
+  description:
+    "Browse every game in the PlayBound catalog. A deliberately small list — each title clears five published criteria for whether a free game is actually good.",
+  path: "/discover",
+});
 
 interface FilterDef {
   key: string;

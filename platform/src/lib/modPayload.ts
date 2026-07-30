@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { defaultArtFor, slugifyTitle } from "@/lib/gamePayload";
+import {
+  defaultArtFor,
+  slugifyTitle,
+  installStepSchema,
+  faqEntrySchema,
+} from "@/lib/gamePayload";
 
 export const DOWNLOAD_KINDS = ["github-zip", "direct-zip", "external"] as const;
 export const MANAGED_BY = ["admin", "developer"] as const;
@@ -62,6 +67,23 @@ export const modPayloadSchema = z.object({
     .union([z.string().trim().min(1), z.literal(""), z.null()])
     .optional()
     .transform((v) => (!v ? null : v)),
+
+  // Editorial depth. installSteps and faq are auto-derived at import;
+  // longDescription and whatItChanges are gated before publishing.
+  longDescription: z
+    .union([z.string().trim().max(20000), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? undefined : v)),
+  whatItChanges: z
+    .union([z.string().trim().max(4000), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? undefined : v)),
+  compatibility: z
+    .union([z.string().trim().max(500), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? undefined : v)),
+  installSteps: z.array(installStepSchema).max(30).default([]),
+  faq: z.array(faqEntrySchema).max(30).default([]),
 });
 
 export type ModPayload = z.infer<typeof modPayloadSchema>;
@@ -98,4 +120,9 @@ export const emptyModDraft = (baseGameSlug = ""): ModPayload => ({
   published: false,
   managedBy: "admin",
   ownerUserId: null,
+  longDescription: undefined,
+  whatItChanges: undefined,
+  compatibility: undefined,
+  installSteps: [],
+  faq: [],
 });

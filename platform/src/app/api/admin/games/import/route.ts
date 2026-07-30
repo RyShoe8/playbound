@@ -8,10 +8,68 @@ import {
 } from "@/lib/gamePayload";
 import { fetchPageMeta, stripHtml } from "@/lib/pageMeta";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import {
+  deriveInstallSteps,
+  deriveFaq,
+  deriveQualityBarSignals,
+  draftQualityBar,
+  suggestBestFor,
+  suggestNotFor,
+  fetchUpstreamActivity,
+  editorialReadiness,
+} from "@/lib/enrich";
 
 const importSchema = z.object({
   url: z.string().trim().url().max(500),
 });
+
+/**
+ * Fill the derivable half of the editorial fields.
+ *
+ * Everything set here is a restatement of a fact already in the draft, plus a
+ * live check of upstream repository activity. Nothing that requires judgement
+ * is written — see the DERIVED / HUMAN split in lib/enrich.ts. The response
+ * carries `evidence` and `suggestions` so the admin UI can show the editor what
+ * was established and on what basis.
+ */
+async function enrichDraft(
+  draft: GamePayload,
+  opts: { steamIsFree?: boolean | null } = {}
+): Promise<{
+  draft: GamePayload;
+  evidence: string[];
+  suggestions: { bestFor: string[]; notFor: string[] };
+  missing: string[];
+}> {
+  const lastUpstreamActivity = draft.githubRepo
+    ? await fetchUpstreamActivity(draft.githubRepo)
+    : null;
+
+  const signals = deriveQualityBarSignals({
+    license: draft.license,
+    githubRepo: draft.githubRepo,
+    steamIsFree: opts.steamIsFree ?? null,
+    lastUpstreamActivity,
+  });
+
+  // Every from* importer returns a complete GamePayload (each spreads
+  // emptyGameDraft), so the derivation helpers get every field they read —
+  // enforced by the type rather than assumed.
+  const withBar: GamePayload = { ...draft, qualityBar: draftQualityBar(signals) };
+
+  const enriched: GamePayload = {
+    ...withBar,
+    installSteps: deriveInstallSteps(withBar),
+    faq: deriveFaq(withBar),
+  };
+
+  return {
+    draft: enriched,
+    evidence: signals.evidence,
+    suggestions: { bestFor: suggestBestFor(withBar), notFor: suggestNotFor(withBar) },
+    missing: editorialReadiness(enriched).missing,
+  };
+}
 
 function parseSteamAppId(url: string): string | null {
   const m = url.match(/store\.steampowered\.com\/app\/(\d+)/i) || url.match(/steamcommunity\.com\/app\/(\d+)/i);
@@ -27,7 +85,9 @@ function parseGithubRepo(url: string): string | null {
   return null;
 }
 
-async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
+async function fromSteam(
+  appId: string
+): Promise<{ draft: GamePayload; steamIsFree: boolean | null }> {
   const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`, {
     headers: { "user-agent": "PlayBoundAdmin/1.0" },
     next: { revalidate: 0 },
@@ -97,37 +157,77 @@ async function fromSteam(appId: string): Promise<Partial<GamePayload>> {
   if (steamPlatforms?.linux) platforms.push("Linux");
   if (platforms.length === 0) platforms.push("Windows");
 
+  // Steam's own free-to-play flag. Note this says nothing about pay-to-win or
+  // cosmetic monetisation, so it is treated as one signal rather than proof.
+  const steamIsFree = typeof data.is_free === "boolean" ? (data.is_free as boolean) : null;
+
   const slug = slugifyTitle(title);
   return {
-    ...emptyGameDraft(),
-    slug,
-    title,
-    tagline: short.slice(0, 200) || title,
-    description: detailed.slice(0, 8000) || short,
-    website,
-    coverImage: header,
-    screenshots,
-    videos,
-    tags: genreTags,
-    platforms,
-    sizeMB,
-    releaseYear,
-    launchMethods: ["install"],
-    browserPlayable: false,
-    license: "See Steam store page",
-    systemRequirements: { min: sysMin, recommended: sysRec },
-    art: defaultArtFor([], slug),
-    published: false,
-    launcherInstall: null,
-    steamAppId: appId,
+    steamIsFree,
+    draft: {
+      ...emptyGameDraft(),
+      slug,
+      title,
+      tagline: short.slice(0, 200) || title,
+      description: detailed.slice(0, 8000) || short,
+      website,
+      coverImage: header,
+      screenshots,
+      videos,
+      tags: genreTags,
+      platforms,
+      sizeMB,
+      releaseYear,
+      launchMethods: ["install"],
+      browserPlayable: false,
+      license: "See Steam store page",
+      systemRequirements: { min: sysMin, recommended: sysRec },
+      art: defaultArtFor([], slug),
+      published: false,
+      launcherInstall: null,
+      steamAppId: appId,
+    },
   };
 }
 
-async function fromGithub(repo: string): Promise<Partial<GamePayload>> {
+/**
+ * Fetch the repository README as raw text.
+ *
+ * Returned to the admin UI as *source material* only — never written into
+ * longDescription. Publishing a project's own README as PlayBound editorial
+ * would be duplicate content and would hollow out the curation claim. The
+ * point is to give the editor something to read, not something to paste.
+ */
+async function fetchReadme(repo: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/readme`, {
+      headers: {
+        accept: "application/vnd.github.raw+json",
+        "user-agent": "PlayBoundAdmin/1.0",
+        ...(process.env.GITHUB_TOKEN
+          ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+          : {}),
+      },
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    return text.slice(0, 20000) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fromGithub(
+  repo: string
+): Promise<{ draft: GamePayload; sourceMaterial: string | null }> {
   const res = await fetch(`https://api.github.com/repos/${repo}`, {
     headers: {
       accept: "application/vnd.github+json",
       "user-agent": "PlayBoundAdmin/1.0",
+      ...(process.env.GITHUB_TOKEN
+        ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+        : {}),
     },
     next: { revalidate: 0 },
   });
@@ -149,28 +249,32 @@ async function fromGithub(repo: string): Promise<Partial<GamePayload>> {
     ? `Open Source (${data.license.spdx_id})`
     : data.license?.name || "Open Source";
   const slug = slugifyTitle(title);
+  const sourceMaterial = await fetchReadme(repo);
 
   return {
-    ...emptyGameDraft(),
-    slug,
-    title,
-    tagline: description.slice(0, 200),
-    description,
-    website,
-    githubRepo: repo,
-    coverImage: `https://opengraph.githubassets.com/1/${repo}`,
-    license,
-    tags: (data.topics ?? []).slice(0, 12),
-    platforms: ["Windows", "macOS", "Linux"],
-    launchMethods: ["install"],
-    browserPlayable: false,
-    art: defaultArtFor([], slug),
-    published: false,
-    launcherInstall: null,
+    sourceMaterial,
+    draft: {
+      ...emptyGameDraft(),
+      slug,
+      title,
+      tagline: description.slice(0, 200),
+      description,
+      website,
+      githubRepo: repo,
+      coverImage: `https://opengraph.githubassets.com/1/${repo}`,
+      license,
+      tags: (data.topics ?? []).slice(0, 12),
+      platforms: ["Windows", "macOS", "Linux"],
+      launchMethods: ["install"],
+      browserPlayable: false,
+      art: defaultArtFor([], slug),
+      published: false,
+      launcherInstall: null,
+    },
   };
 }
 
-async function fromWebsite(url: string): Promise<Partial<GamePayload>> {
+async function fromWebsite(url: string): Promise<GamePayload> {
   const meta = await fetchPageMeta(url);
   const title = meta.title || new URL(url).hostname.replace(/^www\./, "");
   const description = meta.description || `Play ${title} free in your browser.`;
@@ -213,18 +317,23 @@ export async function POST(req: Request) {
     const steamId = parseSteamAppId(url);
     const github = parseGithubRepo(url);
 
-    let draft: Partial<GamePayload>;
+    let base: GamePayload;
+    let steamIsFree: boolean | null = null;
+    let sourceMaterial: string | null = null;
+
     if (steamId && (url.includes("steam") || /^\d+$/.test(url.trim()))) {
-      draft = await fromSteam(steamId);
+      ({ draft: base, steamIsFree } = await fromSteam(steamId));
     } else if (url.includes("github.com") || (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()) && github)) {
-      draft = await fromGithub(github!);
+      ({ draft: base, sourceMaterial } = await fromGithub(github!));
     } else if (steamId) {
-      draft = await fromSteam(steamId);
+      ({ draft: base, steamIsFree } = await fromSteam(steamId));
     } else {
-      draft = await fromWebsite(url);
+      base = await fromWebsite(url);
     }
 
-    return NextResponse.json({ draft });
+    const { draft, evidence, suggestions, missing } = await enrichDraft(base, { steamIsFree });
+
+    return NextResponse.json({ draft, evidence, suggestions, missing, sourceMaterial });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid URL" }, { status: 400 });

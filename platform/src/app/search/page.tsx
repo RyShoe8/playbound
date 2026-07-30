@@ -7,7 +7,11 @@ import { GameCard } from "@/components/GameCard";
 import { SearchFilters } from "@/components/SearchFilters";
 import { Avatar, EmptyHint, SectionHeader } from "@/components/ui/bits";
 
-export const metadata: Metadata = { title: "Search" };
+export const metadata: Metadata = {
+  title: "Search",
+  // Search result pages are thin and infinite — never index them.
+  robots: { index: false, follow: true },
+};
 
 export default async function SearchPage({
   searchParams,

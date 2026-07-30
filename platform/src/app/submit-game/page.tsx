@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { SubmitGameForm } from "@/components/SubmitGameForm";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Submit a Game" };
+export const metadata: Metadata = pageMetadata({
+  title: "Submit a Free Game",
+  description:
+    "Know a free game that clears the PlayBound Bar? Submit it for assessment against our five published criteria.",
+  path: "/submit-game",
+});
 
 export default function SubmitGamePage() {
   return (

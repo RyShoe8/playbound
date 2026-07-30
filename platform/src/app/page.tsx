@@ -8,6 +8,7 @@ import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, PlayCta } from "@/components/GameCard";
 import { ModPreviewCard } from "@/components/ModPreviewCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
@@ -82,6 +83,23 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
+      {/* The H1 is descriptive rather than the rotating hero game title — the
+          site's most important heading should say what the site is. */}
+      <header className="pt-4">
+        <h1 className="max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">
+          High-quality free games, actually worth your time
+        </h1>
+        <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
+          Free games are not scarce — good ones are. Every title on PlayBound clears{" "}
+          <Link href="/standards" className="font-semibold text-primary hover:underline">
+            five published criteria
+          </Link>
+          : genuinely free, finished, actively maintained, good on its own merits, and
+          impossible to shut down. {games.length} games so far. One new pick every
+          Friday.
+        </p>
+      </header>
+
       {/* ── Hero: Game of the Week ─────────────────────────────── */}
       <section className="relative overflow-hidden rounded-2xl border border-border">
         <GameArt game={hero} showTitle={false} className="absolute inset-0" iconSize="lg" />
@@ -90,7 +108,7 @@ export default async function HomePage() {
           <Badge tone="play" className="w-fit">
             <Sparkles className="size-3" /> Game of the Week
           </Badge>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{hero.title}</h1>
+          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{hero.title}</h2>
           <p className="max-w-xl text-sm text-white/85 sm:text-base">{hero.tagline}</p>
           <p className="text-sm text-white/70">
             {hero.genres.join(" / ")} · {hero.releaseYear}
@@ -121,6 +139,7 @@ export default async function HomePage() {
         <div className="relative mt-5">
           <NewsletterForm />
         </div>
+        <RecaptchaNotice className="mt-3" />
       </section>
 
       {/* ── Games ──────────────────────────────────────────────── */}
@@ -176,7 +195,7 @@ export default async function HomePage() {
           <SectionHeader
             title="Mods"
             subtitle="Packageable add-ons for PlayBound titles"
-            href="/discover"
+            href="/mods"
           />
           <CardRow>
             {featuredMods.map((m) => (
@@ -207,7 +226,7 @@ export default async function HomePage() {
         <SectionHeader
           title="Curated Collections"
           subtitle="Hand-picked groupings from PlayBound"
-          href="/discover#collections"
+          href="/collections"
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featuredCollections.map((c) => (

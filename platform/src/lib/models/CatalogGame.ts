@@ -48,6 +48,37 @@ const LauncherInstallSchema = new Schema(
   { _id: false }
 );
 
+/** Score against the five published PlayBound Bar criteria. */
+const QualityBarSchema = new Schema(
+  {
+    genuinelyFree: { type: Boolean, default: false },
+    finished: { type: Boolean, default: false },
+    activelyMaintained: { type: Boolean, default: false },
+    standsAlone: { type: Boolean, default: false },
+    wontDisappear: { type: Boolean, default: false },
+    verdict: { type: String, default: "" },
+    lastVerified: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const InstallStepSchema = new Schema(
+  {
+    platform: { type: String, enum: ["all", "windows", "macos", "linux"], default: "all" },
+    text: { type: String, required: true },
+    command: { type: String, default: null },
+  },
+  { _id: false }
+);
+
+const FaqSchema = new Schema(
+  {
+    q: { type: String, required: true },
+    a: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 /** Lobby login for Zero-K / 0 A.D. server listings (admin-only; not public). */
 const ServerLobbyAuthSchema = new Schema(
   {
@@ -87,6 +118,16 @@ const CatalogGameSchema = new Schema(
     systemRequirements: { type: SystemRequirementsSchema, required: true },
     launcherInstall: { type: LauncherInstallSchema, default: null },
     serverLobbyAuth: { type: ServerLobbyAuthSchema, default: null },
+
+    // Editorial depth — see SEO-STRATEGY.md §4.3.
+    qualityBar: { type: QualityBarSchema, default: null },
+    longDescription: { type: String, default: null },
+    whyWePickedIt: { type: String, default: null },
+    installSteps: { type: [InstallStepSchema], default: [] },
+    faq: { type: [FaqSchema], default: [] },
+    bestFor: { type: [String], default: [] },
+    notFor: { type: [String], default: [] },
+    comparableTo: { type: [String], default: [] },
     published: { type: Boolean, default: true, index: true },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },

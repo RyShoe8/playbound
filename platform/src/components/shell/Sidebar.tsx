@@ -3,15 +3,34 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { CalendarDays, Compass, House, LibraryBig, Play, Server, Shield, Users } from "lucide-react";
+import {
+  CalendarDays,
+  Compass,
+  House,
+  Layers,
+  LibraryBig,
+  Mail,
+  Play,
+  Puzzle,
+  Server,
+  Shield,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 
+// /collections and /mods were previously orphaned — reachable only from a
+// handful of homepage cards, so crawlers never saw most of that content.
 const nav = [
   { href: "/", label: "Home", icon: House },
   { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/weekly", label: "Weekly", icon: Mail },
+  { href: "/collections", label: "Collections", icon: Layers },
   { href: "/servers", label: "Servers", icon: Server },
+  { href: "/mods", label: "Mods", icon: Puzzle },
+  { href: "/standards", label: "Our Standard", icon: ShieldCheck },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/community", label: "Community", icon: Users },
   { href: "/events", label: "Events", icon: CalendarDays },

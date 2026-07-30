@@ -6,6 +6,15 @@ import { TopBar } from "@/components/shell/TopBar";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
+import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
+import { Analytics } from "@/components/Analytics";
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_DESCRIPTION,
+  IS_PRODUCTION,
+} from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,41 +26,44 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-function getSiteUrl(): URL {
-  try {
-    const urlStr = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-    if (urlStr && /^https?:\/\//i.test(urlStr)) return new URL(urlStr);
-  } catch {
-    /* fallback */
-  }
-  return new URL("https://playbound.club");
-}
-
-const siteUrl = getSiteUrl();
-
+/**
+ * metadataBase is hardcoded to the canonical origin rather than derived from
+ * NEXTAUTH_URL / VERCEL_URL. Deriving it leaked the preview host
+ * (playbound-five.vercel.app) into every og:url and canonical on production,
+ * telling crawlers the wrong domain was authoritative.
+ */
 export const metadata: Metadata = {
-  metadataBase: siteUrl,
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "PlayBound — The Home of Free Gaming",
-    template: "%s · PlayBound",
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities. Discover. Click Play. Have Fun.",
-  applicationName: "PlayBound",
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
-    siteName: "PlayBound",
-    title: "PlayBound — The Home of Free Gaming",
-    description:
-      "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities.",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PlayBound — The Home of Free Gaming",
-    description:
-      "Discover, play, and share the best free games. Instant browser play, one-click installs, thriving communities.",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: IS_PRODUCTION,
+    follow: IS_PRODUCTION,
+    googleBot: {
+      index: IS_PRODUCTION,
+      follow: IS_PRODUCTION,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -66,6 +78,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
+        {/* Site-wide entity graph. Present on every page so Organization and
+            WebSite can be referenced by @id from page-level schema. */}
+        <JsonLd data={graph(organizationSchema(), websiteSchema())} />
         <SessionProvider>
           <Sidebar />
           <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
@@ -75,6 +90,9 @@ export default function RootLayout({
           </div>
           <MobileNav />
         </SessionProvider>
+        {/* Production only — decided here because VERCEL_ENV is server-side,
+            so preview traffic never reaches the analytics property. */}
+        <Analytics enabled={IS_PRODUCTION} />
       </body>
     </html>
   );

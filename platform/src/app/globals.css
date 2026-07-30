@@ -106,3 +106,13 @@
     text-shadow: 0 0 24px oklch(0.62 0.21 288 / 55%);
   }
 }
+
+/*
+ * reCAPTCHA v3's floating badge sits fixed bottom-right, where it overlaps the
+ * mobile nav bar. Google permits hiding it only if the required attribution is
+ * shown in the user flow instead — that is <RecaptchaNotice />, rendered on
+ * every form that mints a token. Do not remove one without the other.
+ */
+.grecaptcha-badge {
+  visibility: hidden;
+}
