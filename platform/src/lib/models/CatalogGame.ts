@@ -118,6 +118,7 @@ const CatalogGameSchema = new Schema(
     systemRequirements: { type: SystemRequirementsSchema, required: true },
     launcherInstall: { type: LauncherInstallSchema, default: null },
     serverLobbyAuth: { type: ServerLobbyAuthSchema, default: null },
+    installCount: { type: Number, default: 0 },
 
     // Editorial depth — see SEO-STRATEGY.md §4.3.
     qualityBar: { type: QualityBarSchema, default: null },

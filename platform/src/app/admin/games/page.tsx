@@ -30,6 +30,7 @@ export default async function AdminGamesPage() {
             <tr className="border-b border-border bg-secondary/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
               <th className="px-4 py-3 font-semibold">Game</th>
               <th className="px-4 py-3 font-semibold">Slug</th>
+              <th className="px-4 py-3 font-semibold">Installs</th>
               <th className="px-4 py-3 font-semibold">Published</th>
               <th className="px-4 py-3 font-semibold">Updated</th>
               <th className="px-4 py-3 font-semibold" />
@@ -45,6 +46,9 @@ export default async function AdminGamesPage() {
                   </div>
                 </td>
                 <td className="px-4 py-2.5 text-muted-foreground">{g.slug}</td>
+                <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
+                  {g.installCount ?? 0}
+                </td>
                 <td className="px-4 py-2.5">
                   <span className={g.published ? "text-primary font-semibold" : "text-muted-foreground"}>
                     {g.published ? "Yes" : "Draft"}
