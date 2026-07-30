@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { modsForGame, type CatalogModPublic } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
+import { GameInstallContent } from "@/components/GameInstallContent";
 import {
   JsonLd,
   graph,
@@ -32,22 +33,34 @@ import {
   qualityReviewSchema,
   faqSchema,
   breadcrumbSchema,
+  howToSchema,
 } from "@/components/JsonLd";
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
 import { issueForGame, type WeeklyIssue } from "@/lib/weekly";
 import { classifyMediaUrl } from "@/lib/mediaEmbed";
+import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 
-const tabs = ["overview", "mods", "guides", "achievements", "news", "discussion", "reviews", "media"] as const;
+const tabs = [
+  "overview",
+  "install",
+  "mods",
+  "guides",
+  "achievements",
+  "news",
+  "discussion",
+  "reviews",
+  "media",
+] as const;
 type Tab = (typeof tabs)[number];
 
 /**
  * High-intent sections promoted out of `?tab=` into real indexable URLs.
  * Servers deep-link into the global browser with the game pre-selected.
+ * Install stays on the hub as ?tab=install (legacy /install redirects there).
  */
 const PROMOTED_ROUTES = [
-  { key: "install", label: "install", href: (slug: string) => `/games/${slug}/install` },
   { key: "servers", label: "servers", href: (slug: string) => `/servers?game=${encodeURIComponent(slug)}` },
 ] as const;
 
@@ -217,6 +230,19 @@ export default async function GamePage({
           overview
         </Link>
 
+        <Link
+          href={`/games/${game.slug}?tab=install`}
+          data-tab="install"
+          className={cn(
+            "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
+            tab === "install"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          install
+        </Link>
+
         {/* Real URLs — these can rank. */}
         {PROMOTED_ROUTES.map((r) => (
           <Link
@@ -229,7 +255,7 @@ export default async function GamePage({
           </Link>
         ))}
 
-        {PARAM_TABS.filter((t) => t !== "overview").map((t) => {
+        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install").map((t) => {
           const count =
             t === "discussion"
               ? discussionCount
@@ -269,6 +295,20 @@ export default async function GamePage({
             weeklyIssue={weeklyIssue}
             discordPresence={discordPresence}
           />
+        )}
+        {tab === "install" && (
+          <>
+            <JsonLd
+              data={graph(
+                howToSchema(
+                  game,
+                  game.installSteps?.length ? game.installSteps : deriveInstallSteps(game)
+                ),
+                faqSchema(game.faq?.length ? game.faq : deriveFaq(game))
+              )}
+            />
+            <GameInstallContent game={game} />
+          </>
         )}
         {tab === "mods" && <ModsTab game={game} />}
         {tab === "guides" && (
@@ -567,7 +607,7 @@ async function ModsTab({ game }: { game: Game }) {
 
   if (mods.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div>
         <EmptyHint icon={Wrench}>
           {game.features.some((f) => f.toLowerCase().includes("mod"))
             ? `No PlayBound-listed mods for ${game.title} yet — check back soon or the official community hub.`
@@ -628,7 +668,7 @@ function ModCard({ mod }: { mod: CatalogModPublic }) {
 
 function AchievementsTab() {
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <EmptyHint icon={Trophy}>Platform-wide achievements are planned but not tracked yet.</EmptyHint>
     </div>
   );
@@ -642,7 +682,7 @@ function NewsTab({
   releases: Awaited<ReturnType<typeof fetchGithubReleases>>;
 }) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <h2 className="text-lg font-bold">Releases</h2>
       {releases.length > 0 ? (
         <div className="space-y-3">
@@ -763,7 +803,7 @@ async function DiscussionTabSection({
 
 function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Guides</h2>
         <ContentForm kind="guide" gameSlug={gameSlug} isSignedIn={isSignedIn} />
@@ -790,7 +830,7 @@ function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigned
 function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
   const avg = items.length > 0 ? items.reduce((s, r) => s + (r.rating ?? 0), 0) / items.length : 0;
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
         <div className="flex items-center gap-4">
           <div className="text-center">
@@ -839,7 +879,7 @@ function MediaTab({ game }: { game: Game }) {
   const vids = (game.videos ?? []).map(classifyMediaUrl);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <h2 className="text-lg font-bold">Media</h2>
       {vids.length > 0 && (
         <div className="space-y-3">
