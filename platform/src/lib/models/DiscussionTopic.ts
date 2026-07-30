@@ -1,18 +1,10 @@
 import { Schema, model, models, type Types } from "mongoose";
+import {
+  DISCUSSION_CATEGORIES,
+  type DiscussionCategory,
+} from "@/lib/discussion/categories";
 
-export const DISCUSSION_CATEGORIES = [
-  "general",
-  "help",
-  "technical",
-  "multiplayer",
-  "servers",
-  "mods",
-  "guides",
-  "feedback",
-  "announcements",
-] as const;
-
-export type DiscussionCategory = (typeof DISCUSSION_CATEGORIES)[number];
+export { DISCUSSION_CATEGORIES, type DiscussionCategory };
 
 export const TOPIC_STATUSES = ["open", "locked", "archived", "removed"] as const;
 export type TopicStatus = (typeof TOPIC_STATUSES)[number];

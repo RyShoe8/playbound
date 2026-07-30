@@ -10,10 +10,8 @@ import {
   ReplyComposer,
   ReportButton,
 } from "@/components/discussion/TopicActions";
-import { CATEGORY_META } from "@/lib/discussion/categories";
-import { categorySupportsSolved } from "@/lib/discussion/categories";
+import { CATEGORY_META, categorySupportsSolved, type DiscussionCategory } from "@/lib/discussion/categories";
 import { formatRelative } from "@/lib/discussion/formatRelative";
-import type { DiscussionCategory } from "@/lib/models/DiscussionTopic";
 import { cn } from "@/lib/utils";
 
 function hueFromName(name: string): number {
