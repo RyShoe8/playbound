@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Pin, MessagesSquare } from "lucide-react";
-import type { CategoryMeta } from "@/lib/discussion/categories";
+import type { CategoryMeta, DiscussionCategory } from "@/lib/discussion/categories";
 import { CATEGORY_META } from "@/lib/discussion/categories";
 import { formatRelative } from "@/lib/discussion/formatRelative";
-import type { DiscussionCategory } from "@/lib/models/DiscussionTopic";
 import { TopicComposer } from "@/components/discussion/TopicComposer";
 import { EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";

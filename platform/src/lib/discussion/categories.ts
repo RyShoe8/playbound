@@ -1,8 +1,18 @@
 import type { Game } from "@/lib/data/types";
-import {
-  DISCUSSION_CATEGORIES,
-  type DiscussionCategory,
-} from "@/lib/models/DiscussionTopic";
+
+export const DISCUSSION_CATEGORIES = [
+  "general",
+  "help",
+  "technical",
+  "multiplayer",
+  "servers",
+  "mods",
+  "guides",
+  "feedback",
+  "announcements",
+] as const;
+
+export type DiscussionCategory = (typeof DISCUSSION_CATEGORIES)[number];
 
 export type CategoryMeta = {
   id: DiscussionCategory;
