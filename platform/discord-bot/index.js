@@ -143,10 +143,28 @@ const commands = [
     .addStringOption((o) => o.setName("slug").setDescription("Game slug").setRequired(true)),
 ].map((c) => c.toJSON());
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
-  await rest.put(Routes.applicationGuildCommands(client.user.id, GUILD_ID), { body: commands });
+  try {
+    const rest = new REST({ version: "10" }).setToken(TOKEN);
+    await rest.put(Routes.applicationGuildCommands(client.user.id, GUILD_ID), { body: commands });
+    console.log(`Registered guild slash commands for ${GUILD_ID}`);
+  } catch (err) {
+    // Missing Access (50001) usually means the bot was invited without the
+    // applications.commands scope, or DISCORD_GUILD_ID is wrong / bot not in server.
+    console.error(
+      "Slash command registration failed (bot stays up for channel provisioning):",
+      err?.rawError || err?.message || err
+    );
+    console.error(
+      "Re-invite with both bot + applications.commands scopes, e.g.\n" +
+        `https://discord.com/oauth2/authorize?client_id=${client.user.id}&permissions=268446720&scope=bot%20applications.commands&guild_id=${GUILD_ID}`
+    );
+  }
+});
+
+client.on("error", (err) => {
+  console.error("Discord client error:", err?.message || err);
 });
 
 client.on("interactionCreate", async (interaction) => {

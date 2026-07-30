@@ -8,7 +8,16 @@ Long-lived worker for channel provisioning, welcome pins, slash commands, and Ga
 2. Set env: `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `MONGODB_URI`, `SITE_URL`, `BOT_WEBHOOK_SECRET`, `PORT`.
 3. Start command: `npm start`
 
-Invite the bot with scopes `bot` + `applications.commands` and permissions: Manage Channels, Manage Messages, Create Instant Invite, Send Messages, Embed Links.
+Invite the bot with scopes `bot` **and** `applications.commands`, plus permissions:
+Manage Channels, Manage Messages, Create Instant Invite, Send Messages, Embed Links.
+
+Example invite URL (replace CLIENT_ID and GUILD_ID):
+
+```
+https://discord.com/oauth2/authorize?client_id=CLIENT_ID&permissions=268446720&scope=bot%20applications.commands&guild_id=GUILD_ID
+```
+
+If slash-command registration logs `Missing Access`, the bot is missing `applications.commands` — re-invite with that URL. Channel provisioning still works once the bot is in the server with Manage Channels.
 
 ## Provision from admin
 
