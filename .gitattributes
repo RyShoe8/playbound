@@ -1,0 +1,40 @@
+# Normalise line endings.
+#
+# Without this, editing on Windows rewrites whole files as CRLF while the repo
+# stores LF, so git reports every line of an untouched file as changed. That
+# produced ~4,900 lines of phantom diff across the launcher and several lib
+# files before this was added.
+#
+# `text=auto` means: store LF in the repository, check out the platform's
+# native ending. Windows working copies stay CRLF; git stops calling it a change.
+* text=auto
+
+# Explicit for the common source types, so nothing depends on git's guess.
+*.ts    text
+*.tsx   text
+*.js    text
+*.mjs   text
+*.json  text
+*.css   text
+*.html  text
+*.md    text
+*.yml   text
+*.yaml  text
+
+# Shell scripts must stay LF even when checked out on Windows.
+*.sh    text eol=lf
+
+# Binary — never touch these.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.icns  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.zip   binary
+*.exe   binary
+*.dll   binary

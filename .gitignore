@@ -7,3 +7,6 @@ node_modules
 .env.production.local
 dist
 build
+
+# Claude Code local settings (machine-specific, not shared)
+.claude/settings.local.json
