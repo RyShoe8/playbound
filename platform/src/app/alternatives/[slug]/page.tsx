@@ -154,7 +154,7 @@ export default async function AlternativesPage({
                   Full details
                 </Link>
                 <Link
-                  href={`/games/${top.game.slug}/install`}
+                  href={`/games/${top.game.slug}?tab=install`}
                   className="inline-flex items-center rounded-lg border border-border px-4 py-2 text-sm font-bold transition-colors hover:border-primary/40"
                 >
                   How to install
