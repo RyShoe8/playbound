@@ -44,6 +44,15 @@ const LauncherInstallSchema = new Schema(
     installRoot: { type: String, default: null },
     connectArgs: { type: [String], default: [] },
     note: { type: String, default: null },
+    detectedVersion: { type: String, default: null },
+    lastVersionCheckAt: { type: Date, default: null },
+    versionCheckStatus: {
+      type: String,
+      enum: ["ok", "stale", "broken", "skipped", "updated"],
+      default: null,
+    },
+    versionCheckNote: { type: String, default: null },
+    autoUpdatePinned: { type: Boolean, default: true },
   },
   { _id: false }
 );

@@ -74,6 +74,10 @@ export const launcherInstallSchema = z
     installRoot: optionalTrimmed,
     connectArgs: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
     note: optionalTrimmed,
+    detectedVersion: optionalTrimmed,
+    versionCheckStatus: optionalTrimmed,
+    versionCheckNote: optionalTrimmed,
+    autoUpdatePinned: z.boolean().optional().default(true),
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
@@ -298,6 +302,10 @@ export function toPayloadLauncherInstall(
     installRoot: li.installRoot ?? null,
     connectArgs: li.connectArgs ?? [],
     note: li.note ?? null,
+    detectedVersion: li.detectedVersion ?? null,
+    versionCheckStatus: li.versionCheckStatus ?? null,
+    versionCheckNote: li.versionCheckNote ?? null,
+    autoUpdatePinned: li.autoUpdatePinned !== false,
   };
 }
 

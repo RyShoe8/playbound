@@ -22,6 +22,11 @@ export type CatalogModPublic = {
   coverImage?: string;
   screenshots?: string[];
   managedBy: "admin" | "developer";
+  detectedVersion?: string;
+  lastVersionCheckAt?: string;
+  versionCheckStatus?: string;
+  versionCheckNote?: string;
+  autoUpdatePinned?: boolean;
 
   // ── Editorial depth ──────────────────────────────────────────
   // Optional so existing documents stay valid. installSteps and faq are
@@ -73,6 +78,13 @@ function toMod(doc: LeanMod): CatalogModPublic {
     coverImage: (doc.coverImage as string) || undefined,
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     managedBy: (doc.managedBy as "admin" | "developer") || "admin",
+    detectedVersion: (doc.detectedVersion as string) || undefined,
+    lastVersionCheckAt: (doc as { lastVersionCheckAt?: Date }).lastVersionCheckAt
+      ? new Date((doc as { lastVersionCheckAt: Date }).lastVersionCheckAt).toISOString()
+      : undefined,
+    versionCheckStatus: (doc.versionCheckStatus as string) || undefined,
+    versionCheckNote: (doc.versionCheckNote as string) || undefined,
+    autoUpdatePinned: doc.autoUpdatePinned !== false,
 
     longDescription: (doc.longDescription as string) || undefined,
     whatItChanges: (doc.whatItChanges as string) || undefined,

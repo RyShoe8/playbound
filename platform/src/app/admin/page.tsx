@@ -10,6 +10,7 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import GameSubmission from "@/lib/models/GameSubmission";
 import { developers, listAllGames } from "@/lib/catalog";
+import { listAllMods } from "@/lib/mods";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
 
@@ -55,7 +56,11 @@ async function getCounts() {
 }
 
 export default async function AdminPage() {
-  const [counts, games] = await Promise.all([getCounts(), listAllGames()]);
+  const [counts, games, mods] = await Promise.all([getCounts(), listAllGames(), listAllMods()]);
+  const oneClickMods = mods.filter((m) => m.downloadKind !== "external").length;
+  const brokenVersions =
+    games.filter((g) => g.launcherInstall?.versionCheckStatus === "broken").length +
+    mods.filter((m) => m.versionCheckStatus === "broken").length;
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -73,6 +78,16 @@ export default async function AdminPage() {
           <StatTile
             label="Launcher Installs"
             value={String(games.reduce((sum, g) => sum + (g.installCount ?? 0), 0))}
+          />
+          <StatTile
+            label="One-click mods"
+            value={String(oneClickMods)}
+            hint={`${mods.length - oneClickMods} external links`}
+          />
+          <StatTile
+            label="Version issues"
+            value={String(brokenVersions)}
+            hint="Broken game/mod recipe probes"
           />
           <StatTile label="Developers" value={String(developers.length)} />
           <StatTile label="Registered Users" value={String(counts.totalUsers)} hint={`${counts.verifiedUsers} verified`} />

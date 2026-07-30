@@ -380,6 +380,47 @@ export function ModEditorForm({
         </div>
       </div>
 
+      {form.downloadKind === "external" && form.published ? (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+          Published as an external link — prefer converting to github-zip or direct-zip when a package URL exists.
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.autoUpdatePinned !== false}
+            onChange={(e) => patch("autoUpdatePinned", e.target.checked)}
+          />
+          Auto-update pinned download URLs (daily cron)
+        </label>
+        {mode === "edit" ? (
+          <button
+            type="button"
+            className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                const res = await fetch(`/api/admin/mods/${form.slug}/check-version`, { method: "POST" });
+                const data = await res.json().catch(() => null);
+                if (!res.ok) {
+                  setError(data?.error || "Version check failed");
+                } else if (data?.applied?.directUrl) {
+                  patch("directUrl", data.applied.directUrl);
+                }
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Check version now
+          </button>
+        ) : null}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label className={label}>Release year</label>

@@ -1029,19 +1029,36 @@ async function renderGameDetailView(slug) {
           <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
         </div>
         <button class="btn-sm ${mod.installed ? "btn-secondary" : "btn-primary"}" type="button">
-          ${mod.installed ? "Installed" : "Install"}
+          ${
+            mod.installed
+              ? "Installed"
+              : mod.downloadKind === "external"
+                ? "Open download page"
+                : "Install"
+          }
         </button>
       `;
       const btn = row.querySelector("button");
       if (!mod.installed) {
         btn.addEventListener("click", async () => {
-          setStatus(`Installing ${mod.title}…`);
+          const external = mod.downloadKind === "external";
+          setStatus(external ? `Opening download page for ${mod.title}…` : `Installing ${mod.title}…`);
           try {
-            await window.playbound.installMod(mod.slug);
-            setStatus("Mod install complete");
-            renderGameDetailView(slug);
+            const res = await window.playbound.installMod(mod.slug);
+            if (res?.status === "external") {
+              setStatus("Opened download page in browser.");
+              setProgress(null);
+            } else if (res?.status === "waiting-base") {
+              setStatus("Installing base game first — finish the setup wizard…");
+              setProgress(null);
+            } else {
+              setStatus("Mod install complete");
+              setProgress(null);
+              renderGameDetailView(slug);
+            }
           } catch (err) {
             setStatus(err.message || String(err), true);
+            setProgress(null);
           }
         });
       } else if (mod.installedPath) {

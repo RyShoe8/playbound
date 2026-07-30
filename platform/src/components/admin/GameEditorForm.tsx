@@ -1056,8 +1056,67 @@ export function GameEditorForm({
                         className={field}
                       />
                     </div>
+                    <div>
+                      <label className={label}>Version label</label>
+                      <input
+                        value={form.launcherInstall?.versionLabel ?? ""}
+                        onChange={(e) => patchLauncher({ versionLabel: e.target.value || null })}
+                        placeholder="1.2.3"
+                        className={field}
+                      />
+                    </div>
                   </div>
                 )}
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.launcherInstall?.autoUpdatePinned !== false}
+                      onChange={(e) => patchLauncher({ autoUpdatePinned: e.target.checked })}
+                    />
+                    Auto-update pinned download URLs (daily cron)
+                  </label>
+                  {form.launcherInstall?.detectedVersion ? (
+                    <span className="text-xs text-muted-foreground">
+                      Detected: {form.launcherInstall.detectedVersion}
+                      {form.launcherInstall.versionCheckStatus
+                        ? ` (${form.launcherInstall.versionCheckStatus})`
+                        : ""}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      try {
+                        const res = await fetch(`/api/admin/games/${form.slug}/check-version`, {
+                          method: "POST",
+                        });
+                        const data = await res.json().catch(() => null);
+                        if (!res.ok) {
+                          setError(data?.error || "Version check failed");
+                        } else if (data?.result) {
+                          patchLauncher({
+                            detectedVersion: data.result.detectedVersion,
+                            versionCheckStatus: data.result.status,
+                            versionCheckNote: data.result.note || null,
+                            ...(data.applied?.url ? { url: data.applied.url } : {}),
+                            ...(data.applied?.versionLabel
+                              ? { versionLabel: data.applied.versionLabel }
+                              : {}),
+                            ...(data.applied?.fileName ? { fileName: data.applied.fileName } : {}),
+                          });
+                        }
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Check version now
+                  </button>
+                </div>
                 {(form.launcherInstall?.kind === "github-zip" ||
                   form.launcherInstall?.kind === "direct-zip" ||
                   form.launcherInstall?.kind === "openttd-zip") && (

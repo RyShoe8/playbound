@@ -1,6 +1,6 @@
 /**
  * Patch launcherInstall recipes onto existing CatalogGame docs from seed data.
- * Runs after seed:games so production Mongo picks up recipes even when catalog exists.
+ * Merges structural fields; preserves url/fileName/versionLabel when cron auto-updated.
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -20,16 +20,38 @@ async function main() {
 
   let patched = 0;
   for (const [slug, recipe] of Object.entries(launcherInstallBySlug)) {
-    const result = await CatalogGame.updateOne(
-      { slug },
-      { $set: { launcherInstall: recipe } }
-    );
+    const existing = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
+    const prev = (existing as { launcherInstall?: Record<string, unknown> } | null)?.launcherInstall;
+    const preservePinned =
+      Boolean(prev?.lastVersionCheckAt) ||
+      (prev?.autoUpdatePinned !== false &&
+        prev?.versionCheckStatus === "updated" &&
+        typeof prev?.url === "string" &&
+        prev.url !== recipe.url);
+
+    const merged = {
+      ...recipe,
+      detectedVersion: prev?.detectedVersion ?? null,
+      lastVersionCheckAt: prev?.lastVersionCheckAt ?? null,
+      versionCheckStatus: prev?.versionCheckStatus ?? null,
+      versionCheckNote: prev?.versionCheckNote ?? null,
+      autoUpdatePinned: prev?.autoUpdatePinned ?? true,
+      ...(preservePinned
+        ? {
+            url: (prev?.url as string) || recipe.url,
+            fileName: (prev?.fileName as string) || recipe.fileName,
+            versionLabel: (prev?.versionLabel as string) || recipe.versionLabel,
+          }
+        : {}),
+    };
+
+    const result = await CatalogGame.updateOne({ slug }, { $set: { launcherInstall: merged } });
     if (result.matchedCount === 0) {
       console.warn(`seed:launcher-install — no catalog doc for ${slug}`);
       continue;
     }
     patched++;
-    console.log(`OK  ${slug} (modified=${result.modifiedCount})`);
+    console.log(`OK  ${slug} (modified=${result.modifiedCount}${preservePinned ? ", preserved pinned URL" : ""})`);
   }
 
   console.log(`Patched launcherInstall for ${patched} game(s).`);

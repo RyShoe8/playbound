@@ -163,12 +163,13 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
 
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <p className="text-sm font-semibold">
-          {mod.downloadKind === "external" ? "Open with the PlayBound Launcher" : "Install with the PlayBound Launcher"}
+          {mod.downloadKind === "external" ? "Download page" : "Install with the PlayBound Launcher"}
         </p>
         <p className="text-sm text-muted-foreground">
           {mod.downloadKind === "external" ? (
             <>
-              This entry opens the official page in your browser. The launcher does not download a package for it.
+              This package isn&apos;t one-click yet. Open the official download page in your browser, then place
+              files in the game&apos;s mods folder.
             </>
           ) : (
             <>
@@ -181,12 +182,23 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
           )}
         </p>
         <div className="flex flex-wrap items-start gap-4">
-          <LauncherInstallButton
-            slug={mod.slug}
-            kind="install-mod"
-            label={mod.downloadKind === "external" ? "Open with launcher" : "Install mod"}
-            className="bg-play text-play-foreground border-transparent"
-          />
+          {mod.downloadKind === "external" ? (
+            <a
+              href={mod.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground"
+            >
+              Open download page
+            </a>
+          ) : (
+            <LauncherInstallButton
+              slug={mod.slug}
+              kind="install-mod"
+              label="Install mod"
+              className="bg-play text-play-foreground border-transparent"
+            />
+          )}
           {canOneClickBase && (
             <LauncherInstallButton
               slug={mod.baseGameSlug}
