@@ -129,6 +129,26 @@ export interface Game {
   comparableTo?: string[];
   /** ISO date of last content update. Feeds sitemap lastmod. */
   updatedAt?: string;
+  /** Official + PlayBound Discord destinations for the Community card. */
+  communityLinks?: GameCommunityLinks;
+}
+
+export interface GameCommunityLinks {
+  officialDiscord?: {
+    inviteUrl: string;
+    serverName?: string;
+    verified: boolean;
+    verifiedSourceUrl?: string;
+    verifiedAt?: string;
+  };
+  playboundDiscord?: {
+    guildId?: string;
+    channelId?: string;
+    channelName: string;
+    inviteCode?: string;
+    inviteUrl: string;
+    provisionedAt?: string;
+  };
 }
 
 export interface Developer {

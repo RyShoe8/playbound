@@ -12,6 +12,8 @@ import {
   defaultArtFor,
   slugifyTitle,
   toPayloadLauncherInstall,
+  toPayloadCommunityLinks,
+  patchCommunityLinks,
   type GamePayload,
 } from "@/lib/gamePayload";
 import {
@@ -617,6 +619,173 @@ export function GameEditorForm({
             placeholder="OpenRA/OpenRA — optional"
             className={field}
           />
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+          <div>
+            <p className={label}>Community</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Official Discord must be verified against the developer&apos;s site or repo. PlayBound
+              channel fields are filled manually until the Discord bot provisions them.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={label}>Official Discord invite URL</label>
+              <input
+                value={form.communityLinks?.officialDiscord?.inviteUrl ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "communityLinks",
+                    patchCommunityLinks(form.communityLinks, {
+                      officialDiscord: { inviteUrl: e.target.value || null },
+                    })
+                  )
+                }
+                placeholder="https://discord.gg/…"
+                className={field}
+              />
+            </div>
+            <div>
+              <label className={label}>Verification source URL</label>
+              <input
+                value={form.communityLinks?.officialDiscord?.verifiedSourceUrl ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "communityLinks",
+                    patchCommunityLinks(form.communityLinks, {
+                      officialDiscord: { verifiedSourceUrl: e.target.value || null },
+                    })
+                  )
+                }
+                placeholder="https://… official site linking this Discord"
+                className={field}
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={Boolean(form.communityLinks?.officialDiscord?.verified)}
+              onChange={(e) =>
+                patch(
+                  "communityLinks",
+                  patchCommunityLinks(form.communityLinks, {
+                    officialDiscord: {
+                      verified: e.target.checked,
+                      verifiedAt: e.target.checked ? new Date().toISOString() : null,
+                    },
+                  })
+                )
+              }
+            />
+            Official Discord verified
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={label}>PlayBound channel name</label>
+              <input
+                value={form.communityLinks?.playboundDiscord?.channelName ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "communityLinks",
+                    patchCommunityLinks(form.communityLinks, {
+                      playboundDiscord: { channelName: e.target.value || null },
+                    })
+                  )
+                }
+                placeholder="openra"
+                className={field}
+              />
+            </div>
+            <div>
+              <label className={label}>PlayBound invite URL</label>
+              <input
+                value={form.communityLinks?.playboundDiscord?.inviteUrl ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "communityLinks",
+                    patchCommunityLinks(form.communityLinks, {
+                      playboundDiscord: { inviteUrl: e.target.value || null },
+                    })
+                  )
+                }
+                placeholder="https://discord.gg/…"
+                className={field}
+              />
+            </div>
+            <div>
+              <label className={label}>Channel ID</label>
+              <input
+                value={form.communityLinks?.playboundDiscord?.channelId ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "communityLinks",
+                    patchCommunityLinks(form.communityLinks, {
+                      playboundDiscord: { channelId: e.target.value || null },
+                    })
+                  )
+                }
+                className={field}
+              />
+            </div>
+            <div>
+              <label className={label}>Guild ID</label>
+              <input
+                value={form.communityLinks?.playboundDiscord?.guildId ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "communityLinks",
+                    patchCommunityLinks(form.communityLinks, {
+                      playboundDiscord: { guildId: e.target.value || null },
+                    })
+                  )
+                }
+                className={field}
+              />
+            </div>
+          </div>
+          {mode === "edit" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  const res = await fetch(`/api/admin/games/${initial.slug}/provision-discord`, {
+                    method: "POST",
+                  });
+                  const data = await res.json().catch(() => null);
+                  if (!res.ok) {
+                    setError(data?.error ?? "Provision failed");
+                  } else if (data?.playboundDiscord) {
+                    patch(
+                      "communityLinks",
+                      patchCommunityLinks(form.communityLinks, {
+                        playboundDiscord: {
+                          guildId: data.playboundDiscord.guildId ?? null,
+                          channelId: data.playboundDiscord.channelId ?? null,
+                          channelName: data.playboundDiscord.channelName ?? null,
+                          inviteCode: data.playboundDiscord.inviteCode ?? null,
+                          inviteUrl: data.playboundDiscord.inviteUrl ?? null,
+                          provisionedAt: data.playboundDiscord.provisionedAt
+                            ? String(data.playboundDiscord.provisionedAt)
+                            : new Date().toISOString(),
+                        },
+                      })
+                    );
+                  }
+                } catch {
+                  setError("Couldn't reach the Discord bot webhook.");
+                }
+                setBusy(false);
+              }}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Provision PlayBound Channel
+            </button>
+          )}
         </div>
 
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">

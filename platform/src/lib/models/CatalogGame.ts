@@ -142,6 +142,23 @@ const CatalogGameSchema = new Schema(
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
     ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    communityLinks: {
+      officialDiscord: {
+        inviteUrl: { type: String, default: null },
+        serverName: { type: String, default: null },
+        verified: { type: Boolean, default: false },
+        verifiedSourceUrl: { type: String, default: null },
+        verifiedAt: { type: Date, default: null },
+      },
+      playboundDiscord: {
+        guildId: { type: String, default: null },
+        channelId: { type: String, default: null },
+        channelName: { type: String, default: null },
+        inviteCode: { type: String, default: null },
+        inviteUrl: { type: String, default: null },
+        provisionedAt: { type: Date, default: null },
+      },
+    },
   },
   { timestamps: true }
 );
