@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/shell/Sidebar";
@@ -67,6 +68,10 @@ export const metadata: Metadata = {
   },
 };
 
+/** Cookie-Script CMP — public ID, same class as GA measurement ID. */
+const COOKIE_SCRIPT_SRC =
+  "https://cdn.cookie-script.com/s/cd597c788ebcfd74bbccb96157b11d6b.js";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -78,6 +83,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
+        {/* CMP before analytics so consent can gate tags. beforeInteractive is
+            only allowed in the root layout. Production only — matches Analytics. */}
+        {IS_PRODUCTION ? (
+          <Script src={COOKIE_SCRIPT_SRC} strategy="beforeInteractive" charSet="UTF-8" />
+        ) : null}
         {/* Site-wide entity graph. Present on every page so Organization and
             WebSite can be referenced by @id from page-level schema. */}
         <JsonLd data={graph(organizationSchema(), websiteSchema())} />
