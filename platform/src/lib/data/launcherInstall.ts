@@ -80,7 +80,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "0ad": {
     enabled: true,
     kind: "direct-installer",
-    url: "https://downloads.sourceforge.net/project/zero-ad/releases/0ad-0.28.0-win64.exe",
+    url: "https://releases.wildfiregames.com/0ad-0.28.0-win64.exe",
     fileName: "0ad-0.28.0-win64.exe",
     versionLabel: "0.28.0",
     knownExePaths: [

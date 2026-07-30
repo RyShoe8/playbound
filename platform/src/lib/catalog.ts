@@ -115,20 +115,23 @@ export async function listGames(): Promise<Game[]> {
 }
 
 /** All games including drafts (admin). */
-export async function listAllGames(): Promise<(Game & { published: boolean; updatedAt?: string })[]> {
+export async function listAllGames(): Promise<
+  (Game & { published: boolean; updatedAt?: string; installCount?: number })[]
+> {
   try {
     await dbConnect();
     const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
     if (docs.length === 0) {
-      return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true }));
+      return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true, installCount: 0 }));
     }
     return docs.map((d) => ({
       ...toGame(d as LeanGame),
       published: Boolean((d as LeanGame).published),
       updatedAt: (d as { updatedAt?: Date }).updatedAt?.toISOString(),
+      installCount: Number((d as { installCount?: number }).installCount) || 0,
     }));
   } catch {
-    return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true }));
+    return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true, installCount: 0 }));
   }
 }
 

@@ -659,30 +659,72 @@ function sendProgress(payload) {
   if (win && !win.isDestroyed()) win.webContents.send("progress", payload);
 }
 
-async function downloadTo(url, dest) {
-  const res = await fetch(url, { headers: { "user-agent": "playbound-launcher" } });
-  if (!res.ok || !res.body) throw new Error(`Download failed: HTTP ${res.status}`);
-  const total = Number(res.headers.get("content-length")) || 0;
-  await fsp.mkdir(path.dirname(dest), { recursive: true });
-  const file = fs.createWriteStream(dest);
-  const reader = res.body.getReader();
-  let received = 0;
-  let lastSent = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    received += value.length;
-    if (!file.write(Buffer.from(value))) {
-      await new Promise((r) => file.once("drain", r));
-    }
-    const now = Date.now();
-    if (now - lastSent > 250) {
-      lastSent = now;
-      sendProgress({ phase: "downloading", received, total });
+async function downloadTo(url, dest, attempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { "user-agent": "playbound-launcher" } });
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const total = Number(res.headers.get("content-length")) || 0;
+      await fsp.mkdir(path.dirname(dest), { recursive: true });
+      const file = fs.createWriteStream(dest);
+      const reader = res.body.getReader();
+      let received = 0;
+      let lastSent = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        received += value.length;
+        if (!file.write(Buffer.from(value))) {
+          await new Promise((r) => file.once("drain", r));
+        }
+        const now = Date.now();
+        if (now - lastSent > 250) {
+          lastSent = now;
+          sendProgress({ phase: "downloading", received, total });
+        }
+      }
+      await new Promise((r, j) => file.end((err) => (err ? j(err) : r())));
+      sendProgress({ phase: "downloading", received, total: total || received });
+      return;
+    } catch (err) {
+      lastErr = err;
+      const cause = err && typeof err === "object" ? err.cause : null;
+      const detail =
+        (cause && (cause.code || cause.message)) ||
+        (err instanceof Error ? err.message : String(err));
+      console.warn(`[download] attempt ${attempt}/${attempts} failed: ${detail}`);
+      try {
+        await fsp.rm(dest, { force: true });
+      } catch {
+        /* ignore */
+      }
+      if (attempt < attempts) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      throw new Error(`Download failed (${detail})`);
     }
   }
-  await new Promise((r, j) => file.end((err) => (err ? j(err) : r())));
-  sendProgress({ phase: "downloading", received, total: total || received });
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
+async function reportInstall(slug) {
+  try {
+    const base = getApiBase();
+    await fetch(`${base}/api/games/${encodeURIComponent(slug)}/install/report`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "user-agent": "playbound-launcher",
+      },
+      signal: AbortSignal.timeout(8_000),
+    });
+  } catch (err) {
+    console.warn("[install] report failed:", err instanceof Error ? err.message : err);
+  }
 }
 
 function extractZip(zipPath, destDir) {
@@ -926,9 +968,12 @@ async function installGame(slug, targetDir) {
     await shell.openPath(downloadPath);
     const known = findKnownExecutable(entry);
     if (known) {
-      return markInstalledFromExe(slug, entry, known, dl.version);
+      const result = markInstalledFromExe(slug, entry, known, dl.version);
+      void reportInstall(slug);
+      return result;
     }
     startInstallerPoll(slug, entry, dl.version);
+    void reportInstall(slug);
     return { status: "installer-opened", version: dl.version };
   }
 
@@ -941,6 +986,7 @@ async function installGame(slug, targetDir) {
     await fsp.rm(downloadPath, { force: true });
     markInstalled(slug, { version: dl.version, exe, dir: gameDir });
     sendProgress({ phase: "done" });
+    void reportInstall(slug);
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
@@ -953,6 +999,7 @@ async function installGame(slug, targetDir) {
     const exe = await writeJarLauncher(gameDir, dl.name);
     markInstalled(slug, { version: dl.version, exe, dir: gameDir });
     sendProgress({ phase: "done" });
+    void reportInstall(slug);
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
@@ -966,6 +1013,7 @@ async function installGame(slug, targetDir) {
 
   markInstalled(slug, { version: dl.version, exe, dir: gameDir });
   sendProgress({ phase: "done" });
+  void reportInstall(slug);
   return { status: "installed", version: dl.version, dir: gameDir };
 }
 

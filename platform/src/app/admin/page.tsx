@@ -70,6 +70,10 @@ export default async function AdminPage() {
         <SectionHeader title="Platform Overview" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           <StatTile label="Games" value={String(games.length)} />
+          <StatTile
+            label="Launcher Installs"
+            value={String(games.reduce((sum, g) => sum + (g.installCount ?? 0), 0))}
+          />
           <StatTile label="Developers" value={String(developers.length)} />
           <StatTile label="Registered Users" value={String(counts.totalUsers)} hint={`${counts.verifiedUsers} verified`} />
           <StatTile label="Newsletter Subs" value={String(counts.newsletter)} />
