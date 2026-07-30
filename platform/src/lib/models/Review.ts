@@ -10,5 +10,7 @@ const ReviewSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+ReviewSchema.index({ gameSlug: 1, userId: 1 }, { unique: true });
+
 const Review = models.Review || model("Review", ReviewSchema);
 export default Review;

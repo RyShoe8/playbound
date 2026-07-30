@@ -15,7 +15,7 @@ export const SITE_NAME = "PlayBound";
 export const SITE_TAGLINE = "High-quality free games, actually worth your time";
 
 export const SITE_DESCRIPTION =
-  "A deliberately small catalog of free games that are genuinely good. Every title clears the PlayBound Bar: genuinely free, finished, actively maintained, and impossible to shut down. One editor's pick every Friday.";
+  "A deliberately small catalog of free games that are genuinely good. Every title clears the PlayBound Bar: genuinely free, finished, actively maintained, and impossible to shut down. One editor's pick every Wednesday.";
 
 /**
  * True only for a real production deployment.

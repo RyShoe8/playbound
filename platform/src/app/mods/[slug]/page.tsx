@@ -114,6 +114,17 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
             <Link href={`/games/${baseGame.slug}`} className="font-semibold text-primary hover:underline">
               {baseGame.title}
             </Link>
+            {baseGame.launchMethods.includes("server") && (
+              <>
+                {" · "}
+                <Link
+                  href={`/servers?game=${encodeURIComponent(baseGame.slug)}&mod=${encodeURIComponent(mod.slug)}`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Browse servers
+                </Link>
+              </>
+            )}
           </p>
         )}
       </div>

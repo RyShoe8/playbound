@@ -96,7 +96,7 @@ export default async function HomePage() {
           </Link>
           : genuinely free, finished, actively maintained, good on its own merits, and
           impossible to shut down. {games.length} games so far. One new pick every
-          Friday.
+          Wednesday.
         </p>
       </header>
 
@@ -134,7 +134,7 @@ export default async function HomePage() {
           Something new to play, every single week.
         </h2>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          One email every Friday with what&apos;s worth playing. No spam, unsubscribe any time.
+          One email every Wednesday with what&apos;s worth playing. No spam, unsubscribe any time.
         </p>
         <div className="relative mt-5">
           <NewsletterForm />

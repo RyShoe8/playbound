@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Mail } from "lucide-react";
 import { getGame, developersBySlug } from "@/lib/catalog";
-import { issuesBySlug, issuesNewestFirst, issueSlug } from "@/lib/data/weekly";
+import { getWeeklyIssue, listWeeklyIssues } from "@/lib/weekly";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { GameArt } from "@/components/GameArt";
 import { PlayCta } from "@/components/GameCard";
@@ -15,23 +15,19 @@ import {
   breadcrumbSchema,
 } from "@/components/JsonLd";
 
-export function generateStaticParams() {
-  return issuesNewestFirst().map((i) => ({ slug: issueSlug(i) }));
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const issue = issuesBySlug.get(slug);
+  const issue = await getWeeklyIssue(slug);
   if (!issue) return { title: "Issue Not Found" };
   const game = await getGame(issue.gameSlug);
 
   return pageMetadata({
-    title: `${game?.title ?? issue.gameSlug}: ${issue.headline} — PlayBound Weekly W${issue.week}`,
-    description: issue.verdict,
+    title: `${game?.title ?? issue.gameSlug} — PlayBound Weekly W${issue.week}`,
+    description: game?.tagline ?? `PlayBound Weekly pick for week ${issue.week}, ${issue.year}.`,
     path: `/weekly/${slug}`,
     type: "article",
     publishedTime: issue.publishedAt,
@@ -45,15 +41,15 @@ export default async function WeeklyIssuePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const issue = issuesBySlug.get(slug);
+  const issue = await getWeeklyIssue(slug);
   if (!issue) notFound();
 
   const game = await getGame(issue.gameSlug);
   if (!game) notFound();
 
   const developer = developersBySlug.get(game.developerSlug);
-  const all = issuesNewestFirst();
-  const index = all.findIndex((i) => issueSlug(i) === slug);
+  const all = await listWeeklyIssues();
+  const index = all.findIndex((i) => i.slug === slug);
   const newer = index > 0 ? all[index - 1] : undefined;
   const older = index >= 0 && index < all.length - 1 ? all[index + 1] : undefined;
 
@@ -68,8 +64,8 @@ export default async function WeeklyIssuePage({
       <JsonLd
         data={graph(
           articleSchema({
-            headline: `${game.title}: ${issue.headline}`,
-            description: issue.verdict,
+            headline: game.title,
+            description: game.tagline,
             path: `/weekly/${slug}`,
             datePublished: issue.publishedAt,
             image: game.coverImage,
@@ -97,10 +93,8 @@ export default async function WeeklyIssuePage({
             <Mail className="size-4" />
             PlayBound Weekly · Week {issue.week}, {issue.year}
           </div>
-          <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-            {game.title}
-          </h1>
-          <p className="mt-2 text-lg text-muted-foreground">{issue.headline}</p>
+          <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
+          <p className="mt-2 text-lg text-muted-foreground">{game.tagline}</p>
           <p className="mt-4 text-sm text-muted-foreground">
             Published <time dateTime={issue.publishedAt}>{published}</time> ·{" "}
             {game.genres.join(" · ")} · {sizeLabel(game.sizeMB)} · {game.license}
@@ -112,23 +106,13 @@ export default async function WeeklyIssuePage({
       </section>
 
       <div className="mx-auto max-w-3xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
-        {/* Verdict first — the quotable claim leads, support follows. */}
-        <section className="rounded-xl border-l-4 border-primary bg-card p-6">
-          <h2 className="text-xs font-semibold tracking-wide text-primary uppercase">
-            The verdict
-          </h2>
-          <p className="mt-2 text-lg leading-relaxed font-medium">{issue.verdict}</p>
-        </section>
-
         <article className="space-y-5 leading-relaxed text-muted-foreground">
-          {issue.body.split("\n\n").map((para, i) => (
+          {game.description.split("\n\n").map((para, i) => (
             <p key={i}>{para}</p>
           ))}
         </article>
 
-        {game.qualityBar && (
-          <QualityBarPanel bar={game.qualityBar} gameTitle={game.title} />
-        )}
+        {game.qualityBar && <QualityBarPanel bar={game.qualityBar} gameTitle={game.title} />}
 
         <section className="rounded-xl border border-border bg-card p-5">
           <p className="font-bold">Want to play it?</p>
@@ -154,20 +138,14 @@ export default async function WeeklyIssuePage({
         {(newer || older) && (
           <nav className="flex flex-wrap justify-between gap-4 border-t border-border pt-6 text-sm">
             {older ? (
-              <Link
-                href={`/weekly/${issueSlug(older)}`}
-                className="font-semibold text-primary hover:underline"
-              >
+              <Link href={`/weekly/${older.slug}`} className="font-semibold text-primary hover:underline">
                 ← Week {older.week}, {older.year}
               </Link>
             ) : (
               <span />
             )}
             {newer && (
-              <Link
-                href={`/weekly/${issueSlug(newer)}`}
-                className="font-semibold text-primary hover:underline"
-              >
+              <Link href={`/weekly/${newer.slug}`} className="font-semibold text-primary hover:underline">
                 Week {newer.week}, {newer.year} →
               </Link>
             )}

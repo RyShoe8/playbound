@@ -23,7 +23,7 @@ export function NewsletterForm() {
       });
       if (res.ok) {
         setState("done");
-        setMessage("You're in! First issue lands this Friday.");
+        setMessage("You're in! First issue lands this Wednesday.");
       } else {
         const data = await res.json().catch(() => null);
         setState("error");

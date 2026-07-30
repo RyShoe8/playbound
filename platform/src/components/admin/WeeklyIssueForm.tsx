@@ -1,0 +1,135 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+type GameOption = { slug: string; title: string };
+
+export function WeeklyIssueForm({
+  mode,
+  initial,
+  games,
+}: {
+  mode: "create" | "edit";
+  initial: { slug?: string; gameSlug: string; publishedAt: string; published: boolean };
+  games: GameOption[];
+}) {
+  const router = useRouter();
+  const [gameSlug, setGameSlug] = useState(initial.gameSlug);
+  const [publishedAt, setPublishedAt] = useState(initial.publishedAt);
+  const [published, setPublished] = useState(initial.published);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const url =
+        mode === "create" ? "/api/admin/weekly" : `/api/admin/weekly/${encodeURIComponent(initial.slug!)}`;
+      const res = await fetch(url, {
+        method: mode === "create" ? "POST" : "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ gameSlug, publishedAt, published }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Save failed");
+        setBusy(false);
+        return;
+      }
+      router.push("/admin/weekly");
+      router.refresh();
+    } catch {
+      setError("Couldn't reach the server.");
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!initial.slug) return;
+    if (!confirm("Delete this weekly issue? This cannot be undone.")) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/weekly/${encodeURIComponent(initial.slug)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Delete failed");
+        setBusy(false);
+        return;
+      }
+      router.push("/admin/weekly");
+      router.refresh();
+    } catch {
+      setError("Couldn't reach the server.");
+      setBusy(false);
+    }
+  }
+
+  const field =
+    "mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
+  const label = "text-xs font-semibold text-muted-foreground";
+
+  return (
+    <form onSubmit={save} className="mx-auto max-w-lg space-y-4">
+      <div>
+        <label className={label}>Featured game</label>
+        <select required value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} className={field}>
+          <option value="">Select a game…</option>
+          {games.map((g) => (
+            <option key={g.slug} value={g.slug}>
+              {g.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className={label}>Publication date (Wednesday)</label>
+        <input
+          required
+          type="date"
+          value={publishedAt}
+          onChange={(e) => setPublishedAt(e.target.value)}
+          className={field}
+        />
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Slug and ISO week are derived from this date. Prefer Wednesdays to match the newsletter.
+        </p>
+      </div>
+      <label className="flex items-center gap-2 text-sm font-semibold">
+        <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
+        Published on /weekly
+      </label>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex flex-wrap gap-2 pt-2">
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-60"
+        >
+          {busy ? "Saving…" : mode === "create" ? "Create issue" : "Save"}
+        </button>
+        <Link
+          href="/admin/weekly"
+          className="rounded-full border border-border bg-secondary px-5 py-2 text-sm font-bold"
+        >
+          Cancel
+        </Link>
+        {mode === "edit" && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void remove()}
+            className="rounded-full border border-destructive/40 px-5 py-2 text-sm font-bold text-destructive"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}

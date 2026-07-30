@@ -1,13 +1,11 @@
 /**
- * Patch coverImage + screenshots for games whose seed art was wrong.
- * Runs after seed:games so production Mongo picks up media fixes even when
- * the catalog already exists (seed:games skips in that case).
+ * Patch coverImage + screenshots (+ videos when present) from seed data onto
+ * existing Mongo catalog docs. Runs after seed:games so production picks up
+ * media even when the catalog already exists.
  */
 import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
-
-const MEDIA_FIX_SLUGS = ["beyond-all-reason", "hedgewars", "luanti"] as const;
 
 async function main() {
   if (!process.env.MONGODB_URI) {
@@ -22,30 +20,27 @@ async function main() {
   await dbConnect();
 
   let patched = 0;
-  for (const slug of MEDIA_FIX_SLUGS) {
-    const seed = games.find((g) => g.slug === slug);
-    if (!seed) {
-      console.warn(`fix:game-media — seed missing for ${slug}`);
-      continue;
-    }
+  for (const seed of games) {
+    const screenshots = seed.screenshots ?? [];
+    const videos = seed.videos ?? [];
+    if (!seed.coverImage && screenshots.length === 0 && videos.length === 0) continue;
 
     const result = await CatalogGame.updateOne(
-      { slug },
+      { slug: seed.slug },
       {
         $set: {
-          coverImage: seed.coverImage ?? null,
-          screenshots: seed.screenshots ?? [],
+          ...(seed.coverImage ? { coverImage: seed.coverImage } : {}),
+          ...(screenshots.length ? { screenshots } : {}),
+          ...(videos.length ? { videos } : {}),
         },
       }
     );
 
-    if (result.matchedCount === 0) {
-      console.warn(`fix:game-media — no catalog doc for ${slug}`);
-      continue;
+    if (result.matchedCount === 0) continue;
+    if (result.modifiedCount > 0) {
+      patched++;
+      console.log(`OK  ${seed.slug}`);
     }
-
-    patched++;
-    console.log(`OK  ${slug} (modified=${result.modifiedCount})`);
   }
 
   console.log(`Patched media for ${patched} game(s).`);

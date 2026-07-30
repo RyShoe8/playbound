@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getServerSession } from "next-auth/next";
 import { Server } from "lucide-react";
 import { authOptions } from "@/lib/auth";
@@ -47,11 +48,13 @@ export default async function ServersPage() {
         </p>
       </div>
 
-      <GlobalServerBrowser
-        installedGameSlugs={installedGameSlugs}
-        installedModSlugs={installedModSlugs}
-        signedIn={Boolean(session?.user)}
-      />
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading servers…</p>}>
+        <GlobalServerBrowser
+          installedGameSlugs={installedGameSlugs}
+          installedModSlugs={installedModSlugs}
+          signedIn={Boolean(session?.user)}
+        />
+      </Suspense>
     </div>
   );
 }

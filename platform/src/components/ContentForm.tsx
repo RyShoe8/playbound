@@ -18,8 +18,9 @@ const copy: Record<Kind, { cta: string; titlePlaceholder: string; bodyPlaceholde
   review: {
     cta: "Post Review",
     titlePlaceholder: "Sum it up in one line",
-    bodyPlaceholder: "What did you think? Be specific — mention what you played and for how long.",
-    bodyRows: 4,
+    bodyPlaceholder:
+      "Write a detailed review — what you played, how long, what worked, and what didn't. Aim for a few sentences minimum.",
+    bodyRows: 6,
   },
   guide: {
     cta: "Publish Guide",
@@ -50,15 +51,18 @@ export function ContentForm({
   const [rating, setRating] = useState(5);
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(kind === "review");
 
   if (!isSignedIn) {
     return (
       <p className="text-sm text-muted-foreground">
-        <Link href={`/login?callbackUrl=/games/${gameSlug}`} className="font-semibold text-primary hover:underline">
+        <Link
+          href={`/login?callbackUrl=/games/${gameSlug}?tab=${kind === "review" ? "reviews" : kind === "guide" ? "guides" : "discussion"}`}
+          className="font-semibold text-primary hover:underline"
+        >
           Sign in
         </Link>{" "}
-        to {kind === "review" ? "write a review" : kind === "guide" ? "publish a guide" : "start a discussion"}.
+        to {kind === "review" ? "rate and review this game" : kind === "guide" ? "publish a guide" : "start a discussion"}.
       </p>
     );
   }
@@ -76,6 +80,11 @@ export function ContentForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (kind === "review" && body.trim().length < 40) {
+      setState("error");
+      setMessage("Please write a more detailed review (at least a few sentences).");
+      return;
+    }
     setState("busy");
     try {
       const res = await fetch(endpoints[kind](gameSlug), {
@@ -87,7 +96,7 @@ export function ContentForm({
       if (res.ok) {
         setTitle("");
         setBody("");
-        setOpen(false);
+        setOpen(kind !== "review");
         setState("idle");
         router.refresh();
       } else {
@@ -101,18 +110,27 @@ export function ContentForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl border border-border bg-card p-4">
+    <form onSubmit={submit} className="w-full max-w-xl space-y-3 rounded-xl border border-border bg-card p-4">
       {kind === "review" && (
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} type="button" onClick={() => setRating(n)}>
-              <Star className={cn("size-5", n <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />
-            </button>
-          ))}
+        <div>
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">Your rating</p>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} stars`}>
+                <Star
+                  className={cn(
+                    "size-6",
+                    n <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"
+                  )}
+                />
+              </button>
+            ))}
+          </div>
         </div>
       )}
       <input
         required
+        minLength={3}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder={copy[kind].titlePlaceholder}
@@ -120,6 +138,7 @@ export function ContentForm({
       />
       <textarea
         required
+        minLength={kind === "review" ? 40 : 10}
         rows={copy[kind].bodyRows}
         value={body}
         onChange={(e) => setBody(e.target.value)}
@@ -135,13 +154,15 @@ export function ContentForm({
         >
           {state === "busy" ? "Posting…" : copy[kind].cta}
         </button>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="rounded-full px-5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
-        >
-          Cancel
-        </button>
+        {kind !== "review" && (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded-full px-5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </form>
   );

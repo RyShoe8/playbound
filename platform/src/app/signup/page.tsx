@@ -119,7 +119,7 @@ export default function SignupPage() {
           <span>
             <span className="font-semibold">Email me the PlayBound Weekly newsletter</span>
             <span className="mt-0.5 block text-[11px] text-muted-foreground">
-              One email Fridays with what&apos;s worth playing. Unsubscribe any time. See our{" "}
+              One email Wednesdays with what&apos;s worth playing. Unsubscribe any time. See our{" "}
               <Link href="/privacy" className="underline hover:text-foreground">
                 privacy policy
               </Link>

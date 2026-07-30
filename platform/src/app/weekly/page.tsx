@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { gamesFor } from "@/lib/catalog";
-import { issuesNewestFirst, issueSlug } from "@/lib/data/weekly";
+import { listWeeklyIssues } from "@/lib/weekly";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
@@ -11,12 +11,12 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata = pageMetadata({
   title: "PlayBound Weekly — Every Pick, Archived",
   description:
-    "One high-quality free game every Friday, with the reasoning. Browse every PlayBound Weekly pick — dated, verdicted, and permanently archived.",
+    "One high-quality free game every Wednesday. Browse every PlayBound Weekly pick — dated and permanently archived.",
   path: "/weekly",
 });
 
 export default async function WeeklyIndexPage() {
-  const issues = issuesNewestFirst();
+  const issues = await listWeeklyIssues();
   const games = await gamesFor(issues.map((i) => i.gameSlug));
   const bySlug = new Map(games.map((g) => [g.slug, g]));
 
@@ -39,7 +39,7 @@ export default async function WeeklyIndexPage() {
             itemListElement: issues.map((issue, i) => ({
               "@type": "ListItem",
               position: i + 1,
-              url: absoluteUrl(`/weekly/${issueSlug(issue)}`),
+              url: absoluteUrl(`/weekly/${issue.slug}`),
               name: `Week ${issue.week}, ${issue.year}: ${bySlug.get(issue.gameSlug)?.title ?? issue.gameSlug}`,
             })),
           },
@@ -54,21 +54,21 @@ export default async function WeeklyIndexPage() {
         <Mail className="size-4" /> The PlayBound Weekly
       </div>
       <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-        One free game worth playing, every Friday
+        One free game worth playing, every Wednesday
       </h1>
       <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
         Every pick has cleared the{" "}
         <Link href="/standards" className="font-semibold text-primary hover:underline">
           PlayBound Bar
         </Link>{" "}
-        — genuinely free, finished, maintained, good on its own merits, and impossible
-        to shut down. Here is every issue, with the reasoning.
+        — genuinely free, finished, maintained, good on its own merits, and impossible to shut down.
+        Here is every issue.
       </p>
 
       <div className="mt-8 rounded-xl border border-border bg-card p-5">
         <p className="font-bold">Get it in your inbox</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          One email every Friday. No spam, unsubscribe any time.
+          One email every Wednesday. No spam, unsubscribe any time.
         </p>
         <div className="mt-4">
           <NewsletterForm />
@@ -76,59 +76,49 @@ export default async function WeeklyIndexPage() {
         <RecaptchaNotice className="mt-3" />
       </div>
 
-      {/* Tabular archive. Tables extract cleanly; this is the block most
-          likely to be quoted as "PlayBound's picks". */}
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold">Every pick</h2>
-        {issues.length === 0 ? (
-          <p className="mt-3 text-muted-foreground">
-            The first issue lands this Friday.
-          </p>
-        ) : (
-          <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-card">
-                <tr>
-                  <th scope="col" className="px-4 py-3 font-semibold">Week</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Game</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Genre</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Size</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Verdict</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {issues.map((issue) => {
-                  const game = bySlug.get(issue.gameSlug);
-                  return (
-                    <tr key={issueSlug(issue)}>
-                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                        <time dateTime={issue.publishedAt}>
-                          {issue.year} · W{String(issue.week).padStart(2, "0")}
-                        </time>
-                      </td>
-                      <td className="px-4 py-3 font-semibold">
-                        <Link
-                          href={`/weekly/${issueSlug(issue)}`}
-                          className="text-primary hover:underline"
-                        >
-                          {game?.title ?? issue.gameSlug}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                        {game?.genres.slice(0, 2).join(" · ") ?? "—"}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                        {game ? sizeLabel(game.sizeMB) : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{issue.headline}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {issues.length === 0 ? (
+        <p className="mt-10 text-sm text-muted-foreground">The first issue lands this Wednesday.</p>
+      ) : (
+        <div className="mt-10 overflow-x-auto rounded-xl border border-border">
+          <table className="w-full min-w-[520px] text-left text-sm">
+            <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Week</th>
+                <th className="px-4 py-3 font-semibold">Game</th>
+                <th className="px-4 py-3 font-semibold">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {issues.map((issue) => {
+                const game = bySlug.get(issue.gameSlug);
+                return (
+                  <tr key={issue.slug} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 font-semibold">
+                      <Link href={`/weekly/${issue.slug}`} className="hover:text-primary">
+                        {issue.year} W{issue.week}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link href={`/weekly/${issue.slug}`} className="font-semibold hover:text-primary">
+                        {game?.title ?? issue.gameSlug}
+                      </Link>
+                      {game?.tagline && (
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{game.tagline}</p>
+                      )}
+                      {game && (
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {game.genres.join(" · ")} · {sizeLabel(game.sizeMB)}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{issue.publishedAt}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
