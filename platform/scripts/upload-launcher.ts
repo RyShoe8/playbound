@@ -47,7 +47,16 @@ async function main() {
     const candidates = existsSync(distDir)
       ? readdirSync(distDir)
           .filter((f) => /^PlayBound-Setup-\d+\.\d+\.\d+\.exe$/i.test(f))
-          .sort()
+          .sort((a, b) => {
+            const va = a.match(/(\d+)\.(\d+)\.(\d+)/);
+            const vb = b.match(/(\d+)\.(\d+)\.(\d+)/);
+            if (!va || !vb) return a.localeCompare(b);
+            for (let i = 1; i <= 3; i++) {
+              const d = Number(va[i]) - Number(vb[i]);
+              if (d) return d;
+            }
+            return 0;
+          })
       : [];
     if (candidates.length === 0) {
       console.error("Setup.exe not found. Build first: cd launcher && npm run dist");

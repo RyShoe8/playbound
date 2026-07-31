@@ -93,10 +93,11 @@ async function refreshAccountStatus() {
     accountState = acc;
     if (acc.connected) {
       connectionDot.className = "dot online";
-      connectionLabel.textContent = "Connected";
+      const who = acc.username || acc.email;
+      connectionLabel.textContent = who ? `Signed in · ${who}` : "Signed in";
     } else {
       connectionDot.className = "dot";
-      connectionLabel.textContent = "Not connected";
+      connectionLabel.textContent = "Not signed in";
     }
   } catch {
     connectionDot.className = "dot";
@@ -209,14 +210,25 @@ async function renderLibraryView() {
         <h1 class="view-title" style="margin: 0">My Library</h1>
         <p class="view-sub" style="margin: 4px 0 0 0">Games and mods installed on this PC.</p>
       </div>
-      <button class="btn-secondary btn-sm" id="btn-sync-lib">Sync with Site</button>
+      <button class="btn-secondary btn-sm" id="btn-sync-lib">Sync now</button>
     </div>
     <div id="library-list" style="margin-top: 20px"></div>
   `;
 
   document.getElementById("btn-sync-lib").addEventListener("click", async () => {
     setStatus("Syncing library with playbound.club...");
-    await window.playbound.openDeepLink("playbound://sync");
+    if (window.playbound.syncLibraryNow) {
+      const res = await window.playbound.syncLibraryNow();
+      if (!res?.connected) {
+        setStatus("Sign in from Settings to sync your library.", true);
+        return;
+      }
+      if (res.error) setStatus(`Sync issue: ${res.error}`, true);
+      else if (res.synced > 0) setStatus(`Synced ${res.synced} install${res.synced === 1 ? "" : "s"}.`);
+      else setStatus("Library sync complete.");
+    } else {
+      await window.playbound.openDeepLink("playbound://sync");
+    }
   });
 
   const [installed, installedMods, modsCat] = await Promise.all([
@@ -765,6 +777,11 @@ function paintGamesGrid(catalog) {
 
 async function renderSettingsView() {
   const container = views.settings;
+  try {
+    accountState = await window.playbound.getAccount();
+  } catch {
+    /* keep previous */
+  }
   const settings = await window.playbound.getSettings();
   const ver = window.playbound.getAppVersion
     ? await window.playbound.getAppVersion()
@@ -787,15 +804,19 @@ async function renderSettingsView() {
     <p class="view-sub">Manage launcher preferences and site connection.</p>
 
     <div class="settings-group">
-      <label class="settings-label">Account Link</label>
-      <p class="settings-hint">Connecting to PlayBound allows library syncing between your desktop client and web profile.</p>
+      <label class="settings-label">Account</label>
+      <p class="settings-hint">Sign in once — installs sync to your playbound.club library automatically.</p>
       <div style="display: flex; gap: 10px; align-items: center;">
         <span class="dot ${accountState.connected ? "online" : ""}"></span>
-        <span style="font-size: 13px; font-weight: 600;">${accountState.connected ? "Connected to playbound.club" : "Not connected"}</span>
+        <span style="font-size: 13px; font-weight: 600;">${
+          accountState.connected
+            ? `Signed in${accountState.username || accountState.email ? ` · ${escapeHtml(accountState.username || accountState.email)}` : ""}`
+            : "Not signed in"
+        }</span>
       </div>
       <div style="margin-top: 14px; display: flex; gap: 8px;">
-        <button class="btn-primary btn-sm" id="set-btn-signin">${accountState.connected ? "Reconnect" : "Sign In via Browser"}</button>
-        ${accountState.connected ? '<button class="btn-danger btn-sm" id="set-btn-signout">Disconnect</button>' : ""}
+        <button class="btn-primary btn-sm" id="set-btn-signin">${accountState.connected ? "Switch account" : "Sign in"}</button>
+        ${accountState.connected ? '<button class="btn-danger btn-sm" id="set-btn-signout">Sign out</button>' : ""}
       </div>
     </div>
 

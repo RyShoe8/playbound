@@ -153,6 +153,19 @@ export const authOptions: NextAuthOptions = {
         token.username = user.name ?? undefined;
         token.role = user.role;
         token.needsUsername = Boolean(user.needsUsername);
+        token.roleCheckedAt = Date.now();
+      } else if (token.id) {
+        // Re-read role from Mongo so promotions/demotions appear without re-login.
+        const last = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
+        if (Date.now() - last > 60_000) {
+          await dbConnect();
+          const dbUser = await User.findById(token.id).select("role disabled").lean();
+          if (!dbUser || dbUser.disabled) {
+            return {};
+          }
+          token.role = dbUser.role;
+          token.roleCheckedAt = Date.now();
+        }
       }
       if (trigger === "update" && session?.username) {
         token.username = session.username as string;

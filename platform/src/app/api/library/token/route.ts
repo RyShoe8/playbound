@@ -65,11 +65,16 @@ export async function GET(req: Request) {
       await dbConnect();
       const user = await User.findOne({
         launcherTokenHash: hashLauncherToken(bearer),
-      }).select("+launcherTokenHash _id");
+      }).select("+launcherTokenHash _id email username");
       if (!user) {
         return NextResponse.json({ connected: false, valid: false }, { status: 401 });
       }
-      return NextResponse.json({ connected: true, valid: true });
+      return NextResponse.json({
+        connected: true,
+        valid: true,
+        email: user.email || null,
+        username: user.username || null,
+      });
     } catch (error) {
       console.error("Launcher token validate error:", error);
       return NextResponse.json({ error: "Internal server error" }, { status: 500 });

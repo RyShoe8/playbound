@@ -13,9 +13,6 @@ import {
   MonitorPlay,
   RefreshCw,
 } from "lucide-react";
-import { launcherSyncUrl } from "@/lib/launcher";
-
-const SYNC_FALLBACK_MS = 1500;
 
 type Props = {
   /** Server-known token status so Connected UI is correct on first paint. */
@@ -36,8 +33,7 @@ export function ConnectLauncherPanel({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [manageOpen, setManageOpen] = useState(false);
-  const [showSyncFallback, setShowSyncFallback] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -66,7 +62,6 @@ export function ConnectLauncherPanel({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [refresh, router]);
 
-  // After /launcher/auth handoff returns here with ?linked=1
   useEffect(() => {
     if (searchParams.get("linked") !== "1") return;
     void (async () => {
@@ -83,7 +78,7 @@ export function ConnectLauncherPanel({
     setBusy(true);
     setError(null);
     setCopied(false);
-    setManageOpen(true);
+    setAdvancedOpen(true);
     try {
       const res = await fetch("/api/library/token", { method: "POST" });
       const data = (await res.json()) as { token?: string; error?: string };
@@ -137,17 +132,6 @@ export function ConnectLauncherPanel({
     router.refresh();
   }
 
-  function openSync() {
-    setShowSyncFallback(false);
-    const a = document.createElement("a");
-    a.href = launcherSyncUrl();
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => setShowSyncFallback(true), SYNC_FALLBACK_MS);
-  }
-
   if (connected) {
     return (
       <section className="rounded-xl border border-play/25 bg-play/5 px-4 py-3 sm:px-5">
@@ -155,23 +139,21 @@ export function ConnectLauncherPanel({
           <div className="flex min-w-0 items-center gap-2">
             <CheckCircle2 className="size-4 shrink-0 text-play" />
             <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground">Launcher connected</p>
+              <p className="text-sm font-bold text-foreground">Launcher signed in</p>
               {createdAt && (
                 <p className="text-xs text-muted-foreground">
-                  Linked {new Date(createdAt).toLocaleString()}
+                  Linked {new Date(createdAt).toLocaleString()} — installs sync from the app
+                  automatically.
+                </p>
+              )}
+              {!createdAt && (
+                <p className="text-xs text-muted-foreground">
+                  Installs sync from the PlayBound app automatically.
                 </p>
               )}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={openSync}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
-            >
-              <MonitorPlay className="size-3.5" />
-              Sync installs
-            </button>
             <button
               type="button"
               onClick={refreshAll}
@@ -191,57 +173,40 @@ export function ConnectLauncherPanel({
             </button>
           </div>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Sync pushes installs from the launcher you already linked — it does not create a new token.
-          Then hit Refresh here. If the launcher says not connected, use Connect / Reconnect instead.
-        </p>
-        {showSyncFallback && (
-          <div className="mt-3 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-            <p className="font-semibold text-foreground">Didn&apos;t open?</p>
-            <p className="mt-1">
-              Make sure the PlayBound Launcher is installed and running once so Windows registers the
-              protocol. If the app says not connected, reconnect (creates a new link).
-            </p>
-            <div className="mt-2 flex flex-wrap gap-3">
-              <button type="button" onClick={openSync} className="font-bold text-foreground hover:underline">
-                Try sync again
-              </button>
-              <Link href="/launcher/auth" className="font-bold text-primary hover:underline">
-                Connect / Reconnect
-              </Link>
-              <button type="button" onClick={refreshAll} className="font-bold text-foreground hover:underline">
-                Refresh library
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="mt-2">
           <button
             type="button"
-            onClick={() => setManageOpen((o) => !o)}
+            onClick={() => setAdvancedOpen((o) => !o)}
             className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground"
           >
-            <ChevronDown className={`size-3.5 transition-transform ${manageOpen ? "rotate-180" : ""}`} />
-            Manage
+            <ChevronDown className={`size-3.5 transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+            Advanced
           </button>
-          {manageOpen && (
+          {advancedOpen && (
             <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
               <p className="text-xs text-muted-foreground">
-                Regenerate only if the launcher lost its token. This disconnects any previously linked
-                launcher until you paste the new token.
+                Prefer signing in from the PlayBound app (Settings → Sign in). Use this only if you need
+                a manual reconnect.
               </p>
+              <Link
+                href="/launcher/auth"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold"
+              >
+                <MonitorPlay className="size-3.5" />
+                Reconnect in browser
+              </Link>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void generate()}
-                className="rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold disabled:opacity-60"
+                className="ml-2 rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold disabled:opacity-60"
               >
                 Regenerate token
               </button>
               {freshToken && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-play">Paste into the launcher Advanced field:</p>
+                  <p className="text-xs font-semibold text-play">Paste into the launcher if needed:</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <code className="max-w-full flex-1 overflow-x-auto rounded-lg border border-border bg-secondary/60 px-3 py-2 text-[11px] break-all">
                       {freshToken}
@@ -272,41 +237,42 @@ export function ConnectLauncherPanel({
         <div>
           <h2 className="flex items-center gap-2 text-base font-bold">
             <KeyRound className="size-4 text-primary" />
-            Connect launcher
+            Library sync
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Optional — link the PlayBound Launcher so installs appear here.
+            Sign in from the PlayBound app — installs sync automatically. No need to connect from the
+            website.
           </p>
         </div>
-        <Link
-          href="/launcher/auth"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground"
-        >
-          <MonitorPlay className="size-3.5" />
-          Connect launcher
-        </Link>
       </div>
 
       <div className="mt-4 border-t border-border pt-3">
         <button
           type="button"
-          onClick={() => setManageOpen((o) => !o)}
+          onClick={() => setAdvancedOpen((o) => !o)}
           className="inline-flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground"
         >
-          <ChevronDown className={`size-3.5 transition-transform ${manageOpen ? "rotate-180" : ""}`} />
-          Advanced — manual token
+          <ChevronDown className={`size-3.5 transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+          Advanced
         </button>
 
-        {manageOpen && (
+        {advancedOpen && (
           <div className="mt-3 space-y-3">
             <p className="text-xs text-muted-foreground">
-              Generate a token and paste it into the launcher if the deep link doesn&apos;t open.
+              Browser reconnect or a one-time token if the app cannot open its sign-in window.
             </p>
+            <Link
+              href="/launcher/auth"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground"
+            >
+              <MonitorPlay className="size-3.5" />
+              Reconnect in browser
+            </Link>
             <button
               type="button"
               disabled={busy}
               onClick={() => void generate()}
-              className="rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold disabled:opacity-60"
+              className="ml-2 rounded-full border border-border bg-secondary px-3.5 py-1.5 text-xs font-bold disabled:opacity-60"
             >
               Generate token
             </button>
