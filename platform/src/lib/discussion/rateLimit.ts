@@ -19,25 +19,43 @@ export async function checkRateLimit(
   limit: Limit
 ): Promise<{ ok: true } | { ok: false; retryAfterSec: number }> {
   const now = new Date();
-  const doc = await RateLimitBucket.findOne({ key });
-  if (!doc || doc.expiresAt <= now) {
-    const expiresAt = new Date(now.getTime() + limit.windowMs);
-    await RateLimitBucket.findOneAndUpdate(
-      { key },
-      { key, count: 1, windowStart: now, expiresAt },
-      { upsert: true }
-    );
-    return { ok: true };
-  }
-  if (doc.count >= limit.max) {
-    const retryAfterSec = Math.max(
+
+  // Start (or restart) an expired window. upsert+$setOnInsert means concurrent
+  // openers collapse into one bucket instead of each resetting the count.
+  const expiresAt = new Date(now.getTime() + limit.windowMs);
+  const opened = await RateLimitBucket.findOneAndUpdate(
+    { key, expiresAt: { $lte: now } },
+    { $set: { count: 1, windowStart: now, expiresAt } },
+    { new: true }
+  );
+  if (opened) return { ok: true };
+
+  /**
+   * Single atomic read-modify-write. Reading the count and then incrementing
+   * as two statements lets a burst of concurrent requests all observe the same
+   * pre-limit value and sail through together; the conditional $inc below
+   * cannot, because the filter and the update are evaluated as one operation.
+   */
+  const bumped = await RateLimitBucket.findOneAndUpdate(
+    { key, count: { $lt: limit.max } },
+    { $inc: { count: 1 }, $setOnInsert: { windowStart: now, expiresAt } },
+    { new: true, upsert: true }
+  ).catch(() => null);
+
+  if (bumped) return { ok: true };
+
+  // No document matched: either at the limit, or a duplicate-key race on the
+  // upsert. Re-read to report an accurate retry window.
+  const current = await RateLimitBucket.findOne({ key });
+  if (!current) return { ok: true };
+  if (current.expiresAt <= new Date()) return { ok: true };
+  return {
+    ok: false,
+    retryAfterSec: Math.max(
       1,
-      Math.ceil((doc.expiresAt.getTime() - now.getTime()) / 1000)
-    );
-    return { ok: false, retryAfterSec };
-  }
-  await RateLimitBucket.updateOne({ key }, { $inc: { count: 1 } });
-  return { ok: true };
+      Math.ceil((current.expiresAt.getTime() - Date.now()) / 1000)
+    ),
+  };
 }
 
 export async function assertTopicRateLimit(

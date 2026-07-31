@@ -38,6 +38,9 @@ export function DiscordLinkCard({
           </button>
         </div>
       ) : configured ? (
+        // Not next/link: this is a route handler that 302s to Discord's OAuth
+        // screen, so it needs a real document navigation, not a client push.
+        // eslint-disable-next-line @next/next/no-html-link-for-pages
         <a
           href="/api/auth/discord/start"
           className="mt-3 inline-flex rounded-full bg-[#5865F2] px-4 py-2 text-xs font-bold text-white"

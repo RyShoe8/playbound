@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
-import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
-import { hashLauncherToken } from "@/lib/library";
+import { userFromLauncherBearer } from "@/lib/library";
 
 const syncSchema = z.object({
   kind: z.enum(["game", "mod"]).optional().default("game"),
@@ -16,18 +15,9 @@ const syncSchema = z.object({
   version: z.string().max(80).optional(),
 });
 
-async function userFromBearer(req: Request) {
-  const header = req.headers.get("authorization") || "";
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  if (!match?.[1]) return null;
-  const tokenHash = hashLauncherToken(match[1].trim());
-  await dbConnect();
-  return User.findOne({ launcherTokenHash: tokenHash }).select("+launcherTokenHash _id");
-}
-
 export async function POST(req: Request) {
   try {
-    const user = await userFromBearer(req);
+    const user = await userFromLauncherBearer(req);
     if (!user) {
       return NextResponse.json({ error: "Invalid or missing launcher token" }, { status: 401 });
     }

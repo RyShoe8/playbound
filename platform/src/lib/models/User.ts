@@ -34,7 +34,11 @@ const UserSchema = new Schema({
   emailVerified: { type: Boolean, default: false },
   verificationTokenHash: { type: String, select: false },
   verificationTokenExpires: { type: Date, select: false },
-  launcherTokenHash: { type: String, select: false },
+  // Indexed: every launcher request looks a user up by this hash, and the
+  // lookup runs before the caller is authenticated. Without the index an
+  // unauthenticated request with any random Bearer token forces a full
+  // collection scan.
+  launcherTokenHash: { type: String, select: false, index: true, sparse: true },
   launcherTokenCreatedAt: { type: Date, select: false },
   /** Denormalized community counters and moderation state. */
   community: {

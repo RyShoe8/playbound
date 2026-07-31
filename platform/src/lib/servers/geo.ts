@@ -52,9 +52,6 @@ function isIpv4(host: string): boolean {
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
 }
 
-function isIp(host: string): boolean {
-  return isIpv4(host) || host.includes(":");
-}
 
 export function applyCountryCentroid(location: ServerLocation): ServerLocation {
   if (location.lat != null && location.lon != null) return location;

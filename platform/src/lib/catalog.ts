@@ -1,3 +1,4 @@
+import { cache } from "react";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import type { Game, Genre, LaunchMethod } from "@/lib/data/types";
@@ -135,15 +136,6 @@ function seedGameWithInstall(g: Game): Game {
   return attachLauncherInstall(g);
 }
 
-async function mongoHasCatalog(): Promise<boolean> {
-  try {
-    await dbConnect();
-    return (await CatalogGame.countDocuments()) > 0;
-  } catch {
-    return false;
-  }
-}
-
 async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> {
   try {
     await dbConnect();
@@ -155,12 +147,27 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
   }
 }
 
+/**
+ * Published games for the public site, memoized for the lifetime of one
+ * request.
+ *
+ * Nearly every catalog helper below is a filter over the full list, and a
+ * single page routinely calls several of them (the home page alone wants the
+ * game of the week, the full list and the hidden gems). Without `cache()` each
+ * of those re-queried Mongo. Reading once and filtering in memory also lets us
+ * drop the old countDocuments() probe, which doubled the round trips just to
+ * decide whether the collection was empty — an empty result says the same
+ * thing for free.
+ */
+const loadPublishedGames = cache(async (): Promise<Game[]> => {
+  const fromDb = await fromMongo({ published: true });
+  if (fromDb.length > 0) return fromDb;
+  return seedGames.map(seedGameWithInstall);
+});
+
 /** Published games for the public site (falls back to seed catalog if DB empty). */
 export async function listGames(): Promise<Game[]> {
-  if (await mongoHasCatalog()) {
-    return fromMongo({ published: true });
-  }
-  return seedGames.map(seedGameWithInstall);
+  return loadPublishedGames();
 }
 
 /** All games including drafts (admin). */
@@ -188,16 +195,23 @@ export async function getGame(
   slug: string,
   opts?: { includeUnpublished?: boolean }
 ): Promise<Game | undefined> {
+  // Published lookups reuse the per-request catalog, so a page that already
+  // listed games does not pay for a second query to resolve one of them.
+  if (!opts?.includeUnpublished) {
+    const found = (await loadPublishedGames()).find((g) => g.slug === slug);
+    if (found) return found;
+  }
+
   try {
-    if (await mongoHasCatalog()) {
-      const filter: Record<string, unknown> = { slug };
-      if (!opts?.includeUnpublished) filter.published = true;
-      const doc = await CatalogGame.findOne(filter).lean();
-      return doc ? toGame(doc as LeanGame) : undefined;
-    }
+    await dbConnect();
+    const filter: Record<string, unknown> = { slug };
+    if (!opts?.includeUnpublished) filter.published = true;
+    const doc = await CatalogGame.findOne(filter).lean();
+    if (doc) return toGame(doc as LeanGame);
   } catch (err) {
     console.error("[catalog] getGame failed:", err);
   }
+
   const seed = seedGames.find((g) => g.slug === slug);
   return seed ? seedGameWithInstall(seed) : undefined;
 }
