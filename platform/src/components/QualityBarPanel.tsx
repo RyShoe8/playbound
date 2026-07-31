@@ -1,12 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Check, X, ShieldCheck } from "lucide-react";
 import type { QualityBar } from "@/lib/data/types";
 import { QUALITY_BAR } from "@/lib/site";
 
 const STORAGE_KEY = "pb-quality-bar-dismissed";
+const DISMISS_EVENT = "pb-quality-bar-change";
+
+/**
+ * Dismissal is read through useSyncExternalStore rather than an effect.
+ * Setting state from an effect meant a user who had already dismissed the
+ * panel still saw it render once and then vanish on every game page.
+ */
+function subscribeDismissed(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(DISMISS_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(DISMISS_EVENT, onChange);
+  };
+}
+
+function readDismissed(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false; // private mode
+  }
+}
+
+// The server cannot know the visitor's choice, so it always renders the panel;
+// this keeps hydration consistent and leaves the content visible to crawlers.
+const serverDismissed = () => false;
 
 function formatDate(iso: string): string {
   if (!iso) return "";
@@ -34,25 +61,21 @@ export function QualityBarPanel({
   compact?: boolean;
   dismissible?: boolean;
 }) {
-  const [hidden, setHidden] = useState(false);
+  const dismissed = useSyncExternalStore(
+    subscribeDismissed,
+    readDismissed,
+    serverDismissed
+  );
+  const hidden = dismissible && dismissed;
 
-  useEffect(() => {
-    if (!dismissible) return;
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === "1") setHidden(true);
-    } catch {
-      /* private mode */
-    }
-  }, [dismissible]);
-
-  function dismiss() {
+  const dismiss = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, "1");
     } catch {
       /* ignore */
     }
-    setHidden(true);
-  }
+    window.dispatchEvent(new Event(DISMISS_EVENT));
+  }, []);
 
   if (hidden) return null;
 

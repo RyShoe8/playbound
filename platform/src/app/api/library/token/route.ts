@@ -3,7 +3,11 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
-import { hashLauncherToken, issueLauncherTokenForUser } from "@/lib/library";
+import {
+  hashLauncherToken,
+  issueLauncherTokenForUser,
+  userFromLauncherBearer,
+} from "@/lib/library";
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -23,6 +27,11 @@ export async function POST() {
   }
 }
 
+/**
+ * Deliberately does not go through userFromLauncherBearer: revoking a token
+ * must keep working even for a disabled account, so a ban never leaves a live
+ * credential behind on the user's machine.
+ */
 async function userIdFromBearer(req: Request): Promise<string | null> {
   const header = req.headers.get("authorization") || "";
   const match = /^Bearer\s+(.+)$/i.exec(header);
@@ -62,10 +71,9 @@ export async function GET(req: Request) {
 
   if (bearer) {
     try {
-      await dbConnect();
-      const user = await User.findOne({
-        launcherTokenHash: hashLauncherToken(bearer),
-      }).select("+launcherTokenHash _id email username");
+      // Shared helper so a disabled account cannot keep validating its token
+      // (or reading back its own email) from the desktop app.
+      const user = await userFromLauncherBearer(req);
       if (!user) {
         return NextResponse.json({ connected: false, valid: false }, { status: 401 });
       }

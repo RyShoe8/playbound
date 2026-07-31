@@ -225,10 +225,10 @@ export default async function LibraryPage({
                       <li key={m.slug}>
                         <Link
                           href={`/mods/${m.slug}`}
-                          className="inline-flex max-w-[160px] items-center gap-1 truncate text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                          className="inline-flex max-w-[160px] items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
                         >
                           <Puzzle className="size-3 shrink-0 text-primary" />
-                          {m.title}
+                          <span className="truncate">{m.title}</span>
                         </Link>
                       </li>
                     ))}

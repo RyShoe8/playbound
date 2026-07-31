@@ -74,7 +74,7 @@ export function GameInstallContent({ game }: { game: Game }) {
                       {PLATFORM_LABELS[step.platform] ?? step.platform}
                     </p>
                   )}
-                  <p className="leading-relaxed text-muted-foreground">{step.text}</p>
+                  <p className="leading-relaxed break-words text-muted-foreground">{step.text}</p>
                   {step.command && (
                     <pre className="mt-3 overflow-x-auto rounded-lg bg-background p-3 text-xs">
                       <code className="flex items-center gap-2">

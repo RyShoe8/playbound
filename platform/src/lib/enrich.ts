@@ -1,5 +1,5 @@
 import type { Game, GameFaq, InstallStep, QualityBar } from "@/lib/data/types";
-import type { CatalogModPublic } from "@/lib/mods";
+
 import { isLauncherInstallable } from "@/lib/launcher";
 import { sizeLabel } from "@/lib/seo";
 

@@ -538,16 +538,16 @@ function OverviewTab({
         )}
       </div>
 
-      <aside className="space-y-4">
+      <aside className="min-w-0 space-y-4">
         {developer && (
           <Link
             href={`/developers/${developer.slug}`}
-            className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+            className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
           >
             <Avatar name={developer.name} hue={developer.artHue} size="lg" />
             <div className="min-w-0">
               <p className="truncate font-bold">{developer.name}</p>
-              <p className="text-xs text-muted-foreground">{developer.tagline}</p>
+              <p className="text-xs break-words text-muted-foreground">{developer.tagline}</p>
             </div>
           </Link>
         )}
@@ -899,7 +899,6 @@ function MediaTab({ game }: { game: Game }) {
                     className="h-full w-full"
                   />
                 ) : (
-                  /* eslint-disable-next-line jsx-a11y/media-has-caption */
                   <video
                     src={v.src}
                     controls

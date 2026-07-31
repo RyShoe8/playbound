@@ -9,5 +9,9 @@ const PlatformEventSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// The events page and the admin counter both filter on startsAt >= now and
+// sort by it; this index serves the range scan and the sort together.
+PlatformEventSchema.index({ startsAt: 1 });
+
 const PlatformEvent = models.PlatformEvent || model("PlatformEvent", PlatformEventSchema);
 export default PlatformEvent;

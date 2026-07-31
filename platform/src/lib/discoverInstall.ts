@@ -1,5 +1,6 @@
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import { defaultLauncherInstallForWebsite } from "@/lib/launcherInstall";
+import { assertPublicHttpUrl } from "@/lib/pageMeta";
 
 const FETCH_HEADERS = {
   "user-agent": "PlayBoundAdmin/1.0 (+https://playbound-five.vercel.app)",
@@ -34,10 +35,13 @@ function downloadCandidateUrls(website: string): string[] {
 
 async function fetchHtml(url: string): Promise<{ html: string; finalUrl: string } | null> {
   try {
-    const res = await fetch(url, {
+    // Operator-supplied origin — keep it off internal addresses.
+    const safe = assertPublicHttpUrl(url);
+    const res = await fetch(safe.toString(), {
       headers: FETCH_HEADERS,
       next: { revalidate: 0 },
       redirect: "follow",
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;
     const contentType = res.headers.get("content-type") || "";

@@ -124,12 +124,13 @@ export default async function SearchPage({
               <Link
                 key={d.slug}
                 href={`/developers/${d.slug}`}
-                className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+                className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
               >
                 <Avatar name={d.name} hue={d.artHue} />
                 <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 truncate font-bold">
-                    <Hammer className="size-3.5 text-primary" /> {d.name}
+                  <p className="flex items-center gap-1.5 font-bold">
+                    <Hammer className="size-3.5 shrink-0 text-primary" />
+                    <span className="truncate">{d.name}</span>
                   </p>
                   <p className="truncate text-xs text-muted-foreground">{d.tagline}</p>
                 </div>

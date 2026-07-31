@@ -21,6 +21,26 @@ export async function issueLauncherTokenForUser(userId: string): Promise<string>
   return token;
 }
 
+/**
+ * Resolve the user behind a launcher `Authorization: Bearer <token>` header.
+ *
+ * Returns null for a missing/malformed/unknown token *and* for accounts that
+ * have since been disabled — a ban has to revoke the launcher too, otherwise
+ * the desktop app keeps syncing long after the web session is cut off.
+ */
+export async function userFromLauncherBearer(req: Request) {
+  const match = /^Bearer\s+(.+)$/i.exec(req.headers.get("authorization") || "");
+  if (!match?.[1]) return null;
+
+  await dbConnect();
+  const user = await User.findOne({
+    launcherTokenHash: hashLauncherToken(match[1].trim()),
+  }).select("+launcherTokenHash _id disabled email username");
+
+  if (!user || user.disabled) return null;
+  return user;
+}
+
 export type LibraryEntryDTO = {
   gameSlug: string;
   saved: boolean;

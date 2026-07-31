@@ -12,7 +12,8 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    // String() so a JSON object in the body cannot reach crypto/Mongo as-is.
+    const tokenHash = crypto.createHash("sha256").update(String(token)).digest("hex");
     const user = await User.findOne({ email: String(email).toLowerCase() }).select(
       "+verificationTokenHash +verificationTokenExpires"
     );

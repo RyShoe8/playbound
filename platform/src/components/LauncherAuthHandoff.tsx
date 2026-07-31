@@ -65,7 +65,7 @@ export function LauncherAuthHandoff({ username, autoConnect = false }: Props) {
     if (!autoConnect || autoStarted.current) return;
     autoStarted.current = true;
     void connect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount when from=app
+    // Runs once on mount when from=app; connect() is stable for this purpose.
   }, [autoConnect]);
 
   async function copyToken() {
