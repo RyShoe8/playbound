@@ -83,8 +83,13 @@ function parseDeepLink(url) {
   }
 }
 
-const CONNECTED_LIBRARY_MSG =
-  "Connected. Close this window and refresh your library page.";
+const CONNECTED_LIBRARY_MSG = "Signed in. Your installs sync automatically.";
+
+let authWin = null;
+let lastLibrarySyncAt = 0;
+let librarySyncTimer = null;
+const LIBRARY_SYNC_COOLDOWN_MS = 30_000;
+const LIBRARY_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 function notifyAccount(payload = {}) {
   if (win && !win.isDestroyed()) {
@@ -227,12 +232,16 @@ async function validateLauncherToken(token) {
         "user-agent": "playbound-launcher",
       },
     });
-    if (res.status === 401) return false;
-    if (!res.ok) return true; // don't wipe token on transient errors
+    if (res.status === 401) return { valid: false };
+    if (!res.ok) return { valid: true }; // don't wipe token on transient errors
     const data = await res.json();
-    return data.valid !== false;
+    return {
+      valid: data.valid !== false,
+      email: data.email || null,
+      username: data.username || null,
+    };
   } catch {
-    return true;
+    return { valid: true };
   }
 }
 
@@ -242,22 +251,23 @@ function clearLocalToken(message) {
   saveSettings(settings);
   notifyAccount({
     connected: false,
-    message: message || "Token expired — reconnect from playbound.club/library.",
+    message: message || "Session expired — sign in again from Settings.",
   });
 }
 
 async function connectWithToken(token) {
   persistLauncherToken(token, { notify: false });
-  const valid = await validateLauncherToken(token);
-  if (!valid) {
-    clearLocalToken("Invalid launcher token — reconnect from your library page.");
+  const check = await validateLauncherToken(token);
+  if (!check.valid) {
+    clearLocalToken("Invalid session — sign in again from Settings.");
     return { connected: false, synced: 0, skipped: [], error: "unauthorized" };
   }
   const { synced, skipped, error } = await syncAllInstalledGames();
   if (error === "unauthorized") {
-    clearLocalToken("Token rejected — reconnect from your library page.");
+    clearLocalToken("Session rejected — sign in again from Settings.");
     return { connected: false, synced: 0, skipped: [], error };
   }
+  lastLibrarySyncAt = Date.now();
   let message = CONNECTED_LIBRARY_MSG;
   if (synced > 0) {
     message = `${CONNECTED_LIBRARY_MSG} Synced ${synced} game${synced === 1 ? "" : "s"}.`;
@@ -266,31 +276,61 @@ async function connectWithToken(token) {
     message += ` Skipped ${skipped.length}: ${skipped.slice(0, 3).join(", ")}${skipped.length > 3 ? "…" : ""}.`;
   }
   if (error) {
-    message = `Connected, but sync had issues: ${error}`;
+    message = `Signed in, but sync had issues: ${error}`;
   }
-  notifyAccount({ connected: true, synced, skipped, message });
-  return { connected: true, synced, skipped, error };
+  notifyAccount({
+    connected: true,
+    synced,
+    skipped,
+    message,
+    email: check.email,
+    username: check.username,
+  });
+  return { connected: true, synced, skipped, error, email: check.email, username: check.username };
 }
 
-async function startupLibrarySync() {
+async function syncLibraryNow({ quiet = false } = {}) {
   const settings = loadSettings();
   const token = settings.launcherToken;
-  if (!token) return;
-  const valid = await validateLauncherToken(token);
-  if (!valid) {
-    clearLocalToken("Saved token is no longer valid — reconnect from playbound.club/library.");
-    return;
+  if (!token) {
+    if (!quiet) {
+      notifyAccount({ connected: false, message: "Sign in to sync your library." });
+    }
+    return { connected: false };
   }
+
+  const now = Date.now();
+  if (quiet && now - lastLibrarySyncAt < LIBRARY_SYNC_COOLDOWN_MS) {
+    return { connected: true, skippedDueToCooldown: true };
+  }
+
+  const check = await validateLauncherToken(token);
+  if (!check.valid) {
+    clearLocalToken("Saved session is no longer valid — sign in again from Settings.");
+    return { connected: false, error: "unauthorized" };
+  }
+
+  if (!quiet) {
+    notifyAccount({
+      connected: true,
+      message: "Syncing installs…",
+      email: check.email,
+      username: check.username,
+    });
+  }
+
+  lastLibrarySyncAt = Date.now();
   const { synced, skipped, error } = await syncAllInstalledGames();
   if (error === "unauthorized") {
-    clearLocalToken("Token rejected — reconnect from your library page.");
-    return;
+    clearLocalToken("Session rejected — sign in again from Settings.");
+    return { connected: false, error };
   }
+
   let message = "Library sync complete.";
   if (synced > 0) {
     message = `Synced ${synced} installed game${synced === 1 ? "" : "s"} to your library.`;
   } else if (!error) {
-    message = "Connected — no local installs to sync yet.";
+    message = "Signed in — no local installs to sync yet.";
   }
   if (skipped?.length) {
     message += ` Skipped ${skipped.length}.`;
@@ -298,64 +338,107 @@ async function startupLibrarySync() {
   if (error) {
     message = `Library sync issue: ${error}`;
   }
-  notifyAccount({ connected: true, synced, skipped, message });
+  if (!quiet || synced > 0 || error || skipped?.length) {
+    notifyAccount({
+      connected: true,
+      synced,
+      skipped,
+      message: quiet && !synced && !error && !skipped?.length ? undefined : message,
+      email: check.email,
+      username: check.username,
+    });
+  }
+  return { connected: true, synced, skipped, error, email: check.email, username: check.username };
 }
 
+async function startupLibrarySync() {
+  await syncLibraryNow({ quiet: false });
+}
+
+function scheduleLibrarySync() {
+  if (librarySyncTimer) return;
+  librarySyncTimer = setInterval(() => {
+    void syncLibraryNow({ quiet: true });
+  }, LIBRARY_SYNC_INTERVAL_MS);
+}
+
+function extractLinkToken(url) {
+  try {
+    const parsed = parseDeepLink(url);
+    if (parsed?.action === "link" && parsed.token) return parsed.token;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function openAuthWindow() {
+  const authUrl = `${getApiBase()}/launcher/auth?from=app`;
+  try {
+    if (authWin && !authWin.isDestroyed()) {
+      authWin.focus();
+      void authWin.loadURL(authUrl);
+      return;
+    }
+    authWin = new BrowserWindow({
+      width: 520,
+      height: 740,
+      parent: win && !win.isDestroyed() ? win : undefined,
+      modal: false,
+      title: "Sign in to PlayBound",
+      autoHideMenuBar: true,
+      backgroundColor: "#0c0a12",
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+
+    const handleUrl = (url) => {
+      const token = extractLinkToken(url);
+      if (!token) return false;
+      void connectWithToken(token).finally(() => {
+        if (authWin && !authWin.isDestroyed()) authWin.close();
+      });
+      return true;
+    };
+
+    authWin.webContents.on("will-navigate", (e, url) => {
+      if (handleUrl(url)) e.preventDefault();
+    });
+    authWin.webContents.on("will-redirect", (e, url) => {
+      if (handleUrl(url)) e.preventDefault();
+    });
+    authWin.webContents.on("did-fail-load", (_e, _code, _desc, validatedURL) => {
+      handleUrl(validatedURL);
+    });
+    authWin.on("closed", () => {
+      authWin = null;
+    });
+    void authWin.loadURL(authUrl);
+  } catch (err) {
+    console.warn("Auth window failed, opening system browser:", err?.message || err);
+    void shell.openExternal(authUrl);
+  }
+}
+
+/** @deprecated name kept for call sites — opens in-app auth window */
 function openAuthInBrowser() {
-  const authUrl = `${getApiBase()}/launcher/auth`;
-  void shell.openExternal(authUrl);
+  openAuthWindow();
 }
 
 async function handleSyncDeepLink() {
   showMainWindow();
   context = null;
   pushContext();
-
-  const settings = loadSettings();
-  const token = settings.launcherToken;
-  if (!token) {
-    notifyAccount({
-      connected: false,
-      message: "Not connected — opening Connect in your browser.",
-    });
-    openAuthInBrowser();
-    return;
-  }
-
-  notifyAccount({ connected: true, message: "Syncing installs to your library…" });
-  const valid = await validateLauncherToken(token);
-  if (!valid) {
-    clearLocalToken("Saved token is no longer valid — reconnect from playbound.club/library.");
-    openAuthInBrowser();
-    return;
-  }
-
-  const { synced, skipped, error } = await syncAllInstalledGames();
-  if (error === "unauthorized") {
-    clearLocalToken("Token rejected — reconnect from your library page.");
-    openAuthInBrowser();
-    return;
-  }
-
-  let message = "Library sync complete.";
-  if (synced > 0) {
-    message = `Synced ${synced} installed game${synced === 1 ? "" : "s"} to your library. Refresh the library page.`;
-  } else if (!error) {
-    message = "Connected — no local installs to sync yet.";
-  }
-  if (skipped?.length) {
-    message += ` Skipped ${skipped.length}.`;
-  }
-  if (error) {
-    message = `Library sync issue: ${error}`;
-  }
-  notifyAccount({ connected: true, synced, skipped, message });
+  await syncLibraryNow({ quiet: false });
 }
 
 function handleDeepLink(parsed) {
   if (!parsed) return;
   if (parsed.action === "auth") {
-    openAuthInBrowser();
+    openAuthWindow();
     return;
   }
   if (parsed.action === "sync") {
@@ -1437,11 +1520,21 @@ ipcMain.handle("clipboard-write", (_event, text) => {
   clipboard.writeText(String(text || ""));
   return true;
 });
-ipcMain.handle("get-account", () => {
+ipcMain.handle("get-account", async () => {
   const settings = loadSettings();
+  if (!settings.launcherToken) {
+    return { connected: false, apiBase: getApiBase() };
+  }
+  const check = await validateLauncherToken(settings.launcherToken);
+  if (!check.valid) {
+    clearLocalToken("Saved session is no longer valid — sign in again from Settings.");
+    return { connected: false, apiBase: getApiBase() };
+  }
   return {
-    connected: Boolean(settings.launcherToken),
+    connected: true,
     apiBase: getApiBase(),
+    email: check.email || null,
+    username: check.username || null,
   };
 });
 ipcMain.handle("set-launcher-token", (_event, token) => connectWithToken(token));
@@ -1467,9 +1560,10 @@ ipcMain.handle("clear-launcher-token", async () => {
   return { connected: false };
 });
 ipcMain.handle("sign-in", () => {
-  openAuthInBrowser();
+  openAuthWindow();
   return true;
 });
+ipcMain.handle("sync-library-now", async () => syncLibraryNow({ quiet: false }));
 ipcMain.handle("get-catalog", () => {
   return catalog.map((e) => ({
     slug: e.slug,
@@ -1880,6 +1974,7 @@ function showMainWindow() {
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
+  void syncLibraryNow({ quiet: true });
 }
 
 function ensureTray() {
@@ -1928,6 +2023,9 @@ function createWindow() {
     win.hide();
     win.setSkipTaskbar(true);
     ensureTray();
+  });
+  win.on("focus", () => {
+    void syncLibraryNow({ quiet: true });
   });
   win.webContents.once("did-finish-load", () => {
     const n = scanKnownInstalls();
@@ -2047,6 +2145,7 @@ if (gotLock) {
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;
     createWindow();
+    scheduleLibrarySync();
     if (parsedLaunch && (parsedLaunch.action === "auth" || parsedLaunch.action === "link")) {
       handleDeepLink(parsedLaunch);
     } else if (parsedLaunch) {
@@ -2065,6 +2164,14 @@ if (gotLock) {
   });
 
   app.on("before-quit", () => {
+    if (librarySyncTimer) {
+      clearInterval(librarySyncTimer);
+      librarySyncTimer = null;
+    }
+    if (authWin && !authWin.isDestroyed()) {
+      authWin.destroy();
+      authWin = null;
+    }
     if (tray) {
       tray.destroy();
       tray = null;

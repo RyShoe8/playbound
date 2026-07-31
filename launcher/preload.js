@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld("playbound", {
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
   signIn: () => ipcRenderer.invoke("sign-in"),
+  syncLibraryNow: () => ipcRenderer.invoke("sync-library-now"),
 
   // Catalog / servers / mods
   getCatalog: () => ipcRenderer.invoke("get-catalog"),
