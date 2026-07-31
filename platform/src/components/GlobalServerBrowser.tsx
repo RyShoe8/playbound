@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Lock, RefreshCw, Server, Users } from "lucide-react";
@@ -136,28 +136,47 @@ export function GlobalServerBrowser({
     return games.filter((g) => installedGames.has(g.slug));
   }, [games, installedOnly, installedGames]);
 
+  /**
+   * The selection is validated during render rather than corrected afterwards
+   * in an effect.
+   *
+   * Reconciling in an effect meant an out-of-range slug — a ?mod= deep link
+   * that is filtered out, or a selection hidden by "installed only" — was
+   * still visible to the fetch effect for one render. That fired a request for
+   * the stale value, then the effect reset the state and fired a second one.
+   * Deriving here means the invalid value never reaches the fetch at all.
+   */
+  const effectiveGameSlug = useMemo(
+    () =>
+      visibleGames.some((g) => g.slug === gameSlug) ? gameSlug : visibleGames[0]?.slug || "",
+    [visibleGames, gameSlug]
+  );
+
   const visibleMods = useMemo(() => {
-    let list = mods.filter((m) => m.baseGameSlug === gameSlug && (m.baseSupported || m.baseHasServers));
+    let list = mods.filter(
+      (m) => m.baseGameSlug === effectiveGameSlug && (m.baseSupported || m.baseHasServers)
+    );
     if (installedOnly) list = list.filter((m) => installedMods.has(m.slug));
     return list;
-  }, [mods, gameSlug, installedOnly, installedMods]);
+  }, [mods, effectiveGameSlug, installedOnly, installedMods]);
 
-  useEffect(() => {
-    if (!visibleGames.some((g) => g.slug === gameSlug)) {
-      setGameSlug(visibleGames[0]?.slug || "");
-      setModSlug("");
-    }
-  }, [visibleGames, gameSlug]);
+  const effectiveModSlug = useMemo(
+    () => (modSlug && visibleMods.some((m) => m.slug === modSlug) ? modSlug : ""),
+    [visibleMods, modSlug]
+  );
 
-  useEffect(() => {
-    if (modSlug && !visibleMods.some((m) => m.slug === modSlug)) setModSlug("");
-  }, [visibleMods, modSlug]);
+  // Guards against an earlier, slower request resolving after a later one and
+  // painting servers for a game the user has already navigated away from.
+  const requestSeq = useRef(0);
 
   const loadServers = useCallback(async (slug: string, mod: CatalogMod | null) => {
     if (!slug) {
       setData(null);
       return;
     }
+    const seq = ++requestSeq.current;
+    const isStale = () => seq !== requestSeq.current;
+
     setLoading(true);
     setModNote("");
     try {
@@ -168,6 +187,7 @@ export function GlobalServerBrowser({
       const json = serversRes.ok
         ? ((await serversRes.json()) as ApiResponse)
         : { supported: false, servers: [] };
+      if (isStale()) return;
       if (geoRes?.ok) {
         const geo = await geoRes.json();
         setViewer({
@@ -188,16 +208,18 @@ export function GlobalServerBrowser({
       }
       setData({ ...json, servers });
     } catch {
-      setData({ supported: false, servers: [] });
+      if (!isStale()) setData({ supported: false, servers: [] });
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const mod = modSlug ? mods.find((m) => m.slug === modSlug) || null : null;
-    void loadServers(gameSlug, mod);
-  }, [gameSlug, modSlug, mods, loadServers]);
+    const mod = effectiveModSlug
+      ? mods.find((m) => m.slug === effectiveModSlug) || null
+      : null;
+    void loadServers(effectiveGameSlug, mod);
+  }, [effectiveGameSlug, effectiveModSlug, mods, loadServers]);
 
   const estFor = useCallback(
     (s: GameServer) => {
@@ -224,7 +246,7 @@ export function GlobalServerBrowser({
     [rows]
   );
 
-  const selectedTitle = games.find((g) => g.slug === gameSlug)?.title || gameSlug;
+  const selectedTitle = games.find((g) => g.slug === effectiveGameSlug)?.title || effectiveGameSlug;
 
   return (
     <div className="space-y-4">
@@ -232,7 +254,7 @@ export function GlobalServerBrowser({
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Game
           <select
-            value={gameSlug}
+            value={effectiveGameSlug}
             onChange={(e) => {
               setGameSlug(e.target.value);
               setModSlug("");
@@ -249,7 +271,7 @@ export function GlobalServerBrowser({
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Mod
           <select
-            value={modSlug}
+            value={effectiveModSlug}
             onChange={(e) => setModSlug(e.target.value)}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
           >
@@ -289,8 +311,8 @@ export function GlobalServerBrowser({
         <button
           type="button"
           onClick={() => {
-            const mod = modSlug ? mods.find((m) => m.slug === modSlug) || null : null;
-            void loadServers(gameSlug, mod);
+            const mod = effectiveModSlug ? mods.find((m) => m.slug === effectiveModSlug) || null : null;
+            void loadServers(effectiveGameSlug, mod);
           }}
           className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-secondary px-3 text-xs font-bold"
         >
@@ -312,14 +334,14 @@ export function GlobalServerBrowser({
           Couldn&apos;t refresh live list: {data.error}
         </p>
       )}
-      {gameSlug && data?.supported ? (
+      {effectiveGameSlug && data?.supported ? (
         <p className="text-sm font-semibold text-muted-foreground">
           {totalPlayers} player{totalPlayers === 1 ? "" : "s"} · {rows.length} server
           {rows.length === 1 ? "" : "s"}
         </p>
       ) : null}
 
-      {!gameSlug || (installedOnly && !visibleGames.length) ? (
+      {!effectiveGameSlug || (installedOnly && !visibleGames.length) ? (
         <EmptyHint icon={Server}>
           {installedOnly
             ? "No installed games have live server browsers. Install a multiplayer title or turn off Installed only."
@@ -375,15 +397,15 @@ export function GlobalServerBrowser({
                     <td className="px-3 py-3 tabular-nums text-muted-foreground">{formatEstMs(estFor(s))}</td>
                     <td className="px-3 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        {isOneClickSlug(gameSlug) ? (
+                        {isOneClickSlug(effectiveGameSlug) ? (
                           <a
-                            href={launcherJoinUrl(gameSlug, s.host, s.port, s.name)}
+                            href={launcherJoinUrl(effectiveGameSlug, s.host, s.port, s.name)}
                             className="rounded-full bg-play px-3 py-1 text-xs font-bold text-play-foreground hover:brightness-110"
                           >
                             Join
                           </a>
                         ) : (
-                          <LauncherInstallButton slug={gameSlug} label="Install" className="px-3 py-1 text-xs" />
+                          <LauncherInstallButton slug={effectiveGameSlug} label="Install" className="px-3 py-1 text-xs" />
                         )}
                         <button
                           type="button"
