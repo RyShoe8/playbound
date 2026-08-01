@@ -1564,6 +1564,47 @@ ipcMain.handle("sign-in", () => {
   return true;
 });
 ipcMain.handle("sync-library-now", async () => syncLibraryNow({ quiet: false }));
+ipcMain.handle("report-bug", async (_event, payload = {}) => {
+  const title = String(payload.title || "").trim();
+  const description = String(payload.description || "").trim();
+  const contactEmail = String(payload.contactEmail || "").trim();
+  if (title.length < 3) return { ok: false, error: "Title is too short." };
+  if (description.length < 10) return { ok: false, error: "Please describe the bug in more detail." };
+
+  const settings = loadSettings();
+  const headers = {
+    "content-type": "application/json",
+    accept: "application/json",
+    "user-agent": "playbound-launcher",
+  };
+  if (settings.launcherToken) {
+    headers.authorization = `Bearer ${settings.launcherToken}`;
+  }
+
+  try {
+    const res = await fetch(`${getApiBase()}/api/bug-reports`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        title: title.slice(0, 160),
+        description: description.slice(0, 8000),
+        source: "launcher",
+        contactEmail: contactEmail.slice(0, 200),
+        launcherVersion: app.getVersion(),
+        platform: process.platform,
+        userAgent: `playbound-launcher/${app.getVersion()} (${process.platform})`,
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Server returned ${res.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Couldn't reach playbound.club" };
+  }
+});
 ipcMain.handle("get-catalog", () => {
   return catalog.map((e) => ({
     slug: e.slug,

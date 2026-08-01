@@ -747,6 +747,18 @@ button:disabled {
   outline: none;
 }
 
+textarea.input-text {
+  min-height: 96px;
+  resize: vertical;
+  margin-top: 8px;
+  font-family: inherit;
+  line-height: 1.45;
+}
+
+.settings-group > .input-text + .input-text {
+  margin-top: 8px;
+}
+
 .input-text:focus {
   border-color: var(--accent-light);
 }
