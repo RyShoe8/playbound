@@ -40,7 +40,7 @@ export function LibraryModsDisclosure({ mods }: { mods: LibraryModItem[] }) {
               >
                 {m.title}
               </Link>
-              <div className="flex flex-wrap items-center gap-1">
+              <div className="flex flex-nowrap items-center gap-1">
                 <a
                   href={launcherPlayModUrl(m.slug)}
                   className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
@@ -58,9 +58,9 @@ export function LibraryModsDisclosure({ mods }: { mods: LibraryModItem[] }) {
                 <a
                   href={launcherUninstallModUrl(m.slug)}
                   className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/25"
-                  title="Remove mod"
+                  title="Uninstall"
                 >
-                  <Trash2 className="size-2.5" /> Uninstall
+                  <Trash2 className="size-2.5" /> Remove
                 </a>
               </div>
             </li>
