@@ -26,7 +26,7 @@ function ghHeaders(): HeadersInit {
 export function scoreGithubReleaseAsset(name: string): number {
   const lower = name.toLowerCase();
   if (SKIP_EXT.test(lower)) return -1;
-  if (!/\.(exe|msi|zip)$/i.test(lower)) return -1;
+  if (!/\.(exe|msi|zip|jar)$/i.test(lower)) return -1;
   if (/mac|darwin|osx|linux|appimage|\.dmg|\.deb|\.rpm|android|ios/i.test(lower)) return -1;
 
   let score = 10;
@@ -34,6 +34,7 @@ export function scoreGithubReleaseAsset(name: string): number {
   else if (/windows|win32|win\b/i.test(lower)) score += 20;
   if (/\.msi$/i.test(lower)) score += 28;
   else if (/\.exe$/i.test(lower)) score += 25;
+  else if (/\.jar$/i.test(lower)) score += 22;
   else if (/\.zip$/i.test(lower)) score += 15;
   if (/setup|installer|install|launcher|client/i.test(lower)) score += 20;
   if (/source|src\.|symbols|debug|pdb/i.test(lower)) score -= 40;
@@ -42,8 +43,8 @@ export function scoreGithubReleaseAsset(name: string): number {
 
 /** Looser pattern so the next release still matches after a heal. */
 function saferAssetPattern(name: string): string {
-  const ext = name.match(/\.(exe|msi|zip)$/i)?.[1]?.toLowerCase();
-  if (!ext) return "\\.(exe|msi|zip)$";
+  const ext = name.match(/\.(exe|msi|zip|jar)$/i)?.[1]?.toLowerCase();
+  if (!ext) return "\\.(exe|msi|zip|jar)$";
   if (/win64|x64|x86_64|amd64/i.test(name)) {
     return `(win64|x64|amd64|x86_64).*\\.${ext}$`;
   }
@@ -79,38 +80,57 @@ async function healFromGithubRepo(
 ): Promise<ProbeResult | null> {
   try {
     const release = await fetchLatestReleaseAssets(repo);
-    if (!release?.tag || !release.assets.length) return null;
+    if (release?.tag) {
+      const ranked = release.assets
+        .map((a) => ({ ...a, score: scoreGithubReleaseAsset(a.name) }))
+        .filter((a) => a.score > 0)
+        .sort((a, b) => {
+          if (preferZip) {
+            const az = /\.zip$/i.test(a.name) ? 1 : 0;
+            const bz = /\.zip$/i.test(b.name) ? 1 : 0;
+            if (az !== bz) return bz - az;
+          }
+          return b.score - a.score;
+        });
 
-    const ranked = release.assets
-      .map((a) => ({ ...a, score: scoreGithubReleaseAsset(a.name) }))
-      .filter((a) => a.score > 0)
-      .sort((a, b) => {
-        if (preferZip) {
-          const az = /\.zip$/i.test(a.name) ? 1 : 0;
-          const bz = /\.zip$/i.test(b.name) ? 1 : 0;
-          if (az !== bz) return bz - az;
+      const best = ranked[0];
+      if (best) {
+        const reach = await probeDirectUrl(best.browser_download_url, release.tag);
+        if (reach.status !== "broken") {
+          return {
+            status: "updated",
+            detectedVersion: release.tag,
+            note: `auto-healed: GitHub asset ${best.name}`,
+            patch: {
+              url: best.browser_download_url,
+              fileName: best.name,
+              versionLabel: release.tag,
+              directUrl: best.browser_download_url,
+              assetPattern: saferAssetPattern(best.name),
+            },
+          };
         }
-        return b.score - a.score;
-      });
+      }
 
-    const best = ranked[0];
-    if (!best) return null;
+      // Empty or unscorable assets — same zipball fallback as probeGithubZip.
+      const zipball = `https://github.com/${repo}/archive/refs/tags/${encodeURIComponent(release.tag)}.zip`;
+      const zipReach = await probeDirectUrl(zipball, release.tag);
+      if (zipReach.status !== "broken") {
+        return {
+          status: "updated",
+          detectedVersion: release.tag,
+          note: `auto-healed: release zipball ${release.tag}`,
+          patch: {
+            url: zipball,
+            fileName: `${repo.split("/").pop() || "mod"}-${release.tag}.zip`,
+            versionLabel: release.tag,
+            directUrl: zipball,
+          },
+        };
+      }
+    }
 
-    const reach = await probeDirectUrl(best.browser_download_url, release.tag);
-    if (reach.status === "broken") return null;
-
-    return {
-      status: "updated",
-      detectedVersion: release.tag,
-      note: `auto-healed: GitHub asset ${best.name}`,
-      patch: {
-        url: best.browser_download_url,
-        fileName: best.name,
-        versionLabel: release.tag,
-        directUrl: best.browser_download_url,
-        assetPattern: saferAssetPattern(best.name),
-      },
-    };
+    return null;
   } catch {
     return null;
   }

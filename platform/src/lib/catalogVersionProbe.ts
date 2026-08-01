@@ -85,11 +85,23 @@ export async function probeGithubZip(opts: {
           },
         };
       }
-      return {
-        status: "broken",
-        detectedVersion: release.tag,
-        note: `No asset matching /${assetPattern || "\\.zip$/"}/`,
-      };
+      // Match launcher resolveModDownload: no matching upload → use release zipball.
+      const zipball = `https://github.com/${repo}/archive/refs/tags/${encodeURIComponent(release.tag)}.zip`;
+      const reach = await probeDirectUrl(zipball, release.tag);
+      if (reach.status !== "broken") {
+        const newer = currentVersion && currentVersion !== release.tag;
+        return {
+          status: newer ? "updated" : "ok",
+          detectedVersion: release.tag,
+          note: "Using release zipball (no matching assets)",
+          patch: {
+            url: zipball,
+            fileName: `${repo.split("/").pop() || "mod"}-${release.tag}.zip`,
+            versionLabel: release.tag,
+            directUrl: zipball,
+          },
+        };
+      }
     }
     const branch = await githubDefaultBranch(repo);
     return {
