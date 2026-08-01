@@ -956,11 +956,15 @@ function stripRegQuotes(value) {
 const uninstallExeCache = new Map();
 
 function findExeFromUninstallRegistry(entry) {
-  if (process.platform !== "win32" || !entry?.title) return null;
-  const title = String(entry.title).trim();
-  if (!title) return null;
+  if (process.platform !== "win32" || !entry) return null;
+  const title = String(entry.title || "").trim();
+  const knownBases = (entry.knownExePaths || [])
+    .map((p) => path.basename(expandWinPath(p)).toLowerCase())
+    .filter(Boolean);
+  const cacheKey = title || knownBases.join("|") || entry.slug || "unknown";
+  if (!title && knownBases.length === 0) return null;
 
-  const cached = uninstallExeCache.get(title);
+  const cached = uninstallExeCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 5_000) return cached.exe;
 
   let exe = null;
@@ -968,14 +972,30 @@ function findExeFromUninstallRegistry(entry) {
     const ps = `
 $ErrorActionPreference = 'SilentlyContinue'
 $title = ${JSON.stringify(title)}
+$bases = @(${knownBases.map((b) => JSON.stringify(b)).join(",")})
 $paths = @(
   'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
   'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
   'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
 )
-$hit = Get-ItemProperty $paths |
-  Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
-  Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+$items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation }
+$hit = $null
+if ($title) {
+  $hit = $items |
+    Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
+    Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+}
+if (-not $hit -and $bases.Count -gt 0) {
+  $hit = $items | Where-Object {
+    $icon = [string]$_.DisplayIcon
+    $loc = [string]$_.InstallLocation
+    foreach ($b in $bases) {
+      if ($icon -and ($icon.ToLower().Contains($b))) { return $true }
+      if ($loc -and (Test-Path (Join-Path $loc $b))) { return $true }
+    }
+    $false
+  } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+}
 if (-not $hit) { return }
 @{
   DisplayName = $hit.DisplayName
@@ -1010,12 +1030,13 @@ if (-not $hit) { return }
             }
           }
           if (!exe) {
-            // Shallow walk for a matching exe name from known paths / hint
             const want = new Set(
               [
                 entry.exeHint && path.basename(entry.exeHint),
                 ...(entry.knownExePaths || []).map((p) => path.basename(expandWinPath(p))),
-              ].filter(Boolean).map((n) => n.toLowerCase())
+              ]
+                .filter(Boolean)
+                .map((n) => n.toLowerCase())
             );
             const walk = (dir, depth) => {
               if (exe || depth > 4) return;
@@ -1041,7 +1062,7 @@ if (-not $hit) { return }
     console.warn("[install] uninstall registry lookup failed:", err instanceof Error ? err.message : err);
   }
 
-  uninstallExeCache.set(title, { at: Date.now(), exe });
+  uninstallExeCache.set(cacheKey, { at: Date.now(), exe });
   return exe;
 }
 
@@ -1099,18 +1120,49 @@ function stopInstallerPoll() {
 function startInstallerPoll(slug, entry, version) {
   stopInstallerPoll();
   installerPollSlug = slug;
+  setPendingInstaller(slug, version);
   const started = Date.now();
   const maxMs = 10 * 60 * 1000;
   installerPollTimer = setInterval(() => {
     if (Date.now() - started > maxMs) {
       stopInstallerPoll();
+      clearPendingInstaller(slug);
+      notifyInstallDetectFailed(slug);
       return;
     }
+    invalidateUninstallCache(entry);
     const known = findKnownExecutable(entry);
     if (!known) return;
     stopInstallerPoll();
     markInstalledFromExe(slug, entry, known, version || "located");
   }, 3000);
+}
+
+/** Resume watching a pending installer after app restart. */
+function resumePendingInstallerPoll() {
+  const pending = getPendingInstaller();
+  if (!pending?.slug) return;
+  const state = loadState();
+  const existing = state[pending.slug];
+  if (existing?.exe && fs.existsSync(existing.exe)) {
+    clearPendingInstaller(pending.slug);
+    return;
+  }
+  const startedAt = pending.startedAt ? Date.parse(pending.startedAt) : NaN;
+  if (Number.isFinite(startedAt) && Date.now() - startedAt > 10 * 60 * 1000) {
+    clearPendingInstaller(pending.slug);
+    notifyInstallDetectFailed(pending.slug);
+    return;
+  }
+  const entry = catalog.find((e) => e.slug === pending.slug);
+  if (!entry?.knownExePaths?.length) return;
+  invalidateUninstallCache(entry);
+  const known = findKnownExecutable(entry);
+  if (known) {
+    markInstalledFromExe(pending.slug, entry, known, pending.version || "located");
+    return;
+  }
+  startInstallerPoll(pending.slug, entry, pending.version);
 }
 
 /** One-shot: pick up games already installed via knownExePaths but missing from state. */
@@ -1121,6 +1173,7 @@ function scanKnownInstalls() {
     if (!entry?.slug || !entry.knownExePaths?.length) continue;
     const existing = state[entry.slug];
     if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    invalidateUninstallCache(entry);
     const known = findKnownExecutable(entry);
     if (!known) continue;
     markInstalled(entry.slug, {
@@ -1220,7 +1273,49 @@ function markInstalled(slug, { version, exe, dir }) {
   const state = loadState();
   state[slug] = { version, exe, dir, installedAt: new Date().toISOString() };
   saveState(state);
+  clearPendingInstaller(slug);
   void syncLibrary(slug, "install", version);
+}
+
+function setPendingInstaller(slug, version) {
+  const settings = loadSettings();
+  settings.pendingInstaller = {
+    slug,
+    version: version || null,
+    startedAt: new Date().toISOString(),
+  };
+  saveSettings(settings);
+}
+
+function clearPendingInstaller(slug) {
+  const settings = loadSettings();
+  if (!settings.pendingInstaller) return;
+  if (slug && settings.pendingInstaller.slug !== slug) return;
+  delete settings.pendingInstaller;
+  saveSettings(settings);
+}
+
+function getPendingInstaller() {
+  const settings = loadSettings();
+  const pending = settings.pendingInstaller;
+  if (!pending?.slug) return null;
+  return pending;
+}
+
+function invalidateUninstallCache(entry) {
+  const title = String(entry?.title || "").trim();
+  if (title) uninstallExeCache.delete(title);
+  const knownBases = (entry?.knownExePaths || [])
+    .map((p) => path.basename(expandWinPath(p)).toLowerCase())
+    .filter(Boolean);
+  const cacheKey = title || knownBases.join("|") || entry?.slug || "unknown";
+  uninstallExeCache.delete(cacheKey);
+}
+
+function notifyInstallDetectFailed(slug) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-detect-failed", { slug });
+  }
 }
 
 async function writeJarLauncher(gameDir, jarName) {
@@ -2156,6 +2251,9 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     installed: Boolean(info?.exe && fs.existsSync(info.exe)),
     installedPath: info?.dir || null,
     version: info?.version || null,
+    isInstallerKind:
+      entry.kind === "github-installer" || entry.kind === "direct-installer",
+    pendingInstaller: getPendingInstaller()?.slug === slug,
   };
 });
 
@@ -2264,9 +2362,19 @@ function createWindow() {
   });
   win.on("focus", () => {
     void syncLibraryNow({ quiet: true });
+    const pending = getPendingInstaller();
+    if (pending?.slug) {
+      const entry = catalog.find((e) => e.slug === pending.slug);
+      if (entry) {
+        invalidateUninstallCache(entry);
+        const known = findKnownExecutable(entry);
+        if (known) markInstalledFromExe(pending.slug, entry, known, pending.version || "located");
+      }
+    }
   });
   win.webContents.once("did-finish-load", () => {
     const n = scanKnownInstalls();
+    resumePendingInstallerPoll();
     win.webContents.send("context", buildContextPayload());
     if (n > 0) {
       win.webContents.send("install-detected", { slug: null, scanned: n });
@@ -2279,6 +2387,14 @@ function createWindow() {
 async function testResolve() {
   let failures = 0;
   for (const entry of catalog) {
+    if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
+      if (!Array.isArray(entry.knownExePaths) || entry.knownExePaths.length === 0) {
+        failures++;
+        console.log(`FAIL  ${entry.slug}: installer kind missing knownExePaths`);
+      } else {
+        console.log(`OK    ${entry.slug} knownExePaths=${entry.knownExePaths.length}`);
+      }
+    }
     if (entry.kind === "external") {
       console.log(`SKIP  ${entry.slug} (external: ${entry.url})`);
       continue;
@@ -2381,7 +2497,16 @@ if (gotLock) {
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
 
     await refreshRemoteCatalog();
+    for (const entry of catalog) {
+      if (
+        (entry.kind === "github-installer" || entry.kind === "direct-installer") &&
+        !(Array.isArray(entry.knownExePaths) && entry.knownExePaths.length > 0)
+      ) {
+        console.warn(`[catalog] installer ${entry.slug} is missing knownExePaths`);
+      }
+    }
     scanKnownInstalls();
+    resumePendingInstallerPoll();
     setupAutoUpdater();
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));

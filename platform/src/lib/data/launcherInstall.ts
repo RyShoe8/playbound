@@ -48,8 +48,11 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "naev/naev",
     assetPattern: "win64\\.exe$",
     knownExePaths: [
-      "%LOCALAPPDATA%\\Programs\\naev\\naev.exe",
+      "%PROGRAMFILES%\\Naev\\naev.exe",
+      "%PROGRAMFILES(X86)%\\Naev\\naev.exe",
       "%PROGRAMFILES%\\naev\\naev.exe",
+      "%LOCALAPPDATA%\\Programs\\naev\\naev.exe",
+      "%LOCALAPPDATA%\\Programs\\Naev\\naev.exe",
     ],
   },
   xonotic: {
@@ -75,6 +78,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     knownExePaths: [
       "%PROGRAMFILES%\\Battle for Wesnoth 1.18\\wesnoth.exe",
       "%PROGRAMFILES(X86)%\\Battle for Wesnoth 1.18\\wesnoth.exe",
+      "%LOCALAPPDATA%\\Programs\\Battle for Wesnoth 1.18\\wesnoth.exe",
+      "%LOCALAPPDATA%\\Programs\\Battle for Wesnoth\\wesnoth.exe",
     ],
   },
   "0ad": {
@@ -86,6 +91,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     knownExePaths: [
       "%PROGRAMFILES%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
       "%PROGRAMFILES(X86)%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
+      "%LOCALAPPDATA%\\Programs\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
+      "%LOCALAPPDATA%\\0 A.D. alpha\\binaries\\system\\pyrogenesis.exe",
     ],
     installRoot: "%PROGRAMFILES%\\0 A.D. alpha",
   },
@@ -99,6 +106,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     knownExePaths: [
       "%LOCALAPPDATA%\\Programs\\Airshipper\\airshipper.exe",
       "%LOCALAPPDATA%\\airshipper\\airshipper.exe",
+      "%PROGRAMFILES%\\Airshipper\\airshipper.exe",
+      "%PROGRAMFILES(X86)%\\Airshipper\\airshipper.exe",
     ],
   },
   openttd: {
@@ -113,8 +122,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     assetPattern: "Beyond-All-Reason-.*\\.exe$",
     note: "Opens the BAR launcher — click Update, then Start.",
     knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\Beyond-All-Reason\\Beyond-All-Reason.exe",
       "%LOCALAPPDATA%\\Programs\\Beyond-All-Reason\\Beyond All Reason.exe",
+      "%LOCALAPPDATA%\\Programs\\Beyond All Reason\\Beyond-All-Reason.exe",
       "%LOCALAPPDATA%\\Programs\\Beyond All Reason\\Beyond All Reason.exe",
+      "%PROGRAMFILES%\\Beyond-All-Reason\\Beyond-All-Reason.exe",
+      "%PROGRAMFILES%\\Beyond All Reason\\Beyond All Reason.exe",
+      "%PROGRAMFILES(X86)%\\Beyond-All-Reason\\Beyond-All-Reason.exe",
     ],
   },
   "shattered-pixel-dungeon": {
@@ -144,6 +158,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     knownExePaths: [
       "%PROGRAMFILES%\\Hedgewars\\hedgewars.exe",
       "%PROGRAMFILES(X86)%\\Hedgewars\\hedgewars.exe",
+      "%LOCALAPPDATA%\\Programs\\Hedgewars\\hedgewars.exe",
     ],
   },
   unvanquished: {

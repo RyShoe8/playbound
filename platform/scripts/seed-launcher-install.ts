@@ -19,7 +19,15 @@ async function main() {
   await dbConnect();
 
   let patched = 0;
+  let missingPaths = 0;
   for (const [slug, recipe] of Object.entries(launcherInstallBySlug)) {
+    if (
+      (recipe.kind === "github-installer" || recipe.kind === "direct-installer") &&
+      !(Array.isArray(recipe.knownExePaths) && recipe.knownExePaths.length > 0)
+    ) {
+      console.warn(`seed:launcher-install — installer recipe ${slug} is missing knownExePaths`);
+      missingPaths++;
+    }
     const existing = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
     const prev = (existing as { launcherInstall?: Record<string, unknown> } | null)?.launcherInstall;
     const preservePinned =
@@ -55,7 +63,10 @@ async function main() {
   }
 
   console.log(`Patched launcherInstall for ${patched} game(s).`);
-  process.exit(0);
+  if (missingPaths > 0) {
+    console.warn(`WARNING: ${missingPaths} installer recipe(s) missing knownExePaths`);
+  }
+  process.exit(missingPaths > 0 ? 1 : 0);
 }
 
 main().catch((err) => {
