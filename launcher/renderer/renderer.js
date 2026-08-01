@@ -287,9 +287,9 @@ async function renderLibraryView() {
         row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
           e.stopPropagation();
           try {
-            setStatus(`Launching ${game.title || game.slug}…`);
-            await window.playbound.play(mod.baseGameSlug || game.slug);
-            setStatus(`Launched ${game.title || game.slug}`);
+            setStatus(`Launching ${title}…`);
+            await window.playbound.playMod(mod.slug);
+            setStatus(`Launched ${title}`);
           } catch (err) {
             setStatus(err.message || String(err), true);
           }
@@ -1169,9 +1169,9 @@ async function renderGameDetailView(slug) {
         `;
         row.querySelector(".btn-mod-play")?.addEventListener("click", async () => {
           try {
-            setStatus(`Launching…`);
-            await window.playbound.play(slug);
-            setStatus("Launched");
+            setStatus(`Launching ${mod.title}…`);
+            await window.playbound.playMod(mod.slug);
+            setStatus(`Launched ${mod.title}`);
           } catch (err) {
             setStatus(err.message || String(err), true);
           }

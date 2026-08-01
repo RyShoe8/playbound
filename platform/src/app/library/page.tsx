@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { Download, LibraryBig, LogIn, MonitorPlay, Play, Puzzle } from "lucide-react";
+import { Download, LibraryBig, LogIn, MonitorPlay, Play } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
@@ -12,6 +12,7 @@ import { listMods } from "@/lib/mods";
 import { launcherPlayUrl } from "@/lib/launcher";
 import { GameCard } from "@/components/GameCard";
 import { ConnectLauncherPanel } from "@/components/ConnectLauncherPanel";
+import { LibraryModsDisclosure } from "@/components/LibraryModsDisclosure";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
@@ -197,7 +198,7 @@ export default async function LibraryPage({
             const meta = bySlug.get(game.slug);
             const gameMods = modsByBase.get(game.slug) || [];
             return (
-              <div key={game.slug} className="space-y-2">
+              <div key={game.slug} className="w-44 shrink-0 space-y-2 sm:w-48">
                 <GameCard game={game} />
                 <div className="flex flex-wrap items-center gap-1 px-0.5">
                   {meta?.saved && (
@@ -219,28 +220,7 @@ export default async function LibraryPage({
                     </a>
                   )}
                 </div>
-                {gameMods.length > 0 && (
-                  <ul className="space-y-1 px-0.5">
-                    {gameMods.map((m) => (
-                      <li key={m.slug} className="flex max-w-[200px] items-center gap-1.5">
-                        <Link
-                          href={`/mods/${m.slug}`}
-                          className="inline-flex min-w-0 flex-1 items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-                        >
-                          <Puzzle className="size-3 shrink-0 text-primary" />
-                          <span className="truncate">{m.title}</span>
-                        </Link>
-                        <a
-                          href={launcherPlayUrl(game.slug)}
-                          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
-                          title={`Play ${game.title}`}
-                        >
-                          <Play className="size-2.5 fill-current" /> Play
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <LibraryModsDisclosure mods={gameMods} />
               </div>
             );
           })}
@@ -253,7 +233,7 @@ export default async function LibraryPage({
             return (
               <div
                 key={entry.gameSlug}
-                className="w-[160px] space-y-2 rounded-xl border border-border bg-card p-3"
+                className="w-44 shrink-0 space-y-2 rounded-xl border border-border bg-card p-3 sm:w-48"
               >
                 <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-secondary text-2xl font-extrabold text-muted-foreground">
                   {title.charAt(0)}
@@ -279,24 +259,7 @@ export default async function LibraryPage({
                     </a>
                   )}
                 </div>
-                {gameMods.length > 0 && (
-                  <ul className="space-y-1">
-                    {gameMods.map((m) => (
-                      <li key={m.slug} className="flex items-center gap-1.5">
-                        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-muted-foreground">
-                          {m.title}
-                        </span>
-                        <a
-                          href={launcherPlayUrl(entry.gameSlug)}
-                          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
-                          title={`Play ${title}`}
-                        >
-                          <Play className="size-2.5 fill-current" /> Play
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <LibraryModsDisclosure mods={gameMods} />
               </div>
             );
           })}
