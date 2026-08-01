@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Monitor, Puzzle, Terminal } from "lucide-react";
+import { getServerSession } from "next-auth/next";
+import { Monitor, Play, Puzzle, Terminal } from "lucide-react";
+import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/db";
+import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
-import { isLauncherInstallable } from "@/lib/launcher";
+import { isLauncherInstallable, launcherPlayUrl } from "@/lib/launcher";
 import { Badge } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
@@ -47,7 +51,28 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
   const baseGame = await getGame(mod.baseGameSlug);
   const canOneClickBase = baseGame ? isLauncherInstallable(baseGame) : false;
 
+  let modInstalled = false;
+  if (mod.downloadKind !== "external") {
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        await dbConnect();
+        const entry = await LibraryModEntry.findOne({
+          userId: session.user.id,
+          modSlug: mod.slug,
+          installed: true,
+        })
+          .select("_id")
+          .lean();
+        modInstalled = Boolean(entry);
+      }
+    } catch (err) {
+      console.error("Mod page library load failed:", err);
+    }
+  }
+
   const base = baseGame?.title ?? mod.baseGameSlug;
+  const showPlay = modInstalled && canOneClickBase;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -182,6 +207,14 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
           )}
         </p>
         <div className="flex flex-wrap items-start gap-4">
+          {showPlay ? (
+            <a
+              href={launcherPlayUrl(mod.baseGameSlug)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground hover:brightness-110"
+            >
+              <Play className="size-4 fill-current" /> Play {base}
+            </a>
+          ) : null}
           {mod.downloadKind === "external" ? (
             <a
               href={mod.website}
@@ -195,11 +228,15 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
             <LauncherInstallButton
               slug={mod.slug}
               kind="install-mod"
-              label="Install mod"
-              className="bg-play text-play-foreground border-transparent"
+              label={showPlay ? "Reinstall mod" : "Install mod"}
+              className={
+                showPlay
+                  ? "border border-border bg-secondary"
+                  : "bg-play text-play-foreground border-transparent"
+              }
             />
           )}
-          {canOneClickBase && (
+          {canOneClickBase && !showPlay && (
             <LauncherInstallButton
               slug={mod.baseGameSlug}
               label={`Install ${baseGame?.title ?? "base game"}`}

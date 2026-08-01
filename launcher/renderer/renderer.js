@@ -279,10 +279,21 @@ async function renderLibraryView() {
         row.innerHTML = `
           <span class="library-mod-title">${escapeHtml(title)}</span>
           <div class="library-mod-actions">
+            <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
             ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
             <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
           </div>
         `;
+        row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          try {
+            setStatus(`Launching ${game.title || game.slug}…`);
+            await window.playbound.play(mod.baseGameSlug || game.slug);
+            setStatus(`Launched ${game.title || game.slug}`);
+          } catch (err) {
+            setStatus(err.message || String(err), true);
+          }
+        });
         row.querySelector(".btn-mod-folder")?.addEventListener("click", (e) => {
           e.stopPropagation();
           window.playbound.openFolder(mod.dir);
@@ -1140,49 +1151,78 @@ async function renderGameDetailView(slug) {
     for (const mod of mods) {
       const row = document.createElement("div");
       row.className = "mod-row";
-      row.innerHTML = `
-        <div>
-          <div class="mod-row-title">${escapeHtml(mod.title)}</div>
-          <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
-        </div>
-        <button class="btn-sm ${mod.installed ? "btn-secondary" : "btn-primary"}" type="button">
-          ${
-            mod.installed
-              ? "Installed"
-              : mod.downloadKind === "external"
-                ? "Open download page"
-                : "Install"
-          }
-        </button>
-      `;
-      const btn = row.querySelector("button");
-      if (!mod.installed) {
-        btn.addEventListener("click", async () => {
-          const external = mod.downloadKind === "external";
-          setStatus(external ? `Opening download page for ${mod.title}…` : `Installing ${mod.title}…`);
-          try {
-            const res = await window.playbound.installMod(mod.slug);
-            if (res?.status === "external") {
-              setStatus("Opened download page in browser.");
-              setProgress(null);
-            } else if (res?.status === "waiting-base") {
-              setStatus("Installing base game first — finish the setup wizard…");
-              setProgress(null);
-            } else {
-              setStatus("Mod install complete");
-              setProgress(null);
-              renderGameDetailView(slug);
+      const external = mod.downloadKind === "external";
+      if (mod.installed && !external) {
+        row.innerHTML = `
+          <div>
+            <div class="mod-row-title">${escapeHtml(mod.title)}</div>
+            <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
+          </div>
+          <div class="library-mod-actions">
+            <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
+            ${
+              mod.installedPath
+                ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>`
+                : ""
             }
+          </div>
+        `;
+        row.querySelector(".btn-mod-play")?.addEventListener("click", async () => {
+          try {
+            setStatus(`Launching…`);
+            await window.playbound.play(slug);
+            setStatus("Launched");
           } catch (err) {
             setStatus(err.message || String(err), true);
-            setProgress(null);
           }
         });
-      } else if (mod.installedPath) {
-        btn.textContent = "Folder";
-        btn.addEventListener("click", () => window.playbound.openFolder(mod.installedPath));
+        row.querySelector(".btn-mod-folder")?.addEventListener("click", () => {
+          window.playbound.openFolder(mod.installedPath);
+        });
       } else {
-        btn.disabled = true;
+        row.innerHTML = `
+          <div>
+            <div class="mod-row-title">${escapeHtml(mod.title)}</div>
+            <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
+          </div>
+          <button class="btn-sm ${mod.installed ? "btn-secondary" : "btn-primary"}" type="button">
+            ${
+              mod.installed
+                ? "Installed"
+                : external
+                  ? "Open download page"
+                  : "Install"
+            }
+          </button>
+        `;
+        const btn = row.querySelector("button");
+        if (!mod.installed) {
+          btn.addEventListener("click", async () => {
+            setStatus(external ? `Opening download page for ${mod.title}…` : `Installing ${mod.title}…`);
+            try {
+              const res = await window.playbound.installMod(mod.slug);
+              if (res?.status === "external") {
+                setStatus("Opened download page in browser.");
+                setProgress(null);
+              } else if (res?.status === "waiting-base") {
+                setStatus("Installing base game first — finish the setup wizard…");
+                setProgress(null);
+              } else {
+                setStatus("Mod install complete");
+                setProgress(null);
+                renderGameDetailView(slug);
+              }
+            } catch (err) {
+              setStatus(err.message || String(err), true);
+              setProgress(null);
+            }
+          });
+        } else if (mod.installedPath) {
+          btn.textContent = "Folder";
+          btn.addEventListener("click", () => window.playbound.openFolder(mod.installedPath));
+        } else {
+          btn.disabled = true;
+        }
       }
       modsList.appendChild(row);
     }
