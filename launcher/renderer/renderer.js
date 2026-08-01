@@ -22,6 +22,16 @@ const serversState = {
   search: "",
   pingById: {},
   installedOnly: false,
+  sort: "players", // name | players | map | location | ping
+  sortDir: "desc", // asc | desc
+};
+
+const SERVER_SORT_DEFAULT_DIR = {
+  name: "asc",
+  players: "desc",
+  map: "asc",
+  location: "asc",
+  ping: "desc",
 };
 /** Cached mods list for the mod dropdown (from getModsCatalog). */
 let _modsCatalog = [];
@@ -521,7 +531,56 @@ function filteredServerRows() {
       return blob.includes(q);
     });
   }
-  return rows;
+
+  const { sort, sortDir } = serversState;
+  const dir = sortDir === "asc" ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    if (sort === "players") {
+      return dir * ((Number(a.players) || 0) - (Number(b.players) || 0));
+    }
+    if (sort === "ping") {
+      const idA = `${a.host}:${a.port}`;
+      const idB = `${b.host}:${b.port}`;
+      const pa = serversState.pingById[idA];
+      const pb = serversState.pingById[idB];
+      const aMissing = pa === undefined || pa == null;
+      const bMissing = pb === undefined || pb == null;
+      if (aMissing && bMissing) return 0;
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+      return dir * (pa - pb);
+    }
+    let av = "";
+    let bv = "";
+    if (sort === "name") {
+      av = a.name || "";
+      bv = b.name || "";
+    } else if (sort === "map") {
+      av = a.map || a.gameType || "";
+      bv = b.map || b.gameType || "";
+    } else {
+      av = formatServerLocation(a);
+      bv = formatServerLocation(b);
+    }
+    return dir * String(av).localeCompare(String(bv), undefined, { sensitivity: "base" });
+  });
+}
+
+function setServersSort(key) {
+  if (serversState.sort === key) {
+    serversState.sortDir = serversState.sortDir === "asc" ? "desc" : "asc";
+  } else {
+    serversState.sort = key;
+    serversState.sortDir = SERVER_SORT_DEFAULT_DIR[key] || "asc";
+  }
+  paintServersTable();
+}
+
+function serverSortHeader(key, label, title) {
+  const active = serversState.sort === key;
+  const arrow = active ? (serversState.sortDir === "asc" ? " ↑" : " ↓") : "";
+  const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
+  return `<th class="sortable${active ? " sorted" : ""}" data-sort="${key}"${titleAttr}>${escapeHtml(label)}${arrow}</th>`;
 }
 
 function updateServersStats(rows) {
@@ -564,11 +623,11 @@ function paintServersTable() {
   table.innerHTML = `
     <thead>
       <tr>
-        <th>Server Name</th>
-        <th>Players</th>
-        <th>Map / Mode</th>
-        <th>Location</th>
-        <th title="Host ping from this PC (ICMP, or TCP 443/80 fallback)">Ping</th>
+        ${serverSortHeader("name", "Server Name")}
+        ${serverSortHeader("players", "Players")}
+        ${serverSortHeader("map", "Map / Mode")}
+        ${serverSortHeader("location", "Location")}
+        ${serverSortHeader("ping", "Ping", "Host ping from this PC (ICMP, or TCP 443/80 fallback)")}
         <th>Action</th>
       </tr>
     </thead>
@@ -596,6 +655,10 @@ function paintServersTable() {
   }
 
   wrap.replaceChildren(table);
+
+  wrap.querySelectorAll("th.sortable").forEach((th) => {
+    th.addEventListener("click", () => setServersSort(th.dataset.sort));
+  });
 
   wrap.querySelectorAll(".btn-join").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -905,6 +968,8 @@ async function renderSettingsView() {
 }
 
 let detailActiveTab = "overview";
+/** Sort state for game-detail servers table */
+const detailServersSort = { sort: "players", sortDir: "desc" };
 
 async function renderGameDetailView(slug) {
   currentDetailSlug = slug;
@@ -1128,42 +1193,74 @@ async function renderGameDetailView(slug) {
   const serversRes = await window.playbound.getServers(slug);
   const sSec = document.getElementById("detail-servers-sec");
   if (serversRes.supported && serversRes.servers?.length > 0) {
-    const totalPlayers = serversRes.servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
-    sSec.innerHTML = `
-      <p class="servers-stats" style="margin-top:0">${totalPlayers} players · ${serversRes.servers.length} servers</p>
-      <table class="server-table">
-        <thead>
-          <tr>
-            <th>Server Name</th>
-            <th>Players</th>
-            <th>Map</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${serversRes.servers
-            .slice(0, 40)
-            .map(
-              (s) => `
-            <tr>
-              <td><strong>${escapeHtml(s.name)}</strong></td>
-              <td>${s.players ?? 0}/${s.maxPlayers ?? 0}</td>
-              <td>${escapeHtml(s.map || "Standard")}</td>
-              <td>
-                <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>
-              </td>
-            </tr>
-          `
-            )
-            .join("")}
-        </tbody>
-      </table>
-    `;
-    sSec.querySelectorAll(".btn-join-s").forEach((b) => {
-      b.addEventListener("click", async () => {
-        await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
+    const allServers = serversRes.servers.slice(0, 40);
+
+    function paintDetailServers() {
+      const { sort, sortDir } = detailServersSort;
+      const dir = sortDir === "asc" ? 1 : -1;
+      const sorted = allServers.slice().sort((a, b) => {
+        if (sort === "players") {
+          return dir * ((Number(a.players) || 0) - (Number(b.players) || 0));
+        }
+        const av = sort === "map" ? a.map || "" : a.name || "";
+        const bv = sort === "map" ? b.map || "" : b.name || "";
+        return dir * String(av).localeCompare(String(bv), undefined, { sensitivity: "base" });
       });
-    });
+      const totalPlayers = sorted.reduce((n, s) => n + (Number(s.players) || 0), 0);
+      const header = (key, label) => {
+        const active = detailServersSort.sort === key;
+        const arrow = active ? (detailServersSort.sortDir === "asc" ? " ↑" : " ↓") : "";
+        return `<th class="sortable${active ? " sorted" : ""}" data-sort="${key}">${escapeHtml(label)}${arrow}</th>`;
+      };
+      sSec.innerHTML = `
+        <p class="servers-stats" style="margin-top:0">${totalPlayers} players · ${sorted.length} servers</p>
+        <table class="server-table">
+          <thead>
+            <tr>
+              ${header("name", "Server Name")}
+              ${header("players", "Players")}
+              ${header("map", "Map")}
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted
+              .map(
+                (s) => `
+              <tr>
+                <td><strong>${escapeHtml(s.name)}</strong></td>
+                <td>${s.players ?? 0}/${s.maxPlayers ?? 0}</td>
+                <td>${escapeHtml(s.map || "Standard")}</td>
+                <td>
+                  <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>
+                </td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      `;
+      sSec.querySelectorAll("th.sortable").forEach((th) => {
+        th.addEventListener("click", () => {
+          const key = th.dataset.sort;
+          if (detailServersSort.sort === key) {
+            detailServersSort.sortDir = detailServersSort.sortDir === "asc" ? "desc" : "asc";
+          } else {
+            detailServersSort.sort = key;
+            detailServersSort.sortDir = SERVER_SORT_DEFAULT_DIR[key] || "asc";
+          }
+          paintDetailServers();
+        });
+      });
+      sSec.querySelectorAll(".btn-join-s").forEach((b) => {
+        b.addEventListener("click", async () => {
+          await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
+        });
+      });
+    }
+
+    paintDetailServers();
   } else if (detail.multiplayer) {
     sSec.innerHTML = `<p class="view-sub">No live servers listed right now — try the Servers view.</p>`;
   } else {
