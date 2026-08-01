@@ -25,6 +25,9 @@ let context = null;
 /** Background poll after opening a Windows installer wizard */
 let installerPollTimer = null;
 let installerPollSlug = null;
+/** @type {{ slug: string, abort: boolean, generation: number } | null} */
+let exeScanJob = null;
+let exeScanGeneration = 0;
 /** @type {import('electron-updater').UpdateInfo | null} */
 let pendingUpdate = null;
 
@@ -1120,14 +1123,13 @@ function stopInstallerPoll() {
 function startInstallerPoll(slug, entry, version) {
   stopInstallerPoll();
   installerPollSlug = slug;
-  setPendingInstaller(slug, version);
+  markPendingInstall(slug, version);
   const started = Date.now();
   const maxMs = 10 * 60 * 1000;
   installerPollTimer = setInterval(() => {
     if (Date.now() - started > maxMs) {
       stopInstallerPoll();
-      clearPendingInstaller(slug);
-      notifyInstallDetectFailed(slug);
+      // Keep pending Library card; disk scan may still be running or needsLocate.
       return;
     }
     invalidateUninstallCache(entry);
@@ -1136,33 +1138,30 @@ function startInstallerPoll(slug, entry, version) {
     stopInstallerPoll();
     markInstalledFromExe(slug, entry, known, version || "located");
   }, 3000);
+  void startExeScan(slug, entry, version);
 }
 
-/** Resume watching a pending installer after app restart. */
+/** Resume watching pending installs after app restart. */
 function resumePendingInstallerPoll() {
-  const pending = getPendingInstaller();
-  if (!pending?.slug) return;
   const state = loadState();
-  const existing = state[pending.slug];
-  if (existing?.exe && fs.existsSync(existing.exe)) {
-    clearPendingInstaller(pending.slug);
-    return;
+  for (const [slug, info] of Object.entries(state)) {
+    if (slug === "__mods__") continue;
+    if (!info || typeof info !== "object") continue;
+    if (info.exe && fs.existsSync(info.exe)) continue;
+    if (!info.pending) continue;
+    const entry = catalog.find((e) => e.slug === slug);
+    if (!entry) continue;
+    markPendingInstall(slug, info.version);
+    startInstallerPoll(slug, entry, info.version);
   }
-  const startedAt = pending.startedAt ? Date.parse(pending.startedAt) : NaN;
-  if (Number.isFinite(startedAt) && Date.now() - startedAt > 10 * 60 * 1000) {
-    clearPendingInstaller(pending.slug);
-    notifyInstallDetectFailed(pending.slug);
-    return;
+  const pending = getPendingInstaller();
+  if (pending?.slug && !state[pending.slug]) {
+    const entry = catalog.find((e) => e.slug === pending.slug);
+    if (entry) {
+      markPendingInstall(pending.slug, pending.version);
+      startInstallerPoll(pending.slug, entry, pending.version);
+    }
   }
-  const entry = catalog.find((e) => e.slug === pending.slug);
-  if (!entry?.knownExePaths?.length) return;
-  invalidateUninstallCache(entry);
-  const known = findKnownExecutable(entry);
-  if (known) {
-    markInstalledFromExe(pending.slug, entry, known, pending.version || "located");
-    return;
-  }
-  startInstallerPoll(pending.slug, entry, pending.version);
 }
 
 /** One-shot: pick up games already installed via knownExePaths but missing from state. */
@@ -1270,11 +1269,240 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
 }
 
 function markInstalled(slug, { version, exe, dir }) {
+  stopExeScan(slug);
+  stopInstallerPoll();
   const state = loadState();
   state[slug] = { version, exe, dir, installedAt: new Date().toISOString() };
   saveState(state);
   clearPendingInstaller(slug);
   void syncLibrary(slug, "install", version);
+}
+
+/** Show the game in Library immediately while we look for the exe. */
+function markPendingInstall(slug, version) {
+  const state = loadState();
+  const existing = state[slug];
+  if (existing?.exe && fs.existsSync(existing.exe)) return existing;
+  state[slug] = {
+    pending: true,
+    scanning: true,
+    version: version || existing?.version || null,
+    installedAt: existing?.installedAt || new Date().toISOString(),
+  };
+  saveState(state);
+  setPendingInstaller(slug, version);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", { slug, phase: "pending" });
+  }
+  return state[slug];
+}
+
+function setPendingScanning(slug, scanning) {
+  const state = loadState();
+  const info = state[slug];
+  if (!info?.pending) return;
+  info.scanning = Boolean(scanning);
+  state[slug] = info;
+  saveState(state);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", {
+      slug,
+      phase: scanning ? "scanning" : "needs-locate",
+    });
+  }
+}
+
+function dismissPendingInstall(slug) {
+  stopExeScan(slug);
+  stopInstallerPoll();
+  const state = loadState();
+  const info = state[slug];
+  if (info?.pending && !(info.exe && fs.existsSync(info.exe))) {
+    delete state[slug];
+    saveState(state);
+  }
+  clearPendingInstaller(slug);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", { slug, phase: "dismissed" });
+  }
+  return { status: "dismissed" };
+}
+
+function expectedExeBasenames(entry) {
+  const bases = new Set();
+  for (const raw of entry?.knownExePaths || []) {
+    const base = path.basename(expandWinPath(raw)).toLowerCase();
+    if (base && /\.(exe|cmd|bat)$/i.test(base)) bases.add(base);
+  }
+  if (entry?.exeHint && !/[|\\/]/.test(entry.exeHint)) {
+    const hint = String(entry.exeHint).toLowerCase();
+    if (/\.(exe|cmd|bat)$/.test(hint)) bases.add(hint);
+    else bases.add(`${hint}.exe`);
+  }
+  if (entry?.slug) bases.add(`${String(entry.slug).toLowerCase()}.exe`);
+  return [...bases];
+}
+
+function listFixedDriveRoots() {
+  if (process.platform !== "win32") {
+    return [app.getPath("home"), path.parse(app.getPath("home")).root].filter(Boolean);
+  }
+  try {
+    const out = execFileSync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "Get-CimInstance Win32_LogicalDisk -Filter \"DriveType=3\" | Select-Object -ExpandProperty DeviceID",
+      ],
+      { encoding: "utf8", timeout: 8_000, windowsHide: true }
+    );
+    return out
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => /^[A-Z]:$/i.test(l))
+      .map((l) => `${l}\\`);
+  } catch {
+    const homeRoot = path.parse(process.env.SYSTEMDRIVE || "C:").root;
+    return [homeRoot || "C:\\"];
+  }
+}
+
+const EXE_SCAN_SKIP_DIR = new Set(
+  [
+    "$recycle.bin",
+    "system volume information",
+    "windows",
+    "windows.old",
+    "programdata",
+    "node_modules",
+    ".git",
+    ".svn",
+    "temp",
+    "tmp",
+    "cache",
+    "packages",
+    "package cache",
+    "microsoft",
+    "windowsapps",
+    "winsxs",
+    "installer",
+    "assemblies",
+  ].map((s) => s.toLowerCase())
+);
+
+function shouldSkipScanDir(name) {
+  const n = String(name || "").toLowerCase();
+  if (!n || n.startsWith("$")) return true;
+  if (EXE_SCAN_SKIP_DIR.has(n)) return true;
+  if (n.endsWith(".tmp")) return true;
+  return false;
+}
+
+function stopExeScan(slug) {
+  if (!exeScanJob) return;
+  if (slug != null && exeScanJob.slug !== slug) return;
+  exeScanJob.abort = true;
+  exeScanJob = null;
+}
+
+/**
+ * Breadth-first search of fixed local drives for an expected exe basename.
+ * Caps at ~8 minutes; leaves pending Library entry for manual locate.
+ */
+async function startExeScan(slug, entry, version) {
+  // Always cancel any in-flight scan before starting another.
+  if (exeScanJob) {
+    exeScanJob.abort = true;
+    exeScanJob = null;
+  }
+  const bases = expectedExeBasenames(entry);
+  if (!bases.length) {
+    setPendingScanning(slug, false);
+    notifyInstallDetectFailed(slug);
+    return;
+  }
+  const want = new Set(bases);
+  const generation = ++exeScanGeneration;
+  const job = { slug, abort: false, generation };
+  exeScanJob = job;
+  setPendingScanning(slug, true);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", {
+      slug,
+      phase: "scanning",
+      message: `Searching for ${entry.title || slug}…`,
+    });
+  }
+
+  const roots = listFixedDriveRoots();
+  const queue = roots.slice();
+  const started = Date.now();
+  const maxMs = 8 * 60 * 1000;
+  let visited = 0;
+
+  const tick = async () => {
+    if (job.abort || exeScanJob !== job) return;
+    if (Date.now() - started > maxMs) {
+      if (exeScanJob === job) exeScanJob = null;
+      setPendingScanning(slug, false);
+      notifyInstallDetectFailed(slug);
+      return;
+    }
+    const batch = 40;
+    for (let i = 0; i < batch && queue.length; i++) {
+      if (job.abort) return;
+      const dir = queue.shift();
+      visited++;
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const ent of entries) {
+        if (job.abort) return;
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+          if (!shouldSkipScanDir(ent.name)) queue.push(full);
+        } else if (ent.isFile() && want.has(ent.name.toLowerCase())) {
+          if (exeScanJob === job) exeScanJob = null;
+          stopInstallerPoll();
+          markInstalledFromExe(slug, entry, full, version || "scanned");
+          return;
+        }
+      }
+    }
+    if (visited % 200 === 0 && win && !win.isDestroyed()) {
+      win.webContents.send("install-scan", {
+        slug,
+        phase: "scanning",
+        message: `Searching for ${entry.title || slug}…`,
+      });
+    }
+    if (!queue.length) {
+      if (exeScanJob === job) exeScanJob = null;
+      setPendingScanning(slug, false);
+      notifyInstallDetectFailed(slug);
+      return;
+    }
+    setImmediate(() => {
+      void tick();
+    });
+  };
+
+  invalidateUninstallCache(entry);
+  const known = findKnownExecutable(entry);
+  if (known) {
+    if (exeScanJob === job) exeScanJob = null;
+    stopInstallerPoll();
+    markInstalledFromExe(slug, entry, known, version || "located");
+    return;
+  }
+  setImmediate(() => {
+    void tick();
+  });
 }
 
 function setPendingInstaller(slug, version) {
@@ -1653,12 +1881,22 @@ async function confirmAndUninstallMod(slug) {
 }
 
 async function uninstallGame(slug) {
+  stopExeScan(slug);
+  stopInstallerPoll();
   const state = loadState();
   const info = state[slug];
   if (!info) return { status: "not-installed" };
+  // Pending-only: just drop tracking (no folder to delete).
+  if (info.pending && !(info.exe && fs.existsSync(info.exe))) {
+    delete state[slug];
+    saveState(state);
+    clearPendingInstaller(slug);
+    return { status: "dismissed" };
+  }
   if (info.dir) await fsp.rm(info.dir, { recursive: true, force: true });
   delete state[slug];
   saveState(state);
+  clearPendingInstaller(slug);
   void syncLibrary(slug, "uninstall");
   return { status: "uninstalled", dir: info.dir };
 }
@@ -1669,7 +1907,9 @@ function listInstalledGames() {
   for (const [slug, info] of Object.entries(state)) {
     if (slug === "__mods__") continue;
     if (!info || typeof info !== "object") continue;
-    if (!info.exe || !fs.existsSync(info.exe)) continue;
+    const ready = Boolean(info.exe && fs.existsSync(info.exe));
+    const pending = Boolean(info.pending) && !ready;
+    if (!ready && !pending) continue;
     const entry = catalog.find((e) => e.slug === slug);
     games.push({
       slug,
@@ -1683,7 +1923,9 @@ function listInstalledGames() {
       multiplayer: Boolean(entry?.multiplayer),
       version: info.version || null,
       dir: info.dir || null,
-      exe: info.exe,
+      exe: ready ? info.exe : null,
+      pending,
+      scanning: Boolean(pending && info.scanning),
     });
   }
   games.sort((a, b) => String(a.title).localeCompare(String(b.title)));
@@ -1776,6 +2018,7 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
 ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetDir));
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
+ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
@@ -2253,7 +2496,8 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     version: info?.version || null,
     isInstallerKind:
       entry.kind === "github-installer" || entry.kind === "direct-installer",
-    pendingInstaller: getPendingInstaller()?.slug === slug,
+    pendingInstaller: Boolean(info?.pending) || getPendingInstaller()?.slug === slug,
+    scanning: Boolean(info?.pending && info?.scanning),
   };
 });
 
