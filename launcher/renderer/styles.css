@@ -373,6 +373,16 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.server-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.server-table th.sortable:hover,
+.server-table th.sortable.sorted {
+  color: var(--text-main);
+}
+
 .server-table td {
   padding: 14px 16px;
   font-size: 13px;

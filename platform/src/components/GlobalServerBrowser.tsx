@@ -44,6 +44,24 @@ type ViewerGeo = {
   lon: number | null;
 };
 
+type SortKey = "name" | "players" | "map" | "location" | "est";
+type SortDir = "asc" | "desc";
+
+const SORT_DEFAULT_DIR: Record<SortKey, SortDir> = {
+  name: "asc",
+  players: "desc",
+  map: "asc",
+  location: "asc",
+  est: "desc",
+};
+
+function cmpNullLast(a: number | null, b: number | null, dir: SortDir): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return dir === "asc" ? a - b : b - a;
+}
+
 function formatLocation(server: GameServer): string {
   const loc = server.location;
   if (!loc) return "—";
@@ -101,6 +119,17 @@ export function GlobalServerBrowser({
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [modNote, setModNote] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("players");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function setSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(SORT_DEFAULT_DIR[key]);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -238,8 +267,30 @@ export function GlobalServerBrowser({
         `${s.name} ${s.map || ""} ${s.gameType || ""} ${s.players}/${s.maxPlayers}`.toLowerCase().includes(q)
       );
     }
-    return list;
-  }, [data, search]);
+    const sorted = list.slice().sort((a, b) => {
+      if (sortKey === "players") {
+        return cmpNullLast(Number(a.players) || 0, Number(b.players) || 0, sortDir);
+      }
+      if (sortKey === "est") {
+        return cmpNullLast(estFor(a), estFor(b), sortDir);
+      }
+      let av = "";
+      let bv = "";
+      if (sortKey === "name") {
+        av = a.name || "";
+        bv = b.name || "";
+      } else if (sortKey === "map") {
+        av = a.map || a.gameType || "";
+        bv = b.map || b.gameType || "";
+      } else {
+        av = formatLocation(a);
+        bv = formatLocation(b);
+      }
+      const cmp = av.localeCompare(bv, undefined, { sensitivity: "base" });
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [data, search, sortKey, sortDir, estFor]);
 
   const totalPlayers = useMemo(
     () => rows.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
@@ -247,6 +298,28 @@ export function GlobalServerBrowser({
   );
 
   const selectedTitle = games.find((g) => g.slug === effectiveGameSlug)?.title || effectiveGameSlug;
+
+  function sortLabel(key: SortKey, label: string, title?: string) {
+    const active = sortKey === key;
+    const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+    return (
+      <th className="px-3 py-2.5 font-semibold" title={title}>
+        <button
+          type="button"
+          onClick={() => setSort(key)}
+          title={title}
+          className={cn(
+            "inline-flex items-center gap-0.5 uppercase tracking-wide transition-colors",
+            active ? "text-foreground" : "hover:text-foreground"
+          )}
+          aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+        >
+          {label}
+          {arrow}
+        </button>
+      </th>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -360,13 +433,11 @@ export function GlobalServerBrowser({
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border bg-secondary/50 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-3 py-2.5 font-semibold">Server</th>
-                <th className="px-3 py-2.5 font-semibold">Players</th>
-                <th className="px-3 py-2.5 font-semibold">Map / Mode</th>
-                <th className="px-3 py-2.5 font-semibold">Location</th>
-                <th className="px-3 py-2.5 font-semibold" title="GeoIP estimate, not a real ping">
-                  Est.
-                </th>
+                {sortLabel("name", "Server")}
+                {sortLabel("players", "Players")}
+                {sortLabel("map", "Map / Mode")}
+                {sortLabel("location", "Location")}
+                {sortLabel("est", "Est.", "GeoIP estimate, not a real ping")}
                 <th className="px-3 py-2.5 font-semibold">Action</th>
               </tr>
             </thead>
