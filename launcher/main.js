@@ -62,6 +62,7 @@ function parseDeepLink(url) {
   // playbound://open-folder/openra
   // playbound://open-folder-mod/my-mod
   // playbound://uninstall-mod/my-mod
+  // playbound://locate/naev
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
   // playbound://sync
@@ -86,6 +87,7 @@ function parseDeepLink(url) {
       "open-folder",
       "open-folder-mod",
       "uninstall-mod",
+      "locate",
     ];
     if (!slug || !slugActions.includes(action)) {
       return null;
@@ -525,6 +527,33 @@ function handleDeepLink(parsed) {
         message: err?.message || String(err),
       });
     });
+    return;
+  }
+  if (parsed.action === "locate" && parsed.slug) {
+    showMainWindow();
+    void (async () => {
+      try {
+        await ensureCatalogEntry(parsed.slug);
+        const res = await locateGameExecutable(parsed.slug);
+        if (res?.status === "cancelled") {
+          notifyAccount({
+            connected: Boolean(loadSettings().launcherToken),
+            message: "Locate cancelled.",
+          });
+          return;
+        }
+        notifyAccount({
+          connected: Boolean(loadSettings().launcherToken),
+          message: "Install located — added to library.",
+        });
+      } catch (err) {
+        console.warn("locate failed:", err?.message || err);
+        notifyAccount({
+          connected: Boolean(loadSettings().launcherToken),
+          message: err?.message || String(err),
+        });
+      }
+    })();
     return;
   }
   void setContext(parsed);
@@ -2695,6 +2724,7 @@ function testDeepLink() {
     ["playbound://open-folder/openra", { action: "open-folder", slug: "openra" }],
     ["playbound://open-folder-mod/cool-mod", { action: "open-folder-mod", slug: "cool-mod" }],
     ["playbound://uninstall-mod/cool-mod", { action: "uninstall-mod", slug: "cool-mod" }],
+    ["playbound://locate/naev", { action: "locate", slug: "naev" }],
     ["not-a-deep-link", null],
   ];
   let failures = 0;

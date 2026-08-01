@@ -695,6 +695,74 @@ body {
   color: var(--accent, #a78bfa);
 }
 
+.library-add-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.library-add-panel.hidden {
+  display: none;
+}
+
+.library-add-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-add-search {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.library-add-list {
+  max-height: 280px;
+  overflow: auto;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.library-add-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.library-add-row:hover {
+  background: var(--bg);
+}
+
+.library-add-row-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.library-add-row-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 .library-card-actions {
   display: flex;
   flex-wrap: nowrap;

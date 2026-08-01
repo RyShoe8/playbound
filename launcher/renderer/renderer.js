@@ -123,6 +123,9 @@ window.playbound.onAccount((data) => {
   if (data?.message) setStatus(data.message, data.connected === false);
   refreshAccountStatus();
   if (currentView === "settings") renderSettingsView();
+  if (currentView === "library" && /library|located|Locate/i.test(data?.message || "")) {
+    renderLibraryView();
+  }
 });
 
 window.playbound.onUpdateStatus?.((data) => {
@@ -222,11 +225,17 @@ async function renderLibraryView() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Library</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Games and mods installed on this PC.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Games and mods on this PC — install or add an existing .exe.</p>
       </div>
+      <button class="btn-primary btn-sm" type="button" id="btn-library-add">Add game</button>
     </div>
+    <div id="library-add-panel" class="library-add-panel hidden"></div>
     <div id="library-list" class="library-grid" style="margin-top: 20px"></div>
   `;
+
+  document.getElementById("btn-library-add")?.addEventListener("click", () => {
+    void toggleLibraryAddPanel();
+  });
 
   const [installed, installedMods, modsCat] = await Promise.all([
     window.playbound.getInstalled(),
@@ -241,11 +250,17 @@ async function renderLibraryView() {
   if (!hasGames && !hasMods) {
     list.innerHTML = `
       <div style="text-align: center; padding: 40px 0; grid-column: 1 / -1;">
-        <p class="view-sub">You don't have any games installed yet.</p>
-        <button class="btn-primary" id="btn-go-games">Browse Games</button>
+        <p class="view-sub">No games yet. Browse the catalog or add one you already installed.</p>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+          <button class="btn-primary" id="btn-go-games" type="button">Browse Games</button>
+          <button class="btn-secondary" id="btn-empty-add" type="button">Add existing game</button>
+        </div>
       </div>
     `;
     document.getElementById("btn-go-games")?.addEventListener("click", () => navigateTo("games"));
+    document.getElementById("btn-empty-add")?.addEventListener("click", () => {
+      void toggleLibraryAddPanel(true);
+    });
     return;
   }
 
@@ -282,6 +297,90 @@ async function renderLibraryView() {
     };
     list.appendChild(buildLibraryGameBlock(fakeGame, mods, modTitles, { orphan: true }));
   }
+}
+
+async function toggleLibraryAddPanel(forceOpen = false) {
+  const panel = document.getElementById("library-add-panel");
+  if (!panel) return;
+  const willOpen = forceOpen || panel.classList.contains("hidden");
+  if (!willOpen) {
+    panel.classList.add("hidden");
+    panel.replaceChildren();
+    return;
+  }
+
+  panel.classList.remove("hidden");
+  panel.innerHTML = `<p class="view-sub">Loading catalog…</p>`;
+
+  const [catalog, installed] = await Promise.all([
+    window.playbound.getCatalog(),
+    window.playbound.getInstalled(),
+  ]);
+  const ready = new Set(
+    (installed || []).filter((g) => g.exe && !g.pending).map((g) => g.slug)
+  );
+  const catalogList = Array.isArray(catalog) ? catalog : catalog?.games || [];
+  const games = catalogList
+    .filter((g) => g?.slug && !ready.has(g.slug))
+    .sort((a, b) => String(a.title).localeCompare(String(b.title)));
+
+  panel.innerHTML = `
+    <div class="library-add-header">
+      <input type="search" id="library-add-search" class="library-add-search" placeholder="Search games…" autocomplete="off" />
+      <button type="button" class="btn-secondary btn-sm" id="library-add-close">Close</button>
+    </div>
+    <p class="view-sub" style="margin:8px 0">Pick a catalog game, then select its .exe on disk.</p>
+    <div id="library-add-list" class="library-add-list"></div>
+  `;
+
+  const listEl = document.getElementById("library-add-list");
+  const searchEl = document.getElementById("library-add-search");
+
+  function paint(filter = "") {
+    const q = filter.trim().toLowerCase();
+    const filtered = q
+      ? games.filter(
+          (g) =>
+            String(g.title).toLowerCase().includes(q) ||
+            String(g.slug).toLowerCase().includes(q)
+        )
+      : games;
+    listEl.replaceChildren();
+    if (!filtered.length) {
+      listEl.innerHTML = `<p class="view-sub">No matching games.</p>`;
+      return;
+    }
+    for (const game of filtered) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "library-add-row";
+      row.innerHTML = `<span class="library-add-row-title">${escapeHtml(game.title)}</span>
+        <span class="library-add-row-hint">Select .exe</span>`;
+      row.addEventListener("click", async () => {
+        try {
+          setStatus(`Locate ${game.title}…`);
+          const res = await window.playbound.locateExe(game.slug);
+          if (res?.status === "cancelled") {
+            setStatus("Locate cancelled.");
+            return;
+          }
+          setStatus(`${game.title} added to library.`);
+          renderLibraryView();
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+        }
+      });
+      listEl.appendChild(row);
+    }
+  }
+
+  paint();
+  searchEl?.addEventListener("input", () => paint(searchEl.value));
+  document.getElementById("library-add-close")?.addEventListener("click", () => {
+    panel.classList.add("hidden");
+    panel.replaceChildren();
+  });
+  searchEl?.focus();
 }
 
 function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {

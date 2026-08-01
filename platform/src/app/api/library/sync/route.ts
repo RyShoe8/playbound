@@ -93,22 +93,13 @@ export async function POST(req: Request) {
         success: true,
         gameSlug: entry.gameSlug,
         installed: true,
-        saved: entry.saved,
+        saved: false,
       });
     }
 
     const entry = await LibraryEntry.findOne({ userId: user._id, gameSlug: body.slug });
     if (!entry) {
       return NextResponse.json({ success: true, deleted: false });
-    }
-
-    if (entry.saved) {
-      entry.installed = false;
-      entry.version = undefined;
-      entry.installedAt = undefined;
-      entry.updatedAt = now;
-      await entry.save();
-      return NextResponse.json({ success: true, installed: false, saved: true });
     }
 
     await entry.deleteOne();
