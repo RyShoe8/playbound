@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Gamepad2, Newspaper, Star, Trophy, Wrench } from "lucide-react";
+import { Gamepad2, Newspaper, Play, Star, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import LibraryEntry from "@/lib/models/LibraryEntry";
+import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { fetchGithubReleases } from "@/lib/github";
 import { collectionsFeaturing, developersBySlug, listGames, getGame } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
@@ -26,6 +27,7 @@ import { modsForGame, type CatalogModPublic } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { GameInstallContent } from "@/components/GameInstallContent";
+import { launcherPlayUrl } from "@/lib/launcher";
 import {
   JsonLd,
   graph,
@@ -605,6 +607,24 @@ function OverviewTab({
 async function ModsTab({ game }: { game: Game }) {
   const mods = await modsForGame(game.slug);
 
+  let installedModSlugs = new Set<string>();
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      await dbConnect();
+      const rows = await LibraryModEntry.find({
+        userId: session.user.id,
+        installed: true,
+        baseGameSlug: game.slug,
+      })
+        .select("modSlug")
+        .lean();
+      installedModSlugs = new Set(rows.map((r) => String(r.modSlug)));
+    }
+  } catch (err) {
+    console.error("Mods tab library load failed:", err);
+  }
+
   if (mods.length === 0) {
     return (
       <div>
@@ -627,15 +647,29 @@ async function ModsTab({ game }: { game: Game }) {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {mods.map((mod) => (
-          <ModCard key={mod.slug} mod={mod} />
+          <ModCard
+            key={mod.slug}
+            mod={mod}
+            installed={installedModSlugs.has(mod.slug)}
+            baseGameTitle={game.title}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function ModCard({ mod }: { mod: CatalogModPublic }) {
+function ModCard({
+  mod,
+  installed,
+  baseGameTitle,
+}: {
+  mod: CatalogModPublic;
+  installed: boolean;
+  baseGameTitle: string;
+}) {
   const isExternal = mod.downloadKind === "external";
+  const showPlay = installed && !isExternal;
   return (
     <div className="flex flex-col rounded-xl border border-border bg-card p-4">
       <Link href={`/mods/${mod.slug}`} className="font-bold hover:text-primary">
@@ -647,14 +681,24 @@ function ModCard({ mod }: { mod: CatalogModPublic }) {
           ? "Opens in your browser via the launcher"
           : `Installs to ${mod.installRelativePath || "(game root)"}`}
         {mod.sizeMB ? ` · ~${mod.sizeMB} MB` : ""}
+        {showPlay ? " · Installed" : ""}
       </p>
       <div className="mt-auto flex flex-wrap items-start gap-2 pt-4">
-        <LauncherInstallButton
-          slug={mod.slug}
-          kind="install-mod"
-          label={isExternal ? "Open with launcher" : "Install mod"}
-          className="bg-play text-play-foreground border-transparent px-3 py-1.5 text-xs"
-        />
+        {showPlay ? (
+          <a
+            href={launcherPlayUrl(mod.baseGameSlug)}
+            className="inline-flex items-center gap-1 rounded-full bg-play px-3 py-1.5 text-xs font-bold text-play-foreground hover:brightness-110"
+          >
+            <Play className="size-3 fill-current" /> Play {baseGameTitle}
+          </a>
+        ) : (
+          <LauncherInstallButton
+            slug={mod.slug}
+            kind="install-mod"
+            label={isExternal ? "Open with launcher" : "Install mod"}
+            className="bg-play text-play-foreground border-transparent px-3 py-1.5 text-xs"
+          />
+        )}
         <Link
           href={`/mods/${mod.slug}`}
           className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"

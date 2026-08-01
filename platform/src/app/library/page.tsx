@@ -222,14 +222,21 @@ export default async function LibraryPage({
                 {gameMods.length > 0 && (
                   <ul className="space-y-1 px-0.5">
                     {gameMods.map((m) => (
-                      <li key={m.slug}>
+                      <li key={m.slug} className="flex max-w-[200px] items-center gap-1.5">
                         <Link
                           href={`/mods/${m.slug}`}
-                          className="inline-flex max-w-[160px] items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                          className="inline-flex min-w-0 flex-1 items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
                         >
                           <Puzzle className="size-3 shrink-0 text-primary" />
                           <span className="truncate">{m.title}</span>
                         </Link>
+                        <a
+                          href={launcherPlayUrl(game.slug)}
+                          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
+                          title={`Play ${game.title}`}
+                        >
+                          <Play className="size-2.5 fill-current" /> Play
+                        </a>
                       </li>
                     ))}
                   </ul>
@@ -275,8 +282,17 @@ export default async function LibraryPage({
                 {gameMods.length > 0 && (
                   <ul className="space-y-1">
                     {gameMods.map((m) => (
-                      <li key={m.slug} className="truncate text-[11px] font-semibold text-muted-foreground">
-                        {m.title}
+                      <li key={m.slug} className="flex items-center gap-1.5">
+                        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-muted-foreground">
+                          {m.title}
+                        </span>
+                        <a
+                          href={launcherPlayUrl(entry.gameSlug)}
+                          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
+                          title={`Play ${title}`}
+                        >
+                          <Play className="size-2.5 fill-current" /> Play
+                        </a>
                       </li>
                     ))}
                   </ul>
