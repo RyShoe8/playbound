@@ -68,3 +68,23 @@ export function launcherPlayUrl(slug: string): string {
 export function launcherPlayModUrl(slug: string): string {
   return `playbound://play-mod/${slug}`;
 }
+
+/** Uninstall a game via the launcher. */
+export function launcherUninstallUrl(slug: string): string {
+  return `playbound://uninstall/${slug}`;
+}
+
+/** Open a game install folder via the launcher. */
+export function launcherOpenFolderUrl(slug: string): string {
+  return `playbound://open-folder/${slug}`;
+}
+
+/** Uninstall / untrack a mod via the launcher. */
+export function launcherUninstallModUrl(slug: string): string {
+  return `playbound://uninstall-mod/${slug}`;
+}
+
+/** Open a mod install folder via the launcher. */
+export function launcherOpenModFolderUrl(slug: string): string {
+  return `playbound://open-folder-mod/${slug}`;
+}

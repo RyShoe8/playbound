@@ -56,6 +56,9 @@ function parseDeepLink(url) {
   // playbound://install/openra
   // playbound://install-mod/my-mod
   // playbound://play-mod/my-mod
+  // playbound://open-folder/openra
+  // playbound://open-folder-mod/my-mod
+  // playbound://uninstall-mod/my-mod
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
   // playbound://sync
@@ -70,7 +73,18 @@ function parseDeepLink(url) {
       return { action: "link", token: u.searchParams.get("token") || "" };
     }
     const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (!slug || !["install", "play", "uninstall", "join", "install-mod", "play-mod"].includes(action)) {
+    const slugActions = [
+      "install",
+      "play",
+      "uninstall",
+      "join",
+      "install-mod",
+      "play-mod",
+      "open-folder",
+      "open-folder-mod",
+      "uninstall-mod",
+    ];
+    if (!slug || !slugActions.includes(action)) {
       return null;
     }
     /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string }} */
@@ -459,6 +473,50 @@ function handleDeepLink(parsed) {
     showMainWindow();
     void playMod(parsed.slug).catch((err) => {
       console.warn("play-mod failed:", err?.message || err);
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: err?.message || String(err),
+      });
+    });
+    return;
+  }
+  if (parsed.action === "open-folder" && parsed.slug) {
+    showMainWindow();
+    void openGameFolder(parsed.slug).catch((err) => {
+      console.warn("open-folder failed:", err?.message || err);
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: err?.message || String(err),
+      });
+    });
+    return;
+  }
+  if (parsed.action === "open-folder-mod" && parsed.slug) {
+    showMainWindow();
+    void openModFolder(parsed.slug).catch((err) => {
+      console.warn("open-folder-mod failed:", err?.message || err);
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: err?.message || String(err),
+      });
+    });
+    return;
+  }
+  if (parsed.action === "uninstall" && parsed.slug) {
+    showMainWindow();
+    void confirmAndUninstallGame(parsed.slug).catch((err) => {
+      console.warn("uninstall failed:", err?.message || err);
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: err?.message || String(err),
+      });
+    });
+    return;
+  }
+  if (parsed.action === "uninstall-mod" && parsed.slug) {
+    showMainWindow();
+    void confirmAndUninstallMod(parsed.slug).catch((err) => {
+      console.warn("uninstall-mod failed:", err?.message || err);
       notifyAccount({
         connected: Boolean(loadSettings().launcherToken),
         message: err?.message || String(err),
@@ -1440,6 +1498,65 @@ async function playMod(slug) {
   return { ...result, portable: false, baseGameSlug: base };
 }
 
+async function openGameFolder(slug) {
+  const state = loadState();
+  const info = state[slug];
+  if (!info?.dir || !fs.existsSync(info.dir)) {
+    throw new Error("Game is not installed or folder is missing");
+  }
+  await shell.openPath(info.dir);
+  return { status: "opened", dir: info.dir };
+}
+
+async function openModFolder(slug) {
+  const state = loadState();
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const info = mods[slug];
+  if (!info?.dir || !fs.existsSync(info.dir)) {
+    throw new Error("Mod folder is missing");
+  }
+  await shell.openPath(info.dir);
+  return { status: "opened", dir: info.dir };
+}
+
+async function confirmAndUninstallGame(slug) {
+  const state = loadState();
+  const info = state[slug];
+  if (!info) throw new Error("Game is not installed");
+  const entry = catalog.find((e) => e.slug === slug);
+  const title = entry?.title || slug;
+  const { response } = await dialog.showMessageBox(win || undefined, {
+    type: "warning",
+    buttons: ["Uninstall", "Cancel"],
+    defaultId: 1,
+    cancelId: 1,
+    title: "Uninstall game",
+    message: `Uninstall ${title}?`,
+    detail: "This removes the install folder from this PC.",
+  });
+  if (response !== 0) return { status: "cancelled" };
+  return uninstallGame(slug);
+}
+
+async function confirmAndUninstallMod(slug) {
+  const state = loadState();
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const info = mods[slug];
+  if (!info) throw new Error("Mod is not installed");
+  const title = info.title || slug;
+  const { response } = await dialog.showMessageBox(win || undefined, {
+    type: "warning",
+    buttons: ["Remove", "Cancel"],
+    defaultId: 1,
+    cancelId: 1,
+    title: "Remove mod",
+    message: `Remove ${title} from your library?`,
+    detail: "This stops tracking the mod. Portable installs are not deleted from disk.",
+  });
+  if (response !== 0) return { status: "cancelled" };
+  return uninstallMod(slug);
+}
+
 async function uninstallGame(slug) {
   const state = loadState();
   const info = state[slug];
@@ -1719,6 +1836,17 @@ ipcMain.handle("get-mods-catalog", async () => {
     return await res.json();
   } catch {
     return { mods: [] };
+  }
+});
+ipcMain.handle("get-events", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+    });
+    if (!res.ok) return { events: [] };
+    return await res.json();
+  } catch {
+    return { events: [] };
   }
 });
 ipcMain.handle("get-all-servers", async () => {
@@ -2204,6 +2332,9 @@ function testDeepLink() {
     ["playbound://link?token=abc", { action: "link", token: "abc" }],
     ["playbound://install-mod/cool-mod", { action: "install-mod", slug: "cool-mod" }],
     ["playbound://play-mod/openra-tiberian-dawn-hd", { action: "play-mod", slug: "openra-tiberian-dawn-hd" }],
+    ["playbound://open-folder/openra", { action: "open-folder", slug: "openra" }],
+    ["playbound://open-folder-mod/cool-mod", { action: "open-folder-mod", slug: "cool-mod" }],
+    ["playbound://uninstall-mod/cool-mod", { action: "uninstall-mod", slug: "cool-mod" }],
     ["not-a-deep-link", null],
   ];
   let failures = 0;

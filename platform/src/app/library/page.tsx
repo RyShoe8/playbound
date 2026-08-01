@@ -1,21 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { Download, LibraryBig, LogIn, MonitorPlay, Play } from "lucide-react";
+import { Download, FolderOpen, LibraryBig, LogIn, Play, Trash2 } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
-import User from "@/lib/models/User";
 import { gamesFor } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
-import { launcherPlayUrl } from "@/lib/launcher";
+import {
+  launcherOpenFolderUrl,
+  launcherPlayUrl,
+  launcherUninstallUrl,
+} from "@/lib/launcher";
 import { GameCard } from "@/components/GameCard";
-import { ConnectLauncherPanel } from "@/components/ConnectLauncherPanel";
 import { LibraryModsDisclosure } from "@/components/LibraryModsDisclosure";
 import { Badge, EmptyHint } from "@/components/ui/bits";
-import { cn } from "@/lib/utils";
-import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -23,16 +23,35 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type Filter = "all" | "saved" | "installed";
+function InstalledActions({ slug }: { slug: string }) {
+  return (
+    <>
+      <a
+        href={launcherPlayUrl(slug)}
+        className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
+      >
+        <Play className="size-3 fill-current" /> Play
+      </a>
+      <a
+        href={launcherOpenFolderUrl(slug)}
+        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+        title="Open install folder"
+      >
+        <FolderOpen className="size-3" /> Folder
+      </a>
+      <a
+        href={launcherUninstallUrl(slug)}
+        className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-bold text-destructive hover:bg-destructive/25"
+        title="Uninstall"
+      >
+        <Trash2 className="size-3" /> Uninstall
+      </a>
+    </>
+  );
+}
 
-export default async function LibraryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string; linked?: string }>;
-}) {
+export default async function LibraryPage() {
   const session = await getServerSession(authOptions);
-  const { filter: raw } = await searchParams;
-  const filter: Filter = raw === "saved" || raw === "installed" ? raw : "all";
 
   if (!session?.user) {
     return (
@@ -40,7 +59,7 @@ export default async function LibraryPage({
         <LibraryBig className="size-10 text-primary" />
         <h1 className="text-2xl font-extrabold">Sign in to see your library</h1>
         <p className="text-sm text-muted-foreground">
-          Save games from the site and sync installs from the PlayBound Launcher — all in one place.
+          Save games from the site and sync installs from the PlayBound app — all in one place.
         </p>
         <Link
           href="/login?callbackUrl=/library"
@@ -57,11 +76,9 @@ export default async function LibraryPage({
 
   let entries: { gameSlug: string; saved: boolean; installed: boolean }[] = [];
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
-  let launcherConnected = false;
-  let launcherCreatedAt: string | null = null;
   try {
     await dbConnect();
-    const [rows, modRows, user] = await Promise.all([
+    const [rows, modRows] = await Promise.all([
       LibraryEntry.find({
         userId: session.user.id,
         $or: [{ saved: true }, { installed: true }],
@@ -74,7 +91,6 @@ export default async function LibraryPage({
       })
         .sort({ updatedAt: -1 })
         .lean(),
-      User.findById(session.user.id).select("+launcherTokenHash +launcherTokenCreatedAt").lean(),
     ]);
     entries = rows.map((r) => ({
       gameSlug: r.gameSlug,
@@ -85,28 +101,15 @@ export default async function LibraryPage({
       modSlug: String(r.modSlug),
       baseGameSlug: String(r.baseGameSlug),
     }));
-    launcherConnected = Boolean(user?.launcherTokenHash);
-    launcherCreatedAt = user?.launcherTokenCreatedAt
-      ? new Date(user.launcherTokenCreatedAt).toISOString()
-      : null;
   } catch (err) {
     console.error("Library page load failed:", err);
   }
 
-  const filtered =
-    filter === "saved"
-      ? entries.filter((e) => e.saved)
-      : filter === "installed"
-        ? entries.filter((e) => e.installed)
-        : entries;
-
-  const bySlug = new Map(filtered.map((e) => [e.gameSlug, e]));
-  const games = await gamesFor(filtered.map((e) => e.gameSlug));
+  const bySlug = new Map(entries.map((e) => [e.gameSlug, e]));
+  const games = await gamesFor(entries.map((e) => e.gameSlug));
   const knownSlugs = new Set(games.map((g) => g.slug));
-  const orphanEntries = filtered.filter((e) => !knownSlugs.has(e.gameSlug));
+  const orphanEntries = entries.filter((e) => !knownSlugs.has(e.gameSlug));
   const hasAny = entries.length > 0;
-  const hasInstalled = entries.some((e) => e.installed);
-  const hasVisible = games.length > 0 || orphanEntries.length > 0;
 
   const allMods = await listMods();
   const modBySlug = new Map(allMods.map((m) => [m.slug, m]));
@@ -119,52 +122,20 @@ export default async function LibraryPage({
     modsByBase.set(entry.baseGameSlug, list);
   }
 
-  const chips: { key: Filter; label: string }[] = [
-    { key: "all", label: "All" },
-    { key: "saved", label: "Saved" },
-    { key: "installed", label: "Installed" },
-  ];
-
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
         <p className="mt-1 text-muted-foreground">
-          Games you saved on PlayBound and installs synced from the launcher — including mods under
-          each game.
+          Games you saved on PlayBound and installs synced from the app — including mods under each
+          game.
         </p>
-      </div>
-
-      <Suspense fallback={null}>
-        <ConnectLauncherPanel
-          initiallyConnected={launcherConnected}
-          initiallyCreatedAt={launcherCreatedAt}
-        />
-      </Suspense>
-
-      <div className="flex flex-wrap gap-2">
-        {chips.map((c) => (
-          <Link
-            key={c.key}
-            href={c.key === "all" ? "/library" : `/library?filter=${c.key}`}
-            className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
-              filter === c.key
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
-            )}
-          >
-            {c.label}
-          </Link>
-        ))}
       </div>
 
       {!hasAny ? (
         <div className="space-y-4">
           <EmptyHint icon={LibraryBig}>
-            {launcherConnected
-              ? "No games here yet. Install a game with the launcher, or hit Refresh above if you just connected — synced installs should show up shortly."
-              : "Your library is empty. Save games from any game page, or connect the launcher to sync installs."}
+            Your library is empty. Save games from any game page, or install with the PlayBound app.
           </EmptyHint>
           <div className="flex flex-wrap justify-center gap-2">
             <Link
@@ -173,25 +144,14 @@ export default async function LibraryPage({
             >
               Browse Discover
             </Link>
-            {!launcherConnected && (
-              <a
-                href={process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher"}
-                className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
-              >
-                Download the Launcher
-              </a>
-            )}
+            <a
+              href={process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher"}
+              className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
+            >
+              Download the Launcher
+            </a>
           </div>
         </div>
-      ) : !hasVisible ? (
-        <EmptyHint icon={MonitorPlay}>
-          No games match this filter.
-          {!hasInstalled && filter === "installed"
-            ? launcherConnected
-              ? " Install a game with the launcher, then refresh."
-              : " Connect the launcher and install a game to see it here."
-            : ""}
-        </EmptyHint>
       ) : (
         <div className="flex flex-wrap gap-4 sm:gap-5">
           {games.map((game) => {
@@ -211,14 +171,7 @@ export default async function LibraryPage({
                       <Download className="size-3" /> Installed
                     </Badge>
                   )}
-                  {meta?.installed && (
-                    <a
-                      href={launcherPlayUrl(game.slug)}
-                      className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
-                    >
-                      <Play className="size-3 fill-current" /> Play
-                    </a>
-                  )}
+                  {meta?.installed && <InstalledActions slug={game.slug} />}
                 </div>
                 <LibraryModsDisclosure mods={gameMods} />
               </div>
@@ -250,29 +203,13 @@ export default async function LibraryPage({
                       <Download className="size-3" /> Installed
                     </Badge>
                   )}
-                  {entry.installed && (
-                    <a
-                      href={launcherPlayUrl(entry.gameSlug)}
-                      className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
-                    >
-                      <Play className="size-3 fill-current" /> Play
-                    </a>
-                  )}
+                  {entry.installed && <InstalledActions slug={entry.gameSlug} />}
                 </div>
                 <LibraryModsDisclosure mods={gameMods} />
               </div>
             );
           })}
         </div>
-      )}
-
-      {hasAny && !hasInstalled && !launcherConnected && filter !== "installed" && (
-        <p className="text-sm text-muted-foreground">
-          Tip: connect the launcher above so installs appear here automatically.{" "}
-          <Link href="/launcher" className="font-semibold text-primary hover:underline">
-            Launcher page →
-          </Link>
-        </p>
       )}
     </div>
   );

@@ -43,9 +43,11 @@ let _installedModsList = [];
 const navBtns = document.querySelectorAll(".nav-btn");
 const views = {
   home: document.getElementById("view-home"),
-  library: document.getElementById("view-library"),
-  servers: document.getElementById("view-servers"),
   games: document.getElementById("view-games"),
+  mods: document.getElementById("view-mods"),
+  servers: document.getElementById("view-servers"),
+  events: document.getElementById("view-events"),
+  library: document.getElementById("view-library"),
   settings: document.getElementById("view-settings"),
   gameDetail: document.getElementById("view-game-detail"),
   deepLink: document.getElementById("view-deep-link"),
@@ -70,9 +72,11 @@ function navigateTo(viewName, params = {}) {
   });
 
   if (viewName === "home") renderHomeView();
-  else if (viewName === "library") renderLibraryView();
-  else if (viewName === "servers") renderServersView();
   else if (viewName === "games") renderGamesView();
+  else if (viewName === "mods") renderModsView();
+  else if (viewName === "servers") renderServersView();
+  else if (viewName === "events") renderEventsView();
+  else if (viewName === "library") renderLibraryView();
   else if (viewName === "settings") renderSettingsView();
   else if (viewName === "gameDetail") renderGameDetailView(params.slug);
 }
@@ -217,29 +221,12 @@ async function renderLibraryView() {
   container.innerHTML = `
     <div class="section-header" style="margin-top: 0">
       <div>
-        <h1 class="view-title" style="margin: 0">My Library</h1>
+        <h1 class="view-title" style="margin: 0">Library</h1>
         <p class="view-sub" style="margin: 4px 0 0 0">Games and mods installed on this PC.</p>
       </div>
-      <button class="btn-secondary btn-sm" id="btn-sync-lib">Sync now</button>
     </div>
-    <div id="library-list" style="margin-top: 20px"></div>
+    <div id="library-list" class="library-grid" style="margin-top: 20px"></div>
   `;
-
-  document.getElementById("btn-sync-lib").addEventListener("click", async () => {
-    setStatus("Syncing library with playbound.club...");
-    if (window.playbound.syncLibraryNow) {
-      const res = await window.playbound.syncLibraryNow();
-      if (!res?.connected) {
-        setStatus("Sign in from Settings to sync your library.", true);
-        return;
-      }
-      if (res.error) setStatus(`Sync issue: ${res.error}`, true);
-      else if (res.synced > 0) setStatus(`Synced ${res.synced} install${res.synced === 1 ? "" : "s"}.`);
-      else setStatus("Library sync complete.");
-    } else {
-      await window.playbound.openDeepLink("playbound://sync");
-    }
-  });
 
   const [installed, installedMods, modsCat] = await Promise.all([
     window.playbound.getInstalled(),
@@ -248,10 +235,12 @@ async function renderLibraryView() {
   ]);
   const modTitles = new Map((modsCat.mods || []).map((m) => [m.slug, m.title]));
   const list = document.getElementById("library-list");
+  const hasGames = installed && installed.length > 0;
+  const hasMods = installedMods && installedMods.length > 0;
 
-  if (!installed || installed.length === 0) {
+  if (!hasGames && !hasMods) {
     list.innerHTML = `
-      <div style="text-align: center; padding: 40px 0;">
+      <div style="text-align: center; padding: 40px 0; grid-column: 1 / -1;">
         <p class="view-sub">You don't have any games installed yet.</p>
         <button class="btn-primary" id="btn-go-games">Browse Games</button>
       </div>
@@ -261,54 +250,298 @@ async function renderLibraryView() {
   }
 
   list.replaceChildren();
-  for (const game of installed) {
-    const block = document.createElement("div");
-    block.className = "library-game-block";
-    const card = createGameCard(game);
-    block.appendChild(card);
+  const installedSlugs = new Set((installed || []).map((g) => g.slug));
 
+  for (const game of installed || []) {
     const gameMods = (installedMods || []).filter((m) => m.baseGameSlug === game.slug);
-    if (gameMods.length) {
-      const modsWrap = document.createElement("div");
-      modsWrap.className = "library-mods";
-      modsWrap.innerHTML = `<div class="library-mods-label">Installed mods</div>`;
-      for (const mod of gameMods) {
-        const row = document.createElement("div");
-        row.className = "library-mod-row";
-        const title = modTitles.get(mod.slug) || mod.title || mod.slug;
-        row.innerHTML = `
-          <span class="library-mod-title">${escapeHtml(title)}</span>
-          <div class="library-mod-actions">
-            <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
-            ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
-            <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
+    list.appendChild(buildLibraryGameBlock(game, gameMods, modTitles));
+  }
+
+  const orphanMods = (installedMods || []).filter(
+    (m) => m.baseGameSlug && !installedSlugs.has(m.baseGameSlug)
+  );
+  const orphansByBase = new Map();
+  for (const mod of orphanMods) {
+    const key = mod.baseGameSlug;
+    if (!orphansByBase.has(key)) orphansByBase.set(key, []);
+    orphansByBase.get(key).push(mod);
+  }
+  for (const [baseSlug, mods] of orphansByBase) {
+    const title = baseSlug
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    const fakeGame = {
+      slug: baseSlug,
+      title,
+      blurb: "",
+      art: ["#312e81", "#a78bfa"],
+      coverImage: null,
+      dir: null,
+      exe: null,
+    };
+    list.appendChild(buildLibraryGameBlock(fakeGame, mods, modTitles, { orphan: true }));
+  }
+}
+
+function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
+  const block = document.createElement("div");
+  block.className = "library-game-block";
+
+  if (opts.orphan) {
+    const card = document.createElement("div");
+    card.className = "game-card library-orphan-card";
+    card.innerHTML = `
+      <div class="card-banner" style="background:linear-gradient(135deg,#312e81,#a78bfa)">${escapeHtml((game.title || "?").charAt(0))}</div>
+      <div class="card-body">
+        <div class="card-title">${escapeHtml(game.title)}</div>
+        <div class="card-blurb">Installed mods only</div>
+      </div>
+    `;
+    block.appendChild(card);
+  } else {
+    block.appendChild(createGameCard(game));
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "library-card-actions";
+  if (!opts.orphan && (game.exe || game.dir)) {
+    actions.innerHTML = `
+      <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
+      ${game.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
+      <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Uninstall</button>
+    `;
+    actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        setStatus(`Launching ${game.title}…`);
+        await window.playbound.play(game.slug);
+        setStatus(`Launched ${game.title}`);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    actions.querySelector(".btn-lib-folder")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (game.dir) window.playbound.openFolder(game.dir);
+    });
+    actions.querySelector(".btn-lib-uninstall")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Uninstall ${game.title}?`)) return;
+      try {
+        await window.playbound.uninstall(game.slug);
+        setStatus(`Uninstalled ${game.title}`);
+        renderLibraryView();
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    block.appendChild(actions);
+  }
+
+  if (gameMods.length) {
+    block.appendChild(buildModsDisclosure(gameMods, modTitles));
+  }
+  return block;
+}
+
+function buildModsDisclosure(gameMods, modTitles) {
+  const wrap = document.createElement("div");
+  wrap.className = "library-mods-disclosure";
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "library-mods-toggle";
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.innerHTML = `<span>Mods (${gameMods.length})</span><span class="chevron">▾</span>`;
+
+  const panel = document.createElement("div");
+  panel.className = "library-mods-panel hidden";
+
+  for (const mod of gameMods) {
+    const title = modTitles.get(mod.slug) || mod.title || mod.slug;
+    const row = document.createElement("div");
+    row.className = "library-mod-row";
+    row.innerHTML = `
+      <span class="library-mod-title">${escapeHtml(title)}</span>
+      <div class="library-mod-actions">
+        <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
+        ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
+        <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Uninstall</button>
+      </div>
+    `;
+    row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        setStatus(`Launching ${title}…`);
+        await window.playbound.playMod(mod.slug);
+        setStatus(`Launched ${title}`);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    row.querySelector(".btn-mod-folder")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.playbound.openFolder(mod.dir);
+    });
+    row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Remove mod ${title} from library tracking?`)) return;
+      await window.playbound.uninstallMod(mod.slug);
+      renderLibraryView();
+    });
+    panel.appendChild(row);
+  }
+
+  toggle.addEventListener("click", () => {
+    const nowHidden = panel.classList.toggle("hidden");
+    const open = !nowHidden;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.querySelector(".chevron")?.classList.toggle("open", open);
+  });
+
+  wrap.appendChild(toggle);
+  wrap.appendChild(panel);
+  return wrap;
+}
+
+async function renderModsView() {
+  const container = views.mods;
+  container.innerHTML = `
+    <div class="section-header" style="margin-top: 0">
+      <div>
+        <h1 class="view-title" style="margin: 0">Mods</h1>
+        <p class="view-sub" style="margin: 4px 0 0 0">Browse mods you can install with PlayBound.</p>
+      </div>
+      <button class="btn-secondary btn-sm" id="btn-open-mods-web">Open playbound.club/mods</button>
+    </div>
+    <input type="search" class="input-text" id="mods-search" placeholder="Search mods…" style="margin-top: 16px; max-width: 360px" />
+    <p class="view-sub" id="mods-count" style="margin: 10px 0 0 0"></p>
+    <div id="mods-grid" class="game-grid" style="margin-top: 16px"></div>
+  `;
+
+  document.getElementById("btn-open-mods-web")?.addEventListener("click", () => {
+    window.playbound.openExternal("https://playbound.club/mods");
+  });
+
+  const res = await window.playbound.getModsCatalog();
+  const mods = res.mods || [];
+  const search = document.getElementById("mods-search");
+  const paint = () => {
+    const q = (search.value || "").trim().toLowerCase();
+    let list = mods.slice();
+    if (q) {
+      list = list.filter((m) =>
+        [m.title, m.tagline, m.slug, m.baseGameSlug].join(" ").toLowerCase().includes(q)
+      );
+    }
+    list.sort((a, b) => String(a.title).localeCompare(String(b.title)));
+    const count = document.getElementById("mods-count");
+    if (count) count.textContent = `${list.length} mod${list.length === 1 ? "" : "s"}`;
+    const grid = document.getElementById("mods-grid");
+    if (!grid) return;
+    if (!list.length) {
+      grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No mods match.</p>`;
+      return;
+    }
+    grid.replaceChildren(
+      ...list.map((mod) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        const bgGrad =
+          Array.isArray(mod.art) && mod.art.length >= 2
+            ? `linear-gradient(135deg, ${mod.art[0]}, ${mod.art[1]})`
+            : `linear-gradient(135deg, #312e81, #a78bfa)`;
+        card.innerHTML = `
+          <div class="card-banner" style="background:${bgGrad}">${escapeHtml((mod.title || "?").charAt(0))}</div>
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(mod.title)}</div>
+            <div class="card-blurb">${escapeHtml(mod.tagline || mod.baseGameSlug || "")}</div>
+            <div class="card-footer">
+              <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(mod.approxSize || "")}</span>
+              <button class="btn-primary btn-sm btn-mod-install" type="button">Install</button>
+            </div>
           </div>
         `;
-        row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
+        if (mod.coverImage) {
+          const banner = card.querySelector(".card-banner");
+          banner.textContent = "";
+          const img = document.createElement("img");
+          img.className = "card-cover";
+          img.src = mod.coverImage;
+          img.alt = "";
+          img.loading = "lazy";
+          banner.appendChild(img);
+        }
+        card.querySelector(".btn-mod-install")?.addEventListener("click", async (e) => {
           e.stopPropagation();
           try {
-            setStatus(`Launching ${title}…`);
-            await window.playbound.playMod(mod.slug);
-            setStatus(`Launched ${title}`);
+            setStatus(`Installing ${mod.title}…`);
+            const result = await window.playbound.installMod(mod.slug);
+            if (result?.status === "external-opened") {
+              setStatus("Opened download page in browser.");
+            } else {
+              setStatus(`Installed ${mod.title}`);
+            }
+            setProgress(null);
           } catch (err) {
             setStatus(err.message || String(err), true);
+            setProgress(null);
           }
         });
-        row.querySelector(".btn-mod-folder")?.addEventListener("click", (e) => {
-          e.stopPropagation();
-          window.playbound.openFolder(mod.dir);
+        card.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          window.playbound.openExternal(`https://playbound.club/mods/${mod.slug}`);
         });
-        row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          if (!confirm(`Remove mod ${title} from library tracking?`)) return;
-          await window.playbound.uninstallMod(mod.slug);
-          renderLibraryView();
-        });
-        modsWrap.appendChild(row);
-      }
-      block.appendChild(modsWrap);
-    }
-    list.appendChild(block);
+        return card;
+      })
+    );
+  };
+  search.addEventListener("input", paint);
+  paint();
+}
+
+async function renderEventsView() {
+  const container = views.events;
+  container.innerHTML = `
+    <div class="section-header" style="margin-top: 0">
+      <div>
+        <h1 class="view-title" style="margin: 0">Events</h1>
+        <p class="view-sub" style="margin: 4px 0 0 0">Tournaments and community nights on PlayBound.</p>
+      </div>
+      <button class="btn-secondary btn-sm" id="btn-open-events-web">Open playbound.club/events</button>
+    </div>
+    <div id="events-list" class="events-list" style="margin-top: 20px"></div>
+  `;
+
+  document.getElementById("btn-open-events-web")?.addEventListener("click", () => {
+    window.playbound.openExternal("https://playbound.club/events");
+  });
+
+  const res = (await window.playbound.getEvents?.()) || { events: [] };
+  const events = res.events || [];
+  const list = document.getElementById("events-list");
+  if (!events.length) {
+    list.innerHTML = `<p class="view-sub">No upcoming events. Check playbound.club/events for updates.</p>`;
+    return;
+  }
+  list.replaceChildren();
+  for (const ev of events) {
+    const row = document.createElement("div");
+    row.className = "event-row";
+    const when = ev.startsAt ? new Date(ev.startsAt).toLocaleString() : "";
+    row.innerHTML = `
+      <div>
+        <p class="event-when">${escapeHtml(when)}</p>
+        <p class="event-title">${escapeHtml(ev.title)}</p>
+        <p class="event-desc">${escapeHtml(ev.description || "")}</p>
+        ${ev.gameSlug ? `<p class="event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
+      </div>
+      <button class="btn-secondary btn-sm" type="button">View on site</button>
+    `;
+    row.querySelector("button")?.addEventListener("click", () => {
+      window.playbound.openExternal("https://playbound.club/events");
+    });
+    list.appendChild(row);
   }
 }
 
