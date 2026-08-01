@@ -918,8 +918,9 @@ function paintServersTable() {
         try {
           const res = await window.playbound.install(slug);
           if (res.status === "installer-opened") {
-            setStatus("Installer opened — finish setup, then try Join again.");
+            setStatus("Installer opened — finish setup, then click I've finished installing if needed.");
             setProgress(null);
+            openGameDetail(slug, currentView);
             return;
           }
         } catch (err) {
@@ -1353,7 +1354,12 @@ async function renderGameDetailView(slug) {
       renderGameDetailView(slug);
     });
   } else {
-    actions.innerHTML = `<button class="btn-primary" id="act-install">Install Game</button>`;
+    const showLocate =
+      detail.isInstallerKind || detail.pendingInstaller || Boolean(detail.knownExePaths?.length);
+    actions.innerHTML = `
+      <button class="btn-primary" id="act-install">Install Game</button>
+      ${showLocate ? `<button class="btn-secondary" id="act-locate">I've finished installing</button>` : ""}
+    `;
     document.getElementById("act-install").addEventListener("click", async () => {
       setStatus("Starting install...");
       try {
@@ -1363,12 +1369,30 @@ async function renderGameDetailView(slug) {
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "installer-opened") {
-          setStatus("Installer opened — we'll add it to your library when setup finishes.");
+          setStatus("Installer opened — finish setup, then click I've finished installing if it isn't detected.");
           setProgress(null);
+          renderGameDetailView(slug);
         } else if (res.status === "external") {
           setStatus("Opened download page.");
           setProgress(null);
         }
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+        setProgress(null);
+      }
+    });
+    document.getElementById("act-locate")?.addEventListener("click", async () => {
+      setStatus("Looking for install…");
+      try {
+        const res = await window.playbound.locateExe(slug);
+        if (res?.status === "cancelled") {
+          setStatus("Locate cancelled.");
+          return;
+        }
+        setStatus("Install located — added to library.");
+        setProgress(null);
+        renderGameDetailView(slug);
+        if (currentView === "library") renderLibraryView();
       } catch (err) {
         setStatus(err.message || String(err), true);
         setProgress(null);
@@ -1580,8 +1604,9 @@ function renderDeepLinkView(ctx) {
       try {
         const res = await window.playbound.install(ctx.slug);
         if (res.status === "installer-opened") {
-          setStatus("Installer opened — we'll add it to your library when setup finishes.");
+          setStatus("Installer opened — finish setup, then click I've finished installing if it isn't detected.");
           setProgress(null);
+          openGameDetail(ctx.slug, "deepLink");
           return;
         }
         if (res.status === "installed") {
@@ -1700,6 +1725,17 @@ window.playbound.onInstallDetected((data) => {
   if (currentView === "library") renderLibraryView();
   else if (currentView === "home") renderHomeView();
   else if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
+    renderGameDetailView(data.slug);
+  }
+});
+
+window.playbound.onInstallDetectFailed?.((data) => {
+  const name = data?.slug || "the game";
+  setStatus(
+    `Couldn't auto-detect ${name}. Open the game page and click I've finished installing to locate it.`,
+    true
+  );
+  if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
     renderGameDetailView(data.slug);
   }
 });

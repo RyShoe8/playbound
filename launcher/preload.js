@@ -48,6 +48,8 @@ contextBridge.exposeInMainWorld("playbound", {
   onProgress: (cb) => ipcRenderer.on("progress", (_event, data) => cb(data)),
   onAccount: (cb) => ipcRenderer.on("account", (_event, data) => cb(data || {})),
   onInstallDetected: (cb) => ipcRenderer.on("install-detected", (_event, data) => cb(data || {})),
+  onInstallDetectFailed: (cb) =>
+    ipcRenderer.on("install-detect-failed", (_event, data) => cb(data || {})),
   onModInstallFinished: (cb) =>
     ipcRenderer.on("mod-install-finished", (_event, data) => cb(data || {})),
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
