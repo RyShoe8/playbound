@@ -139,16 +139,16 @@ export default async function GamePage({
     game.communityLinks?.playboundDiscord?.guildId
   );
 
-  let initiallySaved = false;
+  let initiallyInLibrary = false;
   if (session?.user) {
     try {
       await dbConnect();
       const entry = await LibraryEntry.findOne({
         userId: session.user.id,
         gameSlug: game.slug,
-        saved: true,
+        installed: true,
       }).lean();
-      initiallySaved = Boolean(entry);
+      initiallyInLibrary = Boolean(entry);
     } catch {
       /* ignore */
     }
@@ -207,7 +207,7 @@ export default async function GamePage({
               <PlayCta game={game} size="lg" />
               <AddToLibraryButton
                 slug={game.slug}
-                initiallySaved={initiallySaved}
+                initiallyInLibrary={initiallyInLibrary}
                 signedIn={Boolean(session?.user)}
                 size="lg"
               />

@@ -9,7 +9,7 @@ import type { LibraryEntryDTO } from "@/lib/library";
 
 function toDto(doc: {
   gameSlug: string;
-  saved: boolean;
+  saved?: boolean;
   installed: boolean;
   version?: string | null;
   installedAt?: Date | null;
@@ -17,7 +17,7 @@ function toDto(doc: {
 }): LibraryEntryDTO {
   return {
     gameSlug: doc.gameSlug,
-    saved: Boolean(doc.saved),
+    saved: false,
     installed: Boolean(doc.installed),
     version: doc.version ?? null,
     installedAt: doc.installedAt ? new Date(doc.installedAt).toISOString() : null,
@@ -33,9 +33,15 @@ export async function GET() {
 
   try {
     await dbConnect();
+    // Wishlist removed — library is owned/installed games only.
+    await LibraryEntry.deleteMany({
+      userId: session.user.id,
+      installed: { $ne: true },
+      saved: true,
+    });
     const rows = await LibraryEntry.find({
       userId: session.user.id,
-      $or: [{ saved: true }, { installed: true }],
+      installed: true,
     })
       .sort({ updatedAt: -1 })
       .lean();
@@ -51,6 +57,7 @@ const addSchema = z.object({
   slug: z.string().min(1).max(80),
 });
 
+/** Manually claim a catalog game as owned (installed) without a launcher path. */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -68,11 +75,15 @@ export async function POST(req: Request) {
     const entry = await LibraryEntry.findOneAndUpdate(
       { userId: session.user.id, gameSlug: slug },
       {
-        $set: { saved: true, updatedAt: now },
+        $set: {
+          installed: true,
+          saved: false,
+          updatedAt: now,
+          installedAt: now,
+        },
         $setOnInsert: {
           userId: session.user.id,
           gameSlug: slug,
-          installed: false,
           addedAt: now,
         },
       },
@@ -102,19 +113,7 @@ export async function DELETE(req: Request) {
 
   try {
     await dbConnect();
-    const entry = await LibraryEntry.findOne({ userId: session.user.id, gameSlug: slug });
-    if (!entry) {
-      return NextResponse.json({ success: true });
-    }
-
-    if (entry.installed) {
-      entry.saved = false;
-      entry.updatedAt = new Date();
-      await entry.save();
-      return NextResponse.json({ entry: toDto(entry) });
-    }
-
-    await entry.deleteOne();
+    await LibraryEntry.deleteOne({ userId: session.user.id, gameSlug: slug });
     return NextResponse.json({ success: true, deleted: true });
   } catch (error) {
     console.error("Library remove error:", error);

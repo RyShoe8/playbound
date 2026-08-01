@@ -79,6 +79,11 @@ export function launcherOpenFolderUrl(slug: string): string {
   return `playbound://open-folder/${slug}`;
 }
 
+/** Point the launcher at an existing install (Select .exe). */
+export function launcherLocateUrl(slug: string): string {
+  return `playbound://locate/${slug}`;
+}
+
 /** Uninstall / untrack a mod via the launcher. */
 export function launcherUninstallModUrl(slug: string): string {
   return `playbound://uninstall-mod/${slug}`;

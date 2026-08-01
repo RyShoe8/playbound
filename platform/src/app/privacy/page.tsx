@@ -25,9 +25,9 @@ export default function PrivacyPage() {
         <p className="text-sm leading-relaxed text-muted-foreground">
           When you create an account we store your username, email address, and a hashed password.
           We use this to authenticate you, send verification emails, and personalize your library and
-          profile. Saved library games and optional launcher install sync (via a personal launcher
-          token you generate) are stored so your library stays in sync across devices. We do not sell
-          your personal information.
+          profile. Library installs synced from the PlayBound app (via a personal launcher token you
+          generate) and games you add from the site are stored so your library stays in sync. We do not
+          sell your personal information.
         </p>
       </section>
       <section className="space-y-2">

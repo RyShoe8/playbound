@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bookmark, BookmarkCheck, LogIn } from "lucide-react";
+import { LibraryBig, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { launcherLocateUrl } from "@/lib/launcher";
 
 type Props = {
   slug: string;
-  initiallySaved: boolean;
+  initiallyInLibrary: boolean;
   signedIn: boolean;
   size?: "md" | "lg";
 };
 
-export function AddToLibraryButton({ slug, initiallySaved, signedIn, size = "md" }: Props) {
-  const [saved, setSaved] = useState(initiallySaved);
+export function AddToLibraryButton({ slug, initiallyInLibrary, signedIn, size = "md" }: Props) {
+  const [inLibrary, setInLibrary] = useState(initiallyInLibrary);
   const [busy, setBusy] = useState(false);
 
   const className = cn(
@@ -26,7 +27,7 @@ export function AddToLibraryButton({ slug, initiallySaved, signedIn, size = "md"
     return (
       <Link href={`/login?callbackUrl=/games/${slug}`} className={className}>
         <LogIn className={iconClass} />
-        Sign in to save
+        Sign in to add
       </Link>
     );
   }
@@ -34,19 +35,29 @@ export function AddToLibraryButton({ slug, initiallySaved, signedIn, size = "md"
   async function toggle() {
     if (busy) return;
     setBusy(true);
-    const next = !saved;
-    setSaved(next);
+    const next = !inLibrary;
+    setInLibrary(next);
     try {
-      const res = next
-        ? await fetch("/api/library", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ slug }),
-          })
-        : await fetch(`/api/library?slug=${encodeURIComponent(slug)}`, { method: "DELETE" });
-      if (!res.ok) setSaved(!next);
+      if (next) {
+        const res = await fetch("/api/library", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ slug }),
+        });
+        if (!res.ok) {
+          setInLibrary(false);
+          return;
+        }
+        // Hand off to the app so the user can point at an existing .exe.
+        window.location.href = launcherLocateUrl(slug);
+      } else {
+        const res = await fetch(`/api/library?slug=${encodeURIComponent(slug)}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) setInLibrary(true);
+      }
     } catch {
-      setSaved(!next);
+      setInLibrary(!next);
     } finally {
       setBusy(false);
     }
@@ -54,8 +65,8 @@ export function AddToLibraryButton({ slug, initiallySaved, signedIn, size = "md"
 
   return (
     <button type="button" disabled={busy} onClick={() => void toggle()} className={className}>
-      {saved ? <BookmarkCheck className={iconClass} /> : <Bookmark className={iconClass} />}
-      {saved ? "In library" : "Add to Library"}
+      <LibraryBig className={iconClass} />
+      {inLibrary ? "In library" : "Add to Library"}
     </button>
   );
 }

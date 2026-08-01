@@ -9,6 +9,7 @@ import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { gamesFor } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import {
+  launcherLocateUrl,
   launcherOpenFolderUrl,
   launcherPlayUrl,
   launcherUninstallUrl,
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 
 function InstalledActions({ slug }: { slug: string }) {
   return (
-    <div className="flex flex-nowrap items-center gap-1 px-0.5">
+    <div className="flex flex-wrap items-center gap-1 px-0.5">
       <a
         href={launcherPlayUrl(slug)}
         className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
@@ -38,6 +39,13 @@ function InstalledActions({ slug }: { slug: string }) {
         title="Open install folder"
       >
         <FolderOpen className="size-2.5" /> Folder
+      </a>
+      <a
+        href={launcherLocateUrl(slug)}
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
+        title="Select .exe in the PlayBound app"
+      >
+        Locate
       </a>
       <a
         href={launcherUninstallUrl(slug)}
@@ -59,7 +67,7 @@ export default async function LibraryPage() {
         <LibraryBig className="size-10 text-primary" />
         <h1 className="text-2xl font-extrabold">Sign in to see your library</h1>
         <p className="text-sm text-muted-foreground">
-          Save games from the site and sync installs from the PlayBound app — all in one place.
+          Install with the PlayBound app, or add a catalog game you already own — synced to your account.
         </p>
         <Link
           href="/login?callbackUrl=/library"
@@ -74,14 +82,20 @@ export default async function LibraryPage() {
     );
   }
 
-  let entries: { gameSlug: string; saved: boolean; installed: boolean }[] = [];
+  let entries: { gameSlug: string; installed: boolean }[] = [];
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
   try {
     await dbConnect();
+    // Drop leftover wishlist-only rows (saved without install).
+    await LibraryEntry.deleteMany({
+      userId: session.user.id,
+      installed: { $ne: true },
+      saved: true,
+    });
     const [rows, modRows] = await Promise.all([
       LibraryEntry.find({
         userId: session.user.id,
-        $or: [{ saved: true }, { installed: true }],
+        installed: true,
       })
         .sort({ updatedAt: -1 })
         .lean(),
@@ -94,8 +108,7 @@ export default async function LibraryPage() {
     ]);
     entries = rows.map((r) => ({
       gameSlug: r.gameSlug,
-      saved: Boolean(r.saved),
-      installed: Boolean(r.installed),
+      installed: true,
     }));
     modEntries = modRows.map((r) => ({
       modSlug: String(r.modSlug),
@@ -127,7 +140,7 @@ export default async function LibraryPage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
         <p className="mt-1 text-muted-foreground">
-          Games you saved on PlayBound and installs synced from the app — including mods under each
+          Games installed with the PlayBound app or added from the catalog — including mods under each
           game.
         </p>
       </div>
@@ -135,7 +148,8 @@ export default async function LibraryPage() {
       {!hasAny ? (
         <div className="space-y-4">
           <EmptyHint icon={LibraryBig}>
-            Your library is empty. Save games from any game page, or install with the PlayBound app.
+            Your library is empty. Install with the PlayBound app, or open a game page and add one you
+            already own.
           </EmptyHint>
           <div className="flex flex-wrap justify-center gap-2">
             <Link
@@ -160,18 +174,11 @@ export default async function LibraryPage() {
             return (
               <div key={game.slug} className="w-44 shrink-0 space-y-2 sm:w-48">
                 <GameCard game={game} />
-                {(meta?.saved || meta?.installed) && (
+                {meta?.installed && (
                   <div className="flex flex-wrap items-center gap-1 px-0.5">
-                    {meta?.saved && (
-                      <Badge tone="brand">
-                        <LibraryBig className="size-3" /> Saved
-                      </Badge>
-                    )}
-                    {meta?.installed && (
-                      <Badge tone="play">
-                        <Download className="size-3" /> Installed
-                      </Badge>
-                    )}
+                    <Badge tone="play">
+                      <Download className="size-3" /> Installed
+                    </Badge>
                   </div>
                 )}
                 {meta?.installed && <InstalledActions slug={game.slug} />}
@@ -194,18 +201,11 @@ export default async function LibraryPage() {
                   {title.charAt(0)}
                 </div>
                 <p className="truncate text-sm font-bold">{title}</p>
-                {(entry.saved || entry.installed) && (
+                {entry.installed && (
                   <div className="flex flex-wrap items-center gap-1">
-                    {entry.saved && (
-                      <Badge tone="brand">
-                        <LibraryBig className="size-3" /> Saved
-                      </Badge>
-                    )}
-                    {entry.installed && (
-                      <Badge tone="play">
-                        <Download className="size-3" /> Installed
-                      </Badge>
-                    )}
+                    <Badge tone="play">
+                      <Download className="size-3" /> Installed
+                    </Badge>
                   </div>
                 )}
                 {entry.installed && <InstalledActions slug={entry.gameSlug} />}
