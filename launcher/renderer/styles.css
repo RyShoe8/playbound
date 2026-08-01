@@ -688,7 +688,7 @@ body {
 
 .library-card-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -772,7 +772,7 @@ body {
 
 .library-mod-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 

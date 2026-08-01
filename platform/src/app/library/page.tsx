@@ -25,28 +25,28 @@ export const metadata: Metadata = {
 
 function InstalledActions({ slug }: { slug: string }) {
   return (
-    <>
+    <div className="flex flex-nowrap items-center gap-1 px-0.5">
       <a
         href={launcherPlayUrl(slug)}
-        className="inline-flex items-center gap-1 rounded-full bg-play px-2.5 py-0.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
       >
-        <Play className="size-3 fill-current" /> Play
+        <Play className="size-2.5 fill-current" /> Play
       </a>
       <a
         href={launcherOpenFolderUrl(slug)}
-        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
         title="Open install folder"
       >
-        <FolderOpen className="size-3" /> Folder
+        <FolderOpen className="size-2.5" /> Folder
       </a>
       <a
         href={launcherUninstallUrl(slug)}
-        className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-bold text-destructive hover:bg-destructive/25"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/25"
         title="Uninstall"
       >
-        <Trash2 className="size-3" /> Uninstall
+        <Trash2 className="size-2.5" /> Remove
       </a>
-    </>
+    </div>
   );
 }
 
@@ -160,19 +160,21 @@ export default async function LibraryPage() {
             return (
               <div key={game.slug} className="w-44 shrink-0 space-y-2 sm:w-48">
                 <GameCard game={game} />
-                <div className="flex flex-wrap items-center gap-1 px-0.5">
-                  {meta?.saved && (
-                    <Badge tone="brand">
-                      <LibraryBig className="size-3" /> Saved
-                    </Badge>
-                  )}
-                  {meta?.installed && (
-                    <Badge tone="play">
-                      <Download className="size-3" /> Installed
-                    </Badge>
-                  )}
-                  {meta?.installed && <InstalledActions slug={game.slug} />}
-                </div>
+                {(meta?.saved || meta?.installed) && (
+                  <div className="flex flex-wrap items-center gap-1 px-0.5">
+                    {meta?.saved && (
+                      <Badge tone="brand">
+                        <LibraryBig className="size-3" /> Saved
+                      </Badge>
+                    )}
+                    {meta?.installed && (
+                      <Badge tone="play">
+                        <Download className="size-3" /> Installed
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                {meta?.installed && <InstalledActions slug={game.slug} />}
                 <LibraryModsDisclosure mods={gameMods} />
               </div>
             );
@@ -192,19 +194,21 @@ export default async function LibraryPage() {
                   {title.charAt(0)}
                 </div>
                 <p className="truncate text-sm font-bold">{title}</p>
-                <div className="flex flex-wrap items-center gap-1">
-                  {entry.saved && (
-                    <Badge tone="brand">
-                      <LibraryBig className="size-3" /> Saved
-                    </Badge>
-                  )}
-                  {entry.installed && (
-                    <Badge tone="play">
-                      <Download className="size-3" /> Installed
-                    </Badge>
-                  )}
-                  {entry.installed && <InstalledActions slug={entry.gameSlug} />}
-                </div>
+                {(entry.saved || entry.installed) && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    {entry.saved && (
+                      <Badge tone="brand">
+                        <LibraryBig className="size-3" /> Saved
+                      </Badge>
+                    )}
+                    {entry.installed && (
+                      <Badge tone="play">
+                        <Download className="size-3" /> Installed
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                {entry.installed && <InstalledActions slug={entry.gameSlug} />}
                 <LibraryModsDisclosure mods={gameMods} />
               </div>
             );

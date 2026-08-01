@@ -309,7 +309,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     actions.innerHTML = `
       <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
       ${game.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
-      <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Uninstall</button>
+      <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
     `;
     actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -366,7 +366,7 @@ function buildModsDisclosure(gameMods, modTitles) {
       <div class="library-mod-actions">
         <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
         ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
-        <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Uninstall</button>
+        <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
       </div>
     `;
     row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
