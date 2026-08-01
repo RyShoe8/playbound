@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { CalendarDays, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
+import { Bug, CalendarDays, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Review from "@/lib/models/Review";
@@ -9,6 +9,7 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import GameSubmission from "@/lib/models/GameSubmission";
+import BugReport from "@/lib/models/BugReport";
 import { developers, listAllGames } from "@/lib/catalog";
 import { listAllMods } from "@/lib/mods";
 import { GameArt } from "@/components/GameArt";
@@ -19,17 +20,27 @@ export const metadata: Metadata = { title: "Admin" };
 async function getCounts() {
   try {
     await dbConnect();
-    const [totalUsers, verifiedUsers, reviews, guides, discussions, events, newsletter, pendingSubs] =
-      await Promise.all([
-        User.countDocuments(),
-        User.countDocuments({ emailVerified: true }),
-        Review.countDocuments(),
-        GuidePost.countDocuments(),
-        DiscussionTopic.countDocuments({ status: { $ne: "removed" } }),
-        PlatformEvent.countDocuments({ startsAt: { $gte: new Date() } }),
-        NewsletterSubscriber.countDocuments(),
-        GameSubmission.countDocuments({ status: "pending" }),
-      ]);
+    const [
+      totalUsers,
+      verifiedUsers,
+      reviews,
+      guides,
+      discussions,
+      events,
+      newsletter,
+      pendingSubs,
+      openBugs,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ emailVerified: true }),
+      Review.countDocuments(),
+      GuidePost.countDocuments(),
+      DiscussionTopic.countDocuments({ status: { $ne: "removed" } }),
+      PlatformEvent.countDocuments({ startsAt: { $gte: new Date() } }),
+      NewsletterSubscriber.countDocuments(),
+      GameSubmission.countDocuments({ status: "pending" }),
+      BugReport.countDocuments({ status: { $in: ["open", "reviewing"] } }),
+    ]);
     return {
       totalUsers,
       verifiedUsers,
@@ -39,6 +50,7 @@ async function getCounts() {
       events,
       newsletter,
       pendingSubs,
+      openBugs,
     };
   } catch (err) {
     console.error("Failed to load admin counts:", err);
@@ -51,6 +63,7 @@ async function getCounts() {
       events: 0,
       newsletter: 0,
       pendingSubs: 0,
+      openBugs: 0,
     };
   }
 }
@@ -97,6 +110,7 @@ export default async function AdminPage() {
           <StatTile label="Discussion Posts" value={String(counts.discussions)} />
           <StatTile label="Upcoming Events" value={String(counts.events)} />
           <StatTile label="Pending Submissions" value={String(counts.pendingSubs)} />
+          <StatTile label="Open Bugs" value={String(counts.openBugs)} />
         </div>
       </section>
 
@@ -125,6 +139,13 @@ export default async function AdminPage() {
             >
               <Inbox className="size-4" /> Submissions
               {counts.pendingSubs > 0 ? ` (${counts.pendingSubs})` : ""}
+            </Link>
+            <Link
+              href="/admin/bugs"
+              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+            >
+              <Bug className="size-4" /> Bugs
+              {counts.openBugs > 0 ? ` (${counts.openBugs})` : ""}
             </Link>
             <Link
               href="/admin/events/new"

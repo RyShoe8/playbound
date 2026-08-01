@@ -23,6 +23,7 @@ export type RecaptchaAction =
   | "login"
   | "newsletter"
   | "game_submission"
+  | "bug_report"
   | "discussion_topic"
   | "discussion_report";
 

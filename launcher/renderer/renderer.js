@@ -837,6 +837,17 @@ async function renderSettingsView() {
         <button class="btn-primary btn-sm" id="set-btn-install-update" ${ready ? "" : "disabled"}>Install and restart</button>
       </div>
     </div>
+
+    <div class="settings-group">
+      <label class="settings-label">Report a bug</label>
+      <p class="settings-hint">Send a problem report to the PlayBound team. If you are signed in, it is linked to your account.</p>
+      <input type="text" class="input-text" id="set-bug-title" placeholder="Short title" maxlength="160" />
+      <textarea class="input-text" id="set-bug-msg" rows="4" placeholder="What happened? Steps to reproduce…" maxlength="8000"></textarea>
+      <input type="email" class="input-text" id="set-bug-email" placeholder="Email (optional)" value="${escapeHtml(accountState.email || "")}" />
+      <div style="margin-top: 10px;">
+        <button class="btn-secondary btn-sm" id="set-btn-bug">Send report</button>
+      </div>
+    </div>
   `;
 
   document.getElementById("set-btn-signin").addEventListener("click", () => window.playbound.signIn());
@@ -870,6 +881,26 @@ async function renderSettingsView() {
   document.getElementById("set-btn-install-update")?.addEventListener("click", async () => {
     setStatus("Installing update and restarting…");
     await window.playbound.installUpdate();
+  });
+  document.getElementById("set-btn-bug")?.addEventListener("click", async () => {
+    const title = document.getElementById("set-bug-title")?.value?.trim() || "";
+    const description = document.getElementById("set-bug-msg")?.value?.trim() || "";
+    const contactEmail = document.getElementById("set-bug-email")?.value?.trim() || "";
+    if (!window.playbound.reportBug) {
+      setStatus("Update the app to report bugs from Settings.", true);
+      return;
+    }
+    setStatus("Sending bug report…");
+    const res = await window.playbound.reportBug({ title, description, contactEmail });
+    if (!res?.ok) {
+      setStatus(res?.error || "Couldn't send report", true);
+      return;
+    }
+    setStatus("Thanks — bug report sent.");
+    const titleEl = document.getElementById("set-bug-title");
+    const msgEl = document.getElementById("set-bug-msg");
+    if (titleEl) titleEl.value = "";
+    if (msgEl) msgEl.value = "";
   });
 }
 
