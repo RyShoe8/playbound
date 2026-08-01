@@ -3,6 +3,8 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { probeGameInstall } from "@/lib/catalogVersionProbe";
+import { gameProbePatchFields } from "@/lib/applyVersionProbePatch";
+import { withAutoHealGame } from "@/lib/healBrokenInstall";
 
 export async function POST(
   _req: Request,
@@ -19,31 +21,35 @@ export async function POST(
   }
 
   const install = doc.launcherInstall.toObject?.() ?? doc.launcherInstall;
-  const result = await probeGameInstall(install);
+  const probed = await probeGameInstall(install);
+  const result = await withAutoHealGame(probed, {
+    kind: install.kind,
+    repo: install.repo,
+    url: install.url,
+    versionLabel: install.versionLabel,
+    website: doc.website,
+    enabled: install.enabled,
+  });
 
   doc.launcherInstall.detectedVersion = result.detectedVersion;
   doc.launcherInstall.lastVersionCheckAt = new Date();
   doc.launcherInstall.versionCheckStatus = result.status;
   doc.launcherInstall.versionCheckNote = result.note || null;
 
+  const patchSet = gameProbePatchFields(
+    { kind: install.kind, autoUpdatePinned: install.autoUpdatePinned },
+    result
+  );
   const applied: Record<string, string> = {};
-  if (
-    result.status === "updated" &&
-    install.autoUpdatePinned !== false &&
-    result.patch &&
-    String(install.kind || "").startsWith("direct")
-  ) {
-    if (result.patch.url) {
-      doc.launcherInstall.url = result.patch.url;
-      applied.url = result.patch.url;
-    }
-    if (result.patch.fileName) {
-      doc.launcherInstall.fileName = result.patch.fileName;
-      applied.fileName = result.patch.fileName;
-    }
-    if (result.patch.versionLabel) {
-      doc.launcherInstall.versionLabel = result.patch.versionLabel;
-      applied.versionLabel = result.patch.versionLabel;
+  for (const [key, value] of Object.entries(patchSet)) {
+    const field = key.replace(/^launcherInstall\./, "") as
+      | "url"
+      | "fileName"
+      | "versionLabel"
+      | "assetPattern";
+    if (typeof value === "string") {
+      doc.launcherInstall[field] = value;
+      applied[field] = value;
     }
   }
 

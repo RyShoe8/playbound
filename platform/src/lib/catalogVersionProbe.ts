@@ -9,12 +9,13 @@ export type ProbeResult = {
   status: VersionCheckStatus;
   detectedVersion: string | null;
   note?: string;
-  /** When set, cron may write these onto the recipe. */
+  /** When set, cron / Check now may write these onto the recipe. */
   patch?: {
     url?: string;
     fileName?: string;
     versionLabel?: string;
     directUrl?: string;
+    assetPattern?: string;
   };
 };
 

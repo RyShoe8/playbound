@@ -3,6 +3,8 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
 import { probeModInstall } from "@/lib/catalogVersionProbe";
+import { modProbePatchFields } from "@/lib/applyVersionProbePatch";
+import { withAutoHealMod } from "@/lib/healBrokenInstall";
 
 export async function POST(
   _req: Request,
@@ -18,7 +20,7 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const result = await probeModInstall({
+  const probed = await probeModInstall({
     downloadKind: doc.downloadKind,
     githubRepo: doc.githubRepo,
     assetPattern: doc.assetPattern,
@@ -26,22 +28,23 @@ export async function POST(
     detectedVersion: doc.detectedVersion,
     autoUpdatePinned: doc.autoUpdatePinned,
   });
+  const result = await withAutoHealMod(probed, {
+    downloadKind: doc.downloadKind,
+    githubRepo: doc.githubRepo,
+    directUrl: doc.directUrl,
+  });
 
   doc.detectedVersion = result.detectedVersion;
   doc.lastVersionCheckAt = new Date();
   doc.versionCheckStatus = result.status;
   doc.versionCheckNote = result.note || null;
 
-  const applied: Record<string, string> = {};
-  if (
-    result.status === "updated" &&
-    doc.autoUpdatePinned !== false &&
-    result.patch?.directUrl &&
-    doc.downloadKind === "direct-zip"
-  ) {
-    doc.directUrl = result.patch.directUrl;
-    applied.directUrl = result.patch.directUrl;
-  }
+  const applied = modProbePatchFields(
+    { downloadKind: doc.downloadKind, autoUpdatePinned: doc.autoUpdatePinned },
+    result
+  );
+  if (applied.directUrl) doc.directUrl = applied.directUrl;
+  if (applied.assetPattern) doc.assetPattern = applied.assetPattern;
 
   await doc.save();
   return NextResponse.json({ ok: true, result, applied });

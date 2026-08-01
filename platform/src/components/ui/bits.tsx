@@ -88,14 +88,35 @@ export function SectionHeader({
   );
 }
 
-export function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
+export function StatTile({
+  label,
+  value,
+  hint,
+  href,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  href?: string;
+}) {
+  const inner = (
+    <>
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
       {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="block rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-card/80"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="rounded-xl border border-border bg-card p-4">{inner}</div>;
 }
 
 export function EmptyHint({ icon: Icon = Users, children }: { icon?: typeof Users; children: React.ReactNode }) {
