@@ -299,13 +299,58 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       </div>
     `;
     block.appendChild(card);
+  } else if (game.pending) {
+    const card = document.createElement("div");
+    card.className = "game-card library-pending-card";
+    const bgGrad =
+      Array.isArray(game.art) && game.art.length >= 2
+        ? `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`
+        : `linear-gradient(135deg, #312e81, #a78bfa)`;
+    card.innerHTML = `
+      <div class="card-banner" style="background:${bgGrad}">${escapeHtml((game.title || "?").charAt(0))}</div>
+      <div class="card-body">
+        <div class="card-title">${escapeHtml(game.title)}</div>
+        <div class="card-blurb">${
+          game.scanning ? "Scanning drives for install…" : "Install not found yet — select the .exe"
+        }</div>
+      </div>
+    `;
+    card.addEventListener("click", () => openGameDetail(game.slug, "library"));
+    block.appendChild(card);
   } else {
     block.appendChild(createGameCard(game));
   }
 
   const actions = document.createElement("div");
   actions.className = "library-card-actions";
-  if (!opts.orphan && (game.exe || game.dir)) {
+  if (game.pending) {
+    actions.innerHTML = `
+      <button class="btn-primary btn-sm btn-lib-locate" type="button">Select .exe</button>
+      <button class="btn-secondary btn-sm btn-lib-dismiss" type="button">Dismiss</button>
+    `;
+    actions.querySelector(".btn-lib-locate")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        setStatus(`Locate ${game.title}…`);
+        const res = await window.playbound.locateExe(game.slug);
+        if (res?.status === "cancelled") {
+          setStatus("Locate cancelled.");
+          return;
+        }
+        setStatus(`${game.title} added to library.`);
+        renderLibraryView();
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    actions.querySelector(".btn-lib-dismiss")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Remove ${game.title} from Library? (Does not delete game files.)`)) return;
+      await window.playbound.dismissPendingInstall?.(game.slug);
+      renderLibraryView();
+    });
+    block.appendChild(actions);
+  } else if (!opts.orphan && (game.exe || game.dir)) {
     actions.innerHTML = `
       <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
       ${game.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
@@ -918,7 +963,7 @@ function paintServersTable() {
         try {
           const res = await window.playbound.install(slug);
           if (res.status === "installer-opened") {
-            setStatus("Installer opened — finish setup, then click I've finished installing if needed.");
+            setStatus("Installer opened — searching your drives for the game…");
             setProgress(null);
             openGameDetail(slug, currentView);
             return;
@@ -1353,9 +1398,65 @@ async function renderGameDetailView(slug) {
       await window.playbound.uninstall(slug);
       renderGameDetailView(slug);
     });
+  } else if (detail.pendingInstaller) {
+    const locateLabel = detail.scanning ? "Select .exe" : "Select .exe";
+    actions.innerHTML = `
+      <button class="btn-primary" id="act-locate">${locateLabel}</button>
+      <button class="btn-secondary" id="act-dismiss-pending">Dismiss</button>
+      <button class="btn-secondary" id="act-install">Re-run installer</button>
+    `;
+    setStatus(
+      detail.scanning
+        ? `Scanning drives for ${detail.title}…`
+        : `${detail.title} is in Library — select the .exe if the scan missed it.`
+    );
+    document.getElementById("act-locate").addEventListener("click", async () => {
+      setStatus("Looking for install…");
+      try {
+        const res = await window.playbound.locateExe(slug);
+        if (res?.status === "cancelled") {
+          setStatus("Locate cancelled.");
+          return;
+        }
+        setStatus("Install located — added to library.");
+        setProgress(null);
+        renderGameDetailView(slug);
+        if (currentView === "library") renderLibraryView();
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+        setProgress(null);
+      }
+    });
+    document.getElementById("act-dismiss-pending").addEventListener("click", async () => {
+      if (!confirm(`Remove ${detail.title} from Library? (Does not delete game files.)`)) return;
+      await window.playbound.dismissPendingInstall?.(slug);
+      renderGameDetailView(slug);
+      if (currentView === "library") renderLibraryView();
+    });
+    document.getElementById("act-install").addEventListener("click", async () => {
+      setStatus("Starting install...");
+      try {
+        const res = await window.playbound.install(slug);
+        if (res.status === "installed") {
+          setStatus("Install complete!");
+          setProgress(null);
+          renderGameDetailView(slug);
+        } else if (res.status === "installer-opened") {
+          setStatus("Installer opened — searching your drives for the game…");
+          setProgress(null);
+          renderGameDetailView(slug);
+        } else if (res.status === "external") {
+          setStatus("Opened download page.");
+          setProgress(null);
+        }
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+        setProgress(null);
+      }
+    });
   } else {
     const showLocate =
-      detail.isInstallerKind || detail.pendingInstaller || Boolean(detail.knownExePaths?.length);
+      detail.isInstallerKind || Boolean(detail.knownExePaths?.length);
     actions.innerHTML = `
       <button class="btn-primary" id="act-install">Install Game</button>
       ${showLocate ? `<button class="btn-secondary" id="act-locate">I've finished installing</button>` : ""}
@@ -1369,7 +1470,7 @@ async function renderGameDetailView(slug) {
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "installer-opened") {
-          setStatus("Installer opened — finish setup, then click I've finished installing if it isn't detected.");
+          setStatus("Installer opened — searching your drives for the game…");
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "external") {
@@ -1604,7 +1705,7 @@ function renderDeepLinkView(ctx) {
       try {
         const res = await window.playbound.install(ctx.slug);
         if (res.status === "installer-opened") {
-          setStatus("Installer opened — finish setup, then click I've finished installing if it isn't detected.");
+          setStatus("Installer opened — searching your drives for the game…");
           setProgress(null);
           openGameDetail(ctx.slug, "deepLink");
           return;
@@ -1729,13 +1830,35 @@ window.playbound.onInstallDetected((data) => {
   }
 });
 
+window.playbound.onInstallScan?.((data) => {
+  if (data?.phase === "scanning" || data?.phase === "pending") {
+    if (data.message) setStatus(data.message);
+    else if (data.slug) setStatus(`Searching for ${data.slug}…`);
+  } else if (data?.phase === "needs-locate") {
+    setStatus(
+      data.slug
+        ? `Couldn't find ${data.slug} automatically — select the .exe in Library.`
+        : "Couldn't find the install — select the .exe in Library.",
+      true
+    );
+  } else if (data?.phase === "dismissed") {
+    setStatus("Removed from Library.");
+  }
+  if (currentView === "library") renderLibraryView();
+  else if (currentView === "home") renderHomeView();
+  else if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
+    renderGameDetailView(data.slug);
+  }
+});
+
 window.playbound.onInstallDetectFailed?.((data) => {
   const name = data?.slug || "the game";
   setStatus(
-    `Couldn't auto-detect ${name}. Open the game page and click I've finished installing to locate it.`,
+    `Couldn't auto-detect ${name}. Open Library and click Select .exe to locate it.`,
     true
   );
-  if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
+  if (currentView === "library") renderLibraryView();
+  else if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
     renderGameDetailView(data.slug);
   }
 });

@@ -686,6 +686,15 @@ body {
   cursor: default;
 }
 
+.library-pending-card {
+  cursor: pointer;
+  opacity: 0.92;
+}
+
+.library-pending-card .card-blurb {
+  color: var(--accent, #a78bfa);
+}
+
 .library-card-actions {
   display: flex;
   flex-wrap: nowrap;

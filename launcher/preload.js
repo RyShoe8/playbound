@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("playbound", {
   install: (slug, targetDir) => ipcRenderer.invoke("install", slug, targetDir),
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
+  dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
   play: (slug, join) => ipcRenderer.invoke("play", slug, join || null),
   playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
   uninstall: (slug) => ipcRenderer.invoke("uninstall", slug),
@@ -50,6 +51,7 @@ contextBridge.exposeInMainWorld("playbound", {
   onInstallDetected: (cb) => ipcRenderer.on("install-detected", (_event, data) => cb(data || {})),
   onInstallDetectFailed: (cb) =>
     ipcRenderer.on("install-detect-failed", (_event, data) => cb(data || {})),
+  onInstallScan: (cb) => ipcRenderer.on("install-scan", (_event, data) => cb(data || {})),
   onModInstallFinished: (cb) =>
     ipcRenderer.on("mod-install-finished", (_event, data) => cb(data || {})),
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
