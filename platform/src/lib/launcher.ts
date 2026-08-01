@@ -63,3 +63,8 @@ export function launcherLinkUrl(token: string): string {
 export function launcherPlayUrl(slug: string): string {
   return `playbound://play/${slug}`;
 }
+
+/** Launch an installed mod (portable client or its base game) via the launcher. */
+export function launcherPlayModUrl(slug: string): string {
+  return `playbound://play-mod/${slug}`;
+}

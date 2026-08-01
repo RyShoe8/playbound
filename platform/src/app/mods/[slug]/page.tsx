@@ -7,7 +7,7 @@ import dbConnect from "@/lib/db";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
-import { isLauncherInstallable, launcherPlayUrl } from "@/lib/launcher";
+import { isLauncherInstallable, launcherPlayModUrl } from "@/lib/launcher";
 import { Badge } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
@@ -209,7 +209,7 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
         <div className="flex flex-wrap items-start gap-4">
           {showPlay ? (
             <a
-              href={launcherPlayUrl(mod.baseGameSlug)}
+              href={launcherPlayModUrl(mod.slug)}
               className="inline-flex items-center justify-center gap-1.5 rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground hover:brightness-110"
             >
               <Play className="size-4 fill-current" /> Play {base}

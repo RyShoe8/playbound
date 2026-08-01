@@ -55,6 +55,7 @@ if (!gotLock) {
 function parseDeepLink(url) {
   // playbound://install/openra
   // playbound://install-mod/my-mod
+  // playbound://play-mod/my-mod
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
   // playbound://sync
@@ -69,7 +70,9 @@ function parseDeepLink(url) {
       return { action: "link", token: u.searchParams.get("token") || "" };
     }
     const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (!slug || !["install", "play", "uninstall", "join", "install-mod"].includes(action)) return null;
+    if (!slug || !["install", "play", "uninstall", "join", "install-mod", "play-mod"].includes(action)) {
+      return null;
+    }
     /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string }} */
     const parsed = { action, slug };
     if (action === "join") {
@@ -450,6 +453,17 @@ function handleDeepLink(parsed) {
     if (parsed.token) {
       void connectWithToken(parsed.token);
     }
+    return;
+  }
+  if (parsed.action === "play-mod" && parsed.slug) {
+    showMainWindow();
+    void playMod(parsed.slug).catch((err) => {
+      console.warn("play-mod failed:", err?.message || err);
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: err?.message || String(err),
+      });
+    });
     return;
   }
   void setContext(parsed);
@@ -1264,7 +1278,8 @@ async function placeModFiles(slug, install, baseDirOverride) {
   const dl = await resolveModDownload(install);
   let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
   // Full portable clients (OpenRA-style) install beside other PlayBound games.
-  if (/winportable/i.test(dl.name || "")) {
+  const portable = /winportable/i.test(dl.name || "");
+  if (portable) {
     targetDir = path.join(DEFAULT_GAMES_DIR, slug);
   }
   if (!targetDir) {
@@ -1285,6 +1300,8 @@ async function placeModFiles(slug, install, baseDirOverride) {
   }
   await fsp.rm(downloadPath, { force: true });
 
+  const exe = findExecutable(targetDir, null);
+
   const state = loadState();
   if (!state.__mods__ || typeof state.__mods__ !== "object") state.__mods__ = {};
   state.__mods__[slug] = {
@@ -1293,6 +1310,8 @@ async function placeModFiles(slug, install, baseDirOverride) {
     dir: targetDir,
     baseGameSlug: install.baseGameSlug,
     installedAt: new Date().toISOString(),
+    ...(exe ? { exe } : {}),
+    ...(portable ? { portable: true } : {}),
   };
   saveState(state);
   void syncLibrary(slug, "install", dl.version, {
@@ -1300,7 +1319,14 @@ async function placeModFiles(slug, install, baseDirOverride) {
     baseGameSlug: install.baseGameSlug,
   });
   sendProgress({ phase: "done" });
-  return { status: "installed", version: dl.version, dir: targetDir, baseGameSlug: install.baseGameSlug };
+  return {
+    status: "installed",
+    version: dl.version,
+    dir: targetDir,
+    baseGameSlug: install.baseGameSlug,
+    exe: exe || null,
+    portable,
+  };
 }
 
 async function installMod(slug, baseDirOverride) {
@@ -1353,13 +1379,7 @@ async function playGame(slug, join = null) {
       );
     }
   }
-  const useShell = /\.(cmd|bat)$/i.test(info.exe);
-  spawn(info.exe, args, {
-    cwd: path.dirname(info.exe),
-    detached: true,
-    stdio: "ignore",
-    shell: useShell,
-  }).unref();
+  spawnDetachedExe(info.exe, args);
 
   // Track recently played
   const settings = loadSettings();
@@ -1372,6 +1392,52 @@ async function playGame(slug, join = null) {
     connect: args.length > 0 ? `${join.host}:${join.port}` : null,
     manualConnect: Boolean(join?.host && join?.port && !entry?.connectArgs?.length),
   };
+}
+
+function spawnDetachedExe(exePath, args = []) {
+  const useShell = /\.(cmd|bat)$/i.test(exePath);
+  spawn(exePath, args, {
+    cwd: path.dirname(exePath),
+    detached: true,
+    stdio: "ignore",
+    shell: useShell,
+  }).unref();
+}
+
+/** Launch a catalog mod: portable clients use their own exe; content mods open the base game. */
+async function playMod(slug) {
+  const state = loadState();
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const info = mods[slug];
+  if (!info || typeof info !== "object") throw new Error("Mod is not installed");
+
+  let exe = info.exe && fs.existsSync(info.exe) ? info.exe : null;
+  if (!exe && info.dir && fs.existsSync(info.dir)) {
+    exe = findExecutable(info.dir, null);
+    if (exe) {
+      info.exe = exe;
+      if (info.portable == null && /PlayBound[/\\]Games[/\\]/i.test(String(info.dir))) {
+        info.portable = true;
+      }
+      mods[slug] = info;
+      state.__mods__ = mods;
+      saveState(state);
+    }
+  }
+
+  if (exe) {
+    spawnDetachedExe(exe, []);
+    const settings = loadSettings();
+    if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
+    settings.recentlyPlayed[info.baseGameSlug || slug] = { lastPlayed: new Date().toISOString() };
+    saveSettings(settings);
+    return { status: "launched", portable: true, exe, baseGameSlug: info.baseGameSlug || null };
+  }
+
+  const base = info.baseGameSlug;
+  if (!base) throw new Error("Mod has no base game to launch");
+  const result = await playGame(base);
+  return { ...result, portable: false, baseGameSlug: base };
 }
 
 async function uninstallGame(slug) {
@@ -1424,6 +1490,8 @@ function listInstalledMods() {
       baseGameSlug: info.baseGameSlug || null,
       version: info.version || null,
       dir: info.dir || null,
+      exe: info.exe || null,
+      portable: Boolean(info.portable),
       installedAt: info.installedAt || null,
     });
   }
@@ -1497,6 +1565,7 @@ ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetD
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
+ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
@@ -2134,6 +2203,7 @@ function testDeepLink() {
     ["playbound://sync", { action: "sync" }],
     ["playbound://link?token=abc", { action: "link", token: "abc" }],
     ["playbound://install-mod/cool-mod", { action: "install-mod", slug: "cool-mod" }],
+    ["playbound://play-mod/openra-tiberian-dawn-hd", { action: "play-mod", slug: "openra-tiberian-dawn-hd" }],
     ["not-a-deep-link", null],
   ];
   let failures = 0;

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("playbound", {
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
   play: (slug, join) => ipcRenderer.invoke("play", slug, join || null),
+  playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
   uninstall: (slug) => ipcRenderer.invoke("uninstall", slug),
   getInstalled: () => ipcRenderer.invoke("get-installed"),
   getInstalledMods: () => ipcRenderer.invoke("get-installed-mods"),

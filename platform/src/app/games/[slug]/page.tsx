@@ -27,7 +27,7 @@ import { modsForGame, type CatalogModPublic } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { GameInstallContent } from "@/components/GameInstallContent";
-import { launcherPlayUrl } from "@/lib/launcher";
+import { launcherPlayModUrl } from "@/lib/launcher";
 import {
   JsonLd,
   graph,
@@ -686,7 +686,7 @@ function ModCard({
       <div className="mt-auto flex flex-wrap items-start gap-2 pt-4">
         {showPlay ? (
           <a
-            href={launcherPlayUrl(mod.baseGameSlug)}
+            href={launcherPlayModUrl(mod.slug)}
             className="inline-flex items-center gap-1 rounded-full bg-play px-3 py-1.5 text-xs font-bold text-play-foreground hover:brightness-110"
           >
             <Play className="size-3 fill-current" /> Play {baseGameTitle}
