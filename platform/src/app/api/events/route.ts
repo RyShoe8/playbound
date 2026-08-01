@@ -13,6 +13,31 @@ const eventSchema = z.object({
   startsAt: z.string().datetime().or(z.string().min(1)),
 });
 
+export async function GET() {
+  try {
+    await dbConnect();
+    const events = await PlatformEvent.find({ startsAt: { $gte: new Date() } })
+      .sort({ startsAt: 1 })
+      .limit(50)
+      .lean();
+    return NextResponse.json(
+      {
+        events: events.map((e) => ({
+          id: String(e._id),
+          title: e.title,
+          description: e.description,
+          gameSlug: e.gameSlug || null,
+          startsAt: new Date(e.startsAt).toISOString(),
+        })),
+      },
+      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
+    );
+  } catch (err) {
+    console.error("Events list error:", err);
+    return NextResponse.json({ error: "Failed to load events" }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") {

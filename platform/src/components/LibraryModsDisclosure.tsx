@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Play, Puzzle } from "lucide-react";
-import { launcherPlayModUrl } from "@/lib/launcher";
+import { ChevronDown, FolderOpen, Play, Puzzle, Trash2 } from "lucide-react";
+import {
+  launcherOpenModFolderUrl,
+  launcherPlayModUrl,
+  launcherUninstallModUrl,
+} from "@/lib/launcher";
 import { cn } from "@/lib/utils";
 
 export type LibraryModItem = { slug: string; title: string };
@@ -29,20 +33,36 @@ export function LibraryModsDisclosure({ mods }: { mods: LibraryModItem[] }) {
       {open ? (
         <ul className="mt-1 space-y-1 border-l border-border pl-2">
           {mods.map((m) => (
-            <li key={m.slug} className="flex min-w-0 items-center gap-1">
+            <li key={m.slug} className="flex min-w-0 flex-col gap-1">
               <Link
                 href={`/mods/${m.slug}`}
-                className="min-w-0 flex-1 truncate text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                className="min-w-0 truncate text-[11px] font-semibold text-muted-foreground hover:text-foreground"
               >
                 {m.title}
               </Link>
-              <a
-                href={launcherPlayModUrl(m.slug)}
-                className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
-                title={`Play ${m.title}`}
-              >
-                <Play className="size-2.5 fill-current" /> Play
-              </a>
+              <div className="flex flex-wrap items-center gap-1">
+                <a
+                  href={launcherPlayModUrl(m.slug)}
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
+                  title={`Play ${m.title}`}
+                >
+                  <Play className="size-2.5 fill-current" /> Play
+                </a>
+                <a
+                  href={launcherOpenModFolderUrl(m.slug)}
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
+                  title="Open mod folder"
+                >
+                  <FolderOpen className="size-2.5" /> Folder
+                </a>
+                <a
+                  href={launcherUninstallModUrl(m.slug)}
+                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/25"
+                  title="Remove mod"
+                >
+                  <Trash2 className="size-2.5" /> Uninstall
+                </a>
+              </div>
             </li>
           ))}
         </ul>
