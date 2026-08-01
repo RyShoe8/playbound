@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import CatalogMod from "@/lib/models/CatalogMod";
 import { probeGameInstall, probeModInstall } from "@/lib/catalogVersionProbe";
+import { gameProbePatchFields, modProbePatchFields } from "@/lib/applyVersionProbePatch";
+import { withAutoHealGame, withAutoHealMod } from "@/lib/healBrokenInstall";
 
 export const maxDuration = 60;
 
@@ -21,6 +23,19 @@ export async function POST(req: Request) {
   return run(req);
 }
 
+function tally(
+  summary: { updated: number; ok: number; broken: number; skipped: number },
+  status: string,
+  patched: boolean
+) {
+  if (status === "updated") {
+    if (patched) summary.updated++;
+    else summary.ok++;
+  } else if (status === "ok") summary.ok++;
+  else if (status === "broken") summary.broken++;
+  else if (status === "skipped") summary.skipped++;
+}
+
 async function run(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,14 +52,20 @@ async function run(req: Request) {
     published: true,
     "launcherInstall.enabled": true,
   })
-    .select("slug launcherInstall")
+    .select("slug website launcherInstall")
     .lean();
 
   for (const g of games) {
-    const install = (g as { launcherInstall?: Record<string, unknown> }).launcherInstall;
+    const row = g as {
+      slug: string;
+      website?: string;
+      launcherInstall?: Record<string, unknown>;
+    };
+    const install = row.launcherInstall;
     if (!install) continue;
     summary.games.checked++;
-    const result = await probeGameInstall({
+
+    const probed = await probeGameInstall({
       kind: install.kind as string,
       repo: (install.repo as string) || null,
       assetPattern: (install.assetPattern as string) || null,
@@ -52,30 +73,39 @@ async function run(req: Request) {
       versionLabel: (install.versionLabel as string) || null,
       autoUpdatePinned: install.autoUpdatePinned !== false,
     });
+    const result = await withAutoHealGame(probed, {
+      kind: install.kind as string,
+      repo: (install.repo as string) || null,
+      url: (install.url as string) || null,
+      versionLabel: (install.versionLabel as string) || null,
+      website: row.website || null,
+      enabled: install.enabled !== false,
+    });
 
     const set: Record<string, unknown> = {
       "launcherInstall.detectedVersion": result.detectedVersion,
       "launcherInstall.lastVersionCheckAt": new Date(),
       "launcherInstall.versionCheckStatus": result.status,
       "launcherInstall.versionCheckNote": result.note || null,
+      ...gameProbePatchFields(
+        {
+          kind: install.kind as string,
+          autoUpdatePinned: install.autoUpdatePinned !== false,
+        },
+        result
+      ),
     };
 
-    if (
-      result.status === "updated" &&
-      install.autoUpdatePinned !== false &&
-      result.patch &&
-      String(install.kind || "").startsWith("direct")
-    ) {
-      if (result.patch.url) set["launcherInstall.url"] = result.patch.url;
-      if (result.patch.fileName) set["launcherInstall.fileName"] = result.patch.fileName;
-      if (result.patch.versionLabel) set["launcherInstall.versionLabel"] = result.patch.versionLabel;
-      summary.games.updated++;
-    } else if (result.status === "ok") summary.games.ok++;
-    else if (result.status === "broken") summary.games.broken++;
-    else if (result.status === "skipped") summary.games.skipped++;
-    else if (result.status === "updated") summary.games.ok++;
+    const patched = Object.keys(set).some(
+      (k) =>
+        k === "launcherInstall.url" ||
+        k === "launcherInstall.fileName" ||
+        k === "launcherInstall.versionLabel" ||
+        k === "launcherInstall.assetPattern"
+    );
+    tally(summary.games, result.status, patched);
 
-    await CatalogGame.updateOne({ slug: (g as { slug: string }).slug }, { $set: set });
+    await CatalogGame.updateOne({ slug: row.slug }, { $set: set });
   }
 
   const mods = await CatalogMod.find({ published: true })
@@ -95,27 +125,19 @@ async function run(req: Request) {
       detectedVersion?: string;
       autoUpdatePinned?: boolean;
     };
-    const result = await probeModInstall(mod);
+    const probed = await probeModInstall(mod);
+    const result = await withAutoHealMod(probed, mod);
 
+    const patch = modProbePatchFields(mod, result);
     const set: Record<string, unknown> = {
       detectedVersion: result.detectedVersion,
       lastVersionCheckAt: new Date(),
       versionCheckStatus: result.status,
       versionCheckNote: result.note || null,
+      ...patch,
     };
 
-    if (
-      result.status === "updated" &&
-      mod.autoUpdatePinned !== false &&
-      result.patch?.directUrl &&
-      mod.downloadKind === "direct-zip"
-    ) {
-      set.directUrl = result.patch.directUrl;
-      summary.mods.updated++;
-    } else if (result.status === "ok") summary.mods.ok++;
-    else if (result.status === "broken") summary.mods.broken++;
-    else if (result.status === "skipped") summary.mods.skipped++;
-    else if (result.status === "updated") summary.mods.ok++;
+    tally(summary.mods, result.status, Object.keys(patch).length > 0);
 
     await CatalogMod.updateOne({ slug: mod.slug }, { $set: set });
   }

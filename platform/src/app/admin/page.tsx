@@ -101,6 +101,7 @@ export default async function AdminPage() {
             label="Version issues"
             value={String(brokenVersions)}
             hint="Broken game/mod recipe probes"
+            href="/admin/version-issues"
           />
           <StatTile label="Developers" value={String(developers.length)} />
           <StatTile label="Registered Users" value={String(counts.totalUsers)} hint={`${counts.verifiedUsers} verified`} />
