@@ -530,6 +530,74 @@ body {
   margin-top: 16px;
 }
 
+.detail-hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  margin: 0 0 8px;
+}
+
+.detail-cover {
+  flex: 0 0 148px;
+  width: 148px;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-cover-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.detail-hero-copy {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 4px;
+}
+
+.detail-hero-title {
+  margin: 10px 0 0;
+}
+
+.detail-hero-sub {
+  margin: 8px 0 0;
+  max-width: 640px;
+}
+
+.detail-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+@media (max-width: 720px) {
+  .detail-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .detail-cover {
+    width: 120px;
+    flex-basis: 120px;
+  }
+}
+
 .detail-tabs {
   display: flex;
   gap: 4px;

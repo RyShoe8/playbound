@@ -1390,19 +1390,22 @@ async function renderGameDetailView(slug) {
     )
     .join("");
 
-  const heroStyle = coverUrl
-    ? `background-image: linear-gradient(180deg, rgba(12,10,18,0.25) 0%, rgba(12,10,18,0.92) 70%, var(--bg-main) 100%), url('${coverUrl.replace(/'/g, "%27")}');`
-    : `background-image: linear-gradient(180deg, rgba(12,10,18,0.2) 0%, rgba(12,10,18,0.95) 100%), ${bgGrad};`;
+  const coverHtml = coverUrl
+    ? `<div class="detail-cover"><img src="${escapeHtml(coverUrl)}" alt="" loading="lazy" /></div>`
+    : `<div class="detail-cover detail-cover-fallback" style="background:${bgGrad}"><span>${escapeHtml(
+        (detail.title || "?").charAt(0)
+      )}</span></div>`;
 
   container.innerHTML = `
     <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 12px">← Back</button>
 
-    <section class="detail-bleed-hero" style="${heroStyle}">
-      <div class="detail-bleed-inner">
+    <section class="detail-hero">
+      ${coverHtml}
+      <div class="detail-hero-copy">
         <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}</div>
-        <h1 class="view-title detail-bleed-title">${escapeHtml(detail.title)}</h1>
-        <p class="view-sub detail-bleed-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
-        <div class="detail-bleed-actions" id="detail-actions"></div>
+        <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
+        <p class="view-sub detail-hero-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+        <div class="detail-hero-actions" id="detail-actions"></div>
       </div>
     </section>
 

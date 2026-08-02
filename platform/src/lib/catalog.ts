@@ -45,7 +45,7 @@ function toGame(doc: LeanGame): Game {
     gameOfWeek: Boolean(doc.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem),
     art: doc.art as Game["art"],
-    coverImage: (doc.coverImage as string) || undefined,
+    coverImage: (doc.coverImage as string) || seedBySlug.get(String(doc.slug))?.coverImage,
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : undefined,
     systemRequirements: doc.systemRequirements as Game["systemRequirements"],
