@@ -1759,6 +1759,12 @@ async function installMod(slug, baseDirOverride) {
     return { status: "external", url: install.url || null };
   }
 
+  // OpenRA-style portable clients ship their own engine — no base game required.
+  const portableAsset = /winportable/i.test(String(install.assetPattern || ""));
+  if (portableAsset && !baseDirOverride) {
+    return placeModFiles(slug, install, null);
+  }
+
   const userDataMod = modUsesUserDataFolder(install.baseGameSlug);
   let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
   const baseReady = isBaseGameReady(install.baseGameSlug) || Boolean(baseDirOverride && fs.existsSync(baseDirOverride));
