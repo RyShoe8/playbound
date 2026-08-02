@@ -637,6 +637,17 @@ function getApiBase() {
   return String(settings.apiBase || process.env.PLAYBOUND_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "");
 }
 
+/** Turn relative site media paths into absolute URLs the Electron renderer can load. */
+function resolveMediaUrl(pathOrUrl) {
+  if (!pathOrUrl) return null;
+  const s = String(pathOrUrl).trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s) || s.startsWith("data:")) return s;
+  if (s.startsWith("//")) return `https:${s}`;
+  const base = getApiBase();
+  return s.startsWith("/") ? `${base}${s}` : `${base}/${s}`;
+}
+
 async function refreshRemoteCatalog() {
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
@@ -1945,7 +1956,7 @@ function listInstalledGames() {
       title: entry?.title || slug,
       blurb: entry?.blurb || "",
       art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
-      coverImage: entry?.coverImage || null,
+      coverImage: resolveMediaUrl(entry?.coverImage) || null,
       approxSize: entry?.approxSize || "",
       genres: entry?.genres || [],
       tags: entry?.tags || [],
@@ -2166,7 +2177,7 @@ ipcMain.handle("get-catalog", () => {
     kind: e.kind,
     approxSize: e.approxSize || "",
     art: e.art,
-    coverImage: e.coverImage || null,
+    coverImage: resolveMediaUrl(e.coverImage) || null,
     genres: Array.isArray(e.genres) ? e.genres : [],
     tags: Array.isArray(e.tags) ? e.tags : [],
     multiplayer: Boolean(e.multiplayer),
@@ -2472,7 +2483,7 @@ ipcMain.handle("get-recently-played", () => {
       title: entry?.title || slug,
       blurb: entry?.blurb || "",
       art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
-      coverImage: entry?.coverImage || null,
+      coverImage: resolveMediaUrl(entry?.coverImage) || null,
       lastPlayed: data.lastPlayed || null,
     });
   }
@@ -2514,9 +2525,11 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     features: Array.isArray(rich?.features) ? rich.features : [],
     genres: Array.isArray(rich?.genres) ? rich.genres : entry.genres || [],
     tags: Array.isArray(rich?.tags) ? rich.tags : entry.tags || [],
-    screenshots: Array.isArray(rich?.screenshots) ? rich.screenshots : [],
+    screenshots: (Array.isArray(rich?.screenshots) ? rich.screenshots : [])
+      .map((src) => resolveMediaUrl(src))
+      .filter(Boolean),
     systemRequirements: rich?.systemRequirements || null,
-    coverImage: rich?.coverImage || entry.coverImage || null,
+    coverImage: resolveMediaUrl(rich?.coverImage || entry.coverImage) || null,
     approxSize: rich?.approxSize || entry.approxSize || "",
     multiplayer: Boolean(rich?.multiplayer ?? entry.multiplayer),
     mods,
