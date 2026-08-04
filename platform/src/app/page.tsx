@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gem, Newspaper, Server, Users } from "lucide-react";
+import { Gem, Newspaper } from "lucide-react";
 import { collections } from "@/lib/data";
 import { listGamesNewestFirst, listGames, hiddenGems, getGame } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
@@ -10,21 +10,18 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { HomeHero } from "@/components/HomeHero";
+import {
+  HomeServerPreviews,
+  type HomeServerPreview,
+} from "@/components/HomeServerPreviews";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
 
-type ServerPreviewRow = {
-  slug: string;
-  title: string;
-  serverCount: number;
-  playerCount: number;
-};
-
-async function loadServerPreviews(): Promise<ServerPreviewRow[]> {
+async function loadServerPreviews(): Promise<HomeServerPreview[]> {
   const settled = await Promise.allSettled(
-    HOME_SERVER_SLUGS.map(async (slug): Promise<ServerPreviewRow | null> => {
+    HOME_SERVER_SLUGS.map(async (slug): Promise<HomeServerPreview | null> => {
       const [game, result] = await Promise.all([getGame(slug), listServersForGame(slug)]);
       if (!game || !result.supported) return null;
       const servers = result.servers ?? [];
@@ -34,11 +31,14 @@ async function loadServerPreviews(): Promise<ServerPreviewRow[]> {
         title: game.title,
         serverCount: servers.length,
         playerCount,
+        platforms: game.platforms,
+        browserPlayable: game.browserPlayable,
+        steamDeck: game.steamDeck,
       };
     })
   );
 
-  const rows: ServerPreviewRow[] = [];
+  const rows: HomeServerPreview[] = [];
   for (const result of settled) {
     if (result.status === "fulfilled" && result.value) rows.push(result.value);
   }
@@ -100,38 +100,8 @@ export default async function HomePage() {
       {/* ── Games + Hidden gems (client-filtered from full catalog) */}
       <HomeGamesSections games={games} gems={gems} />
 
-      {/* ── Live servers ───────────────────────────────────────── */}
-      {serverPreviews.length > 0 && (
-        <section>
-          <SectionHeader
-            title="Live Servers"
-            subtitle="Public multiplayer right now — open the full browser for every title"
-            href="/servers"
-          />
-          <div className="grid gap-3 sm:grid-cols-3">
-            {serverPreviews.map((row) => (
-              <Link
-                key={row.slug}
-                href="/servers"
-                className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
-              >
-                <p className="flex items-center gap-1.5 font-bold">
-                  <Server className="size-3.5 text-primary" /> {row.title}
-                </p>
-                <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                  <span>
-                    {row.serverCount} server{row.serverCount === 1 ? "" : "s"}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="size-3.5" />
-                    {row.playerCount} player{row.playerCount === 1 ? "" : "s"}
-                  </span>
-                </p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ── Live servers (client-filtered by compatibility) ─── */}
+      <HomeServerPreviews rows={serverPreviews} />
 
       {/* ── Mods ───────────────────────────────────────────────── */}
       {featuredMods.length > 0 && (

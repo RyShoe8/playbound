@@ -9,13 +9,19 @@ import type { GameServer } from "@/lib/servers/types";
 import { estimateLatencyMs } from "@/lib/servers/latencyEstimate";
 import { EmptyHint } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/lib/telemetry";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { isGameCompatible } from "@/lib/compatibility/compatibility";
 
 type IndexGame = {
   slug: string;
   title: string;
   supported: boolean;
+  platforms?: string[];
+  browserPlayable?: boolean;
+  steamDeck?: boolean;
 };
 
 type CatalogMod = {
@@ -123,6 +129,7 @@ export function GlobalServerBrowser({
   const [sortKey, setSortKey] = useState<SortKey>("players");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const { track } = useTelemetry();
+  const { mode, device } = useCompatibilityFilter();
   const lastViewedSlug = useRef<string | null>(null);
 
   function setSort(key: SortKey) {
@@ -164,9 +171,22 @@ export function GlobalServerBrowser({
   }, [queryGame, queryMod]);
 
   const visibleGames = useMemo(() => {
-    if (!installedOnly) return games;
-    return games.filter((g) => installedGames.has(g.slug));
-  }, [games, installedOnly, installedGames]);
+    let list = games;
+    if (mode === "compatible") {
+      list = list.filter((g) =>
+        isGameCompatible(
+          {
+            platforms: g.platforms,
+            browserPlayable: g.browserPlayable,
+            steamDeck: g.steamDeck,
+          },
+          device.type
+        )
+      );
+    }
+    if (installedOnly) list = list.filter((g) => installedGames.has(g.slug));
+    return list;
+  }, [games, installedOnly, installedGames, mode, device.type]);
 
   /**
    * The selection is validated during render rather than corrected afterwards
@@ -330,6 +350,15 @@ export function GlobalServerBrowser({
 
   return (
     <div className="space-y-4">
+      <CompatibilityListingBar />
+
+      {visibleGames.length === 0 ? (
+        <EmptyHint icon={Server}>
+          No live servers for games compatible with this device. Switch to All Games to browse every
+          title.
+        </EmptyHint>
+      ) : null}
+
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Game
@@ -339,7 +368,8 @@ export function GlobalServerBrowser({
               setGameSlug(e.target.value);
               setModSlug("");
             }}
-            className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+            disabled={visibleGames.length === 0}
+            className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
           >
             {visibleGames.map((g) => (
               <option key={g.slug} value={g.slug}>
