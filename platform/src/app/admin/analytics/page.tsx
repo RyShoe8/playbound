@@ -30,9 +30,11 @@ async function loadAnalytics(filters: {
 
   const now = new Date();
   const today = startOfDay(now);
+  const yesterday = daysAgo(1);
   const d7 = daysAgo(7);
   const d14 = daysAgo(14);
   const d30 = daysAgo(30);
+  const d60 = daysAgo(60);
 
   const recentFilter: Record<string, unknown> = {};
   if (filters.event) recentFilter.event = filters.event;
@@ -56,6 +58,11 @@ async function loadAnalytics(filters: {
     topEvents,
     dailyVolume,
     recent,
+    eventsTodayPrev,
+    events7dPrev,
+    events30dPrev,
+    uniqueSessions7dPrev,
+    identifiedUsers7dPrev,
   ] = await Promise.all([
     TelemetryEvent.countDocuments({ createdAt: { $gte: today } }),
     TelemetryEvent.countDocuments({ createdAt: { $gte: d7 } }),
@@ -91,6 +98,17 @@ async function loadAnalytics(filters: {
       .limit(40)
       .select("event userId sessionId url country browser os device createdAt properties")
       .lean(),
+    TelemetryEvent.countDocuments({ createdAt: { $gte: yesterday, $lt: today } }),
+    TelemetryEvent.countDocuments({ createdAt: { $gte: d14, $lt: d7 } }),
+    TelemetryEvent.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
+    TelemetryEvent.distinct("sessionId", {
+      createdAt: { $gte: d14, $lt: d7 },
+      sessionId: { $nin: [null, ""] },
+    }).then((ids) => ids.length),
+    TelemetryEvent.distinct("userId", {
+      createdAt: { $gte: d14, $lt: d7 },
+      userId: { $nin: [null, ""] },
+    }).then((ids) => ids.length),
   ]);
 
   return {
@@ -102,6 +120,11 @@ async function loadAnalytics(filters: {
     topEvents,
     dailyVolume,
     recent,
+    eventsTodayPrev,
+    events7dPrev,
+    events30dPrev,
+    uniqueSessions7dPrev,
+    identifiedUsers7dPrev,
   };
 }
 
@@ -160,17 +183,19 @@ export default async function AdminAnalyticsPage({
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <StatTile label="Events today" value={String(data.eventsToday)} />
-            <StatTile label="Events (7d)" value={String(data.events7d)} />
-            <StatTile label="Events (30d)" value={String(data.events30d)} />
+            <StatTile label="Events today" value={String(data.eventsToday)} trend={{ value: data.eventsTodayPrev, label: "yesterday" }} />
+            <StatTile label="Events (7d)" value={String(data.events7d)} trend={{ value: data.events7dPrev }} />
+            <StatTile label="Events (30d)" value={String(data.events30d)} trend={{ value: data.events30dPrev }} />
             <StatTile
               label="Sessions (7d)"
               value={String(data.uniqueSessions7d)}
+              trend={{ value: data.uniqueSessions7dPrev }}
             />
             <StatTile
               label="Users (7d)"
               value={String(data.identifiedUsers7d)}
               hint="Identified only"
+              trend={{ value: data.identifiedUsers7dPrev }}
             />
           </div>
 
