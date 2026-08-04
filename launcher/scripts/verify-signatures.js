@@ -337,6 +337,17 @@ function main() {
   }
 
   const signedCount = targets.length - untrusted.length;
+
+  // Signings are metered (SSL.com eSigner: 240/year), so report the cost of
+  // this build. The NSIS uninstaller is signed during packaging and embedded
+  // into the installer, so it is spent but no longer on disk to verify —
+  // count it explicitly rather than under-reporting.
+  const verifiedOurs = targets.filter((t) => !t.kind.includes("native")).length;
+  const nativesSigned = signing.signAllBinaries
+    ? targets.filter((t) => t.kind.includes("native")).length
+    : 0;
+  const signingsUsed = verifiedOurs + nativesSigned + 1; // +1 = embedded uninstaller
+
   console.log(`${TAG} ==========================================================`);
   console.log(`${TAG}  SUCCESS — all ${targets.length} Windows binaries are signed`);
   if (signerSubject) {
@@ -347,6 +358,7 @@ function main() {
       (untrusted.length ? ` · untrusted-but-allowed: ${untrusted.length}` : "") +
       (notTimestamped.length ? ` · missing timestamp: ${notTimestamped.length}` : " · all timestamped")
   );
+  console.log(`${TAG}  Signings consumed by this build: ~${signingsUsed}`);
   console.log(`${TAG} ==========================================================`);
   process.exit(0);
 }

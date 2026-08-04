@@ -28,9 +28,12 @@ npm run sync-catalog      # refresh the bundled offline catalog
 
 | Command | Output | Signed |
 | --- | --- | --- |
+| `npm run dist` | `dist/` | No — alias for `dist:dev` |
 | `npm run dist:dev` | `dist/` | No — never, even with a certificate installed |
 | `npm run dist:prod` | `dist/` | Yes — required, and verified before the build succeeds |
-| `npm run dist` | `dist/` | Only if signing credentials happen to be present |
+
+Signing happens **only** via `dist:prod`. Signings are metered (see
+[Release Signing](#release-signing)), so no other command can spend them.
 
 Both targets are produced: the NSIS installer
 (`PlayBound-Setup-<version>.exe`) and the portable build
@@ -63,13 +66,31 @@ certificate.
 sync catalog  →  build + sign  →  verify every binary  →  release
 ```
 
-- **Development builds are never signed.** `dist:dev` forces signing off.
+- **Development builds are never signed.** Both `dist` and `dist:dev` force
+  signing off, so they can never spend metered signings.
 - **Production builds must be signed.** `dist:prod` fails if credentials are
   missing, if signing fails, or if any shipped binary fails verification.
 - **Everything shipped is signed** — installer, portable build, app executable,
-  uninstaller, the `elevate.exe` helper, and Electron's bundled native binaries.
+  uninstaller, and the `elevate.exe` helper.
 - **Missing credentials never block a normal build.** With nothing configured,
   builds still succeed and simply produce unsigned artifacts.
+
+### Signing budget
+
+Signing goes through **SSL.com eSigner**, which meters signatures: **240 per
+year (~20/month**, unused roll over). One release costs several signings.
+
+| Setting | Per release | Releases/year |
+| --- | --- | --- |
+| **Default** | **~5** | ~48 |
+| `WINDOWS_SIGN_ALL_BINARIES=true` | ~11 | ~21 |
+
+Enabling the second signs Electron's bundled `.dll` files as well. They are
+stock Electron binaries rather than our code, so it is off by default — it more
+than doubles the cost for marginal benefit.
+
+Failed builds still consume signings, so rehearse with `npm run dist:dev`
+before a real release. `npm run signing:status` shows the current cost.
 
 ### Check the current state
 
@@ -83,18 +104,21 @@ secrets.
 
 ### Set up signing
 
-Standard certificate (`.pfx` file):
+**SSL.com eSigner (our setup).** Install eSigner CKA, which loads the cloud
+certificate into the Windows certificate store so `signtool` can use it. No
+`.pfx` and no hardware token — and it works on GitHub-hosted runners.
+
+```powershell
+npm run signing:status          # read the thumbprint CKA installed
+$env:WINDOWS_CERT_SHA1 = "A1B2C3D4…"
+npm run dist:prod
+```
+
+**Standard certificate (`.pfx` file)**, if we ever move off eSigner:
 
 ```powershell
 $env:WINDOWS_CERT_PATH = "$env:USERPROFILE\.certs\playbound.pfx"
 $env:WINDOWS_CERT_PASSWORD = "…"
-npm run dist:prod
-```
-
-EV certificate (hardware token, selected from the Windows certificate store):
-
-```powershell
-$env:WINDOWS_CERT_SHA1 = "A1B2C3D4…"
 npm run dist:prod
 ```
 

@@ -55,13 +55,19 @@ const { execFileSync } = require("child_process");
 const DEFAULT_TIMESTAMP_SERVER = "http://timestamp.digicert.com";
 
 /**
- * File extensions signed in addition to the main .exe when signing is on.
+ * File extensions signed in addition to the main .exe, when explicitly enabled.
  *
  * Electron ships native binaries (ffmpeg.dll, libEGL.dll, *.node addons) that
- * land on the user's disk alongside the app. Enterprise deployment checks and
- * some AV heuristics expect those to carry a signature too, so we sign them by
- * default. Signing them does add build time — set WINDOWS_SIGN_ALL_BINARIES=false
- * to sign only the executables.
+ * land on the user's disk alongside the app. Signing them helps with enterprise
+ * allow-listing and some AV heuristics.
+ *
+ * OFF BY DEFAULT, because signing is a metered resource here: PlayBound signs
+ * through SSL.com eSigner, whose plan allows 240 signings per year (~20/month).
+ * Including these six-or-so DLLs takes a release from ~5 signings to ~11 —
+ * roughly 21 releases a year instead of 48. They are stock Electron binaries
+ * rather than our code, so the trade is rarely worth it.
+ *
+ * Set WINDOWS_SIGN_ALL_BINARIES=true to include them.
  */
 const EXTRA_SIGN_EXTS = [".dll", ".node"];
 
@@ -133,7 +139,8 @@ function resolveSigningConfig() {
 
   const timestampServer = readEnv("WINDOWS_TIMESTAMP_SERVER") || DEFAULT_TIMESTAMP_SERVER;
   const publisherName = readEnv("WINDOWS_PUBLISHER_NAME") || null;
-  const signAllBinaries = readTriState("WINDOWS_SIGN_ALL_BINARIES") !== false;
+  // Opt-in, not opt-out — see EXTRA_SIGN_EXTS. Signings are a metered resource.
+  const signAllBinaries = readTriState("WINDOWS_SIGN_ALL_BINARIES") === true;
   const allowUntrusted = readTriState("WINDOWS_SIGNING_ALLOW_UNTRUSTED") === true;
 
   const disabled = (reason) => ({
@@ -300,9 +307,12 @@ function reportSigningConfig(config, opts = {}) {
 
   console.log(`${tag} ${config.reason}`);
   console.log(`${tag} Mode: ${config.mode} · required: ${config.required ? "yes" : "no (auto)"}`);
-  if (config.signAllBinaries) {
-    console.log(`${tag} Also signing bundled native binaries: ${EXTRA_SIGN_EXTS.join(", ")}`);
-  }
+  console.log(
+    config.signAllBinaries
+      ? `${tag} Bundled native binaries (${EXTRA_SIGN_EXTS.join(", ")}) WILL be signed — ~11 signings this build.`
+      : `${tag} Bundled native binaries skipped — ~5 signings this build. ` +
+        `Set WINDOWS_SIGN_ALL_BINARIES=true to include them (~11).`
+  );
   return true;
 }
 
