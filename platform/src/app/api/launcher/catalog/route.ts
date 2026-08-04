@@ -4,6 +4,8 @@ import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import {
   isPcInstallCandidate,
   toLauncherCatalogEntry,
+  sizeLabelFromMB,
+  absoluteMediaUrl,
   type LauncherInstall,
 } from "@/lib/launcherInstall";
 
@@ -12,26 +14,44 @@ export async function GET(req: Request) {
     const origin = new URL(req.url).origin || "https://playbound.club";
     const games = await listGames();
     const entries = games
-      .filter((g) => isPcInstallCandidate(g))
       .map((g) => {
-        const recipe =
-          (g.launcherInstall as LauncherInstall | undefined) ||
-          launcherInstallBySlug[g.slug] ||
-          null;
-        if (!recipe?.enabled || !recipe.kind) return null;
-        return toLauncherCatalogEntry({
+        // PC-installable games: full launcher recipe
+        if (isPcInstallCandidate(g)) {
+          const recipe =
+            (g.launcherInstall as LauncherInstall | undefined) ||
+            launcherInstallBySlug[g.slug] ||
+            null;
+          if (!recipe?.enabled || !recipe.kind) return null;
+          return toLauncherCatalogEntry({
+            slug: g.slug,
+            title: g.title,
+            tagline: g.tagline,
+            sizeMB: g.sizeMB,
+            art: g.art,
+            launcherInstall: recipe,
+            coverImage: g.coverImage,
+            genres: g.genres,
+            tags: g.tags,
+            launchMethods: g.launchMethods,
+            origin,
+          });
+        }
+
+        // Browser / non-installable games: external entry → opens website
+        const cover = absoluteMediaUrl(g.coverImage, origin);
+        return {
           slug: g.slug,
           title: g.title,
-          tagline: g.tagline,
-          sizeMB: g.sizeMB,
-          art: g.art,
-          launcherInstall: recipe,
-          coverImage: g.coverImage,
-          genres: g.genres,
-          tags: g.tags,
-          launchMethods: g.launchMethods,
-          origin,
-        });
+          blurb: g.tagline,
+          kind: "external" as const,
+          url: g.website,
+          art: [g.art.from, g.art.to],
+          approxSize: sizeLabelFromMB(g.sizeMB) ?? "Browser",
+          genres: Array.isArray(g.genres) ? g.genres : [],
+          tags: Array.isArray(g.tags) ? g.tags : [],
+          multiplayer: Boolean(g.launchMethods?.includes("server")),
+          ...(cover ? { coverImage: cover } : {}),
+        };
       })
       .filter(Boolean);
 
@@ -44,3 +64,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Failed to load catalog" }, { status: 500 });
   }
 }
+
