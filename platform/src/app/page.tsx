@@ -1,19 +1,18 @@
 import Link from "next/link";
-import { Gem, Newspaper, Server, Sparkles, Users } from "lucide-react";
+import { Gem, Newspaper, Server, Users } from "lucide-react";
 import { collections } from "@/lib/data";
-import { gameOfTheWeek, listGames, hiddenGems, getGame } from "@/lib/catalog";
+import { listGamesNewestFirst, listGames, hiddenGems, getGame } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
-import { GameArt } from "@/components/GameArt";
-import { CardRow, PlayCta } from "@/components/GameCard";
+import { CardRow } from "@/components/GameCard";
 import { ModPreviewCard } from "@/components/ModPreviewCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
+import { HomeHero } from "@/components/HomeHero";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
-const FEATURED_GAMES_LIMIT = 12;
 const FEATURED_MODS_LIMIT = 8;
 
 type ServerPreviewRow = {
@@ -46,39 +45,16 @@ async function loadServerPreviews(): Promise<ServerPreviewRow[]> {
   return rows;
 }
 
-function pickFeaturedGames<T extends { slug: string; gameOfWeek?: boolean; hiddenGem?: boolean }>(
-  all: T[],
-  heroSlug: string
-): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
-  const push = (g: T | undefined) => {
-    if (!g || seen.has(g.slug)) return;
-    seen.add(g.slug);
-    out.push(g);
-  };
-
-  push(all.find((g) => g.slug === heroSlug));
-  for (const g of all.filter((g) => g.gameOfWeek)) push(g);
-  for (const g of all.filter((g) => g.hiddenGem)) push(g);
-  for (const g of all) {
-    if (out.length >= FEATURED_GAMES_LIMIT) break;
-    push(g);
-  }
-  return out.slice(0, FEATURED_GAMES_LIMIT);
-}
-
 export default async function HomePage() {
-  const [hero, games, gems, mods, serverPreviews] = await Promise.all([
-    gameOfTheWeek(),
+  const [gamesNewestFirst, games, gems, mods, serverPreviews] = await Promise.all([
+    listGamesNewestFirst(),
     listGames(),
     hiddenGems(),
     listMods(),
     loadServerPreviews(),
   ]);
-  if (!hero) return null;
+  if (!gamesNewestFirst.length) return null;
 
-  const featuredGames = pickFeaturedGames(games, hero.slug);
   const featuredMods = mods.slice(0, FEATURED_MODS_LIMIT);
   const featuredCollections = collections.slice(0, 3);
   const gameBySlug = new Map(games.map((g) => [g.slug, g]));
@@ -102,30 +78,7 @@ export default async function HomePage() {
         </p>
       </header>
 
-      {/* ── Hero: Game of the Week ─────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl border border-border">
-        <GameArt game={hero} showTitle={false} className="absolute inset-0" iconSize="lg" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/10" />
-        <div className="relative flex min-h-[380px] flex-col justify-end gap-4 p-6 sm:p-10 lg:max-w-2xl">
-          <Badge tone="play" className="w-fit">
-            <Sparkles className="size-3" /> Game of the Week
-          </Badge>
-          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{hero.title}</h2>
-          <p className="max-w-xl text-sm text-white/85 sm:text-base">{hero.tagline}</p>
-          <p className="text-sm text-white/70">
-            {hero.genres.join(" / ")} · {hero.releaseYear}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <PlayCta game={hero} size="lg" />
-            <Link
-              href={`/games/${hero.slug}`}
-              className="inline-flex h-12 items-center rounded-full border border-white/25 bg-white/10 px-7 text-base font-bold text-white backdrop-blur transition-colors hover:bg-white/20"
-            >
-              Learn More
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HomeHero gamesNewestFirst={gamesNewestFirst} />
 
       {/* ── Newsletter ─────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/20 via-card to-card p-6 sm:p-8">
@@ -144,8 +97,8 @@ export default async function HomePage() {
         <RecaptchaNotice className="mt-3" />
       </section>
 
-      {/* ── Games + Hidden gems (client-filtered) ─────────────── */}
-      <HomeGamesSections featuredGames={featuredGames} gems={gems} />
+      {/* ── Games + Hidden gems (client-filtered from full catalog) */}
+      <HomeGamesSections games={games} gems={gems} />
 
       {/* ── Live servers ───────────────────────────────────────── */}
       {serverPreviews.length > 0 && (
@@ -210,8 +163,6 @@ export default async function HomePage() {
           </CardRow>
         </section>
       )}
-
-      {/* ── Hidden gems are rendered inside HomeGamesSections ──── */}
 
       {/* ── Collections ────────────────────────────────────────── */}
       <section>

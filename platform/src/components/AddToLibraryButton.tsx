@@ -5,6 +5,8 @@ import Link from "next/link";
 import { LibraryBig, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { launcherLocateUrl } from "@/lib/launcher";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { shouldOfferLauncher } from "@/lib/mobilePlay";
 
 type Props = {
   slug: string;
@@ -25,8 +27,12 @@ export function AddToLibraryButton({
   size = "md",
   saveForLater = false,
 }: Props) {
+  const { device } = useCompatibilityFilter();
   const [inLibrary, setInLibrary] = useState(initiallyInLibrary);
   const [busy, setBusy] = useState(false);
+
+  // Phones/tablets never hand off to the desktop locate deep link.
+  const skipLocate = saveForLater || !shouldOfferLauncher(device.type);
 
   const className = cn(
     "inline-flex items-center gap-2 rounded-full border border-border bg-secondary font-bold transition-all hover:bg-secondary/80 active:translate-y-px disabled:opacity-60",
@@ -55,15 +61,14 @@ export function AddToLibraryButton({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             slug,
-            intent: saveForLater ? "save" : "install",
+            intent: skipLocate ? "save" : "install",
           }),
         });
         if (!res.ok) {
           setInLibrary(false);
           return;
         }
-        if (!saveForLater) {
-          // Hand off to the app so the user can point at an existing .exe.
+        if (!skipLocate) {
           window.location.href = launcherLocateUrl(slug);
         }
       } else {
@@ -81,7 +86,7 @@ export function AddToLibraryButton({
 
   const label = inLibrary
     ? "In library"
-    : saveForLater
+    : skipLocate
       ? "Save to Library"
       : "Add to Library";
 

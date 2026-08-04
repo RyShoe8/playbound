@@ -638,6 +638,26 @@ export function GameEditorForm({
             <label className={label}>Website</label>
             <input required type="url" value={form.website} onChange={(e) => patch("website", e.target.value)} className={field} />
           </div>
+          <div>
+            <label className={label}>Android store / download URL</label>
+            <input
+              type="url"
+              value={form.androidStoreUrl ?? ""}
+              onChange={(e) => patch("androidStoreUrl", e.target.value || null)}
+              placeholder="https://play.google.com/store/apps/details?id=…"
+              className={field}
+            />
+          </div>
+          <div>
+            <label className={label}>iOS App Store URL</label>
+            <input
+              type="url"
+              value={form.iosStoreUrl ?? ""}
+              onChange={(e) => patch("iosStoreUrl", e.target.value || null)}
+              placeholder="https://apps.apple.com/app/…"
+              className={field}
+            />
+          </div>
         </div>
 
         <div>

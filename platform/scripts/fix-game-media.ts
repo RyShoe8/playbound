@@ -1,7 +1,7 @@
 /**
- * Patch coverImage + screenshots (+ videos when present) from seed data onto
+ * Patch cover/screenshots/videos and mobile store URLs from seed data onto
  * existing Mongo catalog docs. Runs after seed:games so production picks up
- * media even when the catalog already exists.
+ * new fields even when the catalog already exists.
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -23,7 +23,9 @@ async function main() {
   for (const seed of games) {
     const screenshots = seed.screenshots ?? [];
     const videos = seed.videos ?? [];
-    if (!seed.coverImage && screenshots.length === 0 && videos.length === 0) continue;
+    const hasMedia = Boolean(seed.coverImage || screenshots.length || videos.length);
+    const hasStores = Boolean(seed.androidStoreUrl || seed.iosStoreUrl);
+    if (!hasMedia && !hasStores) continue;
 
     const result = await CatalogGame.updateOne(
       { slug: seed.slug },
@@ -32,6 +34,8 @@ async function main() {
           ...(seed.coverImage ? { coverImage: seed.coverImage } : {}),
           ...(screenshots.length ? { screenshots } : {}),
           ...(videos.length ? { videos } : {}),
+          ...(seed.androidStoreUrl ? { androidStoreUrl: seed.androidStoreUrl } : {}),
+          ...(seed.iosStoreUrl ? { iosStoreUrl: seed.iosStoreUrl } : {}),
         },
       }
     );
@@ -43,7 +47,7 @@ async function main() {
     }
   }
 
-  console.log(`Patched media for ${patched} game(s).`);
+  console.log(`Patched media/store URLs for ${patched} game(s).`);
   process.exit(0);
 }
 

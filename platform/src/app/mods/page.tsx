@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { Puzzle } from "lucide-react";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
-import { ModCard } from "@/components/ModCard";
+import { ModsCatalog } from "@/components/ModsCatalog";
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata = pageMetadata({
@@ -18,18 +17,42 @@ export default async function ModsIndexPage() {
   const [mods, games] = await Promise.all([listMods(), listGames()]);
   const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
-  // Group by base game so every mod page is within two clicks of the index.
   const grouped = new Map<string, typeof mods>();
   for (const mod of mods) {
     const list = grouped.get(mod.baseGameSlug) ?? [];
     list.push(mod);
     grouped.set(mod.baseGameSlug, list);
   }
-  const sections = [...grouped.entries()].sort((a, b) => {
-    const nameA = gameBySlug.get(a[0])?.title ?? a[0];
-    const nameB = gameBySlug.get(b[0])?.title ?? b[0];
-    return nameA.localeCompare(nameB);
-  });
+  const sections = [...grouped.entries()]
+    .sort((a, b) => {
+      const nameA = gameBySlug.get(a[0])?.title ?? a[0];
+      const nameB = gameBySlug.get(b[0])?.title ?? b[0];
+      return nameA.localeCompare(nameB);
+    })
+    .map(([gameSlug, list]) => ({ gameSlug, mods: list }));
+
+  const gamesBySlug: Record<
+    string,
+    | {
+        slug: string;
+        title: string;
+        coverImage?: string;
+        platforms: string[];
+        browserPlayable: boolean;
+        steamDeck: boolean;
+      }
+    | undefined
+  > = {};
+  for (const g of games) {
+    gamesBySlug[g.slug] = {
+      slug: g.slug,
+      title: g.title,
+      coverImage: g.coverImage,
+      platforms: g.platforms,
+      browserPlayable: g.browserPlayable,
+      steamDeck: g.steamDeck,
+    };
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -73,48 +96,7 @@ export default async function ModsIndexPage() {
       {sections.length === 0 ? (
         <p className="mt-10 text-muted-foreground">No mods published yet.</p>
       ) : (
-        <div className="mt-10 space-y-10">
-          {sections.map(([gameSlug, list]) => {
-            const game = gameBySlug.get(gameSlug);
-            return (
-              <section key={gameSlug}>
-                <h2 className="text-xl font-bold">
-                  {game ? (
-                    <Link href={`/games/${game.slug}`} className="hover:text-primary">
-                      {game.title}
-                    </Link>
-                  ) : (
-                    gameSlug
-                  )}{" "}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    · {list.length} mod{list.length === 1 ? "" : "s"}
-                  </span>
-                </h2>
-                <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {list.map((mod) => (
-                    <li key={mod.slug}>
-                      <ModCard
-                        mod={mod}
-                        baseGame={
-                          game
-                            ? {
-                                slug: game.slug,
-                                title: game.title,
-                                coverImage: game.coverImage,
-                              }
-                            : null
-                        }
-                        meta={[mod.license, mod.sizeMB ? `~${mod.sizeMB} MB` : null]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+        <ModsCatalog sections={sections} gamesBySlug={gamesBySlug} />
       )}
     </div>
   );

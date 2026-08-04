@@ -215,6 +215,14 @@ export const gamePayloadSchema = z.object({
     .union([z.string().trim().regex(/^\d+$/, "Steam app id must be numeric"), z.literal(""), z.null()])
     .optional()
     .transform((v) => (!v ? null : v)),
+  androidStoreUrl: z
+    .union([z.string().trim().url().max(500), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? null : v)),
+  iosStoreUrl: z
+    .union([z.string().trim().url().max(500), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (!v ? null : v)),
   githubRepo: z
     .union([
       z.string().trim().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/, "Use owner/repo"),
@@ -491,6 +499,8 @@ export const emptyGameDraft = (): GamePayload => ({
   steamDeck: false,
   website: "https://example.com",
   steamAppId: null,
+  androidStoreUrl: null,
+  iosStoreUrl: null,
   githubRepo: null,
   communityLinks: null,
   gameOfWeek: false,
