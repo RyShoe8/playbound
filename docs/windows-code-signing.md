@@ -6,9 +6,14 @@ The build pipeline is already configured. Once a certificate is installed and a
 few environment variables are set, `npm run dist:prod` produces signed,
 verified artifacts with no further changes to any code.
 
-> ### Signing identity
+> ### Signing identity and plan
 >
-> PlayBound releases are signed as **The Media Shop, LLC**.
+> PlayBound releases are signed as **The Media Shop, LLC**, using an
+> **SSL.com OV certificate with eSigner cloud signing**.
+>
+> **Signings are metered: 240 per year (~20/month, unused roll over).** That
+> budget drives two defaults — native binary signing is off, and `npm run dist`
+> never signs. See [Signing budget](#signing-budget).
 >
 > The certificate must be issued to that exact legal entity — the name Windows
 > shows users in the UAC prompt and the file's Digital Signatures tab comes
@@ -17,6 +22,7 @@ verified artifacts with no further changes to any code.
 > (including the comma and `LLC`), and keep that name identical across renewals
 > so SmartScreen reputation and auto-updates carry over.
 
+- [Signing budget](#signing-budget)
 - [How Windows code signing works](#how-windows-code-signing-works)
 - [Standard vs EV certificates](#standard-vs-ev-certificates)
 - [Buying a certificate](#buying-a-certificate)
@@ -29,6 +35,57 @@ verified artifacts with no further changes to any code.
 - [SmartScreen reputation](#smartscreen-reputation)
 - [Troubleshooting](#troubleshooting)
 - [Best practices](#best-practices)
+
+---
+
+## Signing budget
+
+Unlike a traditional certificate — where the private key sits on your disk or a
+token and signing is free and unlimited — **eSigner meters every signature**.
+The plan allows **240 signings per year (~20/month)**, and unused signings roll
+over while the certificate is active.
+
+One release signs several files, not one:
+
+| Setting | Signings per release | Releases/year |
+| --- | --- | --- |
+| **Default** (`WINDOWS_SIGN_ALL_BINARIES` unset) | **~5** | ~48 |
+| Native binaries included (`=true`) | ~11 | ~21 |
+
+The five are: the NSIS installer, the portable build, `PlayBound.exe`,
+`elevate.exe`, and the uninstaller. Enabling native signing adds Electron's
+bundled `.dll` files (`ffmpeg`, `libEGL`, `libGLESv2`, `vk_swiftshader`,
+`vulkan-1`, `d3dcompiler_47`).
+
+**Why native signing is off by default.** Those DLLs are stock Electron
+binaries, not our code. Signing them helps with enterprise allow-listing and
+some AV heuristics, but it more than doubles the per-release cost and cuts the
+release budget from ~48/year to ~21. For a consumer app the trade is rarely
+worth it. Turn it on deliberately if a specific deployment scenario needs it.
+
+**Why `npm run dist` never signs.** Signing runs only via `npm run dist:prod`.
+An earlier design signed automatically whenever credentials were present, which
+meant anyone with the environment variables set in their shell could burn ~5
+signings by running `dist` to check something unrelated. On a metered plan that
+is a live footgun, so signing is now strictly opt-in.
+
+**Failed builds still consume signings.** If a build signs four files and then
+fails on the fifth, those four are spent. Rehearse with `npm run dist:dev`
+(free, never signs) before running a real release.
+
+To see the current cost at any time:
+
+```bash
+npm run signing:status
+```
+
+It prints the per-build cost, the implied releases per year, and how to change
+it. `npm run dist:prod` also reports signings consumed once verification passes.
+
+> **Worth confirming with SSL.com**, as their documentation does not state it:
+> whether a "signing" is counted per file or per API call, whether failed
+> signing attempts count against quota, and whether exceeding the quota is a
+> hard stop or an overage charge. All three affect the numbers above.
 
 ---
 
@@ -177,6 +234,40 @@ rotate immediately if either happens.
 ---
 
 ## Installing a certificate
+
+### SSL.com eSigner (our setup)
+
+eSigner keeps the private key in a cloud HSM — there is no `.pfx` and no
+hardware token. The bridge is **eSigner CKA (Cloud Key Adapter)**, a Windows
+application that acts as a virtual token and loads the certificate into the
+Windows certificate store, letting `signtool.exe` sign against the cloud HSM.
+
+The practical consequence: **the ordinary certificate-store path works
+unchanged.** No custom signing hook, no `CodeSignTool` wiring, and nothing in
+`electron-builder.js` needs to change.
+
+1. Install eSigner CKA from [SSL.com Downloads](https://www.ssl.com/downloads/)
+   and sign in with your SSL.com credentials plus TOTP.
+2. Confirm the certificate is visible and read its thumbprint:
+
+   ```bash
+   npm run signing:status
+   ```
+
+3. Set the thumbprint and build:
+
+   ```powershell
+   $env:WINDOWS_CERT_SHA1 = "…"
+   npm run dist:prod
+   ```
+
+Because CKA is store-backed rather than token-backed, this also works on
+GitHub-hosted runners — the usual "EV signing needs a self-hosted runner"
+constraint does not apply. See
+[Cloud Code Signing Automation with CI/CD Services](https://www.ssl.com/guide/code-signing-automation/).
+
+New certificates include 30 days of free eSigner, which is enough to exercise
+the whole pipeline before paying for a subscription.
 
 ### Standard (.pfx file)
 

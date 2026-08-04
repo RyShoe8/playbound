@@ -90,6 +90,20 @@ function main() {
   }
   console.log("");
 
+  // Signings are a metered resource on the SSL.com eSigner plan (240/year,
+  // ~20/month, unused roll over). Make the per-release cost visible here so the
+  // budget is a decision rather than a surprise at renewal.
+  const perBuild = config.signAllBinaries ? 11 : 5;
+  console.log("Signing budget (SSL.com eSigner — 240/year, ~20/month, rolls over):");
+  console.log(`  ~${perBuild} signings per release build (installer, portable, app exe, elevate, uninstaller` +
+    `${config.signAllBinaries ? ", + bundled native binaries" : ""})`);
+  console.log(`  ≈ ${Math.floor(240 / perBuild)} releases/year at this setting`);
+  if (config.signAllBinaries) {
+    console.log("  Unset WINDOWS_SIGN_ALL_BINARIES to drop to ~5/build (≈48 releases/year).");
+  }
+  console.log("  Failed builds still consume signings — use `npm run dist:dev` to rehearse.");
+  console.log("");
+
   for (const warning of config.warnings) {
     console.warn(`  WARNING: ${warning}`);
   }
