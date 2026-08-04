@@ -3,6 +3,7 @@
 import { Download, ExternalLink, MonitorPlay } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { useGameSession } from "@/hooks/useGameSession";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
 import {
@@ -21,6 +22,7 @@ export function PlayPageActions({
   officialHref: string;
 }) {
   const { device } = useCompatibilityFilter();
+  const { startSession } = useGameSession();
   const oneClick = isLauncherInstallable(game);
   const browser = isBrowserGame(game);
   const offerLauncher = shouldOfferLauncher(device.type);
@@ -46,6 +48,7 @@ export function PlayPageActions({
           event="official_download_clicked"
           properties={{ gameSlug: game.slug, url: outbound.href, surface: "play_page_mobile" }}
           className="mt-2 flex items-center gap-2 rounded-full bg-play px-6 py-2.5 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
+          onClick={() => outbound.label === "Play Free" && startSession(game.slug, game.title)}
         >
           {outbound.label === "Play Free" ? (
             <MonitorPlay className="size-4" />
@@ -79,6 +82,7 @@ export function PlayPageActions({
         event="official_download_clicked"
         properties={{ gameSlug: game.slug, url: game.website }}
         className="mt-2 flex items-center gap-2 rounded-full bg-play px-6 py-2.5 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
+        onClick={() => startSession(game.slug, game.title)}
       >
         <ExternalLink className="size-4" /> Play Free
       </TelemetryAnchor>

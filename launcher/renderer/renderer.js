@@ -39,6 +39,73 @@ let _supportedServerGames = [];
 let _installedGameSlugs = new Set();
 let _installedModsList = [];
 
+// ── Game session telemetry ──────────────────────────────────────────────────
+const TELEMETRY_API = "https://playbound.co/api/telemetry";
+let _activeGameSession = null;
+let _sessionHeartbeatTimer = null;
+
+/** POST a telemetry event to the existing ingest endpoint (fire-and-forget). */
+function postTelemetry(event, properties) {
+  const sessionId = `launcher-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const anonymousId = (() => {
+    try {
+      let id = localStorage.getItem("pb_telemetry_anonymous_id");
+      if (!id) {
+        id = `pb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        localStorage.setItem("pb_telemetry_anonymous_id", id);
+      }
+      return id;
+    } catch {
+      return `pb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+  })();
+  fetch(TELEMETRY_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      properties: { ...properties, platform: "launcher" },
+      timestamp: new Date().toISOString(),
+      sessionId,
+      anonymousId,
+      userId: accountState?.username || null,
+    }),
+    keepalive: true,
+  }).catch(() => { /* fail-soft */ });
+}
+
+/** Start tracking a new game session. Ends the previous session if one is active. */
+function startGameSession(slug, title) {
+  endGameSession();
+  const startedAt = Date.now();
+  _activeGameSession = { slug, title, startedAt, lastHeartbeat: startedAt };
+  postTelemetry("game_started", {
+    gameSlug: slug,
+    gameTitle: title,
+    installMethod: "launcher",
+  });
+  _sessionHeartbeatTimer = setInterval(() => {
+    if (_activeGameSession) _activeGameSession.lastHeartbeat = Date.now();
+  }, 60000);
+}
+
+/** End the active game session and fire game_finished with computed duration. */
+function endGameSession() {
+  if (!_activeGameSession) return;
+  clearInterval(_sessionHeartbeatTimer);
+  _sessionHeartbeatTimer = null;
+  const durationMs = _activeGameSession.lastHeartbeat - _activeGameSession.startedAt;
+  postTelemetry("game_finished", {
+    gameSlug: _activeGameSession.slug,
+    gameTitle: _activeGameSession.title,
+    durationMs,
+  });
+  _activeGameSession = null;
+}
+
+window.addEventListener("beforeunload", () => endGameSession());
+// ─────────────────────────────────────────────────────────────────────────────
+
 // DOM Elements
 const navBtns = document.querySelectorAll(".nav-btn");
 const views = {
@@ -460,6 +527,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       try {
         setStatus(`Launching ${game.title}…`);
         await window.playbound.play(game.slug);
+        startGameSession(game.slug, game.title);
         setStatus(`Launched ${game.title}`);
       } catch (err) {
         setStatus(err.message || String(err), true);
@@ -1081,6 +1149,7 @@ function paintServersTable() {
       setStatus(`Joining ${host}:${port}…`);
       try {
         await window.playbound.play(slug, { host, port });
+        startGameSession(slug, slug);
       } catch (err) {
         setStatus(err.message || String(err), true);
       }
@@ -1488,6 +1557,7 @@ async function renderGameDetailView(slug) {
     document.getElementById("act-play").addEventListener("click", async () => {
       setStatus("Launching...");
       await window.playbound.play(slug);
+      startGameSession(slug, detail.title || slug);
     });
     document.getElementById("act-shortcut").addEventListener("click", async () => {
       try {
@@ -1795,6 +1865,7 @@ async function renderGameDetailView(slug) {
       sSec.querySelectorAll(".btn-join-s").forEach((b) => {
         b.addEventListener("click", async () => {
           await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
+          startGameSession(slug, detail.title || slug);
         });
       });
     }
@@ -1868,6 +1939,7 @@ function renderDeepLinkView(ctx) {
     `;
     document.getElementById("dl-act-run").addEventListener("click", async () => {
       await window.playbound.play(ctx.slug, ctx.join);
+      startGameSession(ctx.slug, title);
       navigateTo("home");
     });
   } else {
