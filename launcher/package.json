@@ -7,6 +7,8 @@
     "start": "electron .",
     "test:resolve": "electron . --test-resolve",
     "test:deep-link": "electron . --test-deep-link",
+    "sync-catalog": "node scripts/sync-catalog.js",
+    "predist": "node scripts/sync-catalog.js",
     "dist": "electron-builder --win"
   },
   "author": "PlayBound",
