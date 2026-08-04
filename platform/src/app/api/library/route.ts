@@ -18,7 +18,7 @@ function toDto(doc: {
 }): LibraryEntryDTO {
   return {
     gameSlug: doc.gameSlug,
-    saved: false,
+    saved: Boolean(doc.saved) && !doc.installed,
     installed: Boolean(doc.installed),
     version: doc.version ?? null,
     installedAt: doc.installedAt ? new Date(doc.installedAt).toISOString() : null,
@@ -34,15 +34,9 @@ export async function GET() {
 
   try {
     await dbConnect();
-    // Wishlist removed — library is owned/installed games only.
-    await LibraryEntry.deleteMany({
-      userId: session.user.id,
-      installed: { $ne: true },
-      saved: true,
-    });
     const rows = await LibraryEntry.find({
       userId: session.user.id,
-      installed: true,
+      $or: [{ installed: true }, { saved: true }],
     })
       .sort({ updatedAt: -1 })
       .lean();
@@ -56,9 +50,11 @@ export async function GET() {
 
 const addSchema = z.object({
   slug: z.string().min(1).max(80),
+  /** install = claim as owned; save = keep for later (e.g. wrong device). */
+  intent: z.enum(["install", "save"]).optional().default("install"),
 });
 
-/** Manually claim a catalog game as owned (installed) without a launcher path. */
+/** Manually claim a catalog game as owned, or save for later on another device. */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -66,38 +62,48 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { slug } = addSchema.parse(await req.json());
+    const { slug, intent } = addSchema.parse(await req.json());
     if (!(await getGame(slug))) {
       return NextResponse.json({ error: "Unknown game" }, { status: 404 });
     }
 
     await dbConnect();
     const now = new Date();
+    const saving = intent === "save";
+
     const entry = await LibraryEntry.findOneAndUpdate(
       { userId: session.user.id, gameSlug: slug },
       {
-        $set: {
-          installed: true,
-          saved: false,
-          updatedAt: now,
-          installedAt: now,
-        },
+        $set: saving
+          ? {
+              saved: true,
+              updatedAt: now,
+            }
+          : {
+              installed: true,
+              saved: false,
+              updatedAt: now,
+              installedAt: now,
+            },
         $setOnInsert: {
           userId: session.user.id,
           gameSlug: slug,
           addedAt: now,
+          ...(saving ? { installed: false } : {}),
         },
       },
       { upsert: true, new: true }
     ).lean();
 
-    void saveEvent({
-      event: "game_installed",
-      properties: { gameSlug: slug, installMethod: "manual_claim" },
-      userId: session.user.id,
-      timestamp: now.toISOString(),
-      userAgent: req.headers.get("user-agent"),
-    }).catch(() => undefined);
+    if (!saving) {
+      void saveEvent({
+        event: "game_installed",
+        properties: { gameSlug: slug, installMethod: "manual_claim" },
+        userId: session.user.id,
+        timestamp: now.toISOString(),
+        userAgent: req.headers.get("user-agent"),
+      }).catch(() => undefined);
+    }
 
     return NextResponse.json({ entry: toDto(entry!) }, { status: 201 });
   } catch (error) {

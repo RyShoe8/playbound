@@ -16,6 +16,7 @@ import {
 } from "@/lib/launcher";
 import { GameCard } from "@/components/GameCard";
 import { LibraryModsDisclosure } from "@/components/LibraryModsDisclosure";
+import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 
 export const metadata: Metadata = {
@@ -82,20 +83,14 @@ export default async function LibraryPage() {
     );
   }
 
-  let entries: { gameSlug: string; installed: boolean }[] = [];
+  let entries: { gameSlug: string; installed: boolean; saved: boolean }[] = [];
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
   try {
     await dbConnect();
-    // Drop leftover wishlist-only rows (saved without install).
-    await LibraryEntry.deleteMany({
-      userId: session.user.id,
-      installed: { $ne: true },
-      saved: true,
-    });
     const [rows, modRows] = await Promise.all([
       LibraryEntry.find({
         userId: session.user.id,
-        installed: true,
+        $or: [{ installed: true }, { saved: true }],
       })
         .sort({ updatedAt: -1 })
         .lean(),
@@ -108,7 +103,8 @@ export default async function LibraryPage() {
     ]);
     entries = rows.map((r) => ({
       gameSlug: r.gameSlug,
-      installed: true,
+      installed: Boolean(r.installed),
+      saved: Boolean(r.saved) && !r.installed,
     }));
     modEntries = modRows.map((r) => ({
       modSlug: String(r.modSlug),
@@ -174,13 +170,17 @@ export default async function LibraryPage() {
             return (
               <div key={game.slug} className="w-44 shrink-0 space-y-2 sm:w-48">
                 <GameCard game={game} />
-                {meta?.installed && (
-                  <div className="flex flex-wrap items-center gap-1 px-0.5">
+                <div className="flex flex-wrap items-center gap-1 px-0.5">
+                  {meta?.installed && (
                     <Badge tone="play">
                       <Download className="size-3" /> Installed
                     </Badge>
-                  </div>
-                )}
+                  )}
+                  {meta?.saved && !meta.installed && (
+                    <Badge tone="brand">Play Later</Badge>
+                  )}
+                  <LibraryDeviceHint game={game} />
+                </div>
                 {meta?.installed && <InstalledActions slug={game.slug} />}
                 <LibraryModsDisclosure mods={gameMods} />
               </div>

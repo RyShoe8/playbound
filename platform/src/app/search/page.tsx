@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
-import { GameCard } from "@/components/GameCard";
+import { SearchGameResults } from "@/components/SearchGameResults";
 import { SearchFilters } from "@/components/SearchFilters";
 import { Avatar, EmptyHint, SectionHeader } from "@/components/ui/bits";
 
@@ -105,16 +105,7 @@ export default async function SearchPage({
         </EmptyHint>
       )}
 
-      {games.length > 0 && (
-        <section>
-          <SectionHeader title={`Games (${games.length})`} />
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-            {games.map((g) => (
-              <GameCard key={g.slug} game={g} className="w-full sm:w-full" />
-            ))}
-          </div>
-        </section>
-      )}
+      {games.length > 0 && <SearchGameResults games={games} />}
 
       {developerResults.length > 0 && (
         <section>

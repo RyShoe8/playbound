@@ -6,6 +6,16 @@ import Image from "next/image";
 import { Search } from "lucide-react";
 import type { Game, Genre } from "@/lib/data/types";
 import { useTelemetry } from "@/lib/telemetry";
+import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
+import { GamePlatformBadges } from "@/components/GamePlatformBadges";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import {
+  filterGamesForPreference,
+  incompatibilityBadge,
+} from "@/lib/compatibility/compatibility";
+import {
+  CompatibleGamesFade,
+} from "@/components/compatibility/useFilteredGames";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -23,6 +33,8 @@ interface SerializedGame {
   art: { from: string; to: string; icon: string };
   coverImage?: string;
   browserPlayable: boolean;
+  steamDeck: boolean;
+  platforms: string[];
 }
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -33,7 +45,13 @@ function sizeLabel(sizeMB: number) {
 
 /* ── CatalogCard — matches app's game-card layout ────────── */
 
-function CatalogCard({ game }: { game: SerializedGame }) {
+function CatalogCard({
+  game,
+  incompatibleLabel,
+}: {
+  game: SerializedGame;
+  incompatibleLabel: string | null;
+}) {
   const bgGrad = `linear-gradient(135deg, ${game.art.from}, ${game.art.to})`;
 
   return (
@@ -58,6 +76,11 @@ function CatalogCard({ game }: { game: SerializedGame }) {
         ) : (
           (game.title || "?").charAt(0)
         )}
+        {incompatibleLabel ? (
+          <span className="absolute top-2 left-2 rounded-md border border-border/80 bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+            {incompatibleLabel}
+          </span>
+        ) : null}
       </div>
 
       {/* Body */}
@@ -68,6 +91,7 @@ function CatalogCard({ game }: { game: SerializedGame }) {
         <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
           {game.tagline}
         </p>
+        <GamePlatformBadges game={game} compact className="mt-2" />
         <div className="mt-3.5 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground/70">
             {sizeLabel(game.sizeMB)}
@@ -85,6 +109,7 @@ function CatalogCard({ game }: { game: SerializedGame }) {
 
 export function DiscoverFilters({ games }: { games: Game[] }) {
   const { track } = useTelemetry();
+  const { mode, device } = useCompatibilityFilter();
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState("");
   const [sort, setSort] = useState<SortOption>("name");
@@ -116,6 +141,8 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
         art: g.art,
         coverImage: g.coverImage,
         browserPlayable: g.browserPlayable,
+        steamDeck: g.steamDeck,
+        platforms: g.platforms,
       })),
     [games]
   );
@@ -156,6 +183,8 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
       list = list.filter((g) => g.launchMethods.includes("install"));
     }
 
+    list = filterGamesForPreference(list, mode, device.type);
+
     if (sort === "size") {
       list.sort((a, b) => b.sizeMB - a.sizeMB);
     } else {
@@ -163,7 +192,7 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
     }
 
     return list;
-  }, [serialized, query, genre, sort, multiplayerOnly, installableOnly]);
+  }, [serialized, query, genre, sort, multiplayerOnly, installableOnly, mode, device.type]);
 
   useEffect(() => {
     if (skipFirstFilter.current) {
@@ -177,14 +206,25 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
       }
       void track("filter_changed", {
         surface: "discover",
-        filters: { genre, sort, multiplayerOnly, installableOnly, query: q || undefined },
+        filters: {
+          genre,
+          sort,
+          multiplayerOnly,
+          installableOnly,
+          query: q || undefined,
+          compatibility: mode,
+        },
       });
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [query, genre, sort, multiplayerOnly, installableOnly, filtered.length, track]);
+  }, [query, genre, sort, multiplayerOnly, installableOnly, filtered.length, track, mode]);
+
+  const animKey = `${mode}|${filtered.map((g) => g.slug).join(",")}`;
 
   return (
     <>
+      <CompatibilityListingBar />
+
       {/* ── Filter toolbar ──────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Search */}
@@ -255,11 +295,24 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
           No games match your filters.
         </p>
       ) : (
-        <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
-          {filtered.map((g) => (
-            <CatalogCard key={g.slug} game={g} />
-          ))}
-        </div>
+        <CompatibleGamesFade animKey={animKey}>
+          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
+            {filtered.map((g, i) => (
+              <div
+                key={g.slug}
+                className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
+                style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+              >
+                <CatalogCard
+                  game={g}
+                  incompatibleLabel={
+                    mode === "all" ? incompatibilityBadge(g, device.type) : null
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </CompatibleGamesFade>
       )}
     </>
   );

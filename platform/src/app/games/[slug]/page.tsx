@@ -19,8 +19,10 @@ import {
 } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
-import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
-import { AddToLibraryButton } from "@/components/AddToLibraryButton";
+import { LaunchBadge, PlayCta } from "@/components/GameCard";
+import { CompatibleMoreLikeThis } from "@/components/CompatibleGameCardGrid";
+import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
+import { GameIncompatibilityBanner } from "@/components/GameIncompatibilityBanner";
 import { ContentForm } from "@/components/ContentForm";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { CommunityCard } from "@/components/discussion/CommunityCard";
@@ -137,7 +139,7 @@ export default async function GamePage({
   const allGames = await listGames();
   const similar = allGames
     .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
-    .slice(0, 6);
+    .slice(0, 20);
 
   const discussionCount = await safeQuery(
     () =>
@@ -228,8 +230,8 @@ export default async function GamePage({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <PlayCta game={game} size="lg" />
-              <AddToLibraryButton
-                slug={game.slug}
+              <AdaptiveAddToLibraryButton
+                game={game}
                 initiallyInLibrary={initiallyInLibrary}
                 signedIn={Boolean(session?.user)}
                 size="lg"
@@ -238,6 +240,12 @@ export default async function GamePage({
           </div>
         </div>
       </section>
+
+      <GameIncompatibilityBanner
+        game={game}
+        initiallyInLibrary={initiallyInLibrary}
+        signedIn={Boolean(session?.user)}
+      />
 
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <nav className="no-scrollbar sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
@@ -556,9 +564,7 @@ function OverviewTab({
         {similar.length > 0 && (
           <section>
             <h2 className="mb-4 text-lg font-bold">More Like This</h2>
-            <CardRow>
-              {similar.map((g) => g && <GameCard key={g.slug} game={g} />)}
-            </CardRow>
+            <CompatibleMoreLikeThis games={similar} />
           </section>
         )}
       </div>

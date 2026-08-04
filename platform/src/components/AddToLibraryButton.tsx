@@ -11,9 +11,20 @@ type Props = {
   initiallyInLibrary: boolean;
   signedIn: boolean;
   size?: "md" | "lg";
+  /**
+   * When true (incompatible with this device), save without launching the
+   * locate flow — "Save for later" / install on another machine.
+   */
+  saveForLater?: boolean;
 };
 
-export function AddToLibraryButton({ slug, initiallyInLibrary, signedIn, size = "md" }: Props) {
+export function AddToLibraryButton({
+  slug,
+  initiallyInLibrary,
+  signedIn,
+  size = "md",
+  saveForLater = false,
+}: Props) {
   const [inLibrary, setInLibrary] = useState(initiallyInLibrary);
   const [busy, setBusy] = useState(false);
 
@@ -42,14 +53,19 @@ export function AddToLibraryButton({ slug, initiallyInLibrary, signedIn, size = 
         const res = await fetch("/api/library", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ slug }),
+          body: JSON.stringify({
+            slug,
+            intent: saveForLater ? "save" : "install",
+          }),
         });
         if (!res.ok) {
           setInLibrary(false);
           return;
         }
-        // Hand off to the app so the user can point at an existing .exe.
-        window.location.href = launcherLocateUrl(slug);
+        if (!saveForLater) {
+          // Hand off to the app so the user can point at an existing .exe.
+          window.location.href = launcherLocateUrl(slug);
+        }
       } else {
         const res = await fetch(`/api/library?slug=${encodeURIComponent(slug)}`, {
           method: "DELETE",
@@ -63,10 +79,16 @@ export function AddToLibraryButton({ slug, initiallyInLibrary, signedIn, size = 
     }
   }
 
+  const label = inLibrary
+    ? "In library"
+    : saveForLater
+      ? "Save to Library"
+      : "Add to Library";
+
   return (
     <button type="button" disabled={busy} onClick={() => void toggle()} className={className}>
       <LibraryBig className={iconClass} />
-      {inLibrary ? "In library" : "Add to Library"}
+      {label}
     </button>
   );
 }

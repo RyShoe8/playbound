@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
+import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 
 const nav = [
   { href: "/", label: "Home", icon: House },
@@ -81,6 +82,9 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
+        <div className="mb-3">
+          <GameCompatibilityToggle variant="sidebar" />
+        </div>
         {session?.user ? (
           <div className="space-y-1">
             <Link
