@@ -16,6 +16,20 @@ const ingestSchema = z.object({
   userId: z.string().min(1).max(128).nullable().optional(),
 });
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept",
+  "Access-Control-Max-Age": "86400",
+};
+
+function withCors(res: NextResponse): NextResponse {
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    res.headers.set(key, value);
+  }
+  return res;
+}
+
 function clientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
@@ -37,19 +51,25 @@ function clientCountry(req: Request): string | null {
   );
 }
 
+export async function OPTIONS() {
+  return withCors(new NextResponse(null, { status: 204 }));
+}
+
 export async function POST(req: Request) {
   let json: unknown;
   try {
     json = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return withCors(NextResponse.json({ error: "Invalid JSON" }, { status: 400 }));
   }
 
   const parsed = ingestSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Malformed request", details: parsed.error.flatten() },
-      { status: 400 }
+    return withCors(
+      NextResponse.json(
+        { error: "Malformed request", details: parsed.error.flatten() },
+        { status: 400 }
+      )
     );
   }
 
@@ -69,7 +89,7 @@ export async function POST(req: Request) {
         : "";
 
   if (path && isTelemetryExcludedPath(path)) {
-    return NextResponse.json({ ok: true, skipped: true });
+    return withCors(NextResponse.json({ ok: true, skipped: true }));
   }
 
   const ip = clientIp(req);
@@ -81,12 +101,14 @@ export async function POST(req: Request) {
       windowMs: 60 * 1000,
     });
     if (!limit.ok) {
-      return NextResponse.json(
-        { error: "Too many events" },
-        {
-          status: 429,
-          headers: { "Retry-After": String(limit.retryAfterSec) },
-        }
+      return withCors(
+        NextResponse.json(
+          { error: "Too many events" },
+          {
+            status: 429,
+            headers: { "Retry-After": String(limit.retryAfterSec) },
+          }
+        )
       );
     }
 
@@ -101,10 +123,10 @@ export async function POST(req: Request) {
       country: clientCountry(req),
       userAgent: req.headers.get("user-agent"),
     });
-    return NextResponse.json({ ok: true });
+    return withCors(NextResponse.json({ ok: true }));
   } catch (err) {
     console.error("[telemetry] save failed", err);
     // Fail-soft to clients — do not leak internals.
-    return NextResponse.json({ ok: true });
+    return withCors(NextResponse.json({ ok: true }));
   }
 }
