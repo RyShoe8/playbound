@@ -10,3 +10,26 @@ build
 
 # Claude Code local settings (machine-specific, not shared)
 .claude/settings.local.json
+
+# ---------------------------------------------------------------------------
+# Code-signing material — NEVER commit any of this.
+#
+# A leaked code-signing certificate lets anyone publish malware that Windows
+# attributes to us, and the only remedy is revoking the certificate and buying
+# a new one. Certificates live outside the repo; see docs/windows-code-signing.md.
+# ---------------------------------------------------------------------------
+*.pfx
+*.p12
+*.pvk
+*.spc
+*.cer
+*.crt
+*.key
+certificates/
+certs/
+secrets/
+
+# Local signing credentials loaded manually into the shell.
+.env.signing
+.env.signing.local
+signing.env
