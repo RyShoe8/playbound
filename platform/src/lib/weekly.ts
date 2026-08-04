@@ -96,6 +96,38 @@ export async function getWeeklyIssue(
   return seedAsIssues(Boolean(opts?.includeUnpublished)).find((i) => i.slug === slug);
 }
 
+/**
+ * Admin-only reads. These never fall back to the static seed: an admin
+ * managing issues needs to see real, editable/deletable database rows, not a
+ * placeholder that looks identical to one but silently reappears after
+ * deletion because it was never actually stored. An empty result here means
+ * "no issues saved yet," not "let me show you something anyway."
+ */
+export async function listWeeklyIssuesAdmin(): Promise<WeeklyIssue[]> {
+  try {
+    await dbConnect();
+    const docs = await WeeklyIssueModel.find().sort({ publishedAt: -1 }).lean();
+    return docs.map((d) => toIssue(d as Record<string, unknown>));
+  } catch (err) {
+    console.error("[weekly] listWeeklyIssuesAdmin failed:", err);
+    return [];
+  }
+}
+
+export async function getWeeklyIssueAdmin(
+  by: { id: string } | { slug: string }
+): Promise<WeeklyIssue | undefined> {
+  try {
+    await dbConnect();
+    const doc =
+      "id" in by ? await WeeklyIssueModel.findById(by.id).lean() : await WeeklyIssueModel.findOne({ slug: by.slug }).lean();
+    return doc ? toIssue(doc as Record<string, unknown>) : undefined;
+  } catch (err) {
+    console.error("[weekly] getWeeklyIssueAdmin failed:", err);
+    return undefined;
+  }
+}
+
 export async function issueForGame(gameSlug: string): Promise<WeeklyIssue | undefined> {
   const all = await listWeeklyIssues();
   return all.find((i) => i.gameSlug === gameSlug);

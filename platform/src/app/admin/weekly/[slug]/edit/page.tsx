@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { listAllGames } from "@/lib/catalog";
-import { getWeeklyIssue } from "@/lib/weekly";
+import { getWeeklyIssueAdmin } from "@/lib/weekly";
 import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -15,7 +15,7 @@ export default async function AdminEditWeeklyPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const issue = await getWeeklyIssue(slug, { includeUnpublished: true });
+  const issue = await getWeeklyIssueAdmin({ slug });
   if (!issue) notFound();
   const games = await listAllGames();
 
