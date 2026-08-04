@@ -458,10 +458,25 @@ export function GameEditorForm({
             <input
               required
               value={form.slug}
-              onChange={(e) => patch("slug", e.target.value.toLowerCase())}
+              onChange={(e) =>
+                patch(
+                  "slug",
+                  // Keep it URL-safe as you type; the server validates too.
+                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-")
+                )
+              }
               className={field}
-              disabled={mode === "edit"}
+              aria-describedby={mode === "edit" ? "slug-rename-warning" : undefined}
             />
+            {mode === "edit" && form.slug !== initial.slug && (
+              <p id="slug-rename-warning" className="mt-1 text-[11px] text-amber-500">
+                Renaming moves this game to /games/{form.slug || "…"}. Reviews,
+                guides, discussions, mods, events and users&apos; libraries are
+                repointed automatically, and {initial.slug} will redirect here.
+                Any mention in src/lib/data (collections, comparisons,
+                alternatives) still needs updating by hand.
+              </p>
+            )}
           </div>
         </div>
 

@@ -11,6 +11,11 @@ import {
   publishBlockedMessage,
 } from "@/lib/enrich";
 import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
+import {
+  cascadeGameSlugRename,
+  staticReferenceWarning,
+  type SlugRenameReport,
+} from "@/lib/renameGameSlug";
 
 export async function PATCH(
   req: Request,
@@ -38,8 +43,14 @@ export async function PATCH(
 
     await dbConnect();
 
-    if (body.slug !== slug) {
-      const clash = await CatalogGame.findOne({ slug: body.slug }).lean();
+    const isRename = body.slug !== slug;
+
+    if (isRename) {
+      // Reject a collision with a live slug *or* with any slug already retired
+      // by another game, since those still resolve via redirect.
+      const clash = await CatalogGame.findOne({
+        $or: [{ slug: body.slug }, { previousSlugs: body.slug }],
+      }).lean();
       if (clash) {
         return NextResponse.json({ error: "New slug already exists" }, { status: 409 });
       }
@@ -71,6 +82,8 @@ export async function PATCH(
           managedBy: body.managedBy || "admin",
           ownerUserId: body.ownerUserId || null,
         },
+        // Retain the old slug so its indexed URLs keep resolving.
+        ...(isRename ? { $addToSet: { previousSlugs: slug } } : {}),
       },
       { new: true }
     );
@@ -79,11 +92,24 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    // Slugs are foreign keys by value, so the rename has to be carried across
+    // libraries, reviews, guides, discussions, mods and events by hand.
+    let renamed: SlugRenameReport | undefined;
+    let renameWarning: string | undefined;
+    if (isRename) {
+      renamed = await cascadeGameSlugRename(slug, doc.slug);
+      renameWarning = staticReferenceWarning(slug);
+    }
+
     if (doc.published && !hasPlayboundDiscordChannel(doc)) {
       void requestDiscordProvision(doc.slug);
     }
 
-    return NextResponse.json({ success: true, slug: doc.slug });
+    return NextResponse.json({
+      success: true,
+      slug: doc.slug,
+      ...(isRename ? { renamedFrom: slug, renamed, renameWarning } : {}),
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { Gamepad2, Newspaper, Play, Star, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
@@ -10,7 +10,13 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { fetchGithubReleases } from "@/lib/github";
-import { collectionsFeaturing, developersBySlug, listGames, getGame } from "@/lib/catalog";
+import {
+  collectionsFeaturing,
+  developersBySlug,
+  listGames,
+  getGame,
+  canonicalSlugFor,
+} from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { CardRow, GameCard, LaunchBadge, PlayCta } from "@/components/GameCard";
@@ -110,7 +116,18 @@ export default async function GamePage({
   const sp = await searchParams;
   const { tab: rawTab } = sp;
   const game = await getGame(slug);
-  if (!game) notFound();
+  if (!game) {
+    // The game may have been renamed; send its old URL to the current one so
+    // indexed links and shared pages keep working instead of 404ing.
+    const canonical = await canonicalSlugFor(slug);
+    if (canonical) {
+      const qs = new URLSearchParams(
+        Object.entries(sp).filter(([, v]) => typeof v === "string") as [string, string][]
+      ).toString();
+      permanentRedirect(`/games/${canonical}${qs ? `?${qs}` : ""}`);
+    }
+    notFound();
+  }
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const session = await getServerSession(authOptions);
@@ -292,7 +309,7 @@ export default async function GamePage({
           <OverviewTab
             game={game}
             developer={developer}
-            featuring={collectionsFeaturing(game.slug)}
+            featuring={await collectionsFeaturing(game.slug)}
             similar={similar}
             weeklyIssue={weeklyIssue}
             discordPresence={discordPresence}
@@ -365,7 +382,7 @@ function OverviewTab({
 }: {
   game: Game;
   developer: ReturnType<typeof developersBySlug.get>;
-  featuring: ReturnType<typeof collectionsFeaturing>;
+  featuring: Awaited<ReturnType<typeof collectionsFeaturing>>;
   similar: Game[];
   weeklyIssue?: WeeklyIssue;
   discordPresence?: { online?: number; members?: number } | null;
