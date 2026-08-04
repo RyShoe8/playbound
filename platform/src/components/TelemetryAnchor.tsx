@@ -10,6 +10,7 @@ type Props<E extends TelemetryEventName> = {
   className?: string;
   target?: string;
   rel?: string;
+  onClick?: () => void;
   children: React.ReactNode;
 };
 
@@ -21,6 +22,7 @@ export function TelemetryAnchor<E extends TelemetryEventName>({
   className,
   target,
   rel,
+  onClick,
   children,
 }: Props<E>) {
   const { track } = useTelemetry();
@@ -33,6 +35,7 @@ export function TelemetryAnchor<E extends TelemetryEventName>({
       className={className}
       onClick={() => {
         void track(event, properties);
+        onClick?.();
       }}
     >
       {children}

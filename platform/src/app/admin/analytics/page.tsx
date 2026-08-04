@@ -1,10 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
-
-export const metadata: Metadata = { title: "Analytics" };
 
 type SearchParams = Promise<{
   event?: string;
