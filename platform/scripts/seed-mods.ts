@@ -79,7 +79,7 @@ async function main() {
           directUrl: preserveDirect ? prev!.directUrl : m.directUrl ?? null,
           installRelativePath: m.installRelativePath || "mods",
           art,
-          coverImage: null,
+          coverImage: m.coverImage ?? null,
           screenshots: [],
           published: m.published,
           managedBy: m.managedBy,
