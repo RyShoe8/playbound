@@ -5,6 +5,7 @@ import { developersBySlug } from "@/lib/catalog";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { sizeLabel } from "@/lib/seo";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -121,23 +122,30 @@ export function GameInstallContent({ game }: { game: Game }) {
       </section>
 
       <div className="flex flex-wrap gap-3 border-t border-border pt-6 text-sm">
-        <a
+        <TelemetryAnchor
           href={game.website}
           target="_blank"
           rel="noreferrer"
+          event="official_download_clicked"
+          properties={{ gameSlug: game.slug, url: game.website }}
           className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
         >
           Official {game.title} site <ExternalLink className="size-3.5" />
-        </a>
+        </TelemetryAnchor>
         {game.githubRepo && (
-          <a
+          <TelemetryAnchor
             href={`https://github.com/${game.githubRepo}/releases`}
             target="_blank"
             rel="noreferrer"
+            event="official_download_clicked"
+            properties={{
+              gameSlug: game.slug,
+              url: `https://github.com/${game.githubRepo}/releases`,
+            }}
             className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
           >
             Official releases <ExternalLink className="size-3.5" />
-          </a>
+          </TelemetryAnchor>
         )}
         {developer && (
           <Link

@@ -12,10 +12,12 @@ import {
 } from "@/components/GoogleSignInButton";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { useTelemetry } from "@/lib/telemetry";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { track } = useTelemetry();
   const callbackUrl = params.get("callbackUrl") || "/profile";
   // NextAuth redirects OAuth failures back here with ?error=<code>.
   const oauthError = authErrorMessage(params.get("error"));
@@ -41,6 +43,7 @@ function LoginForm() {
     if (res?.error) {
       setError(res.error);
     } else {
+      void track("login", { method: "credentials" });
       router.push(callbackUrl);
       router.refresh();
     }

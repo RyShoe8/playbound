@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import type { Game, Genre } from "@/lib/data/types";
+import { useTelemetry } from "@/lib/telemetry";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -83,11 +84,13 @@ function CatalogCard({ game }: { game: SerializedGame }) {
 /* ── Main component ─────────────────────────────────────────── */
 
 export function DiscoverFilters({ games }: { games: Game[] }) {
+  const { track } = useTelemetry();
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState("");
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   const [installableOnly, setInstallableOnly] = useState(false);
+  const skipFirstFilter = useRef(true);
 
   /* Derive available genres from games list */
   const genres = useMemo(() => {
@@ -161,6 +164,24 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
 
     return list;
   }, [serialized, query, genre, sort, multiplayerOnly, installableOnly]);
+
+  useEffect(() => {
+    if (skipFirstFilter.current) {
+      skipFirstFilter.current = false;
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      const q = query.trim();
+      if (q) {
+        void track("search", { query: q, resultsCount: filtered.length });
+      }
+      void track("filter_changed", {
+        surface: "discover",
+        filters: { genre, sort, multiplayerOnly, installableOnly, query: q || undefined },
+      });
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [query, genre, sort, multiplayerOnly, installableOnly, filtered.length, track]);
 
   return (
     <>

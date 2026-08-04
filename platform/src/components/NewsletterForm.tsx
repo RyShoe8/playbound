@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Mail } from "lucide-react";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { useTelemetry } from "@/lib/telemetry";
 
 export function NewsletterForm() {
+  const { track } = useTelemetry();
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -22,6 +24,7 @@ export function NewsletterForm() {
         body: JSON.stringify({ email, recaptchaToken }),
       });
       if (res.ok) {
+        void track("newsletter_signup", { source: "form" });
         setState("done");
         setMessage("You're in! First issue lands this Wednesday.");
       } else {

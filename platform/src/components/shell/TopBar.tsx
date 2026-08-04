@@ -5,9 +5,11 @@ import { useSession } from "next-auth/react";
 import { Play, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
+import { useTelemetry } from "@/lib/telemetry";
 
 export function TopBar() {
   const { data: session } = useSession();
+  const { track } = useTelemetry();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
@@ -22,7 +24,15 @@ export function TopBar() {
           </span>
         </Link>
 
-        <form action="/search" className="relative mx-auto w-full max-w-xl">
+        <form
+          action="/search"
+          className="relative mx-auto w-full max-w-xl"
+          onSubmit={(e) => {
+            const fd = new FormData(e.currentTarget);
+            const query = String(fd.get("q") || "").trim();
+            if (query) void track("search", { query });
+          }}
+        >
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"

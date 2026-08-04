@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { GENRES, TAGS, PLATFORMS, FEATURES } from "@/lib/gamePayload";
+import { useTelemetry } from "@/lib/telemetry";
 
 type SortOption = "title" | "releaseYear" | "sizeMB";
 type SortDir = "asc" | "desc";
@@ -50,6 +51,7 @@ function FilterChip({
 export function SearchFilters() {
   const router = useRouter();
   const sp = useSearchParams();
+  const { track } = useTelemetry();
 
   const q = sp.get("q") ?? "";
   const genres = useMemo(() => sp.getAll("genre"), [sp]);
@@ -105,27 +107,40 @@ export function SearchFilters() {
   }
 
   function toggleGenre(g: string) {
-    router.push(buildUrl({ genre: toggleInArray(genres, g) }));
+    const next = toggleInArray(genres, g);
+    void track("filter_changed", { surface: "search", filters: { genre: next } });
+    router.push(buildUrl({ genre: next }));
   }
   function toggleTag(t: string) {
-    router.push(buildUrl({ tag: toggleInArray(tags, t) }));
+    const next = toggleInArray(tags, t);
+    void track("filter_changed", { surface: "search", filters: { tag: next } });
+    router.push(buildUrl({ tag: next }));
   }
   function togglePlatform(p: string) {
-    router.push(buildUrl({ platform: toggleInArray(platforms, p) }));
+    const next = toggleInArray(platforms, p);
+    void track("filter_changed", { surface: "search", filters: { platform: next } });
+    router.push(buildUrl({ platform: next }));
   }
   function toggleFeature(f: string) {
-    router.push(buildUrl({ feature: toggleInArray(features, f) }));
+    const next = toggleInArray(features, f);
+    void track("filter_changed", { surface: "search", filters: { feature: next } });
+    router.push(buildUrl({ feature: next }));
   }
   function setSort(s: SortOption) {
+    void track("filter_changed", { surface: "search", filters: { sort: s } });
     router.push(buildUrl({ sort: s }));
   }
   function toggleSortDir() {
-    router.push(buildUrl({ sortDir: sortDir === "asc" ? "desc" : "asc" }));
+    const next = sortDir === "asc" ? "desc" : "asc";
+    void track("filter_changed", { surface: "search", filters: { sortDir: next } });
+    router.push(buildUrl({ sortDir: next }));
   }
   function setMaxSize(v: string) {
+    void track("filter_changed", { surface: "search", filters: { maxSize: v || null } });
     router.push(buildUrl({ maxSize: v || null }));
   }
   function clearFilters() {
+    void track("filter_changed", { surface: "search", filters: { cleared: true } });
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     router.push(`/search?${params.toString()}`);

@@ -10,6 +10,7 @@ import { estimateLatencyMs } from "@/lib/servers/latencyEstimate";
 import { EmptyHint } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { cn } from "@/lib/utils";
+import { useTelemetry } from "@/lib/telemetry";
 
 type IndexGame = {
   slug: string;
@@ -121,6 +122,8 @@ export function GlobalServerBrowser({
   const [modNote, setModNote] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("players");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { track } = useTelemetry();
+  const lastViewedSlug = useRef<string | null>(null);
 
   function setSort(key: SortKey) {
     if (key === sortKey) {
@@ -236,12 +239,16 @@ export function GlobalServerBrowser({
         servers = filtered.servers;
       }
       setData({ ...json, servers });
+      if (slug && lastViewedSlug.current !== slug) {
+        lastViewedSlug.current = slug;
+        void track("server_viewed", { gameSlug: slug });
+      }
     } catch {
       if (!isStale()) setData({ supported: false, servers: [] });
     } finally {
       if (!isStale()) setLoading(false);
     }
-  }, []);
+  }, [track]);
 
   useEffect(() => {
     const mod = effectiveModSlug
@@ -471,6 +478,12 @@ export function GlobalServerBrowser({
                         {isOneClickSlug(effectiveGameSlug) ? (
                           <a
                             href={launcherJoinUrl(effectiveGameSlug, s.host, s.port, s.name)}
+                            onClick={() => {
+                              void track("server_join_clicked", {
+                                serverId: `${s.host}:${s.port}`,
+                                gameSlug: effectiveGameSlug,
+                              });
+                            }}
                             className="rounded-full bg-play px-3 py-1 text-xs font-bold text-play-foreground hover:brightness-110"
                           >
                             Join

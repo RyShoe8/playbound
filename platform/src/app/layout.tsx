@@ -8,7 +8,7 @@ import { MobileNav } from "@/components/shell/MobileNav";
 import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
-import { Analytics } from "@/components/Analytics";
+import { TelemetryProvider } from "@/components/TelemetryProvider";
 import {
   SITE_URL,
   SITE_NAME,
@@ -83,8 +83,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        {/* CMP before analytics so consent can gate tags. beforeInteractive is
-            only allowed in the root layout. Production only — matches Analytics. */}
+        {/* CMP before telemetry scripts so consent can gate tags.
+            beforeInteractive is only allowed in the root layout. */}
         {IS_PRODUCTION ? (
           <Script src={COOKIE_SCRIPT_SRC} strategy="beforeInteractive" charSet="UTF-8" />
         ) : null}
@@ -92,17 +92,18 @@ export default function RootLayout({
             WebSite can be referenced by @id from page-level schema. */}
         <JsonLd data={graph(organizationSchema(), websiteSchema())} />
         <SessionProvider>
-          <Sidebar />
-          <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
-            <TopBar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-          <MobileNav />
+          {/* Inside SessionProvider so identify() sees the auth session.
+              gaEnabled is server-decided so preview never hits production GA4. */}
+          <TelemetryProvider gaEnabled={IS_PRODUCTION}>
+            <Sidebar />
+            <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
+              <TopBar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+            <MobileNav />
+          </TelemetryProvider>
         </SessionProvider>
-        {/* Production only — decided here because VERCEL_ENV is server-side,
-            so preview traffic never reaches the analytics property. */}
-        <Analytics enabled={IS_PRODUCTION} />
       </body>
     </html>
   );
