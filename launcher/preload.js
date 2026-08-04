@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("playbound", {
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
   play: (slug, join) => ipcRenderer.invoke("play", slug, join || null),
   playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
+  postTelemetry: (payload) => ipcRenderer.invoke("post-telemetry", payload),
   uninstall: (slug) => ipcRenderer.invoke("uninstall", slug),
   getInstalled: () => ipcRenderer.invoke("get-installed"),
   getInstalledMods: () => ipcRenderer.invoke("get-installed-mods"),
@@ -55,4 +56,5 @@ contextBridge.exposeInMainWorld("playbound", {
   onModInstallFinished: (cb) =>
     ipcRenderer.on("mod-install-finished", (_event, data) => cb(data || {})),
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
+  onGameExited: (cb) => ipcRenderer.on("game-exited", (_event, data) => cb(data || {})),
 });

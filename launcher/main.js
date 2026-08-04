@@ -1806,7 +1806,7 @@ async function playGame(slug, join = null) {
       );
     }
   }
-  spawnDetachedExe(info.exe, args);
+  spawnTrackedExe(slug, info.exe, args);
 
   // Track recently played
   const settings = loadSettings();
@@ -1821,14 +1821,138 @@ async function playGame(slug, join = null) {
   };
 }
 
-function spawnDetachedExe(exePath, args = []) {
+/** @type {Map<string, { child: import("child_process").ChildProcess, imageNames: string[], pollTimer: ReturnType<typeof setInterval> | null, settleTimer: ReturnType<typeof setTimeout> | null }>} */
+const activeLaunches = new Map();
+const GAME_EXIT_DEBOUNCE_MS = 3000;
+const GAME_RUNNING_POLL_MS = 10000;
+
+function sendGameExited(slug) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("game-exited", { slug });
+  }
+}
+
+function clearLaunchTracking(slug) {
+  const launch = activeLaunches.get(slug);
+  if (!launch) return;
+  if (launch.settleTimer) clearTimeout(launch.settleTimer);
+  if (launch.pollTimer) clearInterval(launch.pollTimer);
+  activeLaunches.delete(slug);
+}
+
+function normalizeProcessImageName(name) {
+  let base = path.basename(String(name || ""));
+  if (!base) return "";
+  if (process.platform === "win32" && !/\.[A-Za-z0-9]+$/.test(base)) {
+    base = `${base}.exe`;
+  }
+  return base;
+}
+
+/** Extract simple process names from catalog exeHint (skip regex fragments). */
+function hintProcessNames(exeHint) {
+  if (!exeHint) return [];
+  const out = [];
+  for (const part of String(exeHint).split("|")) {
+    const token = part.trim();
+    if (/^[A-Za-z0-9_-]+$/.test(token)) {
+      out.push(normalizeProcessImageName(token));
+    }
+  }
+  return out;
+}
+
+function isAnyImageRunning(imageNames) {
+  const names = (imageNames || []).filter(Boolean);
+  if (!names.length) return false;
+
+  if (process.platform === "win32") {
+    for (const image of names) {
+      try {
+        const out = execFileSync(
+          "tasklist",
+          ["/FI", `IMAGENAME eq ${image}`, "/NH"],
+          { encoding: "utf8", windowsHide: true, timeout: 5000 }
+        );
+        if (out.toLowerCase().includes(image.toLowerCase())) return true;
+      } catch {
+        // tasklist failed or no match
+      }
+    }
+    return false;
+  }
+
+  for (const image of names) {
+    const procName = image.replace(/\.exe$/i, "");
+    try {
+      execFileSync("pgrep", ["-x", procName], {
+        encoding: "utf8",
+        timeout: 5000,
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+      return true;
+    } catch {
+      // not running
+    }
+  }
+  return false;
+}
+
+function onSpawnedProcessGone(slug) {
+  const launch = activeLaunches.get(slug);
+  if (!launch) return;
+  if (launch.settleTimer) clearTimeout(launch.settleTimer);
+  launch.settleTimer = setTimeout(() => {
+    const current = activeLaunches.get(slug);
+    if (!current) return;
+    if (isAnyImageRunning(current.imageNames)) {
+      if (current.pollTimer) clearInterval(current.pollTimer);
+      current.pollTimer = setInterval(() => {
+        if (!isAnyImageRunning(current.imageNames)) {
+          clearLaunchTracking(slug);
+          sendGameExited(slug);
+        }
+      }, GAME_RUNNING_POLL_MS);
+    } else {
+      clearLaunchTracking(slug);
+      sendGameExited(slug);
+    }
+  }, GAME_EXIT_DEBOUNCE_MS);
+}
+
+/**
+ * Spawn a game exe (detached so it can outlive the launcher) and watch for exit.
+ * Handles short bootstrap processes (e.g. OpenRA.exe → RedAlert.exe) by polling
+ * catalog exeHint image names after the child exits.
+ */
+function spawnTrackedExe(slug, exePath, args = []) {
+  clearLaunchTracking(slug);
+
   const useShell = /\.(cmd|bat)$/i.test(exePath);
-  spawn(exePath, args, {
+  const child = spawn(exePath, args, {
     cwd: path.dirname(exePath),
     detached: true,
     stdio: "ignore",
     shell: useShell,
-  }).unref();
+  });
+
+  const entry = catalog.find((e) => e.slug === slug);
+  const imageNames = [
+    ...new Set(
+      [normalizeProcessImageName(exePath), ...hintProcessNames(entry?.exeHint)].filter(Boolean)
+    ),
+  ];
+
+  activeLaunches.set(slug, {
+    child,
+    imageNames,
+    pollTimer: null,
+    settleTimer: null,
+  });
+
+  child.on("exit", () => onSpawnedProcessGone(slug));
+  child.on("error", () => onSpawnedProcessGone(slug));
+  return child;
 }
 
 /** Launch a catalog mod: portable clients use their own exe; content mods open the base game. */
@@ -1853,7 +1977,7 @@ async function playMod(slug) {
   }
 
   if (exe) {
-    spawnDetachedExe(exe, []);
+    spawnTrackedExe(slug, exe, []);
     const settings = loadSettings();
     if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
     settings.recentlyPlayed[info.baseGameSlug || slug] = { lastPlayed: new Date().toISOString() };
@@ -2067,6 +2191,43 @@ ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));
 ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
 ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
+ipcMain.handle("post-telemetry", async (_event, payload) => {
+  try {
+    const body =
+      payload && typeof payload === "object"
+        ? {
+            event: String(payload.event || ""),
+            properties:
+              payload.properties && typeof payload.properties === "object"
+                ? payload.properties
+                : {},
+            timestamp: String(payload.timestamp || new Date().toISOString()),
+            sessionId: String(payload.sessionId || ""),
+            anonymousId: String(payload.anonymousId || ""),
+            userId:
+              payload.userId === null || payload.userId === undefined
+                ? null
+                : String(payload.userId),
+          }
+        : null;
+    if (!body?.event || body.sessionId.length < 8 || body.anonymousId.length < 8) {
+      return { ok: false };
+    }
+    const res = await fetch(`${getApiBase()}/api/telemetry`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        accept: "application/json",
+        "user-agent": `playbound-launcher/${app.getVersion()} (${process.platform})`,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15_000),
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
+});
 ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());

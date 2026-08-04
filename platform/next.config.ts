@@ -61,6 +61,14 @@ const nextConfig: NextConfig = {
         source: "/api/launcher/:path*",
         headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
       },
+      {
+        source: "/api/telemetry",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "POST, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Accept" },
+        ],
+      },
     ];
   },
   images: {
