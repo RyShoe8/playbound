@@ -600,12 +600,29 @@ export function GameEditorForm({
               onChange={(e) => patch("developerSlug", e.target.value)}
               className={field}
             >
+              {/* Without a blank option, a game whose developerSlug matches
+                  nothing in the list renders as the first entry while the
+                  stored value is something else — the credit looks wrong and
+                  touching the dropdown would silently overwrite it. */}
+              <option value="">Select a developer…</option>
               {developers.map((d) => (
                 <option key={d.slug} value={d.slug}>
                   {d.name}
                 </option>
               ))}
+              {form.developerSlug && !developers.some((d) => d.slug === form.developerSlug) && (
+                <option value={form.developerSlug}>
+                  {form.developerSlug} (unknown — no such developer)
+                </option>
+              )}
             </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Missing one?{" "}
+              <a href="/admin/developers/new" className="text-primary hover:underline">
+                Add a developer
+              </a>
+              .
+            </p>
           </div>
           <div>
             <label className={label}>License</label>

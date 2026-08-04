@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Mail } from "lucide-react";
-import { getGame, developersBySlug } from "@/lib/catalog";
+import { getGame } from "@/lib/catalog";
+import { getDeveloper } from "@/lib/developers";
 import { getWeeklyIssue, listWeeklyIssues } from "@/lib/weekly";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { GameArt } from "@/components/GameArt";
@@ -47,7 +48,7 @@ export default async function WeeklyIssuePage({
   const game = await getGame(issue.gameSlug);
   if (!game) notFound();
 
-  const developer = developersBySlug.get(game.developerSlug);
+  const developer = await getDeveloper(game.developerSlug);
   const all = await listWeeklyIssues();
   const index = all.findIndex((i) => i.slug === slug);
   const newer = index > 0 ? all[index - 1] : undefined;

@@ -1,4 +1,5 @@
-import { listGames, collections, developers } from "@/lib/catalog";
+import { listGames, collections } from "@/lib/catalog";
+import { listDevelopers } from "@/lib/developers";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
 import { listWeeklyIssues } from "@/lib/weekly";
@@ -119,7 +120,7 @@ export async function GET() {
 
   lines.push("## Developers");
   lines.push("");
-  for (const d of developers) {
+  for (const d of await listDevelopers()) {
     lines.push(
       `- [${d.name}](${SITE_URL}/developers/${d.slug}): ${d.tagline} (${d.website})`
     );

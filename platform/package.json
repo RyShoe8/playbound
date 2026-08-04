@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run seed:games && npm run fix:game-media && npm run seed:launcher-install && npm run seed:mods && npm run fix:mod-media && npm run seed:collections && npm run seed:weekly",
+    "build": "next build && npm run seed:games && npm run fix:game-media && npm run seed:launcher-install && npm run seed:mods && npm run fix:mod-media && npm run seed:developers && npm run seed:collections && npm run seed:weekly",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
@@ -15,6 +15,7 @@
     "seed:mods": "tsx scripts/seed-mods.ts",
     "fix:mod-media": "tsx scripts/fix-mod-media.ts",
     "fetch:mod-covers": "tsx scripts/fetch-mod-covers.ts",
+    "seed:developers": "tsx scripts/seed-developers.ts",
     "seed:collections": "tsx scripts/seed-collections.ts",
     "seed:weekly": "tsx scripts/seed-weekly.ts",
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",

@@ -301,12 +301,27 @@ export function ModEditorForm({
             onChange={(e) => patch("developerSlug", e.target.value)}
             className={field}
           >
+            {/* Blank option so an unmatched developerSlug cannot masquerade as
+                the first entry in the list. */}
+            <option value="">Select a developer…</option>
             {developers.map((d) => (
               <option key={d.slug} value={d.slug}>
                 {d.name}
               </option>
             ))}
+            {form.developerSlug && !developers.some((d) => d.slug === form.developerSlug) && (
+              <option value={form.developerSlug}>
+                {form.developerSlug} (unknown — no such developer)
+              </option>
+            )}
           </select>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Missing one?{" "}
+            <a href="/admin/developers/new" className="text-primary hover:underline">
+              Add a developer
+            </a>
+            .
+          </p>
         </div>
       </div>
 

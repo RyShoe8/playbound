@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import { ExternalLink, Monitor, Terminal } from "lucide-react";
 import type { Game } from "@/lib/data/types";
-import { developersBySlug } from "@/lib/catalog";
+import { getDeveloper } from "@/lib/developers";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { sizeLabel } from "@/lib/seo";
 import { DeviceAwareInstallCta } from "@/components/DeviceAwareInstallCta";
@@ -16,8 +16,8 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 /** Install guide body for the game hub Install tab (no page chrome). */
-export function GameInstallContent({ game }: { game: Game }) {
-  const developer = developersBySlug.get(game.developerSlug);
+export async function GameInstallContent({ game }: { game: Game }) {
+  const developer = await getDeveloper(game.developerSlug);
   const steps = game.installSteps?.length ? game.installSteps : deriveInstallSteps(game);
   const oneClick = isLauncherInstallable(game);
   const installFaq = game.faq?.length ? game.faq : deriveFaq(game);

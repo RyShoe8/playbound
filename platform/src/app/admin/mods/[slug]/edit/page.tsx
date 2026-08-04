@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { developers } from "@/lib/data";
+import { listDevelopers } from "@/lib/developers";
 import { listAllGames } from "@/lib/catalog";
 import { getModAdmin } from "@/lib/mods";
 import type { ModPayload } from "@/lib/modPayload";
@@ -59,7 +59,7 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
       <ModEditorForm
         mode="edit"
         initial={initial}
-        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
       />
     </div>

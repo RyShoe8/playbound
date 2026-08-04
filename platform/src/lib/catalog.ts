@@ -5,12 +5,17 @@ import type { Game, Genre, LaunchMethod } from "@/lib/data/types";
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import { games as seedGames } from "@/lib/data/games";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
-import { developers, developersBySlug, collections, collectionsBySlug } from "@/lib/data";
+import { collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
-import type { Collection } from "@/lib/data/types";
+import { listDevelopers } from "@/lib/developers";
+import type { Collection, Developer } from "@/lib/data/types";
 
 export type { Game } from "@/lib/data/types";
-export { developers, developersBySlug, collections, collectionsBySlug };
+// Developers are deliberately no longer re-exported here. They are database
+// backed now, so reaching for the static list would silently serve only the
+// nineteen seed entries and miss anything added through the admin — import
+// from "@/lib/developers" instead.
+export { collections, collectionsBySlug };
 
 type LeanGame = Record<string, unknown>;
 
@@ -325,7 +330,7 @@ export async function collectionsFeaturing(slug: string): Promise<Collection[]> 
 
 export interface SearchResults {
   games: Game[];
-  developers: typeof developers;
+  developers: Developer[];
   collections: Collection[];
 }
 
@@ -336,10 +341,14 @@ export async function searchAll(query: string): Promise<SearchResults> {
       Array.isArray(f) ? f.some((x) => x.toLowerCase().includes(q)) : f.toLowerCase().includes(q)
     );
   if (!q) return { games: [], developers: [], collections: [] };
-  const [games, allCollections] = await Promise.all([listGames(), listCollections()]);
+  const [games, allCollections, allDevelopers] = await Promise.all([
+    listGames(),
+    listCollections(),
+    listDevelopers(),
+  ]);
   return {
     games: games.filter((g) => has(g.title, g.tagline, g.tags, g.genres)),
-    developers: developers.filter((d) => has(d.name, d.tagline)),
+    developers: allDevelopers.filter((d) => has(d.name, d.tagline)),
     collections: allCollections.filter((c) => has(c.title, c.description)),
   };
 }

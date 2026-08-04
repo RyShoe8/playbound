@@ -12,12 +12,12 @@ import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { fetchGithubReleases } from "@/lib/github";
 import {
   collectionsFeaturing,
-  developersBySlug,
   listGames,
   getGame,
   canonicalSlugFor,
 } from "@/lib/catalog";
-import type { Game } from "@/lib/data/types";
+import { getDeveloper } from "@/lib/developers";
+import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { CompatibleMoreLikeThis } from "@/components/CompatibleGameCardGrid";
@@ -135,7 +135,7 @@ export default async function GamePage({
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const session = await getServerSession(authOptions);
-  const developer = developersBySlug.get(game.developerSlug);
+  const developer = await getDeveloper(game.developerSlug);
   const allGames = await listGames();
   const similar = allGames
     .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
@@ -395,7 +395,7 @@ function OverviewTab({
   discordPresence,
 }: {
   game: Game;
-  developer: ReturnType<typeof developersBySlug.get>;
+  developer: Developer | undefined;
   featuring: Awaited<ReturnType<typeof collectionsFeaturing>>;
   similar: Game[];
   weeklyIssue?: WeeklyIssue;

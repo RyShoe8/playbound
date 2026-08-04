@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { developers } from "@/lib/data";
+import { listDevelopers } from "@/lib/developers";
 import { emptyGameDraft, slugifyTitle, type GamePayload } from "@/lib/gamePayload";
 import dbConnect from "@/lib/db";
 import GameSubmission from "@/lib/models/GameSubmission";
@@ -50,7 +50,7 @@ export default async function AdminNewGamePage({
       <GameEditorForm
         mode="create"
         initial={initial}
-        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
       />
     </div>
   );
