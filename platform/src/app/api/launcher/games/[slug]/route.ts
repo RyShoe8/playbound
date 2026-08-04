@@ -15,11 +15,13 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    const baseCover = absoluteMediaUrl(game.coverImage, origin);
     const mods = (await listMods({ baseGameSlug: slug })).map((m) => ({
       slug: m.slug,
       title: m.title,
       tagline: m.tagline,
       coverImage: absoluteMediaUrl(m.coverImage, origin),
+      baseGameCoverImage: baseCover,
       approxSize: sizeLabelFromMB(m.sizeMB) || null,
       art: [m.art.from, m.art.to] as [string, string],
       downloadKind: m.downloadKind,

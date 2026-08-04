@@ -4,6 +4,7 @@ import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
+import { ModCard } from "@/components/ModCard";
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata = pageMetadata({
@@ -92,19 +93,21 @@ export default async function ModsIndexPage() {
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {list.map((mod) => (
                     <li key={mod.slug}>
-                      <Link
-                        href={`/mods/${mod.slug}`}
-                        className="block h-full rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
-                      >
-                        <p className="font-bold">{mod.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {mod.tagline}
-                        </p>
-                        <p className="mt-3 text-[11px] text-muted-foreground">
-                          {mod.license}
-                          {mod.sizeMB ? ` · ~${mod.sizeMB} MB` : ""}
-                        </p>
-                      </Link>
+                      <ModCard
+                        mod={mod}
+                        baseGame={
+                          game
+                            ? {
+                                slug: game.slug,
+                                title: game.title,
+                                coverImage: game.coverImage,
+                              }
+                            : null
+                        }
+                        meta={[mod.license, mod.sizeMB ? `~${mod.sizeMB} MB` : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      />
                     </li>
                   ))}
                 </ul>

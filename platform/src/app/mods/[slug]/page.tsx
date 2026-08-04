@@ -10,7 +10,9 @@ import { getGame } from "@/lib/catalog";
 import { isLauncherInstallable, launcherPlayModUrl } from "@/lib/launcher";
 import { Badge } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { ModArt } from "@/components/ModArt";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
+import { resolveModVisual } from "@/lib/modMedia";
 import {
   JsonLd,
   graph,
@@ -39,7 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${mod.title} — Free ${base} Mod`,
     description: `${mod.whatItChanges || mod.tagline} Free add-on for ${base}${mod.sizeMB ? `, roughly ${sizeLabel(mod.sizeMB)}` : ""}. One-click install through PlayBound.`,
     path: `/mods/${mod.slug}`,
-    images: mod.coverImage ? [mod.coverImage] : undefined,
+    images: (() => {
+      const visual = resolveModVisual(mod, baseGame);
+      return visual.kind === "image" ? [visual.url] : undefined;
+    })(),
   });
 }
 
@@ -128,6 +133,12 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
       />
 
       <div className="space-y-3">
+        <ModArt
+          mod={mod}
+          baseGame={baseGame}
+          className="h-48 w-full rounded-xl sm:h-56"
+          alt={`${mod.title} cover`}
+        />
         <Badge tone="brand">
           <Puzzle className="size-3" /> Mod
         </Badge>

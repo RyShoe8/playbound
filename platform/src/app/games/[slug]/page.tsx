@@ -29,10 +29,11 @@ import { visibleCategories } from "@/lib/discussion/categories";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
-import { modsForGame, type CatalogModPublic } from "@/lib/mods";
+import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { GameInstallContent } from "@/components/GameInstallContent";
+import { ModCard } from "@/components/ModCard";
 import { launcherPlayModUrl } from "@/lib/launcher";
 import {
   JsonLd,
@@ -668,65 +669,55 @@ async function ModsTab({ game }: { game: Game }) {
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {mods.map((mod) => (
-          <ModCard
-            key={mod.slug}
-            mod={mod}
-            installed={installedModSlugs.has(mod.slug)}
-            baseGameTitle={game.title}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ModCard({
-  mod,
-  installed,
-  baseGameTitle,
-}: {
-  mod: CatalogModPublic;
-  installed: boolean;
-  baseGameTitle: string;
-}) {
-  const isExternal = mod.downloadKind === "external";
-  const showPlay = installed && !isExternal;
-  return (
-    <div className="flex flex-col rounded-xl border border-border bg-card p-4">
-      <Link href={`/mods/${mod.slug}`} className="font-bold hover:text-primary">
-        {mod.title}
-      </Link>
-      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{mod.tagline}</p>
-      <p className="mt-2 text-[11px] text-muted-foreground">
-        {isExternal
-          ? "Opens in your browser via the launcher"
-          : `Installs to ${mod.installRelativePath || "(game root)"}`}
-        {mod.sizeMB ? ` · ~${mod.sizeMB} MB` : ""}
-        {showPlay ? " · Installed" : ""}
-      </p>
-      <div className="mt-auto flex flex-wrap items-start gap-2 pt-4">
-        {showPlay ? (
-          <a
-            href={launcherPlayModUrl(mod.slug)}
-            className="inline-flex items-center gap-1 rounded-full bg-play px-3 py-1.5 text-xs font-bold text-play-foreground hover:brightness-110"
-          >
-            <Play className="size-3 fill-current" /> Play {baseGameTitle}
-          </a>
-        ) : (
-          <LauncherInstallButton
-            slug={mod.slug}
-            kind="install-mod"
-            label={isExternal ? "Open with launcher" : "Install mod"}
-            className="bg-play text-play-foreground border-transparent px-3 py-1.5 text-xs"
-          />
-        )}
-        <Link
-          href={`/mods/${mod.slug}`}
-          className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
-        >
-          Details
-        </Link>
+        {mods.map((mod) => {
+          const isExternal = mod.downloadKind === "external";
+          const showPlay = installedModSlugs.has(mod.slug) && !isExternal;
+          return (
+            <ModCard
+              key={mod.slug}
+              mod={mod}
+              baseGame={{
+                slug: game.slug,
+                title: game.title,
+                coverImage: game.coverImage,
+              }}
+              meta={[
+                isExternal
+                  ? "Opens in your browser via the launcher"
+                  : `Installs to ${mod.installRelativePath || "(game root)"}`,
+                mod.sizeMB ? `~${mod.sizeMB} MB` : null,
+                showPlay ? "Installed" : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              actions={
+                <>
+                  {showPlay ? (
+                    <a
+                      href={launcherPlayModUrl(mod.slug)}
+                      className="inline-flex items-center gap-1 rounded-full bg-play px-3 py-1.5 text-xs font-bold text-play-foreground hover:brightness-110"
+                    >
+                      <Play className="size-3 fill-current" /> Play {game.title}
+                    </a>
+                  ) : (
+                    <LauncherInstallButton
+                      slug={mod.slug}
+                      kind="install-mod"
+                      label={isExternal ? "Open with launcher" : "Install mod"}
+                      className="border-transparent bg-play px-3 py-1.5 text-xs text-play-foreground"
+                    />
+                  )}
+                  <Link
+                    href={`/mods/${mod.slug}`}
+                    className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
+                  >
+                    Details
+                  </Link>
+                </>
+              }
+            />
+          );
+        })}
       </div>
     </div>
   );
