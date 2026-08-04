@@ -345,7 +345,11 @@ export function DerivedContentEditor({
                     };
                     onInstallStepsChange(next);
                   }}
-                  className={`${field} mt-0 w-32 shrink-0`}
+                  // !w-32 is load-bearing: `field` bakes in w-full, and Tailwind's
+                  // stylesheet order let that win over a plain w-32 appended
+                  // after it, stretching the select to fill the row and pushing
+                  // the ml-auto remove button out past the card's right edge.
+                  className={`${field} mt-0 !w-32 shrink-0`}
                 >
                   <option value="all">All</option>
                   <option value="windows">Windows</option>
