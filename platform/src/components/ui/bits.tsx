@@ -93,15 +93,24 @@ export function StatTile({
   value,
   hint,
   href,
+  trend,
 }: {
   label: string;
   value: string;
   hint?: string;
   href?: string;
+  trend?: { value: number | string; label?: string };
 }) {
   const inner = (
     <>
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
+        {trend && (
+          <span className="text-[11px] font-semibold text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">
+            vs {trend.value} {trend.label || "prev"}
+          </span>
+        )}
+      </div>
       <p className="mt-1 text-2xl font-bold">{value}</p>
       {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </>
