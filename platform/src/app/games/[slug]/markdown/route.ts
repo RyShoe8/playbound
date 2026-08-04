@@ -1,4 +1,5 @@
-import { getGame, developersBySlug } from "@/lib/catalog";
+import { getGame } from "@/lib/catalog";
+import { getDeveloper } from "@/lib/developers";
 import { modsForGame } from "@/lib/mods";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
@@ -32,7 +33,7 @@ export async function GET(
     });
   }
 
-  const developer = developersBySlug.get(game.developerSlug);
+  const developer = await getDeveloper(game.developerSlug);
   const mods = await modsForGame(game.slug);
   const issue = await issueForGame(game.slug);
   const cmps = comparisonsFeaturing(game.slug);

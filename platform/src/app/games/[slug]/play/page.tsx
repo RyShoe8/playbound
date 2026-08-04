@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, MonitorPlay, Server } from "lucide-react";
-import { developersBySlug, getGame } from "@/lib/catalog";
+import { getGame } from "@/lib/catalog";
+import { getDeveloper } from "@/lib/developers";
 import { isBrowserGame } from "@/lib/gameLaunch";
 import { GameArt } from "@/components/GameArt";
 import { PlayPageActions, PlayPageHeading } from "@/components/PlayPageActions";
@@ -18,7 +19,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
   const game = await getGame(slug);
   if (!game) notFound();
 
-  const developer = developersBySlug.get(game.developerSlug);
+  const developer = await getDeveloper(game.developerSlug);
   const browser = isBrowserGame(game);
   const officialHref = developer?.website ?? game.website;
 

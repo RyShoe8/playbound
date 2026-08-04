@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Globe, MapPin, Newspaper } from "lucide-react";
-import { developersBySlug } from "@/lib/data";
+import { getDeveloper } from "@/lib/developers";
 import { gamesByDeveloper } from "@/lib/catalog";
 import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
@@ -8,13 +8,13 @@ import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const dev = developersBySlug.get(slug);
+  const dev = await getDeveloper(slug);
   return { title: dev ? dev.name : "Developer Not Found" };
 }
 
 export default async function DeveloperPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const dev = developersBySlug.get(slug);
+  const dev = await getDeveloper(slug);
   if (!dev) notFound();
 
   const devGames = await gamesByDeveloper(dev.slug);

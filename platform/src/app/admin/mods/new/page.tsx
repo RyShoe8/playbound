@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { developers } from "@/lib/data";
+import { listDevelopers } from "@/lib/developers";
 import { listAllGames } from "@/lib/catalog";
 import { emptyModDraft } from "@/lib/modPayload";
 import { ModEditorForm } from "@/components/admin/ModEditorForm";
@@ -19,7 +19,7 @@ export default async function AdminNewModPage() {
       <ModEditorForm
         mode="create"
         initial={emptyModDraft()}
-        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
       />
     </div>

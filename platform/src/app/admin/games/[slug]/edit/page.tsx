@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { developers } from "@/lib/data";
+import { listDevelopers } from "@/lib/developers";
 import { getGame } from "@/lib/catalog";
 import type { GamePayload } from "@/lib/gamePayload";
 import { toPayloadLauncherInstall, toPayloadCommunityLinks } from "@/lib/gamePayload";
@@ -86,7 +86,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
       <GameEditorForm
         mode="edit"
         initial={initial}
-        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
       />
     </div>
   );

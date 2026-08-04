@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-import { listGames, collections, developers } from "@/lib/catalog";
+import { listGames, collections } from "@/lib/catalog";
+import { listDevelopers } from "@/lib/developers";
 import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
@@ -85,7 +86,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
       lastModified: now,
     })),
-    ...developers.map((d) => ({
+    ...(await listDevelopers()).map((d) => ({
       url: `${SITE_URL}/developers/${d.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.5,

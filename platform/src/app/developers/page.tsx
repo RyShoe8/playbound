@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
-import { developers, listGames } from "@/lib/catalog";
+import { listGames } from "@/lib/catalog";
+import { listDevelopers } from "@/lib/developers";
 import { pageMetadata } from "@/lib/seo";
 import { Avatar } from "@/components/ui/bits";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
@@ -21,7 +22,7 @@ export default async function DevelopersIndexPage() {
   }
 
   // Only show teams with a game in the catalog — avoids empty profile pages.
-  const active = developers
+  const active = (await listDevelopers())
     .filter((d) => (countBySlug.get(d.slug) ?? 0) > 0)
     .sort((a, b) => a.name.localeCompare(b.name));
 
