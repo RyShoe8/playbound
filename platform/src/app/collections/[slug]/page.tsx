@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { collectionsBySlug } from "@/lib/data";
+import { getCollection } from "@/lib/collections";
 import { gamesFor } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
@@ -16,7 +16,7 @@ import {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const collection = collectionsBySlug.get(slug);
+  const collection = await getCollection(slug);
   if (!collection) return { title: "Collection Not Found" };
 
   const games = await gamesFor(collection.gameSlugs);
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CollectionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const collection = collectionsBySlug.get(slug);
+  const collection = await getCollection(slug);
   if (!collection) notFound();
 
   const games = await gamesFor(collection.gameSlugs);

@@ -100,6 +100,12 @@ const ServerLobbyAuthSchema = new Schema(
 const CatalogGameSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, index: true },
+    /**
+     * Slugs this game used to live at. Renaming would otherwise 404 every
+     * indexed URL, inbound link and shared page for the old slug, so the old
+     * value is kept here and /games/[slug] 301s from it to the current one.
+     */
+    previousSlugs: { type: [String], default: [], index: true },
     title: { type: String, required: true },
     tagline: { type: String, required: true },
     description: { type: String, required: true },

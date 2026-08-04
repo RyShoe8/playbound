@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { MonitorPlay } from "lucide-react";
-import { collections } from "@/lib/data";
+import { listCollections } from "@/lib/collections";
 import { gamesFor, listGames, hiddenGems } from "@/lib/catalog";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
@@ -48,16 +48,17 @@ export default async function DiscoverPage({
 }) {
   const { filter } = await searchParams;
   const active = filters.find((f) => f.key === filter);
-  const [games, gems, collectionPreviews] = await Promise.all([
+  const [games, gems, collections] = await Promise.all([
     listGames(),
     hiddenGems(),
-    Promise.all(
-      collections.map(async (c) => ({
-        collection: c,
-        preview: (await gamesFor(c.gameSlugs)).slice(0, 4),
-      }))
-    ),
+    listCollections(),
   ]);
+  const collectionPreviews = await Promise.all(
+    collections.map(async (c) => ({
+      collection: c,
+      preview: (await gamesFor(c.gameSlugs)).slice(0, 4),
+    }))
+  );
 
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">

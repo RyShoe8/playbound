@@ -6,6 +6,8 @@ import type { LauncherInstall } from "@/lib/launcherInstall";
 import { games as seedGames } from "@/lib/data/games";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { developers, developersBySlug, collections, collectionsBySlug } from "@/lib/data";
+import { listCollections } from "@/lib/collections";
+import type { Collection } from "@/lib/data/types";
 
 export type { Game } from "@/lib/data/types";
 export { developers, developersBySlug, collections, collectionsBySlug };
@@ -216,6 +218,26 @@ export async function getGame(
   return seed ? seedGameWithInstall(seed) : undefined;
 }
 
+/**
+ * Resolve a retired slug to the game's current one.
+ *
+ * Returns null when the slug was never used, so callers can fall through to a
+ * genuine 404 rather than redirecting on every unknown URL.
+ */
+export const canonicalSlugFor = cache(async (slug: string): Promise<string | null> => {
+  try {
+    await dbConnect();
+    const doc = await CatalogGame.findOne({ previousSlugs: slug })
+      .select("slug published")
+      .lean();
+    const found = doc as { slug?: string; published?: boolean } | null;
+    if (!found?.slug || !found.published) return null;
+    return found.slug;
+  } catch {
+    return null;
+  }
+});
+
 /** Lobby credentials for Zero-K / 0 A.D. listings — never expose on public Game. */
 export async function getServerLobbyAuth(
   slug: string
@@ -272,14 +294,15 @@ export async function gamesByDeveloper(devSlug: string): Promise<Game[]> {
   return (await listGames()).filter((g) => g.developerSlug === devSlug);
 }
 
-export function collectionsFeaturing(slug: string) {
-  return collections.filter((c) => c.gameSlugs.includes(slug));
+/** Collections containing a game. Reads the managed list, not the static seed. */
+export async function collectionsFeaturing(slug: string): Promise<Collection[]> {
+  return (await listCollections()).filter((c) => c.gameSlugs.includes(slug));
 }
 
 export interface SearchResults {
   games: Game[];
   developers: typeof developers;
-  collections: typeof collections;
+  collections: Collection[];
 }
 
 export async function searchAll(query: string): Promise<SearchResults> {
@@ -289,11 +312,11 @@ export async function searchAll(query: string): Promise<SearchResults> {
       Array.isArray(f) ? f.some((x) => x.toLowerCase().includes(q)) : f.toLowerCase().includes(q)
     );
   if (!q) return { games: [], developers: [], collections: [] };
-  const games = await listGames();
+  const [games, allCollections] = await Promise.all([listGames(), listCollections()]);
   return {
     games: games.filter((g) => has(g.title, g.tagline, g.tags, g.genres)),
     developers: developers.filter((d) => has(d.name, d.tagline)),
-    collections: collections.filter((c) => has(c.title, c.description)),
+    collections: allCollections.filter((c) => has(c.title, c.description)),
   };
 }
 
