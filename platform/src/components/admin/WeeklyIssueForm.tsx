@@ -12,7 +12,7 @@ export function WeeklyIssueForm({
   games,
 }: {
   mode: "create" | "edit";
-  initial: { slug?: string; gameSlug: string; publishedAt: string; published: boolean };
+  initial: { id?: string; gameSlug: string; publishedAt: string; published: boolean };
   games: GameOption[];
 }) {
   const router = useRouter();
@@ -28,7 +28,7 @@ export function WeeklyIssueForm({
     setError("");
     try {
       const url =
-        mode === "create" ? "/api/admin/weekly" : `/api/admin/weekly/${encodeURIComponent(initial.slug!)}`;
+        mode === "create" ? "/api/admin/weekly" : `/api/admin/weekly/${encodeURIComponent(initial.id!)}`;
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "content-type": "application/json" },
@@ -49,11 +49,11 @@ export function WeeklyIssueForm({
   }
 
   async function remove() {
-    if (!initial.slug) return;
+    if (!initial.id) return;
     if (!confirm("Delete this weekly issue? This cannot be undone.")) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/admin/weekly/${encodeURIComponent(initial.slug)}`, {
+      const res = await fetch(`/api/admin/weekly/${encodeURIComponent(initial.id)}`, {
         method: "DELETE",
       });
       if (!res.ok) {

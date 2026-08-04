@@ -14,13 +14,13 @@ const updateSchema = z.object({
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { error } = await requireAdminSession();
     if (error) return error;
 
-    const { slug } = await params;
+    const { id } = await params;
     const body = updateSchema.parse(await req.json());
     const game = await getGame(body.gameSlug, { includeUnpublished: true });
     if (!game) {
@@ -30,12 +30,12 @@ export async function PATCH(
     const built = buildIssueFromDate(body.publishedAt, body.gameSlug);
     await dbConnect();
 
-    const existing = await WeeklyIssue.findOne({ slug });
+    const existing = await WeeklyIssue.findById(id);
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    if (built.slug !== slug) {
+    if (built.slug !== existing.slug) {
       const clash = await WeeklyIssue.findOne({
         $or: [{ slug: built.slug }, { year: built.year, week: built.week }],
         _id: { $ne: existing._id },
@@ -56,7 +56,7 @@ export async function PATCH(
     existing.published = body.published !== false;
     await existing.save();
 
-    return NextResponse.json({ success: true, slug: existing.slug });
+    return NextResponse.json({ success: true, slug: existing.slug, id: String(existing._id) });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
@@ -68,15 +68,15 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { error } = await requireAdminSession();
     if (error) return error;
 
-    const { slug } = await params;
+    const { id } = await params;
     await dbConnect();
-    const doc = await WeeklyIssue.findOneAndDelete({ slug });
+    const doc = await WeeklyIssue.findByIdAndDelete(id);
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

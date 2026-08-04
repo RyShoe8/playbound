@@ -10,6 +10,17 @@ import {
 export type WeeklyIssue = WeeklyIssueSeed & {
   slug: string;
   published: boolean;
+  /**
+   * Stable Mongo identity. Unlike a game or collection slug, an issue's slug
+   * is *derived* from its game and date and gets silently rewritten by PATCH
+   * whenever either changes — editing an issue is not "renaming" it the way
+   * editing a game's slug field is. A client holding an old slug (loaded
+   * before an earlier edit changed it) would 404 on delete even though the
+   * issue is still sitting right there in the list under its new slug. Admin
+   * edit/delete actions key off this instead; empty when only the static
+   * seed is available, since there is no document to act on yet.
+   */
+  id: string;
 };
 
 export { issueSlug, isoWeek };
@@ -19,6 +30,7 @@ function toIssue(doc: Record<string, unknown>): WeeklyIssue {
   const week = Number(doc.week);
   const gameSlug = String(doc.gameSlug);
   return {
+    id: doc._id ? String(doc._id) : "",
     slug: String(doc.slug || issueSlug({ year, week, gameSlug })),
     year,
     week,
@@ -33,6 +45,7 @@ function seedAsIssues(includeUnpublished: boolean): WeeklyIssue[] {
     .filter((i) => includeUnpublished || i.published !== false)
     .map((i) => ({
       ...i,
+      id: "",
       slug: issueSlug(i),
       published: i.published !== false,
     }))
@@ -88,7 +101,7 @@ export async function issueForGame(gameSlug: string): Promise<WeeklyIssue | unde
   return all.find((i) => i.gameSlug === gameSlug);
 }
 
-export function buildIssueFromDate(publishedAt: string, gameSlug: string): Omit<WeeklyIssue, "published"> & {
+export function buildIssueFromDate(publishedAt: string, gameSlug: string): Omit<WeeklyIssue, "published" | "id"> & {
   published?: boolean;
 } {
   const date = new Date(`${publishedAt}T12:00:00.000Z`);
