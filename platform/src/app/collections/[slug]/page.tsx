@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCollection } from "@/lib/collections";
 import { gamesFor } from "@/lib/catalog";
-import { GameArt } from "@/components/GameArt";
-import { LaunchBadge, PlayCta } from "@/components/GameCard";
+import { CollectionGamesList } from "@/components/CollectionGamesList";
 import { Badge } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
 import {
@@ -75,30 +74,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
         </p>
       </section>
 
-      <div className="space-y-3">
-        {games.map((game, i) => (
-          <div
-            key={game.slug}
-            className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
-          >
-            <span className="w-6 text-center text-lg font-extrabold text-muted-foreground">{i + 1}</span>
-            <Link href={`/games/${game.slug}`} className="shrink-0">
-              <GameArt game={game} showTitle={false} iconSize="sm" className="size-16 rounded-lg sm:size-20" />
-            </Link>
-            <div className="min-w-0 flex-1">
-              <Link href={`/games/${game.slug}`} className="font-bold hover:underline">
-                {game.title}
-              </Link>
-              <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{game.tagline}</p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
-                <LaunchBadge game={game} />
-                <span className="text-muted-foreground">{game.genres.join(" · ")}</span>
-              </div>
-            </div>
-            <PlayCta game={game} size="sm" />
-          </div>
-        ))}
-      </div>
+      <CollectionGamesList games={games} />
 
       <section>
         <h2 className="text-xl font-bold">Questions</h2>

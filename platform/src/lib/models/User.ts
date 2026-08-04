@@ -57,6 +57,14 @@ const UserSchema = new Schema({
       connectedAt: { type: Date, default: null },
     },
   },
+  /** Client-facing discovery preferences (mirrored in localStorage for guests). */
+  preferences: {
+    compatibilityFilter: {
+      type: String,
+      enum: ["compatible", "all"],
+      default: "compatible",
+    },
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

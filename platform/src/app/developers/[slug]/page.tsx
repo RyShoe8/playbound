@@ -3,7 +3,7 @@ import { Globe, MapPin, Newspaper } from "lucide-react";
 import { developersBySlug } from "@/lib/data";
 import { gamesByDeveloper } from "@/lib/catalog";
 import { fetchGithubReleases } from "@/lib/github";
-import { CardRow, GameCard } from "@/components/GameCard";
+import { CompatibleCardRow } from "@/components/CompatibleCardRow";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -58,11 +58,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
 
       <section>
         <SectionHeader title="Games" subtitle={`Everything by ${dev.name} on PlayBound`} />
-        <CardRow>
-          {devGames.map((g) => (
-            <GameCard key={g.slug} game={g} />
-          ))}
-        </CardRow>
+        <CompatibleCardRow games={devGames} />
       </section>
 
       {releases.length > 0 && (

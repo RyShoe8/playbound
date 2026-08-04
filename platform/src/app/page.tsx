@@ -5,10 +5,11 @@ import { gameOfTheWeek, listGames, hiddenGems, getGame } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
 import { GameArt } from "@/components/GameArt";
-import { CardRow, GameCard, PlayCta } from "@/components/GameCard";
+import { CardRow, PlayCta } from "@/components/GameCard";
 import { ModPreviewCard } from "@/components/ModPreviewCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
+import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
@@ -143,19 +144,8 @@ export default async function HomePage() {
         <RecaptchaNotice className="mt-3" />
       </section>
 
-      {/* ── Games ──────────────────────────────────────────────── */}
-      <section>
-        <SectionHeader
-          title="Games"
-          subtitle={`${games.length} free titles — a sample of what's on PlayBound`}
-          href="/discover"
-        />
-        <CardRow>
-          {featuredGames.map((g) => (
-            <GameCard key={g.slug} game={g} />
-          ))}
-        </CardRow>
-      </section>
+      {/* ── Games + Hidden gems (client-filtered) ─────────────── */}
+      <HomeGamesSections featuredGames={featuredGames} gems={gems} />
 
       {/* ── Live servers ───────────────────────────────────────── */}
       {serverPreviews.length > 0 && (
@@ -221,21 +211,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Hidden gems ────────────────────────────────────────── */}
-      {gems.length > 0 && (
-        <section>
-          <SectionHeader
-            title="Hidden Gems"
-            subtitle="Editor picks — criminally underplayed, genuinely excellent"
-            href="/discover?filter=hidden"
-          />
-          <CardRow>
-            {gems.map((g) => (
-              <GameCard key={g.slug} game={g} />
-            ))}
-          </CardRow>
-        </section>
-      )}
+      {/* ── Hidden gems are rendered inside HomeGamesSections ──── */}
 
       {/* ── Collections ────────────────────────────────────────── */}
       <section>

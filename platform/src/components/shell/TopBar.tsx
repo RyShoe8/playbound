@@ -6,6 +6,7 @@ import { Play, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useTelemetry } from "@/lib/telemetry";
+import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 
 export function TopBar() {
   const { data: session } = useSession();
@@ -43,6 +44,9 @@ export function TopBar() {
         </form>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="lg:hidden">
+            <GameCompatibilityToggle variant="topbar" />
+          </div>
           {session?.user ? (
             <>
               <Link href="/profile" title="Profile" className="rounded-full">

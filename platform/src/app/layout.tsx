@@ -9,6 +9,7 @@ import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
 import { TelemetryProvider } from "@/components/TelemetryProvider";
+import { CompatibilityShell } from "@/components/CompatibilityShell";
 import {
   SITE_URL,
   SITE_NAME,
@@ -95,13 +96,15 @@ export default function RootLayout({
           {/* Inside SessionProvider so identify() sees the auth session.
               gaEnabled is server-decided so preview never hits production GA4. */}
           <TelemetryProvider gaEnabled={IS_PRODUCTION}>
-            <Sidebar />
-            <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
-              <TopBar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
-            <MobileNav />
+            <CompatibilityShell>
+              <Sidebar />
+              <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
+                <TopBar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+              <MobileNav />
+            </CompatibilityShell>
           </TelemetryProvider>
         </SessionProvider>
       </body>
