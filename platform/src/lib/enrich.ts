@@ -409,6 +409,7 @@ export type ReadinessSource = {
   notFor?: string[] | null;
   faq?: GameFaq[] | null;
   installSteps?: InstallStep[] | null;
+  browserPlayable?: boolean | null;
 };
 
 /**
@@ -470,7 +471,13 @@ export function editorialReadiness(game: ReadinessSource): Readiness {
       key: "installSteps",
       label: "Install steps",
       why: "Powers HowTo structured data and the install page. Auto-derived on import.",
-      done: (game.installSteps?.length ?? 0) >= 2,
+      // deriveInstallSteps() returns exactly one step for a browser-playable
+      // game — "runs in your browser, nothing to install" — and that single
+      // step is complete by design, not a partial list. Requiring 2+ made
+      // every browser game permanently unpublishable.
+      done: game.browserPlayable
+        ? (game.installSteps?.length ?? 0) >= 1
+        : (game.installSteps?.length ?? 0) >= 2,
     },
   ];
 

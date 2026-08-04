@@ -548,7 +548,11 @@ export function GameEditorForm({
 
             <StringListEditor
               title="Best for"
-              hint="Concrete situations this game suits. At least two."
+              hint={
+                'Concrete situations you’d recommend this game for — e.g. "LAN parties" ' +
+                'or "people who miss Command & Conquer." Specific enough that a reader ' +
+                'pictures themselves in it, not a genre label. At least two.'
+              }
               values={form.bestFor ?? []}
               suggestions={suggestions.bestFor}
               onChange={(next) => patch("bestFor", next)}
@@ -556,7 +560,12 @@ export function GameEditorForm({
 
             <StringListEditor
               title="Not for"
-              hint="Honest limitations. At least two. This is the strongest trust signal on the page — nobody else in this niche publishes it, so resist softening them."
+              hint={
+                'Honest limitations — e.g. "players who want ranked matchmaking" or ' +
+                '"anyone without a decent GPU." At least two. This is the strongest trust ' +
+                'signal on the page — nobody else in this niche publishes it, so resist ' +
+                "softening them into a Best For in disguise."
+              }
               values={form.notFor ?? []}
               suggestions={suggestions.notFor}
               onChange={(next) => patch("notFor", next)}
@@ -564,7 +573,12 @@ export function GameEditorForm({
 
             <StringListEditor
               title="Comparable to"
-              hint="Commercial games this resembles. Powers the /alternatives pages."
+              hint={
+                "Commercial (paid) games this resembles, not other free ones — e.g. a free " +
+                "RTS might list Command & Conquer or StarCraft. Powers the /alternatives " +
+                "pages, which exist to catch searches for a paid game's name from people " +
+                "looking for a free substitute."
+              }
               values={form.comparableTo ?? []}
               onChange={(next) => patch("comparableTo", next)}
             />
