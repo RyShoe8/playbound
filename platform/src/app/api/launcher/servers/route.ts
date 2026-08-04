@@ -25,6 +25,9 @@ export async function GET(req: Request) {
         coverImage: absoluteMediaUrl(g.coverImage, origin),
         art: [g.art.from, g.art.to] as [string, string],
         tagline: g.tagline,
+        platforms: g.platforms ?? [],
+        browserPlayable: Boolean(g.browserPlayable),
+        steamDeck: Boolean(g.steamDeck),
       }))
       .sort((a, b) => {
         if (a.supported !== b.supported) return a.supported ? -1 : 1;

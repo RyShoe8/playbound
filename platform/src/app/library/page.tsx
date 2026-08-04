@@ -1,63 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { Download, FolderOpen, LibraryBig, LogIn, Play, Trash2 } from "lucide-react";
+import { LibraryBig, LogIn } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { gamesFor } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
-import {
-  launcherLocateUrl,
-  launcherOpenFolderUrl,
-  launcherPlayUrl,
-  launcherUninstallUrl,
-} from "@/lib/launcher";
-import { GameCard } from "@/components/GameCard";
-import { LibraryModsDisclosure } from "@/components/LibraryModsDisclosure";
-import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
-import { Badge, EmptyHint } from "@/components/ui/bits";
+import { LibraryGrid } from "@/components/LibraryGrid";
+import { EmptyHint } from "@/components/ui/bits";
 
 export const metadata: Metadata = {
   title: "Library",
   // Personal / auth route — must never be indexed.
   robots: { index: false, follow: false },
 };
-
-function InstalledActions({ slug }: { slug: string }) {
-  return (
-    <div className="flex flex-wrap items-center gap-1 px-0.5">
-      <a
-        href={launcherPlayUrl(slug)}
-        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
-      >
-        <Play className="size-2.5 fill-current" /> Play
-      </a>
-      <a
-        href={launcherOpenFolderUrl(slug)}
-        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
-        title="Open install folder"
-      >
-        <FolderOpen className="size-2.5" /> Folder
-      </a>
-      <a
-        href={launcherLocateUrl(slug)}
-        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
-        title="Select .exe in the PlayBound app"
-      >
-        Locate
-      </a>
-      <a
-        href={launcherUninstallUrl(slug)}
-        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/25"
-        title="Uninstall"
-      >
-        <Trash2 className="size-2.5" /> Remove
-      </a>
-    </div>
-  );
-}
 
 export default async function LibraryPage() {
   const session = await getServerSession(authOptions);
@@ -114,7 +72,6 @@ export default async function LibraryPage() {
     console.error("Library page load failed:", err);
   }
 
-  const bySlug = new Map(entries.map((e) => [e.gameSlug, e]));
   const games = await gamesFor(entries.map((e) => e.gameSlug));
   const knownSlugs = new Set(games.map((g) => g.slug));
   const orphanEntries = entries.filter((e) => !knownSlugs.has(e.gameSlug));
@@ -122,13 +79,13 @@ export default async function LibraryPage() {
 
   const allMods = await listMods();
   const modBySlug = new Map(allMods.map((m) => [m.slug, m]));
-  const modsByBase = new Map<string, { slug: string; title: string }[]>();
+  const modsByBase: Record<string, { slug: string; title: string }[]> = {};
   for (const entry of modEntries) {
     const mod = modBySlug.get(entry.modSlug);
     const title = mod?.title || entry.modSlug;
-    const list = modsByBase.get(entry.baseGameSlug) || [];
+    const list = modsByBase[entry.baseGameSlug] || [];
     list.push({ slug: entry.modSlug, title });
-    modsByBase.set(entry.baseGameSlug, list);
+    modsByBase[entry.baseGameSlug] = list;
   }
 
   return (
@@ -163,57 +120,12 @@ export default async function LibraryPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-4 sm:gap-5">
-          {games.map((game) => {
-            const meta = bySlug.get(game.slug);
-            const gameMods = modsByBase.get(game.slug) || [];
-            return (
-              <div key={game.slug} className="w-44 shrink-0 space-y-2 sm:w-48">
-                <GameCard game={game} />
-                <div className="flex flex-wrap items-center gap-1 px-0.5">
-                  {meta?.installed && (
-                    <Badge tone="play">
-                      <Download className="size-3" /> Installed
-                    </Badge>
-                  )}
-                  {meta?.saved && !meta.installed && (
-                    <Badge tone="brand">Play Later</Badge>
-                  )}
-                  <LibraryDeviceHint game={game} />
-                </div>
-                {meta?.installed && <InstalledActions slug={game.slug} />}
-                <LibraryModsDisclosure mods={gameMods} />
-              </div>
-            );
-          })}
-          {orphanEntries.map((entry) => {
-            const title = entry.gameSlug
-              .split("-")
-              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(" ");
-            const gameMods = modsByBase.get(entry.gameSlug) || [];
-            return (
-              <div
-                key={entry.gameSlug}
-                className="w-44 shrink-0 space-y-2 rounded-xl border border-border bg-card p-3 sm:w-48"
-              >
-                <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-secondary text-2xl font-extrabold text-muted-foreground">
-                  {title.charAt(0)}
-                </div>
-                <p className="truncate text-sm font-bold">{title}</p>
-                {entry.installed && (
-                  <div className="flex flex-wrap items-center gap-1">
-                    <Badge tone="play">
-                      <Download className="size-3" /> Installed
-                    </Badge>
-                  </div>
-                )}
-                {entry.installed && <InstalledActions slug={entry.gameSlug} />}
-                <LibraryModsDisclosure mods={gameMods} />
-              </div>
-            );
-          })}
-        </div>
+        <LibraryGrid
+          games={games}
+          entries={entries}
+          orphans={orphanEntries}
+          modsByBase={modsByBase}
+        />
       )}
     </div>
   );
