@@ -7,6 +7,7 @@ import { games as seedGames } from "@/lib/data/games";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { developers, developersBySlug, collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
+import { listWeeklyIssues } from "@/lib/weekly";
 import type { Collection } from "@/lib/data/types";
 
 export type { Game } from "@/lib/data/types";
@@ -278,8 +279,15 @@ export async function gamesFor(slugs: string[]): Promise<Game[]> {
 }
 
 export async function gameOfTheWeek(): Promise<Game | undefined> {
-  const all = await listGames();
-  return all.find((g) => g.gameOfWeek) ?? all[0];
+  const [all, issues] = await Promise.all([listGames(), listWeeklyIssues()]);
+  const bySlug = new Map(all.map((g) => [g.slug, g]));
+  const fromIssue = issues[0] && bySlug.get(issues[0].gameSlug);
+  // The home page hero should reflect an actual published weekly issue, not
+  // an arbitrary game — falling straight to all[0] here previously meant
+  // whichever game sorted first alphabetically became "Game of the Week" the
+  // instant nothing had the flag set, which looked like new games were
+  // silently joining the weekly feature.
+  return fromIssue || all.find((g) => g.gameOfWeek) || all[0];
 }
 
 export async function hiddenGems(): Promise<Game[]> {

@@ -28,7 +28,7 @@ export default async function AdminEditWeeklyPage({
       <WeeklyIssueForm
         mode="edit"
         initial={{
-          slug: issue.slug,
+          id: issue.id,
           gameSlug: issue.gameSlug,
           publishedAt: issue.publishedAt,
           published: issue.published,
