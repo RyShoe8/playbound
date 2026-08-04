@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useTelemetry } from "@/lib/telemetry";
 
 /** Google's mark, inlined so there is no external request on the auth pages. */
 function GoogleMark() {
@@ -42,6 +43,10 @@ export function GoogleSignInButton({
   label?: string;
 }) {
   const [busy, setBusy] = useState(false);
+  const { track } = useTelemetry();
+  const intent = callbackUrl === "/welcome" || label.toLowerCase().includes("sign up")
+    ? "signup"
+    : "login";
 
   return (
     <button
@@ -49,6 +54,7 @@ export function GoogleSignInButton({
       disabled={busy}
       onClick={() => {
         setBusy(true);
+        void track(intent, { method: "google" });
         void signIn("google", { callbackUrl });
       }}
       className="flex h-10 w-full items-center justify-center gap-2.5 rounded-full border border-input bg-secondary/50 text-sm font-bold transition-colors hover:bg-secondary disabled:opacity-60"

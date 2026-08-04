@@ -6,6 +6,7 @@ import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 const syncSchema = z.object({
   kind: z.enum(["game", "mod"]).optional().default("game"),
@@ -89,6 +90,17 @@ export async function POST(req: Request) {
         },
         { upsert: true, new: true }
       );
+      void saveEvent({
+        event: "game_installed",
+        properties: {
+          gameSlug: body.slug,
+          installMethod: "launcher",
+          version: body.version,
+        },
+        userId: String(user._id),
+        timestamp: now.toISOString(),
+        userAgent: req.headers.get("user-agent"),
+      }).catch(() => undefined);
       return NextResponse.json({
         success: true,
         gameSlug: entry.gameSlug,

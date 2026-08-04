@@ -5,6 +5,7 @@ import { isBrowserGame } from "@/lib/gameLaunch";
 import { GameArt } from "./GameArt";
 import { Badge } from "./ui/bits";
 import { cn } from "@/lib/utils";
+import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 
 function sizeLabel(sizeMB: number) {
   return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
@@ -25,10 +26,17 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
 
   if (isBrowserGame(game)) {
     return (
-      <a href={game.website} target="_blank" rel="noreferrer" className={className}>
+      <TelemetryAnchor
+        href={game.website}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+        event="official_download_clicked"
+        properties={{ gameSlug: game.slug, url: game.website }}
+      >
         <MonitorPlay className={iconClass} />
         Play Free
-      </a>
+      </TelemetryAnchor>
     );
   }
 

@@ -6,6 +6,7 @@ import { isBrowserGame } from "@/lib/gameLaunch";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { Badge } from "@/components/ui/bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -54,14 +55,16 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
               No download or launcher needed — {game.title} runs on the web. Opens on the official site
               ({host}).
             </p>
-            <a
+            <TelemetryAnchor
               href={game.website}
               target="_blank"
               rel="noreferrer"
+              event="official_download_clicked"
+              properties={{ gameSlug: game.slug, url: game.website }}
               className="mt-2 flex items-center gap-2 rounded-full bg-play px-6 py-2.5 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
             >
               <ExternalLink className="size-4" /> Play Free on {host}
-            </a>
+            </TelemetryAnchor>
           </div>
         </div>
       </div>
@@ -101,10 +104,15 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
               className="mt-2 border-transparent bg-play px-6 py-2.5 text-play-foreground hover:brightness-110"
             />
           ) : null}
-          <a
+          <TelemetryAnchor
             href={developer?.website ?? game.website}
             target="_blank"
             rel="noreferrer"
+            event="official_download_clicked"
+            properties={{
+              gameSlug: game.slug,
+              url: developer?.website ?? game.website,
+            }}
             className={
               oneClick
                 ? "flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
@@ -112,7 +120,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
             }
           >
             <Download className="size-4" /> Download from {host}
-          </a>
+          </TelemetryAnchor>
           {game.launchMethods.includes("server") && (
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Server className="size-3.5" /> Supports dedicated servers for multiplayer

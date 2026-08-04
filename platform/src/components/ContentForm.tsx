@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTelemetry } from "@/lib/telemetry";
 
 type Kind = "review" | "guide";
 
@@ -39,6 +40,7 @@ export function ContentForm({
   isSignedIn: boolean;
 }) {
   const router = useRouter();
+  const { track } = useTelemetry();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [rating, setRating] = useState(5);
@@ -87,6 +89,9 @@ export function ContentForm({
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
+        if (kind === "review") {
+          void track("review_created", { gameSlug, rating });
+        }
         setTitle("");
         setBody("");
         setOpen(kind !== "review");

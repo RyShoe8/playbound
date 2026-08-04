@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CategoryMeta } from "@/lib/discussion/categories";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { useTelemetry } from "@/lib/telemetry";
 
 type Related = { slug: string; title: string; replyCount: number };
 
@@ -18,6 +19,7 @@ export function TopicComposer({
   isSignedIn: boolean;
 }) {
   const router = useRouter();
+  const { track } = useTelemetry();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -102,6 +104,10 @@ export function TopicComposer({
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.topic?.href) {
+        void track("discussion_created", {
+          gameId: gameSlug,
+          topicId: data.topic.id || data.topic.slug || undefined,
+        });
         router.push(data.topic.href);
         router.refresh();
         return;

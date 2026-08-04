@@ -6,6 +6,7 @@ import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { getGame } from "@/lib/catalog";
 import type { LibraryEntryDTO } from "@/lib/library";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 function toDto(doc: {
   gameSlug: string;
@@ -89,6 +90,14 @@ export async function POST(req: Request) {
       },
       { upsert: true, new: true }
     ).lean();
+
+    void saveEvent({
+      event: "game_installed",
+      properties: { gameSlug: slug, installMethod: "manual_claim" },
+      userId: session.user.id,
+      timestamp: now.toISOString(),
+      userAgent: req.headers.get("user-agent"),
+    }).catch(() => undefined);
 
     return NextResponse.json({ entry: toDto(entry!) }, { status: 201 });
   } catch (error) {

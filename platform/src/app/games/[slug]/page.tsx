@@ -43,6 +43,7 @@ import {
   breadcrumbSchema,
   howToSchema,
 } from "@/components/JsonLd";
+import { TelemetryOnce } from "@/components/TelemetryOnce";
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
@@ -189,6 +190,10 @@ export default async function GamePage({
 
   return (
     <div>
+      <TelemetryOnce
+        event="game_viewed"
+        properties={{ gameSlug: game.slug, gameTitle: game.title }}
+      />
       <JsonLd
         data={graph(
           videoGameSchema(game, developer, { aggregateRating }),
@@ -865,6 +870,10 @@ async function DiscussionTabSection({
 function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
   return (
     <div className="space-y-6">
+      <TelemetryOnce
+        event="guide_viewed"
+        properties={{ gameSlug }}
+      />
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Guides</h2>
         <ContentForm kind="guide" gameSlug={gameSlug} isSignedIn={isSignedIn} />

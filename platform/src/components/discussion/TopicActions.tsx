@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
 import { REPORT_REASONS } from "@/lib/discussion/reportConstants";
+import { useTelemetry } from "@/lib/telemetry";
 
 export function ReportButton({
   targetType,
@@ -17,6 +18,7 @@ export function ReportButton({
   const [reason, setReason] = useState<(typeof REPORT_REASONS)[number]>("spam");
   const [details, setDetails] = useState("");
   const [msg, setMsg] = useState("");
+  const { track } = useTelemetry();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +37,7 @@ export function ReportButton({
     });
     const data = await res.json().catch(() => null);
     if (res.ok) {
+      void track("discussion_report", { topicId: targetId, reason });
       setOpen(false);
       setMsg("Report submitted. Thank you.");
     } else {
@@ -106,6 +109,7 @@ export function ReplyComposer({
   onClearQuote?: () => void;
 }) {
   const router = useRouter();
+  const { track } = useTelemetry();
   const [body, setBody] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -139,6 +143,7 @@ export function ReplyComposer({
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
+        void track("discussion_reply", { topicId, gameId: gameSlug });
         setBody("");
         onClearQuote?.();
         setState("idle");
@@ -193,6 +198,7 @@ export function HelpfulButton({
 }) {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
+  const { track } = useTelemetry();
 
   async function react() {
     setErr("");
@@ -202,6 +208,7 @@ export function HelpfulButton({
       body: JSON.stringify({ targetType, targetId, reaction: "helpful" }),
     });
     if (res.ok || res.status === 409) {
+      void track("discussion_upvote", { topicId: targetId, targetType });
       setDone(true);
     } else {
       const data = await res.json().catch(() => null);

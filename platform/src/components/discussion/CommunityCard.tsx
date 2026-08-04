@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { GameCommunityLinks } from "@/lib/data/types";
+import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 
 export function CommunityCard({
   gameSlug,
@@ -33,10 +34,12 @@ export function CommunityCard({
       )}
 
       {showOfficial ? (
-        <a
+        <TelemetryAnchor
           href={official!.inviteUrl}
           target="_blank"
           rel="noopener noreferrer"
+          event="discord_clicked"
+          properties={{ source: "official", gameSlug }}
           className={
             compact
               ? "rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold hover:bg-secondary/70"
@@ -54,7 +57,7 @@ export function CommunityCard({
               <p className="mt-2 text-sm font-semibold text-primary">Join Official Discord ↗</p>
             </>
           )}
-        </a>
+        </TelemetryAnchor>
       ) : !compact ? (
         <div className="rounded-lg border border-dashed border-border p-3 text-sm">
           <p className="font-semibold">Official Discord</p>
@@ -68,10 +71,12 @@ export function CommunityCard({
       ) : null}
 
       {playbound?.inviteUrl ? (
-        <a
+        <TelemetryAnchor
           href={playbound.inviteUrl}
           target="_blank"
           rel="noopener noreferrer"
+          event="discord_clicked"
+          properties={{ source: "playbound", gameSlug }}
           className={
             compact
               ? "rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold hover:bg-secondary/70"
@@ -98,7 +103,7 @@ export function CommunityCard({
               </p>
             </>
           )}
-        </a>
+        </TelemetryAnchor>
       ) : null}
 
       {!compact && (

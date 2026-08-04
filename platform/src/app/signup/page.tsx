@@ -6,8 +6,10 @@ import { Mail, UserPlus } from "lucide-react";
 import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { useTelemetry } from "@/lib/telemetry";
 
 export default function SignupPage() {
+  const { track } = useTelemetry();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,6 +35,10 @@ export default function SignupPage() {
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
+        void track("signup", { method: "credentials" });
+        if (newsletterOptIn) {
+          void track("newsletter_signup", { source: "signup" });
+        }
         setState("done");
       } else {
         setState("error");

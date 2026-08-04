@@ -6,6 +6,7 @@ import { Download, MonitorPlay } from "lucide-react";
 import { launcherInstallUrl, launcherInstallModUrl } from "@/lib/launcher";
 import { LAUNCHER_DOWNLOAD_URL } from "@/lib/launcherDownload";
 import { cn } from "@/lib/utils";
+import { useTelemetry } from "@/lib/telemetry";
 
 type Props = {
   slug: string;
@@ -24,10 +25,15 @@ export function LauncherInstallButton({
   label = "Install with PlayBound Launcher",
 }: Props) {
   const [showFallback, setShowFallback] = useState(false);
+  const { track } = useTelemetry();
   const deepLink = kind === "install-mod" ? launcherInstallModUrl(slug) : launcherInstallUrl(slug);
   const downloadUrl = LAUNCHER_DOWNLOAD_URL;
 
   function openLauncher() {
+    void track("install_clicked", {
+      gameSlug: slug,
+      source: kind === "install-mod" ? "launcher_mod" : "launcher",
+    });
     setShowFallback(false);
     const a = document.createElement("a");
     a.href = deepLink;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   AlertTriangle,
+  BarChart3,
   Bug,
   CalendarDays,
   Gamepad2,
@@ -18,6 +19,7 @@ import {
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/games", label: "Games", icon: Gamepad2 },
   { href: "/admin/mods", label: "Mods", icon: Puzzle },
   { href: "/admin/collections", label: "Collections", icon: Layers },
