@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { Download, ExternalLink, Monitor, Terminal } from "lucide-react";
+﻿import Link from "next/link";
+import { ExternalLink, Monitor, Terminal } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { developersBySlug } from "@/lib/catalog";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { sizeLabel } from "@/lib/seo";
-import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { DeviceAwareInstallCta } from "@/components/DeviceAwareInstallCta";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 
@@ -33,27 +33,12 @@ export function GameInstallContent({ game }: { game: Game }) {
           {game.license}. It runs on {game.platforms.join(", ")}, needs about{" "}
           {sizeLabel(game.sizeMB)} of disk space, and requires no account, payment or trial.{" "}
           {oneClick
-            ? "The fastest route is the PlayBound Launcher, which handles the download and setup in one click."
+            ? "On a computer, the fastest route is the PlayBound Launcher. On a phone or tablet, use the official store or site instead."
             : `Download it from the official site at ${game.website}.`}
         </p>
       </div>
 
-      {oneClick && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="flex items-center gap-2 font-bold">
-            <Download className="size-4 text-primary" /> One-click install
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            PlayBound fetches the official release — no third-party mirrors.
-          </p>
-          <div className="mt-4">
-            <LauncherInstallButton
-              slug={game.slug}
-              label={`Install ${game.title} with PlayBound Launcher`}
-            />
-          </div>
-        </div>
-      )}
+      <DeviceAwareInstallCta game={game} oneClick={oneClick} />
 
       <section>
         <h3 className="text-xl font-bold">Installation steps</h3>

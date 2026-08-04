@@ -49,6 +49,8 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
   const initial: GamePayload = {
     ...game,
     steamAppId: game.steamAppId ?? null,
+    androidStoreUrl: game.androidStoreUrl ?? null,
+    iosStoreUrl: game.iosStoreUrl ?? null,
     githubRepo: game.githubRepo ?? null,
     coverImage: game.coverImage ?? null,
     screenshots: game.screenshots ?? [],

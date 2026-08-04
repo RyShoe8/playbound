@@ -91,6 +91,10 @@ export interface Game {
   website: string;
   /** Steam store app id when the game was imported from Steam (for steam:// install). */
   steamAppId?: string;
+  /** Google Play / Android download page when the title ships on Android. */
+  androidStoreUrl?: string;
+  /** App Store page when the title ships on iOS. */
+  iosStoreUrl?: string;
   /** owner/repo on GitHub, for games whose official releases are published there. */
   githubRepo?: string;
   /** Editorial curation flags chosen by PlayBound */
@@ -129,6 +133,8 @@ export interface Game {
   comparableTo?: string[];
   /** ISO date of last content update. Feeds sitemap lastmod. */
   updatedAt?: string;
+  /** ISO date when the catalog document was first created (Mongo timestamps). */
+  createdAt?: string;
   /** Official + PlayBound Discord destinations for the Community card. */
   communityLinks?: GameCommunityLinks;
 }

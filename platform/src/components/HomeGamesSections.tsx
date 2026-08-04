@@ -9,14 +9,17 @@ import {
 } from "@/components/compatibility/useFilteredGames";
 import { SectionHeader } from "@/components/ui/bits";
 
+const FEATURED_GAMES_LIMIT = 12;
+
 export function HomeGamesSections({
-  featuredGames,
+  games,
   gems,
 }: {
-  featuredGames: Game[];
+  /** Full published catalog — filtered client-side to match Discover. */
+  games: Game[];
   gems: Game[];
 }) {
-  const featured = useFilteredGames(featuredGames, { limit: 12 });
+  const featured = useFilteredGames(games, { limit: FEATURED_GAMES_LIMIT });
   const filteredGems = useFilteredGames(gems);
   const animKey = `${featured.map((g) => g.slug).join(",")}|${filteredGems.map((g) => g.slug).join(",")}`;
 
@@ -35,7 +38,7 @@ export function HomeGamesSections({
             {featured.map((g, i) => (
               <div
                 key={g.slug}
-                className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
+                className="h-full opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
                 <GameCard game={g} />
@@ -55,7 +58,7 @@ export function HomeGamesSections({
               {filteredGems.map((g, i) => (
                 <div
                   key={g.slug}
-                  className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
+                  className="h-full opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
                   style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
                 >
                   <GameCard game={g} />

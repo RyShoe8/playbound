@@ -7,7 +7,6 @@ import { games as seedGames } from "@/lib/data/games";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { developers, developersBySlug, collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
-import { listWeeklyIssues } from "@/lib/weekly";
 import type { Collection } from "@/lib/data/types";
 
 export type { Game } from "@/lib/data/types";
@@ -44,6 +43,8 @@ function toGame(doc: LeanGame): Game {
     steamDeck: Boolean(doc.steamDeck),
     website: String(doc.website),
     steamAppId: (doc.steamAppId as string) || undefined,
+    androidStoreUrl: (doc.androidStoreUrl as string) || seedBySlug.get(String(doc.slug))?.androidStoreUrl,
+    iosStoreUrl: (doc.iosStoreUrl as string) || seedBySlug.get(String(doc.slug))?.iosStoreUrl,
     githubRepo: (doc.githubRepo as string) || undefined,
     gameOfWeek: Boolean(doc.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem),
@@ -78,6 +79,9 @@ function toGame(doc: LeanGame): Game {
       : seedBySlug.get(String(doc.slug))?.comparableTo,
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
+      : undefined,
+    createdAt: (doc as { createdAt?: Date }).createdAt
+      ? new Date((doc as { createdAt: Date }).createdAt).toISOString()
       : undefined,
     communityLinks: mapCommunityLinks(doc.communityLinks),
   };
@@ -278,16 +282,28 @@ export async function gamesFor(slugs: string[]): Promise<Game[]> {
   return slugs.map((s) => map.get(s)).filter((g): g is Game => Boolean(g));
 }
 
+/** Newest catalog game by Mongo `createdAt` (homepage spotlight). */
+export async function newestGame(): Promise<Game | undefined> {
+  const all = await listGames();
+  if (!all.length) return undefined;
+  return [...all].sort(compareNewestFirst)[0];
+}
+
+/** Games newest-first — for client hero / listings that need recency order. */
+export async function listGamesNewestFirst(): Promise<Game[]> {
+  return [...(await listGames())].sort(compareNewestFirst);
+}
+
+function compareNewestFirst(a: Game, b: Game): number {
+  const ta = Date.parse(a.createdAt || a.updatedAt || "") || 0;
+  const tb = Date.parse(b.createdAt || b.updatedAt || "") || 0;
+  if (tb !== ta) return tb - ta;
+  return a.title.localeCompare(b.title);
+}
+
+/** @deprecated Prefer newestGame() — homepage no longer uses weekly issues. */
 export async function gameOfTheWeek(): Promise<Game | undefined> {
-  const [all, issues] = await Promise.all([listGames(), listWeeklyIssues()]);
-  const bySlug = new Map(all.map((g) => [g.slug, g]));
-  const fromIssue = issues[0] && bySlug.get(issues[0].gameSlug);
-  // The home page hero should reflect an actual published weekly issue, not
-  // an arbitrary game — falling straight to all[0] here previously meant
-  // whichever game sorted first alphabetically became "Game of the Week" the
-  // instant nothing had the flag set, which looked like new games were
-  // silently joining the weekly feature.
-  return fromIssue || all.find((g) => g.gameOfWeek) || all[0];
+  return newestGame();
 }
 
 export async function hiddenGems(): Promise<Game[]> {

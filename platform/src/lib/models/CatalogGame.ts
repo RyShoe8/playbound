@@ -123,6 +123,8 @@ const CatalogGameSchema = new Schema(
     steamDeck: { type: Boolean, default: false },
     website: { type: String, required: true },
     steamAppId: { type: String, default: null },
+    androidStoreUrl: { type: String, default: null },
+    iosStoreUrl: { type: String, default: null },
     githubRepo: { type: String, default: null },
     gameOfWeek: { type: Boolean, default: false },
     hiddenGem: { type: Boolean, default: false },

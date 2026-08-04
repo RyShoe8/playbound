@@ -32,6 +32,17 @@ export function GameCompatibilityToggle({
 }) {
   const { mode, setMode, device } = useCompatibilityFilter();
 
+  if (variant === "topbar") {
+    return (
+      <div className={cn("flex items-center self-center", className)}>
+        <TopbarControl mode={mode} setMode={setMode} />
+        <span className="sr-only" role="status" aria-live="polite">
+          {announce(mode)}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-2", className)}>
       {variant === "radios" && (
@@ -39,7 +50,6 @@ export function GameCompatibilityToggle({
       )}
       {variant === "select" && <SelectControl mode={mode} setMode={setMode} />}
       {variant === "sidebar" && <SidebarControl mode={mode} setMode={setMode} />}
-      {variant === "topbar" && <TopbarControl mode={mode} setMode={setMode} />}
 
       {showMessage && mode === "compatible" && (
         <p className="text-sm text-muted-foreground">
@@ -190,13 +200,13 @@ function TopbarControl({
   setMode: (mode: CompatibilityFilterMode) => void;
 }) {
   return (
-    <label className="flex shrink-0 items-center gap-1.5">
+    <label className="inline-flex h-8 shrink-0 items-center leading-none">
       <span className="sr-only">Game compatibility filter</span>
       <select
         aria-label="Game compatibility filter"
         value={mode}
         onChange={(e) => setMode(e.target.value as CompatibilityFilterMode)}
-        className="h-9 max-w-[9.5rem] rounded-full border border-input bg-secondary/60 px-2.5 text-xs font-semibold outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+        className="h-8 appearance-none rounded-full border border-input bg-secondary/60 px-2.5 py-0 text-xs font-semibold leading-none outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
       >
         {OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

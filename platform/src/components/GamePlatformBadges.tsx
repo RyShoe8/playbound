@@ -18,18 +18,26 @@ export function GamePlatformBadges({
   game,
   className,
   compact = false,
+  /** Keep cards uniform height — one clipped row instead of wrapping. */
+  singleLine = false,
 }: {
   game: GameLike;
   className?: string;
   compact?: boolean;
+  singleLine?: boolean;
 }) {
   const labels = platformBadgeLabels(game);
-  if (!labels.length) return null;
+  if (!labels.length) {
+    return singleLine ? (
+      <div className={cn(compact ? "h-5" : "h-6", className)} aria-hidden />
+    ) : null;
+  }
 
   return (
     <ul
       className={cn(
-        "flex flex-wrap gap-1",
+        "flex gap-1",
+        singleLine ? "min-h-5 flex-nowrap overflow-hidden" : "flex-wrap",
         compact ? "mt-1" : "mt-1.5",
         className
       )}
@@ -41,7 +49,7 @@ export function GamePlatformBadges({
           <li
             key={label}
             className={cn(
-              "inline-flex items-center gap-1 rounded-md border border-border/80 bg-secondary/50 font-medium text-muted-foreground",
+              "inline-flex shrink-0 items-center gap-1 rounded-md border border-border/80 bg-secondary/50 font-medium text-muted-foreground",
               compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]"
             )}
           >

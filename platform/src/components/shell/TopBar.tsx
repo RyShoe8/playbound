@@ -43,10 +43,8 @@ export function TopBar() {
           />
         </form>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <div className="lg:hidden">
-            <GameCompatibilityToggle variant="topbar" />
-          </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <GameCompatibilityToggle variant="topbar" className="lg:hidden" />
           {session?.user ? (
             <>
               <Link href="/profile" title="Profile" className="rounded-full">
