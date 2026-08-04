@@ -606,14 +606,20 @@ async function renderModsView() {
             </div>
           </div>
         `;
-        if (mod.coverImage) {
+        // Cascade: mod cover → art gradient (already on banner) → base-game cover
+        const coverUrl = mod.coverImage || mod.baseGameCoverImage || "";
+        const useBaseFallback = !mod.coverImage && Boolean(mod.baseGameCoverImage);
+        const hasArt =
+          Array.isArray(mod.art) && mod.art.length >= 2 && mod.art[0] && mod.art[1];
+        if (mod.coverImage || (!hasArt && mod.baseGameCoverImage)) {
           const banner = card.querySelector(".card-banner");
           banner.textContent = "";
           const img = document.createElement("img");
           img.className = "card-cover";
-          img.src = mod.coverImage;
+          img.src = coverUrl;
           img.alt = "";
           img.loading = "lazy";
+          if (useBaseFallback) img.dataset.source = "base-game";
           banner.appendChild(img);
         }
         card.querySelector(".btn-mod-install")?.addEventListener("click", async (e) => {

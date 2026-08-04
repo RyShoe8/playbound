@@ -80,6 +80,7 @@ export default async function HomePage() {
   const featuredGames = pickFeaturedGames(games, hero.slug);
   const featuredMods = mods.slice(0, FEATURED_MODS_LIMIT);
   const featuredCollections = collections.slice(0, 3);
+  const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
@@ -198,9 +199,24 @@ export default async function HomePage() {
             href="/mods"
           />
           <CardRow>
-            {featuredMods.map((m) => (
-              <ModPreviewCard key={m.slug} mod={m} />
-            ))}
+            {featuredMods.map((m) => {
+              const base = gameBySlug.get(m.baseGameSlug);
+              return (
+                <ModPreviewCard
+                  key={m.slug}
+                  mod={m}
+                  baseGame={
+                    base
+                      ? {
+                          slug: base.slug,
+                          title: base.title,
+                          coverImage: base.coverImage,
+                        }
+                      : null
+                  }
+                />
+              );
+            })}
           </CardRow>
         </section>
       )}

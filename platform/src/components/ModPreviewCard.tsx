@@ -1,29 +1,22 @@
-import Link from "next/link";
 import type { CatalogModPublic } from "@/lib/mods";
+import { ModCard } from "@/components/ModCard";
 import { cn } from "@/lib/utils";
 
-/** Compact mod card for homepage / browse strips. */
+/** Homepage / strip variant — same banner layout as /mods and the launcher. */
 export function ModPreviewCard({
   mod,
+  baseGame,
   className,
 }: {
   mod: CatalogModPublic;
+  baseGame?: { slug?: string; title?: string; coverImage?: string | null } | null;
   className?: string;
 }) {
   return (
-    <Link
-      href={`/mods/${mod.slug}`}
-      className={cn(
-        "group flex w-56 shrink-0 snap-start flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40",
-        className
-      )}
-    >
-      <p className="truncate font-bold group-hover:text-primary">{mod.title}</p>
-      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{mod.tagline}</p>
-      <p className="mt-auto pt-3 text-[11px] text-muted-foreground">
-        For {mod.baseGameSlug}
-        {mod.sizeMB ? ` · ~${mod.sizeMB} MB` : ""}
-      </p>
-    </Link>
+    <ModCard
+      mod={mod}
+      baseGame={baseGame}
+      className={cn("w-56 shrink-0 snap-start", className)}
+    />
   );
 }
