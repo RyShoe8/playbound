@@ -4,7 +4,7 @@ import dbConnect from "@/lib/db";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import { getGame } from "@/lib/catalog";
 import { requireAdminSession } from "@/lib/requireAdmin";
-import { buildIssueFromDate, listWeeklyIssues } from "@/lib/weekly";
+import { buildIssueFromDate, listWeeklyIssuesAdmin } from "@/lib/weekly";
 
 const createSchema = z.object({
   gameSlug: z.string().trim().min(1).max(80),
@@ -15,7 +15,7 @@ const createSchema = z.object({
 export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
-  const issues = await listWeeklyIssues({ includeUnpublished: true });
+  const issues = await listWeeklyIssuesAdmin();
   return NextResponse.json({ issues });
 }
 

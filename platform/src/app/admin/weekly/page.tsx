@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
-import { listWeeklyIssues } from "@/lib/weekly";
+import { listWeeklyIssuesAdmin } from "@/lib/weekly";
 import { getGame } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Admin · Weekly" };
 
 export default async function AdminWeeklyPage() {
-  const issues = await listWeeklyIssues({ includeUnpublished: true });
+  const issues = await listWeeklyIssuesAdmin();
   const titles = new Map<string, string>();
   await Promise.all(
     issues.map(async (i) => {
