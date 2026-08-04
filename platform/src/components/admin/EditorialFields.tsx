@@ -162,8 +162,15 @@ export function StringListEditor({
       <p className="text-[11px] text-muted-foreground">{hint}</p>
 
       <div className="mt-2 space-y-2">
+        {/*
+          Keyed by index, not by value. These rows are identified by position —
+          add appends, remove filters by index, edits happen in place, and
+          nothing reorders. Including the value in the key changed it on every
+          keystroke, so React tore down the input and rebuilt it, dropping focus
+          after a single character.
+        */}
         {values.map((value, i) => (
-          <div key={`${value}-${i}`} className="flex gap-2">
+          <div key={i} className="flex gap-2">
             <input
               value={value}
               onChange={(e) => {
