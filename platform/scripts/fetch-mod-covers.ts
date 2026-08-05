@@ -1,12 +1,13 @@
 /**
- * Best-effort download + crop of mod cover arts into public/mods/{slug}/cover.jpg.
+ * Best-effort download + crop of mod cover arts into public/mods/{slug}/cover.webp.
  *
  * Usage: npm run fetch:mod-covers
- * Skips slugs that already have cover.jpg. Rate-limits GitHub OG fetches.
+ * Skips slugs that already have cover.webp. Rate-limits GitHub OG fetches.
  */
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { compressImageBuffer } from "../src/lib/compressImage";
 
 const ROOT = path.join(process.cwd(), "public", "mods");
 const UA =
@@ -159,7 +160,7 @@ async function resolveUrl(source: Source): Promise<string> {
 async function writeCover(slug: string, buf: Buffer): Promise<void> {
   const dir = path.join(ROOT, slug);
   fs.mkdirSync(dir, { recursive: true });
-  const dest = path.join(dir, "cover.jpg");
+  const dest = path.join(dir, "cover.webp");
 
   const meta = await sharp(buf, { failOn: "none", density: 300 }).metadata();
   const isLikelyLogo =
@@ -170,6 +171,7 @@ async function writeCover(slug: string, buf: Buffer): Promise<void> {
       meta.width <= 640 &&
       meta.height <= 640);
 
+  let intermediate: Buffer;
   if (isLikelyLogo) {
     const size = 900;
     const resized = await sharp(buf, { failOn: "none", density: 300 })
@@ -179,7 +181,7 @@ async function writeCover(slug: string, buf: Buffer): Promise<void> {
       })
       .png()
       .toBuffer();
-    await sharp({
+    intermediate = await sharp({
       create: {
         width: size,
         height: 1200,
@@ -188,15 +190,17 @@ async function writeCover(slug: string, buf: Buffer): Promise<void> {
       },
     })
       .composite([{ input: resized, gravity: "centre" }])
-      .jpeg({ quality: 88, mozjpeg: true })
-      .toFile(dest);
-    return;
+      .png()
+      .toBuffer();
+  } else {
+    intermediate = await sharp(buf, { failOn: "none" })
+      .resize(900, 1200, { fit: "cover", position: "centre" })
+      .png()
+      .toBuffer();
   }
 
-  await sharp(buf, { failOn: "none" })
-    .resize(900, 1200, { fit: "cover", position: "centre" })
-    .jpeg({ quality: 85, mozjpeg: true })
-    .toFile(dest);
+  const { buffer } = await compressImageBuffer(intermediate);
+  fs.writeFileSync(dest, buffer);
 }
 
 async function main() {
@@ -205,7 +209,7 @@ async function main() {
   const skipped: string[] = [];
 
   for (const [slug, source] of Object.entries(SOURCES)) {
-    const dest = path.join(ROOT, slug, "cover.jpg");
+    const dest = path.join(ROOT, slug, "cover.webp");
     if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
       skipped.push(slug);
       ok.push(slug);

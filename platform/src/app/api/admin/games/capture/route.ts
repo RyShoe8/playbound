@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { compressImageBuffer } from "@/lib/compressImage";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 const schema = z.object({
@@ -68,13 +69,24 @@ export async function POST(req: Request) {
     if (!imgRes.ok) {
       return NextResponse.json({ error: "Failed to download captured screenshot" }, { status: 502 });
     }
-    const bytes = await imgRes.arrayBuffer();
+    const bytes = Buffer.from(await imgRes.arrayBuffer());
+    let compressed;
+    try {
+      compressed = await compressImageBuffer(bytes);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid capture image";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
     const safeSlug = (slug || "capture").replace(/[^a-z0-9-]/gi, "-").slice(0, 80);
-    const blob = await put(`games/${safeSlug}/capture-${Date.now()}.png`, bytes, {
-      access: "public",
-      contentType: "image/png",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    const blob = await put(
+      `games/${safeSlug}/capture-${Date.now()}.${compressed.extension}`,
+      compressed.buffer,
+      {
+        access: "public",
+        contentType: compressed.contentType,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      }
+    );
 
     return NextResponse.json({ url: blob.url });
   } catch (err) {

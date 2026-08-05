@@ -111,7 +111,7 @@ export interface Game {
   gameOfWeek: boolean;
   hiddenGem: boolean;
   art: GameArt;
-  /** Local cover under /public, e.g. /games/openra/cover.jpg */
+  /** Local cover under /public, e.g. /games/openra/cover.webp */
   coverImage?: string;
   /** Local or absolute screenshot URLs for the Media tab */
   screenshots?: string[];
