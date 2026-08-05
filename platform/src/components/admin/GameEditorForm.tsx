@@ -30,6 +30,11 @@ import type { QualityBar } from "@/lib/data/types";
 import { CATALOG_STATUSES, type CatalogStatus, normalizeStatus } from "@/lib/catalogStatus";
 import { classifyMediaUrl } from "@/lib/mediaEmbed";
 import {
+  coverLooksLikeSteamHeader,
+  screenshotsAreThin,
+} from "@/lib/fetchGameMedia";
+import { HlsVideo } from "@/components/HlsVideo";
+import {
   DerivedContentEditor,
   EvidencePanel,
   ProseField,
@@ -112,9 +117,18 @@ function VideoPreview({ src }: { src: string }) {
       />
     );
   }
+  if (media.kind === "hls") {
+    return (
+      <HlsVideo
+        src={media.src}
+        className="aspect-video w-full max-w-md rounded-md border border-border bg-black"
+        title="Video preview"
+      />
+    );
+  }
   return (
     <video
-      src={src}
+      src={media.src}
       controls
       className="aspect-video w-full max-w-md rounded-md border border-border bg-black"
       preload="metadata"
@@ -299,7 +313,7 @@ export function GameEditorForm({
   async function fetchMedia() {
     const url = form.website || importUrl;
     const steamAppId = form.steamAppId?.trim() || null;
-    if (!url.trim() && !steamAppId) {
+    if (!url.trim() && !steamAppId && !(form.screenshots?.length)) {
       setError("Set a website URL or Steam app id first.");
       return;
     }
@@ -313,7 +327,13 @@ export function GameEditorForm({
       const res = await fetch("/api/admin/games/media", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: url.trim() || null, steamAppId }),
+        body: JSON.stringify({
+          url: url.trim() || null,
+          steamAppId,
+          slug: form.slug || "upload",
+          coverImage: form.coverImage,
+          screenshots: form.screenshots ?? [],
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -321,24 +341,40 @@ export function GameEditorForm({
         setBusy(false);
         return;
       }
-      const nextShots = [
-        ...new Set([...(form.screenshots ?? []), ...((data.screenshots as string[]) ?? [])]),
-      ].slice(0, 20);
-      const nextVideos = [
-        ...new Set([...(form.videos ?? []), ...((data.videos as string[]) ?? [])]),
-      ].slice(0, 10);
-      const nextCover = form.coverImage || data.coverImage || null;
+
+      const incomingShots = ((data.screenshots as string[]) ?? []).filter(Boolean);
+      const incomingVideos = ((data.videos as string[]) ?? []).filter(Boolean);
+      const thin = screenshotsAreThin(form.screenshots);
+      const nextShots = thin
+        ? incomingShots.slice(0, 20)
+        : [...new Set([...(form.screenshots ?? []), ...incomingShots])].slice(0, 20);
+      const nextVideos = [...new Set([...(form.videos ?? []), ...incomingVideos])].slice(0, 10);
+      const replaceCover =
+        !form.coverImage || coverLooksLikeSteamHeader(form.coverImage) || thin;
+      const nextCover = replaceCover
+        ? data.coverImage || form.coverImage || null
+        : form.coverImage || data.coverImage || null;
+      const inferredSteam =
+        typeof data.steamAppId === "string" && /^\d+$/.test(data.steamAppId)
+          ? data.steamAppId
+          : null;
+
       setForm((prev) => ({
         ...prev,
         coverImage: nextCover,
         screenshots: nextShots,
         videos: nextVideos,
+        steamAppId: prev.steamAppId || inferredSteam,
       }));
-      const addedShots = Math.max(0, nextShots.length - beforeShots);
+      const addedShots = Math.max(0, nextShots.length - (thin ? 0 : beforeShots));
       const addedVideos = Math.max(0, nextVideos.length - beforeVideos);
-      const coverBit = !hadCover && nextCover ? "set cover, " : "";
+      const coverBit =
+        (!hadCover || replaceCover) && nextCover ? "updated cover, " : "";
+      const steamBit = inferredSteam && !steamAppId ? `steam id ${inferredSteam}, ` : "";
       setMediaNote(
-        `Refresh done — ${coverBit}added ${addedShots} screenshot${addedShots === 1 ? "" : "s"}, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. Save to persist.`
+        `Refresh done — ${steamBit}${coverBit}${thin ? "replaced" : "added"} ${addedShots} screenshot${
+          addedShots === 1 ? "" : "s"
+        }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. Save to persist.`
       );
       setBusy(false);
     } catch {

@@ -1,5 +1,5 @@
 /**
- * Patch cover/screenshots/videos and mobile store URLs from seed data onto
+ * Patch cover/screenshots/videos, store URLs, and steamAppId from seed data onto
  * existing Mongo catalog docs. Runs after seed:games so production picks up
  * new fields even when the catalog already exists.
  */
@@ -25,7 +25,8 @@ async function main() {
     const videos = seed.videos ?? [];
     const hasMedia = Boolean(seed.coverImage || screenshots.length || videos.length);
     const hasStores = Boolean(seed.androidStoreUrl || seed.iosStoreUrl);
-    if (!hasMedia && !hasStores) continue;
+    const hasSteam = Boolean(seed.steamAppId);
+    if (!hasMedia && !hasStores && !hasSteam) continue;
 
     const result = await CatalogGame.updateOne(
       { slug: seed.slug },
@@ -36,6 +37,7 @@ async function main() {
           ...(videos.length ? { videos } : {}),
           ...(seed.androidStoreUrl ? { androidStoreUrl: seed.androidStoreUrl } : {}),
           ...(seed.iosStoreUrl ? { iosStoreUrl: seed.iosStoreUrl } : {}),
+          ...(seed.steamAppId ? { steamAppId: seed.steamAppId } : {}),
         },
       }
     );
@@ -47,7 +49,7 @@ async function main() {
     }
   }
 
-  console.log(`Patched media/store URLs for ${patched} game(s).`);
+  console.log(`Patched media/store/steam fields for ${patched} game(s).`);
   process.exit(0);
 }
 
