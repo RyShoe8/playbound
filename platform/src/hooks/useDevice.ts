@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { DeviceType } from "@/lib/compatibility/compatibility";
@@ -13,9 +13,11 @@ export type DeviceInfo = {
 const BREAKPOINTS = { mobile: 768, tablet: 1024 } as const;
 const CHANGE_EVENT = "pb-device-change";
 
-function typeFromWidth(width: number): DeviceType {
+function typeFromClientState(width: number, ua: string): DeviceType {
+  const isMac = /Mac OS X|Macintosh/i.test(ua);
   if (width < BREAKPOINTS.mobile) return "mobile";
   if (width < BREAKPOINTS.tablet) return "tablet";
+  if (isMac) return "macos";
   return "desktop";
 }
 
@@ -36,7 +38,7 @@ function subscribe(onChange: () => void): () => void {
 }
 
 function readClientType(): DeviceType {
-  return typeFromWidth(window.innerWidth);
+  return typeFromClientState(window.innerWidth, navigator.userAgent);
 }
 
 function toInfo(type: DeviceType): DeviceInfo {
@@ -44,7 +46,7 @@ function toInfo(type: DeviceType): DeviceInfo {
     type,
     isMobile: type === "mobile",
     isTablet: type === "tablet",
-    isDesktop: type === "desktop",
+    isDesktop: type === "desktop" || type === "macos",
   };
 }
 

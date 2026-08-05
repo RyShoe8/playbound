@@ -34,11 +34,18 @@ function normalizePlatform(value) {
 
 function isGameDesktopCompatible(game) {
   if (game?.browserPlayable) return true;
-  if (game?.steamDeck) return true;
+  
+  const isMac = /Mac OS X|Macintosh/i.test(navigator.userAgent);
+  if (!isMac && game?.steamDeck) return true;
+  
   const platforms = (game?.platforms || []).map(normalizePlatform).filter(Boolean);
   // Missing metadata: don't hide (common for installed/recent rows before enrich).
   if (platforms.length === 0) return true;
-  const allowed = new Set(["windows", "macos", "linux", "web"]);
+  
+  const allowed = isMac 
+    ? new Set(["macos", "web", "browser"]) 
+    : new Set(["windows", "macos", "linux", "web"]);
+    
   return platforms.some((p) => allowed.has(p));
 }
 
