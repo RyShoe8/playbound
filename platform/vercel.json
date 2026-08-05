@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/catalog-versions",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/presence-sweep",
+      "schedule": "* * * * *"
     }
   ]
 }

@@ -7,6 +7,7 @@ import { TopBar } from "@/components/shell/TopBar";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
+import { PresenceProvider } from "@/components/PresenceProvider";
 import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
 import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
@@ -96,6 +97,10 @@ export default function RootLayout({
           {/* Inside SessionProvider so identify() sees the auth session.
               gaEnabled is server-decided so preview never hits production GA4. */}
           <TelemetryProvider gaEnabled={IS_PRODUCTION}>
+            {/* Renders nothing; drives the presence heartbeat. Inside
+                SessionProvider because presence only exists for signed-in
+                users, and mounted once so only one session is ever opened. */}
+            <PresenceProvider />
             <CompatibilityShell>
               <Sidebar />
               <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
