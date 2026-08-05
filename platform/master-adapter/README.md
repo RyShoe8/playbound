@@ -33,7 +33,9 @@ latest commit (root directory `platform/master-adapter`).
    - `MASTER_ADAPTER_KEY` — same secret
 
 Lobby credentials from the catalog are forwarded as `x-playbound-lobby-user` /
-`x-playbound-lobby-pass` on Zero-K and 0 A.D. requests.
+`x-playbound-lobby-pass` on Zero-K, 0 A.D., and Wesnoth requests. Background
+refresh uses the adapter env vars above when set; without them it will **not**
+overwrite a CMS-authenticated battle list with a single lobby pointer row.
 
 ### 0 A.D. listing flow
 

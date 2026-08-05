@@ -5,12 +5,22 @@ const PORT = Number(process.env.PORT || 8787);
 const ADAPTER_KEY = process.env.MASTER_ADAPTER_KEY || "";
 const REFRESH_MS = Number(process.env.REFRESH_MS || 40_000);
 
-/** @type {Map<string, { servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }>} */
+/**
+ * @typedef {{
+ *   servers: import('./types.js').GameServer[],
+ *   updatedAt: string,
+ *   error?: string,
+ *   source: string,
+ *   authenticated?: boolean,
+ * }} CacheEntry
+ */
+
+/** @type {Map<string, CacheEntry>} */
 const cache = new Map();
 /** @type {Map<string, number>} */
 const lastPollAt = new Map();
 /** In-flight authenticated polls keyed by slug (serialize concurrent CMS logins). */
-/** @type {Map<string, Promise<{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }>>} */
+/** @type {Map<string, Promise<CacheEntry>>} */
 const livePollInflight = new Map();
 
 const LIVE_AUTH_CACHE_MS = 45_000;
@@ -26,13 +36,54 @@ function acceptsLiveCreds(kind) {
 }
 
 /**
- * @param {string} slug
- * @returns {{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string } | null}
+ * True when the list is only a lobby placeholder (not real games/battles).
+ * @param {import('./types.js').GameServer[] | undefined | null} servers
  */
-function freshCachedEntry(slug) {
+function isLobbyPointerList(servers) {
+  if (!Array.isArray(servers) || servers.length === 0) return false;
+  return servers.every((s) => typeof s?.id === "string" && /:lobby$/i.test(s.id));
+}
+
+/**
+ * Env fallbacks used by background refresh when CMS headers are absent.
+ * @param {{ kind?: string }} game
+ * @returns {{ username: string, password: string } | null}
+ */
+function envCredsFor(game) {
+  if (game.kind === "zerod") {
+    const username = String(process.env.ZEROAD_LOBBY_JID || "").trim();
+    const password = String(process.env.ZEROAD_LOBBY_PASSWORD || "").trim();
+    if (username && password) return { username, password };
+    return null;
+  }
+  if (game.kind === "wesnoth") {
+    const username = String(process.env.WESNOTH_LOBBY_USER || "").trim();
+    const password = String(process.env.WESNOTH_LOBBY_PASS || "").trim();
+    if (username && password) return { username, password };
+    return null;
+  }
+  if (game.kind === "zerok") {
+    const username = String(process.env.ZEROK_LOBBY_USER || "").trim();
+    const password = String(process.env.ZEROK_LOBBY_PASS || "").trim();
+    if (username && password) return { username, password };
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Fresh authenticated list usable for live-cred requests (never lobby pointers).
+ * @param {string} slug
+ * @returns {CacheEntry | null}
+ */
+function freshAuthenticatedEntry(slug) {
   const entry = cache.get(slug);
   if (!entry || entry.error) return null;
   if (!Array.isArray(entry.servers) || entry.servers.length === 0) return null;
+  if (isLobbyPointerList(entry.servers)) return null;
+  const game = GAMES.find((g) => g.slug === slug);
+  // Live CMS credentials must not reuse guest/background pointer caches.
+  if (acceptsLiveCreds(game?.kind) && !entry.authenticated) return null;
   const parsed = Date.parse(entry.updatedAt || "");
   const age = Number.isFinite(parsed) ? Date.now() - parsed : Infinity;
   if (age > LIVE_AUTH_CACHE_MS) return null;
@@ -45,8 +96,8 @@ function freshCachedEntry(slug) {
  */
 async function pollLiveCached(game, liveCreds) {
   const slug = game.slug;
-  if (game.kind === "zerod" || game.kind === "wesnoth") {
-    const hit = freshCachedEntry(slug);
+  if (game.kind === "zerod" || game.kind === "wesnoth" || game.kind === "zerok") {
+    const hit = freshAuthenticatedEntry(slug);
     if (hit) return hit;
   }
 
@@ -60,15 +111,43 @@ async function pollLiveCached(game, liveCreds) {
         servers,
         updatedAt: new Date().toISOString(),
         source: gameSource(game),
+        authenticated: !isLobbyPointerList(servers),
       };
+      // Don't let an auth failure that returns only a pointer wipe a richer list.
+      const prev = cache.get(slug);
+      if (
+        isLobbyPointerList(servers) &&
+        Array.isArray(prev?.servers) &&
+        prev.servers.length > 0 &&
+        !isLobbyPointerList(prev.servers)
+      ) {
+        return {
+          servers: prev.servers,
+          updatedAt: prev.updatedAt,
+          error: "authenticated poll returned lobby pointer; keeping previous battles",
+          source: prev.source,
+          authenticated: prev.authenticated,
+        };
+      }
       cache.set(slug, entry);
       return entry;
     } catch (err) {
+      const prev = cache.get(slug);
+      if (Array.isArray(prev?.servers) && prev.servers.length > 0 && !isLobbyPointerList(prev.servers)) {
+        return {
+          servers: prev.servers,
+          updatedAt: prev.updatedAt,
+          error: err instanceof Error ? err.message : String(err),
+          source: prev.source,
+          authenticated: prev.authenticated,
+        };
+      }
       return {
         servers: [],
         updatedAt: new Date().toISOString(),
         error: err instanceof Error ? err.message : String(err),
         source: gameSource(game),
+        authenticated: false,
       };
     } finally {
       livePollInflight.delete(slug);
@@ -98,26 +177,57 @@ async function refreshGame(game, force = false) {
 
   const source = gameSource(game);
   const prev = cache.get(game.slug);
+  const envCreds = acceptsLiveCreds(game.kind) ? envCredsFor(game) : null;
+
+  // Without env lobby creds, background refresh would only produce pointers for
+  // 0 A.D. / Wesnoth / Zero-K and stomp authenticated CMS-driven lists.
+  if (acceptsLiveCreds(game.kind) && !envCreds) {
+    if (prev?.authenticated && !isLobbyPointerList(prev.servers)) {
+      lastPollAt.set(game.slug, Date.now());
+      console.log(`[poll] ${game.slug}: skip unauthenticated refresh (keeping authenticated list)`);
+      return;
+    }
+  }
+
   try {
-    const servers = await pollGame(game);
+    const servers = await pollGame(game, envCreds);
+    const authenticated = Boolean(envCreds) && !isLobbyPointerList(servers);
+
     if (servers.length === 0 && Array.isArray(prev?.servers) && prev.servers.length > 0) {
       cache.set(game.slug, {
         servers: prev.servers,
         updatedAt: prev.updatedAt || new Date().toISOString(),
         error: "poll returned empty; keeping previous list",
         source: prev.source || source,
+        authenticated: prev.authenticated,
       });
       lastPollAt.set(game.slug, Date.now());
       console.warn(`[poll] ${game.slug}: empty poll — kept ${prev.servers.length} previous servers`);
       return;
     }
+
+    // Never replace a real battle list with a lobby-only pointer from guest/env-less polls.
+    if (
+      isLobbyPointerList(servers) &&
+      Array.isArray(prev?.servers) &&
+      prev.servers.length > 0 &&
+      !isLobbyPointerList(prev.servers)
+    ) {
+      lastPollAt.set(game.slug, Date.now());
+      console.warn(
+        `[poll] ${game.slug}: pointer-only poll — kept ${prev.servers.length} previous battle(s)`
+      );
+      return;
+    }
+
     cache.set(game.slug, {
       servers,
       updatedAt: new Date().toISOString(),
       source,
+      authenticated,
     });
     lastPollAt.set(game.slug, Date.now());
-    console.log(`[poll] ${game.slug}: ${servers.length} servers`);
+    console.log(`[poll] ${game.slug}: ${servers.length} servers${authenticated ? " (auth)" : ""}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[poll] ${game.slug} failed:`, message);
@@ -126,6 +236,7 @@ async function refreshGame(game, force = false) {
       updatedAt: prev?.servers?.length ? prev.updatedAt || new Date().toISOString() : new Date().toISOString(),
       error: message,
       source: prev?.servers?.length ? prev.source || source : source,
+      authenticated: prev?.authenticated,
     });
     lastPollAt.set(game.slug, Date.now());
   }
@@ -174,7 +285,7 @@ const server = http.createServer(async (req, res) => {
         ? { username: lobbyUser, password: lobbyPass }
         : null;
 
-    /** @type {{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }} */
+    /** @type {CacheEntry} */
     let entry;
     if (liveCreds) {
       entry = await pollLiveCached(game, liveCreds);
@@ -182,11 +293,13 @@ const server = http.createServer(async (req, res) => {
       entry = cache.get(slug);
       if (!entry) {
         try {
-          const servers = await pollGame(game);
+          const envCreds = acceptsLiveCreds(game.kind) ? envCredsFor(game) : null;
+          const servers = await pollGame(game, envCreds);
           entry = {
             servers,
             updatedAt: new Date().toISOString(),
             source: gameSource(game),
+            authenticated: Boolean(envCreds) && !isLobbyPointerList(servers),
           };
           cache.set(slug, entry);
         } catch (err) {
@@ -195,6 +308,7 @@ const server = http.createServer(async (req, res) => {
             updatedAt: new Date().toISOString(),
             error: err instanceof Error ? err.message : String(err),
             source: gameSource(game),
+            authenticated: false,
           };
         }
       }
