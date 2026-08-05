@@ -35,14 +35,13 @@ function normalizePlatform(value) {
 function isGameDesktopCompatible(game) {
   if (game?.browserPlayable) return true;
   
-  const isMac = /Mac OS X|Macintosh/i.test(navigator.userAgent);
-  if (!isMac && game?.steamDeck) return true;
+  const currentOS = window.playbound.platform.getOS();
+  if (currentOS !== "macos" && game?.steamDeck) return true;
   
   const platforms = (game?.platforms || []).map(normalizePlatform).filter(Boolean);
-  // Missing metadata: don't hide (common for installed/recent rows before enrich).
   if (platforms.length === 0) return true;
   
-  const allowed = isMac 
+  const allowed = currentOS === "macos" 
     ? new Set(["macos", "web", "browser"]) 
     : new Set(["windows", "macos", "linux", "web"]);
     
@@ -2171,8 +2170,8 @@ async function renderGameDetailView(slug) {
   if (detail.installed) {
     actions.innerHTML = `
       <button class="btn-success" id="act-play">Play Now</button>
-      <button class="btn-secondary" id="act-shortcut">Create Shortcut</button>
-      <button class="btn-secondary" id="act-folder">Open Folder</button>
+      ${window.playbound.platform.supportsDesktopShortcuts() ? `<button class="btn-secondary" id="act-shortcut">Create Shortcut</button>` : ""}
+      <button class="btn-secondary" id="act-folder">${window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"}</button>
       <button class="btn-danger" id="act-uninstall">Uninstall</button>
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
@@ -2180,14 +2179,17 @@ async function renderGameDetailView(slug) {
       await window.playbound.play(slug);
       startGameSession(slug, detail.title || slug);
     });
-    document.getElementById("act-shortcut").addEventListener("click", async () => {
-      try {
-        const res = await window.playbound.createShortcut(slug);
-        setStatus(`Desktop shortcut created for ${res.title}`);
-      } catch (err) {
-        setStatus(err.message || String(err), true);
-      }
-    });
+    const btnShortcut = document.getElementById("act-shortcut");
+    if (btnShortcut) {
+      btnShortcut.addEventListener("click", async () => {
+        try {
+          const res = await window.playbound.createShortcut(slug);
+          setStatus(`Desktop shortcut created for ${res.title}`);
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+        }
+      });
+    }
     document.getElementById("act-folder").addEventListener("click", () => {
       if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
     });

@@ -39,14 +39,17 @@ async function main() {
     process.exit(1);
   }
 
-  const argPath = process.argv[2];
+  const args = process.argv.slice(2);
+  const isMac = args.includes("--mac");
+  const argPath = args.find(a => !a.startsWith("--"));
   const distDir = resolve(process.cwd(), "../launcher/dist");
   let setupPath = argPath ? resolve(argPath) : "";
 
   if (!setupPath || !existsSync(setupPath)) {
+    const regex = isMac ? /^PlayBound-macOS-\d+\.\d+\.\d+\.dmg$/i : /^PlayBound-Setup-\d+\.\d+\.\d+\.exe$/i;
     const candidates = existsSync(distDir)
       ? readdirSync(distDir)
-          .filter((f) => /^PlayBound-Setup-\d+\.\d+\.\d+\.exe$/i.test(f))
+          .filter((f) => regex.test(f))
           .sort((a, b) => {
             const va = a.match(/(\d+)\.(\d+)\.(\d+)/);
             const vb = b.match(/(\d+)\.(\d+)\.(\d+)/);
@@ -59,7 +62,7 @@ async function main() {
           })
       : [];
     if (candidates.length === 0) {
-      console.error("Setup.exe not found. Build first: cd launcher && npm run dist");
+      console.error(`${isMac ? "DMG" : "Setup.exe"} not found. Build first: cd launcher && npm run dist${isMac ? ":mac" : ""}`);
       process.exit(1);
     }
     setupPath = resolve(distDir, candidates[candidates.length - 1]);
@@ -67,7 +70,8 @@ async function main() {
 
   const setupName = basename(setupPath);
   const dir = dirname(setupPath);
-  const ymlPath = resolve(dir, "latest.yml");
+  const ymlName = isMac ? "latest-mac.yml" : "latest.yml";
+  const ymlPath = resolve(dir, ymlName);
   const blockmapPath = resolve(dir, `${setupName}.blockmap`);
 
   console.log(`Uploading updater package from ${dir}…`);
@@ -80,9 +84,9 @@ async function main() {
 
   let ymlUrl: string | null = null;
   if (existsSync(ymlPath)) {
-    ymlUrl = await uploadBlob("launcher/latest.yml", ymlPath, "text/yaml; charset=utf-8");
+    ymlUrl = await uploadBlob(`launcher/${ymlName}`, ymlPath, "text/yaml; charset=utf-8");
   } else {
-    console.warn("  warning: latest.yml missing — auto-update checks will fail until present");
+    console.warn(`  warning: ${ymlName} missing — auto-update checks will fail until present`);
   }
 
   if (existsSync(blockmapPath)) {
@@ -95,8 +99,9 @@ async function main() {
     console.warn("  warning: .blockmap missing — delta updates unavailable");
   }
 
+  const aliasName = isMac ? "PlayBound-Launcher-Setup.dmg" : "PlayBound-Launcher-Setup.exe";
   const aliasUrl = await uploadBlob(
-    "launcher/PlayBound-Launcher-Setup.exe",
+    `launcher/${aliasName}`,
     setupPath,
     "application/octet-stream"
   );
@@ -111,7 +116,8 @@ async function main() {
   console.log(`  electron-updater url: ${feedBase}`);
   console.log("");
   console.log("Set on Vercel (Production + Preview) if changed:");
-  console.log(`  NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL=${aliasUrl}`);
+  const envVar = isMac ? "NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL" : "NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL";
+  console.log(`  ${envVar}=${aliasUrl}`);
 }
 
 main().catch((err) => {
