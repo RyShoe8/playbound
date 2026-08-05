@@ -6,7 +6,7 @@ import {
   slugifyTitle,
   type GamePayload,
 } from "@/lib/gamePayload";
-import { fetchPageMeta, stripHtml } from "@/lib/pageMeta";
+import { stripHtml, tryFetchPageMeta, softTitleFromUrl } from "@/lib/pageMeta";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   deriveInstallSteps,
@@ -274,37 +274,81 @@ async function fromGithub(
   };
 }
 
-async function fromWebsite(url: string): Promise<GamePayload> {
-  const meta = await fetchPageMeta(url);
-  const title = meta.title || new URL(url).hostname.replace(/^www\./, "");
-  const description = meta.description || `Play ${title} free in your browser.`;
+async function fromWebsite(
+  url: string
+): Promise<{ draft: GamePayload; warning?: string }> {
+  const result = await tryFetchPageMeta(url);
+
+  if (result.ok) {
+    const meta = result.meta;
+    const title = meta.title || softTitleFromUrl(url);
+    const description = meta.description || `Play ${title} free in your browser.`;
+    const slug = slugifyTitle(title);
+    const cover = meta.images[0] ?? null;
+
+    return {
+      draft: {
+        ...emptyGameDraft(),
+        slug,
+        title,
+        tagline: description.slice(0, 200),
+        description,
+        website: url,
+        developerSlug: "indie-web",
+        coverImage: cover,
+        screenshots: meta.images.slice(0, 8),
+        videos: meta.videos.slice(0, 5),
+        platforms: ["Web"],
+        launchMethods: ["browser"],
+        browserPlayable: true,
+        sizeMB: 0,
+        license: "Free to play",
+        tags: ["Browser", "Indie"],
+        systemRequirements: {
+          min: "Modern web browser",
+          recommended: "Modern web browser",
+        },
+        art: defaultArtFor(["Arcade"], slug),
+        published: false,
+        launcherInstall: null,
+      },
+    };
+  }
+
+  const title = softTitleFromUrl(url);
   const slug = slugifyTitle(title);
-  const cover = meta.images[0] ?? null;
+  const warning =
+    result.reason === "blocked"
+      ? result.message
+      : `Could not scrape this page${result.status ? ` (${result.status})` : ""}. Created a blank draft from the URL — fill title/description manually.`;
 
   return {
-    ...emptyGameDraft(),
-    slug,
-    title,
-    tagline: description.slice(0, 200),
-    description,
-    website: url,
-    developerSlug: "indie-web",
-    coverImage: cover,
-    screenshots: meta.images.slice(0, 8),
-    videos: meta.videos.slice(0, 5),
-    platforms: ["Web"],
-    launchMethods: ["browser"],
-    browserPlayable: true,
-    sizeMB: 0,
-    license: "Free to play",
-    tags: ["Browser", "Indie"],
-    systemRequirements: {
-      min: "Modern web browser",
-      recommended: "Modern web browser",
+    warning,
+    draft: {
+      ...emptyGameDraft(),
+      slug,
+      title,
+      tagline: `Play ${title}`,
+      description: `Play ${title} free in your browser.`,
+      website: url,
+      developerSlug: "indie-web",
+      coverImage: null,
+      screenshots: [],
+      videos: [],
+      platforms: ["Web"],
+      launchMethods: ["browser"],
+      browserPlayable: true,
+      sizeMB: 0,
+      license: "Free to play",
+      tags: ["Browser", "Indie"],
+      systemRequirements: {
+        min: "Modern web browser",
+        recommended: "Modern web browser",
+      },
+      art: defaultArtFor(["Arcade"], slug),
+      published: false,
+      launcherInstall: null,
     },
-    art: defaultArtFor(["Arcade"], slug),
-    published: false,
-    launcherInstall: null,
   };
 }
 
@@ -320,6 +364,7 @@ export async function POST(req: Request) {
     let base: GamePayload;
     let steamIsFree: boolean | null = null;
     let sourceMaterial: string | null = null;
+    let warning: string | undefined;
 
     if (steamId && (url.includes("steam") || /^\d+$/.test(url.trim()))) {
       ({ draft: base, steamIsFree } = await fromSteam(steamId));
@@ -328,12 +373,19 @@ export async function POST(req: Request) {
     } else if (steamId) {
       ({ draft: base, steamIsFree } = await fromSteam(steamId));
     } else {
-      base = await fromWebsite(url);
+      ({ draft: base, warning } = await fromWebsite(url));
     }
 
     const { draft, evidence, suggestions, missing } = await enrichDraft(base, { steamIsFree });
 
-    return NextResponse.json({ draft, evidence, suggestions, missing, sourceMaterial });
+    return NextResponse.json({
+      draft,
+      evidence,
+      suggestions,
+      missing,
+      sourceMaterial,
+      ...(warning ? { warning } : {}),
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid URL" }, { status: 400 });

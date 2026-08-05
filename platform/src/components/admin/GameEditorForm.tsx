@@ -98,6 +98,7 @@ export function GameEditorForm({
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [forcePublishNext, setForcePublishNext] = useState(false);
   const [captureAvailable, setCaptureAvailable] = useState(false);
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
@@ -207,6 +208,7 @@ export function GameEditorForm({
     if (!importUrl.trim()) return;
     setBusy(true);
     setError("");
+    setWarning("");
     try {
       const res = await fetch("/api/admin/games/import", {
         method: "POST",
@@ -243,6 +245,7 @@ export function GameEditorForm({
           notFor: [],
         }
       );
+      setWarning(typeof data.warning === "string" ? data.warning : "");
       setLauncherDiscoverNote("");
       setBusy(false);
     } catch {
@@ -456,6 +459,11 @@ export function GameEditorForm({
         <p className="mt-2 text-[11px] text-muted-foreground">
           Website URLs default to browser-playable drafts. Steam/GitHub stay installable. Review before publishing.
         </p>
+        {warning && (
+          <p className="mt-2 text-sm text-amber-500" role="status">
+            {warning}
+          </p>
+        )}
       </div>
 
       <form onSubmit={save} className="space-y-4">
