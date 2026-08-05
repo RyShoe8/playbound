@@ -251,9 +251,23 @@ export default async function GameplayAnalyticsPage({
   let loadError = false;
   let catalog = { games: 0, mods: 0, developers: 0 };
   let telemetryEvents = emptyPeriodCounts();
+  let gameInstalls = emptyPeriodCounts();
+  let gameInstallsTotal = 0;
+  let modInstalls = emptyPeriodCounts();
+  let modInstallsTotal = 0;
 
   try {
-    const [gameplay, games, mods, developers, events] = await Promise.all([
+    const [
+      gameplay,
+      games,
+      mods,
+      developers,
+      events,
+      gameInstallPeriods,
+      gameInstallCount,
+      modInstallPeriods,
+      modInstallCount,
+    ] = await Promise.all([
       loadGameplayAnalytics({
         game: sp.game,
         from: sp.from,
@@ -263,6 +277,10 @@ export default async function GameplayAnalyticsPage({
       listAllMods(),
       listDevelopers(),
       periodTelemetryCounts(TelemetryEvent),
+      periodTelemetryCounts(TelemetryEvent, "game_installed"),
+      TelemetryEvent.countDocuments({ event: "game_installed" }),
+      periodTelemetryCounts(TelemetryEvent, "mod_installed"),
+      TelemetryEvent.countDocuments({ event: "mod_installed" }),
     ]);
     data = gameplay;
     catalog = {
@@ -271,6 +289,10 @@ export default async function GameplayAnalyticsPage({
       developers: developers.length,
     };
     telemetryEvents = events;
+    gameInstalls = gameInstallPeriods;
+    gameInstallsTotal = gameInstallCount;
+    modInstalls = modInstallPeriods;
+    modInstallsTotal = modInstallCount;
   } catch (err) {
     console.error("Failed to load gameplay analytics", err);
     loadError = true;
@@ -318,8 +340,20 @@ export default async function GameplayAnalyticsPage({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatTile label="Games" value={String(catalog.games)} href="/admin/games" />
-            <StatTile label="Mods" value={String(catalog.mods)} href="/admin/mods" />
+            <PeriodStatTile
+              label="Game installs"
+              primary={String(gameInstallsTotal)}
+              hint={`${catalog.games} in catalog`}
+              href="/admin/games"
+              periods={gameInstalls}
+            />
+            <PeriodStatTile
+              label="Mod installs"
+              primary={String(modInstallsTotal)}
+              hint={`${catalog.mods} in catalog`}
+              href="/admin/mods"
+              periods={modInstalls}
+            />
             <StatTile
               label="Developers"
               value={String(catalog.developers)}

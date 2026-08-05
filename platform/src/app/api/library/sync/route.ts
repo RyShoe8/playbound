@@ -37,7 +37,8 @@ export async function POST(req: Request) {
       }
 
       if (body.action === "install") {
-        const entry = await LibraryModEntry.findOneAndUpdate(
+        // new:false returns prior doc (null on insert) so we only telemetry first installs
+        const prev = await LibraryModEntry.findOneAndUpdate(
           { userId: user._id, modSlug: body.slug },
           {
             $set: {
@@ -52,25 +53,27 @@ export async function POST(req: Request) {
               modSlug: body.slug,
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, new: false }
         );
-        void saveEvent({
-          event: "mod_installed",
-          properties: {
-            modSlug: body.slug,
-            baseGameSlug: body.baseGameSlug,
-            installMethod: "launcher",
-            version: body.version,
-          },
-          userId: String(user._id),
-          timestamp: now.toISOString(),
-          userAgent: req.headers.get("user-agent"),
-        }).catch(() => undefined);
+        if (!prev || !prev.installed) {
+          void saveEvent({
+            event: "mod_installed",
+            properties: {
+              modSlug: body.slug,
+              baseGameSlug: body.baseGameSlug,
+              installMethod: "launcher",
+              version: body.version,
+            },
+            userId: String(user._id),
+            timestamp: now.toISOString(),
+            userAgent: req.headers.get("user-agent"),
+          }).catch(() => undefined);
+        }
         return NextResponse.json({
           success: true,
           kind: "mod",
-          modSlug: entry.modSlug,
-          baseGameSlug: entry.baseGameSlug,
+          modSlug: body.slug,
+          baseGameSlug: body.baseGameSlug,
           installed: true,
         });
       }
