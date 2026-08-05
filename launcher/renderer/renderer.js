@@ -2038,19 +2038,27 @@ window.playbound.onInstallDetected((data) => {
 });
 
 window.playbound.onInstallScan?.((data) => {
-  if (data?.phase === "scanning" || data?.phase === "pending") {
+  const phase = data?.phase;
+  if (phase === "scanning" || phase === "waiting") {
+    // Progress only — do not rebuild Library/Home/Detail (causes flicker).
     if (data.message) setStatus(data.message);
     else if (data.slug) setStatus(`Searching for ${data.slug}…`);
-  } else if (data?.phase === "needs-locate") {
+    return;
+  }
+  if (phase === "pending") {
+    if (data.message) setStatus(data.message);
+    else if (data.slug) setStatus(`Waiting for ${data.slug} install…`);
+  } else if (phase === "needs-locate") {
     setStatus(
       data.slug
         ? `Couldn't find ${data.slug} automatically — select the .exe in Library.`
         : "Couldn't find the install — select the .exe in Library.",
       true
     );
-  } else if (data?.phase === "dismissed") {
+  } else if (phase === "dismissed") {
     setStatus("Removed from Library.");
   }
+  // Re-render only on state-changing phases (pending / needs-locate / dismissed).
   if (currentView === "library") renderLibraryView();
   else if (currentView === "home") renderHomeView();
   else if (currentView === "gameDetail" && data?.slug && currentDetailSlug === data.slug) {
