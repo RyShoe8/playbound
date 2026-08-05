@@ -55,5 +55,5 @@ On login: profile value wins when set; otherwise the local value is pushed to th
 | `src/lib/compatibility/compatibility.ts` | Pure rules |
 | `src/hooks/useDevice.ts` | Device hook |
 | `src/hooks/useCompatibilityFilter.ts` | Preference + provider |
-| `src/components/GameCompatibilityToggle.tsx` | Toggle + listing bar |
+| `src/components/GameCompatibilityToggle.tsx` | Sidebar + mobile topbar toggle |
 | `src/app/api/auth/preferences/route.ts` | Persisted prefs |

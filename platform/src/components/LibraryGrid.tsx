@@ -14,7 +14,6 @@ import { GameCard } from "@/components/GameCard";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
@@ -223,8 +222,6 @@ export function LibraryGrid({
 
   return (
     <div className="space-y-4">
-      <CompatibilityListingBar />
-
       {emptyFiltered ? (
         <div className="rounded-xl border border-border bg-card px-4 py-8 text-center">
           <p className="text-sm text-muted-foreground">

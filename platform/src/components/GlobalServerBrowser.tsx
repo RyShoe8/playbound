@@ -9,7 +9,6 @@ import type { GameServer } from "@/lib/servers/types";
 import { estimateLatencyMs } from "@/lib/servers/latencyEstimate";
 import { EmptyHint } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import { cn } from "@/lib/utils";
 import { telemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -405,8 +404,6 @@ export function GlobalServerBrowser({
 
   return (
     <div className="space-y-4">
-      <CompatibilityListingBar />
-
       {catalogLoaded && visibleGames.length === 0 ? (
         <EmptyHint icon={Server}>
           No live servers for games compatible with this device. Switch to All Games to browse every

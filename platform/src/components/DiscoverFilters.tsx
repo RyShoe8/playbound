@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Search } from "lucide-react";
 import type { Game, Genre } from "@/lib/data/types";
 import { useTelemetry } from "@/lib/telemetry";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import {
@@ -223,8 +222,6 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
 
   return (
     <>
-      <CompatibilityListingBar />
-
       {/* ── Filter toolbar ──────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Search */}

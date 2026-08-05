@@ -2,7 +2,6 @@
 
 import type { Game } from "@/lib/data/types";
 import { CardRow, GameCard } from "@/components/GameCard";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import {
   CompatibleGamesFade,
   useFilteredGames,
@@ -14,7 +13,6 @@ export function CompatibleCardRow({ games }: { games: Game[] }) {
 
   return (
     <div className="space-y-3">
-      <CompatibilityListingBar />
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No compatible titles — switch to All Games to see everything.
