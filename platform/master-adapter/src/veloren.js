@@ -9,18 +9,29 @@ const MAX_RESPONSE_SIZE = 256;
 const BATTLE_MODES = ["PvP", "PvE", "Per-player"];
 const QUERY_TIMEOUT_MS = 6_000;
 
+/** QueryServerRequest: Init=1, ServerInfo=2 (u32 BE, 1-based) */
+const REQ_INIT = 1;
+const REQ_SERVER_INFO = 2;
+/** RawQueryServerResponse: Response=1, Init=2 */
+const RESP_SERVER_INFO_OUTER = 1;
+const RESP_INIT = 2;
+/** QueryServerResponse::ServerInfo = 1 */
+const RESP_SERVER_INFO_INNER = 1;
+
 /**
  * Build a Veloren query datagram (version + request + pad + "veloren" trailer).
+ * Wire layout matches Veloren's network-protocol (bincode / BE / 1-based discs).
  * @param {bigint | number} p
- * @param {0 | 1} request 0=Init, 1=ServerInfo
+ * @param {number} request disc (REQ_INIT | REQ_SERVER_INFO)
  * @param {number} [protocolVersion]
  */
 function buildRequest(p, request, protocolVersion = 0) {
-  const content = Buffer.alloc(9);
-  content.writeBigUInt64LE(BigInt(p), 0);
-  content.writeUInt8(request, 8);
+  // content: p u64 BE + request disc u32 BE
+  const content = Buffer.alloc(12);
+  content.writeBigUInt64BE(BigInt(p), 0);
+  content.writeUInt32BE(request >>> 0, 8);
 
-  // version (2) + content, padded to MAX_RESPONSE_SIZE, then header
+  // version (u16 LE) + content, padded to MAX_RESPONSE_SIZE, then header
   const body = Buffer.alloc(MAX_RESPONSE_SIZE);
   body.writeUInt16LE(protocolVersion & 0xffff, 0);
   content.copy(body, 2);
@@ -32,32 +43,38 @@ function buildRequest(p, request, protocolVersion = 0) {
  * @returns {{ kind: 'init', p: bigint, maxVersion: number } | { kind: 'info', players: number, maxPlayers: number, battlemode: number } | null}
  */
 function parseResponse(msg) {
-  if (!msg || msg.length < 3) return null;
-  const disc = msg[0];
-  if (disc === 1) {
-    // Init { p: u64, max_supported_version: u16 }
-    if (msg.length < 11) return null;
+  if (!msg || msg.length < 4) return null;
+  const disc = msg.readUInt32BE(0);
+
+  if (disc === RESP_INIT) {
+    // Init { p: u64 BE, max_supported_version: u16 BE }
+    if (msg.length < 4 + 8 + 2) return null;
     return {
       kind: "init",
-      p: msg.readBigUInt64LE(1),
-      maxVersion: msg.readUInt16LE(9),
+      p: msg.readBigUInt64BE(4),
+      maxVersion: msg.readUInt16BE(12),
     };
   }
-  if (disc === 0) {
-    // Response(ServerInfo) — nested disc 0 + ServerInfo fields
-    let offset = 1;
-    if (msg.length > offset && msg[offset] === 0) offset += 1; // QueryServerResponse::ServerInfo
-    // git_hash u32, git_timestamp i64, players_count u16, player_cap u16, battlemode u8
+
+  if (disc === RESP_SERVER_INFO_OUTER) {
+    // Response(ServerInfo): outer disc + inner disc + fields (all BE)
+    let offset = 4;
+    if (msg.length < offset + 4) return null;
+    const inner = msg.readUInt32BE(offset);
+    offset += 4;
+    if (inner !== RESP_SERVER_INFO_INNER) return null;
+    // git_hash u32, git_timestamp i64, players_count u16, player_cap u16, battlemode u8 (1-based)
     if (msg.length < offset + 4 + 8 + 2 + 2 + 1) return null;
     offset += 4; // git_hash
     offset += 8; // git_timestamp
-    const players = msg.readUInt16LE(offset);
+    const players = msg.readUInt16BE(offset);
     offset += 2;
-    const maxPlayers = msg.readUInt16LE(offset);
+    const maxPlayers = msg.readUInt16BE(offset);
     offset += 2;
     const battlemode = msg[offset];
     return { kind: "info", players, maxPlayers, battlemode };
   }
+
   return null;
 }
 
@@ -124,7 +141,7 @@ function queryServerInfo(host, port) {
         if (Number.isFinite(parsed.maxVersion) && parsed.maxVersion >= 0) {
           protocolVersion = Math.min(parsed.maxVersion, 0xffff);
         }
-        send(challenge, 1); // ServerInfo
+        send(challenge, REQ_SERVER_INFO);
         return;
       }
       if (parsed.kind === "info") {
@@ -137,7 +154,7 @@ function queryServerInfo(host, port) {
     });
 
     // First packet: Init with p=0 triggers challenge
-    send(0, 0);
+    send(0, REQ_INIT);
   });
 }
 
@@ -190,8 +207,8 @@ export async function pollVeloren() {
     const modeParts = [];
     if (row.channel) modeParts.push(String(row.channel));
     if (row.official) modeParts.push("official");
-    if (info && BATTLE_MODES[info.battlemode]) {
-      modeParts.push(BATTLE_MODES[info.battlemode]);
+    if (info && BATTLE_MODES[info.battlemode - 1]) {
+      modeParts.push(BATTLE_MODES[info.battlemode - 1]);
     }
 
     servers.push({
