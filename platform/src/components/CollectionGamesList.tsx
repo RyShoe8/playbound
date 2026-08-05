@@ -5,7 +5,6 @@ import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import {
   CompatibleGamesFade,
   useFilteredGames,
@@ -54,7 +53,6 @@ export function CollectionGamesList({ games }: { games: Game[] }) {
 
   return (
     <div className="space-y-3">
-      <CompatibilityListingBar />
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           No compatible games in this collection. Switch to All Games to see every title.

@@ -5,7 +5,6 @@ import type { CatalogModPublic } from "@/lib/mods";
 import type { GameLike } from "@/lib/compatibility/compatibility";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import { ModCard } from "@/components/ModCard";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
 
@@ -41,8 +40,6 @@ export function ModsCatalog({
 
   return (
     <div className="mt-8 space-y-8">
-      <CompatibilityListingBar />
-
       <p className="text-sm text-muted-foreground">
         Showing {visibleModCount} mod{visibleModCount === 1 ? "" : "s"}
         {mode === "compatible" ? " for games compatible with this device" : ""}.

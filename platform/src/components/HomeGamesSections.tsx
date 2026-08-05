@@ -2,7 +2,6 @@
 
 import type { Game } from "@/lib/data/types";
 import { CardRow, GameCard } from "@/components/GameCard";
-import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import {
   CompatibleGamesFade,
   useFilteredGames,
@@ -25,8 +24,6 @@ export function HomeGamesSections({
 
   return (
     <div className="space-y-12">
-      <CompatibilityListingBar />
-
       <CompatibleGamesFade animKey={animKey} className="space-y-12">
         <section>
           <SectionHeader
