@@ -9,6 +9,7 @@ import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import User from "@/lib/models/User";
 import { sendMail, verificationEmailHtml } from "@/lib/mailer";
 import { clientIpFrom, recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
+import { absoluteUrl } from "@/lib/site";
 
 const registerSchema = z.object({
   username: z.string().min(3).max(20),
@@ -18,8 +19,21 @@ const registerSchema = z.object({
   recaptchaToken: z.string().optional(),
 });
 
-function baseUrl(req: Request) {
-  return process.env.NEXTAUTH_URL || new URL(req.url).origin;
+/**
+ * Verification links must be absolute — an email has no page to be relative
+ * to — so they use the canonical site origin rather than the request's.
+ *
+ * This previously read `NEXTAUTH_URL || new URL(req.url).origin`. On Vercel
+ * both resolve to a per-deployment host, so every link stopped working the
+ * moment that deployment was superseded: clicking one returned
+ * DEPLOYMENT_NOT_FOUND. Emails outlive deployments, so the link has to point
+ * at the stable public origin. src/lib/site.ts exists for exactly this and
+ * warns against deriving from NEXTAUTH_URL or VERCEL_URL.
+ */
+function verificationLink(token: string, email: string) {
+  return absoluteUrl(
+    `/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
+  );
 }
 
 export async function POST(req: Request) {
@@ -98,7 +112,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const verifyUrl = `${baseUrl(req)}/verify-email?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
+    const verifyUrl = verificationLink(token, normalizedEmail);
 
     let emailSent = true;
     let emailError: string | undefined;

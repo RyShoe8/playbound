@@ -7,6 +7,7 @@ import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import { resolveOAuthUser } from "@/lib/oauthUser";
 import { recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
+import { SITE_URL } from "@/lib/site";
 
 if (process.env.NEXTAUTH_URL && !/^https?:\/\/[a-zA-Z0-9.-]+/i.test(process.env.NEXTAUTH_URL)) {
   process.env.NEXTAUTH_URL = "http://localhost:3000";
@@ -110,6 +111,38 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    /**
+     * Keep post-auth redirects on the host the user is actually browsing.
+     *
+     * NextAuth's default resolves every redirect against NEXTAUTH_URL. On
+     * Vercel that is frequently a per-deployment host, so once that deployment
+     * is superseded, signing out sent people to a URL that no longer exists —
+     * Vercel answers DEPLOYMENT_NOT_FOUND. Returning the path unchanged lets
+     * the browser resolve it against the current origin, which is correct on
+     * production, previews and localhost alike without depending on an env var
+     * being right.
+     */
+    async redirect({ url, baseUrl }) {
+      // A protocol-relative URL ("//evil.com") also starts with "/" and would
+      // otherwise be handed straight back as an open redirect. Backslashes are
+      // rejected for the same reason — some browsers normalise "/\" to "//".
+      if (url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\")) {
+        return url;
+      }
+
+      // Absolute URLs are only honoured for our own origins, so a crafted
+      // callbackUrl cannot bounce a freshly signed-in user off-site.
+      try {
+        const target = new URL(url);
+        if (target.origin === baseUrl || target.origin === SITE_URL) {
+          return `${target.pathname}${target.search}${target.hash}` || "/";
+        }
+      } catch {
+        /* not a parseable URL — fall through */
+      }
+      return "/";
+    },
+
     /**
      * OAuth sign-ins are resolved to a Mongo user here.
      *
