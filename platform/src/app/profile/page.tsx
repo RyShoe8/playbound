@@ -10,9 +10,10 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getGame } from "@/lib/catalog";
 import { Avatar, EmptyHint, SectionHeader, StatTile } from "@/components/ui/bits";
 import { ProfileSettings } from "@/components/ProfileSettings";
-import { DiscordLinkCard } from "@/components/DiscordLinkCard";
+import { ConnectedAccounts } from "@/components/ConnectedAccounts";
 import { SignOutButton } from "@/components/SignOutButton";
 import User from "@/lib/models/User";
+import Friend from "@/lib/models/Friend";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -47,17 +48,28 @@ export default async function ProfilePage() {
   let posts: { gameSlug: string; title: string; slug: string; createdAt: Date }[] = [];
   let community = { topicCount: 0, replyCount: 0, helpfulCount: 0 };
   let discordLinked: { username: string; avatarUrl?: string | null } | null = null;
+  let googleConnected = false;
+  let friendsCount = 0;
+  let pendingRequestsCount = 0;
 
   try {
     await dbConnect();
-    const [r, g, p, user] = await Promise.all([
+    const [r, g, p, user, fCount, pCount] = await Promise.all([
       Review.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
       GuidePost.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
       DiscussionTopic.find({ authorId: userId, status: { $ne: "removed" } })
         .sort({ createdAt: -1 })
         .limit(10)
         .lean(),
-      User.findById(userId).select("community connectedAccounts").lean(),
+      User.findById(userId).select("community connectedAccounts authProviders").lean(),
+      Friend.countDocuments({
+        $or: [{ requesterId: userId }, { recipientId: userId }],
+        status: "accepted",
+      }),
+      Friend.countDocuments({
+        recipientId: userId,
+        status: "pending",
+      }),
     ]);
     reviews = r;
     guides = g;
@@ -74,12 +86,17 @@ export default async function ProfilePage() {
         helpfulCount: user.community.helpfulCount ?? 0,
       };
     }
+    if (user?.authProviders?.includes("google")) {
+      googleConnected = true;
+    }
     if (user?.connectedAccounts?.discord?.discordUserId) {
       discordLinked = {
         username: user.connectedAccounts.discord.username ?? "Discord",
         avatarUrl: user.connectedAccounts.discord.avatarUrl,
       };
     }
+    friendsCount = fCount ?? 0;
+    pendingRequestsCount = pCount ?? 0;
   } catch (err) {
     console.error("Failed to load profile activity:", err);
   }
@@ -108,7 +125,15 @@ export default async function ProfilePage() {
         email={session.user.email ?? ""}
       />
 
-      <DiscordLinkCard linked={discordLinked} />
+      <section>
+        <SectionHeader title="Friends" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+          <StatTile label="Friends" value={String(friendsCount)} />
+          <StatTile label="Pending Requests" value={String(pendingRequestsCount)} />
+        </div>
+      </section>
+
+      <ConnectedAccounts googleConnected={googleConnected} discordLinked={discordLinked} />
 
       <section>
         <SectionHeader title="Your Contributions" />

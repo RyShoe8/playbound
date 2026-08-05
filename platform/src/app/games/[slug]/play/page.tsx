@@ -7,6 +7,7 @@ import { isBrowserGame } from "@/lib/gameLaunch";
 import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { GameArt } from "@/components/GameArt";
 import { PlayPageActions, PlayPageHeading } from "@/components/PlayPageActions";
+import { GameFriendsWidget } from "@/components/friends/GameFriendsWidget";
 import { Badge } from "@/components/ui/bits";
 import { privateMetadata } from "@/lib/seo";
 
@@ -60,6 +61,9 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
               <Server className="size-3.5" /> Supports dedicated servers for multiplayer
             </p>
           )}
+          <div className="w-full text-left mt-2 lg:hidden">
+            <GameFriendsWidget gameSlug={game.slug} />
+          </div>
         </div>
       </div>
     </div>

@@ -38,6 +38,7 @@ import { getDiscordPresence } from "@/lib/discordPresence";
 import { getGameLiveStats, type EntityLiveStats } from "@/lib/liveActivity";
 import { PlayingNowBadge } from "@/components/ActivityStats";
 import { ActivityStatsCard } from "@/components/ActivityStatsCard";
+import { GameFriendsWidget } from "@/components/friends/GameFriendsWidget";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
@@ -636,6 +637,9 @@ function OverviewTab({
               : []),
           ]}
         />
+        <div className="hidden lg:block">
+          <GameFriendsWidget gameSlug={game.slug} />
+        </div>
         {developer && (
           <Link
             href={`/developers/${developer.slug}`}
