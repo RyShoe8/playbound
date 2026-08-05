@@ -117,6 +117,7 @@ export function GlobalServerBrowser({
 
   const [games, setGames] = useState<IndexGame[]>([]);
   const [mods, setMods] = useState<CatalogMod[]>([]);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [gameSlug, setGameSlug] = useState(queryGame);
   const [modSlug, setModSlug] = useState(queryMod);
   const [installedOnly, setInstalledOnly] = useState(false);
@@ -162,6 +163,8 @@ export function GlobalServerBrowser({
         if (queryMod) setModSlug(queryMod);
       } catch {
         /* ignore */
+      } finally {
+        if (!cancelled) setCatalogLoaded(true);
       }
     })();
     return () => {
@@ -404,7 +407,7 @@ export function GlobalServerBrowser({
     <div className="space-y-4">
       <CompatibilityListingBar />
 
-      {visibleGames.length === 0 ? (
+      {catalogLoaded && visibleGames.length === 0 ? (
         <EmptyHint icon={Server}>
           No live servers for games compatible with this device. Switch to All Games to browse every
           title.
@@ -420,7 +423,7 @@ export function GlobalServerBrowser({
               setGameSlug(e.target.value);
               setModSlug("");
             }}
-            disabled={visibleGames.length === 0}
+            disabled={!catalogLoaded || visibleGames.length === 0}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
           >
             {visibleGames.map((g) => (
@@ -503,7 +506,9 @@ export function GlobalServerBrowser({
         </p>
       ) : null}
 
-      {!effectiveGameSlug || (installedOnly && !visibleGames.length) ? (
+      {!catalogLoaded ? (
+        <p className="text-sm text-muted-foreground">Loading server catalog…</p>
+      ) : !effectiveGameSlug || (installedOnly && !visibleGames.length) ? (
         <EmptyHint icon={Server}>
           {installedOnly
             ? "No installed games have live server browsers. Install a multiplayer title or turn off Installed only."
