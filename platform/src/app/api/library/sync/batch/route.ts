@@ -6,6 +6,7 @@ import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 const batchSchema = z.object({
   installs: z
@@ -94,6 +95,18 @@ export async function POST(req: Request) {
         },
         { upsert: true, new: true }
       );
+      void saveEvent({
+        event: "mod_installed",
+        properties: {
+          modSlug: item.slug,
+          baseGameSlug: item.baseGameSlug,
+          installMethod: "launcher",
+          version: item.version,
+        },
+        userId: String(user._id),
+        timestamp: now.toISOString(),
+        userAgent: req.headers.get("user-agent"),
+      }).catch(() => undefined);
       modsSynced += 1;
     }
 

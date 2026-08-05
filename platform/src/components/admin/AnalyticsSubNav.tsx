@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Gamepad2 } from "lucide-react";
+import { Activity, FileText, Gamepad2 } from "lucide-react";
 
 const tabs = [
   { href: "/admin/analytics", label: "Overview", icon: Activity, exact: true },
   { href: "/admin/analytics/gameplay", label: "Gameplay", icon: Gamepad2 },
+  { href: "/admin/analytics/content", label: "Content", icon: FileText },
 ];
 
 export function AnalyticsSubNav() {

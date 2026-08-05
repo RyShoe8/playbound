@@ -8,6 +8,7 @@ import {
   issueLauncherTokenForUser,
   userFromLauncherBearer,
 } from "@/lib/library";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -16,10 +17,24 @@ export async function POST() {
   }
 
   try {
+    await dbConnect();
+    const existing = await User.findById(session.user.id).select("+launcherTokenHash");
+    const firstConnect = !existing?.launcherTokenHash;
+
     const token = await issueLauncherTokenForUser(session.user.id);
+
+    if (firstConnect) {
+      void saveEvent({
+        event: "launcher_connected",
+        properties: { firstConnect: true },
+        userId: session.user.id,
+      }).catch(() => undefined);
+    }
+
     return NextResponse.json({
       token,
       createdAt: new Date().toISOString(),
+      firstConnect,
     });
   } catch (error) {
     console.error("Launcher token mint error:", error);

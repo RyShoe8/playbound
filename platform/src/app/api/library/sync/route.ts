@@ -54,6 +54,18 @@ export async function POST(req: Request) {
           },
           { upsert: true, new: true }
         );
+        void saveEvent({
+          event: "mod_installed",
+          properties: {
+            modSlug: body.slug,
+            baseGameSlug: body.baseGameSlug,
+            installMethod: "launcher",
+            version: body.version,
+          },
+          userId: String(user._id),
+          timestamp: now.toISOString(),
+          userAgent: req.headers.get("user-agent"),
+        }).catch(() => undefined);
         return NextResponse.json({
           success: true,
           kind: "mod",
