@@ -1108,7 +1108,7 @@ export function GameEditorForm({
                   <p className="text-[11px] text-muted-foreground">
                     {form.slug === "zero-k"
                       ? "Optional. Without this, listings show lobby presence only. Password must be the Chobby PasswordHash (not the plain account password)."
-                      : "Optional. Without this, listings show a lobby pointer only. Use your Wildfire Games lobby username (or JID) and password."}
+                      : "Optional. Without this, listings show a lobby pointer only. Enter your Wildfire Games lobby username (or JID) and the same plain password as the game client — the adapter hashes it like official EncryptPassword. A 64-char hex value from user.cfg lobby.password also works."}
                   </p>
                   <div>
                     <label className={label}>

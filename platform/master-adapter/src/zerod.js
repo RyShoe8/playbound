@@ -1,4 +1,5 @@
 import { MAX_SERVERS } from "./types.js";
+import { resolveZeroAdSaslPassword } from "./zeroad-password.js";
 
 const DOMAIN = "lobby.wildfiregames.com";
 const CONFERENCE = `conference.${DOMAIN}`;
@@ -115,6 +116,8 @@ export async function pollZeroAd(creds = null) {
   }
 
   const username = jid.includes("@") ? jid.split("@")[0] : jid;
+  // Official client SASL password is EncryptPassword(plain, username), not the typed password.
+  const saslPassword = resolveZeroAdSaslPassword(password, username);
   const rooms = lobbyRooms();
 
   const { client, xml } = await import("@xmpp/client");
@@ -127,7 +130,7 @@ export async function pollZeroAd(creds = null) {
     domain: DOMAIN,
     resource: "0ad-playbound",
     username,
-    password,
+    password: saslPassword,
   });
 
   try {

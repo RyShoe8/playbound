@@ -25,7 +25,7 @@ latest commit (root directory `platform/master-adapter`).
    - `PORT` — set by Render
    - Optional env fallbacks (prefer setting lobby login on the admin game page → Dedicated servers):
      - `ZEROK_LOBBY_USER` / `ZEROK_LOBBY_PASS` — Zero-K account (PasswordHash as used by Chobby)
-     - `ZEROAD_LOBBY_JID` / `ZEROAD_LOBBY_PASSWORD` — 0 A.D. lobby account
+     - `ZEROAD_LOBBY_JID` / `ZEROAD_LOBBY_PASSWORD` — 0 A.D. lobby account (plain password, or 64-char hex from `user.cfg` `lobby.password`; the adapter runs official `EncryptPassword` before SASL)
      - `ZEROAD_LOBBY_ROOMS` — comma-separated MUC rooms (default `arena27,arena26,arena`)
 3. Health check: `/health`
 4. On Vercel:
@@ -39,9 +39,10 @@ Lobby credentials from the catalog are forwarded as `x-playbound-lobby-user` /
 
 Modern XpartaMuPP does **not** answer an IQ get for the game list. The adapter:
 
-1. Logs in with a resource that starts with `0ad` (e.g. `0ad-playbound`)
-2. Joins versioned MUC rooms (`arena27`, `arena26`, `arena`)
-3. Waits for pushed `jabber:iq:gamelist` IQs
+1. Hashes the lobby password with the same `EncryptPassword` algorithm as the official client (skipped if the value is already 64-char hex)
+2. Logs in with a resource that starts with `0ad` (e.g. `0ad-playbound`)
+3. Joins versioned MUC rooms (`arena27`, `arena26`, `arena`)
+4. Waits for pushed `jabber:iq:gamelist` IQs
 
 Without credentials the API returns a single lobby pointer row. With credentials
 configured, failures return an error + empty list (no fake lobby row).
