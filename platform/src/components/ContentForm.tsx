@@ -34,10 +34,15 @@ export function ContentForm({
   kind,
   gameSlug,
   isSignedIn,
+  editionSlug,
+  editionName,
 }: {
   kind: Kind;
   gameSlug: string;
   isSignedIn: boolean;
+  /** Set on an edition page so the review attaches to that edition. */
+  editionSlug?: string;
+  editionName?: string;
 }) {
   const router = useRouter();
   const { track } = useTelemetry();
@@ -57,7 +62,13 @@ export function ContentForm({
         >
           Sign in
         </Link>{" "}
-        to {kind === "review" ? "rate and review this game" : "publish a guide"}.
+        to{" "}
+        {kind === "review"
+          ? editionName
+            ? `rate and review the ${editionName} edition`
+            : "rate and review this game"
+          : "publish a guide"}
+        .
       </p>
     );
   }
@@ -85,12 +96,14 @@ export function ContentForm({
       const res = await fetch(endpoints[kind](gameSlug), {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(kind === "review" ? { rating, title, body } : { title, body }),
+        body: JSON.stringify(
+          kind === "review" ? { rating, title, body, editionSlug: editionSlug ?? null } : { title, body }
+        ),
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
         if (kind === "review") {
-          void track("review_created", { gameSlug, rating });
+          void track("review_created", { gameSlug, rating, editionSlug });
         }
         setTitle("");
         setBody("");

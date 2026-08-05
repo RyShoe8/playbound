@@ -16,6 +16,8 @@
     "fix:mod-media": "tsx scripts/fix-mod-media.ts",
     "fetch:mod-covers": "tsx scripts/fetch-mod-covers.ts",
     "seed:developers": "tsx scripts/seed-developers.ts",
+    "migrate:editions": "tsx scripts/migrate-editions.ts",
+    "migrate:review-index": "tsx scripts/migrate-review-index.ts",
     "seed:collections": "tsx scripts/seed-collections.ts",
     "seed:weekly": "tsx scripts/seed-weekly.ts",
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",

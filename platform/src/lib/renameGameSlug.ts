@@ -4,6 +4,7 @@ import CatalogMod from "@/lib/models/CatalogMod";
 import DiscussionPost from "@/lib/models/DiscussionPost";
 import DiscussionReply from "@/lib/models/DiscussionReply";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
+import Edition from "@/lib/models/Edition";
 import GuidePost from "@/lib/models/GuidePost";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
@@ -25,6 +26,10 @@ const REFERENCES: { label: string; model: { updateMany: (f: object, u: object) =
   { label: "discussionPosts", model: DiscussionPost, field: "gameSlug" },
   { label: "discussionReplies", model: DiscussionReply, field: "gameSlug" },
   { label: "discussionTopics", model: DiscussionTopic, field: "gameSlug" },
+  // Editions denormalize gameSlug alongside gameId. Without this a rename
+  // would orphan every edition: the game page would fall back to its virtual
+  // Official edition and the real ones would be unreachable.
+  { label: "editions", model: Edition, field: "gameSlug" },
   { label: "guides", model: GuidePost, field: "gameSlug" },
   { label: "libraryEntries", model: LibraryEntry, field: "gameSlug" },
   { label: "libraryModEntries", model: LibraryModEntry, field: "baseGameSlug" },

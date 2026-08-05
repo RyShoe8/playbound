@@ -1089,6 +1089,28 @@ export function GameEditorForm({
           </div>
         </div>
 
+        <div>
+          <label className={label}>Search aliases</label>
+          <textarea
+            rows={2}
+            value={(form.aliases ?? []).join("\n")}
+            onChange={(e) =>
+              patch(
+                "aliases",
+                e.target.value
+                  .split(/[\n,]/)
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+              )
+            }
+            className={`${field} h-auto py-2`}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Shorthand people search by — &ldquo;WoW&rdquo;, &ldquo;C&amp;C&rdquo;. Never displayed,
+            only matched. One per line.
+          </p>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Min requirements</label>

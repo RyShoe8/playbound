@@ -8,6 +8,8 @@ import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
 import { listDevelopers } from "@/lib/developers";
+import { searchEditions } from "@/lib/editions";
+import type { Edition } from "@/lib/editionTypes";
 import type { Collection, Developer } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 
@@ -40,6 +42,7 @@ function toGame(doc: LeanGame): Game {
     developerSlug: String(doc.developerSlug),
     genres: (doc.genres as Genre[]) ?? [],
     tags: (doc.tags as string[]) ?? [],
+    aliases: (doc.aliases as string[]) ?? [],
     license: String(doc.license),
     releaseYear: Number(doc.releaseYear),
     sizeMB: Number(doc.sizeMB),
@@ -358,10 +361,22 @@ export async function collectionsFeaturing(slug: string): Promise<Collection[]> 
   return (await listCollections()).filter((c) => c.gameSlugs.includes(slug));
 }
 
+/** An edition match, carried with the game it belongs to so the UI can link it. */
+export interface EditionSearchHit {
+  edition: Edition;
+  game: Game;
+}
+
 export interface SearchResults {
   games: Game[];
   developers: Developer[];
   collections: Collection[];
+  /**
+   * Editions matching by name, tag or slug. Searching "Turtle" has to surface
+   * Turtle WoW even though its game is called World of Warcraft, so editions
+   * are searched independently of game titles and joined back to their game.
+   */
+  editions: EditionSearchHit[];
 }
 
 export async function searchAll(
@@ -373,16 +388,30 @@ export async function searchAll(
     fields.some((f) =>
       Array.isArray(f) ? f.some((x) => x.toLowerCase().includes(q)) : f.toLowerCase().includes(q)
     );
-  if (!q) return { games: [], developers: [], collections: [] };
-  const [games, allCollections, allDevelopers] = await Promise.all([
+  if (!q) return { games: [], developers: [], collections: [], editions: [] };
+  const [games, allCollections, allDevelopers, editionMatches] = await Promise.all([
     listGames({ includeTesting: opts?.includeTesting }),
     listCollections(),
     listDevelopers(),
+    searchEditions(query),
   ]);
+
+  // Join each edition hit back to its game, dropping any whose game is not
+  // visible to this viewer so a hidden game cannot leak through its editions.
+  const gameBySlug = new Map(games.map((g) => [g.slug, g]));
+  const editions: EditionSearchHit[] = [];
+  for (const edition of editionMatches) {
+    const game = gameBySlug.get(edition.gameSlug);
+    if (game) editions.push({ edition, game });
+  }
+
   return {
-    games: games.filter((g) => has(g.title, g.tagline, g.tags, g.genres)),
+    // Aliases catch the shorthand people actually type ("WoW", "C&C") which
+    // appears nowhere in the title or tags.
+    games: games.filter((g) => has(g.title, g.tagline, g.tags, g.genres, g.aliases ?? [])),
     developers: allDevelopers.filter((d) => has(d.name, d.tagline)),
     collections: allCollections.filter((c) => has(c.title, c.description)),
+    editions,
   };
 }
 

@@ -17,6 +17,9 @@ import {
   canonicalSlugFor,
 } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
+import { listPublicEditionsForGame } from "@/lib/editions";
+import type { Edition } from "@/lib/editionTypes";
+import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
@@ -24,6 +27,7 @@ import { CompatibleMoreLikeThis } from "@/components/CompatibleGameCardGrid";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { GameIncompatibilityBanner } from "@/components/GameIncompatibilityBanner";
 import { ContentForm } from "@/components/ContentForm";
+import { ReviewList } from "@/components/reviews/ReviewList";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { CommunityCard } from "@/components/discussion/CommunityCard";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
@@ -194,6 +198,9 @@ export default async function GamePage({
     : undefined;
 
   const weeklyIssue = await issueForGame(game.slug);
+  // Always non-empty: a game with none stored yields its virtual Official
+  // edition, so nothing downstream needs a "no editions" branch.
+  const editions = await listPublicEditionsForGame(game);
 
   return (
     <div>
@@ -337,6 +344,7 @@ export default async function GamePage({
             similar={similar}
             weeklyIssue={weeklyIssue}
             discordPresence={discordPresence}
+            editions={editions}
           />
         )}
         {tab === "install" && (
@@ -382,10 +390,14 @@ export default async function GamePage({
           />
         )}
         {tab === "reviews" && (
-          <ReviewsTab
+          <ReviewList
             gameSlug={game.slug}
             isSignedIn={Boolean(session?.user)}
             items={await safeQuery(() => Review.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+            // The game tab shows reviews of every edition together, so each
+            // one is labelled with what it actually covers.
+            showEditionLabels
+            editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
           />
         )}
         {tab === "media" && <MediaTab game={game} />}
@@ -403,6 +415,7 @@ function OverviewTab({
   similar,
   weeklyIssue,
   discordPresence,
+  editions,
 }: {
   game: Game;
   developer: Developer | undefined;
@@ -410,6 +423,7 @@ function OverviewTab({
   similar: Game[];
   weeklyIssue?: WeeklyIssue;
   discordPresence?: { online?: number; members?: number } | null;
+  editions: Edition[];
 }) {
   if (!game) return null;
 
@@ -427,6 +441,11 @@ function OverviewTab({
         {game.qualityBar && (
           <QualityBarPanel bar={game.qualityBar} gameTitle={game.title} />
         )}
+
+        {/* Editions sit high on the page: when a game has several, which one
+            to install is the reader's first decision, ahead of the blurb.
+            Renders nothing for games with only the generated Official one. */}
+        <EditionsSection game={game} editions={editions} />
 
         <section>
           <h2 className="text-lg font-bold">About {game.title}</h2>
@@ -900,53 +919,6 @@ function GuidesTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSigned
         </div>
       ) : (
         <EmptyHint>No guides yet — be the first to write one.</EmptyHint>
-      )}
-    </div>
-  );
-}
-
-function ReviewsTab({ gameSlug, isSignedIn, items }: { gameSlug: string; isSignedIn: boolean; items: PostDoc[] }) {
-  const avg = items.length > 0 ? items.reduce((s, r) => s + (r.rating ?? 0), 0) / items.length : 0;
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-5">
-        <div className="flex items-center gap-4">
-          <div className="text-center">
-            <p className="text-4xl font-extrabold">{items.length > 0 ? avg.toFixed(1) : "—"}</p>
-            <div className="mt-1 flex justify-center">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className={cn("size-4", i <= Math.round(avg) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />
-              ))}
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {items.length} player review{items.length === 1 ? "" : "s"}
-          </p>
-        </div>
-      </div>
-      <div>
-        <h3 className="mb-3 text-sm font-bold">Write a review</h3>
-        <ContentForm kind="review" gameSlug={gameSlug} isSignedIn={isSignedIn} />
-      </div>
-      {items.length > 0 ? (
-        <div className="space-y-3">
-          {items.map((r) => (
-            <article key={String(r._id)} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-bold">&ldquo;{r.title}&rdquo;</p>
-                <span className="flex items-center gap-1 text-sm font-semibold">
-                  <Star className="size-3.5 fill-amber-400 text-amber-400" /> {r.rating}
-                </span>
-              </div>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{r.body}</p>
-              <p className="mt-3 text-xs text-muted-foreground">
-                {r.username} · {new Date(r.createdAt).toLocaleDateString()}
-              </p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <EmptyHint icon={Star}>No reviews yet — rate it after your first session.</EmptyHint>
       )}
     </div>
   );

@@ -1,0 +1,86 @@
+import type { EditionDraft } from "@/components/admin/EditionEditorForm";
+import type { Edition } from "@/lib/editionTypes";
+
+/**
+ * Draft shapes for the admin edition form.
+ *
+ * Kept out of the form component so both the create and edit pages (server
+ * components) can build a draft without importing the client bundle's
+ * internals, and so the empty shape lives next to the conversion from a stored
+ * Edition rather than being duplicated.
+ */
+
+export function emptyEditionDraft(gameSlug: string): EditionDraft {
+  return {
+    gameSlug,
+    slug: "",
+    name: "",
+    shortDescription: "",
+    description: "",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    sortOrder: 0,
+    isDefault: false,
+    branding: { logo: "", heroImage: "", screenshots: [], videos: [] },
+    links: { website: "", discord: "", wiki: "", github: "", forum: "" },
+    installMethod: "manual",
+    installConfig: {},
+    requirements: { min: "", recommended: "", notes: "" },
+    features: [],
+    tags: [],
+    aliases: [],
+    serverName: "",
+    languages: [],
+    version: "",
+    verified: false,
+    verificationLevel: "untested",
+    verificationNote: "",
+  };
+}
+
+/** A stored edition as the form's mutable draft. */
+export function editionToDraft(edition: Edition): EditionDraft {
+  return {
+    id: edition.id,
+    gameSlug: edition.gameSlug,
+    slug: edition.slug,
+    name: edition.name,
+    shortDescription: edition.shortDescription,
+    description: edition.description,
+    type: edition.type,
+    status: edition.status,
+    visibility: edition.visibility,
+    sortOrder: edition.sortOrder,
+    isDefault: edition.isDefault,
+    branding: {
+      logo: edition.branding.logo ?? "",
+      heroImage: edition.branding.heroImage ?? "",
+      screenshots: edition.branding.screenshots ?? [],
+      videos: edition.branding.videos ?? [],
+    },
+    links: {
+      website: edition.links.website ?? "",
+      discord: edition.links.discord ?? "",
+      wiki: edition.links.wiki ?? "",
+      github: edition.links.github ?? "",
+      forum: edition.links.forum ?? "",
+    },
+    installMethod: edition.installMethod,
+    installConfig: edition.installConfig ?? {},
+    requirements: {
+      min: edition.requirements?.min ?? "",
+      recommended: edition.requirements?.recommended ?? "",
+      notes: edition.requirements?.notes ?? "",
+    },
+    features: edition.features,
+    tags: edition.tags,
+    aliases: edition.aliases,
+    serverName: edition.serverName ?? "",
+    languages: edition.languages,
+    version: edition.version ?? "",
+    verified: edition.verified,
+    verificationLevel: edition.verificationLevel,
+    verificationNote: edition.verificationNote ?? "",
+  };
+}

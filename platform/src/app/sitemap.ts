@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listGames, collections } from "@/lib/catalog";
+import { listAllPublicEditions } from "@/lib/editions";
 import { listDevelopers } from "@/lib/developers";
 import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
@@ -14,10 +15,11 @@ import { SITE_URL } from "@/lib/site";
  * no standalone value that would compete with the game page itself.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [games, mods, weekly] = await Promise.all([
+  const [games, mods, weekly, editions] = await Promise.all([
     listGames(),
     listMods(),
     listWeeklyIssues(),
+    listAllPublicEditions(),
   ]);
   const now = new Date();
 
@@ -53,9 +55,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]);
 
+  // Only real editions are indexed. A game whose sole edition is the generated
+  // Official one has no separate page worth listing — it would duplicate the
+  // game page it was derived from. Unlisted and hidden editions are excluded
+  // upstream by listAllPublicEditions().
+  const knownGameSlugs = new Set(games.map((g) => g.slug));
+  const editionRoutes: MetadataRoute.Sitemap = editions
+    .filter((e) => knownGameSlugs.has(e.gameSlug))
+    .map((e) => ({
+      url: `${SITE_URL}/games/${e.gameSlug}/editions/${e.slug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+      lastModified: e.updatedAt ? new Date(e.updatedAt) : now,
+    }));
+
   return [
     ...staticRoutes,
     ...gameRoutes,
+    ...editionRoutes,
     ...weekly.map((i) => ({
       url: `${SITE_URL}/weekly/${i.slug}`,
       changeFrequency: "yearly" as const,
