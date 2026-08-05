@@ -73,7 +73,7 @@ export function FriendsSidebar() {
             {incomingRequests.map((req) => (
               <div key={req.id} className="flex items-center justify-between rounded-lg bg-secondary/30 p-2">
                 <div className="flex items-center gap-2 truncate">
-                  <Avatar name={req.user.username} src={req.user.image ?? undefined} size="sm" />
+                  <Avatar name={req.user.username} hue={265} size="sm" />
                   <span className="truncate text-sm font-semibold">{req.user.username}</span>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -94,7 +94,7 @@ export function FriendsSidebar() {
           {playingFriends.map((f) => (
             <div key={f.id} className="group flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary/50">
               <div className="relative">
-                <Avatar name={f.username} src={f.image ?? undefined} size="sm" />
+                <Avatar name={f.username} hue={265} size="sm" />
                 <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-card">
                   <span className="size-2.5 rounded-full bg-primary" />
                 </span>
@@ -118,7 +118,7 @@ export function FriendsSidebar() {
           {onlineFriends.map((f) => (
             <div key={f.id} className="group flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-secondary/50">
               <div className="relative">
-                <Avatar name={f.username} src={f.image ?? undefined} size="sm" />
+                <Avatar name={f.username} hue={265} size="sm" />
                 <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-card">
                   <span className="size-2.5 rounded-full bg-green-500" />
                 </span>
@@ -141,7 +141,7 @@ export function FriendsSidebar() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Offline - {offlineFriends.length}</h3>
           {offlineFriends.map((f) => (
             <div key={f.id} className="group flex items-center gap-3 rounded-lg p-2">
-              <Avatar name={f.username} src={f.image ?? undefined} size="sm" />
+              <Avatar name={f.username} hue={265} size="sm" />
               <div className="flex-1 truncate">
                 <p className="truncate text-sm font-bold">{f.username}</p>
                 <p className="truncate text-xs text-muted-foreground">Offline</p>

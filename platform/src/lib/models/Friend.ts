@@ -20,11 +20,9 @@ const FriendSchema = new Schema(
 // However, MongoDB unique indexes are directed. To handle this, we can enforce a rule where
 // user1 < user2 or we can just create a compound unique index if we ensure order.
 // Let's add a pre-save hook to ensure requesterId and recipientId are not the same
-FriendSchema.pre("validate", function (next) {
+FriendSchema.pre("validate", function () {
   if (this.requesterId && this.recipientId && this.requesterId.toString() === this.recipientId.toString()) {
-    next(new Error("Cannot create a friendship with yourself"));
-  } else {
-    next();
+    throw new Error("Cannot create a friendship with yourself");
   }
 });
 
