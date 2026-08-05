@@ -33,7 +33,7 @@ export default async function AdminModsPage() {
               <th className="px-4 py-3 font-semibold">Base game</th>
               <th className="px-4 py-3 font-semibold">Install</th>
               <th className="px-4 py-3 font-semibold">Version</th>
-              <th className="px-4 py-3 font-semibold">Published</th>
+              <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold" />
             </tr>
           </thead>
@@ -67,8 +67,16 @@ export default async function AdminModsPage() {
                     ) : null}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className={m.published ? "font-semibold text-primary" : "text-muted-foreground"}>
-                      {m.published ? "Yes" : "Draft"}
+                    <span
+                      className={
+                        m.status === "published"
+                          ? "font-semibold text-primary"
+                          : m.status === "testing"
+                            ? "font-semibold text-amber-600 dark:text-amber-300"
+                            : "text-muted-foreground"
+                      }
+                    >
+                      {m.status === "published" ? "Published" : m.status === "testing" ? "Testing" : "Draft"}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-right">

@@ -26,6 +26,7 @@ import {
 import type { LauncherInstallKind } from "@/lib/launcherInstall";
 import { editorialReadiness, ensureDerivedGameFields } from "@/lib/enrich";
 import type { QualityBar } from "@/lib/data/types";
+import { CATALOG_STATUSES, type CatalogStatus, normalizeStatus } from "@/lib/catalogStatus";
 import {
   DerivedContentEditor,
   EvidencePanel,
@@ -97,6 +98,7 @@ export function GameEditorForm({
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [forcePublishNext, setForcePublishNext] = useState(false);
   const [captureAvailable, setCaptureAvailable] = useState(false);
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
   const [launcherDiscoverNote, setLauncherDiscoverNote] = useState("");
@@ -351,23 +353,31 @@ export function GameEditorForm({
     }
   }
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(e?: React.FormEvent, opts?: { forcePublish?: boolean; status?: CatalogStatus }) {
+    e?.preventDefault();
     setBusy(true);
     setError("");
+    const force = Boolean(opts?.forcePublish || forcePublishNext);
+    const status = opts?.status ?? normalizeStatus(form);
     const payload: GamePayload = {
       ...form,
+      status,
+      published: status === "published",
       githubRepo: form.githubRepo || null,
       coverImage: form.coverImage || null,
       art: form.art ?? defaultArtFor(form.genres, form.slug),
     };
+    if (status !== normalizeStatus(form)) {
+      setForm((prev) => ({ ...prev, status, published: status === "published" }));
+    }
     try {
       const res = await fetch(mode === "create" ? "/api/admin/games" : `/api/admin/games/${initial.slug}`, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(force ? { ...payload, forcePublish: true } : payload),
       });
       const data = await res.json().catch(() => null);
+      setForcePublishNext(false);
       if (!res.ok) {
         setError(data?.error ?? "Save failed");
         setBusy(false);
@@ -376,9 +386,25 @@ export function GameEditorForm({
       router.push("/admin/games");
       router.refresh();
     } catch {
+      setForcePublishNext(false);
       setError("Couldn't reach the server.");
       setBusy(false);
     }
+  }
+
+  function forcePublish() {
+    const missing = readiness.missing.length
+      ? readiness.missing.join(", ")
+      : "editorial readiness fields";
+    if (
+      !confirm(
+        `Force publish anyway?\n\nStill missing: ${missing}\n\nThis skips the editorial quality gate for this save.`
+      )
+    ) {
+      return;
+    }
+    setForcePublishNext(true);
+    void save(undefined, { forcePublish: true, status: "published" });
   }
 
   async function remove() {
@@ -1419,33 +1445,62 @@ export function GameEditorForm({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-4 text-sm">
-          {/* Publishing is gated on editorial completeness — the same check runs
-              server-side, so disabling here is a courtesy rather than the guard. */}
-          <label
-            className={`flex items-center gap-2 font-semibold ${
-              !readiness.ready && !form.published ? "opacity-50" : ""
-            }`}
-            title={
-              readiness.ready
-                ? undefined
-                : `Still needs: ${readiness.missing.join(", ")}`
-            }
-          >
-            <input
-              type="checkbox"
-              checked={Boolean(form.published)}
-              disabled={!readiness.ready && !form.published}
-              onChange={(e) => patch("published", e.target.checked)}
-            />
-            Published
-            {!readiness.ready && !form.published && (
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <fieldset className="flex flex-wrap items-center gap-3">
+            <legend className="sr-only">Catalog status</legend>
+            <span className="font-semibold">Status</span>
+            {CATALOG_STATUSES.map((value) => {
+              const current = normalizeStatus(form);
+              const publishLocked = value === "published" && !readiness.ready && current !== "published";
+              return (
+                <label
+                  key={value}
+                  className={`flex items-center gap-1.5 font-semibold capitalize ${
+                    publishLocked ? "opacity-50" : ""
+                  }`}
+                  title={
+                    publishLocked
+                      ? `Still needs: ${readiness.missing.join(", ")}`
+                      : value === "testing"
+                        ? "Visible only to admins on site and launcher"
+                        : undefined
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="catalog-status"
+                    checked={current === value}
+                    disabled={publishLocked}
+                    onChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        status: value,
+                        published: value === "published",
+                      }))
+                    }
+                  />
+                  {value}
+                </label>
+              );
+            })}
+            {!readiness.ready && normalizeStatus(form) !== "published" && (
               <span className="text-[11px] font-normal text-muted-foreground">
                 ({readiness.missing.length} field
-                {readiness.missing.length === 1 ? "" : "s"} missing)
+                {readiness.missing.length === 1 ? "" : "s"} missing for Published)
               </span>
             )}
-          </label>
+          </fieldset>
+          {!readiness.ready && normalizeStatus(form) !== "published" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={forcePublish}
+              className="rounded-full border border-amber-500/40 px-3 py-1 text-xs font-bold text-amber-700 disabled:opacity-60 dark:text-amber-300"
+              title={`Still needs: ${readiness.missing.join(", ")}`}
+            >
+              Force publish
+            </button>
+          )}
 
           {(
             [
@@ -1485,7 +1540,21 @@ export function GameEditorForm({
           </div>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <div className="space-y-2">
+            <p className="text-sm text-destructive">{error}</p>
+            {!readiness.ready && normalizeStatus(form) !== "published" && /publish|missing/i.test(error) && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={forcePublish}
+                className="rounded-full border border-amber-500/40 px-3 py-1.5 text-xs font-bold text-amber-700 disabled:opacity-60 dark:text-amber-300"
+              >
+                Force publish anyway
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <button

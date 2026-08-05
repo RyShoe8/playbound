@@ -54,6 +54,12 @@ const CatalogModSchema = new Schema(
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },
     published: { type: Boolean, default: true, index: true },
+    status: {
+      type: String,
+      enum: ["draft", "testing", "published"],
+      default: "published",
+      index: true,
+    },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
     ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
 

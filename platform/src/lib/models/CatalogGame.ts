@@ -148,6 +148,12 @@ const CatalogGameSchema = new Schema(
     notFor: { type: [String], default: [] },
     comparableTo: { type: [String], default: [] },
     published: { type: Boolean, default: true, index: true },
+    status: {
+      type: String,
+      enum: ["draft", "testing", "published"],
+      default: "published",
+      index: true,
+    },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
     ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },

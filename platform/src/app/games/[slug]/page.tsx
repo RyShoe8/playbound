@@ -48,6 +48,7 @@ import {
 } from "@/components/JsonLd";
 import { TelemetryOnce } from "@/components/TelemetryOnce";
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
 import { issueForGame, type WeeklyIssue } from "@/lib/weekly";
@@ -81,8 +82,10 @@ const PARAM_TABS = tabs;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = await getGame(slug);
+  const includeTesting = await viewerIsAdmin();
+  const game = await getGame(slug, { includeTesting });
   if (!game) return privateMetadata("Game Not Found");
+  if (game.status === "testing") return privateMetadata(gameTitle(game));
 
   // The canonical collapses all nine ?tab= variants into one indexable URL.
   return pageMetadata({
@@ -119,7 +122,8 @@ export default async function GamePage({
   const { slug } = await params;
   const sp = await searchParams;
   const { tab: rawTab } = sp;
-  const game = await getGame(slug);
+  const includeTesting = await viewerIsAdmin();
+  const game = await getGame(slug, { includeTesting });
   if (!game) {
     // The game may have been renamed; send its old URL to the current one so
     // indexed links and shared pages keep working instead of 404ing.
@@ -136,7 +140,7 @@ export default async function GamePage({
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const session = await getServerSession(authOptions);
   const developer = await getDeveloper(game.developerSlug);
-  const allGames = await listGames();
+  const allGames = await listGames({ includeTesting });
   const similar = allGames
     .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
     .slice(0, 20);
@@ -209,6 +213,12 @@ export default async function GamePage({
           ])
         )}
       />
+
+      {game.status === "testing" && (
+        <div className="border-b border-amber-500/40 bg-amber-400/10 px-4 py-2 text-center text-sm font-semibold text-amber-700 dark:text-amber-300 sm:px-6 lg:px-8">
+          Testing — admin only
+        </div>
+      )}
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-border">
@@ -634,7 +644,8 @@ function OverviewTab({
 }
 
 async function ModsTab({ game }: { game: Game }) {
-  const mods = await modsForGame(game.slug);
+  const includeTesting = await viewerIsAdmin();
+  const mods = await modsForGame(game.slug, { includeTesting });
 
   let installedModSlugs = new Set<string>();
   try {

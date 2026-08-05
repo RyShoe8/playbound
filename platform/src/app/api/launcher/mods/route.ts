@@ -3,14 +3,19 @@ import { absoluteMediaUrl, sizeLabelFromMB } from "@/lib/launcherInstall";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { hasServerProvider, isKnownServerGame } from "@/lib/servers/registry";
+import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
 export async function GET(req: Request) {
   try {
+    const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
     const baseGameSlug = new URL(req.url).searchParams.get("baseGameSlug") || undefined;
     const [mods, games] = await Promise.all([
-      listMods(baseGameSlug ? { baseGameSlug } : undefined),
-      listGames(),
+      listMods({
+        ...(baseGameSlug ? { baseGameSlug } : {}),
+        includeTesting,
+      }),
+      listGames({ includeTesting }),
     ]);
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
@@ -26,6 +31,8 @@ export async function GET(req: Request) {
         downloadKind: m.downloadKind,
         approxSize: sizeLabelFromMB(m.sizeMB) || null,
         art: [m.art.from, m.art.to] as [string, string],
+        status: m.status || "published",
+        testing: m.status === "testing",
         baseHasServers:
           hasServerProvider(m.baseGameSlug) || isKnownServerGame(m.baseGameSlug),
         baseSupported: hasServerProvider(m.baseGameSlug),
@@ -34,7 +41,13 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       { mods: entries },
-      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
+      {
+        headers: {
+          "Cache-Control": includeTesting
+            ? "private, no-store"
+            : "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
     );
   } catch (err) {
     console.error("launcher mods error:", err);

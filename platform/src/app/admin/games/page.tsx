@@ -36,7 +36,7 @@ export default async function AdminGamesPage() {
               <th className="px-4 py-3 font-semibold">Slug</th>
               <th className="px-4 py-3 font-semibold">Installs</th>
               <th className="px-4 py-3 font-semibold">Version</th>
-              <th className="px-4 py-3 font-semibold">Published</th>
+              <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Updated</th>
               <th className="px-4 py-3 font-semibold" />
             </tr>
@@ -58,8 +58,16 @@ export default async function AdminGamesPage() {
                   {g.launcherInstall?.detectedVersion || g.launcherInstall?.versionLabel || "—"}
                 </td>
                 <td className="px-4 py-2.5">
-                  <span className={g.published ? "text-primary font-semibold" : "text-muted-foreground"}>
-                    {g.published ? "Yes" : "Draft"}
+                  <span
+                    className={
+                      g.status === "published"
+                        ? "font-semibold text-primary"
+                        : g.status === "testing"
+                          ? "font-semibold text-amber-600 dark:text-amber-300"
+                          : "text-muted-foreground"
+                    }
+                  >
+                    {g.status === "published" ? "Published" : g.status === "testing" ? "Testing" : "Draft"}
                   </span>
                 </td>
                 <td className="px-4 py-2.5 text-muted-foreground">

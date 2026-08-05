@@ -5,6 +5,7 @@ import { listAllGames } from "@/lib/catalog";
 import { getModAdmin } from "@/lib/mods";
 import type { ModPayload } from "@/lib/modPayload";
 import { ModEditorForm } from "@/components/admin/ModEditorForm";
+import { normalizeStatus } from "@/lib/catalogStatus";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -39,6 +40,7 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
     coverImage: doc.coverImage ? String(doc.coverImage) : null,
     screenshots: (doc.screenshots as string[]) ?? [],
     published: Boolean(doc.published),
+    status: normalizeStatus(doc as { status?: unknown; published?: unknown }),
     managedBy: (doc.managedBy as ModPayload["managedBy"]) || "admin",
     ownerUserId: doc.ownerUserId ? String(doc.ownerUserId) : null,
     // Editorial depth — installSteps and faq are auto-derived on save, the

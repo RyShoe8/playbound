@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getGame } from "@/lib/catalog";
 import { absoluteMediaUrl, sizeLabelFromMB } from "@/lib/launcherInstall";
 import { listMods } from "@/lib/mods";
+import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
 export async function GET(
   req: Request,
@@ -9,14 +10,15 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const game = await getGame(slug);
+    const game = await getGame(slug, { includeTesting });
     if (!game) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const baseCover = absoluteMediaUrl(game.coverImage, origin);
-    const mods = (await listMods({ baseGameSlug: slug })).map((m) => ({
+    const mods = (await listMods({ baseGameSlug: slug, includeTesting })).map((m) => ({
       slug: m.slug,
       title: m.title,
       tagline: m.tagline,
@@ -25,6 +27,8 @@ export async function GET(
       approxSize: sizeLabelFromMB(m.sizeMB) || null,
       art: [m.art.from, m.art.to] as [string, string],
       downloadKind: m.downloadKind,
+      status: m.status || "published",
+      testing: m.status === "testing",
     }));
 
     return NextResponse.json(
@@ -45,9 +49,17 @@ export async function GET(
         systemRequirements: game.systemRequirements || null,
         multiplayer: Boolean(game.launchMethods?.includes("server")),
         website: game.website || null,
+        status: game.status || "published",
+        testing: game.status === "testing",
         mods,
       },
-      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
+      {
+        headers: {
+          "Cache-Control": includeTesting
+            ? "private, no-store"
+            : "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
     );
   } catch (err) {
     console.error("launcher game detail error:", err);

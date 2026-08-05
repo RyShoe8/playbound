@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DOWNLOAD_KINDS, MANAGED_BY, slugifyTitle, type ModPayload } from "@/lib/modPayload";
 import { ensureDerivedModFields, modEditorialReadiness } from "@/lib/enrich";
+import { CATALOG_STATUSES, normalizeStatus } from "@/lib/catalogStatus";
 import {
   DerivedContentEditor,
   EvidencePanel,
@@ -98,11 +99,13 @@ export function ModEditorForm({
     e.preventDefault();
     setBusy(true);
     setError("");
+    const status = normalizeStatus(form);
+    const payload = { ...form, status, published: status === "published" };
     try {
       const res = await fetch(mode === "create" ? "/api/admin/mods" : `/api/admin/mods/${initial.slug}`, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -395,7 +398,7 @@ export function ModEditorForm({
         </div>
       </div>
 
-      {form.downloadKind === "external" && form.published ? (
+      {form.downloadKind === "external" && normalizeStatus(form) === "published" ? (
         <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
           Published as an external link — prefer converting to github-zip or direct-zip when a package URL exists.
         </p>
@@ -483,27 +486,50 @@ export function ModEditorForm({
         />
       </div>
 
-      {/* Same gate as the server; disabling here is a courtesy, not the guard. */}
-      <label
-        className={`flex items-center gap-2 text-sm font-semibold ${
-          !readiness.ready && !form.published ? "opacity-50" : ""
-        }`}
-        title={readiness.ready ? undefined : `Still needs: ${readiness.missing.join(", ")}`}
-      >
-        <input
-          type="checkbox"
-          checked={form.published}
-          disabled={!readiness.ready && !form.published}
-          onChange={(e) => patch("published", e.target.checked)}
-        />
-        Published
-        {!readiness.ready && !form.published && (
+      <fieldset className="flex flex-wrap items-center gap-3 text-sm">
+        <legend className="sr-only">Catalog status</legend>
+        <span className="font-semibold">Status</span>
+        {CATALOG_STATUSES.map((value) => {
+          const current = normalizeStatus(form);
+          const publishLocked = value === "published" && !readiness.ready && current !== "published";
+          return (
+            <label
+              key={value}
+              className={`flex items-center gap-1.5 font-semibold capitalize ${
+                publishLocked ? "opacity-50" : ""
+              }`}
+              title={
+                publishLocked
+                  ? `Still needs: ${readiness.missing.join(", ")}`
+                  : value === "testing"
+                    ? "Visible only to admins on site and launcher"
+                    : undefined
+              }
+            >
+              <input
+                type="radio"
+                name="mod-catalog-status"
+                checked={current === value}
+                disabled={publishLocked}
+                onChange={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    status: value,
+                    published: value === "published",
+                  }))
+                }
+              />
+              {value}
+            </label>
+          );
+        })}
+        {!readiness.ready && normalizeStatus(form) !== "published" && (
           <span className="text-[11px] font-normal text-muted-foreground">
             ({readiness.missing.length} field
-            {readiness.missing.length === 1 ? "" : "s"} missing)
+            {readiness.missing.length === 1 ? "" : "s"} missing for Published)
           </span>
         )}
-      </label>
+      </fieldset>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

@@ -7,6 +7,7 @@ import { toPayloadLauncherInstall, toPayloadCommunityLinks } from "@/lib/gamePay
 import { GameEditorForm } from "@/components/admin/GameEditorForm";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
+import { normalizeStatus } from "@/lib/catalogStatus";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -19,6 +20,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
   if (!game) notFound();
 
   let published = true;
+  let status: GamePayload["status"] = "published";
   let submissionId: string | null = null;
   let managedBy: "admin" | "developer" = "admin";
   let ownerUserId: string | null = null;
@@ -27,7 +29,8 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     await dbConnect();
     const doc = await CatalogGame.findOne({ slug }).lean();
     if (doc) {
-      published = Boolean(doc.published);
+      status = normalizeStatus(doc as { status?: unknown; published?: unknown });
+      published = status === "published";
       submissionId = doc.submissionId ? String(doc.submissionId) : null;
       managedBy = (doc.managedBy as "admin" | "developer") || "admin";
       ownerUserId = doc.ownerUserId ? String(doc.ownerUserId) : null;
@@ -60,11 +63,10 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     communityLinks: toPayloadCommunityLinks(game.communityLinks),
     developerName: null,
     published,
+    status,
     submissionId,
     managedBy,
     ownerUserId,
-    // Editorial depth. Present on the payload so the form can edit it and the
-    // publish gate can evaluate it.
     qualityBar: game.qualityBar ?? null,
     longDescription: game.longDescription,
     whyWePickedIt: game.whyWePickedIt,
@@ -80,7 +82,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Edit {game.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Changes go live on the public site when Published is on (no code deploy needed for catalog text).
+          Published goes live for everyone; Testing is admin-only on the site and launcher.
         </p>
       </div>
       <GameEditorForm

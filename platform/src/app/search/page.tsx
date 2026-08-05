@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { SearchGameResults } from "@/components/SearchGameResults";
 import { SearchFilters } from "@/components/SearchFilters";
 import { Avatar, EmptyHint, SectionHeader } from "@/components/ui/bits";
@@ -46,6 +47,7 @@ export default async function SearchPage({
   const hasFilters = genres.length > 0 || tags.length > 0 || platforms.length > 0 || features.length > 0 || !!maxSize;
   const hasSearch = !!q;
   const hasAny = hasSearch || hasFilters;
+  const includeTesting = await viewerIsAdmin();
 
   // Run structured game filter
   const filter: GameFilter = {
@@ -59,10 +61,10 @@ export default async function SearchPage({
     maxSizeMB: maxSize,
   };
 
-  const games = hasAny ? await searchGames(filter) : [];
+  const games = hasAny ? await searchGames(filter, { includeTesting }) : [];
 
   // Also search developers and collections when there's a text query
-  const otherResults = hasSearch ? await searchAll(q) : null;
+  const otherResults = hasSearch ? await searchAll(q, { includeTesting }) : null;
   const developerResults = otherResults?.developers ?? [];
   const collectionResults = otherResults?.collections ?? [];
 

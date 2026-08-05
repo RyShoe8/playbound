@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listGames } from "@/lib/catalog";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { pageMetadata } from "@/lib/seo";
 
@@ -11,7 +12,8 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function DiscoverPage() {
-  const games = await listGames();
+  const includeTesting = await viewerIsAdmin();
+  const games = await listGames({ includeTesting });
 
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">

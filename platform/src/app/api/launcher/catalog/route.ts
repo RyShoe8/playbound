@@ -8,11 +8,13 @@ import {
   absoluteMediaUrl,
   type LauncherInstall,
 } from "@/lib/launcherInstall";
+import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
 export async function GET(req: Request) {
   try {
+    const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const games = await listGames();
+    const games = await listGames({ includeTesting });
     const entries = games
       .map((g) => {
         // PC-installable games: full launcher recipe
@@ -22,7 +24,7 @@ export async function GET(req: Request) {
             launcherInstallBySlug[g.slug] ||
             null;
           if (!recipe?.enabled || !recipe.kind) return null;
-          return toLauncherCatalogEntry({
+          const entry = toLauncherCatalogEntry({
             slug: g.slug,
             title: g.title,
             tagline: g.tagline,
@@ -35,6 +37,9 @@ export async function GET(req: Request) {
             launchMethods: g.launchMethods,
             origin,
           });
+          return entry
+            ? { ...entry, status: g.status || "published", testing: g.status === "testing" }
+            : null;
         }
 
         // Browser / non-installable games: external entry → opens website
@@ -50,6 +55,8 @@ export async function GET(req: Request) {
           genres: Array.isArray(g.genres) ? g.genres : [],
           tags: Array.isArray(g.tags) ? g.tags : [],
           multiplayer: Boolean(g.launchMethods?.includes("server")),
+          status: g.status || "published",
+          testing: g.status === "testing",
           ...(cover ? { coverImage: cover } : {}),
         };
       })
@@ -57,11 +64,16 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       { games: entries },
-      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } }
+      {
+        headers: {
+          "Cache-Control": includeTesting
+            ? "private, no-store"
+            : "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
     );
   } catch (err) {
     console.error("launcher catalog error:", err);
     return NextResponse.json({ error: "Failed to load catalog" }, { status: 500 });
   }
 }
-

@@ -310,6 +310,8 @@ async function connectWithToken(token) {
     email: check.email,
     username: check.username,
   });
+  // Admins get testing titles once the bearer is present.
+  void refreshRemoteCatalog();
   return { connected: true, synced, skipped, error, email: check.email, username: check.username };
 }
 
@@ -650,10 +652,23 @@ function resolveMediaUrl(pathOrUrl) {
   return s.startsWith("/") ? `${base}${s}` : `${base}/${s}`;
 }
 
+function launcherApiHeaders(extra = {}) {
+  const settings = loadSettings();
+  const headers = {
+    "user-agent": "playbound-launcher",
+    accept: "application/json",
+    ...extra,
+  };
+  if (settings.launcherToken) {
+    headers.authorization = `Bearer ${settings.launcherToken}`;
+  }
+  return headers;
+}
+
 async function refreshRemoteCatalog() {
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders(),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -676,7 +691,7 @@ async function ensureCatalogEntry(slug) {
   if (existing) return existing;
   try {
     const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/install`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders(),
     });
     if (!res.ok) return null;
     const entry = await res.json();
@@ -2483,7 +2498,7 @@ ipcMain.handle("get-servers", async (_event, slug) => {
 ipcMain.handle("get-server-index", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/servers`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders(),
     });
     if (!res.ok) return { games: [], providers: [] };
     return await res.json();
@@ -2494,7 +2509,7 @@ ipcMain.handle("get-server-index", async () => {
 ipcMain.handle("get-mods-catalog", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/mods`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders(),
     });
     if (!res.ok) return { mods: [] };
     return await res.json();
@@ -2517,7 +2532,7 @@ ipcMain.handle("get-all-servers", async () => {
   let providers = [];
   try {
     const idxRes = await fetch(`${getApiBase()}/api/launcher/servers`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders(),
     });
     if (idxRes.ok) {
       const idx = await idxRes.json();
@@ -2785,7 +2800,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   let rich = null;
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders(),
     });
     if (res.ok) rich = await res.json();
   } catch {

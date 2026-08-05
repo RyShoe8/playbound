@@ -82,6 +82,11 @@ export interface Game {
   releaseYear: number;
   /** Approximate download size in MB */
   sizeMB: number;
+  /**
+   * Catalog visibility. Omitted/undefined on seed rows treated as published.
+   * `testing` is only returned when the caller loaded with includeTesting.
+   */
+  status?: "draft" | "testing" | "published";
   platforms: string[];
   features: string[];
   launchMethods: LaunchMethod[];

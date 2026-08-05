@@ -4,19 +4,24 @@ import { ArrowLeft, Download, MonitorPlay, Server } from "lucide-react";
 import { getGame } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
 import { isBrowserGame } from "@/lib/gameLaunch";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { GameArt } from "@/components/GameArt";
 import { PlayPageActions, PlayPageHeading } from "@/components/PlayPageActions";
 import { Badge } from "@/components/ui/bits";
+import { privateMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = await getGame(slug);
+  const includeTesting = await viewerIsAdmin();
+  const game = await getGame(slug, { includeTesting });
+  if (game?.status === "testing") return privateMetadata(`Play ${game.title}`);
   return { title: game ? `Play ${game.title}` : "Play" };
 }
 
 export default async function PlayPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = await getGame(slug);
+  const includeTesting = await viewerIsAdmin();
+  const game = await getGame(slug, { includeTesting });
   if (!game) notFound();
 
   const developer = await getDeveloper(game.developerSlug);

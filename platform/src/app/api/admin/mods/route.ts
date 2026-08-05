@@ -5,6 +5,7 @@ import CatalogMod from "@/lib/models/CatalogMod";
 import { developersBySlug } from "@/lib/data";
 import { getGame } from "@/lib/catalog";
 import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
+import { withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { listAllMods } from "@/lib/mods";
 import {
@@ -31,9 +32,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unknown base game slug" }, { status: 400 });
     }
 
-    const body = ensureDerivedModFields(parsed, baseGame.title);
+    const body = withSyncedPublished(ensureDerivedModFields(parsed, baseGame.title));
 
-    if (body.published) {
+    if (body.status === "published") {
       const readiness = modEditorialReadiness(body);
       if (!readiness.ready) {
         return NextResponse.json(

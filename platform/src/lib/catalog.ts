@@ -9,6 +9,7 @@ import { collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
 import { listDevelopers } from "@/lib/developers";
 import type { Collection, Developer } from "@/lib/data/types";
+import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 
 export type { Game } from "@/lib/data/types";
 // Developers are deliberately no longer re-exported here. They are database
@@ -30,6 +31,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
 }
 
 function toGame(doc: LeanGame): Game {
+  const status = normalizeStatus(doc);
   const base: Game = {
     slug: String(doc.slug),
     title: String(doc.title),
@@ -41,6 +43,7 @@ function toGame(doc: LeanGame): Game {
     license: String(doc.license),
     releaseYear: Number(doc.releaseYear),
     sizeMB: Number(doc.sizeMB),
+    status,
     platforms: (doc.platforms as string[]) ?? [],
     features: (doc.features as string[]) ?? [],
     launchMethods: (doc.launchMethods as LaunchMethod[]) ?? [],
@@ -172,53 +175,80 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
  * thing for free.
  */
 const loadPublishedGames = cache(async (): Promise<Game[]> => {
-  const fromDb = await fromMongo({ published: true });
+  const fromDb = await fromMongo(mongoVisibleFilter({ includeTesting: false }));
   if (fromDb.length > 0) return fromDb;
   return seedGames.map(seedGameWithInstall);
 });
 
-/** Published games for the public site (falls back to seed catalog if DB empty). */
-export async function listGames(): Promise<Game[]> {
+async function loadPublishedAndTestingGames(): Promise<Game[]> {
+  const fromDb = await fromMongo(mongoVisibleFilter({ includeTesting: true }));
+  if (fromDb.length > 0) return fromDb;
+  return seedGames.map(seedGameWithInstall);
+}
+
+/** Visible catalog. Pass `includeTesting` for admin viewers (published + testing). */
+export async function listGames(opts?: { includeTesting?: boolean }): Promise<Game[]> {
+  if (opts?.includeTesting) return loadPublishedAndTestingGames();
   return loadPublishedGames();
 }
 
 /** All games including drafts (admin). */
 export async function listAllGames(): Promise<
-  (Game & { published: boolean; updatedAt?: string; installCount?: number })[]
+  (Game & { published: boolean; status: CatalogStatus; updatedAt?: string; installCount?: number })[]
 > {
   try {
     await dbConnect();
     const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
     if (docs.length === 0) {
-      return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true, installCount: 0 }));
+      return seedGames.map((g) => ({
+        ...seedGameWithInstall(g),
+        published: true,
+        status: "published" as const,
+        installCount: 0,
+      }));
     }
-    return docs.map((d) => ({
-      ...toGame(d as LeanGame),
-      published: Boolean((d as LeanGame).published),
-      updatedAt: (d as { updatedAt?: Date }).updatedAt?.toISOString(),
-      installCount: Number((d as { installCount?: number }).installCount) || 0,
-    }));
+    return docs.map((d) => {
+      const lean = d as LeanGame;
+      const status = normalizeStatus(lean);
+      return {
+        ...toGame(lean),
+        published: status === "published",
+        status,
+        updatedAt: (d as { updatedAt?: Date }).updatedAt?.toISOString(),
+        installCount: Number((d as { installCount?: number }).installCount) || 0,
+      };
+    });
   } catch {
-    return seedGames.map((g) => ({ ...seedGameWithInstall(g), published: true, installCount: 0 }));
+    return seedGames.map((g) => ({
+      ...seedGameWithInstall(g),
+      published: true,
+      status: "published" as const,
+      installCount: 0,
+    }));
   }
 }
 
 export async function getGame(
   slug: string,
-  opts?: { includeUnpublished?: boolean }
+  opts?: { includeUnpublished?: boolean; includeTesting?: boolean }
 ): Promise<Game | undefined> {
   // Published lookups reuse the per-request catalog, so a page that already
   // listed games does not pay for a second query to resolve one of them.
   if (!opts?.includeUnpublished) {
-    const found = (await loadPublishedGames()).find((g) => g.slug === slug);
+    const catalog = opts?.includeTesting
+      ? await loadPublishedAndTestingGames()
+      : await loadPublishedGames();
+    const found = catalog.find((g) => g.slug === slug);
     if (found) return found;
   }
 
   try {
     await dbConnect();
-    const filter: Record<string, unknown> = { slug };
-    if (!opts?.includeUnpublished) filter.published = true;
-    const doc = await CatalogGame.findOne(filter).lean();
+    const query: Record<string, unknown> = opts?.includeUnpublished
+      ? { slug }
+      : { $and: [{ slug }, mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) })] };
+
+    const doc = await CatalogGame.findOne(query).lean();
     if (doc) return toGame(doc as LeanGame);
   } catch (err) {
     console.error("[catalog] getGame failed:", err);
@@ -334,7 +364,10 @@ export interface SearchResults {
   collections: Collection[];
 }
 
-export async function searchAll(query: string): Promise<SearchResults> {
+export async function searchAll(
+  query: string,
+  opts?: { includeTesting?: boolean }
+): Promise<SearchResults> {
   const q = query.trim().toLowerCase();
   const has = (...fields: (string | string[])[]) =>
     fields.some((f) =>
@@ -342,7 +375,7 @@ export async function searchAll(query: string): Promise<SearchResults> {
     );
   if (!q) return { games: [], developers: [], collections: [] };
   const [games, allCollections, allDevelopers] = await Promise.all([
-    listGames(),
+    listGames({ includeTesting: opts?.includeTesting }),
     listCollections(),
     listDevelopers(),
   ]);
@@ -364,8 +397,11 @@ export interface GameFilter {
   maxSizeMB?: number;
 }
 
-export async function searchGames(filter: GameFilter): Promise<Game[]> {
-  let games = await listGames();
+export async function searchGames(
+  filter: GameFilter,
+  opts?: { includeTesting?: boolean }
+): Promise<Game[]> {
+  let games = await listGames({ includeTesting: opts?.includeTesting });
 
   if (filter.q) {
     const q = filter.q.trim().toLowerCase();
