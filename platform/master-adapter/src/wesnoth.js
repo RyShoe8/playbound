@@ -57,7 +57,9 @@ function escapeWml(text) {
  */
 function wmlTag(tag, attrs = {}) {
   let body = `[${tag}]\n`;
-  for (const [key, value] of Object.entries(attrs)) {
+  // wesnothd simple_wml requires lexicographical attribute order
+  for (const key of Object.keys(attrs).sort()) {
+    const value = attrs[key];
     if (value == null || value === "") continue;
     body += `${key}="${escapeWml(value)}"\n`;
   }
