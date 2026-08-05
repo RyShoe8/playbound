@@ -97,8 +97,20 @@ async function refreshGame(game, force = false) {
   if (!force && now - last < interval - 500) return;
 
   const source = gameSource(game);
+  const prev = cache.get(game.slug);
   try {
     const servers = await pollGame(game);
+    if (servers.length === 0 && Array.isArray(prev?.servers) && prev.servers.length > 0) {
+      cache.set(game.slug, {
+        servers: prev.servers,
+        updatedAt: prev.updatedAt || new Date().toISOString(),
+        error: "poll returned empty; keeping previous list",
+        source: prev.source || source,
+      });
+      lastPollAt.set(game.slug, Date.now());
+      console.warn(`[poll] ${game.slug}: empty poll — kept ${prev.servers.length} previous servers`);
+      return;
+    }
     cache.set(game.slug, {
       servers,
       updatedAt: new Date().toISOString(),
@@ -109,12 +121,11 @@ async function refreshGame(game, force = false) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[poll] ${game.slug} failed:`, message);
-    const prev = cache.get(game.slug);
     cache.set(game.slug, {
       servers: prev?.servers ?? [],
-      updatedAt: new Date().toISOString(),
+      updatedAt: prev?.servers?.length ? prev.updatedAt || new Date().toISOString() : new Date().toISOString(),
       error: message,
-      source,
+      source: prev?.servers?.length ? prev.source || source : source,
     });
     lastPollAt.set(game.slug, Date.now());
   }
