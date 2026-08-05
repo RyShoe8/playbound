@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { Gamepad2, Newspaper, Play, Star, Trophy, Wrench } from "lucide-react";
@@ -17,6 +18,7 @@ import {
   canonicalSlugFor,
 } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
+import { platformFromUserAgent, visiblePlatformsFor } from "@/lib/libraryPlatform";
 import { listPublicEditionsForGame } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import { EditionsSection } from "@/components/editions/EditionsSection";
@@ -174,10 +176,21 @@ export default async function GamePage({
   if (session?.user) {
     try {
       await dbConnect();
+      // Scoped to this device: a phone install must not show as "in library"
+      // on desktop, where the game is not actually installed.
+      const viewerPlatform = platformFromUserAgent((await headers()).get("user-agent"));
+      const visible = visiblePlatformsFor(viewerPlatform);
       const entry = await LibraryEntry.findOne({
         userId: session.user.id,
         gameSlug: game.slug,
         installed: true,
+        $or: [
+          { platform: { $in: visible } },
+          // Legacy entries have no platform and are desktop by definition.
+          ...(viewerPlatform === "desktop"
+            ? [{ platform: { $exists: false } }, { platform: null }]
+            : []),
+        ],
       }).lean();
       initiallyInLibrary = Boolean(entry);
     } catch {

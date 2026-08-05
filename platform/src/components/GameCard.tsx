@@ -8,6 +8,7 @@ import { GameArt } from "./GameArt";
 import { Badge } from "./ui/bits";
 import { cn } from "@/lib/utils";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
+import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
 import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -40,22 +41,15 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
     const os =
       typeof navigator !== "undefined" ? parseMobileOs(navigator.userAgent) : "other";
     const outbound = resolveMobileOutbound(game, os);
+    // Claims the game for this device's library on the way out, and opens a
+    // play session for browser games.
     return (
-      <TelemetryAnchor
-        href={outbound.href}
-        target="_blank"
-        rel="noreferrer"
+      <MobileOutboundCta
+        game={game}
+        outbound={outbound}
+        surface="mobile_cta"
         className={className}
-        event="official_download_clicked"
-        properties={{ gameSlug: game.slug, url: outbound.href, surface: "mobile_cta" }}
-      >
-        {outbound.label === "Play Free" ? (
-          <MonitorPlay className={iconClass} />
-        ) : (
-          <Download className={iconClass} />
-        )}
-        {outbound.label}
-      </TelemetryAnchor>
+      />
     );
   }
 

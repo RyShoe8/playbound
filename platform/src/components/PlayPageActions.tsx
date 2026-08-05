@@ -13,6 +13,7 @@ import {
 } from "@/lib/mobilePlay";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
+import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 
 export function PlayPageActions({
   game,
@@ -41,22 +42,16 @@ export function PlayPageActions({
 
     return (
       <>
-        <TelemetryAnchor
-          href={outbound.href}
-          target="_blank"
-          rel="noreferrer"
-          event="official_download_clicked"
-          properties={{ gameSlug: game.slug, url: outbound.href, surface: "play_page_mobile" }}
+        {/* Handles the click event, the play session and the library claim —
+            previously only the first two happened here. */}
+        <MobileOutboundCta
+          game={game}
+          outbound={outbound}
+          surface="play_page_mobile"
           className="mt-2 flex items-center gap-2 rounded-full bg-play px-6 py-2.5 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
-          onClick={() => outbound.label === "Play Free" && startSession(game.slug, game.title)}
         >
-          {outbound.label === "Play Free" ? (
-            <MonitorPlay className="size-4" />
-          ) : (
-            <Download className="size-4" />
-          )}
           {outbound.label === "Get It Free" ? `Get It Free on ${host}` : outbound.label}
-        </TelemetryAnchor>
+        </MobileOutboundCta>
         {outbound.href !== officialHref ? (
           <TelemetryAnchor
             href={officialHref}

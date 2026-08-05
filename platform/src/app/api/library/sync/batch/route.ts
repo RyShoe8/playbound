@@ -50,7 +50,8 @@ export async function POST(req: Request) {
         continue;
       }
       await LibraryEntry.findOneAndUpdate(
-        { userId: user._id, gameSlug: item.slug },
+        // Launcher sync is always the desktop copy — see the single-item route.
+        { userId: user._id, gameSlug: item.slug, platform: "desktop" },
         {
           $set: {
             installed: true,
@@ -61,6 +62,8 @@ export async function POST(req: Request) {
           $setOnInsert: {
             userId: user._id,
             gameSlug: item.slug,
+            platform: "desktop",
+            source: "launcher",
             saved: false,
             addedAt: now,
           },

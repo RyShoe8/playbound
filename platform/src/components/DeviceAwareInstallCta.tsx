@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+
 import type { Game } from "@/lib/data/types";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import {
@@ -9,7 +9,7 @@ import {
   shouldOfferLauncher,
 } from "@/lib/mobilePlay";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
-import { TelemetryAnchor } from "@/components/TelemetryAnchor";
+import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 
 /** Launcher on desktop; store/website on mobile — for Install tab + similar. */
 export function DeviceAwareInstallCta({
@@ -33,21 +33,14 @@ export function DeviceAwareInstallCta({
           Opens the official store or project site. The PlayBound desktop launcher is for computers.
         </p>
         <div className="mt-4">
-          <TelemetryAnchor
-            href={outbound.href}
-            target="_blank"
-            rel="noreferrer"
-            event="official_download_clicked"
-            properties={{
-              gameSlug: game.slug,
-              url: outbound.href,
-              surface: "install_tab_mobile",
-            }}
+          {/* Adds the game to this device's library on the way out — a store
+              install otherwise left no trace at all. */}
+          <MobileOutboundCta
+            game={game}
+            outbound={outbound}
+            surface="install_tab_mobile"
             className="inline-flex items-center gap-2 rounded-full bg-play px-5 py-2.5 text-sm font-bold text-play-foreground hover:brightness-110"
-          >
-            <ExternalLink className="size-4" />
-            {outbound.label}
-          </TelemetryAnchor>
+          />
         </div>
       </div>
     );
