@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useTelemetry } from "@/lib/telemetry";
 import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
-import { MobileFriendsPanel } from "@/components/friends/MobileFriendsPanel";
+import { MobileFriendsButton } from "@/components/friends/MobileFriendsButton";
 
 export function TopBar() {
   const { data: session } = useSession();
@@ -48,7 +48,7 @@ export function TopBar() {
           <GameCompatibilityToggle variant="topbar" className="lg:hidden" />
           {session?.user ? (
             <>
-              <MobileFriendsPanel />
+              <MobileFriendsButton />
               <Link href="/profile" title="Profile" className="rounded-full">
                 <Avatar name={session.user.username ?? "?"} hue={265} size="sm" />
               </Link>
