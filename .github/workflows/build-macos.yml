@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           
       - name: Install Platform Dependencies
         run: npm install
@@ -40,7 +40,7 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           
       - name: Upload to Vercel Blob
-        run: npx ts-node scripts/upload-launcher.ts --mac
+        run: npm run upload:launcher -- --mac
         working-directory: platform
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
