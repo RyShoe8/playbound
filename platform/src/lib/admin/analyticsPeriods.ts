@@ -2,6 +2,8 @@
  * Shared day / week / month windows for admin KPI dashboards.
  */
 
+import dbConnect from "@/lib/db";
+
 export type PeriodWindows = {
   now: Date;
   today: Date;
@@ -67,11 +69,18 @@ type Countable = {
 
 /**
  * Count documents with a `createdAt` field across today / 7d / 30d and prior windows.
+ *
+ * Ensures the database connection itself, rather than assuming the caller got
+ * there first. Every caller passes a Mongoose model, and these are routinely
+ * invoked inside a Promise.all where ordering is not guaranteed — with
+ * bufferCommands:false that raced the connection and failed on cold starts.
+ * dbConnect() is cached, so this costs nothing once connected.
  */
 export async function periodDocumentCounts(
   model: Countable,
   baseFilter: Record<string, unknown> = {}
 ): Promise<PeriodCounts> {
+  await dbConnect();
   const w = getPeriodWindows();
   const count = async (createdAt: Record<string, Date>) =>
     Number(await model.countDocuments({ ...baseFilter, createdAt }));
@@ -108,6 +117,9 @@ export async function periodTelemetryCounts(
 export async function periodDistinctUsers(
   distinctFn: (filter: Record<string, unknown>) => Promise<unknown[]>
 ): Promise<PeriodCounts> {
+  // Same cold-start race as periodDocumentCounts — the caller's distinctFn
+  // closes over a Mongoose model that needs a live connection.
+  await dbConnect();
   const w = getPeriodWindows();
   const run = async (createdAt: Record<string, Date>) => {
     const ids = await distinctFn({

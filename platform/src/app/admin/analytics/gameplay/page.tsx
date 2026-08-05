@@ -257,6 +257,14 @@ export default async function GameplayAnalyticsPage({
   let modInstallsTotal = 0;
 
   try {
+    // Must come before the Promise.all, not inside it. Promise.all starts
+    // every entry immediately, so the bare TelemetryEvent queries below would
+    // otherwise fire while the connection is still opening — and with
+    // bufferCommands:false Mongoose rejects rather than queuing them. That
+    // only showed up on a cold start, which is why the page failed
+    // intermittently rather than always.
+    await dbConnect();
+
     const [
       gameplay,
       games,
