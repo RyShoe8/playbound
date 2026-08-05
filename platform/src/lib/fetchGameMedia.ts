@@ -4,6 +4,11 @@ import { put } from "@vercel/blob";
 import { compressImageBuffer } from "@/lib/compressImage";
 import { tryFetchPageMeta } from "@/lib/pageMeta";
 
+export {
+  coverLooksLikeSteamHeader,
+  screenshotsAreThin,
+} from "@/lib/mediaThin";
+
 export const MAX_SCREENSHOTS = 20;
 export const MAX_VIDEOS = 10;
 
@@ -46,19 +51,6 @@ export function mergeGameMedia(
 
 export function mediaIsThin(media: GameMediaBundle): boolean {
   return (media.screenshots?.length ?? 0) < 4 || (media.videos?.length ?? 0) === 0;
-}
-
-/** True when the gallery is empty, a single shot, or only Steam header/capsule assets. */
-export function screenshotsAreThin(shots: string[] | null | undefined): boolean {
-  const list = (shots ?? []).filter(Boolean);
-  if (list.length <= 1) return true;
-  if (list.length > 3) return false;
-  return list.every((s) => /\/steam\/apps\/\d+\/(header|library_hero|capsule|logo)/i.test(s));
-}
-
-export function coverLooksLikeSteamHeader(cover: string | null | undefined): boolean {
-  if (!cover) return true;
-  return /\/steam\/apps\/\d+\/(header|library_hero|capsule)/i.test(cover);
 }
 
 export function mediaChanged(before: GameMediaBundle, after: GameMediaBundle): boolean {

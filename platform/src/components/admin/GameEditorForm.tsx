@@ -32,7 +32,7 @@ import { classifyMediaUrl } from "@/lib/mediaEmbed";
 import {
   coverLooksLikeSteamHeader,
   screenshotsAreThin,
-} from "@/lib/fetchGameMedia";
+} from "@/lib/mediaThin";
 import { HlsVideo } from "@/components/HlsVideo";
 import {
   DerivedContentEditor,
