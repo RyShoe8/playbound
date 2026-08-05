@@ -6,6 +6,7 @@ import {
   stripQuakeColors,
   udpQueryMaster,
 } from "./udp.js";
+import { pollXonoticHttp } from "./dpmaster-http.js";
 import { pollMindustry } from "./mindustry.js";
 import { pollHedgewars } from "./hedgewars.js";
 import { pollWesnoth } from "./wesnoth.js";
@@ -16,16 +17,19 @@ import { pollVeloren } from "./veloren.js";
 import { pollOpenTtd } from "./openttd.js";
 
 /**
+ * @typedef {{ host: string, port: number }} MasterEndpoint
  * @typedef {{
  *   slug: string,
  *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod' | 'veloren' | 'openttd',
  *   masterHost?: string,
  *   masterPort?: number,
+ *   masters?: MasterEndpoint[],
  *   query?: string,
  *   altQueries?: string[],
  *   nameKeys?: string[],
  *   gamenameAllow?: RegExp,
  *   gamenameDeny?: RegExp,
+ *   httpFallback?: 'xonotic-deathmask',
  *   source?: string,
  *   refreshMs?: number,
  * }} GameMasterConfig
@@ -36,13 +40,25 @@ export const GAMES = [
   {
     slug: "xonotic",
     kind: "dpmaster",
-    masterHost: "dpmaster.deathmask.net",
+    masters: [
+      { host: "master2.xonotic.org", port: 27950 },
+      { host: "master3.xonotic.org", port: 27950 },
+      { host: "dpm4.xonotic.xyz", port: 27777 },
+      { host: "dpmaster.deathmask.net", port: 27950 },
+    ],
+    masterHost: "master2.xonotic.org",
     masterPort: 27950,
-    query: "getserversExt Xonotic 3 empty full ipv4",
-    altQueries: ["getserversExt Xonotic 3 empty full", "getservers 68 empty full"],
+    // Plain getservers is more reliable than Ext+ipv4 against many masters.
+    query: "getservers Xonotic 3 empty full",
+    altQueries: [
+      "getserversExt Xonotic 3 empty full ipv4",
+      "getserversExt Xonotic 3 empty full",
+    ],
     nameKeys: ["hostname", "sv_hostname", "host"],
     gamenameAllow: /xonotic|warsow|nexuiz/i,
     gamenameDeny: /mineclonia|minetest|luanti/i,
+    httpFallback: "xonotic-deathmask",
+    source: "dpmaster+http",
   },
   {
     slug: "unvanquished",
@@ -51,7 +67,10 @@ export const GAMES = [
     masterPort: 27950,
     // Plain getservers is more reliable than Ext+ipv4 against this master.
     query: "getservers 86 empty full",
-    altQueries: ["getserversExt Unvanquished 86 empty full ipv4", "getserversExt Unvanquished 86 empty full"],
+    altQueries: [
+      "getserversExt Unvanquished 86 empty full ipv4",
+      "getserversExt Unvanquished 86 empty full",
+    ],
     nameKeys: ["sv_hostname", "hostname", "host"],
     // Daemon getinfo reports gamename=unv (not "unvanquished").
     gamenameAllow: /\bunv\b|unvanquished|tremulous/i,
@@ -71,6 +90,20 @@ export const GAMES = [
     refreshMs: 120_000,
   },
 ];
+
+/**
+ * @param {GameMasterConfig} game
+ * @returns {MasterEndpoint[]}
+ */
+function masterEndpoints(game) {
+  if (Array.isArray(game.masters) && game.masters.length > 0) {
+    return game.masters.filter((m) => m?.host && Number(m.port) > 0);
+  }
+  if (game.masterHost && game.masterPort) {
+    return [{ host: game.masterHost, port: game.masterPort }];
+  }
+  return [];
+}
 
 /**
  * @param {Record<string, string> | null} info
@@ -125,50 +158,40 @@ function passesGamenameFilter(info, game) {
 }
 
 /**
- * True when info yielded a non-IP-looking hostname we can display.
- * @param {Record<string, string> | null} info
- * @param {string[]} nameKeys
- * @param {string} fallbackIpPort
- */
-function hasRealHostname(info, nameKeys, fallbackIpPort) {
-  if (!info) return false;
-  for (const k of nameKeys) {
-    const cleaned = stripQuakeColors(info[k] || "");
-    if (!cleaned) continue;
-    if (cleaned === fallbackIpPort) continue;
-    if (/^\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?$/.test(cleaned)) continue;
-    return true;
-  }
-  return false;
-}
-
-/**
  * @param {GameMasterConfig} game
  * @returns {Promise<{ host: string, port: number }[]>}
  */
 async function collectMasterAddresses(game) {
   const queries = [game.query, ...(game.altQueries || [])].filter(Boolean);
+  const masters = masterEndpoints(game);
   /** @type {{ host: string, port: number }[]} */
   const addresses = [];
   const seen = new Set();
 
-  for (const query of queries) {
-    try {
-      const packets = await udpQueryMaster(game.masterHost, game.masterPort, query, 8000);
-      for (const raw of packets) {
-        for (const a of parseGetServersResponse(raw)) {
-          const key = `${a.host}:${a.port}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          addresses.push(a);
+  for (const master of masters) {
+    for (const query of queries) {
+      try {
+        const packets = await udpQueryMaster(master.host, master.port, query, 8000);
+        for (const raw of packets) {
+          for (const a of parseGetServersResponse(raw)) {
+            const key = `${a.host}:${a.port}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            addresses.push(a);
+          }
         }
+        if (addresses.length >= 8) {
+          console.log(
+            `[dpmaster] ${game.slug} collected ${addresses.length} addrs from ${master.host}:${master.port} via "${query}"`
+          );
+          return addresses;
+        }
+      } catch (err) {
+        console.warn(
+          `[dpmaster] ${game.slug} ${master.host}:${master.port} query "${query}" failed:`,
+          err instanceof Error ? err.message : err
+        );
       }
-      if (addresses.length >= 8) break;
-    } catch (err) {
-      console.warn(
-        `[dpmaster] ${game.slug} query "${query}" failed:`,
-        err instanceof Error ? err.message : err
-      );
     }
   }
   return addresses;
@@ -180,6 +203,10 @@ async function collectMasterAddresses(game) {
  */
 async function pollDpmaster(game) {
   const addresses = await collectMasterAddresses(game);
+  let masterAddrs = addresses.length;
+  let infoOk = 0;
+  let droppedGamename = 0;
+  let kept = 0;
 
   const infos = await mapPool(addresses.slice(0, 180), 20, async (addr) => {
     const info = await getServerInfo(addr.host, addr.port);
@@ -195,10 +222,13 @@ async function pollDpmaster(game) {
     const { addr, info } = row;
     const fallback = `${addr.host}:${addr.port}`;
 
-    // Drop silent hosts and bare-IP shells (no cleaned hostname).
+    // Keep any host that answered getinfo and passes gamename — IP-only names are OK.
     if (!info) continue;
-    if (!hasRealHostname(info, nameKeys, fallback)) continue;
-    if (!passesGamenameFilter(info, game)) continue;
+    infoOk += 1;
+    if (!passesGamenameFilter(info, game)) {
+      droppedGamename += 1;
+      continue;
+    }
 
     const name = pickName(info, nameKeys, fallback);
     const { players, maxPlayers } = pickPlayers(info);
@@ -218,6 +248,22 @@ async function pollDpmaster(game) {
       location: null,
       protected: Boolean(needPass),
     });
+    kept += 1;
+  }
+
+  console.log(
+    `[dpmaster] ${game.slug} funnel masterAddrs=${masterAddrs} infoOk=${infoOk} droppedGamename=${droppedGamename} kept=${kept}`
+  );
+
+  if (kept === 0 && game.httpFallback === "xonotic-deathmask") {
+    try {
+      return await pollXonoticHttp();
+    } catch (err) {
+      console.warn(
+        `[dpmaster] ${game.slug} HTTP fallback failed:`,
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 
   servers.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
@@ -256,6 +302,10 @@ export async function pollGame(game, creds = null) {
 
 export function gameSource(game) {
   if (game.source) return game.source;
+  const masters = masterEndpoints(game);
+  if (masters.length > 0) {
+    return masters.map((m) => `${m.host}:${m.port}`).join(",");
+  }
   if (game.masterHost && game.masterPort) return `${game.masterHost}:${game.masterPort}`;
   return game.kind;
 }

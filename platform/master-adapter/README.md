@@ -51,7 +51,7 @@ configured, failures return an error + empty list (no fake lobby row).
 
 | Slug | Kind |
 |------|------|
-| `xonotic` | dpmaster UDP + getstatus/getinfo |
+| `xonotic` | dpmaster UDP (+ deathmask HTTP fallback) |
 | `unvanquished` | dpmaster UDP + getstatus/getinfo |
 | `mindustry` | GitHub directory + UDP ping |
 | `hedgewars` | TCP lobby (PROTO 59) |

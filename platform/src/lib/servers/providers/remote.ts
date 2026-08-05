@@ -39,7 +39,7 @@ export async function fetchRemoteMaster(
 
   const res = await fetch(`${base}/v1/${slug}/servers`, {
     headers,
-    signal: AbortSignal.timeout(auth ? 18_000 : 8_000),
+    signal: AbortSignal.timeout(auth ? 18_000 : 15_000),
     ...(auth ? { cache: "no-store" as const } : { next: { revalidate: 30 } }),
   });
 
