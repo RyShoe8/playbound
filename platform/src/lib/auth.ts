@@ -112,35 +112,51 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     /**
-     * Keep post-auth redirects on the host the user is actually browsing.
+     * Resolve post-auth redirects against a stable origin.
      *
-     * NextAuth's default resolves every redirect against NEXTAUTH_URL. On
-     * Vercel that is frequently a per-deployment host, so once that deployment
-     * is superseded, signing out sent people to a URL that no longer exists —
-     * Vercel answers DEPLOYMENT_NOT_FOUND. Returning the path unchanged lets
-     * the browser resolve it against the current origin, which is correct on
-     * production, previews and localhost alike without depending on an env var
-     * being right.
+     * NextAuth's default resolves everything against NEXTAUTH_URL. On Vercel
+     * that can be a per-deployment host, so once the deployment was superseded
+     * sign-out sent people somewhere that no longer existed and Vercel
+     * answered DEPLOYMENT_NOT_FOUND.
+     *
+     * The return value MUST be an absolute URL. `signIn(..., { redirect:
+     * false })` — which the login form uses — passes it to `new URL()` on the
+     * client, and a relative path throws "Failed to construct 'URL'", leaving
+     * the form hanging even though the session cookie was set. So the fix is
+     * to correct the *origin*, not to drop it.
      */
     async redirect({ url, baseUrl }) {
-      // A protocol-relative URL ("//evil.com") also starts with "/" and would
-      // otherwise be handed straight back as an open redirect. Backslashes are
-      // rejected for the same reason — some browsers normalise "/\" to "//".
+      /**
+       * Prefer the canonical site over a throwaway deployment host. Anything
+       * else — a real custom domain, or localhost in development — is already
+       * the host the user is on, so it is left alone.
+       */
+      const safeOrigin = (() => {
+        try {
+          return /\.vercel\.app$/i.test(new URL(baseUrl).hostname) ? SITE_URL : baseUrl;
+        } catch {
+          return SITE_URL;
+        }
+      })();
+
+      // A protocol-relative URL ("//evil.com") also starts with "/", and
+      // backslashes are normalised to "//" by some browsers — both would be
+      // open redirects if resolved naively, so they fall through to the root.
       if (url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\")) {
-        return url;
+        return `${safeOrigin}${url}`;
       }
 
-      // Absolute URLs are only honoured for our own origins, so a crafted
+      // Absolute URLs are honoured only for our own origins, so a crafted
       // callbackUrl cannot bounce a freshly signed-in user off-site.
       try {
         const target = new URL(url);
         if (target.origin === baseUrl || target.origin === SITE_URL) {
-          return `${target.pathname}${target.search}${target.hash}` || "/";
+          return `${safeOrigin}${target.pathname}${target.search}${target.hash}`;
         }
       } catch {
         /* not a parseable URL — fall through */
       }
-      return "/";
+      return safeOrigin;
     },
 
     /**
