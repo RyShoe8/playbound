@@ -35,6 +35,7 @@ export function ModEditorForm({
   const [form, setForm] = useState<ModPayload>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [evidence, setEvidence] = useState<string[]>([]);
   const [sourceMaterial, setSourceMaterial] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export function ModEditorForm({
     }
     setBusy(true);
     setError("");
+    setWarning("");
     try {
       const res = await fetch("/api/admin/mods/import", {
         method: "POST",
@@ -88,6 +90,7 @@ export function ModEditorForm({
       }));
       setEvidence((data.evidence as string[]) ?? []);
       setSourceMaterial((data.sourceMaterial as string | null) ?? null);
+      setWarning(typeof data.warning === "string" ? data.warning : "");
       setBusy(false);
     } catch {
       setError("Couldn't reach the server.");
@@ -164,6 +167,11 @@ export function ModEditorForm({
           Pick the base game below first — install steps and the FAQ are generated
           against it.
         </p>
+        {warning && (
+          <p className="mt-2 text-sm text-amber-500" role="status">
+            {warning}
+          </p>
+        )}
       </div>
 
       <form onSubmit={save} className="space-y-4">

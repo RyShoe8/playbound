@@ -98,6 +98,10 @@ const nextConfig: NextConfig = {
       // links to the old anchor targets.
       { source: "/discover/collections", destination: "/collections", permanent: true },
       { source: "/discover/developers", destination: "/developers", permanent: true },
+      // App Router serves the icon at /icon (app/icon.tsx); browsers and bots
+      // still request the legacy favicon paths.
+      { source: "/favicon.ico", destination: "/icon", permanent: false },
+      { source: "/favicon.png", destination: "/icon", permanent: false },
     ];
   },
 };

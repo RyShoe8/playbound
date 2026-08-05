@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getGame } from "@/lib/catalog";
 import { emptyModDraft, slugifyTitle, type ModPayload } from "@/lib/modPayload";
 import { defaultArtFor } from "@/lib/gamePayload";
-import { fetchPageMeta } from "@/lib/pageMeta";
+import { tryFetchPageMeta, softTitleFromUrl } from "@/lib/pageMeta";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   deriveModInstallSteps,
@@ -117,26 +117,61 @@ async function fromGithub(
   };
 }
 
-async function fromWebsite(url: string, baseGameSlug: string): Promise<Partial<ModPayload>> {
-  const meta = await fetchPageMeta(url);
-  const title = meta.title || new URL(url).hostname.replace(/^www\./, "");
-  const description = meta.description || `Add-on for ${baseGameSlug}.`;
+async function fromWebsite(
+  url: string,
+  baseGameSlug: string
+): Promise<{ draft: Partial<ModPayload>; warning?: string }> {
+  const result = await tryFetchPageMeta(url);
+
+  if (result.ok) {
+    const meta = result.meta;
+    const title = meta.title || softTitleFromUrl(url);
+    const description = meta.description || `Add-on for ${baseGameSlug}.`;
+    const slug = slugifyTitle(`${baseGameSlug}-${title}`);
+
+    return {
+      draft: {
+        ...emptyModDraft(baseGameSlug),
+        slug,
+        title,
+        tagline: description.slice(0, 200),
+        description,
+        website: url,
+        downloadKind: "external",
+        directUrl: url,
+        assetPattern: null,
+        coverImage: meta.images[0] ?? null,
+        screenshots: meta.images.slice(0, 8),
+        art: defaultArtFor([], slug),
+        published: false,
+      },
+    };
+  }
+
+  const title = softTitleFromUrl(url);
   const slug = slugifyTitle(`${baseGameSlug}-${title}`);
+  const warning =
+    result.reason === "blocked"
+      ? result.message
+      : `Could not scrape this page${result.status ? ` (${result.status})` : ""}. Created a blank draft from the URL — fill title/description manually.`;
 
   return {
-    ...emptyModDraft(baseGameSlug),
-    slug,
-    title,
-    tagline: description.slice(0, 200),
-    description,
-    website: url,
-    downloadKind: "external",
-    directUrl: url,
-    assetPattern: null,
-    coverImage: meta.images[0] ?? null,
-    screenshots: meta.images.slice(0, 8),
-    art: defaultArtFor([], slug),
-    published: false,
+    warning,
+    draft: {
+      ...emptyModDraft(baseGameSlug),
+      slug,
+      title,
+      tagline: `Add-on for ${baseGameSlug}`,
+      description: `Add-on for ${baseGameSlug}.`,
+      website: url,
+      downloadKind: "external",
+      directUrl: url,
+      assetPattern: null,
+      coverImage: null,
+      screenshots: [],
+      art: defaultArtFor([], slug),
+      published: false,
+    },
   };
 }
 
@@ -163,11 +198,12 @@ export async function POST(req: Request) {
     const repo = parseGithubRepo(url);
     let base: Partial<ModPayload>;
     let sourceMaterial: string | null = null;
+    let warning: string | undefined;
 
     if (repo && (url.includes("github.com") || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()))) {
       ({ draft: base, sourceMaterial } = await fromGithub(repo, baseGameSlug));
     } else {
-      base = await fromWebsite(url, baseGameSlug);
+      ({ draft: base, warning } = await fromWebsite(url, baseGameSlug));
     }
 
     const forDerivation = base as unknown as CatalogModPublic;
@@ -197,6 +233,7 @@ export async function POST(req: Request) {
       evidence,
       missing: readiness.missing,
       sourceMaterial,
+      ...(warning ? { warning } : {}),
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
