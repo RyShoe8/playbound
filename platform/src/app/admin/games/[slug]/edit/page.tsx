@@ -51,6 +51,8 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
 
   const initial: GamePayload = {
     ...game,
+    // Optional on Game (older documents predate it), required on the payload.
+    aliases: game.aliases ?? [],
     steamAppId: game.steamAppId ?? null,
     androidStoreUrl: game.androidStoreUrl ?? null,
     iosStoreUrl: game.iosStoreUrl ?? null,

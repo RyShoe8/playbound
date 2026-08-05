@@ -5,6 +5,7 @@ const fsp = require("fs/promises");
 const path = require("path");
 const net = require("net");
 const bundledCatalog = require("./catalog");
+const { createTelemetry } = require("./telemetry");
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
 let catalog = bundledCatalog.map((e) => ({ ...e }));
@@ -639,6 +640,43 @@ function saveSettings(settings) {
 function getApiBase() {
   const settings = loadSettings();
   return String(settings.apiBase || process.env.PLAYBOUND_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "");
+}
+
+/**
+ * Main-process analytics. Declared after its dependencies exist because the
+ * helpers are injected rather than imported — see telemetry.js.
+ */
+const telemetry = createTelemetry({
+  getApiBase,
+  loadSettings,
+  saveSettings,
+  getAppVersion: () => app.getVersion(),
+  getUserId: () => {
+    try {
+      return loadSettings().userId || null;
+    } catch {
+      return null;
+    }
+  },
+});
+
+/**
+ * Identity for an edition event, derived from the catalog entry.
+ *
+ * The launcher's catalog is still game-keyed, so until entries carry edition
+ * metadata this reports the game's Official edition — which matches what the
+ * site synthesizes for a game with no stored editions, so both sides agree.
+ */
+function editionInfoFor(slug, extra = {}) {
+  const entry = catalog.find((e) => e.slug === slug);
+  return {
+    gameSlug: slug,
+    gameTitle: entry?.title,
+    editionSlug: extra.editionSlug || entry?.editionSlug || "official",
+    editionName: extra.editionName || entry?.editionName || "Official",
+    editionType: entry?.editionType || "official",
+    ...extra,
+  };
 }
 
 /** Turn relative site media paths into absolute URLs the Electron renderer can load. */
@@ -1762,10 +1800,12 @@ async function installGame(slug, targetDir) {
     if (known) {
       const result = markInstalledFromExe(slug, entry, known, dl.version);
       void reportInstall(slug);
+      void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
       return result;
     }
     startInstallerPoll(slug, entry, dl.version);
     void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
     return { status: "installer-opened", version: dl.version };
   }
 
@@ -1779,6 +1819,7 @@ async function installGame(slug, targetDir) {
     markInstalled(slug, { version: dl.version, exe, dir: gameDir });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
@@ -1792,6 +1833,7 @@ async function installGame(slug, targetDir) {
     markInstalled(slug, { version: dl.version, exe, dir: gameDir });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
@@ -1806,6 +1848,7 @@ async function installGame(slug, targetDir) {
   markInstalled(slug, { version: dl.version, exe, dir: gameDir });
   sendProgress({ phase: "done" });
   void reportInstall(slug);
+  void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
   return { status: "installed", version: dl.version, dir: gameDir };
 }
 
@@ -1941,6 +1984,9 @@ async function playGame(slug, join = null) {
     }
   }
   spawnTrackedExe(slug, info.exe, args);
+  // Opens a play session; the matching sendGameExited() closes it with a real
+  // duration rather than guessing one.
+  void telemetry.editionLaunched(editionInfoFor(slug, { version: info.version }));
 
   // Track recently played
   const settings = loadSettings();
@@ -1961,6 +2007,9 @@ const GAME_EXIT_DEBOUNCE_MS = 3000;
 const GAME_RUNNING_POLL_MS = 10000;
 
 function sendGameExited(slug) {
+  // Reported from here rather than the renderer so a session still closes when
+  // the window is hidden to the tray or the game outlived the launcher UI.
+  void telemetry.editionExited(editionInfoFor(slug));
   if (win && !win.isDestroyed()) {
     win.webContents.send("game-exited", { slug });
   }
@@ -2202,6 +2251,7 @@ async function uninstallGame(slug) {
   saveState(state);
   clearPendingInstaller(slug);
   void syncLibrary(slug, "uninstall");
+  void telemetry.editionUninstalled(editionInfoFor(slug));
   return { status: "uninstalled", dir: info.dir };
 }
 
@@ -3118,6 +3168,9 @@ if (gotLock) {
   });
 
   app.on("before-quit", () => {
+    // Close any play session still open. Fire-and-forget: quitting must not
+    // wait on the network, and an unreported session is better than a hang.
+    void telemetry.flushOpenSessions();
     if (librarySyncTimer) {
       clearInterval(librarySyncTimer);
       librarySyncTimer = null;

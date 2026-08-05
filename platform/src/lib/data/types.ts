@@ -78,6 +78,11 @@ export interface Game {
   developerSlug: string;
   genres: Genre[];
   tags: string[];
+  /**
+   * Alternate names people search by — "WoW", "C&C". Never displayed;
+   * exists so a search for a common shorthand reaches the game.
+   */
+  aliases?: string[];
   license: string;
   releaseYear: number;
   /** Approximate download size in MB */

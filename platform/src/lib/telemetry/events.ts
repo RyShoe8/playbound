@@ -8,6 +8,22 @@
 
 type Extra = { [key: string]: unknown };
 
+/**
+ * Identity carried by every edition-scoped event.
+ *
+ * Kept as one alias so adding a dimension later (edition type, certification
+ * level) reaches all edition events at once instead of drifting per event.
+ */
+type EditionProps = {
+  gameId?: string;
+  gameSlug?: string;
+  gameTitle?: string;
+  editionId?: string;
+  editionSlug?: string;
+  editionName?: string;
+  editionType?: string;
+};
+
 export type TelemetryEventMap = {
   page_view: { path?: string; title?: string } & Extra;
   signup: { method?: string } & Extra;
@@ -61,6 +77,37 @@ export type TelemetryEventMap = {
   newsletter_signup: { source?: string } & Extra;
   newsletter_unsubscribe: Extra;
   achievement_earned: { achievementId?: string; gameSlug?: string } & Extra;
+  /**
+   * ── Editions ────────────────────────────────────────────────────────────
+   * Every edition event carries both gameId/gameSlug and editionId/editionSlug
+   * so funnels can be read at either level: "how many installs did World of
+   * Warcraft get" and "how many of those were Turtle WoW".
+   *
+   * `editionId` is the database id, or `virtual:<gameSlug>` for the synthesized
+   * Official edition of a game that has none stored — so games predating
+   * editions still report cleanly instead of dropping out of the funnel.
+   *
+   * These are additive. The existing game_* events above are unchanged and
+   * still fire; edition events sit alongside them rather than replacing them.
+   */
+  edition_view: EditionProps & Extra;
+  edition_installed: EditionProps & { installMethod?: string; version?: string } & Extra;
+  edition_launched: EditionProps & { installMethod?: string } & Extra;
+  edition_updated: EditionProps & { fromVersion?: string; toVersion?: string } & Extra;
+  edition_uninstalled: EditionProps & Extra;
+  edition_install_clicked: EditionProps & { installMethod?: string; source?: string } & Extra;
+  edition_community_clicked: EditionProps & { destination?: string } & Extra;
+
+  /**
+   * Play sessions, reported by the launcher.
+   *
+   * `game_ended` is edition-aware and distinct from the older `game_finished`
+   * above, which is kept firing so existing dashboards keep working.
+   */
+  game_ended: EditionProps & { durationMs?: number } & Extra;
+  session_started: EditionProps & { sessionKind?: string } & Extra;
+  session_ended: EditionProps & { durationMs?: number; sessionKind?: string } & Extra;
+
   search: { query?: string; resultsCount?: number } & Extra;
   filter_changed: { surface?: string; filters?: Record<string, unknown> } & Extra;
   error: { message?: string; code?: string; source?: string } & Extra;

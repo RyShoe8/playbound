@@ -2,13 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllGames } from "@/lib/catalog";
+import { editionCountsByGame } from "@/lib/editions";
 import { GameArt } from "@/components/GameArt";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
 export default async function AdminGamesPage() {
-  const games = await listAllGames();
+  const [games, editionCounts] = await Promise.all([listAllGames(), editionCountsByGame()]);
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -73,7 +74,18 @@ export default async function AdminGamesPage() {
                 <td className="px-4 py-2.5 text-muted-foreground">
                   {g.updatedAt ? new Date(g.updatedAt).toLocaleString() : "—"}
                 </td>
-                <td className="px-4 py-2.5 text-right">
+                <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                  <Link
+                    href={`/admin/games/${g.slug}/editions`}
+                    className="mr-3 text-xs font-semibold text-muted-foreground hover:underline"
+                  >
+                    Editions
+                    {(editionCounts.get(g.slug) ?? 0) > 0 && (
+                      <span className="ml-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold">
+                        {editionCounts.get(g.slug)}
+                      </span>
+                    )}
+                  </Link>
                   <Link href={`/admin/games/${g.slug}/edit`} className="font-semibold text-primary hover:underline">
                     Edit
                   </Link>

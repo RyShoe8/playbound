@@ -114,6 +114,8 @@ const CatalogGameSchema = new Schema(
     developerName: { type: String, default: null },
     genres: { type: [String], default: [] },
     tags: { type: [String], default: [] },
+    /** Alternate search names — "WoW", "C&C". Indexed; never displayed. */
+    aliases: { type: [String], default: [], index: true },
     license: { type: String, required: true },
     releaseYear: { type: Number, required: true },
     sizeMB: { type: Number, required: true },

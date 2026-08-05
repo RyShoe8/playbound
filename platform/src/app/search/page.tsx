@@ -1,9 +1,13 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
+import { FolderHeart, Hammer, Layers, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
 import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import {
+  EditionTypeBadge,
+  VerificationBadge,
+} from "@/components/editions/EditionBadges";
 import { SearchGameResults } from "@/components/SearchGameResults";
 import { SearchFilters } from "@/components/SearchFilters";
 import { Avatar, EmptyHint, SectionHeader } from "@/components/ui/bits";
@@ -67,8 +71,12 @@ export default async function SearchPage({
   const otherResults = hasSearch ? await searchAll(q, { includeTesting }) : null;
   const developerResults = otherResults?.developers ?? [];
   const collectionResults = otherResults?.collections ?? [];
+  // Editions match on their own name, so "Turtle" finds Turtle WoW even though
+  // its game is called World of Warcraft and would not match the query itself.
+  const editionResults = otherResults?.editions ?? [];
 
-  const total = games.length + developerResults.length + collectionResults.length;
+  const total =
+    games.length + developerResults.length + collectionResults.length + editionResults.length;
 
   // Build a readable description of active filters
   const filterParts: string[] = [];
@@ -108,6 +116,38 @@ export default async function SearchPage({
       )}
 
       {games.length > 0 && <SearchGameResults games={games} />}
+
+      {editionResults.length > 0 && (
+        <section>
+          <SectionHeader title={`Editions (${editionResults.length})`} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {editionResults.map(({ edition, game }) => (
+              <Link
+                key={edition.id}
+                href={`/games/${game.slug}/editions/${edition.slug}`}
+                className="min-w-0 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+              >
+                {/* The parent game leads, since the edition name alone
+                    ("Turtle WoW") may not say which game it belongs to. */}
+                <p className="truncate text-xs font-semibold text-muted-foreground">{game.title}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 font-bold">
+                  <Layers className="size-3.5 shrink-0 text-primary" />
+                  <span className="truncate">{edition.name}</span>
+                </p>
+                {edition.shortDescription && (
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {edition.shortDescription}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <EditionTypeBadge edition={edition} />
+                  <VerificationBadge level={edition.verificationLevel} showLabel={false} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {developerResults.length > 0 && (
         <section>
