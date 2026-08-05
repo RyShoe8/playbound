@@ -30,6 +30,13 @@ contextBridge.exposeInMainWorld("playbound", {
   syncLibraryNow: () => ipcRenderer.invoke("sync-library-now"),
   reportBug: (payload) => ipcRenderer.invoke("report-bug", payload || {}),
 
+  // Friends API
+  getFriends: () => ipcRenderer.invoke("get-friends"),
+  getFriendRequests: () => ipcRenderer.invoke("get-friend-requests"),
+  acceptFriendRequest: (requestId) => ipcRenderer.invoke("accept-friend-request", requestId),
+  declineFriendRequest: (requestId) => ipcRenderer.invoke("decline-friend-request", requestId),
+  removeFriend: (friendId) => ipcRenderer.invoke("remove-friend", friendId),
+
   // Catalog / servers / mods
   getCatalog: () => ipcRenderer.invoke("get-catalog"),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),

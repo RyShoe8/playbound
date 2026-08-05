@@ -1349,3 +1349,21 @@ textarea.input-text {
   color: var(--text-muted);
   white-space: pre-line;
 }
+  
+/* Friends UI */  
+.friends-section { margin-bottom: 24px; }  
+.friends-list { display: flex; flex-direction: column; gap: 8px; }  
+.friend-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }  
+.friend-card:hover { background: var(--bg-hover); }  
+.friend-offline { opacity: 0.6; }  
+.friend-offline:hover { opacity: 1; }  
+.friend-card-main { display: flex; align-items: center; gap: 12px; }  
+.friend-avatar-wrap { position: relative; }  
+.friend-avatar { width: 40px; height: 40px; border-radius: 20px; background: linear-gradient(135deg, #312e81, #a78bfa); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; color: #fff; }  
+.status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 6px; border: 2px solid var(--bg-card); }  
+.dot-online { background: #10b981; }  
+.dot-playing { background: #8b5cf6; }  
+.friend-info { display: flex; flex-direction: column; gap: 2px; }  
+.friend-name { font-weight: 600; display: flex; align-items: center; gap: 4px; }  
+.friend-status { font-size: 13px; color: var(--text-muted); }  
+.friend-actions { display: flex; gap: 8px; } 
