@@ -9,7 +9,7 @@ export type RemoteMasterAuth = {
 
 /**
  * Fetch a UDP-backed list from the always-on Master Adapter (Render).
- * Optional lobby auth is forwarded for Zero-K / 0 A.D. battle lists.
+ * Optional lobby auth is forwarded for Zero-K / 0 A.D. / Wesnoth battle lists.
  */
 export async function fetchRemoteMaster(
   slug: string,

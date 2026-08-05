@@ -1100,19 +1100,29 @@ export function GameEditorForm({
                   ? " — live listings aren't wired for this slug yet."
                   : " — live listings are available when a provider is online."}
               </p>
-              {(form.slug === "zero-k" || form.slug === "0ad") && (
+              {(form.slug === "zero-k" || form.slug === "0ad" || form.slug === "battle-for-wesnoth") && (
                 <div className="space-y-3 rounded-lg border border-border bg-background/40 p-3">
                   <p className="text-xs font-bold">
-                    {form.slug === "zero-k" ? "Zero-K lobby login" : "0 A.D. lobby login"}
+                    {form.slug === "zero-k"
+                      ? "Zero-K lobby login"
+                      : form.slug === "0ad"
+                        ? "0 A.D. lobby login"
+                        : "Wesnoth lobby login"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {form.slug === "zero-k"
                       ? "Optional. Without this, listings show lobby presence only. Password must be the Chobby PasswordHash (not the plain account password)."
-                      : "Optional. Without this, listings show a lobby pointer only. Enter your Wildfire Games lobby username (or JID) and the same plain password as the game client — the adapter hashes it like official EncryptPassword. A 64-char hex value from user.cfg lobby.password also works."}
+                      : form.slug === "0ad"
+                        ? "Optional. Without this, listings show a lobby pointer only. Enter your Wildfire Games lobby username (or JID) and the same plain password as the game client — the adapter hashes it like official EncryptPassword. A 64-char hex value from user.cfg lobby.password also works."
+                        : "Optional. Without this, listings may show only a lobby pointer. Enter your Wesnoth forums / multiplayer nick and the same plain password as the game client (sent over TLS to wesnothd)."}
                   </p>
                   <div>
                     <label className={label}>
-                      {form.slug === "zero-k" ? "Lobby username" : "Lobby username / JID"}
+                      {form.slug === "zero-k"
+                        ? "Lobby username"
+                        : form.slug === "0ad"
+                          ? "Lobby username / JID"
+                          : "Lobby username"}
                     </label>
                     <input
                       type="text"
@@ -1125,7 +1135,13 @@ export function GameEditorForm({
                         })
                       }
                       className={field}
-                      placeholder={form.slug === "0ad" ? "player or player@lobby…" : "username"}
+                      placeholder={
+                        form.slug === "0ad"
+                          ? "player or player@lobby…"
+                          : form.slug === "battle-for-wesnoth"
+                            ? "forum nick"
+                            : "username"
+                      }
                     />
                   </div>
                   <div>

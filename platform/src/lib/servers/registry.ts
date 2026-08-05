@@ -29,7 +29,7 @@ const providers: Record<string, ServerProvider> = {
   hedgewars: { slug: "hedgewars", fetchServers: () => fetchRemoteMaster("hedgewars") },
   "battle-for-wesnoth": {
     slug: "battle-for-wesnoth",
-    fetchServers: () => fetchRemoteMaster("battle-for-wesnoth"),
+    fetchServers: () => fetchRemoteWithLobbyAuth("battle-for-wesnoth"),
   },
   "warzone-2100": {
     slug: "warzone-2100",
