@@ -90,10 +90,13 @@ function gameFromElement(gameEl) {
   }
 
   const maxPlayers = Number(a.maxnbp || a.maxPlayers || a.maxplayers || 0) || null;
-  const ip = a.IP || a.ip || null;
+  const ipCandidates = [a.IP, a.ip, a.stunIP, a.stunIp, a.publicIp, a.publicIP, a.hostIP, a.hostIp];
+  const ip =
+    ipCandidates.find((v) => typeof v === "string" && /^\d{1,3}(?:\.\d{1,3}){3}$/.test(v.trim())) ||
+    null;
   const hostUsername = a.hostUsername || null;
   const hostJID = a.hostJID || null;
-  const host = ip || hostUsername || hostJID || DOMAIN;
+  const host = (ip ? String(ip).trim() : null) || hostUsername || hostJID || DOMAIN;
   const version = versionFromMods(a.mods);
   const state = a.state || null;
   const gameType = [version, state].filter(Boolean).join(" · ") || "0ad";

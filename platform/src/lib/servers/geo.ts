@@ -186,21 +186,39 @@ function preferCountryCode(existing: string | undefined, looked: string | undefi
   return looked || existing || "ZZ";
 }
 
-export async function attachGeo<T extends { host: string; location: ServerLocation | null }>(
-  servers: T[]
-): Promise<T[]> {
-  const need = servers.filter((s) => needsGeoLookup(s.location)).map((s) => s.host);
-  if (need.length === 0) {
+/**
+ * Host used for GeoIP/DNS. 0 A.D. often exposes nicks/JIDs instead of IPs —
+ * fall back to the public lobby host for Est./country only.
+ */
+function geoLookupHost(server: { host: string; id?: string }): string {
+  const host = String(server.host || "").trim();
+  if (!host) return host;
+  if (isIpv4(host)) return host;
+  if (server.id?.startsWith("0ad:")) {
+    // Nick, bare JID localpart, or full JID — not a resolvable game endpoint.
+    if (!host.includes(".") || host.includes("@")) return "lobby.wildfiregames.com";
+  }
+  return host;
+}
+
+export async function attachGeo<
+  T extends { host: string; location: ServerLocation | null; id?: string },
+>(servers: T[]): Promise<T[]> {
+  const needServers = servers.filter((s) => needsGeoLookup(s.location));
+  if (needServers.length === 0) {
     return servers.map((s) =>
       s.location ? { ...s, location: refineLocation(s.location) } : s
     );
   }
-  const map = await lookupLocations(need);
+
+  const lookupHosts = needServers.map(geoLookupHost);
+  const map = await lookupLocations(lookupHosts);
+
   return servers.map((s) => {
     if (!needsGeoLookup(s.location)) {
       return s.location ? { ...s, location: refineLocation(s.location) } : s;
     }
-    const looked = map.get(s.host);
+    const looked = map.get(geoLookupHost(s));
     if (!looked) {
       return s.location ? { ...s, location: refineLocation(s.location) } : s;
     }
