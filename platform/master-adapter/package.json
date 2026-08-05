@@ -11,6 +11,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@xmpp/client": "^0.13.4"
+    "@xmpp/client": "^0.14.0"
   }
 }

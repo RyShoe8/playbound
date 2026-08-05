@@ -169,7 +169,7 @@ export async function pollVeloren() {
       name: String(row.name || host),
       host,
       port,
-      players: info?.players ?? 0,
+      players: info?.players ?? null,
       maxPlayers: info?.maxPlayers ?? null,
       map: row.description ? String(row.description).slice(0, 80) : null,
       gameType: modeParts.length ? modeParts.join(" · ") : null,
@@ -178,6 +178,8 @@ export async function pollVeloren() {
     });
   }
 
-  servers.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  servers.sort(
+    (a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name)
+  );
   return servers.slice(0, MAX_SERVERS);
 }

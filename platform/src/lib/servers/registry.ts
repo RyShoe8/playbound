@@ -2,7 +2,6 @@ import { getServerLobbyAuth } from "@/lib/catalog";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenRaServers } from "./providers/openra";
-import { fetchOpenTtdServers } from "./providers/openttd";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -15,7 +14,8 @@ async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
 const providers: Record<string, ServerProvider> = {
   openra: { slug: "openra", fetchServers: fetchOpenRaServers },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
-  openttd: { slug: "openttd", fetchServers: fetchOpenTtdServers },
+  // Listing + detail enrich runs on the always-on Master Adapter (~2 min)
+  openttd: { slug: "openttd", fetchServers: () => fetchRemoteMaster("openttd") },
   // UDP query_port enrichment runs on the always-on Master Adapter
   veloren: { slug: "veloren", fetchServers: () => fetchRemoteMaster("veloren") },
   "beyond-all-reason": {

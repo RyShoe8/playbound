@@ -211,20 +211,27 @@ function hasUsefulInfo(info) {
  * @returns {Promise<Record<string, string> | null>}
  */
 export async function getServerInfo(host, port) {
-  // Prefer getstatus (richer keys on DarkPlaces / Daemon); fall back to getinfo
+  // Prefer getstatus (richer keys on DarkPlaces / Daemon) and merge getinfo
+  // so hostname/map that only appear on one response are not lost.
   const status = await queryInfoKeys(host, port, "getstatus", "statusResponse", 3500);
-  if (hasUsefulInfo(status)) return status;
-
   const info = await queryInfoKeys(host, port, "getinfo", "infoResponse", 3500);
-  if (hasUsefulInfo(info)) {
-    return status ? { ...status, ...info } : info;
+
+  /** @type {Record<string, string> | null} */
+  let merged = null;
+  if (hasUsefulInfo(status) || hasUsefulInfo(info)) {
+    merged = { ...(status || {}), ...(info || {}) };
   }
 
-  // Challenge variants some Daemon forks expect
-  const challenged = await queryInfoKeys(host, port, "getinfo xxx", "infoResponse", 2500);
-  if (hasUsefulInfo(challenged)) return challenged;
+  if (!hasUsefulInfo(merged)) {
+    const challenged = await queryInfoKeys(host, port, "getinfo xxx", "infoResponse", 2500);
+    if (hasUsefulInfo(challenged)) {
+      merged = { ...(merged || {}), ...challenged };
+    } else if (!merged) {
+      return challenged;
+    }
+  }
 
-  return status || info || challenged;
+  return hasUsefulInfo(merged) ? merged : merged || status || info;
 }
 
 /**

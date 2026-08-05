@@ -7,6 +7,8 @@ const REFRESH_MS = Number(process.env.REFRESH_MS || 40_000);
 
 /** @type {Map<string, { servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }>} */
 const cache = new Map();
+/** @type {Map<string, number>} */
+const lastPollAt = new Map();
 
 function authOk(req) {
   if (!ADAPTER_KEY) return true;
@@ -14,28 +16,50 @@ function authOk(req) {
   return header === ADAPTER_KEY;
 }
 
-async function refreshAll() {
+/**
+ * @param {import('./poll.js').GameMasterConfig} game
+ */
+function refreshIntervalFor(game) {
+  return Number(game.refreshMs) > 0 ? Number(game.refreshMs) : REFRESH_MS;
+}
+
+/**
+ * @param {import('./poll.js').GameMasterConfig | { slug: string, refreshMs?: number, kind?: string }} game
+ * @param {boolean} [force]
+ */
+async function refreshGame(game, force = false) {
+  const now = Date.now();
+  const interval = refreshIntervalFor(game);
+  const last = lastPollAt.get(game.slug) || 0;
+  if (!force && now - last < interval - 500) return;
+
+  const source = gameSource(game);
+  try {
+    const servers = await pollGame(game);
+    cache.set(game.slug, {
+      servers,
+      updatedAt: new Date().toISOString(),
+      source,
+    });
+    lastPollAt.set(game.slug, Date.now());
+    console.log(`[poll] ${game.slug}: ${servers.length} servers`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[poll] ${game.slug} failed:`, message);
+    const prev = cache.get(game.slug);
+    cache.set(game.slug, {
+      servers: prev?.servers ?? [],
+      updatedAt: new Date().toISOString(),
+      error: message,
+      source,
+    });
+    lastPollAt.set(game.slug, Date.now());
+  }
+}
+
+async function refreshAll(force = false) {
   for (const game of GAMES) {
-    const source = gameSource(game);
-    try {
-      const servers = await pollGame(game);
-      cache.set(game.slug, {
-        servers,
-        updatedAt: new Date().toISOString(),
-        source,
-      });
-      console.log(`[poll] ${game.slug}: ${servers.length} servers`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[poll] ${game.slug} failed:`, message);
-      const prev = cache.get(game.slug);
-      cache.set(game.slug, {
-        servers: prev?.servers ?? [],
-        updatedAt: new Date().toISOString(),
-        error: message,
-        source,
-      });
-    }
+    await refreshGame(game, force);
   }
 }
 
@@ -132,9 +156,9 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`playbound-master-adapter listening on :${PORT}`);
   console.log(`games: ${GAMES.map((g) => g.slug).join(", ")}`);
-  refreshAll().finally(() => {
+  refreshAll(true).finally(() => {
     setInterval(() => {
-      refreshAll().catch((err) => console.error("[poll] loop", err));
-    }, REFRESH_MS);
+      refreshAll(false).catch((err) => console.error("[poll] loop", err));
+    }, Math.min(REFRESH_MS, 15_000));
   });
 });

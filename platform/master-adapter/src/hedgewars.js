@@ -13,7 +13,7 @@ function encodeMsg(cmd, args = []) {
 
 /**
  * Parse a flattened ROOMS / ADDROOM field list into room rows.
- * roomInfo layout varies by protocol; walk by detecting non-numeric name fields.
+ * PROTO 46–59 roomInfo: flags, name, playersIn, teams, owner, MAP, SCRIPT, SCHEME, AMMO
  * @param {string[]} fields
  * @returns {import('./types.js').GameServer[]}
  */
@@ -21,21 +21,32 @@ function parseRoomFields(fields) {
   /** @type {import('./types.js').GameServer[]} */
   const rooms = [];
   let i = 0;
+  const FLAG_RE = /^-[gpjr]*$/;
+
   while (i < fields.length) {
-    const name = fields[i];
-    if (!name || /^\d+$/.test(name)) {
+    let flags = "";
+    let nameIdx = i;
+
+    if (FLAG_RE.test(fields[i] || "")) {
+      flags = fields[i];
+      nameIdx = i + 1;
+    }
+
+    const name = fields[nameIdx];
+    if (!name || /^\d+$/.test(name) || FLAG_RE.test(name)) {
       i += 1;
       continue;
     }
-    // Typical: name, players, teams, inGame, map, scheme, weapons, …
-    const players = Number(fields[i + 1]);
-    const mapCandidate = fields[i + 4] || fields[i + 3] || null;
-    const map =
-      mapCandidate && !/^\d+$/.test(mapCandidate) && mapCandidate !== "0" && mapCandidate !== "1"
-        ? mapCandidate
-        : fields[i + 3] && !/^\d+$/.test(fields[i + 3])
-          ? fields[i + 3]
-          : null;
+
+    // flags + name + players + teams + owner + map + script + scheme + ammo = 9
+    // without flags (older layouts): name + players + … 
+    const base = nameIdx;
+    const players = Number(fields[base + 1]);
+    const map = fields[base + 4] || null;
+    const script = fields[base + 5] || null;
+    const gameType = [script, flags.includes("g") ? "in-game" : null]
+      .filter(Boolean)
+      .join(" · ") || "hedgewars-lobby";
 
     rooms.push({
       id: `hw:${name}`,
@@ -44,31 +55,32 @@ function parseRoomFields(fields) {
       port: PORT,
       players: Number.isFinite(players) ? players : 0,
       maxPlayers: null,
-      map,
-      gameType: "hedgewars-lobby",
+      map: map && !/^\d+$/.test(map) ? map : null,
+      gameType,
       location: null,
-      protected: false,
+      protected: flags.includes("p"),
     });
 
-    // Advance to next likely room name: try common strides, else scan ahead
+    const stride = flags ? 9 : 8;
     let next = -1;
-    for (const stride of [8, 9, 10, 7, 11]) {
-      const j = i + stride;
-      if (j < fields.length && fields[j] && !/^\d+$/.test(fields[j])) {
+    for (const s of [stride, stride + 1, stride - 1, 9, 10, 8, 7]) {
+      const j = i + s;
+      if (j >= fields.length) continue;
+      const f = fields[j];
+      if (FLAG_RE.test(f || "") || (f && !/^\d+$/.test(f))) {
         next = j;
         break;
       }
     }
     if (next < 0) {
-      for (let j = i + 2; j < fields.length; j++) {
-        if (fields[j] && !/^\d+$/.test(fields[j]) && j > i + 1) {
-          // Prefer skipping at least a few fields between names
+      for (let j = i + stride; j < fields.length; j++) {
+        if (FLAG_RE.test(fields[j] || "") || (fields[j] && !/^\d+$/.test(fields[j]))) {
           next = j;
           break;
         }
       }
     }
-    i = next > i ? next : i + 8;
+    i = next > i ? next : i + stride;
   }
   return rooms;
 }

@@ -6,7 +6,7 @@
  *   name: string,
  *   host: string,
  *   port: number,
- *   players: number,
+ *   players: number | null,
  *   maxPlayers: number | null,
  *   map: string | null,
  *   gameType: string | null,

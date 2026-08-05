@@ -13,17 +13,19 @@ import { pollWarzone } from "./warzone.js";
 import { pollZeroK } from "./zerok.js";
 import { pollZeroAd } from "./zerod.js";
 import { pollVeloren } from "./veloren.js";
+import { pollOpenTtd } from "./openttd.js";
 
 /**
  * @typedef {{
  *   slug: string,
- *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod' | 'veloren',
+ *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod' | 'veloren' | 'openttd',
  *   masterHost?: string,
  *   masterPort?: number,
  *   query?: string,
  *   altQueries?: string[],
  *   nameKeys?: string[],
  *   source?: string,
+ *   refreshMs?: number,
  * }} GameMasterConfig
  */
 
@@ -54,6 +56,12 @@ export const GAMES = [
   { slug: "zero-k", kind: "zerok", source: "zero-k.info:8200" },
   { slug: "0ad", kind: "zerod", source: "lobby.wildfiregames.com" },
   { slug: "veloren", kind: "veloren", source: "serverlist.veloren.net" },
+  {
+    slug: "openttd",
+    kind: "openttd",
+    source: "servers.openttd.org",
+    refreshMs: 120_000,
+  },
 ];
 
 /**
@@ -77,8 +85,18 @@ function pickName(info, nameKeys, fallback) {
  */
 function pickPlayers(info) {
   if (!info) return { players: 0, maxPlayers: null };
-  const clients = Number(info.clients ?? info.players ?? info.g_humanplayers ?? 0) || 0;
   const maxPlayers = Number(info.sv_maxclients ?? info.maxclients ?? 0) || null;
+
+  const human = Number(info.g_humanplayers);
+  if (Number.isFinite(human) && human >= 0 && info.g_humanplayers !== "") {
+    return { players: human, maxPlayers };
+  }
+
+  let clients = Number(info.clients ?? info.players ?? 0) || 0;
+  const bots = Number(info.bots ?? info.sv_privateClients ?? NaN);
+  if (Number.isFinite(bots) && bots > 0) {
+    clients = Math.max(0, clients - bots);
+  }
   return { players: Math.max(0, clients), maxPlayers };
 }
 
@@ -183,6 +201,8 @@ export async function pollGame(game, creds = null) {
       return pollZeroAd(creds);
     case "veloren":
       return pollVeloren();
+    case "openttd":
+      return pollOpenTtd();
     default:
       throw new Error(`Unknown poller kind: ${game.kind}`);
   }
