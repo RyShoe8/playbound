@@ -10,17 +10,19 @@ export async function GET(req: Request) {
   const jar = await cookies();
   const expected = jar.get("pb_discord_oauth_state")?.value;
   const userId = jar.get("pb_discord_oauth_uid")?.value;
-  const site = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  // Resolved against the incoming request so the user stays on the host they
+  // are actually browsing, rather than wherever NEXTAUTH_URL happens to point.
+  const back = (query: string) => new URL(`/profile?${query}`, req.url);
 
   if (!code || !state || !expected || state !== expected || !userId) {
-    return NextResponse.redirect(`${site}/profile?discord=error`);
+    return NextResponse.redirect(back("discord=error"));
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   const redirectUri = process.env.DISCORD_REDIRECT_URI;
   if (!clientId || !clientSecret || !redirectUri) {
-    return NextResponse.redirect(`${site}/profile?discord=error`);
+    return NextResponse.redirect(back("discord=error"));
   }
 
   const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
@@ -35,18 +37,18 @@ export async function GET(req: Request) {
     }),
   });
   if (!tokenRes.ok) {
-    return NextResponse.redirect(`${site}/profile?discord=error`);
+    return NextResponse.redirect(back("discord=error"));
   }
   const token = (await tokenRes.json()) as { access_token?: string };
   if (!token.access_token) {
-    return NextResponse.redirect(`${site}/profile?discord=error`);
+    return NextResponse.redirect(back("discord=error"));
   }
 
   const meRes = await fetch("https://discord.com/api/users/@me", {
     headers: { Authorization: `Bearer ${token.access_token}` },
   });
   if (!meRes.ok) {
-    return NextResponse.redirect(`${site}/profile?discord=error`);
+    return NextResponse.redirect(back("discord=error"));
   }
   const me = (await meRes.json()) as {
     id: string;
@@ -74,7 +76,7 @@ export async function GET(req: Request) {
     }
   );
 
-  const res = NextResponse.redirect(`${site}/profile?discord=linked`);
+  const res = NextResponse.redirect(back("discord=linked"));
   res.cookies.delete("pb_discord_oauth_state");
   res.cookies.delete("pb_discord_oauth_uid");
   return res;

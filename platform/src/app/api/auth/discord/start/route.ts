@@ -3,10 +3,11 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import crypto from "crypto";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
-    return NextResponse.redirect(new URL("/login?callbackUrl=/profile", process.env.NEXTAUTH_URL || "http://localhost:3000"));
+    // Request-relative: keeps the user on the host they are browsing.
+    return NextResponse.redirect(new URL("/login?callbackUrl=/profile", req.url));
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
