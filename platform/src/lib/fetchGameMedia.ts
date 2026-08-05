@@ -2,6 +2,7 @@
 
 import { put } from "@vercel/blob";
 import { compressImageBuffer } from "@/lib/compressImage";
+import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
 
@@ -188,13 +189,19 @@ export async function fetchWebsiteMedia(url: string): Promise<GameMediaBundle | 
   const result = await tryFetchPageMeta(url);
   if (!result.ok) return null;
   const { meta } = result;
+  const candidates = meta.images.filter((img) => isScreenshotCandidate(img, { requireRaster: false }));
+  const screenshots = candidates
+    .filter((img) => isScreenshotCandidate(img, { requireRaster: true }))
+    .slice(0, MAX_SCREENSHOTS);
+  // Prefer raster gallery shots for cover; fall back to first non-junk OG image.
+  const coverImage = screenshots[0] ?? candidates[0] ?? null;
   const videos = meta.videos
     .map((v) => normalizeVideoUrl(v) || v)
     .filter(Boolean)
     .slice(0, MAX_VIDEOS);
   return {
-    coverImage: meta.images[0] ?? null,
-    screenshots: meta.images.slice(0, MAX_SCREENSHOTS),
+    coverImage,
+    screenshots: screenshots.length ? screenshots : coverImage ? [coverImage] : [],
     videos,
   };
 }

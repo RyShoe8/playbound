@@ -1,6 +1,7 @@
 /** Shared HTML / Open Graph helpers for admin import + media fetch. */
 
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
+import { isScreenshotCandidate, readImgPixelSize } from "@/lib/mediaImageFilter";
 
 export function stripHtml(html: string): string {
   return html
@@ -157,7 +158,10 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
     const raw = metaContent(html, key);
     if (raw) {
       const abs = absoluteUrl(finalUrl, raw);
-      if (!images.includes(abs)) images.push(abs);
+      // OG/cover: allow non-raster hosts, still drop social/junk-named URLs.
+      if (isScreenshotCandidate(abs, { requireRaster: false }) && !images.includes(abs)) {
+        images.push(abs);
+      }
     }
   }
   for (const abs of collectBodyImages(html, finalUrl)) {
@@ -189,24 +193,21 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
   };
 }
 
-const SKIP_IMAGE_RE =
-  /(?:^|\/)(?:icon|favicon|logo|avatar|sprite|emoji|badge|button|pixel|1x1|spacer|tracking)(?:[-_.]|$)/i;
-const TINY_DIM_RE = /[-_/](?:16|24|32|48|64)x(?:16|24|32|48|64)(?:[-_.]|$)/i;
-
 /** Pull large-looking <img> URLs from HTML body beyond OG tags. */
 function collectBodyImages(html: string, finalUrl: string): string[] {
   const out: string[] = [];
-  for (const m of html.matchAll(/<img\b[^>]*?\bsrc=["']([^"']+)["'][^>]*>/gi)) {
-    const raw = m[1]?.trim();
-    if (!raw || raw.startsWith("data:")) continue;
+  for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+    const tag = m[0];
+    const src = tag.match(/\bsrc=["']([^"']+)["']/i)?.[1]?.trim();
+    if (!src || src.startsWith("data:")) continue;
     let abs: string;
     try {
-      abs = absoluteUrl(finalUrl, raw);
+      abs = absoluteUrl(finalUrl, src);
     } catch {
       continue;
     }
-    if (!/^https?:\/\//i.test(abs)) continue;
-    if (SKIP_IMAGE_RE.test(abs) || TINY_DIM_RE.test(abs)) continue;
+    const { width, height } = readImgPixelSize(tag);
+    if (!isScreenshotCandidate(abs, { requireRaster: true, width, height })) continue;
     if (out.includes(abs)) continue;
     out.push(abs);
     if (out.length >= 20) break;
@@ -275,7 +276,7 @@ function parseJinaMarkdown(text: string, sourceUrl: string): PageMeta | null {
   const images: string[] = [];
   for (const m of text.matchAll(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g)) {
     const url = m[1];
-    if (!url || SKIP_IMAGE_RE.test(url) || TINY_DIM_RE.test(url)) continue;
+    if (!url || !isScreenshotCandidate(url, { requireRaster: true })) continue;
     if (!images.includes(url)) images.push(url);
     if (images.length >= 20) break;
   }

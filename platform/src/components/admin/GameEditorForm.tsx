@@ -33,6 +33,7 @@ import {
   coverLooksLikeSteamHeader,
   screenshotsAreThin,
 } from "@/lib/mediaThin";
+import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { HlsVideo } from "@/components/HlsVideo";
 import {
   DerivedContentEditor,
@@ -351,19 +352,28 @@ export function GameEditorForm({
 
       const incomingShots = ((data.screenshots as string[]) ?? []).filter(Boolean);
       const incomingVideos = ((data.videos as string[]) ?? []).filter(Boolean);
-      const thin = screenshotsAreThin(existingShots);
-      const unionShots = [...new Set([...existingShots, ...incomingShots])].slice(0, 20);
+      // Drop social/UI junk so a prior polluted Refresh can heal on the next run.
+      const cleanExisting = existingShots.filter((u) => isScreenshotCandidate(u));
+      const cleanIncoming = incomingShots.filter((u) => isScreenshotCandidate(u));
+      const thin = screenshotsAreThin(cleanExisting);
+      const unionShots = [...new Set([...cleanExisting, ...cleanIncoming])].slice(0, 20);
       let nextShots =
-        thin && incomingShots.length > existingShots.length
-          ? incomingShots.slice(0, 20)
+        thin && cleanIncoming.length > cleanExisting.length
+          ? cleanIncoming.slice(0, 20)
           : unionShots;
-      if (nextShots.length < existingShots.length) {
+      if (nextShots.length < cleanExisting.length) {
         nextShots = unionShots;
       }
 
       const nextVideos = [...new Set([...existingVideos, ...incomingVideos])].slice(0, 10);
+      const coverIsJunk =
+        Boolean(form.coverImage) &&
+        !isScreenshotCandidate(form.coverImage, { requireRaster: false });
       const replaceCover =
-        (!form.coverImage || coverLooksLikeSteamHeader(form.coverImage) || thin) &&
+        (!form.coverImage ||
+          coverIsJunk ||
+          coverLooksLikeSteamHeader(form.coverImage) ||
+          thin) &&
         Boolean(data.coverImage);
       const nextCover = replaceCover
         ? (data.coverImage as string) || form.coverImage || null
@@ -373,13 +383,15 @@ export function GameEditorForm({
           ? data.steamAppId
           : null;
 
-      const addedShots = Math.max(0, nextShots.length - existingShots.length);
+      const addedShots = Math.max(0, nextShots.length - cleanExisting.length);
+      const removedJunk = Math.max(0, existingShots.length - cleanExisting.length);
       const addedVideos = Math.max(0, nextVideos.length - existingVideos.length);
       const stats = data.stats as { fetched?: number; rehosted?: number; keptRemote?: number } | undefined;
 
       if (
         addedShots === 0 &&
         addedVideos === 0 &&
+        removedJunk === 0 &&
         nextCover === form.coverImage &&
         !(stats?.fetched)
       ) {
@@ -394,10 +406,14 @@ export function GameEditorForm({
           stats && (stats.rehosted || stats.keptRemote)
             ? `rehosted ${stats.rehosted ?? 0}, kept remote ${stats.keptRemote ?? 0}. `
             : "";
+        const junkBit =
+          removedJunk > 0
+            ? `Removed ${removedJunk} non-screenshot image${removedJunk === 1 ? "" : "s"}. `
+            : "";
         const trailerBit =
           addedVideos === 0 ? " No trailers found — paste a YouTube URL if you have one." : "";
         setMediaNote(
-          `Refresh done — ${steamBit}${coverBit}added ${addedShots} screenshot${
+          `Refresh done — ${steamBit}${coverBit}${junkBit}added ${addedShots} screenshot${
             addedShots === 1 ? "" : "s"
           }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. ${rehostBit}Save to persist.${trailerBit}`
         );
