@@ -6,14 +6,18 @@
  * a community edition of the same game.
  *
  * Mongo never drops a superseded index on its own. Until this runs, the old
- * index is still enforced and the second review will be rejected with a
- * duplicate-key error — so this must run once against each environment.
+ * index is still enforced and the second review on a different edition is
+ * rejected with a duplicate-key error.
  *
- * Safe to re-run: it does nothing if the old index is already gone.
+ * This runs automatically on every deploy — `npm run build` invokes
+ * migrate:review-index:apply before the seed scripts — so no manual step is
+ * needed in normal operation. It is idempotent: once the old index is gone it
+ * finds nothing to do and exits immediately.
  *
  * Usage:
- *   npx tsx scripts/migrate-review-index.ts           # dry run
- *   npx tsx scripts/migrate-review-index.ts --apply
+ *   npx tsx scripts/migrate-review-index.ts                       # dry run
+ *   npx tsx scripts/migrate-review-index.ts --apply               # apply, fail loudly
+ *   npx tsx scripts/migrate-review-index.ts --apply --soft-fail   # what the build runs
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -72,5 +76,23 @@ async function main() {
 
 main().catch((err) => {
   console.error("migrate:review-index failed:", err);
+
+  /**
+   * In the deploy pipeline this runs with --soft-fail so a transient database
+   * blip cannot block a release. The site is fully functional without the
+   * migration — only the second review on a different edition is refused, and
+   * the API says so explicitly — whereas a failed build takes the whole
+   * deploy down. The migration is idempotent, so the next deploy retries it.
+   *
+   * Run by hand without the flag and it exits non-zero, so a human running it
+   * deliberately still sees the failure.
+   */
+  if (process.argv.includes("--soft-fail")) {
+    console.error(
+      "migrate:review-index: continuing anyway (--soft-fail). Per-edition reviews " +
+        "stay disabled until this succeeds; it will retry on the next deploy."
+    );
+    process.exit(0);
+  }
   process.exit(1);
 });
