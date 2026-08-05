@@ -4,7 +4,7 @@
  * Windows, macOS, Linux, Android, iOS, Web.
  */
 
-export type DeviceType = "desktop" | "tablet" | "mobile";
+export type DeviceType = "desktop" | "macos" | "tablet" | "mobile";
 export type CompatibilityFilterMode = "compatible" | "all";
 
 export type GameLike = {
@@ -19,6 +19,7 @@ const MOBILE_PLATFORMS = new Set(["android", "ios", "web", "browser"]);
 /** Platforms considered compatible for a device class (normalized lowercase). */
 export const PLATFORMS_FOR_DEVICE: Record<DeviceType, ReadonlySet<string>> = {
   desktop: DESKTOP_PLATFORMS,
+  macos: new Set(["macos", "web", "browser"]),
   tablet: MOBILE_PLATFORMS,
   mobile: MOBILE_PLATFORMS,
 };
@@ -46,10 +47,15 @@ export function isMobileDevice(device: DeviceType): boolean {
 }
 
 /** Map UA parser device string → DeviceType (SSR seed only). */
-export function deviceTypeFromUaDevice(uaDevice: string | undefined | null): DeviceType {
+export function deviceTypeFromUaDevice(
+  uaDevice: string | undefined | null,
+  uaOs?: string | null
+): DeviceType {
   const d = (uaDevice || "").toLowerCase();
+  const os = (uaOs || "").toLowerCase();
   if (d === "mobile") return "mobile";
   if (d === "tablet") return "tablet";
+  if (os === "macos") return "macos";
   return "desktop";
 }
 

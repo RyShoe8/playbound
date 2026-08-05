@@ -8,7 +8,7 @@ export async function CompatibilityShell({ children }: { children: React.ReactNo
   const h = await headers();
   const ua = h.get("user-agent");
   const parsed = parseUserAgent(ua);
-  const ssrDevice = deviceTypeFromUaDevice(parsed.device);
+  const ssrDevice = deviceTypeFromUaDevice(parsed.device, parsed.os);
 
   return <CompatibilityProvider ssrDevice={ssrDevice}>{children}</CompatibilityProvider>;
 }

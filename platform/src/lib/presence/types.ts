@@ -71,7 +71,7 @@ export type PresencePlatform = (typeof PRESENCE_PLATFORMS)[number];
  * Device form factor. Mirrors DeviceType in lib/compatibility plus "launcher",
  * which is a distinct experience rather than a screen size.
  */
-export const PRESENCE_DEVICES = ["desktop", "tablet", "mobile", "launcher"] as const;
+export const PRESENCE_DEVICES = ["desktop", "macos", "tablet", "mobile", "launcher"] as const;
 export type PresenceDevice = (typeof PRESENCE_DEVICES)[number];
 
 export const PLATFORM_SESSION_STATUSES = ["active", "ended"] as const;
