@@ -3038,6 +3038,71 @@ ipcMain.handle("get-game-releases", async (_event, slug) => {
     return { releases: [], githubRepo: null };
   }
 });
+
+// --- Friends API Bridging ---
+ipcMain.handle("get-friends", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends`, { headers: launcherApiHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch friends");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("get-friend-requests", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/requests`, { headers: launcherApiHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch friend requests");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("accept-friend-request", async (_event, requestId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/accept`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ requestId })
+    });
+    if (!res.ok) throw new Error("Failed to accept request");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("decline-friend-request", async (_event, requestId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/decline`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ requestId })
+    });
+    if (!res.ok) throw new Error("Failed to decline request");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("remove-friend", async (_event, friendId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/remove`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ friendId })
+    });
+    if (!res.ok) throw new Error("Failed to remove friend");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+// ----------------------------
+
 ipcMain.handle("get-recently-played", () => {
   const settings = loadSettings();
   const recent = settings.recentlyPlayed || {};

@@ -251,6 +251,7 @@ const views = {
   servers: document.getElementById("view-servers"),
   events: document.getElementById("view-events"),
   library: document.getElementById("view-library"),
+  friends: document.getElementById("view-friends"),
   settings: document.getElementById("view-settings"),
   gameDetail: document.getElementById("view-game-detail"),
   editionDetail: document.getElementById("view-edition-detail"),
@@ -282,6 +283,7 @@ function navigateTo(viewName, params = {}) {
   else if (viewName === "servers") renderServersView();
   else if (viewName === "events") renderEventsView();
   else if (viewName === "library") renderLibraryView();
+  else if (viewName === "friends") renderFriendsView();
   else if (viewName === "settings") renderSettingsView();
   else if (viewName === "gameDetail") renderGameDetailView(params.slug);
   else if (viewName === "editionDetail") {
@@ -475,6 +477,208 @@ async function renderLibraryView() {
   document.getElementById("btn-library-add")?.addEventListener("click", () => {
     void toggleLibraryAddPanel();
   });
+
+  document.getElementById("btn-sync-lib-settings")?.addEventListener("click", () => {
+    void syncLibraryNow({ quiet: false });
+  });
+}
+
+// ── Friends View ──────────────────────────────────────────────
+let friendsPollInterval = null;
+
+async function renderFriendsView() {
+  const container = views.friends;
+  
+  if (!accountState.connected) {
+    container.innerHTML = `
+      <div class="section-header" style="margin-top: 0">
+        <div>
+          <h1 class="view-title" style="margin: 0">Friends</h1>
+          <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and manage friend requests.</p>
+        </div>
+      </div>
+      <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px; margin-top: 20px;">
+        <p class="view-sub">Sign in to view and manage your friends.</p>
+        <button class="btn-primary" style="margin-top: 12px" id="btn-friends-login">Sign In</button>
+      </div>
+    `;
+    document.getElementById("btn-friends-login")?.addEventListener("click", () => openAuthWindow());
+    return;
+  }
+
+  // Initial skeleton
+  if (!container.querySelector("#friends-content-area")) {
+    container.innerHTML = `
+      <div class="section-header" style="margin-top: 0">
+        <div>
+          <h1 class="view-title" style="margin: 0">Friends</h1>
+          <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and manage friend requests.</p>
+        </div>
+        <button class="btn-secondary btn-sm" id="btn-add-friend" onclick="window.playbound.openExternal('https://playbound.club/search?tab=users')">Add Friend on Web</button>
+      </div>
+      <div id="friends-content-area" style="margin-top: 20px;">
+        <p class="view-sub">Loading friends...</p>
+      </div>
+    `;
+  }
+
+  await refreshFriendsData();
+
+  if (!friendsPollInterval) {
+    friendsPollInterval = setInterval(() => {
+      if (currentView === "friends" && accountState.connected) {
+        refreshFriendsData();
+      } else {
+        clearInterval(friendsPollInterval);
+        friendsPollInterval = null;
+      }
+    }, 30000); // Poll every 30s
+  }
+}
+
+async function refreshFriendsData() {
+  const content = document.getElementById("friends-content-area");
+  if (!content) return;
+
+  try {
+    const [friendsData, requestsData] = await Promise.all([
+      window.playbound.getFriends(),
+      window.playbound.getFriendRequests()
+    ]);
+
+    const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
+    const incomingRequests = Array.isArray(requestsData?.incoming) ? requestsData.incoming : [];
+
+    const playing = friends.filter(f => f.presence?.status === "playing");
+    const online = friends.filter(f => ["online", "browsing", "away"].includes(f.presence?.status));
+    const offline = friends.filter(f => f.presence?.status === "offline");
+
+    let html = "";
+
+    if (incomingRequests.length > 0) {
+      html += `
+        <div class="friends-section">
+          <div class="section-header" style="margin-bottom: 12px">Pending Requests</div>
+          <div class="friends-list">
+            ${incomingRequests.map(req => `
+              <div class="friend-card">
+                <div class="friend-card-main">
+                  <div class="friend-avatar">${escapeHtml(req.user.username.charAt(0).toUpperCase())}</div>
+                  <div class="friend-info">
+                    <div class="friend-name">${escapeHtml(req.user.username)}</div>
+                    <div class="friend-status" style="color: var(--text-muted)">Wants to be friends</div>
+                  </div>
+                </div>
+                <div class="friend-actions">
+                  <button class="btn-primary btn-sm btn-accept" data-id="${escapeHtml(req.id)}">Accept</button>
+                  <button class="btn-danger btn-sm btn-decline" data-id="${escapeHtml(req.id)}">Decline</button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    if (playing.length > 0) {
+      html += buildFriendsSectionHtml("Playing", playing, "playing");
+    }
+    if (online.length > 0) {
+      html += buildFriendsSectionHtml("Online", online, "online");
+    }
+    if (offline.length > 0) {
+      html += buildFriendsSectionHtml("Offline", offline, "offline");
+    }
+
+    if (!friends.length && !incomingRequests.length) {
+      html = `
+        <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px;">
+          <p class="view-sub">You don't have any friends yet.</p>
+          <button class="btn-primary" style="margin-top: 12px" onclick="window.playbound.openExternal('https://playbound.club/search?tab=users')">Find Friends</button>
+        </div>
+      `;
+    }
+
+    content.innerHTML = html;
+
+    // Attach event listeners
+    content.querySelectorAll(".btn-accept").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Accepting...";
+        await window.playbound.acceptFriendRequest(btn.dataset.id);
+        refreshFriendsData();
+      });
+    });
+
+    content.querySelectorAll(".btn-decline").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Declining...";
+        await window.playbound.declineFriendRequest(btn.dataset.id);
+        refreshFriendsData();
+      });
+    });
+
+    content.querySelectorAll(".btn-remove-friend").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to remove this friend?")) return;
+        btn.disabled = true;
+        await window.playbound.removeFriend(btn.dataset.id);
+        refreshFriendsData();
+      });
+    });
+
+  } catch (err) {
+    content.innerHTML = `<p class="view-sub" style="color: var(--danger)">Failed to load friends: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function buildFriendsSectionHtml(title, list, type) {
+  let listHtml = "";
+  for (const f of list) {
+    let statusText = "Offline";
+    let statusDot = "";
+    
+    if (type === "playing") {
+      statusText = `<span style="color: var(--primary)">Playing ${escapeHtml(f.presence.currentGameId || "a game")}</span>`;
+      statusDot = `<span class="status-dot dot-playing"></span>`;
+    } else if (type === "online") {
+      statusText = escapeHtml(f.presence.status === "browsing" ? "Browsing" : f.presence.status);
+      statusDot = `<span class="status-dot dot-online"></span>`;
+    }
+
+    listHtml += `
+      <div class="friend-card ${type === 'offline' ? 'friend-offline' : ''}">
+        <div class="friend-card-main">
+          <div class="friend-avatar-wrap">
+            <div class="friend-avatar">${escapeHtml(f.username.charAt(0).toUpperCase())}</div>
+            ${statusDot}
+          </div>
+          <div class="friend-info">
+            <div class="friend-name">${escapeHtml(f.username)}${f.discordLinked ? ' <span class="discord-badge" title="Discord Linked"></span>' : ''}</div>
+            <div class="friend-status">${statusText}</div>
+          </div>
+        </div>
+        <div class="friend-actions">
+          <button class="btn-secondary btn-sm btn-remove-friend" data-id="${escapeHtml(f.id)}" title="Remove Friend">
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="friends-section" style="margin-bottom: 24px">
+      <div class="section-header" style="margin-bottom: 12px">${escapeHtml(title)} - ${list.length}</div>
+      <div class="friends-list">
+        ${listHtml}
+      </div>
+    </div>
+  `;
+}
+// ─────────────────────────────────────────────────────────────────
 
   const [installed, installedMods, modsCat] = await Promise.all([
     window.playbound.getInstalled(),
