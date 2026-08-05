@@ -243,18 +243,34 @@ async function mapPool<T, R>(
   return results;
 }
 
-/** Rehost cover + screenshots to Blob WebP; leave videos as remote (HLS/CDN) URLs. */
+/** Rehost cover + screenshots to Blob WebP; keep original URL if rehost fails. */
+export type RehostStats = {
+  fetched: number;
+  rehosted: number;
+  keptRemote: number;
+};
+
 export async function rehostMediaBundle(
   bundle: GameMediaBundle,
   slug: string
-): Promise<GameMediaBundle> {
+): Promise<GameMediaBundle & { stats: RehostStats }> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     throw new Error("BLOB_READ_WRITE_TOKEN is required to rehost media");
   }
 
+  let rehosted = 0;
+  let keptRemote = 0;
+
   let coverImage = bundle.coverImage;
   if (coverImage && !coverImage.includes("blob.vercel-storage.com") && !coverImage.startsWith("/")) {
-    coverImage = (await rehostImageToBlob({ sourceUrl: coverImage, slug, kind: "cover" })) || coverImage;
+    const blob = await rehostImageToBlob({ sourceUrl: coverImage, slug, kind: "cover" });
+    if (blob) {
+      coverImage = blob;
+      rehosted += 1;
+    } else {
+      coverImage = toHttpsUrl(coverImage);
+      keptRemote += 1;
+    }
   }
 
   const remoteShots = bundle.screenshots.filter(
@@ -264,19 +280,26 @@ export async function rehostMediaBundle(
     (u) => u && (u.includes("blob.vercel-storage.com") || u.startsWith("/"))
   );
 
-  const rehosted = await mapPool(remoteShots, 3, async (sourceUrl, i) => {
-    const url = await rehostImageToBlob({ sourceUrl, slug, kind: `shot${i}` });
-    return url;
+  const resolved = await mapPool(remoteShots, 3, async (sourceUrl, i) => {
+    const blob = await rehostImageToBlob({ sourceUrl, slug, kind: `shot${i}` });
+    if (blob) {
+      rehosted += 1;
+      return blob;
+    }
+    keptRemote += 1;
+    return toHttpsUrl(sourceUrl);
   });
 
-  const screenshots = [...localShots, ...rehosted.filter((u): u is string => Boolean(u))].slice(
-    0,
-    MAX_SCREENSHOTS
-  );
+  const screenshots = [...localShots, ...resolved.filter(Boolean)].slice(0, MAX_SCREENSHOTS);
 
   return {
     coverImage,
     screenshots,
     videos: bundle.videos.map(toHttpsUrl).slice(0, MAX_VIDEOS),
+    stats: {
+      fetched: (bundle.coverImage ? 1 : 0) + bundle.screenshots.length + bundle.videos.length,
+      rehosted,
+      keptRemote,
+    },
   };
 }

@@ -321,8 +321,8 @@ export function GameEditorForm({
     setError("");
     setMediaNote("");
     try {
-      const beforeShots = form.screenshots?.length ?? 0;
-      const beforeVideos = form.videos?.length ?? 0;
+      const existingShots = [...(form.screenshots ?? [])].filter(Boolean);
+      const existingVideos = [...(form.videos ?? [])].filter(Boolean);
       const hadCover = Boolean(form.coverImage);
       const res = await fetch("/api/admin/games/media", {
         method: "POST",
@@ -337,27 +337,66 @@ export function GameEditorForm({
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(data?.error ?? "Media fetch failed");
+        // Non-fatal when we already have media — don't wipe.
+        const msg = data?.error ?? "Media fetch failed";
+        if (existingShots.length || existingVideos.length || form.coverImage) {
+          setMediaNote(`${msg} Existing media kept.`);
+          setError("");
+        } else {
+          setError(msg);
+        }
         setBusy(false);
         return;
       }
 
       const incomingShots = ((data.screenshots as string[]) ?? []).filter(Boolean);
       const incomingVideos = ((data.videos as string[]) ?? []).filter(Boolean);
-      const thin = screenshotsAreThin(form.screenshots);
-      const nextShots = thin
-        ? incomingShots.slice(0, 20)
-        : [...new Set([...(form.screenshots ?? []), ...incomingShots])].slice(0, 20);
-      const nextVideos = [...new Set([...(form.videos ?? []), ...incomingVideos])].slice(0, 10);
+      const thin = screenshotsAreThin(existingShots);
+      const unionShots = [...new Set([...existingShots, ...incomingShots])].slice(0, 20);
+      let nextShots =
+        thin && incomingShots.length > existingShots.length
+          ? incomingShots.slice(0, 20)
+          : unionShots;
+      if (nextShots.length < existingShots.length) {
+        nextShots = unionShots;
+      }
+
+      const nextVideos = [...new Set([...existingVideos, ...incomingVideos])].slice(0, 10);
       const replaceCover =
-        !form.coverImage || coverLooksLikeSteamHeader(form.coverImage) || thin;
+        (!form.coverImage || coverLooksLikeSteamHeader(form.coverImage) || thin) &&
+        Boolean(data.coverImage);
       const nextCover = replaceCover
-        ? data.coverImage || form.coverImage || null
-        : form.coverImage || data.coverImage || null;
+        ? (data.coverImage as string) || form.coverImage || null
+        : form.coverImage || (data.coverImage as string) || null;
       const inferredSteam =
         typeof data.steamAppId === "string" && /^\d+$/.test(data.steamAppId)
           ? data.steamAppId
           : null;
+
+      const addedShots = Math.max(0, nextShots.length - existingShots.length);
+      const addedVideos = Math.max(0, nextVideos.length - existingVideos.length);
+      const stats = data.stats as { fetched?: number; rehosted?: number; keptRemote?: number } | undefined;
+
+      if (
+        addedShots === 0 &&
+        addedVideos === 0 &&
+        nextCover === form.coverImage &&
+        !(stats?.fetched)
+      ) {
+        setMediaNote("No new media found from website or Steam. Existing media kept.");
+      } else {
+        const steamBit = inferredSteam && !steamAppId ? `steam id ${inferredSteam}, ` : "";
+        const coverBit = (!hadCover || replaceCover) && nextCover && nextCover !== form.coverImage ? "updated cover, " : "";
+        const rehostBit =
+          stats && (stats.rehosted || stats.keptRemote)
+            ? `rehosted ${stats.rehosted ?? 0}, kept remote ${stats.keptRemote ?? 0}. `
+            : "";
+        setMediaNote(
+          `Refresh done — ${steamBit}${coverBit}added ${addedShots} screenshot${
+            addedShots === 1 ? "" : "s"
+          }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. ${rehostBit}Save to persist.`
+        );
+      }
 
       setForm((prev) => ({
         ...prev,
@@ -366,16 +405,6 @@ export function GameEditorForm({
         videos: nextVideos,
         steamAppId: prev.steamAppId || inferredSteam,
       }));
-      const addedShots = Math.max(0, nextShots.length - (thin ? 0 : beforeShots));
-      const addedVideos = Math.max(0, nextVideos.length - beforeVideos);
-      const coverBit =
-        (!hadCover || replaceCover) && nextCover ? "updated cover, " : "";
-      const steamBit = inferredSteam && !steamAppId ? `steam id ${inferredSteam}, ` : "";
-      setMediaNote(
-        `Refresh done — ${steamBit}${coverBit}${thin ? "replaced" : "added"} ${addedShots} screenshot${
-          addedShots === 1 ? "" : "s"
-        }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. Save to persist.`
-      );
       setBusy(false);
     } catch {
       setError("Couldn't reach the server.");

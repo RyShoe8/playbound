@@ -143,6 +143,10 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
       if (!images.includes(abs)) images.push(abs);
     }
   }
+  for (const abs of collectBodyImages(html, finalUrl)) {
+    if (!images.includes(abs)) images.push(abs);
+    if (images.length >= 20) break;
+  }
 
   const videos: string[] = [];
   for (const key of ["og:video", "og:video:url", "og:video:secure_url", "twitter:player:stream"]) {
@@ -160,6 +164,31 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
     videos,
     siteName: metaContent(html, "og:site_name"),
   };
+}
+
+const SKIP_IMAGE_RE =
+  /(?:^|\/)(?:icon|favicon|logo|avatar|sprite|emoji|badge|button|pixel|1x1|spacer|tracking)(?:[-_.]|$)/i;
+const TINY_DIM_RE = /[-_/](?:16|24|32|48|64)x(?:16|24|32|48|64)(?:[-_.]|$)/i;
+
+/** Pull large-looking <img> URLs from HTML body beyond OG tags. */
+function collectBodyImages(html: string, finalUrl: string): string[] {
+  const out: string[] = [];
+  for (const m of html.matchAll(/<img\b[^>]*?\bsrc=["']([^"']+)["'][^>]*>/gi)) {
+    const raw = m[1]?.trim();
+    if (!raw || raw.startsWith("data:")) continue;
+    let abs: string;
+    try {
+      abs = absoluteUrl(finalUrl, raw);
+    } catch {
+      continue;
+    }
+    if (!/^https?:\/\//i.test(abs)) continue;
+    if (SKIP_IMAGE_RE.test(abs) || TINY_DIM_RE.test(abs)) continue;
+    if (out.includes(abs)) continue;
+    out.push(abs);
+    if (out.length >= 20) break;
+  }
+  return out;
 }
 
 function parseJinaMarkdown(text: string, sourceUrl: string): PageMeta | null {
@@ -182,8 +211,10 @@ function parseJinaMarkdown(text: string, sourceUrl: string): PageMeta | null {
 
   const images: string[] = [];
   for (const m of text.matchAll(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g)) {
-    if (m[1] && !images.includes(m[1])) images.push(m[1]);
-    if (images.length >= 8) break;
+    const url = m[1];
+    if (!url || SKIP_IMAGE_RE.test(url) || TINY_DIM_RE.test(url)) continue;
+    if (!images.includes(url)) images.push(url);
+    if (images.length >= 20) break;
   }
 
   return {
