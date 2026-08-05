@@ -322,7 +322,10 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     }
   });
 
-  const editionCount = editionLists.reduce((sum, list) => sum + list.length, 0);
+  const editionCount = editionLists.reduce(
+    (sum, list) => sum + list.filter((e) => !e.virtual).length,
+    0
+  );
 
   const mostPopular = [...games]
     .map((g) => ({
@@ -422,7 +425,7 @@ async function computeModLiveStats(modSlug: string): Promise<EntityLiveStats> {
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v2"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v3"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();
