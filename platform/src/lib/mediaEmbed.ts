@@ -8,7 +8,7 @@ export type ClassifiedMedia = {
   embedUrl?: string;
 };
 
-function youtubeId(url: string): string | null {
+export function youtubeId(url: string): string | null {
   try {
     const u = new URL(url);
     if (u.hostname.includes("youtu.be")) {
@@ -25,7 +25,7 @@ function youtubeId(url: string): string | null {
   return null;
 }
 
-function vimeoId(url: string): string | null {
+export function vimeoId(url: string): string | null {
   try {
     const u = new URL(url);
     if (!u.hostname.includes("vimeo.com")) return null;
@@ -54,18 +54,48 @@ function looksLikeHls(url: string): boolean {
   return false;
 }
 
-export function classifyMediaUrl(src: string): ClassifiedMedia {
-  const normalized = toHttps(src);
+function looksLikeDirectVideo(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (/\.(mp4|webm|m3u8)(\?|$)/i.test(u.pathname)) return true;
+    if (u.hostname.includes("steamstatic.com") && /\/movie/i.test(u.pathname)) return true;
+    return looksLikeHls(url);
+  } catch {
+    return /\.(mp4|webm|m3u8)(\?|$)/i.test(url);
+  }
+}
+
+/** True when the URL can render in GameMedia / HlsVideo (YT, Vimeo, HLS, direct file). */
+export function isPlayableVideoUrl(url: string): boolean {
+  const normalized = toHttps(url.trim());
+  if (!/^https?:\/\//i.test(normalized)) return false;
+  if (youtubeId(normalized) || vimeoId(normalized)) return true;
+  return looksLikeDirectVideo(normalized);
+}
+
+/** Canonical watch URL for YouTube; https for everything else. */
+export function normalizeVideoUrl(url: string): string | null {
+  const normalized = toHttps(url.trim());
+  if (!isPlayableVideoUrl(normalized)) return null;
   const yt = youtubeId(normalized);
-  if (yt) {
-    return { kind: "youtube", src: normalized, embedUrl: `https://www.youtube-nocookie.com/embed/${yt}` };
-  }
+  if (yt) return `https://www.youtube.com/watch?v=${yt}`;
   const vim = vimeoId(normalized);
+  if (vim) return `https://vimeo.com/${vim}`;
+  return normalized;
+}
+
+export function classifyMediaUrl(src: string): ClassifiedMedia {
+  const stored = normalizeVideoUrl(src) || toHttps(src);
+  const yt = youtubeId(stored);
+  if (yt) {
+    return { kind: "youtube", src: stored, embedUrl: `https://www.youtube-nocookie.com/embed/${yt}` };
+  }
+  const vim = vimeoId(stored);
   if (vim) {
-    return { kind: "vimeo", src: normalized, embedUrl: `https://player.vimeo.com/video/${vim}` };
+    return { kind: "vimeo", src: stored, embedUrl: `https://player.vimeo.com/video/${vim}` };
   }
-  if (looksLikeHls(normalized)) {
-    return { kind: "hls", src: normalized };
+  if (looksLikeHls(stored)) {
+    return { kind: "hls", src: stored };
   }
-  return { kind: "direct", src: normalized };
+  return { kind: "direct", src: stored };
 }

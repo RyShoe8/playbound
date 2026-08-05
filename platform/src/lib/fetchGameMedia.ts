@@ -2,7 +2,8 @@
 
 import { put } from "@vercel/blob";
 import { compressImageBuffer } from "@/lib/compressImage";
-import { tryFetchPageMeta } from "@/lib/pageMeta";
+import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
+import { normalizeVideoUrl } from "@/lib/mediaEmbed";
 
 export {
   coverLooksLikeSteamHeader,
@@ -87,13 +88,23 @@ export function inferSteamAppId(opts: {
   return null;
 }
 
-function steamMovieUrl(movie: {
+type SteamMovie = {
+  highlight?: boolean;
   mp4?: { max?: string; "480"?: string };
-  webm?: { max?: string };
+  webm?: { max?: string; "480"?: string };
   hls_h264?: string;
-}): string | null {
+  hlsH264?: string;
+};
+
+function steamMovieUrl(movie: SteamMovie): string | null {
   const raw =
-    movie.mp4?.max || movie.mp4?.["480"] || movie.webm?.max || movie.hls_h264 || null;
+    movie.mp4?.max ||
+    movie.mp4?.["480"] ||
+    movie.webm?.max ||
+    movie.webm?.["480"] ||
+    movie.hls_h264 ||
+    movie.hlsH264 ||
+    null;
   return raw ? toHttpsUrl(raw) : null;
 }
 
@@ -109,11 +120,12 @@ export function parseSteamStoreMedia(data: Record<string, unknown>): GameMediaBu
 
   const videos: string[] = [];
   if (Array.isArray(data.movies)) {
-    for (const movie of data.movies as {
-      mp4?: { max?: string; "480"?: string };
-      webm?: { max?: string };
-      hls_h264?: string;
-    }[]) {
+    const movies = [...(data.movies as SteamMovie[])].sort((a, b) => {
+      const ah = a.highlight ? 0 : 1;
+      const bh = b.highlight ? 0 : 1;
+      return ah - bh;
+    });
+    for (const movie of movies) {
       const url = steamMovieUrl(movie);
       if (url && !videos.includes(url)) videos.push(url);
       if (videos.length >= MAX_VIDEOS) break;
@@ -121,6 +133,27 @@ export function parseSteamStoreMedia(data: Record<string, unknown>): GameMediaBu
   }
 
   return { coverImage, screenshots, videos };
+}
+
+async function fetchSteamStorePageVideos(appId: string): Promise<string[]> {
+  try {
+    const storeUrl = `https://store.steampowered.com/app/${appId}`;
+    const res = await fetch(storeUrl, {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        accept: "text/html",
+        "accept-language": "en-US,en;q=0.9",
+      },
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    return collectVideosFromHtml(html, storeUrl).slice(0, MAX_VIDEOS);
+  } catch {
+    return [];
+  }
 }
 
 /** Steam store gallery only (no editorial fields). */
@@ -140,7 +173,14 @@ export async function fetchSteamStoreMedia(appId: string): Promise<GameMediaBund
   >;
   const entry = json[appId];
   if (!entry?.success || !entry.data) throw new Error("Steam app not found or unavailable");
-  return parseSteamStoreMedia(entry.data);
+  const bundle = parseSteamStoreMedia(entry.data);
+  if (bundle.videos.length === 0) {
+    const pageVideos = await fetchSteamStorePageVideos(appId);
+    if (pageVideos.length) {
+      return { ...bundle, videos: pageVideos.slice(0, MAX_VIDEOS) };
+    }
+  }
+  return bundle;
 }
 
 /** Open Graph / page meta images and videos (soft-fails via tryFetchPageMeta). */
@@ -148,15 +188,19 @@ export async function fetchWebsiteMedia(url: string): Promise<GameMediaBundle | 
   const result = await tryFetchPageMeta(url);
   if (!result.ok) return null;
   const { meta } = result;
+  const videos = meta.videos
+    .map((v) => normalizeVideoUrl(v) || v)
+    .filter(Boolean)
+    .slice(0, MAX_VIDEOS);
   return {
     coverImage: meta.images[0] ?? null,
     screenshots: meta.images.slice(0, MAX_SCREENSHOTS),
-    videos: meta.videos.slice(0, MAX_VIDEOS),
+    videos,
   };
 }
 
 /**
- * Prefer Steam when an app id is present, then merge website OG.
+ * Prefer Steam when an app id is present, then fill gaps from the website.
  * Website failures do not throw when Steam succeeded.
  */
 export async function fetchCombinedGameMedia(opts: {
@@ -171,7 +215,9 @@ export async function fetchCombinedGameMedia(opts: {
   }
 
   const url = opts.url?.trim();
-  if (url) {
+  const shouldScrapeSite =
+    Boolean(url) && (!steamId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
+  if (shouldScrapeSite && url) {
     try {
       const site = await fetchWebsiteMedia(url);
       if (site) bundle = mergeGameMedia(bundle, site);
