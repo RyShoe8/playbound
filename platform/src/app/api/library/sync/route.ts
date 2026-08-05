@@ -88,7 +88,10 @@ export async function POST(req: Request) {
 
     if (body.action === "install") {
       const entry = await LibraryEntry.findOneAndUpdate(
-        { userId: user._id, gameSlug: body.slug },
+        // The launcher only runs on desktop, so its installs are always the
+        // desktop copy — and must not collide with the same game installed
+        // from a phone's app store.
+        { userId: user._id, gameSlug: body.slug, platform: "desktop" },
         {
           $set: {
             installed: true,
@@ -99,6 +102,8 @@ export async function POST(req: Request) {
           $setOnInsert: {
             userId: user._id,
             gameSlug: body.slug,
+            platform: "desktop",
+            source: "launcher",
             saved: false,
             addedAt: now,
           },
@@ -110,6 +115,7 @@ export async function POST(req: Request) {
         properties: {
           gameSlug: body.slug,
           installMethod: "launcher",
+          platform: "desktop",
           version: body.version,
         },
         userId: String(user._id),
@@ -124,7 +130,14 @@ export async function POST(req: Request) {
       });
     }
 
-    const entry = await LibraryEntry.findOne({ userId: user._id, gameSlug: body.slug });
+    // Uninstalling via the launcher removes the desktop copy only. Legacy
+    // entries have no platform and are desktop by definition, so they must
+    // match too or they become unremovable.
+    const entry = await LibraryEntry.findOne({
+      userId: user._id,
+      gameSlug: body.slug,
+      $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
+    });
     if (!entry) {
       return NextResponse.json({ success: true, deleted: false });
     }

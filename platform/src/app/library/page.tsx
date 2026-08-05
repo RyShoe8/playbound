@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { LibraryBig, LogIn } from "lucide-react";
 import { authOptions } from "@/lib/auth";
@@ -10,6 +11,12 @@ import { gamesFor } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { LibraryGrid } from "@/components/LibraryGrid";
 import { EmptyHint } from "@/components/ui/bits";
+import {
+  isLibraryPlatform,
+  LIBRARY_PLATFORM_LABELS,
+  platformFromUserAgent,
+  visiblePlatformsFor,
+} from "@/lib/libraryPlatform";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -43,6 +50,15 @@ export default async function LibraryPage() {
 
   let entries: { gameSlug: string; installed: boolean; saved: boolean }[] = [];
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
+  /** Games owned on other devices, so an empty page can explain itself. */
+  let elsewhereCount = 0;
+
+  // The library is per-device: a game installed from the Play Store on a phone
+  // is not installed on this desktop, and listing it here would offer a Play
+  // button that cannot work.
+  const viewerPlatform = platformFromUserAgent((await headers()).get("user-agent"));
+  const visible = visiblePlatformsFor(viewerPlatform);
+
   try {
     await dbConnect();
     const [rows, modRows] = await Promise.all([
@@ -59,11 +75,19 @@ export default async function LibraryPage() {
         .sort({ updatedAt: -1 })
         .lean(),
     ]);
-    entries = rows.map((r) => ({
-      gameSlug: r.gameSlug,
-      installed: Boolean(r.installed),
-      saved: Boolean(r.saved) && !r.installed,
-    }));
+    // Entries predating the platform field were all written by the launcher,
+    // which is desktop-only — so that is their platform, not a guess.
+    const platformOf = (r: { platform?: string }) =>
+      isLibraryPlatform(r.platform) ? r.platform : "desktop";
+
+    entries = rows
+      .filter((r) => visible.includes(platformOf(r)))
+      .map((r) => ({
+        gameSlug: r.gameSlug,
+        installed: Boolean(r.installed),
+        saved: Boolean(r.saved) && !r.installed,
+      }));
+    elsewhereCount = rows.filter((r) => !visible.includes(platformOf(r))).length;
     modEntries = modRows.map((r) => ({
       modSlug: String(r.modSlug),
       baseGameSlug: String(r.baseGameSlug),
@@ -93,16 +117,27 @@ export default async function LibraryPage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
         <p className="mt-1 text-muted-foreground">
-          Games installed with the PlayBound app or added from the catalog — including mods under each
-          game.
+          What you have on <strong>{LIBRARY_PLATFORM_LABELS[viewerPlatform]}</strong> — games
+          installed with the PlayBound app or added from the catalog, with mods under each game.
         </p>
       </div>
+
+      {/* Without this, a desktop user whose games are all on their phone sees
+          an empty page and assumes the library lost them. */}
+      {elsewhereCount > 0 && (
+        <p className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground">
+          {elsewhereCount} more game{elsewhereCount === 1 ? "" : "s"} in your library on other
+          devices. A library is per device, since installing on your phone doesn&apos;t install on
+          your computer — open PlayBound there to see them.
+        </p>
+      )}
 
       {!hasAny ? (
         <div className="space-y-4">
           <EmptyHint icon={LibraryBig}>
-            Your library is empty. Install with the PlayBound app, or open a game page and add one you
-            already own.
+            {elsewhereCount > 0
+              ? `Nothing here on ${LIBRARY_PLATFORM_LABELS[viewerPlatform]} yet — your ${elsewhereCount} game${elsewhereCount === 1 ? "" : "s"} are installed on another device.`
+              : "Your library is empty. Install with the PlayBound app, or open a game page and add one you already own."}
           </EmptyHint>
           <div className="flex flex-wrap justify-center gap-2">
             <Link
