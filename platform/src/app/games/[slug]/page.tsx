@@ -439,10 +439,7 @@ function OverviewTab({
     p.picks.some((pick) => pick.slug === game.slug)
   );
 
-  const installTotal =
-    typeof game.installCount === "number" && game.installCount > 0
-      ? game.installCount
-      : liveStats.installsAllTime ?? 0;
+  const installTotal = liveStats.installsAllTime ?? 0;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
