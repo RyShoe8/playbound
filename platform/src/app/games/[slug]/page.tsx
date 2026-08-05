@@ -57,6 +57,7 @@ import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
 import { issueForGame, type WeeklyIssue } from "@/lib/weekly";
 import { classifyMediaUrl } from "@/lib/mediaEmbed";
+import { HlsVideo } from "@/components/HlsVideo";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
 
 const tabs = [
@@ -942,6 +943,13 @@ function MediaTab({ game }: { game: Game }) {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     className="h-full w-full"
+                  />
+                ) : v.kind === "hls" ? (
+                  <HlsVideo
+                    src={v.src}
+                    title={`${game.title} video`}
+                    poster={game.coverImage || undefined}
+                    className="h-full w-full object-contain"
                   />
                 ) : (
                   <video

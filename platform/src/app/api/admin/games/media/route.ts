@@ -1,22 +1,31 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { fetchCombinedGameMedia } from "@/lib/fetchGameMedia";
+import {
+  emptyGameMedia,
+  fetchSteamStoreMedia,
+  fetchWebsiteMedia,
+  inferSteamAppId,
+  mergeGameMedia,
+  rehostMediaBundle,
+  type GameMediaBundle,
+} from "@/lib/fetchGameMedia";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
-const schema = z
-  .object({
-    url: z.string().trim().url().max(500).optional().nullable(),
-    steamAppId: z
-      .string()
-      .trim()
-      .regex(/^\d+$/)
-      .max(20)
-      .optional()
-      .nullable(),
-  })
-  .refine((v) => Boolean(v.url?.trim()) || Boolean(v.steamAppId?.trim()), {
-    message: "Provide a website URL or Steam app id",
-  });
+export const maxDuration = 120;
+
+const schema = z.object({
+  url: z.string().trim().url().max(500).optional().nullable(),
+  steamAppId: z
+    .string()
+    .trim()
+    .regex(/^\d+$/)
+    .max(20)
+    .optional()
+    .nullable(),
+  slug: z.string().trim().max(80).optional().nullable(),
+  coverImage: z.string().trim().max(500).optional().nullable(),
+  screenshots: z.array(z.string().trim().max(500)).max(20).optional().nullable(),
+});
 
 export async function POST(req: Request) {
   try {
@@ -24,16 +33,57 @@ export async function POST(req: Request) {
     if (error) return error;
 
     const body = schema.parse(await req.json());
-    const media = await fetchCombinedGameMedia({
-      url: body.url,
+    const steamAppId = inferSteamAppId({
       steamAppId: body.steamAppId,
+      website: body.url,
+      coverImage: body.coverImage,
+      screenshots: body.screenshots ?? undefined,
     });
+    const url = body.url?.trim() || null;
+
+    if (!steamAppId && !url) {
+      return NextResponse.json(
+        { error: "Provide a website URL, Steam app id, or media URLs that contain a Steam id" },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json(
+        { error: "BLOB_READ_WRITE_TOKEN is required to refresh and rehost media" },
+        { status: 503 }
+      );
+    }
+
+    let bundle: GameMediaBundle = emptyGameMedia();
+    if (steamAppId) {
+      bundle = mergeGameMedia(bundle, await fetchSteamStoreMedia(steamAppId));
+    }
+
+    // Website OG only if the Steam gallery is still thin.
+    if (url && bundle.screenshots.length < 4) {
+      try {
+        const site = await fetchWebsiteMedia(url);
+        if (site) bundle = mergeGameMedia(bundle, site);
+      } catch {
+        /* soft-fail */
+      }
+    }
+
+    if (!bundle.coverImage && bundle.screenshots.length === 0 && bundle.videos.length === 0) {
+      return NextResponse.json({ error: "Could not fetch media" }, { status: 502 });
+    }
+
+    const slug = (body.slug || "upload").replace(/[^a-z0-9-]/gi, "-").slice(0, 80) || "upload";
+    const rehosted = await rehostMediaBundle(bundle, slug);
 
     return NextResponse.json({
-      coverImage: media.coverImage,
-      screenshots: media.screenshots,
-      videos: media.videos,
-      images: media.screenshots,
+      coverImage: rehosted.coverImage,
+      screenshots: rehosted.screenshots,
+      videos: rehosted.videos,
+      images: rehosted.screenshots,
+      steamAppId,
+      rehosted: true,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {

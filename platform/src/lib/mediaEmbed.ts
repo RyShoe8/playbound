@@ -1,4 +1,4 @@
-export type MediaKind = "youtube" | "vimeo" | "direct";
+export type MediaKind = "youtube" | "vimeo" | "direct" | "hls";
 
 export type ClassifiedMedia = {
   kind: MediaKind;
@@ -37,14 +37,35 @@ function vimeoId(url: string): string | null {
   }
 }
 
+function toHttps(url: string): string {
+  if (url.startsWith("http://")) return `https://${url.slice("http://".length)}`;
+  return url;
+}
+
+function looksLikeHls(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (/\.m3u8$/i.test(u.pathname)) return true;
+    if (/hls_264|hls_h264|\/hls_/i.test(u.pathname + u.search)) return true;
+    if (u.hostname.includes("video.akamai.steamstatic.com") && u.pathname.includes("hls")) return true;
+  } catch {
+    return /\.m3u8(\?|$)/i.test(url);
+  }
+  return false;
+}
+
 export function classifyMediaUrl(src: string): ClassifiedMedia {
-  const yt = youtubeId(src);
+  const normalized = toHttps(src);
+  const yt = youtubeId(normalized);
   if (yt) {
-    return { kind: "youtube", src, embedUrl: `https://www.youtube-nocookie.com/embed/${yt}` };
+    return { kind: "youtube", src: normalized, embedUrl: `https://www.youtube-nocookie.com/embed/${yt}` };
   }
-  const vim = vimeoId(src);
+  const vim = vimeoId(normalized);
   if (vim) {
-    return { kind: "vimeo", src, embedUrl: `https://player.vimeo.com/video/${vim}` };
+    return { kind: "vimeo", src: normalized, embedUrl: `https://player.vimeo.com/video/${vim}` };
   }
-  return { kind: "direct", src };
+  if (looksLikeHls(normalized)) {
+    return { kind: "hls", src: normalized };
+  }
+  return { kind: "direct", src: normalized };
 }
