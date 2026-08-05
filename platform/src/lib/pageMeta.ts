@@ -1,5 +1,7 @@
 /** Shared HTML / Open Graph helpers for admin import + media fetch. */
 
+import { normalizeVideoUrl } from "@/lib/mediaEmbed";
+
 export function stripHtml(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, "\n")
@@ -124,6 +126,21 @@ function metaIsUsable(meta: PageMeta): boolean {
   return true;
 }
 
+function pushVideo(out: string[], raw: string | null | undefined, baseUrl?: string) {
+  if (!raw?.trim()) return;
+  let abs = raw.trim();
+  if (baseUrl) {
+    try {
+      abs = absoluteUrl(baseUrl, abs);
+    } catch {
+      return;
+    }
+  }
+  const normalized = normalizeVideoUrl(abs);
+  if (!normalized || out.includes(normalized)) return;
+  out.push(normalized);
+}
+
 function parsePageMeta(html: string, finalUrl: string): PageMeta {
   const ogTitle = metaContent(html, "og:title");
   const twTitle = metaContent(html, "twitter:title");
@@ -149,19 +166,25 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
   }
 
   const videos: string[] = [];
-  for (const key of ["og:video", "og:video:url", "og:video:secure_url", "twitter:player:stream"]) {
-    const raw = metaContent(html, key);
-    if (raw) {
-      const abs = absoluteUrl(finalUrl, raw);
-      if (!videos.includes(abs)) videos.push(abs);
-    }
+  for (const key of [
+    "og:video",
+    "og:video:url",
+    "og:video:secure_url",
+    "twitter:player:stream",
+    "twitter:player",
+  ]) {
+    pushVideo(videos, metaContent(html, key), finalUrl);
+  }
+  for (const v of collectVideosFromHtml(html, finalUrl)) {
+    if (!videos.includes(v)) videos.push(v);
+    if (videos.length >= 10) break;
   }
 
   return {
     title,
     description,
     images,
-    videos,
+    videos: videos.slice(0, 10),
     siteName: metaContent(html, "og:site_name"),
   };
 }
@@ -187,6 +210,46 @@ function collectBodyImages(html: string, finalUrl: string): string[] {
     if (out.includes(abs)) continue;
     out.push(abs);
     if (out.length >= 20) break;
+  }
+  return out;
+}
+
+const ATTR_URL_RES = [
+  /<(?:iframe|a)\b[^>]*?\b(?:src|data-src|href)=["']([^"']+)["'][^>]*>/gi,
+  /<(?:video|source)\b[^>]*?\bsrc=["']([^"']+)["'][^>]*>/gi,
+];
+
+/** YouTube / Vimeo / direct video URLs from page markup (iframes, links, video tags). */
+export function collectVideosFromHtml(html: string, baseUrl: string): string[] {
+  const out: string[] = [];
+  for (const re of ATTR_URL_RES) {
+    re.lastIndex = 0;
+    for (const m of html.matchAll(re)) {
+      pushVideo(out, m[1], baseUrl);
+      if (out.length >= 10) return out;
+    }
+  }
+  // Bare YouTube / Vimeo URLs in script or JSON-LD blobs
+  for (const m of html.matchAll(
+    /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)[\w-]{6,}|youtu\.be\/[\w-]{6,}|vimeo\.com\/\d+)/gi
+  )) {
+    pushVideo(out, m[0]);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+function collectVideosFromText(text: string): string[] {
+  const out: string[] = [];
+  for (const m of text.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)) {
+    pushVideo(out, m[1]);
+    if (out.length >= 10) return out;
+  }
+  for (const m of text.matchAll(
+    /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)[\w-]{6,}|youtu\.be\/[\w-]{6,}|vimeo\.com\/\d+)[^\s)\]"'<>]*/gi
+  )) {
+    pushVideo(out, m[0].replace(/[.,;]+$/, ""));
+    if (out.length >= 10) break;
   }
   return out;
 }
@@ -221,7 +284,7 @@ function parseJinaMarkdown(text: string, sourceUrl: string): PageMeta | null {
     title,
     description,
     images,
-    videos: [],
+    videos: collectVideosFromText(text),
     siteName: null,
   };
 }

@@ -60,8 +60,9 @@ export async function POST(req: Request) {
       bundle = mergeGameMedia(bundle, await fetchSteamStoreMedia(steamAppId));
     }
 
-    // Always scrape the website for non-Steam games; for Steam, only fill gaps.
-    const shouldScrapeSite = Boolean(url) && (!steamAppId || bundle.screenshots.length < 4);
+    // Always scrape the website for non-Steam games; for Steam, fill shot or video gaps.
+    const shouldScrapeSite =
+      Boolean(url) && (!steamAppId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
     if (shouldScrapeSite && url) {
       try {
         const site = await fetchWebsiteMedia(url);

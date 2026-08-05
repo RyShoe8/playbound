@@ -386,15 +386,20 @@ export function GameEditorForm({
         setMediaNote("No new media found from website or Steam. Existing media kept.");
       } else {
         const steamBit = inferredSteam && !steamAppId ? `steam id ${inferredSteam}, ` : "";
-        const coverBit = (!hadCover || replaceCover) && nextCover && nextCover !== form.coverImage ? "updated cover, " : "";
+        const coverBit =
+          (!hadCover || replaceCover) && nextCover && nextCover !== form.coverImage
+            ? "updated cover, "
+            : "";
         const rehostBit =
           stats && (stats.rehosted || stats.keptRemote)
             ? `rehosted ${stats.rehosted ?? 0}, kept remote ${stats.keptRemote ?? 0}. `
             : "";
+        const trailerBit =
+          addedVideos === 0 ? " No trailers found — paste a YouTube URL if you have one." : "";
         setMediaNote(
           `Refresh done — ${steamBit}${coverBit}added ${addedShots} screenshot${
             addedShots === 1 ? "" : "s"
-          }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. ${rehostBit}Save to persist.`
+          }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. ${rehostBit}Save to persist.${trailerBit}`
         );
       }
 
@@ -1746,14 +1751,14 @@ export function GameEditorForm({
                 </label>
               );
             })}
-            {!readiness.ready && normalizeStatus(form) !== "published" && (
+            {!readiness.ready && (
               <span className="text-[11px] font-normal text-muted-foreground">
                 ({readiness.missing.length} field
                 {readiness.missing.length === 1 ? "" : "s"} missing for Published)
               </span>
             )}
           </fieldset>
-          {!readiness.ready && normalizeStatus(form) !== "published" && (
+          {!readiness.ready && (
             <button
               type="button"
               disabled={busy}
@@ -1807,7 +1812,7 @@ export function GameEditorForm({
         {error && (
           <div className="space-y-2">
             <p className="text-sm text-destructive">{error}</p>
-            {!readiness.ready && normalizeStatus(form) !== "published" && /publish|missing/i.test(error) && (
+            {!readiness.ready && /cannot publish|publish|missing/i.test(error) && (
               <button
                 type="button"
                 disabled={busy}
