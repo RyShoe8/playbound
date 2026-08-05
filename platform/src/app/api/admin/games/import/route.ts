@@ -7,6 +7,7 @@ import {
   type GamePayload,
 } from "@/lib/gamePayload";
 import { stripHtml, tryFetchPageMeta, softTitleFromUrl } from "@/lib/pageMeta";
+import { parseSteamStoreMedia, MAX_SCREENSHOTS, MAX_VIDEOS } from "@/lib/fetchGameMedia";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   deriveInstallSteps,
@@ -104,29 +105,13 @@ async function fromSteam(
   const short = String(data.short_description ?? "");
   const detailed = stripHtml(String(data.detailed_description ?? short));
   const website = (data.website as string) || `https://store.steampowered.com/app/${appId}`;
-  const header = (data.header_image as string) || null;
-  const screenshots = Array.isArray(data.screenshots)
-    ? (data.screenshots as { path_full?: string }[])
-        .map((s) => s.path_full)
-        .filter((u): u is string => Boolean(u))
-        .slice(0, 8)
-    : [];
+  const { coverImage: header, screenshots, videos } = parseSteamStoreMedia(data);
   const genreTags = Array.isArray(data.genres)
     ? (data.genres as { description?: string }[])
         .map((g) => g.description)
         .filter((x): x is string => Boolean(x))
         .slice(0, 8)
     : [];
-
-  // Extract videos from Steam movies array
-  const videos: string[] = [];
-  if (Array.isArray(data.movies)) {
-    for (const movie of data.movies as { mp4?: { max?: string; "480"?: string }; webm?: { max?: string } }[]) {
-      const url = movie.mp4?.max || movie.mp4?.["480"] || movie.webm?.max;
-      if (url && !videos.includes(url)) videos.push(url);
-      if (videos.length >= 5) break;
-    }
-  }
 
   // Extract sizeMB from pc_requirements disk space text
   const pcReq = data.pc_requirements as { minimum?: string; recommended?: string } | string | null;
@@ -296,8 +281,8 @@ async function fromWebsite(
         website: url,
         developerSlug: "indie-web",
         coverImage: cover,
-        screenshots: meta.images.slice(0, 8),
-        videos: meta.videos.slice(0, 5),
+        screenshots: meta.images.slice(0, MAX_SCREENSHOTS),
+        videos: meta.videos.slice(0, MAX_VIDEOS),
         platforms: ["Web"],
         launchMethods: ["browser"],
         browserPlayable: true,
