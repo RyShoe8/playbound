@@ -7,7 +7,7 @@ import { MAX_SERVERS } from "./types.js";
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 
-const HOSTS = ["server.wesnoth.org", "server2.wesnoth.org"];
+const HOSTS = ["server.wesnoth.org"];
 const PORT = 15000;
 const SESSION_MS = 20_000;
 const DEFAULT_VERSION = process.env.WESNOTH_CLIENT_VERSION || "1.18.5";
@@ -526,6 +526,8 @@ export async function pollWesnoth(creds = null) {
 
   /** @type {Error | null} */
   let lastErr = null;
+  /** @type {Error | null} */
+  let lastNonDnsErr = null;
   for (const host of HOSTS) {
     try {
       const servers = await pollOne(host, PORT, auth);
@@ -540,12 +542,18 @@ export async function pollWesnoth(creds = null) {
       if (servers.length) return servers;
     } catch (err) {
       lastErr = err instanceof Error ? err : new Error(String(err));
-      console.warn(`[wesnoth] ${host} failed:`, lastErr.message);
+      const msg = lastErr.message || "";
+      const isDns =
+        lastErr.code === "ENOTFOUND" ||
+        lastErr.code === "EAI_AGAIN" ||
+        /ENOTFOUND|getaddrinfo/i.test(msg);
+      if (!isDns) lastNonDnsErr = lastErr;
+      console.warn(`[wesnoth] ${host} failed:`, msg);
     }
   }
 
   if (auth) {
-    throw lastErr || new Error("Wesnoth lobby login succeeded on no host with a game list");
+    throw lastNonDnsErr || new Error("Wesnoth lobby returned no games");
   }
   return lobbyPointer();
 }
