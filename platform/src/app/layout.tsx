@@ -12,6 +12,7 @@ import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/J
 import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
 import { FriendsSidebar } from "@/components/friends/FriendsSidebar";
+import { MobileFriendsPanel } from "@/components/friends/MobileFriendsPanel";
 import {
   SITE_URL,
   SITE_NAME,
@@ -111,6 +112,7 @@ export default function RootLayout({
               </div>
               <MobileNav />
               <FriendsSidebar />
+              <MobileFriendsPanel />
             </CompatibilityShell>
           </TelemetryProvider>
         </SessionProvider>

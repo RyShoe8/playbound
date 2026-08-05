@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { Avatar } from "@/components/ui/bits";
-import { Gamepad2, Globe, Search, UserMinus, UserPlus, X, Users } from "lucide-react";
+import { Gamepad2, Globe, Search, UserMinus, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 
 export function MobileFriendsPanel() {
@@ -16,41 +16,27 @@ export function MobileFriendsPanel() {
     incomingRequests,
     acceptRequest,
     declineRequest,
+    isMobilePanelOpen,
+    setMobilePanelOpen,
   } = useFriendsStore();
-
-  const [isOpen, setIsOpen] = useState(false);
 
   if (status !== "authenticated") return null;
 
-  return (
-    <>
-      {/* Mobile nav button to open panel */}
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary xl:hidden relative"
-      >
-        <Users className="size-5" />
-        {incomingRequests.length > 0 && (
-          <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
-            {incomingRequests.length}
-          </span>
-        )}
-      </button>
+  if (!isMobilePanelOpen) return null;
 
-      {/* Slide-over panel */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex xl:hidden">
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
-          <div className="relative ml-auto flex w-full max-w-sm flex-col bg-card shadow-2xl transition-transform duration-300 ease-in-out border-l border-border h-full">
+  return (
+    <div className="fixed inset-0 z-50 flex xl:hidden">
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobilePanelOpen(false)} />
+      <div className="relative ml-auto flex w-full max-w-sm flex-col bg-card shadow-2xl transition-transform duration-300 ease-in-out border-l border-border h-full">
             
             {/* Header */}
             <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-secondary/50 px-4">
               <h2 className="text-lg font-bold">Friends</h2>
               <div className="flex items-center gap-3">
-                <Link href="/search?tab=users" onClick={() => setIsOpen(false)} className="p-2 hover:bg-secondary rounded text-muted-foreground hover:text-foreground">
+                <Link href="/search?tab=users" onClick={() => setMobilePanelOpen(false)} className="p-2 hover:bg-secondary rounded text-muted-foreground hover:text-foreground">
                   <Search className="size-5" />
                 </Link>
-                <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-secondary rounded text-muted-foreground hover:text-foreground">
+                <button onClick={() => setMobilePanelOpen(false)} className="p-2 hover:bg-secondary rounded text-muted-foreground hover:text-foreground">
                   <X className="size-5" />
                 </button>
               </div>
@@ -143,9 +129,7 @@ export function MobileFriendsPanel() {
               </div>
 
             </div>
-          </div>
-        </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
