@@ -101,8 +101,8 @@ module.exports = {
 
   mac: {
     target: {
-      target: "zip",
-      arch: ["x64"]
+      target: "dmg",
+      arch: ["universal"]
     },
     artifactName: "PlayBound-macOS-${version}.${ext}",
     category: "public.app-category.games",
