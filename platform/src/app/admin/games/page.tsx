@@ -5,7 +5,6 @@ import { listAllGames } from "@/lib/catalog";
 import { editionCountsByGame } from "@/lib/editions";
 import { GameArt } from "@/components/GameArt";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
-import { BackfillMediaButton } from "@/components/admin/BackfillMediaButton";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
@@ -20,7 +19,6 @@ export default async function AdminGamesPage() {
           <p className="mt-1 text-muted-foreground">Create, edit, and publish catalog entries in MongoDB.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <BackfillMediaButton />
           <ProvisionDiscordAllButton />
           <Link
             href="/admin/games/new"

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 import {
   FEATURES,
   GENRES,
@@ -27,6 +28,7 @@ import type { LauncherInstallKind } from "@/lib/launcherInstall";
 import { editorialReadiness, ensureDerivedGameFields } from "@/lib/enrich";
 import type { QualityBar } from "@/lib/data/types";
 import { CATALOG_STATUSES, type CatalogStatus, normalizeStatus } from "@/lib/catalogStatus";
+import { classifyMediaUrl } from "@/lib/mediaEmbed";
 import {
   DerivedContentEditor,
   EvidencePanel,
@@ -36,6 +38,7 @@ import {
   SourceMaterialPanel,
   StringListEditor,
 } from "@/components/admin/EditorialFields";
+import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 
 /** Games with a live PlayBound server list provider (keep in sync with registry). */
 const WIRED_SERVER_PROVIDERS = new Set([
@@ -83,6 +86,42 @@ function toggleInList<T extends string>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
 }
 
+function isUsableVideoUrl(src: string): boolean {
+  try {
+    const u = new URL(src);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    const kind = classifyMediaUrl(src).kind;
+    if (kind === "youtube" || kind === "vimeo") return true;
+    // Direct: accept video extensions or any https (Steam CDN trails often omit extensions).
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function VideoPreview({ src }: { src: string }) {
+  const media = classifyMediaUrl(src);
+  if (media.kind === "youtube" || media.kind === "vimeo") {
+    return (
+      <iframe
+        title="Video preview"
+        src={media.embedUrl}
+        className="aspect-video w-full max-w-md rounded-md border border-border bg-black"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+  return (
+    <video
+      src={src}
+      controls
+      className="aspect-video w-full max-w-md rounded-md border border-border bg-black"
+      preload="metadata"
+    />
+  );
+}
+
 export function GameEditorForm({
   mode,
   initial,
@@ -94,11 +133,14 @@ export function GameEditorForm({
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const videoFileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<GamePayload>(initial);
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const [mediaNote, setMediaNote] = useState("");
+  const [videoUrlDraft, setVideoUrlDraft] = useState("");
   const [forcePublishNext, setForcePublishNext] = useState(false);
   const [captureAvailable, setCaptureAvailable] = useState(false);
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
@@ -263,7 +305,11 @@ export function GameEditorForm({
     }
     setBusy(true);
     setError("");
+    setMediaNote("");
     try {
+      const beforeShots = form.screenshots?.length ?? 0;
+      const beforeVideos = form.videos?.length ?? 0;
+      const hadCover = Boolean(form.coverImage);
       const res = await fetch("/api/admin/games/media", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -275,19 +321,86 @@ export function GameEditorForm({
         setBusy(false);
         return;
       }
+      const nextShots = [
+        ...new Set([...(form.screenshots ?? []), ...((data.screenshots as string[]) ?? [])]),
+      ].slice(0, 20);
+      const nextVideos = [
+        ...new Set([...(form.videos ?? []), ...((data.videos as string[]) ?? [])]),
+      ].slice(0, 10);
+      const nextCover = form.coverImage || data.coverImage || null;
       setForm((prev) => ({
         ...prev,
-        coverImage: prev.coverImage || data.coverImage || null,
-        screenshots: [
-          ...new Set([...(prev.screenshots ?? []), ...((data.screenshots as string[]) ?? [])]),
-        ].slice(0, 20),
-        videos: [
-          ...new Set([...(prev.videos ?? []), ...((data.videos as string[]) ?? [])]),
-        ].slice(0, 10),
+        coverImage: nextCover,
+        screenshots: nextShots,
+        videos: nextVideos,
       }));
+      const addedShots = Math.max(0, nextShots.length - beforeShots);
+      const addedVideos = Math.max(0, nextVideos.length - beforeVideos);
+      const coverBit = !hadCover && nextCover ? "set cover, " : "";
+      setMediaNote(
+        `Refresh done — ${coverBit}added ${addedShots} screenshot${addedShots === 1 ? "" : "s"}, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. Save to persist.`
+      );
       setBusy(false);
     } catch {
       setError("Couldn't reach the server.");
+      setBusy(false);
+    }
+  }
+
+  function addVideoUrl() {
+    const raw = videoUrlDraft.trim();
+    if (!raw) return;
+    if (!isUsableVideoUrl(raw)) {
+      setError("Enter a valid http(s) YouTube, Vimeo, or direct video URL.");
+      return;
+    }
+    if ((form.videos ?? []).includes(raw)) {
+      setError("That video URL is already listed.");
+      return;
+    }
+    if ((form.videos?.length ?? 0) >= 10) {
+      setError("Maximum of 10 videos.");
+      return;
+    }
+    setError("");
+    patch("videos", [...(form.videos ?? []), raw]);
+    setVideoUrlDraft("");
+  }
+
+  async function onVideoFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if ((form.videos?.length ?? 0) >= 10) {
+      setError("Maximum of 10 videos.");
+      return;
+    }
+    if (!["video/mp4", "video/webm", "video/quicktime"].includes(file.type)) {
+      setError("Upload an MP4 or WebM video.");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Max video size is 100MB.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const slug = (form.slug || "upload").replace(/[^a-z0-9-]/gi, "-").slice(0, 80);
+      const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
+      const pathname = `games/${slug || "upload"}/video-${Date.now()}.${ext}`;
+      const blob = await upload(pathname, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/games/upload/client",
+      });
+      setForm((prev) => ({
+        ...prev,
+        videos: [...(prev.videos ?? []), blob.url].slice(0, 10),
+      }));
+      setMediaNote("Video uploaded — save the game to persist.");
+      setBusy(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Video upload failed");
       setBusy(false);
     }
   }
@@ -468,6 +581,7 @@ export function GameEditorForm({
       </div>
 
       <form onSubmit={save} className="space-y-4">
+        <AdminCollapsibleSection title="Basics" defaultOpen>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Title</label>
@@ -534,98 +648,6 @@ export function GameEditorForm({
             className={area}
           />
         </div>
-
-        {/* ── Editorial depth ─────────────────────────────────── */}
-        <details open className="rounded-xl border border-border bg-card p-4">
-          <summary className="cursor-pointer text-sm font-bold">
-            Editorial — required to publish
-            {!readiness.ready && (
-              <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
-                {readiness.missing.length} missing
-              </span>
-            )}
-          </summary>
-
-          <div className="mt-4 space-y-5">
-            <ReadinessPanel fields={readiness.fields} ready={readiness.ready} kind="game" />
-
-            {evidence.length > 0 && <EvidencePanel evidence={evidence} />}
-
-            {sourceMaterial && (
-              <SourceMaterialPanel
-                text={sourceMaterial}
-                onDismiss={() => setSourceMaterial(null)}
-              />
-            )}
-
-            <QualityBarEditor
-              value={form.qualityBar ?? null}
-              onChange={(next: QualityBar) => patch("qualityBar", next)}
-            />
-
-            <ProseField
-              title="Long description"
-              hint="400–600 words of original editorial. This replaces the scraped summary on the public page — do not paste store or README copy, it is duplicate content and will not rank. Blank line between paragraphs."
-              value={form.longDescription ?? ""}
-              minWords={150}
-              rows={14}
-              onChange={(v) => patch("longDescription", v)}
-            />
-
-            <ProseField
-              title="Why we picked it"
-              hint="~100 words in your own voice. The curation rationale — this is what separates PlayBound from a directory listing."
-              value={form.whyWePickedIt ?? ""}
-              minWords={20}
-              rows={5}
-              onChange={(v) => patch("whyWePickedIt", v)}
-            />
-
-            <StringListEditor
-              title="Best for"
-              hint={
-                'Concrete situations you’d recommend this game for — e.g. "LAN parties" ' +
-                'or "people who miss Command & Conquer." Specific enough that a reader ' +
-                'pictures themselves in it, not a genre label. At least two.'
-              }
-              values={form.bestFor ?? []}
-              suggestions={suggestions.bestFor}
-              onChange={(next) => patch("bestFor", next)}
-            />
-
-            <StringListEditor
-              title="Not for"
-              hint={
-                'Honest limitations — e.g. "players who want ranked matchmaking" or ' +
-                '"anyone without a decent GPU." At least two. This is the strongest trust ' +
-                'signal on the page — nobody else in this niche publishes it, so resist ' +
-                "softening them into a Best For in disguise."
-              }
-              values={form.notFor ?? []}
-              suggestions={suggestions.notFor}
-              onChange={(next) => patch("notFor", next)}
-            />
-
-            <StringListEditor
-              title="Comparable to"
-              hint={
-                "Commercial (paid) games this resembles, not other free ones — e.g. a free " +
-                "RTS might list Command & Conquer or StarCraft. Powers the /alternatives " +
-                "pages, which exist to catch searches for a paid game's name from people " +
-                "looking for a free substitute."
-              }
-              values={form.comparableTo ?? []}
-              onChange={(next) => patch("comparableTo", next)}
-            />
-
-            <DerivedContentEditor
-              installSteps={form.installSteps ?? []}
-              faq={form.faq ?? []}
-              onInstallStepsChange={(next) => patch("installSteps", next)}
-              onFaqChange={(next) => patch("faq", next)}
-            />
-          </div>
-        </details>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -722,10 +744,383 @@ export function GameEditorForm({
           />
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <div>
+          <label className={label}>Steam app ID</label>
+          <input
+            value={form.steamAppId ?? ""}
+            onChange={(e) => patch("steamAppId", e.target.value.replace(/\D/g, "").slice(0, 20) || null)}
+            placeholder="480 — optional, for Steam media"
+            className={field}
+          />
+        </div>
+        </AdminCollapsibleSection>
+
+        <AdminCollapsibleSection title="Cover & media" defaultOpen>
           <div>
-            <p className={label}>Community</p>
+            <p className="text-[11px] text-muted-foreground">
+              Fallback gradient art is automatic when there is no cover — no manual art colors needed.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={fetchMedia}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Refresh media
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setUploadKind("cover");
+                fileRef.current?.click();
+              }}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Upload cover
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setUploadKind("shot");
+                fileRef.current?.click();
+              }}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Upload screenshot
+            </button>
+            <button
+              type="button"
+              disabled={busy || !captureAvailable}
+              onClick={captureShot}
+              title={
+                captureAvailable
+                  ? "Capture via Microlink"
+                  : "Needs MICROLINK_API_KEY + BLOB_READ_WRITE_TOKEN"
+              }
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Capture screenshot
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => videoFileRef.current?.click()}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Upload video
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
+            <input
+              ref={videoFileRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              className="hidden"
+              onChange={onVideoFileSelected}
+            />
+          </div>
+          {form.coverImage ? (
+            <div className="flex items-start gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={form.coverImage} alt="Cover" className="h-28 w-20 rounded-md object-cover border border-border" />
+              <button
+                type="button"
+                className="text-xs font-semibold text-destructive"
+                onClick={() => patch("coverImage", null)}
+              >
+                Remove cover
+              </button>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No cover yet — cards will use an auto gradient.</p>
+          )}
+          {(form.screenshots?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {form.screenshots!.map((src) => (
+                <div key={src} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-20 w-32 rounded-md object-cover border border-border" />
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 rounded bg-black/70 px-1.5 text-[10px] font-bold text-white"
+                    onClick={() =>
+                      patch(
+                        "screenshots",
+                        (form.screenshots ?? []).filter((s) => s !== src)
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div>
+            <p className={label}>Videos</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                value={videoUrlDraft}
+                onChange={(e) => setVideoUrlDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addVideoUrl();
+                  }
+                }}
+                placeholder="YouTube, Vimeo, or direct video URL"
+                className={`${field} mt-0 min-w-[200px] flex-1`}
+              />
+              <button
+                type="button"
+                onClick={addVideoUrl}
+                className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
+              >
+                Add video
+              </button>
+            </div>
+            {(form.videos?.length ?? 0) > 0 ? (
+              <div className="mt-3 flex flex-col gap-4">
+                {form.videos!.map((src) => (
+                  <div key={src} className="space-y-2">
+                    <VideoPreview src={src} />
+                    <div className="flex items-center gap-2">
+                      <code className="min-w-0 flex-1 truncate rounded bg-secondary/70 px-2 py-1 text-[11px] text-muted-foreground">
+                        {src}
+                      </code>
+                      <button
+                        type="button"
+                        className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white"
+                        onClick={() =>
+                          patch(
+                            "videos",
+                            (form.videos ?? []).filter((s) => s !== src)
+                          )
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">No videos yet — add a URL or upload one.</p>
+            )}
+          </div>
+          {mediaNote && <p className="text-xs text-muted-foreground" role="status">{mediaNote}</p>}
+        </AdminCollapsibleSection>
+
+        <AdminCollapsibleSection
+          title="Editorial — required to publish"
+          badge={
+            !readiness.ready ? (
+              <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+                {readiness.missing.length} missing
+              </span>
+            ) : undefined
+          }
+        >
+          <ReadinessPanel fields={readiness.fields} ready={readiness.ready} kind="game" />
+
+          {evidence.length > 0 && <EvidencePanel evidence={evidence} />}
+
+          {sourceMaterial && (
+            <SourceMaterialPanel
+              text={sourceMaterial}
+              onDismiss={() => setSourceMaterial(null)}
+            />
+          )}
+
+          <QualityBarEditor
+            value={form.qualityBar ?? null}
+            onChange={(next: QualityBar) => patch("qualityBar", next)}
+          />
+
+          <ProseField
+            title="Long description"
+            hint="400–600 words of original editorial. This replaces the scraped summary on the public page — do not paste store or README copy, it is duplicate content and will not rank. Blank line between paragraphs."
+            value={form.longDescription ?? ""}
+            minWords={150}
+            rows={14}
+            onChange={(v) => patch("longDescription", v)}
+          />
+
+          <ProseField
+            title="Why we picked it"
+            hint="~100 words in your own voice. The curation rationale — this is what separates PlayBound from a directory listing."
+            value={form.whyWePickedIt ?? ""}
+            minWords={20}
+            rows={5}
+            onChange={(v) => patch("whyWePickedIt", v)}
+          />
+
+          <StringListEditor
+            title="Best for"
+            hint={
+              'Concrete situations you’d recommend this game for — e.g. "LAN parties" ' +
+              'or "people who miss Command & Conquer." Specific enough that a reader ' +
+              'pictures themselves in it, not a genre label. At least two.'
+            }
+            values={form.bestFor ?? []}
+            suggestions={suggestions.bestFor}
+            onChange={(next) => patch("bestFor", next)}
+          />
+
+          <StringListEditor
+            title="Not for"
+            hint={
+              'Honest limitations — e.g. "players who want ranked matchmaking" or ' +
+              '"anyone without a decent GPU." At least two. This is the strongest trust ' +
+              'signal on the page — nobody else in this niche publishes it, so resist ' +
+              "softening them into a Best For in disguise."
+            }
+            values={form.notFor ?? []}
+            suggestions={suggestions.notFor}
+            onChange={(next) => patch("notFor", next)}
+          />
+
+          <StringListEditor
+            title="Comparable to"
+            hint={
+              "Commercial (paid) games this resembles, not other free ones — e.g. a free " +
+              "RTS might list Command & Conquer or StarCraft. Powers the /alternatives " +
+              "pages, which exist to catch searches for a paid game's name from people " +
+              "looking for a free substitute."
+            }
+            values={form.comparableTo ?? []}
+            onChange={(next) => patch("comparableTo", next)}
+          />
+
+          <DerivedContentEditor
+            installSteps={form.installSteps ?? []}
+            faq={form.faq ?? []}
+            onInstallStepsChange={(next) => patch("installSteps", next)}
+            onFaqChange={(next) => patch("faq", next)}
+          />
+        </AdminCollapsibleSection>
+
+        <AdminCollapsibleSection title="Taxonomy">
+          <div>
+            <label className={label}>Genres</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {GENRES.map((g) => (
+                <ChipToggle
+                  key={g}
+                  label={g}
+                  on={genreSet.has(g)}
+                  onClick={() => patch("genres", toggleInList([...form.genres], g))}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>Launch methods</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {LAUNCH_METHODS.map((m) => (
+                <ChipToggle
+                  key={m}
+                  label={m}
+                  on={launchSet.has(m)}
+                  onClick={() => {
+                    const next = toggleInList([...form.launchMethods], m);
+                    if (next.length === 0) return;
+                    setForm((prev) => ({
+                      ...prev,
+                      launchMethods: next,
+                      browserPlayable: next.includes("browser") && !next.includes("install") ? true : prev.browserPlayable,
+                      platforms:
+                        next.includes("browser") && !prev.platforms.includes("Web")
+                          ? [...prev.platforms, "Web"]
+                          : prev.platforms,
+                      sizeMB: next.includes("browser") && !next.includes("install") ? 0 : prev.sizeMB,
+                    }));
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>Platforms</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {PLATFORMS.map((p) => (
+                <ChipToggle
+                  key={p}
+                  label={p}
+                  on={platformSet.has(p)}
+                  onClick={() => patch("platforms", toggleInList([...form.platforms], p))}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>Features</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {FEATURES.map((f) => (
+                <ChipToggle
+                  key={f}
+                  label={f}
+                  on={featureSet.has(f)}
+                  onClick={() => patch("features", toggleInList([...form.features], f))}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>Tags</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TAGS.map((t) => (
+                <ChipToggle
+                  key={t}
+                  label={t}
+                  on={tagSet.has(t)}
+                  onClick={() => patch("tags", toggleInList([...form.tags], t))}
+                />
+              ))}
+              {extraTags.map((t) => (
+                <ChipToggle
+                  key={t}
+                  label={t}
+                  on
+                  onClick={() => patch("tags", form.tags.filter((x) => x !== t))}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>Search aliases</label>
+            <textarea
+              rows={2}
+              value={(form.aliases ?? []).join("\n")}
+              onChange={(e) =>
+                patch(
+                  "aliases",
+                  e.target.value
+                    .split(/[\n,]/)
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                )
+              }
+              className={`${field} h-auto py-2`}
+            />
             <p className="mt-1 text-[11px] text-muted-foreground">
+              Shorthand people search by — &ldquo;WoW&rdquo;, &ldquo;C&amp;C&rdquo;. Never displayed,
+              only matched. One per line.
+            </p>
+          </div>
+        </AdminCollapsibleSection>
+
+        <AdminCollapsibleSection title="Community">
+          <div>
+            <p className="text-[11px] text-muted-foreground">
               Official Discord must be verified against the developer&apos;s site or repo. PlayBound
               channel fields are filled manually until the Discord bot provisions them.
             </p>
@@ -887,242 +1282,12 @@ export function GameEditorForm({
               Provision PlayBound Channel
             </button>
           )}
-        </div>
+        </AdminCollapsibleSection>
 
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <div>
-            <p className={label}>Cover & screenshots</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Fallback gradient art is automatic when there is no cover — no manual art colors needed.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={fetchMedia}
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-            >
-              Fetch from website
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setUploadKind("cover");
-                fileRef.current?.click();
-              }}
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-            >
-              Upload cover
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setUploadKind("shot");
-                fileRef.current?.click();
-              }}
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-            >
-              Upload screenshot
-            </button>
-            <button
-              type="button"
-              disabled={busy || !captureAvailable}
-              onClick={captureShot}
-              title={
-                captureAvailable
-                  ? "Capture via Microlink"
-                  : "Needs MICROLINK_API_KEY + BLOB_READ_WRITE_TOKEN"
-              }
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-            >
-              Capture screenshot
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
-          </div>
-          {form.coverImage ? (
-            <div className="flex items-start gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={form.coverImage} alt="Cover" className="h-28 w-20 rounded-md object-cover border border-border" />
-              <button
-                type="button"
-                className="text-xs font-semibold text-destructive"
-                onClick={() => patch("coverImage", null)}
-              >
-                Remove cover
-              </button>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No cover yet — cards will use an auto gradient.</p>
-          )}
-          {(form.screenshots?.length ?? 0) > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {form.screenshots!.map((src) => (
-                <div key={src} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="h-20 w-32 rounded-md object-cover border border-border" />
-                  <button
-                    type="button"
-                    className="absolute top-1 right-1 rounded bg-black/70 px-1.5 text-[10px] font-bold text-white"
-                    onClick={() =>
-                      patch(
-                        "screenshots",
-                        (form.screenshots ?? []).filter((s) => s !== src)
-                      )
-                    }
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          {(form.videos?.length ?? 0) > 0 && (
+        <AdminCollapsibleSection title="System & servers">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className={label}>Videos ({form.videos!.length})</p>
-              <div className="mt-2 flex flex-col gap-2">
-                {form.videos!.map((src) => (
-                  <div key={src} className="flex items-center gap-2">
-                    <code className="flex-1 min-w-0 truncate rounded bg-secondary/70 px-2 py-1 text-[11px] text-muted-foreground">
-                      {src}
-                    </code>
-                    <button
-                      type="button"
-                      className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white"
-                      onClick={() =>
-                        patch(
-                          "videos",
-                          (form.videos ?? []).filter((s) => s !== src)
-                        )
-                      }
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <label className={label}>Genres</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {GENRES.map((g) => (
-              <ChipToggle
-                key={g}
-                label={g}
-                on={genreSet.has(g)}
-                onClick={() => patch("genres", toggleInList([...form.genres], g))}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className={label}>Launch methods</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {LAUNCH_METHODS.map((m) => (
-              <ChipToggle
-                key={m}
-                label={m}
-                on={launchSet.has(m)}
-                onClick={() => {
-                  const next = toggleInList([...form.launchMethods], m);
-                  if (next.length === 0) return;
-                  setForm((prev) => ({
-                    ...prev,
-                    launchMethods: next,
-                    browserPlayable: next.includes("browser") && !next.includes("install") ? true : prev.browserPlayable,
-                    platforms:
-                      next.includes("browser") && !prev.platforms.includes("Web")
-                        ? [...prev.platforms, "Web"]
-                        : prev.platforms,
-                    sizeMB: next.includes("browser") && !next.includes("install") ? 0 : prev.sizeMB,
-                  }));
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className={label}>Platforms</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {PLATFORMS.map((p) => (
-              <ChipToggle
-                key={p}
-                label={p}
-                on={platformSet.has(p)}
-                onClick={() => patch("platforms", toggleInList([...form.platforms], p))}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className={label}>Features</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {FEATURES.map((f) => (
-              <ChipToggle
-                key={f}
-                label={f}
-                on={featureSet.has(f)}
-                onClick={() => patch("features", toggleInList([...form.features], f))}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className={label}>Tags</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {TAGS.map((t) => (
-              <ChipToggle
-                key={t}
-                label={t}
-                on={tagSet.has(t)}
-                onClick={() => patch("tags", toggleInList([...form.tags], t))}
-              />
-            ))}
-            {extraTags.map((t) => (
-              <ChipToggle
-                key={t}
-                label={t}
-                on
-                onClick={() => patch("tags", form.tags.filter((x) => x !== t))}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className={label}>Search aliases</label>
-          <textarea
-            rows={2}
-            value={(form.aliases ?? []).join("\n")}
-            onChange={(e) =>
-              patch(
-                "aliases",
-                e.target.value
-                  .split(/[\n,]/)
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              )
-            }
-            className={`${field} h-auto py-2`}
-          />
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Shorthand people search by — &ldquo;WoW&rdquo;, &ldquo;C&amp;C&rdquo;. Never displayed,
-            only matched. One per line.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={label}>Min requirements</label>
+              <label className={label}>Min requirements</label>
             <input
               required
               value={form.systemRequirements.min}
@@ -1248,8 +1413,9 @@ export function GameEditorForm({
             </button>
           )}
         </div>
+        </AdminCollapsibleSection>
 
-        <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
+        <AdminCollapsibleSection title="Launcher">
           <p className="text-sm font-bold">Launcher install (Windows)</p>
           {onPlayboundLauncher ? (
             <>
@@ -1474,9 +1640,10 @@ export function GameEditorForm({
               </div>
             </details>
           )}
-        </div>
+        </AdminCollapsibleSection>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm">
+        <AdminCollapsibleSection title="Publishing">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
           <fieldset className="flex flex-wrap items-center gap-3">
             <legend className="sr-only">Catalog status</legend>
             <span className="font-semibold">Status</span>
@@ -1570,6 +1737,7 @@ export function GameEditorForm({
             />
           </div>
         </div>
+        </AdminCollapsibleSection>
 
         {error && (
           <div className="space-y-2">

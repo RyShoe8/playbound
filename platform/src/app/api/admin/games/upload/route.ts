@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import { compressImageBuffer } from "@/lib/compressImage";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 export async function POST(req: Request) {
@@ -29,10 +30,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only image uploads are allowed" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const pathname = `games/${slug || "upload"}/${kind}-${Date.now()}.${ext}`;
-    const blob = await put(pathname, file, {
+    const input = Buffer.from(await file.arrayBuffer());
+    let compressed;
+    try {
+      compressed = await compressImageBuffer(input);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid image";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    const pathname = `games/${slug || "upload"}/${kind}-${Date.now()}.${compressed.extension}`;
+    const blob = await put(pathname, compressed.buffer, {
       access: "public",
+      contentType: compressed.contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
