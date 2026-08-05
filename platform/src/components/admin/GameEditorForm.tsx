@@ -256,8 +256,9 @@ export function GameEditorForm({
 
   async function fetchMedia() {
     const url = form.website || importUrl;
-    if (!url.trim()) {
-      setError("Set a website URL first.");
+    const steamAppId = form.steamAppId?.trim() || null;
+    if (!url.trim() && !steamAppId) {
+      setError("Set a website URL or Steam app id first.");
       return;
     }
     setBusy(true);
@@ -266,7 +267,7 @@ export function GameEditorForm({
       const res = await fetch("/api/admin/games/media", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: url.trim() || null, steamAppId }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {

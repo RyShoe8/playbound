@@ -161,9 +161,6 @@ export default async function GamePage({
     () => Review.countDocuments({ gameSlug: game.slug }),
     0
   );
-  const mediaCount =
-    (game.screenshots?.length ?? 0) + (game.videos?.length ?? 0);
-
   const discordPresence = await getDiscordPresence(
     game.communityLinks?.playboundDiscord?.guildId
   );
@@ -311,9 +308,7 @@ export default async function GamePage({
               ? discussionCount
               : t === "reviews"
                 ? reviewCount
-                : t === "media"
-                  ? mediaCount
-                  : null;
+                : null;
           return (
             <Link
               key={t}
