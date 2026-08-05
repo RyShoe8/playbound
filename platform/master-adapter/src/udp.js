@@ -150,7 +150,12 @@ export function parseGetServersResponse(msg) {
  * @param {string} infoBody latin1 infoResponse body after header
  */
 export function parseInfoKeys(infoBody) {
-  const parts = infoBody.split("\\").filter(Boolean);
+  // Daemon/ioq3 often prefixes the info string with a newline before the first `\`.
+  // Stripping it keeps key/value pairing aligned.
+  let body = String(infoBody || "").replace(/^[\r\n\s]+/, "");
+  const slash = body.indexOf("\\");
+  if (slash > 0) body = body.slice(slash);
+  const parts = body.split("\\").filter(Boolean);
   /** @type {Record<string, string>} */
   const keys = {};
   for (let i = 0; i + 1 < parts.length; i += 2) {

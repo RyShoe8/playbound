@@ -23,6 +23,8 @@ export type LauncherInstall = {
   fileName?: string | null;
   versionLabel?: string | null;
   knownExePaths?: string[];
+  /** Extra DisplayName strings to match in Windows uninstall registry. */
+  registryTitles?: string[];
   /** Expanded game/content root for mods (installer games where exe is nested). */
   installRoot?: string | null;
   connectArgs?: string[];
@@ -47,6 +49,7 @@ export type LauncherCatalogEntry = {
   fileName?: string;
   versionLabel?: string;
   knownExePaths?: string[];
+  registryTitles?: string[];
   installRoot?: string;
   connectArgs?: string[];
   note?: string;
@@ -192,6 +195,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.fileName) entry.fileName = li.fileName;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
+  if (li.registryTitles?.length) entry.registryTitles = li.registryTitles;
   if (li.installRoot) entry.installRoot = li.installRoot;
   if (li.connectArgs?.length) entry.connectArgs = li.connectArgs;
   if (li.note) entry.note = li.note;

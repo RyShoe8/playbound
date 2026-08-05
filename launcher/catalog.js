@@ -479,6 +479,11 @@ module.exports = [
     "url": "https://gitlab.com/veloren/airshipper/-/releases/v0.17.0/downloads/binaries/windows-installer-x86_64",
     "fileName": "airshipper-installer.exe",
     "versionLabel": "0.17.0",
+    "exeHint": "airshipper",
+    "registryTitles": [
+      "Airshipper",
+      "Veloren"
+    ],
     "knownExePaths": [
       "%LOCALAPPDATA%\\Programs\\Airshipper\\airshipper.exe",
       "%LOCALAPPDATA%\\airshipper\\airshipper.exe",

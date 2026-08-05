@@ -1002,12 +1002,23 @@ const uninstallExeCache = new Map();
 
 function findExeFromUninstallRegistry(entry) {
   if (process.platform !== "win32" || !entry) return null;
-  const title = String(entry.title || "").trim();
+  const titles = [
+    String(entry.title || "").trim(),
+    ...((entry.registryTitles || []).map((t) => String(t || "").trim())),
+  ].filter(Boolean);
+  // Deduplicate case-insensitively while preserving order.
+  const seenTitles = new Set();
+  const titleList = titles.filter((t) => {
+    const k = t.toLowerCase();
+    if (seenTitles.has(k)) return false;
+    seenTitles.add(k);
+    return true;
+  });
   const knownBases = (entry.knownExePaths || [])
     .map((p) => path.basename(expandWinPath(p)).toLowerCase())
     .filter(Boolean);
-  const cacheKey = title || knownBases.join("|") || entry.slug || "unknown";
-  if (!title && knownBases.length === 0) return null;
+  const cacheKey = titleList.join("|") || knownBases.join("|") || entry.slug || "unknown";
+  if (titleList.length === 0 && knownBases.length === 0) return null;
 
   const cached = uninstallExeCache.get(cacheKey);
   if (cached && Date.now() - cached.at < 5_000) return cached.exe;
@@ -1016,7 +1027,7 @@ function findExeFromUninstallRegistry(entry) {
   try {
     const ps = `
 $ErrorActionPreference = 'SilentlyContinue'
-$title = ${JSON.stringify(title)}
+$titles = @(${titleList.map((t) => JSON.stringify(t)).join(",")})
 $bases = @(${knownBases.map((b) => JSON.stringify(b)).join(",")})
 $paths = @(
   'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
@@ -1025,10 +1036,12 @@ $paths = @(
 )
 $items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation }
 $hit = $null
-if ($title) {
+foreach ($title in $titles) {
+  if (-not $title) { continue }
   $hit = $items |
     Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
     Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
+  if ($hit) { break }
 }
 if (-not $hit -and $bases.Count -gt 0) {
   $hit = $items | Where-Object {
@@ -1406,6 +1419,7 @@ function markPendingInstall(slug, version) {
   const state = loadState();
   const existing = state[slug];
   if (existing?.exe && fs.existsSync(existing.exe)) return existing;
+  const alreadyPending = Boolean(existing?.pending);
   state[slug] = {
     pending: true,
     // Full-drive scan is delayed; known-path poll first.
@@ -1415,8 +1429,13 @@ function markPendingInstall(slug, version) {
   };
   saveState(state);
   setPendingInstaller(slug, version);
-  if (win && !win.isDestroyed()) {
-    win.webContents.send("install-scan", { slug, phase: "pending" });
+  // Skip redundant pending IPC — re-renders Library and causes flicker.
+  if (!alreadyPending && win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", {
+      slug,
+      phase: "pending",
+      message: `Waiting for ${slug} install to finish…`,
+    });
   }
   return state[slug];
 }
@@ -1463,7 +1482,12 @@ function expectedExeBasenames(entry) {
     if (/\.(exe|cmd|bat)$/.test(hint)) bases.add(hint);
     else bases.add(`${hint}.exe`);
   }
-  if (entry?.slug) bases.add(`${String(entry.slug).toLowerCase()}.exe`);
+  if (entry?.slug) {
+    const slugExe = `${String(entry.slug).toLowerCase()}.exe`;
+    // Skip slug.exe when known/hint names already point at a different launcher
+    // binary (e.g. veloren → airshipper.exe).
+    if (bases.size === 0 || bases.has(slugExe)) bases.add(slugExe);
+  }
   return [...bases];
 }
 
@@ -3055,7 +3079,6 @@ if (gotLock) {
       }
     }
     scanKnownInstalls();
-    resumePendingInstallerPoll();
     setupAutoUpdater();
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
