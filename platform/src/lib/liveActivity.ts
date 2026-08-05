@@ -30,6 +30,10 @@ export type CatalogLiveStats = {
   multiplayerPlayers: number;
   platformPlayers: number;
   mostPopular: CatalogPopularGame[];
+  /** Per-game playing-now for client-side compatibility scoping. */
+  byGame: CatalogPopularGame[];
+  /** Non-virtual public edition counts keyed by game slug. */
+  editionCountBySlug: Record<string, number>;
   asOf: string;
 };
 
@@ -322,19 +326,23 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     }
   });
 
-  const editionCount = editionLists.reduce(
-    (sum, list) => sum + list.filter((e) => !e.virtual).length,
-    0
-  );
+  const editionCountBySlug: Record<string, number> = {};
+  let editionCount = 0;
+  games.forEach((g, i) => {
+    const n = (editionLists[i] ?? []).filter((e) => !e.virtual).length;
+    editionCountBySlug[g.slug] = n;
+    editionCount += n;
+  });
 
-  const mostPopular = [...games]
+  const byGame = [...games]
     .map((g) => ({
       slug: g.slug,
       title: g.title,
       playingNow: (mpBySlug.get(g.slug) ?? 0) + (platformByGame.get(g.slug) ?? 0),
     }))
-    .sort((a, b) => b.playingNow - a.playingNow || a.title.localeCompare(b.title))
-    .slice(0, 3);
+    .sort((a, b) => b.playingNow - a.playingNow || a.title.localeCompare(b.title));
+
+  const mostPopular = byGame.slice(0, 3);
 
   const asOf = new Date().toISOString();
 
@@ -346,6 +354,8 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     platformPlayers,
     playingNow: multiplayerPlayers + platformPlayers,
     mostPopular,
+    byGame,
+    editionCountBySlug,
     asOf,
   };
 }
@@ -425,7 +435,7 @@ async function computeModLiveStats(modSlug: string): Promise<EntityLiveStats> {
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v3"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v4"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();
