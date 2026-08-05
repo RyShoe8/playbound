@@ -206,13 +206,52 @@ export async function fetchWebsiteMedia(url: string): Promise<GameMediaBundle | 
   };
 }
 
+/** Pull screenshot candidates from a GitHub README when the website gallery is thin. */
+export async function fetchGithubReadmeMedia(repo: string): Promise<GameMediaBundle | null> {
+  const m = repo.trim().match(/^([\w.-]+)\/([\w.-]+)$/);
+  if (!m) return null;
+  const full = `${m[1]}/${m[2]}`;
+
+  for (const branch of ["develop", "main", "master"]) {
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/${full}/${branch}/README.md`, {
+        headers: { "user-agent": "PlayBoundAdmin/1.0" },
+        signal: AbortSignal.timeout(10_000),
+        next: { revalidate: 0 },
+      });
+      if (!res.ok) continue;
+      const text = await res.text();
+      const images: string[] = [];
+      for (const match of text.matchAll(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g)) {
+        const url = match[1];
+        if (!url || !isScreenshotCandidate(url, { requireRaster: true })) continue;
+        if (!images.includes(url)) images.push(url);
+        if (images.length >= MAX_SCREENSHOTS) break;
+      }
+      if (images.length) {
+        return {
+          coverImage: images[0] ?? null,
+          screenshots: images.slice(0, MAX_SCREENSHOTS),
+          videos: [],
+        };
+      }
+      // README found but no usable images — stop trying other branches.
+      return null;
+    } catch {
+      /* try next branch */
+    }
+  }
+  return null;
+}
+
 /**
- * Prefer Steam when an app id is present, then fill gaps from the website.
+ * Prefer Steam when an app id is present, then fill gaps from the website / GitHub README.
  * Website failures do not throw when Steam succeeded.
  */
 export async function fetchCombinedGameMedia(opts: {
   steamAppId?: string | null;
   url?: string | null;
+  githubRepo?: string | null;
 }): Promise<GameMediaBundle> {
   let bundle = emptyGameMedia();
 
@@ -233,7 +272,17 @@ export async function fetchCombinedGameMedia(opts: {
     }
   }
 
-  if (!steamId && !url) {
+  const repo = opts.githubRepo?.trim();
+  if (repo && bundle.screenshots.length < 4) {
+    try {
+      const gh = await fetchGithubReadmeMedia(repo);
+      if (gh) bundle = mergeGameMedia(bundle, gh);
+    } catch {
+      /* soft-fail readme */
+    }
+  }
+
+  if (!steamId && !url && !repo) {
     throw new Error("Provide a Steam app id or website URL");
   }
 

@@ -27,6 +27,16 @@ function parseMaybeUrl(raw: string): URL | null {
   }
 }
 
+/** Hosts that often serve real photos without a file extension in the path. */
+function isExtensionlessImageHost(u: URL): boolean {
+  const host = u.hostname.toLowerCase();
+  if (host === "user-images.githubusercontent.com") return true;
+  if (host === "github.com" && /^\/user-attachments\/assets\//i.test(u.pathname)) return true;
+  if (host.includes("blob.vercel-storage.com")) return true;
+  if (host.includes("steamstatic.com") || host.includes("steamcdn-a.akamaihd.net")) return true;
+  return false;
+}
+
 /** True when a URL looks like a real gallery/cover photo rather than chrome or social art. */
 export function isScreenshotCandidate(
   url: string | null | undefined,
@@ -65,12 +75,8 @@ export function isScreenshotCandidate(
 
   const requireRaster = opts.requireRaster !== false;
   if (requireRaster && !RASTER_EXT_RE.test(haystack)) {
-    // Blob / Steam CDN often omit extensions; keep known good CDNs without raster ext.
-    const okCdn =
-      host.includes("blob.vercel-storage.com") ||
-      host.includes("steamstatic.com") ||
-      host.includes("steamcdn-a.akamaihd.net");
-    if (!okCdn) return false;
+    // Blob / Steam / GitHub attachments often omit extensions.
+    if (!isExtensionlessImageHost(u)) return false;
   }
 
   const w = opts.width;
@@ -89,4 +95,29 @@ export function readImgPixelSize(tag: string): { width: number | null; height: n
     width: width ? Number(width) : null,
     height: height ? Number(height) : null,
   };
+}
+
+/** Pick the largest URL from a srcset attribute (prefer highest `w` descriptor). */
+export function pickLargestSrcset(srcset: string): string | null {
+  const parts = srcset
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!parts.length) return null;
+  let bestUrl: string | null = null;
+  let bestW = -1;
+  for (const part of parts) {
+    const m = part.match(/^(\S+)\s+(\d+)w$/i);
+    if (m) {
+      const w = Number(m[2]);
+      if (w >= bestW) {
+        bestW = w;
+        bestUrl = m[1];
+      }
+      continue;
+    }
+    const urlOnly = part.split(/\s+/)[0];
+    if (urlOnly) bestUrl = urlOnly;
+  }
+  return bestUrl;
 }

@@ -314,8 +314,9 @@ export function GameEditorForm({
   async function fetchMedia() {
     const url = form.website || importUrl;
     const steamAppId = form.steamAppId?.trim() || null;
-    if (!url.trim() && !steamAppId && !(form.screenshots?.length)) {
-      setError("Set a website URL or Steam app id first.");
+    const githubRepo = form.githubRepo?.trim() || null;
+    if (!url.trim() && !steamAppId && !githubRepo && !(form.screenshots?.length)) {
+      setError("Set a website URL, Steam app id, or GitHub repo first.");
       return;
     }
     setBusy(true);
@@ -331,6 +332,7 @@ export function GameEditorForm({
         body: JSON.stringify({
           url: url.trim() || null,
           steamAppId,
+          githubRepo,
           slug: form.slug || "upload",
           coverImage: form.coverImage,
           screenshots: form.screenshots ?? [],
@@ -395,7 +397,11 @@ export function GameEditorForm({
         nextCover === form.coverImage &&
         !(stats?.fetched)
       ) {
-        setMediaNote("No new media found from website or Steam. Existing media kept.");
+        setMediaNote(
+          nextShots.length === 0
+            ? "No gallery images on the website — try Capture screenshot or paste image URLs."
+            : "No new media found from website or Steam. Existing media kept."
+        );
       } else {
         const steamBit = inferredSteam && !steamAppId ? `steam id ${inferredSteam}, ` : "";
         const coverBit =
@@ -412,10 +418,14 @@ export function GameEditorForm({
             : "";
         const trailerBit =
           addedVideos === 0 ? " No trailers found — paste a YouTube URL if you have one." : "";
+        const galleryBit =
+          nextShots.length === 0
+            ? " No gallery images on the website — try Capture screenshot or paste image URLs."
+            : "";
         setMediaNote(
           `Refresh done — ${steamBit}${coverBit}${junkBit}added ${addedShots} screenshot${
             addedShots === 1 ? "" : "s"
-          }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. ${rehostBit}Save to persist.${trailerBit}`
+          }, ${addedVideos} video${addedVideos === 1 ? "" : "s"}. ${rehostBit}Save to persist.${trailerBit}${galleryBit}`
         );
       }
 
