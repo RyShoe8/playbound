@@ -102,6 +102,10 @@ function parseDeepLink(url) {
       parsed.port = Number(u.searchParams.get("port") || 0);
       parsed.name = u.searchParams.get("name") || "";
     }
+    if (action === "install" || action === "play") {
+      const edition = u.searchParams.get("edition");
+      if (edition) parsed.editionSlug = edition;
+    }
     return parsed;
   } catch {
     return null;
@@ -313,6 +317,7 @@ async function connectWithToken(token) {
   });
   // Admins get testing titles once the bearer is present.
   void refreshRemoteCatalog();
+  void pullCompatibilityPreference();
   return { connected: true, synced, skipped, error, email: check.email, username: check.username };
 }
 
@@ -661,22 +666,110 @@ const telemetry = createTelemetry({
 });
 
 /**
- * Identity for an edition event, derived from the catalog entry.
- *
- * The launcher's catalog is still game-keyed, so until entries carry edition
- * metadata this reports the game's Official edition — which matches what the
- * site synthesizes for a game with no stored editions, so both sides agree.
+ * Identity for an edition event, derived from the catalog entry / install state.
  */
 function editionInfoFor(slug, extra = {}) {
   const entry = catalog.find((e) => e.slug === slug);
+  let stateMeta = {};
+  try {
+    stateMeta = loadState()[slug] || {};
+  } catch {
+    stateMeta = {};
+  }
   return {
     gameSlug: slug,
     gameTitle: entry?.title,
-    editionSlug: extra.editionSlug || entry?.editionSlug || "official",
-    editionName: extra.editionName || entry?.editionName || "Official",
-    editionType: entry?.editionType || "official",
+    editionSlug:
+      extra.editionSlug || stateMeta.editionSlug || entry?.editionSlug || "official",
+    editionName:
+      extra.editionName || stateMeta.editionName || entry?.editionName || "Official",
+    editionType: extra.editionType || stateMeta.editionType || entry?.editionType || "official",
     ...extra,
   };
+}
+
+async function pullCompatibilityPreference() {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    const res = await fetch(`${getApiBase()}/api/auth/preferences`, {
+      headers: launcherApiHeaders(),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const mode = data?.preferences?.compatibilityFilter;
+    if (mode === "compatible" || mode === "all") {
+      settings.compatibilityFilter = mode;
+      saveSettings(settings);
+    }
+  } catch {
+    /* offline */
+  }
+}
+
+async function pushCompatibilityPreference(mode) {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    await fetch(`${getApiBase()}/api/auth/preferences`, {
+      method: "PATCH",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ compatibilityFilter: mode }),
+    });
+  } catch {
+    /* offline */
+  }
+}
+
+async function fetchLauncherEditions(gameSlug) {
+  const qs = gameSlug ? `?game=${encodeURIComponent(gameSlug)}` : "";
+  const res = await fetch(`${getApiBase()}/api/launcher/editions${qs}`, {
+    headers: launcherApiHeaders(),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data.editions) ? data.editions : [];
+}
+
+/** Map a launcher edition row onto the catalog entry shape installGame understands. */
+function catalogEntryFromEdition(edition) {
+  if (!edition?.gameSlug) return null;
+  const cfg = edition.installConfig?.playbound_installer;
+  if (cfg?.kind) {
+    return {
+      slug: edition.gameSlug,
+      title: edition.gameTitle || edition.editionName || edition.gameSlug,
+      blurb: edition.shortDescription || "",
+      kind: cfg.kind,
+      repo: cfg.repo || undefined,
+      assetPattern: cfg.assetPattern || undefined,
+      exeHint: cfg.exeHint || undefined,
+      url: cfg.url || undefined,
+      fileName: cfg.fileName || undefined,
+      versionLabel: cfg.versionLabel || undefined,
+      knownExePaths: Array.isArray(cfg.knownExePaths) ? cfg.knownExePaths : undefined,
+      installRoot: cfg.installRoot || undefined,
+      connectArgs: Array.isArray(cfg.connectArgs) ? cfg.connectArgs : undefined,
+      note: cfg.note || undefined,
+      art: Array.isArray(edition.art) ? edition.art : ["#312e81", "#a78bfa"],
+      coverImage: edition.coverImage || null,
+      approxSize: edition.sizeMB ? `~${edition.sizeMB} MB` : "",
+      editionSlug: edition.editionSlug,
+      editionName: edition.editionName,
+      editionType: edition.editionType || "official",
+      editionId: edition.editionId,
+    };
+  }
+  return null;
+}
+
+async function resolveEditionForInstall(gameSlug, editionSlug) {
+  const editions = await fetchLauncherEditions(gameSlug);
+  if (!editions.length) return null;
+  if (editionSlug) {
+    return editions.find((e) => e.editionSlug === editionSlug) || null;
+  }
+  return editions.find((e) => e.isDefault) || editions[0] || null;
 }
 
 /** Turn relative site media paths into absolute URLs the Electron renderer can load. */
@@ -819,6 +912,7 @@ function buildContextPayload() {
     action: context.action,
     slug: entry.slug,
     entry,
+    editionSlug: context.editionSlug || null,
     installed: Boolean(installed),
     installedPath: installed?.dir ?? null,
     defaultDir: path.join(DEFAULT_GAMES_DIR, entry.slug),
@@ -1261,7 +1355,14 @@ function notifyInstallDetected(slug) {
 
 function markInstalledFromExe(slug, entry, exe, version) {
   const dir = resolveInstallDir(entry, exe);
-  markInstalled(slug, { version, exe, dir });
+  markInstalled(slug, {
+    version,
+    exe,
+    dir,
+    editionSlug: entry?.editionSlug,
+    editionName: entry?.editionName,
+    editionType: entry?.editionType,
+  });
   notifyInstallDetected(slug);
   sendProgress({ phase: "done" });
   return { status: "installed", version, exe, dir };
@@ -1457,11 +1558,20 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
   }
 }
 
-function markInstalled(slug, { version, exe, dir }) {
+function markInstalled(slug, { version, exe, dir, editionSlug, editionName, editionType }) {
   stopExeScan(slug);
   stopInstallerPoll();
   const state = loadState();
-  state[slug] = { version, exe, dir, installedAt: new Date().toISOString() };
+  const prev = state[slug] || {};
+  state[slug] = {
+    version,
+    exe,
+    dir,
+    installedAt: new Date().toISOString(),
+    editionSlug: editionSlug || prev.editionSlug || "official",
+    editionName: editionName || prev.editionName || "Official",
+    editionType: editionType || prev.editionType || "official",
+  };
   saveState(state);
   clearPendingInstaller(slug);
   void syncLibrary(slug, "install", version);
@@ -1777,14 +1887,56 @@ async function writeJarLauncher(gameDir, jarName) {
 
 /* ── core actions ──────────────────────────────────────────── */
 
-async function installGame(slug, targetDir) {
-  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
+async function installGame(slug, targetDir, editionSlug) {
+  let entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
+
+  let editionMeta = null;
+  try {
+    editionMeta = await resolveEditionForInstall(slug, editionSlug || null);
+  } catch (err) {
+    console.warn("resolveEditionForInstall failed:", err?.message || err);
+  }
+
+  if (editionMeta) {
+    const fromEdition = catalogEntryFromEdition(editionMeta);
+    if (fromEdition) {
+      entry = { ...(entry || {}), ...fromEdition };
+    } else if (editionMeta.installMethod === "official_download") {
+      const url =
+        editionMeta.installConfig?.official_download?.url ||
+        editionMeta.links?.website ||
+        editionMeta.installAction?.href;
+      if (url) {
+        await shell.openExternal(url);
+        return { status: "external", editionSlug: editionMeta.editionSlug };
+      }
+    } else if (editionMeta.installMethod === "external_installer") {
+      const url = editionMeta.installConfig?.external_installer?.url || editionMeta.installAction?.href;
+      if (url) {
+        await shell.openExternal(url);
+        return { status: "external", editionSlug: editionMeta.editionSlug };
+      }
+    } else if (editionMeta.installAction?.kind === "link" && editionMeta.installAction.href) {
+      await shell.openExternal(editionMeta.installAction.href);
+      return { status: "external", editionSlug: editionMeta.editionSlug };
+    } else if (editionMeta.installAction?.kind === "browser" && editionMeta.installAction.href) {
+      await shell.openExternal(editionMeta.installAction.href);
+      return { status: "external", editionSlug: editionMeta.editionSlug };
+    }
+  }
+
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   if (entry.kind === "external") {
     await shell.openExternal(entry.url);
     return { status: "external" };
   }
+
+  const editionExtra = {
+    editionSlug: entry.editionSlug || editionMeta?.editionSlug || "official",
+    editionName: entry.editionName || editionMeta?.editionName || "Official",
+    editionType: entry.editionType || editionMeta?.editionType || "official",
+  };
 
   const gameDir = targetDir || path.join(DEFAULT_GAMES_DIR, entry.slug);
 
@@ -1800,12 +1952,12 @@ async function installGame(slug, targetDir) {
     if (known) {
       const result = markInstalledFromExe(slug, entry, known, dl.version);
       void reportInstall(slug);
-      void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
+      void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
       return result;
     }
     startInstallerPoll(slug, entry, dl.version);
     void reportInstall(slug);
-    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
     return { status: "installer-opened", version: dl.version };
   }
 
@@ -1816,10 +1968,10 @@ async function installGame(slug, targetDir) {
     const exe = path.join(gameDir, destName);
     await fsp.copyFile(downloadPath, exe);
     await fsp.rm(downloadPath, { force: true });
-    markInstalled(slug, { version: dl.version, exe, dir: gameDir });
+    markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
-    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
@@ -1830,10 +1982,10 @@ async function installGame(slug, targetDir) {
     await fsp.copyFile(downloadPath, jarPath);
     await fsp.rm(downloadPath, { force: true });
     const exe = await writeJarLauncher(gameDir, dl.name);
-    markInstalled(slug, { version: dl.version, exe, dir: gameDir });
+    markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
-    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
+    void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
     return { status: "installed", version: dl.version, dir: gameDir };
   }
 
@@ -1845,10 +1997,10 @@ async function installGame(slug, targetDir) {
   const exe = findExecutable(gameDir, entry.exeHint);
   if (!exe) throw new Error("Extracted, but no executable found");
 
-  markInstalled(slug, { version: dl.version, exe, dir: gameDir });
+  markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
   sendProgress({ phase: "done" });
   void reportInstall(slug);
-  void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version }));
+  void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
   return { status: "installed", version: dl.version, dir: gameDir };
 }
 
@@ -2369,7 +2521,9 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   return result.filePaths[0];
 });
 
-ipcMain.handle("install", (_event, slug, targetDir) => installGame(slug, targetDir));
+ipcMain.handle("install", (_event, slug, targetDir, editionSlug) =>
+  installGame(slug, targetDir, editionSlug || null)
+);
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));
@@ -2532,6 +2686,9 @@ ipcMain.handle("get-catalog", () => {
     genres: Array.isArray(e.genres) ? e.genres : [],
     tags: Array.isArray(e.tags) ? e.tags : [],
     multiplayer: Boolean(e.multiplayer),
+    platforms: Array.isArray(e.platforms) ? e.platforms : [],
+    browserPlayable: Boolean(e.browserPlayable),
+    steamDeck: Boolean(e.steamDeck),
   }));
 });
 ipcMain.handle("get-servers", async (_event, slug) => {
@@ -2777,6 +2934,8 @@ ipcMain.handle("get-settings", () => {
     connected: Boolean(settings.launcherToken),
     version: app.getVersion(),
     packaged: app.isPackaged,
+    compatibilityFilter:
+      settings.compatibilityFilter === "all" ? "all" : "compatible",
   };
 });
 ipcMain.handle("get-app-version", () => ({
@@ -2817,8 +2976,64 @@ ipcMain.handle("save-settings", (_event, patch) => {
   const settings = loadSettings();
   if (patch.apiBase != null) settings.apiBase = patch.apiBase;
   if (patch.gamesDir != null) settings.gamesDir = patch.gamesDir;
+  if (patch.compatibilityFilter === "compatible" || patch.compatibilityFilter === "all") {
+    settings.compatibilityFilter = patch.compatibilityFilter;
+    void pushCompatibilityPreference(patch.compatibilityFilter);
+  }
   saveSettings(settings);
   return true;
+});
+
+ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (opts?.game) params.set("game", opts.game);
+    if (opts?.mod) params.set("mod", opts.mod);
+    if (opts?.edition) params.set("edition", opts.edition);
+    const qs = params.toString();
+    const res = await fetch(`${getApiBase()}/api/launcher/live-stats${qs ? `?${qs}` : ""}`, {
+      headers: launcherApiHeaders(),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle("get-editions", async (_event, gameSlug) => {
+  try {
+    const editions = await fetchLauncherEditions(gameSlug || null);
+    return { editions };
+  } catch {
+    return { editions: [] };
+  }
+});
+
+ipcMain.handle("get-game-guides", async (_event, slug) => {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/guides`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return { guides: [] };
+    return await res.json();
+  } catch {
+    return { guides: [] };
+  }
+});
+
+ipcMain.handle("get-game-releases", async (_event, slug) => {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/releases`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return { releases: [], githubRepo: null };
+    return await res.json();
+  } catch {
+    return { releases: [], githubRepo: null };
+  }
 });
 ipcMain.handle("get-recently-played", () => {
   const settings = loadSettings();
@@ -2880,6 +3095,17 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
       .map((src) => resolveMediaUrl(src))
       .filter(Boolean),
     systemRequirements: rich?.systemRequirements || null,
+    faq: Array.isArray(rich?.faq) ? rich.faq : [],
+    videos: Array.isArray(rich?.videos) ? rich.videos : [],
+    website: rich?.website || entry.url || null,
+    githubRepo: rich?.githubRepo || null,
+    platforms: Array.isArray(rich?.platforms)
+      ? rich.platforms
+      : Array.isArray(entry.platforms)
+        ? entry.platforms
+        : [],
+    browserPlayable: Boolean(rich?.browserPlayable ?? entry.browserPlayable),
+    steamDeck: Boolean(rich?.steamDeck ?? entry.steamDeck),
     coverImage: resolveMediaUrl(rich?.coverImage || entry.coverImage) || null,
     approxSize: rich?.approxSize || entry.approxSize || "",
     multiplayer: Boolean(rich?.multiplayer ?? entry.multiplayer),
@@ -2887,6 +3113,8 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     installed: Boolean(info?.exe && fs.existsSync(info.exe)),
     installedPath: info?.dir || null,
     version: info?.version || null,
+    installedEditionSlug: info?.editionSlug || null,
+    installedEditionName: info?.editionName || null,
     isInstallerKind:
       entry.kind === "github-installer" || entry.kind === "direct-installer",
     pendingInstaller: Boolean(info?.pending) || getPendingInstaller()?.slug === slug,

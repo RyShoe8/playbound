@@ -38,7 +38,14 @@ export async function GET(req: Request) {
             origin,
           });
           return entry
-            ? { ...entry, status: g.status || "published", testing: g.status === "testing" }
+            ? {
+                ...entry,
+                status: g.status || "published",
+                testing: g.status === "testing",
+                platforms: Array.isArray(g.platforms) ? g.platforms : [],
+                browserPlayable: Boolean(g.browserPlayable),
+                steamDeck: Boolean(g.steamDeck),
+              }
             : null;
         }
 
@@ -57,6 +64,9 @@ export async function GET(req: Request) {
           multiplayer: Boolean(g.launchMethods?.includes("server")),
           status: g.status || "published",
           testing: g.status === "testing",
+          platforms: Array.isArray(g.platforms) ? g.platforms : [],
+          browserPlayable: Boolean(g.browserPlayable),
+          steamDeck: Boolean(g.steamDeck),
           ...(cover ? { coverImage: cover } : {}),
         };
       })

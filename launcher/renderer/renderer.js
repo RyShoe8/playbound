@@ -15,6 +15,147 @@ const gamesFilters = {
   sort: "name",
 };
 
+/** Compatible | all — mirrors site GameCompatibilityToggle (desktop rules). */
+let compatibilityFilter = "compatible";
+let currentEditionDetail = null; // { gameSlug, editionSlug }
+
+const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
+const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
+
+function normalizePlatform(value) {
+  const t = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (t === "browser" || t === "web") return "web";
+  if (t === "mac os" || t === "macos" || t === "osx" || t === "mac") return "macos";
+  if (t === "iphone" || t === "ipad") return "ios";
+  return t;
+}
+
+function isGameDesktopCompatible(game) {
+  if (game?.browserPlayable) return true;
+  const platforms = (game?.platforms || []).map(normalizePlatform);
+  const allowed = new Set(["windows", "macos", "linux", "web"]);
+  if (platforms.some((p) => allowed.has(p))) return true;
+  if (game?.steamDeck) return true;
+  return false;
+}
+
+function filterByCompatibility(list) {
+  if (compatibilityFilter !== "compatible") return list;
+  return list.filter(isGameDesktopCompatible);
+}
+
+async function loadCompatibilitySetting() {
+  try {
+    const s = await window.playbound.getSettings();
+    if (s?.compatibilityFilter === "all" || s?.compatibilityFilter === "compatible") {
+      compatibilityFilter = s.compatibilityFilter;
+    }
+  } catch {
+    /* ignore */
+  }
+  syncCompatRadios();
+}
+
+function syncCompatRadios() {
+  document.querySelectorAll('input[name="compat-filter"]').forEach((input) => {
+    input.checked = input.value === compatibilityFilter;
+  });
+}
+
+async function setCompatibilityFilter(mode) {
+  if (mode !== "compatible" && mode !== "all") return;
+  compatibilityFilter = mode;
+  syncCompatRadios();
+  try {
+    await window.playbound.saveSettings({ compatibilityFilter: mode });
+  } catch {
+    /* ignore */
+  }
+  if (currentView === "home") renderHomeView();
+  else if (currentView === "games") renderGamesView();
+  else if (currentView === "library") renderLibraryView();
+}
+
+function formatStatNumber(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString();
+}
+
+function buildActivityPanelHtml(stats, title = "Activity") {
+  if (!stats) {
+    return `<aside class="activity-panel"><p class="activity-panel-title">${escapeHtml(title)}</p><p class="view-sub" style="margin:0">Stats unavailable offline.</p></aside>`;
+  }
+  const rows = [];
+  if (typeof stats.playersThisMonth === "number" && stats.playersThisMonth > 0) {
+    rows.push(["Players this month", stats.playersThisMonth]);
+  }
+  if (typeof stats.multiplayerPlayers === "number" && stats.multiplayerPlayers > 0) {
+    rows.push(["On multiplayer servers", stats.multiplayerPlayers]);
+  }
+  if (typeof stats.serverCount === "number" && stats.serverCount > 0) {
+    rows.push(["Live servers", stats.serverCount]);
+  }
+  if (typeof stats.installsAllTime === "number" && stats.installsAllTime > 0) {
+    rows.push(["Installs", stats.installsAllTime]);
+  }
+  if (typeof stats.installsThisMonth === "number" && stats.installsThisMonth > 0) {
+    rows.push(["Installs this month", stats.installsThisMonth]);
+  }
+  const rowsHtml =
+    rows.length > 0
+      ? `<dl class="activity-rows">${rows
+          .map(
+            ([label, value]) =>
+              `<div><dt>${escapeHtml(label)}</dt><dd>${formatStatNumber(value)}</dd></div>`
+          )
+          .join("")}</dl>`
+      : "";
+  return `
+    <aside class="activity-panel">
+      <p class="activity-panel-title">${escapeHtml(title)}</p>
+      <div class="activity-playing">
+        <strong>${formatStatNumber(stats.playingNow)}</strong>
+        <span>playing now</span>
+      </div>
+      ${rowsHtml}
+      <p class="catalog-stats-footer">Updated every 15 minutes</p>
+    </aside>`;
+}
+
+function buildCatalogStatsCardHtml(live) {
+  if (!live) {
+    return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable offline.</p></aside>`;
+  }
+  const popular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
+  const popularHtml =
+    popular.length > 0
+      ? `<div class="catalog-stats-popular">
+          <h3>Most Popular Right Now</h3>
+          <ol>
+            ${popular
+              .map(
+                (g, i) =>
+                  `<li><span aria-hidden="true">${PODIUM_MEDALS[i] || `${i + 1}.`}</span> <button type="button" class="linkish" data-popular-slug="${escapeHtml(g.slug)}">${escapeHtml(g.title)}</button></li>`
+              )
+              .join("")}
+          </ol>
+        </div>`
+      : "";
+  return `
+    <aside class="catalog-stats-card">
+      <dl>
+        <div><dt>Games</dt><dd>${formatStatNumber(live.gameCount)}</dd></div>
+        <div><dt>Mods</dt><dd>${formatStatNumber(live.modCount)}</dd></div>
+        <div><dt>Editions</dt><dd>${formatStatNumber(live.editionCount)}</dd></div>
+        <div><dt>Active Players</dt><dd>${formatStatNumber(live.playingNow)}</dd></div>
+      </dl>
+      ${popularHtml}
+      <p class="catalog-stats-footer">Across supported games • Updated every 15 min</p>
+    </aside>`;
+}
+
 /** Servers browser state */
 const serversState = {
   selectedSlug: null,
@@ -111,6 +252,7 @@ const views = {
   library: document.getElementById("view-library"),
   settings: document.getElementById("view-settings"),
   gameDetail: document.getElementById("view-game-detail"),
+  editionDetail: document.getElementById("view-edition-detail"),
   deepLink: document.getElementById("view-deep-link"),
 };
 const connectionDot = document.getElementById("connection-dot");
@@ -124,12 +266,13 @@ const fmtBytes = (n) =>
 
 function navigateTo(viewName, params = {}) {
   currentView = viewName;
-  const navKey = viewName === "gameDetail" ? null : viewName;
+  const navKey =
+    viewName === "gameDetail" || viewName === "editionDetail" ? null : viewName;
   navBtns.forEach((btn) => {
     btn.classList.toggle("active", Boolean(navKey) && btn.dataset.view === navKey);
   });
   Object.keys(views).forEach((k) => {
-    views[k].classList.toggle("active", k === viewName);
+    views[k]?.classList.toggle("active", k === viewName);
   });
 
   if (viewName === "home") renderHomeView();
@@ -140,6 +283,9 @@ function navigateTo(viewName, params = {}) {
   else if (viewName === "library") renderLibraryView();
   else if (viewName === "settings") renderSettingsView();
   else if (viewName === "gameDetail") renderGameDetailView(params.slug);
+  else if (viewName === "editionDetail") {
+    renderEditionDetailView(params.gameSlug, params.editionSlug);
+  }
 }
 
 navBtns.forEach((btn) => {
@@ -147,6 +293,19 @@ navBtns.forEach((btn) => {
     if (btn.dataset.view) navigateTo(btn.dataset.view);
   });
 });
+
+document.getElementById("sidebar-discord")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  window.playbound.openExternal(DISCORD_INVITE);
+});
+
+document.querySelectorAll('input[name="compat-filter"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    if (input.checked) void setCompatibilityFilter(input.value);
+  });
+});
+
+void loadCompatibilitySetting();
 
 function setStatus(text, isError = false) {
   statusMsg.textContent = text || "";
@@ -183,6 +342,7 @@ async function refreshAccountStatus() {
 window.playbound.onAccount((data) => {
   if (data?.message) setStatus(data.message, data.connected === false);
   refreshAccountStatus();
+  if (data?.connected) void loadCompatibilitySetting();
   if (currentView === "settings") renderSettingsView();
   if (currentView === "library" && /library|located|Locate/i.test(data?.message || "")) {
     renderLibraryView();
@@ -232,8 +392,13 @@ window.playbound.onUpdateStatus?.((data) => {
 async function renderHomeView() {
   const container = views.home;
   container.innerHTML = `
-    <h1 class="view-title">Welcome back</h1>
-    <p class="view-sub">Play your favorite titles or browse free games on PlayBound.</p>
+    <div class="home-header-row">
+      <div class="home-header-copy">
+        <h1 class="view-title">Welcome back</h1>
+        <p class="view-sub">Play your favorite titles or browse free games on PlayBound.</p>
+      </div>
+      <div id="home-stats-slot"></div>
+    </div>
     
     <div id="home-recent-section" class="hidden">
       <div class="section-header">Recently Played</div>
@@ -252,22 +417,32 @@ async function renderHomeView() {
 
   document.getElementById("home-browse-games")?.addEventListener("click", () => navigateTo("games"));
 
-  const [recent, installed, catalog] = await Promise.all([
+  const [recent, installed, catalog, live] = await Promise.all([
     window.playbound.getRecentlyPlayed(),
     window.playbound.getInstalled(),
     window.playbound.getCatalog(),
+    window.playbound.getLiveStats?.() || Promise.resolve(null),
   ]);
+
+  const statsSlot = document.getElementById("home-stats-slot");
+  if (statsSlot) {
+    statsSlot.innerHTML = buildCatalogStatsCardHtml(live);
+    statsSlot.querySelectorAll("[data-popular-slug]").forEach((btn) => {
+      btn.addEventListener("click", () => openGameDetail(btn.dataset.popularSlug, "home"));
+    });
+  }
 
   const recentSec = document.getElementById("home-recent-section");
   const recentGrid = document.getElementById("home-recent-grid");
   if (recent && recent.length > 0) {
     recentSec.classList.remove("hidden");
-    recentGrid.replaceChildren(...recent.map(createGameCard));
+    recentGrid.replaceChildren(...filterByCompatibility(recent).map(createGameCard));
   }
 
   const installedGrid = document.getElementById("home-installed-grid");
-  if (installed && installed.length > 0) {
-    installedGrid.replaceChildren(...installed.map(createGameCard));
+  const installedFiltered = filterByCompatibility(installed || []);
+  if (installedFiltered.length > 0) {
+    installedGrid.replaceChildren(...installedFiltered.map(createGameCard));
   } else {
     installedGrid.innerHTML = `<p class="view-sub">No games installed yet. <a href="#" id="home-empty-games">Browse Games</a></p>`;
     document.getElementById("home-empty-games")?.addEventListener("click", (e) => {
@@ -277,7 +452,9 @@ async function renderHomeView() {
   }
 
   const catalogGrid = document.getElementById("home-catalog-grid");
-  catalogGrid.replaceChildren(...catalog.slice(0, 4).map(createGameCard));
+  catalogGrid.replaceChildren(
+    ...filterByCompatibility(catalog).slice(0, 4).map(createGameCard)
+  );
 }
 
 async function renderLibraryView() {
@@ -1252,7 +1429,7 @@ function parseSizeMB(label) {
 
 function paintGamesGrid(catalog) {
   const q = gamesFilters.query.trim().toLowerCase();
-  let list = catalog.slice();
+  let list = filterByCompatibility(catalog.slice());
 
   if (q) {
     list = list.filter((g) => {
@@ -1465,13 +1642,39 @@ async function renderGameDetailView(slug) {
         (detail.title || "?").charAt(0)
       )}</span></div>`;
 
+  const [liveStats, editionsRes] = await Promise.all([
+    window.playbound.getLiveStats?.({ game: slug }) || Promise.resolve(null),
+    window.playbound.getEditions?.(slug) || Promise.resolve({ editions: [] }),
+  ]);
+  const editions = Array.isArray(editionsRes?.editions) ? editionsRes.editions : [];
+  const playingChip =
+    liveStats && Number(liveStats.playingNow) > 0
+      ? `<span class="playing-now-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
+      : liveStats
+        ? `<span class="playing-now-chip">0 playing now</span>`
+        : "";
+
+  const faqHtml = (detail.faq || [])
+    .map(
+      (item) =>
+        `<div class="faq-card"><h3>${escapeHtml(item.q || item.question || "FAQ")}</h3><p>${escapeHtml(item.a || item.answer || "")}</p></div>`
+    )
+    .join("");
+
+  const editionPickerOptions = editions
+    .map(
+      (ed) =>
+        `<option value="${escapeHtml(ed.editionSlug)}" ${ed.isDefault ? "selected" : ""}>${escapeHtml(ed.editionName)}${ed.isDefault ? " (default)" : ""}</option>`
+    )
+    .join("");
+
   container.innerHTML = `
     <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 12px">← Back</button>
 
     <section class="detail-hero">
       ${coverHtml}
       <div class="detail-hero-copy">
-        <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}</div>
+        <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${playingChip}</div>
         <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
         <p class="view-sub detail-hero-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
         <div class="detail-hero-actions" id="detail-actions"></div>
@@ -1480,12 +1683,21 @@ async function renderGameDetailView(slug) {
 
     <nav class="detail-tabs" id="detail-tabs">
       <button type="button" class="detail-tab ${detailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
       <button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>
       <button type="button" class="detail-tab ${detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "news" ? "active" : ""}" data-tab="news">News</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "media" ? "active" : ""}" data-tab="media">Media</button>
     </nav>
 
     <div class="detail-tab-panels">
       <div class="detail-tab-panel ${detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
+        ${buildActivityPanelHtml(liveStats)}
+        <section class="detail-section" id="detail-editions-sec">
+          <h2 class="detail-section-title">Editions</h2>
+          <div class="editions-list" id="detail-editions-list"></div>
+        </section>
         <section class="detail-section">
           <h2 class="detail-section-title">About</h2>
           <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
@@ -1505,12 +1717,215 @@ async function renderGameDetailView(slug) {
             : ""
         }
         ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
+        <div class="detail-web-tabs">
+          <button type="button" class="btn-secondary btn-sm" data-web-tab="discussion">Discussion on site</button>
+          <button type="button" class="btn-secondary btn-sm" data-web-tab="reviews">Reviews on site</button>
+          <button type="button" class="btn-secondary btn-sm" data-web-tab="achievements">Achievements on site</button>
+        </div>
         <p class="view-sub"><a href="#" id="detail-open-site">Open full page on playbound.club</a></p>
+      </div>
+      <div class="detail-tab-panel ${detailActiveTab === "install" ? "active" : ""}" data-panel="install">
+        <section class="detail-section">
+          <h2 class="detail-section-title">Install</h2>
+          ${
+            editions.length > 1
+              ? `<label class="view-sub" for="detail-edition-pick">Edition</label>
+                 <select class="input-text" id="detail-edition-pick" style="max-width:320px;margin:8px 0 14px">${editionPickerOptions}</select>`
+              : ""
+          }
+          <div class="detail-hero-actions" style="margin-bottom:16px">
+            <button class="btn-primary" type="button" id="install-tab-install">Install selected edition</button>
+            ${detail.website ? `<button class="btn-secondary" type="button" id="install-tab-website">Official website</button>` : ""}
+          </div>
+          ${
+            detail.systemRequirements
+              ? `<div class="req-grid" style="margin-bottom:16px">
+              <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
+              <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
+            </div>`
+              : ""
+          }
+          ${faqHtml ? `<h3 class="detail-section-title">FAQ</h3><div class="faq-list">${faqHtml}</div>` : `<p class="view-sub">No FAQ yet for this title.</p>`}
+        </section>
       </div>
       <div class="detail-tab-panel ${detailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="detail-servers-sec"></div>
       <div class="detail-tab-panel ${detailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="detail-mods-sec"></div>
+      <div class="detail-tab-panel ${detailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="detail-guides-sec"><p class="view-sub">Loading guides…</p></div>
+      <div class="detail-tab-panel ${detailActiveTab === "news" ? "active" : ""}" data-panel="news" id="detail-news-sec"><p class="view-sub">Loading releases…</p></div>
+      <div class="detail-tab-panel ${detailActiveTab === "media" ? "active" : ""}" data-panel="media" id="detail-media-sec"></div>
     </div>
   `;
+
+  const editionsList = document.getElementById("detail-editions-list");
+  if (editionsList) {
+    if (!editions.length) {
+      editionsList.innerHTML = `<p class="view-sub">No editions listed — install uses the default recipe.</p>`;
+    } else {
+      for (const ed of editions) {
+        const row = document.createElement("div");
+        row.className = "edition-row";
+        row.innerHTML = `
+          <div class="edition-row-copy">
+            <strong>${escapeHtml(ed.editionName)}</strong>
+            <span>${escapeHtml(ed.editionType || "")}${ed.shortDescription ? ` · ${escapeHtml(ed.shortDescription)}` : ""}</span>
+          </div>
+          <button type="button" class="btn-secondary btn-sm">View</button>
+        `;
+        row.querySelector("button")?.addEventListener("click", () => {
+          openEditionDetail(slug, ed.editionSlug);
+        });
+        editionsList.appendChild(row);
+      }
+    }
+  }
+
+  function selectedEditionSlug() {
+    const pick = document.getElementById("detail-edition-pick");
+    if (pick?.value) return pick.value;
+    const def = editions.find((e) => e.isDefault) || editions[0];
+    return def?.editionSlug || null;
+  }
+
+  async function runInstall(editionSlug) {
+    setStatus("Starting install...");
+    try {
+      const res = await window.playbound.install(slug, null, editionSlug || null);
+      if (res.status === "installed") {
+        setStatus("Install complete!");
+        setProgress(null);
+        renderGameDetailView(slug);
+      } else if (res.status === "installer-opened") {
+        setStatus("Installer opened — waiting for installer to finish…");
+        setProgress(null);
+        renderGameDetailView(slug);
+      } else if (res.status === "external") {
+        setStatus("Opened download page.");
+        setProgress(null);
+      }
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+      setProgress(null);
+    }
+  }
+
+  document.getElementById("install-tab-install")?.addEventListener("click", () => {
+    void runInstall(selectedEditionSlug());
+  });
+  document.getElementById("install-tab-website")?.addEventListener("click", () => {
+    if (detail.website) window.playbound.openExternal(detail.website);
+  });
+  container.querySelectorAll("[data-web-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.getAttribute("data-web-tab");
+      window.playbound.openExternal(
+        `https://playbound.club/games/${encodeURIComponent(slug)}?tab=${encodeURIComponent(tab)}`
+      );
+    });
+  });
+
+  // Guides / news / media (lazy fill)
+  void (async () => {
+    const guidesSec = document.getElementById("detail-guides-sec");
+    const newsSec = document.getElementById("detail-news-sec");
+    const mediaSec = document.getElementById("detail-media-sec");
+    const [guidesRes, releasesRes] = await Promise.all([
+      window.playbound.getGameGuides?.(slug) || Promise.resolve({ guides: [] }),
+      window.playbound.getGameReleases?.(slug) || Promise.resolve({ releases: [] }),
+    ]);
+    const guides = guidesRes?.guides || [];
+    if (guidesSec) {
+      if (!guides.length) {
+        guidesSec.innerHTML = `<p class="view-sub">No guides yet. <a href="#" id="guides-open-site">Write one on playbound.club</a></p>`;
+        document.getElementById("guides-open-site")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(
+            `https://playbound.club/games/${encodeURIComponent(slug)}?tab=guides`
+          );
+        });
+      } else {
+        guidesSec.innerHTML = `<div class="guide-list">${guides
+          .map(
+            (g) =>
+              `<button type="button" class="guide-card" data-url="${escapeHtml(g.url)}" style="text-align:left;cursor:pointer;width:100%;color:inherit;background:rgba(255,255,255,0.02)">
+                <h3>${escapeHtml(g.title)}</h3>
+                <p>${escapeHtml(g.excerpt || "")}</p>
+                <p style="margin-top:6px;font-size:11px">${escapeHtml(g.username || "")} · ${escapeHtml(
+                g.createdAt ? new Date(g.createdAt).toLocaleDateString() : ""
+              )}</p>
+              </button>`
+          )
+          .join("")}</div>`;
+        guidesSec.querySelectorAll("[data-url]").forEach((el) => {
+          el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+      }
+    }
+    const releases = releasesRes?.releases || [];
+    if (newsSec) {
+      if (!releases.length) {
+        newsSec.innerHTML = `<p class="view-sub">No GitHub release notes available${
+          detail.website
+            ? `. <a href="#" id="news-website">Check the official site</a>`
+            : "."
+        }</p>`;
+        document.getElementById("news-website")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(detail.website);
+        });
+      } else {
+        newsSec.innerHTML = `<div class="release-list">${releases
+          .map(
+            (r) =>
+              `<a class="release-card" href="${escapeHtml(r.url)}" data-ext="${escapeHtml(r.url)}" style="display:block;text-decoration:none;color:inherit">
+                <h3>${escapeHtml(r.name || r.tagName)}</h3>
+                <p>${escapeHtml(r.body || "")}</p>
+                <p style="margin-top:6px;font-size:11px">${
+                  r.publishedAt ? escapeHtml(new Date(r.publishedAt).toLocaleDateString()) : ""
+                }</p>
+              </a>`
+          )
+          .join("")}</div>`;
+        newsSec.querySelectorAll("[data-ext]").forEach((a) => {
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.playbound.openExternal(a.dataset.ext);
+          });
+        });
+      }
+    }
+    if (mediaSec) {
+      const vids = Array.isArray(detail.videos) ? detail.videos.filter(Boolean) : [];
+      const mediaShots = (detail.screenshots || [])
+        .map(
+          (src) =>
+            `<a class="shot-thumb" href="${escapeHtml(src)}" data-ext="${escapeHtml(src)}"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></a>`
+        )
+        .join("");
+      mediaSec.innerHTML = `
+        ${
+          vids.length
+            ? `<section class="detail-section"><h2 class="detail-section-title">Videos</h2><div class="media-video-list">${vids
+                .map(
+                  (url, i) =>
+                    `<a href="${escapeHtml(url)}" data-ext="${escapeHtml(url)}">Video ${i + 1}</a>`
+                )
+                .join("")}</div></section>`
+            : ""
+        }
+        ${
+          mediaShots
+            ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${mediaShots}</div></section>`
+            : `<p class="view-sub">No media yet.</p>`
+        }
+      `;
+      mediaSec.querySelectorAll("[data-ext]").forEach((a) => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(a.dataset.ext);
+        });
+      });
+    }
+  })();
 
   document.getElementById("detail-back").addEventListener("click", () => {
     const back = ["games", "library", "home", "servers"].includes(detailReturnView)
@@ -1606,25 +2021,7 @@ async function renderGameDetailView(slug) {
       if (currentView === "library") renderLibraryView();
     });
     document.getElementById("act-install").addEventListener("click", async () => {
-      setStatus("Starting install...");
-      try {
-        const res = await window.playbound.install(slug);
-        if (res.status === "installed") {
-          setStatus("Install complete!");
-          setProgress(null);
-          renderGameDetailView(slug);
-        } else if (res.status === "installer-opened") {
-          setStatus("Installer opened — waiting for installer to finish…");
-          setProgress(null);
-          renderGameDetailView(slug);
-        } else if (res.status === "external") {
-          setStatus("Opened download page.");
-          setProgress(null);
-        }
-      } catch (err) {
-        setStatus(err.message || String(err), true);
-        setProgress(null);
-      }
+      await runInstall(selectedEditionSlug());
     });
   } else {
     const showLocate =
@@ -1634,25 +2031,7 @@ async function renderGameDetailView(slug) {
       ${showLocate ? `<button class="btn-secondary" id="act-locate">I've finished installing</button>` : ""}
     `;
     document.getElementById("act-install").addEventListener("click", async () => {
-      setStatus("Starting install...");
-      try {
-        const res = await window.playbound.install(slug);
-        if (res.status === "installed") {
-          setStatus("Install complete!");
-          setProgress(null);
-          renderGameDetailView(slug);
-        } else if (res.status === "installer-opened") {
-          setStatus("Installer opened — waiting for installer to finish…");
-          setProgress(null);
-          renderGameDetailView(slug);
-        } else if (res.status === "external") {
-          setStatus("Opened download page.");
-          setProgress(null);
-        }
-      } catch (err) {
-        setStatus(err.message || String(err), true);
-        setProgress(null);
-      }
+      await runInstall(selectedEditionSlug());
     });
     document.getElementById("act-locate")?.addEventListener("click", async () => {
       setStatus("Looking for install…");
@@ -1788,6 +2167,16 @@ async function renderGameDetailView(slug) {
         }
       }
       modsList.appendChild(row);
+      void window.playbound.getLiveStats?.({ mod: mod.slug }).then((stats) => {
+        if (!stats || !row.isConnected) return;
+        const titleEl = row.querySelector(".mod-row-title");
+        if (!titleEl) return;
+        const chip = document.createElement("span");
+        chip.className = "playing-now-chip";
+        chip.style.marginLeft = "8px";
+        chip.textContent = `${formatStatNumber(stats.playingNow)} playing now`;
+        titleEl.appendChild(chip);
+      });
     }
   } else {
     modsSec.innerHTML = `<p class="view-sub">No catalog mods for this title yet.</p>`;
@@ -1879,6 +2268,138 @@ function openGameDetail(slug, fromView) {
   navigateTo("gameDetail", { slug });
 }
 
+function openEditionDetail(gameSlug, editionSlug) {
+  currentEditionDetail = { gameSlug, editionSlug };
+  navigateTo("editionDetail", { gameSlug, editionSlug });
+}
+
+async function renderEditionDetailView(gameSlug, editionSlug) {
+  const container = views.editionDetail;
+  if (!container) return;
+  container.innerHTML = `<p class="view-sub">Loading edition…</p>`;
+
+  const [editionsRes, liveStats, gameDetail] = await Promise.all([
+    window.playbound.getEditions?.(gameSlug) || Promise.resolve({ editions: [] }),
+    window.playbound.getLiveStats?.({ game: gameSlug, edition: editionSlug }) ||
+      Promise.resolve(null),
+    window.playbound.getGameDetail(gameSlug),
+  ]);
+  const edition = (editionsRes?.editions || []).find((e) => e.editionSlug === editionSlug);
+  if (!edition) {
+    container.innerHTML = `
+      <button class="btn-secondary btn-sm" id="edition-back">← Back to game</button>
+      <p class="view-sub" style="margin-top:12px">Edition not found.</p>
+    `;
+    document.getElementById("edition-back")?.addEventListener("click", () =>
+      openGameDetail(gameSlug, detailReturnView)
+    );
+    return;
+  }
+
+  const cover = edition.coverImage || gameDetail?.coverImage || "";
+  const coverHtml = cover
+    ? `<div class="detail-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" /></div>`
+    : `<div class="detail-cover detail-cover-fallback"><span>${escapeHtml(
+        (edition.editionName || "?").charAt(0)
+      )}</span></div>`;
+
+  const links = edition.links || {};
+  const linkButtons = [
+    ["Website", links.website],
+    ["Discord", links.discord],
+    ["Wiki", links.wiki],
+    ["GitHub", links.github],
+    ["Forum", links.forum],
+  ]
+    .filter(([, url]) => url)
+    .map(
+      ([label, url]) =>
+        `<button type="button" class="btn-secondary btn-sm" data-ext="${escapeHtml(url)}">${escapeHtml(label)}</button>`
+    )
+    .join("");
+
+  container.innerHTML = `
+    <button class="btn-secondary btn-sm" id="edition-back" style="margin-bottom:12px">← ${escapeHtml(
+      edition.gameTitle || gameSlug
+    )}</button>
+    <section class="detail-hero">
+      ${coverHtml}
+      <div class="detail-hero-copy">
+        <div class="chip-row">
+          <span class="chip">${escapeHtml(edition.editionType || "edition")}</span>
+          ${
+            liveStats
+              ? `<span class="playing-now-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
+              : ""
+          }
+        </div>
+        <h1 class="view-title detail-hero-title">${escapeHtml(edition.editionName)}</h1>
+        <p class="view-sub detail-hero-sub">${escapeHtml(edition.shortDescription || "")}</p>
+        <div class="detail-hero-actions">
+          <button class="btn-primary" id="edition-install">Install this edition</button>
+          ${
+            gameDetail?.installed
+              ? `<button class="btn-success" id="edition-play">Play</button>`
+              : ""
+          }
+        </div>
+      </div>
+    </section>
+    ${buildActivityPanelHtml(liveStats, "Edition activity")}
+    <section class="detail-section">
+      <h2 class="detail-section-title">About</h2>
+      <p class="detail-prose">${escapeHtml(edition.shortDescription || "")}</p>
+    </section>
+    ${
+      edition.requirements
+        ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
+        <div class="req-grid">
+          <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(edition.requirements.min || "—")}</p></div>
+          <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(edition.requirements.recommended || "—")}</p></div>
+        </div></section>`
+        : ""
+    }
+    ${
+      linkButtons
+        ? `<section class="detail-section"><h2 class="detail-section-title">Community</h2><div class="detail-web-tabs">${linkButtons}</div></section>`
+        : ""
+    }
+  `;
+
+  document.getElementById("edition-back")?.addEventListener("click", () =>
+    openGameDetail(gameSlug, detailReturnView)
+  );
+  document.getElementById("edition-install")?.addEventListener("click", async () => {
+    setStatus("Starting install...");
+    try {
+      const res = await window.playbound.install(gameSlug, null, editionSlug);
+      if (res.status === "installed") {
+        setStatus("Install complete!");
+        setProgress(null);
+        renderEditionDetailView(gameSlug, editionSlug);
+      } else if (res.status === "installer-opened") {
+        setStatus("Installer opened — waiting for installer to finish…");
+        setProgress(null);
+        openGameDetail(gameSlug, "editionDetail");
+      } else if (res.status === "external") {
+        setStatus("Opened download page.");
+        setProgress(null);
+      }
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+      setProgress(null);
+    }
+  });
+  document.getElementById("edition-play")?.addEventListener("click", async () => {
+    setStatus("Launching...");
+    await window.playbound.play(gameSlug);
+    startGameSession(gameSlug, edition.gameTitle || gameSlug);
+  });
+  container.querySelectorAll("[data-ext]").forEach((btn) => {
+    btn.addEventListener("click", () => window.playbound.openExternal(btn.dataset.ext));
+  });
+}
+
 function renderDeepLinkView(ctx) {
   if (!ctx) return;
   deepLinkCtx = ctx;
@@ -1909,7 +2430,7 @@ function renderDeepLinkView(ctx) {
     document.getElementById("dl-act-run").addEventListener("click", async () => {
       setStatus("Installing...");
       try {
-        const res = await window.playbound.install(ctx.slug);
+        const res = await window.playbound.install(ctx.slug, null, ctx.editionSlug || null);
         if (res.status === "installer-opened") {
           setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);

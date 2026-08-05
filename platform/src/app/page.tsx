@@ -114,7 +114,9 @@ export default async function HomePage() {
         <CatalogStatsCard
           gameCount={live.gameCount}
           modCount={live.modCount}
+          editionCount={live.editionCount}
           playingNow={live.playingNow}
+          mostPopular={live.mostPopular}
         />
       </header>
 

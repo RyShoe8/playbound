@@ -3,21 +3,29 @@ import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
+import { userFromLauncherBearer } from "@/lib/library";
 import User from "@/lib/models/User";
 
 const patchSchema = z.object({
   compatibilityFilter: z.enum(["compatible", "all"]),
 });
 
-export async function GET() {
+async function resolveUserId(req: Request): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id) return session.user.id;
+  const launcherUser = await userFromLauncherBearer(req);
+  return launcherUser?._id ? String(launcherUser._id) : null;
+}
+
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = await resolveUserId(req);
+    if (!userId) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
 
     await dbConnect();
-    const user = await User.findById(session.user.id)
+    const user = await User.findById(userId)
       .select("preferences")
       .lean<{ preferences?: { compatibilityFilter?: string } }>();
 
@@ -38,8 +46,8 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = await resolveUserId(req);
+    if (!userId) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
 
@@ -48,7 +56,7 @@ export async function PATCH(req: Request) {
 
     await dbConnect();
     const user = await User.findByIdAndUpdate(
-      session.user.id,
+      userId,
       { $set: { "preferences.compatibilityFilter": compatibilityFilter } },
       { new: true }
     ).select("preferences");
