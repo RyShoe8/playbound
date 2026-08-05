@@ -11,7 +11,7 @@ import { EmptyHint } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { CompatibilityListingBar } from "@/components/GameCompatibilityToggle";
 import { cn } from "@/lib/utils";
-import { useTelemetry } from "@/lib/telemetry";
+import { telemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 
@@ -128,7 +128,6 @@ export function GlobalServerBrowser({
   const [modNote, setModNote] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("players");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const { track } = useTelemetry();
   const { mode, device } = useCompatibilityFilter();
   const lastViewedSlug = useRef<string | null>(null);
 
@@ -310,7 +309,7 @@ export function GlobalServerBrowser({
       setData({ ...json, servers });
       if (slug && lastViewedSlug.current !== slug) {
         lastViewedSlug.current = slug;
-        void track("server_viewed", { gameSlug: slug });
+        void telemetry.track("server_viewed", { gameSlug: slug });
       }
     } catch {
       if (ac.signal.aborted || isStale()) return;
@@ -318,7 +317,7 @@ export function GlobalServerBrowser({
     } finally {
       if (!isStale()) setLoading(false);
     }
-  }, [track]);
+  }, []);
 
   useEffect(() => {
     const mod = effectiveModSlug
@@ -562,7 +561,7 @@ export function GlobalServerBrowser({
                           <a
                             href={launcherJoinUrl(effectiveGameSlug, s.host, s.port, s.name)}
                             onClick={() => {
-                              void track("server_join_clicked", {
+                              void telemetry.track("server_join_clicked", {
                                 serverId: `${s.host}:${s.port}`,
                                 gameSlug: effectiveGameSlug,
                               });
