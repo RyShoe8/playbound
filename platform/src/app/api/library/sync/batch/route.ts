@@ -78,7 +78,8 @@ export async function POST(req: Request) {
         modsSkipped.push(item.slug);
         continue;
       }
-      await LibraryModEntry.findOneAndUpdate(
+      // new:false returns prior doc (null on insert) so we only telemetry first installs
+      const prev = await LibraryModEntry.findOneAndUpdate(
         { userId: user._id, modSlug: item.slug },
         {
           $set: {
@@ -93,20 +94,22 @@ export async function POST(req: Request) {
             modSlug: item.slug,
           },
         },
-        { upsert: true, new: true }
+        { upsert: true, new: false }
       );
-      void saveEvent({
-        event: "mod_installed",
-        properties: {
-          modSlug: item.slug,
-          baseGameSlug: item.baseGameSlug,
-          installMethod: "launcher",
-          version: item.version,
-        },
-        userId: String(user._id),
-        timestamp: now.toISOString(),
-        userAgent: req.headers.get("user-agent"),
-      }).catch(() => undefined);
+      if (!prev || !prev.installed) {
+        void saveEvent({
+          event: "mod_installed",
+          properties: {
+            modSlug: item.slug,
+            baseGameSlug: item.baseGameSlug,
+            installMethod: "launcher",
+            version: item.version,
+          },
+          userId: String(user._id),
+          timestamp: now.toISOString(),
+          userAgent: req.headers.get("user-agent"),
+        }).catch(() => undefined);
+      }
       modsSynced += 1;
     }
 
