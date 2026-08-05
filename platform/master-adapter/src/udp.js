@@ -88,7 +88,22 @@ export function udpQueryMaster(host, port, payload, timeoutMs = 8000) {
 }
 
 /**
+ * Skip known ASCII master-server tags (\empty, \full, \EOT).
+ * @param {Buffer} msg
+ * @param {number} i index of leading 0x5c
+ * @returns {number} index after the tag, or -1 if not a known tag
+ */
+function skipAsciiMasterTag(msg, i) {
+  const rest = msg.toString("latin1", i + 1, Math.min(msg.length, i + 1 + 8));
+  if (rest.startsWith("EOT")) return i + 4;
+  if (rest.startsWith("empty")) return i + 1 + 5;
+  if (rest.startsWith("full")) return i + 1 + 4;
+  return -1;
+}
+
+/**
  * Parse Quake3 / DarkPlaces getservers(Ext)Response binary address list.
+ * Skips ASCII tags (\empty, \full, \EOT) that appear between binary host entries.
  * @param {Buffer} msg
  * @returns {{ host: string, port: number }[]}
  */
@@ -106,12 +121,24 @@ export function parseGetServersResponse(msg) {
   /** @type {{ host: string, port: number }[]} */
   const servers = [];
   while (i + 7 <= msg.length) {
-    if (msg[i] !== 0x5c) break;
-    // \EOT
-    if (msg[i + 1] === 0x45 && msg[i + 2] === 0x4f && msg[i + 3] === 0x54) break;
+    if (msg[i] !== 0x5c) {
+      i += 1;
+      continue;
+    }
+    const afterTag = skipAsciiMasterTag(msg, i);
+    if (afterTag >= 0) {
+      i = afterTag;
+      continue;
+    }
     const host = `${msg[i + 1]}.${msg[i + 2]}.${msg[i + 3]}.${msg[i + 4]}`;
     const port = (msg[i + 5] << 8) | msg[i + 6];
-    if (port > 0 && port < 65536) {
+    const octets = host.split(".").map(Number);
+    const plausible =
+      port > 0 &&
+      port < 65536 &&
+      octets.every((o) => o >= 0 && o <= 255) &&
+      !(octets[0] === 0 && octets[1] === 0);
+    if (plausible) {
       servers.push({ host, port });
     }
     i += 7;
@@ -162,20 +189,42 @@ async function queryInfoKeys(host, port, command, responseMarker, timeoutMs) {
 }
 
 /**
+ * @param {Record<string, string> | null} info
+ */
+function hasUsefulInfo(info) {
+  if (!info) return false;
+  return Boolean(
+    info.hostname ||
+      info.sv_hostname ||
+      info.host ||
+      info.mapname ||
+      info.map ||
+      info.clients != null ||
+      info.players != null ||
+      info.sv_maxclients != null
+  );
+}
+
+/**
  * @param {string} host
  * @param {number} port
  * @returns {Promise<Record<string, string> | null>}
  */
 export async function getServerInfo(host, port) {
-  const info = await queryInfoKeys(host, port, "getinfo", "infoResponse", 2000);
-  if (info && (info.hostname || info.sv_hostname || info.host || info.clients || info.players)) {
-    return info;
+  // Prefer getstatus (richer keys on DarkPlaces / Daemon); fall back to getinfo
+  const status = await queryInfoKeys(host, port, "getstatus", "statusResponse", 3500);
+  if (hasUsefulInfo(status)) return status;
+
+  const info = await queryInfoKeys(host, port, "getinfo", "infoResponse", 3500);
+  if (hasUsefulInfo(info)) {
+    return status ? { ...status, ...info } : info;
   }
-  const status = await queryInfoKeys(host, port, "getstatus", "statusResponse", 2000);
-  if (status) {
-    return { ...(info || {}), ...status };
-  }
-  return info;
+
+  // Challenge variants some Daemon forks expect
+  const challenged = await queryInfoKeys(host, port, "getinfo xxx", "infoResponse", 2500);
+  if (hasUsefulInfo(challenged)) return challenged;
+
+  return status || info || challenged;
 }
 
 /**

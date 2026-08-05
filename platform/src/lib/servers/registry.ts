@@ -5,7 +5,6 @@ import { fetchOpenRaServers } from "./providers/openra";
 import { fetchOpenTtdServers } from "./providers/openttd";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
-import { fetchVelorenServers } from "./providers/veloren";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
@@ -17,7 +16,8 @@ const providers: Record<string, ServerProvider> = {
   openra: { slug: "openra", fetchServers: fetchOpenRaServers },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
   openttd: { slug: "openttd", fetchServers: fetchOpenTtdServers },
-  veloren: { slug: "veloren", fetchServers: fetchVelorenServers },
+  // UDP query_port enrichment runs on the always-on Master Adapter
+  veloren: { slug: "veloren", fetchServers: () => fetchRemoteMaster("veloren") },
   "beyond-all-reason": {
     slug: "beyond-all-reason",
     fetchServers: fetchBeyondAllReasonServers,
