@@ -5,7 +5,7 @@ import {
   installStepSchema,
   faqEntrySchema,
 } from "@/lib/gamePayload";
-
+import { CATALOG_STATUSES } from "@/lib/catalogStatus";
 export const DOWNLOAD_KINDS = ["github-zip", "direct-zip", "external"] as const;
 export const MANAGED_BY = ["admin", "developer"] as const;
 
@@ -63,6 +63,7 @@ export const modPayloadSchema = z.object({
     .transform((v) => (!v ? null : v)),
   screenshots: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
   published: z.boolean().default(false),
+  status: z.enum(CATALOG_STATUSES).optional(),
   managedBy: z.enum(MANAGED_BY).default("admin"),
   ownerUserId: z
     .union([z.string().trim().min(1), z.literal(""), z.null()])
@@ -120,6 +121,7 @@ export const emptyModDraft = (baseGameSlug = ""): ModPayload => ({
   coverImage: null,
   screenshots: [],
   published: false,
+  status: "draft",
   managedBy: "admin",
   ownerUserId: null,
   longDescription: undefined,

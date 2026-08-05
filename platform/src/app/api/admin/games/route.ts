@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
+import { withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { listAllGames } from "@/lib/catalog";
 import {
@@ -25,14 +26,19 @@ export async function POST(req: Request) {
     const { error } = await requireAdminSession();
     if (error) return error;
 
-    const body = ensureDerivedGameFields(
-      withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(await req.json())))
+    const raw = await req.json();
+    const forcePublish = Boolean(
+      raw && typeof raw === "object" && "forcePublish" in raw && (raw as { forcePublish?: unknown }).forcePublish
+    );
+    const body = withSyncedPublished(
+      ensureDerivedGameFields(
+        withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(raw)))
+      )
     );
 
-    // Drafts save freely; publishing requires the human-written fields.
-    if (body.published) {
+    if (body.status === "published") {
       const readiness = editorialReadiness(body);
-      if (!readiness.ready) {
+      if (!readiness.ready && !forcePublish) {
         return NextResponse.json(
           { error: publishBlockedMessage("game", readiness.missing), readiness },
           { status: 422 }

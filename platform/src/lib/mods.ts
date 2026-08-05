@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
 import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
+import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 
 export type CatalogModPublic = {
   slug: string;
@@ -22,6 +23,7 @@ export type CatalogModPublic = {
   coverImage?: string;
   screenshots?: string[];
   managedBy: "admin" | "developer";
+  status?: CatalogStatus;
   detectedVersion?: string;
   lastVersionCheckAt?: string;
   versionCheckStatus?: string;
@@ -78,6 +80,7 @@ function toMod(doc: LeanMod): CatalogModPublic {
     coverImage: (doc.coverImage as string) || undefined,
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     managedBy: (doc.managedBy as "admin" | "developer") || "admin",
+    status: normalizeStatus(doc),
     detectedVersion: (doc.detectedVersion as string) || undefined,
     lastVersionCheckAt: (doc as { lastVersionCheckAt?: Date }).lastVersionCheckAt
       ? new Date((doc as { lastVersionCheckAt: Date }).lastVersionCheckAt).toISOString()
@@ -122,12 +125,17 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
 export async function listMods(opts?: {
   baseGameSlug?: string;
   includeUnpublished?: boolean;
+  includeTesting?: boolean;
 }): Promise<CatalogModPublic[]> {
   try {
     await dbConnect();
-    const filter: Record<string, unknown> = {};
-    if (opts?.baseGameSlug) filter.baseGameSlug = opts.baseGameSlug;
-    if (!opts?.includeUnpublished) filter.published = true;
+    const parts: Record<string, unknown>[] = [];
+    if (opts?.baseGameSlug) parts.push({ baseGameSlug: opts.baseGameSlug });
+    if (!opts?.includeUnpublished) {
+      parts.push(mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) }));
+    }
+    const filter =
+      parts.length === 0 ? {} : parts.length === 1 ? parts[0]! : { $and: parts };
     const docs = await CatalogMod.find(filter).sort({ title: 1 }).lean();
     return docs.map((d) => toMod(d as LeanMod));
   } catch (err) {
@@ -136,19 +144,31 @@ export async function listMods(opts?: {
   }
 }
 
-export async function listAllMods(): Promise<(CatalogModPublic & { published: boolean; updatedAt?: string })[]> {
+export async function listAllMods(): Promise<
+  (CatalogModPublic & {
+    published: boolean;
+    status: CatalogStatus;
+    updatedAt?: string;
+    ownerUserId?: string | null;
+  })[]
+> {
   try {
     await dbConnect();
     const docs = await CatalogMod.find({}).sort({ updatedAt: -1 }).lean();
-    return docs.map((d) => ({
-      ...toMod(d as LeanMod),
-      published: Boolean((d as LeanMod).published),
-      updatedAt: (d as { updatedAt?: Date }).updatedAt
-        ? new Date((d as { updatedAt: Date }).updatedAt).toISOString()
-        : undefined,
-      managedBy: ((d as LeanMod).managedBy as "admin" | "developer") || "admin",
-      ownerUserId: (d as LeanMod).ownerUserId ? String((d as LeanMod).ownerUserId) : null,
-    }));
+    return docs.map((d) => {
+      const lean = d as LeanMod;
+      const status = normalizeStatus(lean);
+      return {
+        ...toMod(lean),
+        published: status === "published",
+        status,
+        updatedAt: (d as { updatedAt?: Date }).updatedAt
+          ? new Date((d as { updatedAt: Date }).updatedAt).toISOString()
+          : undefined,
+        managedBy: (lean.managedBy as "admin" | "developer") || "admin",
+        ownerUserId: lean.ownerUserId ? String(lean.ownerUserId) : null,
+      };
+    });
   } catch (err) {
     console.error("[mods] listAllMods failed:", err);
     return [];
@@ -157,13 +177,14 @@ export async function listAllMods(): Promise<(CatalogModPublic & { published: bo
 
 export async function getMod(
   slug: string,
-  opts?: { includeUnpublished?: boolean }
+  opts?: { includeUnpublished?: boolean; includeTesting?: boolean }
 ): Promise<CatalogModPublic | undefined> {
   try {
     await dbConnect();
-    const filter: Record<string, unknown> = { slug };
-    if (!opts?.includeUnpublished) filter.published = true;
-    const doc = await CatalogMod.findOne(filter).lean();
+    const query: Record<string, unknown> = opts?.includeUnpublished
+      ? { slug }
+      : { $and: [{ slug }, mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) })] };
+    const doc = await CatalogMod.findOne(query).lean();
     return doc ? toMod(doc as LeanMod) : undefined;
   } catch (err) {
     console.error("[mods] getMod failed:", err);
@@ -171,8 +192,15 @@ export async function getMod(
   }
 }
 
-export async function modsForGame(baseGameSlug: string): Promise<CatalogModPublic[]> {
-  return listMods({ baseGameSlug, includeUnpublished: false });
+export async function modsForGame(
+  baseGameSlug: string,
+  opts?: { includeTesting?: boolean }
+): Promise<CatalogModPublic[]> {
+  return listMods({
+    baseGameSlug,
+    includeUnpublished: false,
+    includeTesting: opts?.includeTesting,
+  });
 }
 
 export async function getModAdmin(slug: string) {

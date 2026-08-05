@@ -1979,7 +1979,11 @@ function createGameCard(game) {
   const body = document.createElement("div");
   body.className = "card-body";
   body.innerHTML = `
-      <div class="card-title">${escapeHtml(game.title)}</div>
+      <div class="card-title">${escapeHtml(game.title)}${
+        game.testing || game.status === "testing"
+          ? ` <span class="badge" style="font-size:10px;background:rgba(245,158,11,.2);color:#f59e0b">Testing</span>`
+          : ""
+      }</div>
       <div class="card-blurb">${escapeHtml(game.blurb || "")}</div>
       <div class="card-footer">
         <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(game.approxSize || "")}</span>

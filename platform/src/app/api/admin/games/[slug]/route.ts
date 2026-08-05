@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
+import { withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   ensureDerivedGameFields,
@@ -26,14 +27,20 @@ export async function PATCH(
     if (error) return error;
 
     const { slug } = await params;
-    const body = ensureDerivedGameFields(
-      withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(await req.json())))
+    const raw = await req.json();
+    const forcePublish = Boolean(
+      raw && typeof raw === "object" && "forcePublish" in raw && (raw as { forcePublish?: unknown }).forcePublish
+    );
+    const body = withSyncedPublished(
+      ensureDerivedGameFields(
+        withDefaultLauncherInstall(withDefaultArt(gamePayloadSchema.parse(raw)))
+      )
     );
 
-    // Drafts save freely; publishing requires the human-written fields.
-    if (body.published) {
+    // Drafts/testing save freely; publishing requires editorial fields unless forced.
+    if (body.status === "published") {
       const readiness = editorialReadiness(body);
-      if (!readiness.ready) {
+      if (!readiness.ready && !forcePublish) {
         return NextResponse.json(
           { error: publishBlockedMessage("game", readiness.missing), readiness },
           { status: 422 }

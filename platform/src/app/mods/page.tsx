@@ -1,6 +1,7 @@
 import { Puzzle } from "lucide-react";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { ModsCatalog } from "@/components/ModsCatalog";
@@ -14,7 +15,11 @@ export const metadata = pageMetadata({
 });
 
 export default async function ModsIndexPage() {
-  const [mods, games] = await Promise.all([listMods(), listGames()]);
+  const includeTesting = await viewerIsAdmin();
+  const [mods, games] = await Promise.all([
+    listMods({ includeTesting }),
+    listGames({ includeTesting }),
+  ]);
   const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
   const grouped = new Map<string, typeof mods>();

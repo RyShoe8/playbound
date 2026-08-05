@@ -6,11 +6,13 @@ import {
   isKnownServerGame,
   listProviderSlugs,
 } from "@/lib/servers/registry";
+import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
 export async function GET(req: Request) {
   try {
+    const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const games = await listGames();
+    const games = await listGames({ includeTesting });
     const providers = listProviderSlugs();
 
     const entries = games
@@ -28,6 +30,8 @@ export async function GET(req: Request) {
         platforms: g.platforms ?? [],
         browserPlayable: Boolean(g.browserPlayable),
         steamDeck: Boolean(g.steamDeck),
+        status: g.status || "published",
+        testing: g.status === "testing",
       }))
       .sort((a, b) => {
         if (a.supported !== b.supported) return a.supported ? -1 : 1;
@@ -36,7 +40,13 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       { games: entries, providers },
-      { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } }
+      {
+        headers: {
+          "Cache-Control": includeTesting
+            ? "private, no-store"
+            : "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      }
     );
   } catch (err) {
     console.error("launcher servers index error:", err);

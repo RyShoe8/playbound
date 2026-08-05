@@ -6,6 +6,7 @@ import {
   isPcInstallCandidate,
   type LauncherInstall,
 } from "@/lib/launcherInstall";
+import { CATALOG_STATUSES } from "@/lib/catalogStatus";
 
 export const GENRES = [
   "Strategy",
@@ -324,6 +325,7 @@ export const gamePayloadSchema = z.object({
       return { username: username || null, password: password || null };
     }),
   published: z.boolean().default(false),
+  status: z.enum(CATALOG_STATUSES).optional(),
   submissionId: z.string().optional().nullable(),
   managedBy: z.enum(["admin", "developer"]).default("admin"),
   ownerUserId: z
@@ -518,6 +520,7 @@ export const emptyGameDraft = (): GamePayload => ({
   launcherInstall: null,
   serverLobbyAuth: null,
   published: false,
+  status: "draft",
   submissionId: null,
   managedBy: "admin",
   ownerUserId: null,

@@ -7,11 +7,12 @@ import dbConnect from "@/lib/db";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { isLauncherInstallable, launcherPlayModUrl } from "@/lib/launcher";
 import { Badge } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { ModArt } from "@/components/ModArt";
-import { pageMetadata, sizeLabel } from "@/lib/seo";
+import { pageMetadata, privateMetadata, sizeLabel } from "@/lib/seo";
 import { resolveModVisual } from "@/lib/modMedia";
 import {
   JsonLd,
@@ -31,10 +32,12 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const mod = await getMod(slug);
+  const includeTesting = await viewerIsAdmin();
+  const mod = await getMod(slug, { includeTesting });
   if (!mod) return { title: "Mod Not Found" };
+  if (mod.status === "testing") return privateMetadata(mod.title);
 
-  const baseGame = await getGame(mod.baseGameSlug);
+  const baseGame = await getGame(mod.baseGameSlug, { includeTesting });
   const base = baseGame?.title ?? mod.baseGameSlug;
 
   return pageMetadata({
@@ -50,10 +53,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ModPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const mod = await getMod(slug);
+  const includeTesting = await viewerIsAdmin();
+  const mod = await getMod(slug, { includeTesting });
   if (!mod) notFound();
 
-  const baseGame = await getGame(mod.baseGameSlug);
+  const baseGame = await getGame(mod.baseGameSlug, { includeTesting });
   const canOneClickBase = baseGame ? isLauncherInstallable(baseGame) : false;
 
   let modInstalled = false;

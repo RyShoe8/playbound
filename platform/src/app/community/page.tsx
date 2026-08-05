@@ -6,6 +6,7 @@ import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getGame, listGames } from "@/lib/catalog";
+import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
 
@@ -73,11 +74,12 @@ const kindIcon = { review: Star, guide: BookOpen, discussion: MessagesSquare };
 const kindLabel = { review: "reviewed", guide: "published a guide for", discussion: "started a discussion on" };
 
 export default async function CommunityPage() {
+  const includeTesting = await viewerIsAdmin();
   const activity = await getRecentActivity();
   const rows = await Promise.all(
     activity.map(async (a) => ({
       a,
-      game: await getGame(a.gameSlug),
+      game: await getGame(a.gameSlug, { includeTesting }),
     }))
   );
 
@@ -109,7 +111,7 @@ export default async function CommunityPage() {
     ]);
     unanswered = u.map((t) => ({ title: t.title, gameSlug: t.gameSlug, slug: t.slug }));
     solved = s.map((t) => ({ title: t.title, gameSlug: t.gameSlug, slug: t.slug }));
-    const games = await listGames();
+    const games = await listGames({ includeTesting });
     const bySlug = new Map(games.map((g) => [g.slug, g.title]));
     activeGames = agg.map((a) => ({
       slug: a._id,
