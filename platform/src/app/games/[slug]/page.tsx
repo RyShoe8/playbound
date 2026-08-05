@@ -33,6 +33,9 @@ import { CommunityCard } from "@/components/discussion/CommunityCard";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { visibleCategories } from "@/lib/discussion/categories";
 import { getDiscordPresence } from "@/lib/discordPresence";
+import { getGameLiveStats, type EntityLiveStats } from "@/lib/liveActivity";
+import { PlayingNowBadge } from "@/components/ActivityStats";
+import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
@@ -165,6 +168,7 @@ export default async function GamePage({
   const discordPresence = await getDiscordPresence(
     game.communityLinks?.playboundDiscord?.guildId
   );
+  const liveStats = await getGameLiveStats(game.slug);
 
   let initiallyInLibrary = false;
   if (session?.user) {
@@ -242,6 +246,9 @@ export default async function GamePage({
               </div>
               <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
               <p className="mt-2 text-muted-foreground sm:text-lg">{game.tagline}</p>
+              <div className="mt-3">
+                <PlayingNowBadge count={liveStats.playingNow} className="border-white/15 bg-black/40 text-white" />
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <PlayCta game={game} size="lg" />
@@ -341,6 +348,7 @@ export default async function GamePage({
             weeklyIssue={weeklyIssue}
             discordPresence={discordPresence}
             editions={editions}
+            liveStats={liveStats}
           />
         )}
         {tab === "install" && (
@@ -412,6 +420,7 @@ function OverviewTab({
   weeklyIssue,
   discordPresence,
   editions,
+  liveStats,
 }: {
   game: Game;
   developer: Developer | undefined;
@@ -420,6 +429,7 @@ function OverviewTab({
   weeklyIssue?: WeeklyIssue;
   discordPresence?: { online?: number; members?: number } | null;
   editions: Edition[];
+  liveStats: EntityLiveStats;
 }) {
   if (!game) return null;
 
@@ -428,6 +438,11 @@ function OverviewTab({
   const relatedAlternatives = alternativePages.filter((p) =>
     p.picks.some((pick) => pick.slug === game.slug)
   );
+
+  const installTotal =
+    typeof game.installCount === "number" && game.installCount > 0
+      ? game.installCount
+      : liveStats.installsAllTime ?? 0;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
@@ -595,6 +610,22 @@ function OverviewTab({
       </div>
 
       <aside className="min-w-0 space-y-4">
+        <ActivityStatsCard
+          playingNow={liveStats.playingNow}
+          rows={[
+            { label: "Players this month", value: liveStats.playersThisMonth },
+            ...(liveStats.multiplayerPlayers > 0
+              ? [{ label: "On multiplayer servers", value: liveStats.multiplayerPlayers }]
+              : []),
+            ...(liveStats.serverCount > 0
+              ? [{ label: "Live servers", value: liveStats.serverCount }]
+              : []),
+            ...(installTotal > 0 ? [{ label: "Installs", value: installTotal }] : []),
+            ...(liveStats.installsThisMonth > 0
+              ? [{ label: "Installs this month", value: liveStats.installsThisMonth }]
+              : []),
+          ]}
+        />
         {developer && (
           <Link
             href={`/developers/${developer.slug}`}

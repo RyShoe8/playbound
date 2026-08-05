@@ -72,15 +72,22 @@ export function EditionStatusBadge({ edition }: { edition: Edition }) {
 }
 
 /**
- * Live population. Renders nothing unless a real number exists — an unknown
- * player count must never be shown as zero.
+ * Live population. Prefers an override (from shared live stats); otherwise
+ * uses the edition's stored population. Never shows unknown as zero.
  */
-export function EditionPopulationBadge({ edition }: { edition: Edition }) {
-  if (edition.population == null) return null;
+export function EditionPopulationBadge({
+  edition,
+  population,
+}: {
+  edition: Edition;
+  population?: number | null;
+}) {
+  const n = population ?? edition.population;
+  if (n == null || n <= 0) return null;
   return (
     <Badge tone="neutral">
       <Users className="size-3" />
-      {edition.population.toLocaleString()} online
+      {n.toLocaleString()} online
     </Badge>
   );
 }

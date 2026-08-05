@@ -15,7 +15,9 @@ import {
   HomeServerPreviews,
   type HomeServerPreview,
 } from "@/components/HomeServerPreviews";
+import { CatalogStatsCard } from "@/components/ActivityStatsCard";
 import { Badge, SectionHeader } from "@/components/ui/bits";
+import { getCatalogLiveStats } from "@/lib/liveActivity";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
@@ -77,11 +79,12 @@ function HomeLiveServersFallback() {
 }
 
 export default async function HomePage() {
-  const [gamesNewestFirst, games, gems, mods] = await Promise.all([
+  const [gamesNewestFirst, games, gems, mods, live] = await Promise.all([
     listGamesNewestFirst(),
     listGames(),
     hiddenGems(),
     listMods(),
+    getCatalogLiveStats(),
   ]);
   if (!gamesNewestFirst.length) return null;
 
@@ -93,19 +96,26 @@ export default async function HomePage() {
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
       {/* The H1 is descriptive rather than the rotating hero game title — the
           site's most important heading should say what the site is. */}
-      <header className="pt-4">
-        <h1 className="max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">
-          High-quality free games, actually worth your time
-        </h1>
-        <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
-          Free games are not scarce — good ones are. Every title on PlayBound clears{" "}
-          <Link href="/standards" className="font-semibold text-primary hover:underline">
-            five published criteria
-          </Link>
-          : genuinely free, finished, actively maintained, good on its own merits, and
-          impossible to shut down. {games.length} games so far. One new pick every
-          Wednesday.
-        </p>
+      <header className="flex flex-col gap-6 pt-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            High-quality free games, actually worth your time
+          </h1>
+          <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
+            Free games are not scarce — good ones are. Every title on PlayBound clears{" "}
+            <Link href="/standards" className="font-semibold text-primary hover:underline">
+              five published criteria
+            </Link>
+            : genuinely free, finished, actively maintained, good on its own merits, and
+            impossible to shut down. {live.gameCount} games so far. One new pick every
+            Wednesday.
+          </p>
+        </div>
+        <CatalogStatsCard
+          gameCount={live.gameCount}
+          modCount={live.modCount}
+          playingNow={live.playingNow}
+        />
       </header>
 
       <HomeHero gamesNewestFirst={gamesNewestFirst} />

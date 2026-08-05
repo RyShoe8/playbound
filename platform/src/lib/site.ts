@@ -17,6 +17,9 @@ export const SITE_TAGLINE = "High-quality free games, actually worth your time";
 export const SITE_DESCRIPTION =
   "A deliberately small catalog of free games that are genuinely good. Every title clears the PlayBound Bar: genuinely free, finished, actively maintained, and impossible to shut down. One editor's pick every Wednesday.";
 
+/** Public Discord invite (sidebar + Organization.sameAs). */
+export const SITE_DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
+
 /**
  * True only for a real production deployment.
  *
@@ -33,9 +36,7 @@ export function absoluteUrl(path = "/"): string {
 }
 
 /** Social / entity profiles. Used for Organization.sameAs. */
-export const SITE_SAME_AS: string[] = [
-  // Populate as accounts go live — entity resolution depends on these.
-];
+export const SITE_SAME_AS: string[] = [SITE_DISCORD_INVITE];
 
 /**
  * The published quality standard. Referenced by /standards, game pages,
