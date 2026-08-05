@@ -112,11 +112,14 @@ export default async function HomePage() {
           </p>
         </div>
         <CatalogStatsCard
-          gameCount={live.gameCount}
-          modCount={live.modCount}
-          editionCount={live.editionCount}
-          playingNow={live.playingNow}
-          mostPopular={live.mostPopular}
+          live={live}
+          games={games.map((g) => ({
+            slug: g.slug,
+            platforms: g.platforms,
+            browserPlayable: g.browserPlayable,
+            steamDeck: g.steamDeck,
+          }))}
+          mods={mods.map((m) => ({ baseGameSlug: m.baseGameSlug }))}
         />
       </header>
 

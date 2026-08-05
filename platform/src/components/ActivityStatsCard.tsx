@@ -1,6 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Users } from "lucide-react";
-import type { CatalogPopularGame } from "@/lib/liveActivity";
+import type { CatalogLiveStats, CatalogPopularGame } from "@/lib/liveActivity";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import {
+  filterGamesForPreference,
+  type GameLike,
+} from "@/lib/compatibility/compatibility";
 
 export type ActivityStatsRow = {
   label: string;
@@ -44,20 +51,53 @@ export function ActivityStatsCard({
 
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"] as const;
 
-/** Homepage header catalog snapshot. */
+export type CatalogStatsGame = GameLike & { slug: string };
+export type CatalogStatsMod = { baseGameSlug: string };
+
+/** Homepage header catalog snapshot. Respects Compatible / All Games. */
 export function CatalogStatsCard({
-  gameCount,
-  modCount,
-  editionCount,
-  playingNow,
-  mostPopular,
+  live,
+  games,
+  mods,
 }: {
-  gameCount: number;
-  modCount: number;
-  editionCount: number;
-  playingNow: number;
-  mostPopular: CatalogPopularGame[];
+  live: CatalogLiveStats;
+  games: CatalogStatsGame[];
+  mods: CatalogStatsMod[];
 }) {
+  const { mode, device } = useCompatibilityFilter();
+  const compatibleOnly = mode === "compatible";
+
+  const byGame = Array.isArray(live.byGame) ? live.byGame : live.mostPopular;
+  const editionCountBySlug = live.editionCountBySlug ?? {};
+
+  let gameCount = live.gameCount;
+  let modCount = live.modCount;
+  let editionCount = live.editionCount;
+  let playingNow = live.playingNow;
+  let mostPopular: CatalogPopularGame[] = live.mostPopular;
+  let footer = "Across supported games • Updated every 15 min";
+
+  if (compatibleOnly) {
+    const compatibleGames = filterGamesForPreference(games, "compatible", device.type);
+    const compatibleSlugs = new Set(compatibleGames.map((g) => g.slug));
+
+    gameCount = compatibleGames.length;
+    modCount = mods.filter((m) => compatibleSlugs.has(m.baseGameSlug)).length;
+    editionCount = [...compatibleSlugs].reduce(
+      (sum, slug) => sum + (Number(editionCountBySlug[slug]) || 0),
+      0
+    );
+    playingNow = byGame
+      .filter((g) => compatibleSlugs.has(g.slug))
+      .reduce((sum, g) => sum + (Number(g.playingNow) || 0), 0);
+    mostPopular = byGame
+      .filter((g) => compatibleSlugs.has(g.slug))
+      .slice()
+      .sort((a, b) => b.playingNow - a.playingNow || a.title.localeCompare(b.title))
+      .slice(0, 3);
+    footer = "Compatible with this device • Updated every 15 min";
+  }
+
   const items = [
     { label: "Games", value: gameCount },
     { label: "Mods", value: modCount },
@@ -99,9 +139,7 @@ export function CatalogStatsCard({
         </div>
       )}
 
-      <p className="mt-2.5 text-[11px] text-muted-foreground">
-        Across supported games • Updated every 15 min
-      </p>
+      <p className="mt-2.5 text-[11px] text-muted-foreground">{footer}</p>
     </div>
   );
 }
