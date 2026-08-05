@@ -1111,11 +1111,58 @@ if (-not $hit) { return }
   return exe;
 }
 
+/**
+ * Look under Settings → games directory (and gamesDir/<slug>) for expected exe names.
+ * Prefer this before full-drive BFS so PlayBound-managed installs are found quickly.
+ * @param {object} entry
+ * @returns {string | null}
+ */
+function findExeUnderGamesDir(entry) {
+  const settings = loadSettings();
+  const gamesDir = settings.gamesDir || DEFAULT_GAMES_DIR;
+  if (!gamesDir || !fs.existsSync(gamesDir)) return null;
+  const want = new Set(expectedExeBasenames(entry).map((b) => b.toLowerCase()));
+  if (!want.size) return null;
+
+  const roots = [gamesDir];
+  if (entry?.slug) {
+    const slugDir = path.join(gamesDir, entry.slug);
+    if (fs.existsSync(slugDir)) roots.unshift(slugDir);
+  }
+
+  const maxDepth = 5;
+  const queue = roots.map((r) => ({ dir: r, depth: 0 }));
+  const seen = new Set();
+
+  while (queue.length) {
+    const { dir, depth } = queue.shift();
+    const key = dir.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isFile() && want.has(ent.name.toLowerCase())) return full;
+      if (ent.isDirectory() && depth < maxDepth && !shouldSkipScanDir(ent.name)) {
+        queue.push({ dir: full, depth: depth + 1 });
+      }
+    }
+  }
+  return null;
+}
+
 function findKnownExecutable(entry) {
   for (const raw of entry.knownExePaths || []) {
     const full = expandWinPath(raw);
     if (full && fs.existsSync(full)) return full;
   }
+  const underGames = findExeUnderGamesDir(entry);
+  if (underGames) return underGames;
   return findExeFromUninstallRegistry(entry);
 }
 
@@ -1518,7 +1565,22 @@ async function startExeScan(slug, entry, version) {
   }
 
   const roots = listFixedDriveRoots();
-  const queue = roots.slice();
+  const settings = loadSettings();
+  const gamesDir = settings.gamesDir || DEFAULT_GAMES_DIR;
+  /** Prefer games directory roots so managed installs are found before full-drive BFS. */
+  const preferred = [];
+  if (gamesDir && fs.existsSync(gamesDir)) {
+    if (entry?.slug) {
+      const slugDir = path.join(gamesDir, entry.slug);
+      if (fs.existsSync(slugDir)) preferred.push(slugDir);
+    }
+    preferred.push(gamesDir);
+  }
+  const preferredSet = new Set(preferred.map((p) => p.toLowerCase()));
+  const queue = [
+    ...preferred,
+    ...roots.filter((r) => !preferredSet.has(String(r).toLowerCase())),
+  ];
   const started = Date.now();
   const maxMs = 8 * 60 * 1000;
 

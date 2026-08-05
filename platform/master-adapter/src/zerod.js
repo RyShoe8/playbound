@@ -3,6 +3,8 @@ import { resolveZeroAdSaslPassword } from "./zeroad-password.js";
 
 const DOMAIN = "lobby.wildfiregames.com";
 const CONFERENCE = `conference.${DOMAIN}`;
+const SETTLE_AFTER_IQ_MS = 2_500;
+const HARD_CAP_MS = 12_000;
 
 /**
  * Placeholder when no credentials are configured (wired but unauthenticated).
@@ -38,42 +40,76 @@ function lobbyRooms() {
 }
 
 /**
+ * @param {string | null | undefined} modsRaw
+ * @returns {string | null}
+ */
+function versionFromMods(modsRaw) {
+  if (!modsRaw) return null;
+  try {
+    const mods = JSON.parse(modsRaw);
+    if (!Array.isArray(mods)) return null;
+    const preferred =
+      mods.find((m) => m && (m.name === "0ad" || m.mod === "public")) ||
+      mods.find((m) => m?.version) ||
+      null;
+    return preferred?.version ? String(preferred.version) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string | null | undefined} mapName
+ * @param {string | null | undefined} niceMapName
+ * @returns {string | null}
+ */
+function displayMap(mapName, niceMapName) {
+  if (niceMapName && String(niceMapName).trim()) return String(niceMapName).trim();
+  if (!mapName) return null;
+  const s = String(mapName).replace(/\\/g, "/");
+  const base = s.includes("/") ? s.slice(s.lastIndexOf("/") + 1) : s;
+  return base || null;
+}
+
+/**
  * @param {import('@xmpp/xml').Element} gameEl
- * @param {number} index
  * @returns {import('./types.js').GameServer}
  */
-function gameFromElement(gameEl, index) {
+function gameFromElement(gameEl) {
   const a = gameEl.attrs || {};
   const name = a.name || gameEl.getChildText?.("name") || "0 A.D. game";
-  const map = a.mapName || a.map || gameEl.getChildText?.("mapName") || null;
-  // nbp = number of players currently; players may be a CSV of names
-  let players = Number(a.nbp || a.players || 0);
+  const niceMapName = a.niceMapName || null;
+  const mapName = a.mapName || a.map || gameEl.getChildText?.("mapName") || null;
+
+  let players = Number(a.nbp);
   if (!Number.isFinite(players) || players < 0) {
     const csv = String(a.players || "");
-    players = csv.includes(",") ? csv.split(",").filter(Boolean).length : 0;
+    players = csv.includes(",")
+      ? csv.split(",").filter(Boolean).length
+      : Number(a.players) || 0;
   }
-  const maxPlayers = Number(a.maxPlayers || a.maxplayers || 0) || null;
-  const host =
-    a.IP ||
-    a.ip ||
-    a.hostUsername ||
-    a.hostJID ||
-    DOMAIN;
-  const mods = a.mods || null;
+
+  const maxPlayers = Number(a.maxnbp || a.maxPlayers || a.maxplayers || 0) || null;
+  const ip = a.IP || a.ip || null;
+  const hostUsername = a.hostUsername || null;
+  const hostJID = a.hostJID || null;
+  const host = ip || hostUsername || hostJID || DOMAIN;
+  const version = versionFromMods(a.mods);
   const state = a.state || null;
-  const gameType = [mods, state].filter(Boolean).join(" · ") || "0ad";
+  const gameType = [version, state].filter(Boolean).join(" · ") || "0ad";
+  const hasPassword = a.hasPassword === "true" || a.hasPassword === "1";
 
   return {
-    id: `0ad:${a.hostJID || name}:${index}`,
+    id: `0ad:${hostJID || hostUsername || name}`,
     name: String(name).slice(0, 256),
     host: String(host),
     port: 20595,
-    players: Number(players) || 0,
-    maxPlayers: maxPlayers || null,
-    map: map ? String(map) : null,
+    players: Number.isFinite(players) ? Math.max(0, players) : 0,
+    maxPlayers,
+    map: displayMap(mapName, niceMapName),
     gameType,
     location: null,
-    protected: false,
+    protected: Boolean(hasPassword),
   };
 }
 
@@ -92,7 +128,7 @@ function gamesFromStanza(stanza) {
   const out = [];
   for (const g of children) {
     if (out.length >= MAX_SERVERS) break;
-    out.push(gameFromElement(g, out.length));
+    out.push(gameFromElement(g));
   }
   return out;
 }
@@ -101,9 +137,6 @@ function gamesFromStanza(stanza) {
  * 0 A.D. XpartaMuPP lobby via modern MUC push flow.
  * Clients must use a resource starting with "0ad" and join a versioned arena room;
  * XpartaMuPP then pushes jabber:iq:gamelist.
- *
- * Without credentials → lobby pointer.
- * With credentials + failure → throws (caller surfaces error; no fake lobby).
  *
  * @param {{ username?: string, password?: string } | null} [creds]
  * @returns {Promise<import('./types.js').GameServer[]>}
@@ -116,7 +149,6 @@ export async function pollZeroAd(creds = null) {
   }
 
   const username = jid.includes("@") ? jid.split("@")[0] : jid;
-  // Official client SASL password is EncryptPassword(plain, username), not the typed password.
   const saslPassword = resolveZeroAdSaslPassword(password, username);
   const rooms = lobbyRooms();
 
@@ -124,38 +156,49 @@ export async function pollZeroAd(creds = null) {
 
   /** @type {Map<string, import('./types.js').GameServer>} */
   const byId = new Map();
+  const resource = `0ad-pb-${Math.floor(Math.random() * 1e9).toString(36)}`;
 
   const xmpp = client({
     service: `xmpp://${DOMAIN}:5222`,
     domain: DOMAIN,
-    resource: "0ad-playbound",
+    resource,
     username,
     password: saslPassword,
   });
 
   try {
     await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
+      let settleTimer = null;
+      const hardTimer = setTimeout(() => {
+        if (settleTimer) clearTimeout(settleTimer);
         resolve(null);
-      }, 16_000);
+      }, HARD_CAP_MS);
+
+      const finish = () => {
+        clearTimeout(hardTimer);
+        if (settleTimer) clearTimeout(settleTimer);
+        resolve(null);
+      };
 
       xmpp.on("error", (err) => {
-        clearTimeout(timer);
+        clearTimeout(hardTimer);
+        if (settleTimer) clearTimeout(settleTimer);
         reject(err);
       });
 
       xmpp.on("stanza", (stanza) => {
         if (!stanza.is?.("iq")) return;
         const games = gamesFromStanza(stanza);
+        if (!games.length) return;
+
+        // Full-list semantics: each gamelist IQ replaces the snapshot.
+        byId.clear();
         for (const g of games) {
           byId.set(g.id, g);
         }
-        // Once we have any games, we can finish early after a short settle
-        if (byId.size > 0) {
-          clearTimeout(timer);
-          // Brief settle for multi-room pushes
-          setTimeout(() => resolve(null), 800);
-        }
+
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = setTimeout(finish, SETTLE_AFTER_IQ_MS);
       });
 
       xmpp.on("online", async (address) => {
@@ -169,13 +212,15 @@ export async function pollZeroAd(creds = null) {
             );
           }
         } catch (err) {
-          clearTimeout(timer);
+          clearTimeout(hardTimer);
+          if (settleTimer) clearTimeout(settleTimer);
           reject(err);
         }
       });
 
       xmpp.start().catch((err) => {
-        clearTimeout(timer);
+        clearTimeout(hardTimer);
+        if (settleTimer) clearTimeout(settleTimer);
         reject(err);
       });
     });
@@ -197,7 +242,10 @@ export async function pollZeroAd(creds = null) {
   }
 
   const list = [...byId.values()];
-  list.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  list.sort(
+    (a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name)
+  );
+  console.log(`[0ad] gamelist snapshot size=${list.length}`);
   if (list.length === 0) {
     console.warn("[0ad] authenticated but received no games from MUC push");
   }

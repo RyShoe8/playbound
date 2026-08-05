@@ -3,7 +3,6 @@ import { mapPool } from "./udp.js";
 
 const LISTING_URL = "https://servers.openttd.org/listing";
 const DETAIL_BASE = "https://servers.openttd.org/server/";
-const DETAIL_ENRICH = 40;
 
 /** @type {Record<string, string>} */
 const TAG_TO_ISO = {
@@ -44,6 +43,11 @@ const TAG_TO_ISO = {
   at: "AT",
   ch: "CH",
   ie: "IE",
+  eu: "DE",
+  na: "US",
+  sa: "BR",
+  oc: "AU",
+  as: "SG",
 };
 
 const NAME_HINTS = [
@@ -51,25 +55,53 @@ const NAME_HINTS = [
   [/japan|\.jp\b/i, "JP"],
   [/australia|aussie|\.au\b/i, "AU"],
   [/new zealand|\.nz\b/i, "NZ"],
-  [/united states|\busa\b|\bu\.s\./i, "US"],
+  [/united states|\busa\b|\bu\.s\.|\bus\b|\bnyc\b|\bohio\b|\btexas\b|\bcalifornia\b/i, "US"],
   [/canada|\.ca\b/i, "CA"],
-  [/united kingdom|\buk\b|britain|england/i, "GB"],
+  [/united kingdom|\buk\b|britain|england|scotland|wales/i, "GB"],
   [/germany|deutsch|\.de\b/i, "DE"],
   [/netherlands|dutch|\.nl\b/i, "NL"],
   [/france|français|\.fr\b/i, "FR"],
   [/poland|polska|\.pl\b/i, "PL"],
   [/spain|español|\.es\b/i, "ES"],
-  [/russia|росси/i, "RU"],
-  [/brazil|brasil/i, "BR"],
-  [/argentina/i, "AR"],
-  [/singapore|\.sg\b|sea asia/i, "SG"],
-  [/europe\b/i, "DE"],
-  [/scandinavia|sweden|svea/i, "SE"],
+  [/italy|italia|\.it\b/i, "IT"],
+  [/russia|росси|\.ru\b/i, "RU"],
+  [/ukraine|\.ua\b/i, "UA"],
+  [/brazil|brasil|\.br\b/i, "BR"],
+  [/argentina|\.ar\b/i, "AR"],
+  [/mexico|\.mx\b/i, "MX"],
+  [/singapore|\.sg\b|sea asia|southeast asia/i, "SG"],
+  [/hong kong|\.hk\b/i, "HK"],
+  [/taiwan|\.tw\b/i, "TW"],
+  [/china|\.cn\b/i, "CN"],
+  [/india|\.in\b/i, "IN"],
+  [/turkey|türkiye|\.tr\b/i, "TR"],
+  [/portugal|\.pt\b/i, "PT"],
+  [/belgium|\.be\b/i, "BE"],
+  [/austria|\.at\b/i, "AT"],
+  [/switzerland|\.ch\b/i, "CH"],
+  [/ireland|\.ie\b/i, "IE"],
+  [/europe\b|\beu\b/i, "DE"],
+  [/scandinavia|sweden|svea|\.se\b/i, "SE"],
+  [/norway|\.no\b/i, "NO"],
+  [/denmark|\.dk\b/i, "DK"],
   [/finland|\.fi\b/i, "FI"],
-  [/czech|czechia/i, "CZ"],
+  [/czech|czechia|\.cz\b/i, "CZ"],
+  [/\bnorth america\b|\bna\b/i, "US"],
+  [/\bsouth america\b|\blatam\b/i, "BR"],
+  [/\boceania\b/i, "AU"],
 ];
 
 const CLIMATE_RE = /\b(temperate|arctic|tropical|tropic|toyland|desert|winter)\b/i;
+
+/**
+ * @param {string} raw
+ */
+function titleCaseClimate(raw) {
+  const s = String(raw || "").trim().toLowerCase();
+  if (!s) return null;
+  if (s === "tropic") return "Tropical";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 /**
  * @param {string} name
@@ -79,6 +111,11 @@ function locationFromName(name) {
   const tag = name.match(/\[([A-Za-z]{2,3})\]/);
   if (tag) {
     const iso = TAG_TO_ISO[tag[1].toLowerCase()];
+    if (iso) return { countryCode: iso };
+  }
+  const paren = name.match(/\(([A-Za-z]{2,3})\)/);
+  if (paren) {
+    const iso = TAG_TO_ISO[paren[1].toLowerCase()];
     if (iso) return { countryCode: iso };
   }
   for (const [re, iso] of NAME_HINTS) {
@@ -93,26 +130,43 @@ function locationFromName(name) {
  */
 function mapFromName(name) {
   const climate = name.match(CLIMATE_RE);
-  if (climate) return climate[1].charAt(0).toUpperCase() + climate[1].slice(1).toLowerCase();
+  if (climate) return titleCaseClimate(climate[1]);
   return null;
 }
 
 /**
+ * Detail pages expose Landscape + Map size (not scenario filenames).
  * @param {string} html
  * @param {string} invite
  * @returns {{ map: string | null, location: { countryCode: string, region?: string } | null }}
  */
 function parseDetailPage(html, invite) {
+  const landscapeMatch =
+    html.match(/Landscape\s*[:<\/][^A-Za-z0-9]*([A-Za-z][A-Za-z ]{2,20})/i) ||
+    html.match(/>\s*Landscape\s*<[\s\S]{0,80}?>([A-Za-z][A-Za-z ]{2,20})</i);
+  const sizeMatch =
+    html.match(/Map\s*size\s*[:<\/][^0-9]*(\d+)\s*[×xX]\s*(\d+)/i) ||
+    html.match(/>\s*Map\s*size\s*<[\s\S]{0,80}?>(\d+)\s*[×xX]\s*(\d+)</i);
+
+  let landscape = landscapeMatch ? titleCaseClimate(landscapeMatch[1]) : null;
+  if (!landscape) {
+    const climate = html.match(/\b(Temperate|Arctic|Tropic(?:al)?|Toyland|Desert|Winter)\b/i);
+    if (climate) landscape = titleCaseClimate(climate[1]);
+  }
+
+  /** @type {string | null} */
   let map = null;
-  const mapMatch =
-    html.match(/Map(?:\s*size)?\s*[:<][^A-Za-z0-9]*([A-Za-z][A-Za-z0-9 _.-]{2,60})/i) ||
-    html.match(/landscape[^A-Za-z0-9]+([A-Za-z]+)/i) ||
-    html.match(/\b(Temperate|Arctic|Tropic|Toyland|Desert)\b/);
-  if (mapMatch) map = mapMatch[1].trim();
+  if (landscape && sizeMatch) {
+    map = `${landscape} · ${sizeMatch[1]}×${sizeMatch[2]}`;
+  } else if (landscape) {
+    map = landscape;
+  } else if (sizeMatch) {
+    map = `${sizeMatch[1]}×${sizeMatch[2]}`;
+  }
 
   const locMatch =
-    html.match(/Country\s*[:<][^A-Za-z]*([A-Za-z][A-Za-z .'-]{1,40})/i) ||
-    html.match(/Location\s*[:<][^A-Za-z]*([A-Za-z][A-Za-z .'-]{1,40})/i);
+    html.match(/Country\s*[:<\/][^A-Za-z]*([A-Za-z][A-Za-z .'-]{1,40})/i) ||
+    html.match(/Location\s*[:<\/][^A-Za-z]*([A-Za-z][A-Za-z .'-]{1,40})/i);
 
   /** @type {{ countryCode: string, region?: string } | null} */
   let location = null;
@@ -122,6 +176,11 @@ function parseDetailPage(html, invite) {
     else {
       const hit = NAME_HINTS.find(([re]) => re.test(raw));
       if (hit) location = { countryCode: hit[1], region: raw };
+      else {
+        const key = raw.toLowerCase().slice(0, 3);
+        const iso = TAG_TO_ISO[key] || TAG_TO_ISO[raw.toLowerCase().slice(0, 2)];
+        if (iso) location = { countryCode: iso, region: raw };
+      }
     }
   }
 
@@ -130,7 +189,7 @@ function parseDetailPage(html, invite) {
 }
 
 /**
- * Scrape public OpenTTD listing; enrich top servers via detail pages.
+ * Scrape public OpenTTD listing; enrich listed servers via detail pages.
  * Host stays as Game Coordinator invite (+ABC) for join.
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
@@ -209,11 +268,11 @@ export async function pollOpenTtd() {
     }
   }
 
-  mapped.sort((a, b) => (b.players ?? 0) - (a.players ?? 0) || a.name.localeCompare(b.name));
+  mapped.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   const top = mapped.slice(0, MAX_SERVERS);
-  const enrichTargets = top.slice(0, DETAIL_ENRICH);
 
-  await mapPool(enrichTargets, 6, async (server) => {
+  // Enrich every listed server (up to MAX_SERVERS) for Landscape · Map size.
+  await mapPool(top, 8, async (server) => {
     try {
       const detailRes = await fetch(`${DETAIL_BASE}${encodeURIComponent(server.host)}`, {
         headers: { "user-agent": "PlayBound-master-adapter/1.0", accept: "text/html" },
@@ -228,6 +287,8 @@ export async function pollOpenTtd() {
           countryCode: parsed.location.countryCode,
           region: parsed.location.region || server.location?.region,
         };
+      } else if (!server.location) {
+        server.location = locationFromName(server.name);
       }
     } catch {
       /* detail optional */

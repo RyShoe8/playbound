@@ -47,6 +47,6 @@ export async function fetchBeyondAllReasonServers(): Promise<GameServer[]> {
     });
   }
 
-  mapped.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  mapped.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   return attachGeo(mapped.slice(0, MAX_SERVERS));
 }

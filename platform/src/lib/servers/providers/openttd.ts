@@ -86,7 +86,7 @@ export async function fetchOpenTtdServers(): Promise<GameServer[]> {
     }
   }
 
-  mapped.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  mapped.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   // Invite hosts aren't resolvable IPs — skip GeoIP noise.
   return mapped.slice(0, MAX_SERVERS);
 }

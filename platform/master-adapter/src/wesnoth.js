@@ -156,7 +156,7 @@ async function parseWesnothBuffer(buf, host) {
     });
   }
 
-  servers.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  servers.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   return servers.slice(0, MAX_SERVERS);
 }
 
