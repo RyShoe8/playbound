@@ -60,8 +60,9 @@ export async function POST(req: Request) {
       bundle = mergeGameMedia(bundle, await fetchSteamStoreMedia(steamAppId));
     }
 
-    // Website OG only if the Steam gallery is still thin.
-    if (url && bundle.screenshots.length < 4) {
+    // Always scrape the website for non-Steam games; for Steam, only fill gaps.
+    const shouldScrapeSite = Boolean(url) && (!steamAppId || bundle.screenshots.length < 4);
+    if (shouldScrapeSite && url) {
       try {
         const site = await fetchWebsiteMedia(url);
         if (site) bundle = mergeGameMedia(bundle, site);
@@ -71,7 +72,14 @@ export async function POST(req: Request) {
     }
 
     if (!bundle.coverImage && bundle.screenshots.length === 0 && bundle.videos.length === 0) {
-      return NextResponse.json({ error: "Could not fetch media" }, { status: 502 });
+      return NextResponse.json({
+        error: "No new media found from website",
+        coverImage: null,
+        screenshots: [],
+        videos: [],
+        steamAppId,
+        stats: { fetched: 0, rehosted: 0, keptRemote: 0 },
+      }, { status: 502 });
     }
 
     const slug = (body.slug || "upload").replace(/[^a-z0-9-]/gi, "-").slice(0, 80) || "upload";
@@ -84,6 +92,7 @@ export async function POST(req: Request) {
       images: rehosted.screenshots,
       steamAppId,
       rehosted: true,
+      stats: rehosted.stats,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
