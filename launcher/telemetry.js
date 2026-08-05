@@ -17,6 +17,7 @@
  */
 
 const crypto = require("crypto");
+const Platform = require("./platform");
 
 /** Matches the site's ingest guard, which rejects ids shorter than this. */
 const MIN_ID_LENGTH = 8;
@@ -83,7 +84,7 @@ function createTelemetry({
         headers: {
           "Content-Type": "application/json",
           accept: "application/json",
-          "user-agent": `playbound-launcher/${getAppVersion()} (${process.platform})`,
+          "user-agent": `playbound-launcher/${getAppVersion()} (${Platform.getOS()}; ${Platform.getArchitecture()})`,
         },
         body: JSON.stringify({
           event: String(event),
@@ -91,7 +92,9 @@ function createTelemetry({
             ...properties,
             source: "launcher",
             launcherVersion: getAppVersion(),
-            platform: process.platform,
+            platform: Platform.getOS(),
+            osVersion: Platform.getOSVersion(),
+            architecture: Platform.getArchitecture(),
           },
           timestamp: new Date().toISOString(),
           sessionId: RUN_SESSION_ID,

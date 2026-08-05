@@ -56,8 +56,13 @@ export default async function LibraryPage() {
   // The library is per-device: a game installed from the Play Store on a phone
   // is not installed on this desktop, and listing it here would offer a Play
   // button that cannot work.
-  const viewerPlatform = platformFromUserAgent((await headers()).get("user-agent"));
+  const userAgent = (await headers()).get("user-agent") || "";
+  const viewerPlatform = platformFromUserAgent(userAgent);
   const visible = visiblePlatformsFor(viewerPlatform);
+  const isMac = /Mac OS X|Macintosh/i.test(userAgent);
+  const downloadUrl = isMac 
+    ? process.env.NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL || process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher"
+    : process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher";
 
   try {
     await dbConnect();
@@ -147,7 +152,7 @@ export default async function LibraryPage() {
               Browse Discover
             </Link>
             <a
-              href={process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher"}
+              href={downloadUrl}
               className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
             >
               Download the Launcher

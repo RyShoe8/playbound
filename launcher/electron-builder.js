@@ -98,4 +98,18 @@ module.exports = {
   portable: {
     artifactName: "PlayBound-Launcher-Portable-${version}.${ext}",
   },
+
+  mac: {
+    target: {
+      target: "zip",
+      arch: ["x64"]
+    },
+    artifactName: "PlayBound-macOS-${version}.${ext}",
+    category: "public.app-category.games",
+  },
+
+  dmg: {
+    title: "PlayBound",
+    artifactName: "PlayBound-macOS-${version}.${ext}",
+  },
 };

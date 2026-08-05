@@ -11,6 +11,7 @@
     "dist": "node scripts/build-windows.js --dev",
     "dist:dev": "node scripts/build-windows.js --dev",
     "dist:prod": "node scripts/build-windows.js --prod",
+    "dist:mac": "electron-builder --mac --universal",
     "verify:signatures": "node scripts/verify-signatures.js",
     "signing:status": "node scripts/signing-status.js"
   },

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { listGames } from "@/lib/catalog";
 import { isLauncherInstallable, launcherInstallUrl } from "@/lib/launcher";
-import { getLauncherDownloadUrl } from "@/lib/launcherDownload";
+import { LauncherHeroDownload } from "@/components/LauncherHeroDownload";
 import { GameArt } from "@/components/GameArt";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
@@ -33,7 +33,7 @@ const features = [
 ];
 
 export default async function LauncherPage() {
-  const [games, downloadUrl] = await Promise.all([listGames(), Promise.resolve(getLauncherDownloadUrl())]);
+  const games = await listGames();
   const installable = games.filter((g) => isLauncherInstallable(g));
 
   return (
@@ -50,25 +50,7 @@ export default async function LauncherPage() {
           Windows app, run it once so <code className="text-play">playbound://</code> deep links work,
           then install any game from this site in a single click.
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          {downloadUrl ? (
-            <a
-              href={downloadUrl}
-              className="inline-flex items-center gap-2 rounded-full bg-play px-6 py-3 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
-            >
-              <Download className="size-4" /> Download for Windows
-            </a>
-          ) : (
-            <p className="rounded-lg border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-              Download URL not configured. Set{" "}
-              <code className="text-play">NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL</code> after uploading the
-              Setup.exe to Vercel Blob.
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Windows 10/11 · ~78 MB · run once to register deep links
-          </p>
-        </div>
+        <LauncherHeroDownload />
         <p className="mt-4 max-w-xl text-xs text-muted-foreground">
           Windows may show an &quot;unrecognized app&quot; SmartScreen warning because the installer is still
           building reputation. Choose <span className="font-semibold text-foreground">More info</span>, then{" "}

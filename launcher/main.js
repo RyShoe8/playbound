@@ -6,12 +6,14 @@ const path = require("path");
 const net = require("net");
 const bundledCatalog = require("./catalog");
 const { createTelemetry } = require("./telemetry");
+const Platform = require("./platform");
+const GameLauncher = require("./services/GameLauncher");
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
 let catalog = bundledCatalog.map((e) => ({ ...e }));
 
 const PROTOCOL = "playbound";
-const DEFAULT_GAMES_DIR = path.join(app.getPath("home"), "PlayBound", "Games");
+const DEFAULT_GAMES_DIR = Platform.getInstallDirectory("");
 const STATE_FILE = path.join(app.getPath("userData"), "installed.json");
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const DEFAULT_API_BASE = "https://playbound.club";
@@ -2263,13 +2265,7 @@ function onSpawnedProcessGone(slug) {
 function spawnTrackedExe(slug, exePath, args = []) {
   clearLaunchTracking(slug);
 
-  const useShell = /\.(cmd|bat)$/i.test(exePath);
-  const child = spawn(exePath, args, {
-    cwd: path.dirname(exePath),
-    detached: true,
-    stdio: "ignore",
-    shell: useShell,
-  });
+  const child = GameLauncher.spawnGame(exePath, args);
 
   const entry = catalog.find((e) => e.slug === slug);
   const imageNames = [
@@ -2332,7 +2328,7 @@ async function openGameFolder(slug) {
   if (!info?.dir || !fs.existsSync(info.dir)) {
     throw new Error("Game is not installed or folder is missing");
   }
-  await shell.openPath(info.dir);
+  await Platform.openFolder(info.dir);
   return { status: "opened", dir: info.dir };
 }
 
@@ -2343,7 +2339,7 @@ async function openModFolder(slug) {
   if (!info?.dir || !fs.existsSync(info.dir)) {
     throw new Error("Mod folder is missing");
   }
-  await shell.openPath(info.dir);
+  await Platform.openFolder(info.dir);
   return { status: "opened", dir: info.dir };
 }
 
@@ -2483,7 +2479,7 @@ function sanitizeShortcutName(name) {
     .slice(0, 80) || "Game";
 }
 
-function createGameShortcut(slug) {
+async function createGameShortcut(slug) {
   const state = loadState();
   const info = state[slug];
   if (!info?.exe || !fs.existsSync(info.exe)) {
@@ -2491,17 +2487,14 @@ function createGameShortcut(slug) {
   }
   const entry = catalog.find((e) => e.slug === slug);
   const title = sanitizeShortcutName(entry?.title || slug);
-  const desktop = app.getPath("desktop");
-  const shortcutPath = path.join(desktop, `${title}.lnk`);
-  const ok = shell.writeShortcutLink(shortcutPath, {
-    target: info.exe,
-    cwd: path.dirname(info.exe),
+  await Platform.createShortcut({
+    title,
+    targetPath: info.exe,
+    args: "",
     description: `Play ${title}`,
-    icon: info.exe,
-    iconIndex: 0,
+    icon: info.exe
   });
-  if (!ok) throw new Error("Couldn't create desktop shortcut");
-  return { path: shortcutPath, title };
+  return { title };
 }
 
 function clearContext() {
@@ -2663,8 +2656,10 @@ ipcMain.handle("report-bug", async (_event, payload = {}) => {
         source: "launcher",
         contactEmail: contactEmail.slice(0, 200),
         launcherVersion: app.getVersion(),
-        platform: process.platform,
-        userAgent: `playbound-launcher/${app.getVersion()} (${process.platform})`,
+        platform: Platform.getOS(),
+        osVersion: Platform.getOSVersion(),
+        architecture: Platform.getArchitecture(),
+        userAgent: `playbound-launcher/${app.getVersion()} (${Platform.getOS()}; ${Platform.getArchitecture()})`,
       }),
       signal: AbortSignal.timeout(20_000),
     });
@@ -3447,6 +3442,39 @@ if (gotLock) {
 
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;
+    
+    if (Platform.getOS() === "macos") {
+      const template = [
+        {
+          label: app.name,
+          submenu: [
+            { role: "about" },
+            { type: "separator" },
+            { role: "services" },
+            { type: "separator" },
+            { role: "hide" },
+            { role: "hideOthers" },
+            { role: "unhide" },
+            { type: "separator" },
+            { role: "quit" }
+          ]
+        },
+        {
+          label: "Edit",
+          submenu: [
+            { role: "undo" },
+            { role: "redo" },
+            { type: "separator" },
+            { role: "cut" },
+            { role: "copy" },
+            { role: "paste" },
+            { role: "selectAll" }
+          ]
+        }
+      ];
+      Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+    }
+    
     createWindow();
     scheduleLibrarySync();
     if (parsedLaunch && (parsedLaunch.action === "auth" || parsedLaunch.action === "link")) {
