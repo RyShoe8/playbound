@@ -106,6 +106,6 @@ function parseJsonl(text) {
       protected: Boolean(obj.passworded || obj.private),
     });
   }
-  out.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  out.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   return out;
 }

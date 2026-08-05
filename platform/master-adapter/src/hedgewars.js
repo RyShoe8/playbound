@@ -112,7 +112,7 @@ function pollWithProto(proto) {
       const rooms = [...roomMap.values()];
       if (err && rooms.length === 0) reject(err);
       else {
-        rooms.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+        rooms.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
         resolve(rooms.slice(0, MAX_SERVERS));
       }
     };

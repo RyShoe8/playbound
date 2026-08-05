@@ -168,6 +168,8 @@ export function stripQuakeColors(text) {
     .trim();
 }
 
+const INFO_CHALLENGE = "playbound";
+
 /**
  * @param {string} host
  * @param {number} port
@@ -182,13 +184,22 @@ async function queryInfoKeys(host, port, command, responseMarker, timeoutMs) {
     const text = msg.toString("latin1");
     const idx = text.indexOf(responseMarker);
     if (idx < 0) return null;
-    return parseInfoKeys(text.slice(idx + responseMarker.length));
+    const body = text.slice(idx + responseMarker.length);
+    const keys = parseInfoKeys(body);
+    // statusResponse often appends quoted player lines after the info keys.
+    if (responseMarker === "statusResponse") {
+      const playerLines = body.split(/\r?\n/).filter((l) => /^\s*"/.test(l));
+      if (playerLines.length) keys._statusPlayers = String(playerLines.length);
+    }
+    return keys;
   } catch {
     return null;
   }
 }
 
 /**
+ * Enough to bother merging — hostname preferred, but map/clients alone still merge.
+ * Callers that must hide bare-IP shells should require a cleaned hostname separately.
  * @param {Record<string, string> | null} info
  */
 function hasUsefulInfo(info) {
@@ -201,37 +212,36 @@ function hasUsefulInfo(info) {
       info.map ||
       info.clients != null ||
       info.players != null ||
-      info.sv_maxclients != null
+      info.sv_maxclients != null ||
+      info._statusPlayers != null
   );
 }
 
 /**
+ * Merge status + info, preferring challenged Daemon/ioq3 queries first.
  * @param {string} host
  * @param {number} port
  * @returns {Promise<Record<string, string> | null>}
  */
 export async function getServerInfo(host, port) {
-  // Prefer getstatus (richer keys on DarkPlaces / Daemon) and merge getinfo
-  // so hostname/map that only appear on one response are not lost.
-  const status = await queryInfoKeys(host, port, "getstatus", "statusResponse", 3500);
-  const info = await queryInfoKeys(host, port, "getinfo", "infoResponse", 3500);
-
   /** @type {Record<string, string> | null} */
   let merged = null;
-  if (hasUsefulInfo(status) || hasUsefulInfo(info)) {
-    merged = { ...(status || {}), ...(info || {}) };
-  }
 
-  if (!hasUsefulInfo(merged)) {
-    const challenged = await queryInfoKeys(host, port, "getinfo xxx", "infoResponse", 2500);
-    if (hasUsefulInfo(challenged)) {
-      merged = { ...(merged || {}), ...challenged };
-    } else if (!merged) {
-      return challenged;
+  const tryPair = async (statusCmd, infoCmd, timeoutMs) => {
+    const status = await queryInfoKeys(host, port, statusCmd, "statusResponse", timeoutMs);
+    const info = await queryInfoKeys(host, port, infoCmd, "infoResponse", timeoutMs);
+    if (hasUsefulInfo(status) || hasUsefulInfo(info)) {
+      return { ...(status || {}), ...(info || {}) };
     }
+    return null;
+  };
+
+  merged = await tryPair(`getstatus ${INFO_CHALLENGE}`, `getinfo ${INFO_CHALLENGE}`, 3500);
+  if (!hasUsefulInfo(merged)) {
+    merged = await tryPair("getstatus", "getinfo", 3500);
   }
 
-  return hasUsefulInfo(merged) ? merged : merged || status || info;
+  return hasUsefulInfo(merged) ? merged : null;
 }
 
 /**

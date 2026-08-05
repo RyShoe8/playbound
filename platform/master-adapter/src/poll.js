@@ -24,6 +24,8 @@ import { pollOpenTtd } from "./openttd.js";
  *   query?: string,
  *   altQueries?: string[],
  *   nameKeys?: string[],
+ *   gamenameAllow?: RegExp,
+ *   gamenameDeny?: RegExp,
  *   source?: string,
  *   refreshMs?: number,
  * }} GameMasterConfig
@@ -39,6 +41,8 @@ export const GAMES = [
     query: "getserversExt Xonotic 3 empty full ipv4",
     altQueries: ["getserversExt Xonotic 3 empty full", "getservers 68 empty full"],
     nameKeys: ["hostname", "sv_hostname", "host"],
+    gamenameAllow: /xonotic|warsow|nexuiz/i,
+    gamenameDeny: /mineclonia|minetest|luanti/i,
   },
   {
     slug: "unvanquished",
@@ -46,8 +50,10 @@ export const GAMES = [
     masterHost: "master.unvanquished.net",
     masterPort: 27950,
     query: "getserversExt Unvanquished 86 empty full ipv4",
-    altQueries: ["getservers 86 empty full", "getservers 0 empty full"],
+    altQueries: ["getservers 86 empty full"],
     nameKeys: ["sv_hostname", "hostname", "host"],
+    gamenameAllow: /unvanquished|tremulous/i,
+    gamenameDeny: /mineclonia|minetest|luanti/i,
   },
   { slug: "mindustry", kind: "mindustry", source: "github:MindustryServerList" },
   { slug: "hedgewars", kind: "hedgewars", source: "netserver.hedgewars.org:46631" },
@@ -92,12 +98,45 @@ function pickPlayers(info) {
     return { players: human, maxPlayers };
   }
 
-  let clients = Number(info.clients ?? info.players ?? 0) || 0;
+  let clients = Number(info.clients ?? info.players ?? NaN);
+  if (!Number.isFinite(clients)) {
+    clients = Number(info._statusPlayers ?? 0) || 0;
+  }
   const bots = Number(info.bots ?? info.sv_privateClients ?? NaN);
   if (Number.isFinite(bots) && bots > 0) {
     clients = Math.max(0, clients - bots);
   }
   return { players: Math.max(0, clients), maxPlayers };
+}
+
+/**
+ * @param {Record<string, string>} info
+ * @param {GameMasterConfig} game
+ */
+function passesGamenameFilter(info, game) {
+  const raw = `${info.gamename || ""} ${info.com_gamename || ""} ${info.modname || ""} ${info.game || ""}`.trim();
+  if (game.gamenameDeny && game.gamenameDeny.test(raw)) return false;
+  if (!game.gamenameAllow) return true;
+  if (!raw) return true; // empty after successful keyed reply is OK
+  return game.gamenameAllow.test(raw);
+}
+
+/**
+ * True when info yielded a non-IP-looking hostname we can display.
+ * @param {Record<string, string> | null} info
+ * @param {string[]} nameKeys
+ * @param {string} fallbackIpPort
+ */
+function hasRealHostname(info, nameKeys, fallbackIpPort) {
+  if (!info) return false;
+  for (const k of nameKeys) {
+    const cleaned = stripQuakeColors(info[k] || "");
+    if (!cleaned) continue;
+    if (cleaned === fallbackIpPort) continue;
+    if (/^\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?$/.test(cleaned)) continue;
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -144,6 +183,8 @@ async function pollDpmaster(game) {
     return { addr, info };
   });
 
+  const nameKeys = game.nameKeys || ["hostname", "sv_hostname", "host"];
+
   /** @type {import('./types.js').GameServer[]} */
   const servers = [];
   for (const row of infos) {
@@ -151,10 +192,12 @@ async function pollDpmaster(game) {
     const { addr, info } = row;
     const fallback = `${addr.host}:${addr.port}`;
 
-    // Prefer dropping silent hosts rather than flooding the list as bare IPs.
+    // Drop silent hosts and bare-IP shells (no cleaned hostname).
     if (!info) continue;
+    if (!hasRealHostname(info, nameKeys, fallback)) continue;
+    if (!passesGamenameFilter(info, game)) continue;
 
-    const name = pickName(info, game.nameKeys || ["hostname", "sv_hostname", "host"], fallback);
+    const name = pickName(info, nameKeys, fallback);
     const { players, maxPlayers } = pickPlayers(info);
     const map = info.mapname || info.map || info.mapName || null;
     const gameType = info.gamename || info.modname || info.game || info.version || null;
@@ -174,7 +217,7 @@ async function pollDpmaster(game) {
     });
   }
 
-  servers.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+  servers.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   return servers.slice(0, MAX_SERVERS);
 }
 

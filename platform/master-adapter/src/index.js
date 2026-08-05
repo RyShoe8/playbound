@@ -9,11 +9,70 @@ const REFRESH_MS = Number(process.env.REFRESH_MS || 40_000);
 const cache = new Map();
 /** @type {Map<string, number>} */
 const lastPollAt = new Map();
+/** In-flight authenticated polls keyed by slug (serialize concurrent CMS logins). */
+/** @type {Map<string, Promise<{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }>>} */
+const livePollInflight = new Map();
+
+const ZEROAD_LIVE_CACHE_MS = 45_000;
 
 function authOk(req) {
   if (!ADAPTER_KEY) return true;
   const header = req.headers["x-playbound-adapter-key"];
   return header === ADAPTER_KEY;
+}
+
+/**
+ * @param {string} slug
+ * @returns {{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string } | null}
+ */
+function freshCachedEntry(slug) {
+  const entry = cache.get(slug);
+  if (!entry || entry.error) return null;
+  if (!Array.isArray(entry.servers) || entry.servers.length === 0) return null;
+  const parsed = Date.parse(entry.updatedAt || "");
+  const age = Number.isFinite(parsed) ? Date.now() - parsed : Infinity;
+  if (age > ZEROAD_LIVE_CACHE_MS) return null;
+  return entry;
+}
+
+/**
+ * @param {import('./poll.js').GameMasterConfig | { slug: string, kind?: string }} game
+ * @param {{ username: string, password: string }} liveCreds
+ */
+async function pollLiveCached(game, liveCreds) {
+  const slug = game.slug;
+  if (game.kind === "zerod") {
+    const hit = freshCachedEntry(slug);
+    if (hit) return hit;
+  }
+
+  const existing = livePollInflight.get(slug);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      const servers = await pollGame(game, liveCreds);
+      const entry = {
+        servers,
+        updatedAt: new Date().toISOString(),
+        source: gameSource(game),
+      };
+      cache.set(slug, entry);
+      return entry;
+    } catch (err) {
+      return {
+        servers: [],
+        updatedAt: new Date().toISOString(),
+        error: err instanceof Error ? err.message : String(err),
+        source: gameSource(game),
+      };
+    } finally {
+      livePollInflight.delete(slug);
+    }
+  })();
+
+  livePollInflight.set(slug, promise);
+  return promise;
 }
 
 /**
@@ -103,23 +162,7 @@ const server = http.createServer(async (req, res) => {
     /** @type {{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }} */
     let entry;
     if (liveCreds) {
-      try {
-        const servers = await pollGame(game, liveCreds);
-        entry = {
-          servers,
-          updatedAt: new Date().toISOString(),
-          source: gameSource(game),
-        };
-        // Prefer authenticated snapshot in background cache when available
-        cache.set(slug, entry);
-      } catch (err) {
-        entry = {
-          servers: [],
-          updatedAt: new Date().toISOString(),
-          error: err instanceof Error ? err.message : String(err),
-          source: gameSource(game),
-        };
-      }
+      entry = await pollLiveCached(game, liveCreds);
     } else {
       entry = cache.get(slug);
       if (!entry) {

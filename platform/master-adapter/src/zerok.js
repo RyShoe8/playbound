@@ -37,7 +37,7 @@ export async function pollZeroK(creds = null) {
         return;
       }
       if (battles.length) {
-        battles.sort((a, b) => b.players - a.players || a.name.localeCompare(b.name));
+        battles.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
         resolve(battles.slice(0, MAX_SERVERS));
         return;
       }
