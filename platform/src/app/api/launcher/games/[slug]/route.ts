@@ -46,9 +46,15 @@ export async function GET(
         screenshots: (game.screenshots || [])
           .map((s) => absoluteMediaUrl(s, origin))
           .filter(Boolean),
+        videos: Array.isArray(game.videos) ? game.videos.filter(Boolean) : [],
         systemRequirements: game.systemRequirements || null,
+        faq: Array.isArray(game.faq) ? game.faq : [],
         multiplayer: Boolean(game.launchMethods?.includes("server")),
         website: game.website || null,
+        githubRepo: game.githubRepo || null,
+        platforms: Array.isArray(game.platforms) ? game.platforms : [],
+        browserPlayable: Boolean(game.browserPlayable),
+        steamDeck: Boolean(game.steamDeck),
         status: game.status || "published",
         testing: game.status === "testing",
         mods,

@@ -4,7 +4,8 @@ contextBridge.exposeInMainWorld("playbound", {
   // Existing
   getContext: () => ipcRenderer.invoke("get-context"),
   chooseDirectory: (defaultPath) => ipcRenderer.invoke("choose-directory", defaultPath),
-  install: (slug, targetDir) => ipcRenderer.invoke("install", slug, targetDir),
+  install: (slug, targetDir, editionSlug) =>
+    ipcRenderer.invoke("install", slug, targetDir, editionSlug || null),
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
@@ -41,6 +42,10 @@ contextBridge.exposeInMainWorld("playbound", {
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),
   getRecentlyPlayed: () => ipcRenderer.invoke("get-recently-played"),
   getGameDetail: (slug) => ipcRenderer.invoke("get-game-detail", slug),
+  getLiveStats: (opts) => ipcRenderer.invoke("get-live-stats", opts || {}),
+  getEditions: (gameSlug) => ipcRenderer.invoke("get-editions", gameSlug || null),
+  getGameGuides: (slug) => ipcRenderer.invoke("get-game-guides", slug),
+  getGameReleases: (slug) => ipcRenderer.invoke("get-game-releases", slug),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   installUpdate: () => ipcRenderer.invoke("install-update"),
