@@ -46,6 +46,13 @@ export async function fetchSuperTuxKartServers(): Promise<GameServer[]> {
     const country = attr(tag, "country_code");
     const mode = attr(tag, "game_mode");
     const track = attr(tag, "current_track");
+    const gameStarted = attr(tag, "game_started");
+    const trackLabel =
+      track && track.trim()
+        ? track
+        : gameStarted !== "1"
+          ? "In lobby"
+          : null;
     mapped.push({
       id: attr(tag, "id") || `${host}:${port}`,
       name: name.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))),
@@ -53,7 +60,7 @@ export async function fetchSuperTuxKartServers(): Promise<GameServer[]> {
       port,
       players: Number(attr(tag, "current_players") || 0),
       maxPlayers: Number(attr(tag, "max_players") || 0) || null,
-      map: track || null,
+      map: trackLabel,
       gameType: (mode && GAME_MODES[mode]) || mode,
       location: country ? { countryCode: country.toUpperCase() } : null,
       protected: attr(tag, "password") === "1",

@@ -12,14 +12,16 @@ import { pollWesnoth } from "./wesnoth.js";
 import { pollWarzone } from "./warzone.js";
 import { pollZeroK } from "./zerok.js";
 import { pollZeroAd } from "./zerod.js";
+import { pollVeloren } from "./veloren.js";
 
 /**
  * @typedef {{
  *   slug: string,
- *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod',
+ *   kind: 'dpmaster' | 'mindustry' | 'hedgewars' | 'wesnoth' | 'warzone' | 'zerok' | 'zerod' | 'veloren',
  *   masterHost?: string,
  *   masterPort?: number,
  *   query?: string,
+ *   altQueries?: string[],
  *   nameKeys?: string[],
  *   source?: string,
  * }} GameMasterConfig
@@ -33,6 +35,7 @@ export const GAMES = [
     masterHost: "dpmaster.deathmask.net",
     masterPort: 27950,
     query: "getserversExt Xonotic 3 empty full ipv4",
+    altQueries: ["getserversExt Xonotic 3 empty full", "getservers 68 empty full"],
     nameKeys: ["hostname", "sv_hostname", "host"],
   },
   {
@@ -40,7 +43,8 @@ export const GAMES = [
     kind: "dpmaster",
     masterHost: "master.unvanquished.net",
     masterPort: 27950,
-    query: "getservers 0 empty full",
+    query: "getserversExt Unvanquished 86 empty full ipv4",
+    altQueries: ["getservers 86 empty full", "getservers 0 empty full"],
     nameKeys: ["sv_hostname", "hostname", "host"],
   },
   { slug: "mindustry", kind: "mindustry", source: "github:MindustryServerList" },
@@ -49,6 +53,7 @@ export const GAMES = [
   { slug: "warzone-2100", kind: "warzone", source: "wzlobby.wz2100.net" },
   { slug: "zero-k", kind: "zerok", source: "zero-k.info:8200" },
   { slug: "0ad", kind: "zerod", source: "lobby.wildfiregames.com" },
+  { slug: "veloren", kind: "veloren", source: "serverlist.veloren.net" },
 ];
 
 /**
@@ -72,11 +77,41 @@ function pickName(info, nameKeys, fallback) {
  */
 function pickPlayers(info) {
   if (!info) return { players: 0, maxPlayers: null };
-  const clients = Number(info.clients ?? info.players ?? 0) || 0;
-  const bots = Number(info.bots ?? info.sv_bots ?? 0) || 0;
-  const players = clients + bots;
+  const clients = Number(info.clients ?? info.players ?? info.g_humanplayers ?? 0) || 0;
   const maxPlayers = Number(info.sv_maxclients ?? info.maxclients ?? 0) || null;
-  return { players, maxPlayers };
+  return { players: Math.max(0, clients), maxPlayers };
+}
+
+/**
+ * @param {GameMasterConfig} game
+ * @returns {Promise<{ host: string, port: number }[]>}
+ */
+async function collectMasterAddresses(game) {
+  const queries = [game.query, ...(game.altQueries || [])].filter(Boolean);
+  /** @type {{ host: string, port: number }[]} */
+  const addresses = [];
+  const seen = new Set();
+
+  for (const query of queries) {
+    try {
+      const packets = await udpQueryMaster(game.masterHost, game.masterPort, query, 8000);
+      for (const raw of packets) {
+        for (const a of parseGetServersResponse(raw)) {
+          const key = `${a.host}:${a.port}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          addresses.push(a);
+        }
+      }
+      if (addresses.length >= 8) break;
+    } catch (err) {
+      console.warn(
+        `[dpmaster] ${game.slug} query "${query}" failed:`,
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
+  return addresses;
 }
 
 /**
@@ -84,18 +119,7 @@ function pickPlayers(info) {
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
 async function pollDpmaster(game) {
-  const packets = await udpQueryMaster(game.masterHost, game.masterPort, game.query, 8000);
-  /** @type {{ host: string, port: number }[]} */
-  const addresses = [];
-  const seen = new Set();
-  for (const raw of packets) {
-    for (const a of parseGetServersResponse(raw)) {
-      const key = `${a.host}:${a.port}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      addresses.push(a);
-    }
-  }
+  const addresses = await collectMasterAddresses(game);
 
   const infos = await mapPool(addresses.slice(0, 180), 20, async (addr) => {
     const info = await getServerInfo(addr.host, addr.port);
@@ -108,11 +132,15 @@ async function pollDpmaster(game) {
     if (!row?.addr) continue;
     const { addr, info } = row;
     const fallback = `${addr.host}:${addr.port}`;
+
+    // Prefer dropping silent hosts rather than flooding the list as bare IPs.
+    if (!info) continue;
+
     const name = pickName(info, game.nameKeys || ["hostname", "sv_hostname", "host"], fallback);
     const { players, maxPlayers } = pickPlayers(info);
-    const map = info?.mapname || info?.map || null;
-    const gameType = info?.gamename || info?.modname || info?.game || null;
-    const needPass = info?.needpass === "1" || info?.g_needpass === "1";
+    const map = info.mapname || info.map || info.mapName || null;
+    const gameType = info.gamename || info.modname || info.game || info.version || null;
+    const needPass = info.needpass === "1" || info.g_needpass === "1";
 
     servers.push({
       id: fallback,
@@ -121,8 +149,8 @@ async function pollDpmaster(game) {
       port: addr.port,
       players,
       maxPlayers,
-      map,
-      gameType,
+      map: map ? stripQuakeColors(map) : null,
+      gameType: gameType ? stripQuakeColors(gameType) : null,
       location: null,
       protected: Boolean(needPass),
     });
@@ -153,6 +181,8 @@ export async function pollGame(game, creds = null) {
       return pollZeroK(creds);
     case "zerod":
       return pollZeroAd(creds);
+    case "veloren":
+      return pollVeloren();
     default:
       throw new Error(`Unknown poller kind: ${game.kind}`);
   }
