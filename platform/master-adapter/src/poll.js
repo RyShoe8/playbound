@@ -235,7 +235,7 @@ export async function pollGame(game, creds = null) {
     case "hedgewars":
       return pollHedgewars();
     case "wesnoth":
-      return pollWesnoth();
+      return pollWesnoth(creds);
     case "warzone":
       return pollWarzone();
     case "zerok":

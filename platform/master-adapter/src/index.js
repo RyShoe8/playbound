@@ -13,12 +13,16 @@ const lastPollAt = new Map();
 /** @type {Map<string, Promise<{ servers: import('./types.js').GameServer[], updatedAt: string, error?: string, source: string }>>} */
 const livePollInflight = new Map();
 
-const ZEROAD_LIVE_CACHE_MS = 45_000;
+const LIVE_AUTH_CACHE_MS = 45_000;
 
 function authOk(req) {
   if (!ADAPTER_KEY) return true;
   const header = req.headers["x-playbound-adapter-key"];
   return header === ADAPTER_KEY;
+}
+
+function acceptsLiveCreds(kind) {
+  return kind === "zerok" || kind === "zerod" || kind === "wesnoth";
 }
 
 /**
@@ -31,7 +35,7 @@ function freshCachedEntry(slug) {
   if (!Array.isArray(entry.servers) || entry.servers.length === 0) return null;
   const parsed = Date.parse(entry.updatedAt || "");
   const age = Number.isFinite(parsed) ? Date.now() - parsed : Infinity;
-  if (age > ZEROAD_LIVE_CACHE_MS) return null;
+  if (age > LIVE_AUTH_CACHE_MS) return null;
   return entry;
 }
 
@@ -41,7 +45,7 @@ function freshCachedEntry(slug) {
  */
 async function pollLiveCached(game, liveCreds) {
   const slug = game.slug;
-  if (game.kind === "zerod") {
+  if (game.kind === "zerod" || game.kind === "wesnoth") {
     const hit = freshCachedEntry(slug);
     if (hit) return hit;
   }
@@ -155,7 +159,7 @@ const server = http.createServer(async (req, res) => {
     const lobbyUser = String(req.headers["x-playbound-lobby-user"] || "").trim();
     const lobbyPass = String(req.headers["x-playbound-lobby-pass"] || "").trim();
     const liveCreds =
-      lobbyUser && lobbyPass && (game.kind === "zerok" || game.kind === "zerod")
+      lobbyUser && lobbyPass && acceptsLiveCreds(game.kind)
         ? { username: lobbyUser, password: lobbyPass }
         : null;
 
