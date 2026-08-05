@@ -9,12 +9,14 @@ import {
   House,
   LibraryBig,
   Mail,
+  MessagesSquare,
   Play,
   Puzzle,
   Server,
   Shield,
   ShieldCheck,
 } from "lucide-react";
+import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -82,6 +84,23 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
+        <a
+          href={SITE_DISCORD_INVITE}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/10 p-3 transition-colors hover:border-primary/50 hover:bg-primary/15"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold">
+            <MessagesSquare className="size-4 text-primary" />
+            Join the Discord
+          </span>
+          <span className="text-xs leading-snug text-muted-foreground">
+            Hang with the community, find people to play with, and hear about new games.
+          </span>
+          <span className="inline-flex w-full items-center justify-center rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
+            Open Discord
+          </span>
+        </a>
         <div className="mb-3">
           <GameCompatibilityToggle variant="sidebar" />
         </div>

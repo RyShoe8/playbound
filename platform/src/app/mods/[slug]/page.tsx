@@ -22,6 +22,9 @@ import {
   ORGANIZATION_ID,
 } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+import { getModLiveStats } from "@/lib/liveActivity";
+import { PlayingNowBadge } from "@/components/ActivityStats";
+import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 
 const PLATFORM_LABELS: Record<string, string> = {
   all: "All platforms",
@@ -82,9 +85,10 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
 
   const base = baseGame?.title ?? mod.baseGameSlug;
   const showPlay = modInstalled && canOneClickBase;
+  const liveStats = await getModLiveStats(mod.slug);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
           {
@@ -148,6 +152,7 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
         </Badge>
         <h1 className="text-4xl font-extrabold tracking-tight">{mod.title}</h1>
         <p className="text-lg text-muted-foreground">{mod.tagline}</p>
+        <PlayingNowBadge count={liveStats.playingNow} />
         {baseGame && (
           <p className="text-sm text-muted-foreground">
             For{" "}
@@ -169,6 +174,8 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
         )}
       </div>
 
+      <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+        <div className="min-w-0 space-y-8">
       {/* Direct answer first — what this mod actually does. */}
       {mod.whatItChanges && (
         <section className="rounded-xl border-l-4 border-primary bg-card p-5">
@@ -321,6 +328,23 @@ export default async function ModPage({ params }: { params: Promise<{ slug: stri
           </div>
         </section>
       ) : null}
+        </div>
+
+        <aside className="min-w-0 space-y-4">
+          <ActivityStatsCard
+            playingNow={liveStats.playingNow}
+            rows={[
+              { label: "Players this month", value: liveStats.playersThisMonth },
+              ...(liveStats.installsThisMonth > 0
+                ? [{ label: "Installs this month", value: liveStats.installsThisMonth }]
+                : []),
+              ...(liveStats.installsAllTime != null && liveStats.installsAllTime > 0
+                ? [{ label: "Total installs", value: liveStats.installsAllTime }]
+                : []),
+            ]}
+          />
+        </aside>
+      </div>
     </div>
   );
 }

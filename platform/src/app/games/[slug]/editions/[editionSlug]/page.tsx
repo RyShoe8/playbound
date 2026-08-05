@@ -36,6 +36,9 @@ import {
   VerificationBadge,
 } from "@/components/editions/EditionBadges";
 import { EditionCard } from "@/components/editions/EditionCard";
+import { getEditionLiveStats } from "@/lib/liveActivity";
+import { PlayingNowBadge } from "@/components/ActivityStats";
+import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 
 type Params = Promise<{ slug: string; editionSlug: string }>;
 
@@ -96,6 +99,7 @@ export default async function EditionPage({ params }: { params: Params }) {
   const action = resolveInstallAction(edition);
   const secondary = resolveSecondaryActions(edition);
   const telemetryProps = editionTelemetryProps(game, edition);
+  const liveStats = await getEditionLiveStats(game.slug, edition.slug);
 
   const session = await getServerSession(authOptions);
 
@@ -165,7 +169,11 @@ export default async function EditionPage({ params }: { params: Params }) {
             <EditionTypeBadge edition={edition} />
             <VerificationBadge level={edition.verificationLevel} />
             <EditionStatusBadge edition={edition} />
-            <EditionPopulationBadge edition={edition} />
+            {liveStats.playingNow > 0 ? (
+              <EditionPopulationBadge edition={edition} population={liveStats.playingNow} />
+            ) : (
+              <PlayingNowBadge count={liveStats.playingNow} className="border-white/20 bg-black/40 text-white" />
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <EditionInstallButton action={action} telemetryProps={telemetryProps} size="lg" />
@@ -182,7 +190,8 @@ export default async function EditionPage({ params }: { params: Params }) {
         </div>
       </section>
 
-      <div className="mx-auto max-w-5xl space-y-10 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
+        <div className="min-w-0 space-y-10">
         {/* ── Description ────────────────────────────────────────── */}
         {edition.description && (
           <section>
@@ -437,6 +446,14 @@ export default async function EditionPage({ params }: { params: Params }) {
             has an overview, reviews and discussion covering every edition.
           </p>
         </section>
+        </div>
+
+        <aside className="min-w-0 space-y-4">
+          <ActivityStatsCard
+            playingNow={liveStats.playingNow}
+            rows={[{ label: "Players this month", value: liveStats.playersThisMonth }]}
+          />
+        </aside>
       </div>
     </div>
   );
