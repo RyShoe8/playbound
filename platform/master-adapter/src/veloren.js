@@ -1,4 +1,5 @@
 import dgram from "node:dgram";
+import { lookup as dnsLookup } from "node:dns/promises";
 import { MAX_SERVERS } from "./types.js";
 import { mapPool } from "./udp.js";
 
@@ -6,20 +7,22 @@ const LIST_URL = "https://serverlist.veloren.net/v1/servers";
 const VELOREN_HEADER = Buffer.from("veloren");
 const MAX_RESPONSE_SIZE = 256;
 const BATTLE_MODES = ["PvP", "PvE", "Per-player"];
+const QUERY_TIMEOUT_MS = 6_000;
 
 /**
  * Build a Veloren query datagram (version + request + pad + "veloren" trailer).
  * @param {bigint | number} p
  * @param {0 | 1} request 0=Init, 1=ServerInfo
+ * @param {number} [protocolVersion]
  */
-function buildRequest(p, request) {
+function buildRequest(p, request, protocolVersion = 0) {
   const content = Buffer.alloc(9);
   content.writeBigUInt64LE(BigInt(p), 0);
   content.writeUInt8(request, 8);
 
   // version (2) + content, padded to MAX_RESPONSE_SIZE, then header
   const body = Buffer.alloc(MAX_RESPONSE_SIZE);
-  body.writeUInt16LE(0, 0); // VERSION
+  body.writeUInt16LE(protocolVersion & 0xffff, 0);
   content.copy(body, 2);
   return Buffer.concat([body, VELOREN_HEADER]);
 }
@@ -60,6 +63,20 @@ function parseResponse(msg) {
 
 /**
  * @param {string} host
+ * @returns {Promise<string | null>}
+ */
+async function resolveIpv4(host) {
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return host;
+  try {
+    const res = await dnsLookup(host, { family: 4 });
+    return res.address || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} host IPv4 preferred
  * @param {number} port
  * @returns {Promise<{ players: number, maxPlayers: number, battlemode: number } | null>}
  */
@@ -69,6 +86,7 @@ function queryServerInfo(host, port) {
     let settled = false;
     /** @type {bigint | null} */
     let challenge = null;
+    let protocolVersion = 0;
     let attempts = 0;
 
     const finish = (value) => {
@@ -83,15 +101,15 @@ function queryServerInfo(host, port) {
       resolve(value);
     };
 
-    const timer = setTimeout(() => finish(null), 4000);
+    const timer = setTimeout(() => finish(null), QUERY_TIMEOUT_MS);
 
     const send = (p, request) => {
       attempts += 1;
-      if (attempts > 6) {
+      if (attempts > 8) {
         finish(null);
         return;
       }
-      const buf = buildRequest(p, request);
+      const buf = buildRequest(p, request, protocolVersion);
       socket.send(buf, port, host, (err) => {
         if (err) finish(null);
       });
@@ -103,6 +121,9 @@ function queryServerInfo(host, port) {
       if (!parsed) return;
       if (parsed.kind === "init") {
         challenge = parsed.p;
+        if (Number.isFinite(parsed.maxVersion) && parsed.maxVersion >= 0) {
+          protocolVersion = Math.min(parsed.maxVersion, 0xffff);
+        }
         send(challenge, 1); // ServerInfo
         return;
       }
@@ -121,15 +142,6 @@ function queryServerInfo(host, port) {
 }
 
 /**
- * @param {string} address
- * @returns {Promise<string>}
- */
-async function resolveHost(address) {
-  // Prefer leaving hostnames as-is for join; GeoIP later may resolve
-  return address;
-}
-
-/**
  * Official Veloren server list + UDP query_port enrichment.
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
@@ -142,11 +154,11 @@ export async function pollVeloren() {
   const data = await res.json();
   const rows = Array.isArray(data?.servers) ? data.servers : [];
 
-  const infos = await mapPool(rows.slice(0, MAX_SERVERS), 12, async (row) => {
+  // Lower concurrency — UDP drops under burst on some hosts.
+  const infos = await mapPool(rows.slice(0, MAX_SERVERS), 6, async (row) => {
     if (!row.address || !row.port) return { row, info: null };
     const gamePort = Number(row.port);
     const listed = Number(row.query_port);
-    // Official list often omits query_port; Airshipper defaults query to 14006.
     const candidates = [];
     if (Number.isFinite(listed) && listed > 0) candidates.push(listed);
     if (!candidates.includes(14006)) candidates.push(14006);
@@ -155,9 +167,12 @@ export async function pollVeloren() {
       if (!candidates.includes(plus2)) candidates.push(plus2);
     }
 
+    const ipv4 = await resolveIpv4(String(row.address));
+    if (!ipv4) return { row, info: null };
+
     let info = null;
     for (const qp of candidates) {
-      info = await queryServerInfo(String(row.address), qp);
+      info = await queryServerInfo(ipv4, qp);
       if (info) break;
     }
     return { row, info };
@@ -170,7 +185,7 @@ export async function pollVeloren() {
     if (!entry?.row) continue;
     const { row, info } = entry;
     if (info) enriched += 1;
-    const host = await resolveHost(String(row.address));
+    const host = String(row.address);
     const port = Number(row.port);
     const modeParts = [];
     if (row.channel) modeParts.push(String(row.channel));

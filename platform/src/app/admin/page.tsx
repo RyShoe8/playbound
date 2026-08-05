@@ -30,6 +30,7 @@ async function loadDashboardKpis() {
       newUsers,
       activeUsers,
       launcherInstalls,
+      launcherInstallsTotal,
       bugReports,
       errorEvents,
       gamesPlayed,
@@ -44,6 +45,7 @@ async function loadDashboardKpis() {
       periodDocumentCounts(User),
       periodDistinctUsers((filter) => TelemetryEvent.distinct("userId", filter)),
       periodTelemetryCounts(TelemetryEvent, "launcher_connected"),
+      TelemetryEvent.countDocuments({ event: "launcher_connected" }),
       periodDocumentCounts(BugReport),
       periodTelemetryCounts(TelemetryEvent, "error"),
       periodTelemetryCounts(TelemetryEvent, "game_started"),
@@ -60,6 +62,7 @@ async function loadDashboardKpis() {
       newUsers,
       activeUsers,
       launcherInstalls,
+      launcherInstallsTotal,
       bugs: addPeriodCounts(bugReports, errorEvents),
       bugReports,
       errorEvents,
@@ -79,6 +82,7 @@ async function loadDashboardKpis() {
       newUsers: empty,
       activeUsers: empty,
       launcherInstalls: empty,
+      launcherInstallsTotal: 0,
       bugs: empty,
       bugReports: empty,
       errorEvents: empty,
@@ -131,7 +135,8 @@ export default async function AdminPage() {
           />
           <PeriodStatTile
             label="Launcher Installs"
-            hint="First-time launcher connects"
+            primary={String(kpis.launcherInstallsTotal)}
+            hint="Lifetime first connects · periods below"
             periods={kpis.launcherInstalls}
           />
           <PeriodStatTile

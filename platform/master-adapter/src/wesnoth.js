@@ -9,8 +9,16 @@ const gunzip = promisify(zlib.gunzip);
 
 const HOSTS = ["server.wesnoth.org", "server2.wesnoth.org"];
 const PORT = 15000;
-const SESSION_MS = 12_000;
-const DEFAULT_VERSION = process.env.WESNOTH_CLIENT_VERSION || "1.18.0";
+const SESSION_MS = 20_000;
+const DEFAULT_VERSION = process.env.WESNOTH_CLIENT_VERSION || "1.18.5";
+
+function isLobbyPointerList(servers) {
+  return (
+    Array.isArray(servers) &&
+    servers.length > 0 &&
+    servers.every((s) => typeof s?.id === "string" && /:lobby$/i.test(s.id))
+  );
+}
 
 /**
  * @param {string} [host]
@@ -307,12 +315,21 @@ async function connectBest(host, port, wantsAuth) {
 function gamesFromWml(wml, host) {
   /** @type {import('./types.js').GameServer[]} */
   const servers = [];
+  const seen = new Set();
+  // Top-level [game] and DiffWML nested under [insert_child]/[change_child].
   const gameRe = /\[game\]([\s\S]*?)\[\/game\]/gi;
   let m;
   while ((m = gameRe.exec(wml)) !== null && servers.length < MAX_SERVERS) {
     const block = m[1];
+    // Skip empty stub tags occasionally nested in diffs.
+    if (!/\w+\s*=/.test(block)) continue;
+
     const id = attr(block, "id");
     const name = attr(block, "name") || attr(block, "title") || "Wesnoth game";
+    const dedupe = `${id || ""}|${name}`;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+
     const map =
       attr(block, "mp_scenario") ||
       attr(block, "scenario") ||
@@ -338,8 +355,14 @@ function gamesFromWml(wml, host) {
       }
     }
 
-    const players =
-      maxPlayers != null && Number.isFinite(vacant) ? Math.max(0, maxPlayers - vacant) : 0;
+    const humans = Number(attr(block, "human_sides") || NaN);
+    let players = 0;
+    if (maxPlayers != null && Number.isFinite(vacant)) {
+      players = Math.max(0, maxPlayers - vacant);
+    } else if (Number.isFinite(humans) && humans > 0) {
+      players = humans;
+      if (maxPlayers == null) maxPlayers = humans;
+    }
 
     const passworded =
       /password\s*=\s*"?yes"?/i.test(block) || Boolean(attr(block, "password"));
@@ -366,11 +389,13 @@ function gamesFromWml(wml, host) {
  * @param {string} host
  * @param {number} port
  * @param {{ username?: string, password?: string } | null} creds
+ * @param {string} [clientVersion]
  * @returns {Promise<import('./types.js').GameServer[] | null>}
  */
-async function pollOne(host, port, creds) {
+async function pollOne(host, port, creds, clientVersion = DEFAULT_VERSION) {
   const wantsAuth = Boolean(creds?.username && creds?.password);
   const conn = await connectBest(host, port, wantsAuth);
+  console.log(`[wesnoth] ${host}:${port} connected tls=${conn.usingTls} auth=${wantsAuth} ver=${clientVersion}`);
 
   const username =
     creds?.username ||
@@ -382,14 +407,22 @@ async function pollOne(host, port, creds) {
   let games = [];
   let joined = false;
   let passwordSent = false;
+  /** @type {string[]} */
+  const tagsSeen = [];
   /** @type {{ host: string, port: number } | null} */
   let redirect = null;
+  /** @type {string | null} */
+  let retryVersion = null;
   const started = Date.now();
 
   try {
     while (Date.now() - started < SESSION_MS) {
       const remaining = Math.max(1_000, SESSION_MS - (Date.now() - started));
       const frame = await conn.readFrame(remaining);
+
+      for (const tag of ["redirect", "reject", "version", "mustlogin", "error", "join_lobby", "gamelist", "gamelist_diff", "game"]) {
+        if (new RegExp(`\\[${tag}\\]`, "i").test(frame) && !tagsSeen.includes(tag)) tagsSeen.push(tag);
+      }
 
       if (/\[redirect\]/i.test(frame)) {
         const block = childBlock(frame, "redirect") || frame;
@@ -401,14 +434,25 @@ async function pollOne(host, port, creds) {
       }
 
       if (/\[reject\]/i.test(frame)) {
-        throw new Error("Wesnoth server rejected client version");
+        const block = childBlock(frame, "reject") || frame;
+        const accepted = attr(block, "accepted_versions") || "";
+        const candidate = accepted
+          .split(",")
+          .map((s) => s.trim().replace(/\*/g, "0"))
+          .find((s) => /^\d+\.\d+/.test(s));
+        if (candidate && candidate !== clientVersion) {
+          retryVersion = candidate;
+          console.warn(`[wesnoth] ${host} rejected ${clientVersion}; retrying with ${candidate}`);
+          break;
+        }
+        throw new Error(`Wesnoth server rejected client version (${accepted || "unknown accepted"})`);
       }
 
       // Version query (often the first tagged payload).
       if (/\[version\]/i.test(frame) && !/\[mustlogin\]/i.test(frame) && !/\[login\]/i.test(frame)) {
         await conn.sendFrame(
           wmlTag("version", {
-            version: DEFAULT_VERSION,
+            version: clientVersion,
             client_source: "PlayBound",
           })
         );
@@ -440,9 +484,10 @@ async function pollOne(host, port, creds) {
 
       if (/\[gamelist\]/i.test(frame) || /\[game\]/i.test(frame) || /\[gamelist_diff\]/i.test(frame)) {
         const parsed = gamesFromWml(frame, host);
-        if (parsed.length >= games.length) games = parsed;
-        if (joined && games.length > 0) {
-          await new Promise((r) => setTimeout(r, 600));
+        if (parsed.length > games.length) games = parsed;
+        // After join+refresh, keep reading briefly for a fuller list / diffs.
+        if (joined && games.length > 0 && Date.now() - started > 3_000) {
+          await new Promise((r) => setTimeout(r, 400));
           break;
         }
       }
@@ -451,8 +496,15 @@ async function pollOne(host, port, creds) {
     conn.destroy();
   }
 
+  console.log(
+    `[wesnoth] ${host} joined=${joined} games=${games.length} tags=${tagsSeen.join(",") || "-"}`
+  );
+
+  if (retryVersion) {
+    return pollOne(host, port, creds, retryVersion);
+  }
   if (redirect) {
-    return pollOne(redirect.host, redirect.port, creds);
+    return pollOne(redirect.host, redirect.port, creds, clientVersion);
   }
 
   if (games.length) return games;
@@ -472,14 +524,28 @@ export async function pollWesnoth(creds = null) {
   const authPass = creds?.password || process.env.WESNOTH_LOBBY_PASS || "";
   const auth = authUser && authPass ? { username: authUser, password: authPass } : null;
 
+  /** @type {Error | null} */
+  let lastErr = null;
   for (const host of HOSTS) {
     try {
       const servers = await pollOne(host, PORT, auth);
-      if (servers && servers.length) return servers;
+      if (!servers) continue;
+      if (isLobbyPointerList(servers)) {
+        if (auth) {
+          console.warn(`[wesnoth] ${host} authenticated but returned lobby pointer only`);
+          continue;
+        }
+        return servers;
+      }
+      if (servers.length) return servers;
     } catch (err) {
-      console.warn(`[wesnoth] ${host} failed:`, err instanceof Error ? err.message : err);
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[wesnoth] ${host} failed:`, lastErr.message);
     }
   }
 
+  if (auth) {
+    throw lastErr || new Error("Wesnoth lobby login succeeded on no host with a game list");
+  }
   return lobbyPointer();
 }

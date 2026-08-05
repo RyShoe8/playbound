@@ -38,7 +38,7 @@ export async function fetchLuantiServers(): Promise<GameServer[]> {
       map: row.mapgen || null,
       gameType: row.gameid || null,
       location: row.geo_continent
-        ? { countryCode: row.geo_continent.slice(0, 2).toUpperCase(), region: row.geo_continent }
+        ? { countryCode: "ZZ", region: String(row.geo_continent).toUpperCase() }
         : null,
       protected: Boolean(row.password),
     });

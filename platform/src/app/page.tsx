@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { Gem, Newspaper } from "lucide-react";
+import { Gem, Newspaper, Server } from "lucide-react";
 import { collections } from "@/lib/data";
 import { listGamesNewestFirst, listGames, hiddenGems, getGame } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
@@ -45,13 +46,42 @@ async function loadServerPreviews(): Promise<HomeServerPreview[]> {
   return rows;
 }
 
+async function HomeLiveServersSection() {
+  const serverPreviews = await loadServerPreviews();
+  return <HomeServerPreviews rows={serverPreviews} />;
+}
+
+function HomeLiveServersFallback() {
+  return (
+    <section>
+      <SectionHeader
+        title="Live Servers"
+        subtitle="Public multiplayer right now — open the full browser for every title"
+        href="/servers"
+      />
+      <div className="grid gap-3 sm:grid-cols-3">
+        {HOME_SERVER_SLUGS.map((slug) => (
+          <div
+            key={slug}
+            className="animate-pulse rounded-xl border border-border bg-card p-4"
+          >
+            <p className="flex items-center gap-1.5 font-bold text-muted-foreground">
+              <Server className="size-3.5" /> Loading…
+            </p>
+            <div className="mt-3 h-4 w-2/3 rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function HomePage() {
-  const [gamesNewestFirst, games, gems, mods, serverPreviews] = await Promise.all([
+  const [gamesNewestFirst, games, gems, mods] = await Promise.all([
     listGamesNewestFirst(),
     listGames(),
     hiddenGems(),
     listMods(),
-    loadServerPreviews(),
   ]);
   if (!gamesNewestFirst.length) return null;
 
@@ -100,8 +130,10 @@ export default async function HomePage() {
       {/* ── Games + Hidden gems (client-filtered from full catalog) */}
       <HomeGamesSections games={games} gems={gems} />
 
-      {/* ── Live servers (client-filtered by compatibility) ─── */}
-      <HomeServerPreviews rows={serverPreviews} />
+      {/* ── Live servers (streamed — do not block Home chrome) ─── */}
+      <Suspense fallback={<HomeLiveServersFallback />}>
+        <HomeLiveServersSection />
+      </Suspense>
 
       {/* ── Mods ───────────────────────────────────────────────── */}
       {featuredMods.length > 0 && (
