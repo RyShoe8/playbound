@@ -27,7 +27,7 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
           <div className="flex flex-col gap-2">
             {friendsPlaying.map((f) => (
               <div key={f.id} className="flex items-center gap-2">
-                <Avatar name={f.username} src={f.image ?? undefined} size="sm" />
+                <Avatar name={f.username} hue={265} size="sm" />
                 <span className="text-sm font-semibold truncate">{f.username}</span>
               </div>
             ))}
@@ -41,7 +41,7 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
           <div className="flex flex-col gap-2">
             {friendsViewing.map((f) => (
               <div key={f.id} className="flex items-center gap-2 opacity-80">
-                <Avatar name={f.username} src={f.image ?? undefined} size="sm" />
+                <Avatar name={f.username} hue={265} size="sm" />
                 <span className="text-sm font-semibold truncate">{f.username}</span>
               </div>
             ))}
