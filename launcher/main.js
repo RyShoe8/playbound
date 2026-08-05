@@ -25,6 +25,8 @@ let context = null;
 /** Background poll after opening a Windows installer wizard */
 let installerPollTimer = null;
 let installerPollSlug = null;
+/** Delayed full-drive BFS — only after known-path poll grace period */
+let exeScanDelayTimer = null;
 /** @type {{ slug: string, abort: boolean, generation: number } | null} */
 let exeScanJob = null;
 let exeScanGeneration = 0;
@@ -1158,27 +1160,61 @@ function stopInstallerPoll() {
     installerPollTimer = null;
     installerPollSlug = null;
   }
+  if (exeScanDelayTimer) {
+    clearTimeout(exeScanDelayTimer);
+    exeScanDelayTimer = null;
+  }
 }
+
+const INSTALLER_KNOWN_PATH_GRACE_MS = 50_000;
 
 function startInstallerPoll(slug, entry, version) {
   stopInstallerPoll();
+  stopExeScan(slug);
   installerPollSlug = slug;
   markPendingInstall(slug, version);
+
   const started = Date.now();
   const maxMs = 10 * 60 * 1000;
+
+  const tryKnownPath = () => {
+    invalidateUninstallCache(entry);
+    const known = findKnownExecutable(entry);
+    if (!known) return false;
+    stopInstallerPoll();
+    stopExeScan(slug);
+    markInstalledFromExe(slug, entry, known, version || "located");
+    return true;
+  };
+
+  // Immediate known-path check (installer may already be done / re-run).
+  if (tryKnownPath()) return;
+
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", {
+      slug,
+      phase: "waiting",
+      message: `Waiting for ${entry.title || slug} install to finish…`,
+    });
+  }
+
   installerPollTimer = setInterval(() => {
     if (Date.now() - started > maxMs) {
       stopInstallerPoll();
       // Keep pending Library card; disk scan may still be running or needsLocate.
       return;
     }
-    invalidateUninstallCache(entry);
-    const known = findKnownExecutable(entry);
-    if (!known) return;
-    stopInstallerPoll();
-    markInstalledFromExe(slug, entry, known, version || "located");
+    tryKnownPath();
   }, 3000);
-  void startExeScan(slug, entry, version);
+
+  // Full-drive BFS is expensive and flashes the UI if it spams progress —
+  // wait for the installer to typically finish writing under known paths first.
+  exeScanDelayTimer = setTimeout(() => {
+    exeScanDelayTimer = null;
+    if (installerPollSlug !== slug) return;
+    if (tryKnownPath()) return;
+    void startExeScan(slug, entry, version);
+  }, INSTALLER_KNOWN_PATH_GRACE_MS);
 }
 
 /** Resume watching pending installs after app restart. */
@@ -1325,7 +1361,8 @@ function markPendingInstall(slug, version) {
   if (existing?.exe && fs.existsSync(existing.exe)) return existing;
   state[slug] = {
     pending: true,
-    scanning: true,
+    // Full-drive scan is delayed; known-path poll first.
+    scanning: false,
     version: version || existing?.version || null,
     installedAt: existing?.installedAt || new Date().toISOString(),
   };
@@ -1441,6 +1478,10 @@ function shouldSkipScanDir(name) {
 }
 
 function stopExeScan(slug) {
+  if (exeScanDelayTimer) {
+    clearTimeout(exeScanDelayTimer);
+    exeScanDelayTimer = null;
+  }
   if (!exeScanJob) return;
   if (slug != null && exeScanJob.slug !== slug) return;
   exeScanJob.abort = true;
@@ -1480,7 +1521,6 @@ async function startExeScan(slug, entry, version) {
   const queue = roots.slice();
   const started = Date.now();
   const maxMs = 8 * 60 * 1000;
-  let visited = 0;
 
   const tick = async () => {
     if (job.abort || exeScanJob !== job) return;
@@ -1494,7 +1534,6 @@ async function startExeScan(slug, entry, version) {
     for (let i = 0; i < batch && queue.length; i++) {
       if (job.abort) return;
       const dir = queue.shift();
-      visited++;
       let entries;
       try {
         entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -1514,13 +1553,7 @@ async function startExeScan(slug, entry, version) {
         }
       }
     }
-    if (visited % 200 === 0 && win && !win.isDestroyed()) {
-      win.webContents.send("install-scan", {
-        slug,
-        phase: "scanning",
-        message: `Searching for ${entry.title || slug}…`,
-      });
-    }
+    // No per-batch progress IPC — rebuilds the renderer and causes flicker.
     if (!queue.length) {
       if (exeScanJob === job) exeScanJob = null;
       setPendingScanning(slug, false);
