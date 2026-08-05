@@ -66,12 +66,12 @@ export function CatalogStatsCard({
   ];
 
   return (
-    <div className="w-full rounded-xl border border-border bg-card p-4 sm:max-w-xs lg:w-64">
-      <dl className="space-y-3">
+    <div className="w-full rounded-xl border border-border bg-card p-3 sm:max-w-sm lg:w-80">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
         {items.map((item) => (
           <div key={item.label}>
-            <dt className="text-sm text-muted-foreground">{item.label}</dt>
-            <dd className="text-xl font-extrabold tabular-nums tracking-tight">
+            <dt className="text-xs text-muted-foreground">{item.label}</dt>
+            <dd className="text-lg font-extrabold tabular-nums tracking-tight">
               {item.value.toLocaleString()}
             </dd>
           </div>
@@ -79,11 +79,11 @@ export function CatalogStatsCard({
       </dl>
 
       {mostPopular.length > 0 && (
-        <div className="mt-4 border-t border-border pt-3">
-          <p className="text-sm font-semibold">Most Popular Right Now</p>
-          <ol className="mt-2 space-y-1.5">
+        <div className="mt-3 border-t border-border pt-2.5">
+          <p className="text-xs font-semibold">Most Popular Right Now</p>
+          <ol className="mt-1.5 space-y-1">
             {mostPopular.map((game, i) => (
-              <li key={game.slug} className="text-sm">
+              <li key={game.slug} className="text-sm leading-snug">
                 <span className="mr-1.5" aria-hidden>
                   {PODIUM_MEDALS[i] ?? `${i + 1}.`}
                 </span>
@@ -99,7 +99,7 @@ export function CatalogStatsCard({
         </div>
       )}
 
-      <p className="mt-4 text-[11px] text-muted-foreground">
+      <p className="mt-2.5 text-[11px] text-muted-foreground">
         Across supported games • Updated every 15 min
       </p>
     </div>

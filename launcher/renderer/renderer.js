@@ -34,11 +34,12 @@ function normalizePlatform(value) {
 
 function isGameDesktopCompatible(game) {
   if (game?.browserPlayable) return true;
-  const platforms = (game?.platforms || []).map(normalizePlatform);
-  const allowed = new Set(["windows", "macos", "linux", "web"]);
-  if (platforms.some((p) => allowed.has(p))) return true;
   if (game?.steamDeck) return true;
-  return false;
+  const platforms = (game?.platforms || []).map(normalizePlatform).filter(Boolean);
+  // Missing metadata: don't hide (common for installed/recent rows before enrich).
+  if (platforms.length === 0) return true;
+  const allowed = new Set(["windows", "macos", "linux", "web"]);
+  return platforms.some((p) => allowed.has(p));
 }
 
 function filterByCompatibility(list) {
@@ -145,7 +146,7 @@ function buildCatalogStatsCardHtml(live) {
       : "";
   return `
     <aside class="catalog-stats-card">
-      <dl>
+      <dl class="catalog-stats-grid">
         <div><dt>Games</dt><dd>${formatStatNumber(live.gameCount)}</dd></div>
         <div><dt>Mods</dt><dd>${formatStatNumber(live.modCount)}</dd></div>
         <div><dt>Editions</dt><dd>${formatStatNumber(live.editionCount)}</dd></div>

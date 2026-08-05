@@ -2427,6 +2427,9 @@ function listInstalledGames() {
       genres: entry?.genres || [],
       tags: entry?.tags || [],
       multiplayer: Boolean(entry?.multiplayer),
+      platforms: Array.isArray(entry?.platforms) ? entry.platforms : [],
+      browserPlayable: Boolean(entry?.browserPlayable),
+      steamDeck: Boolean(entry?.steamDeck),
       version: info.version || null,
       dir: info.dir || null,
       exe: ready ? info.exe : null,
@@ -3050,6 +3053,9 @@ ipcMain.handle("get-recently-played", () => {
       blurb: entry?.blurb || "",
       art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
       coverImage: resolveMediaUrl(entry?.coverImage) || null,
+      platforms: Array.isArray(entry?.platforms) ? entry.platforms : [],
+      browserPlayable: Boolean(entry?.browserPlayable),
+      steamDeck: Boolean(entry?.steamDeck),
       lastPlayed: data.lastPlayed || null,
     });
   }
