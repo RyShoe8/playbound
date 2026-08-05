@@ -3,81 +3,102 @@ import type { Metadata } from "next";
 import { Bug, CalendarDays, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
-import Review from "@/lib/models/Review";
-import GuidePost from "@/lib/models/GuidePost";
-import DiscussionTopic from "@/lib/models/DiscussionTopic";
-import PlatformEvent from "@/lib/models/PlatformEvent";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import GameSubmission from "@/lib/models/GameSubmission";
 import BugReport from "@/lib/models/BugReport";
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { listAllGames } from "@/lib/catalog";
-import { listDevelopers } from "@/lib/developers";
 import { listAllMods } from "@/lib/mods";
 import { GameArt } from "@/components/GameArt";
-import { SectionHeader, StatTile } from "@/components/ui/bits";
+import { PeriodStatTile, SectionHeader } from "@/components/ui/bits";
+import {
+  addPeriodCounts,
+  emptyPeriodCounts,
+  periodDistinctUsers,
+  periodDocumentCounts,
+  periodTelemetryCounts,
+} from "@/lib/admin/analyticsPeriods";
 
 export const metadata: Metadata = { title: "Admin" };
 
-async function getCounts() {
+async function loadDashboardKpis() {
   try {
     await dbConnect();
     const [
       totalUsers,
       verifiedUsers,
-      reviews,
-      guides,
-      discussions,
-      events,
-      newsletter,
-      pendingSubs,
+      newUsers,
+      activeUsers,
+      launcherInstalls,
+      bugReports,
+      errorEvents,
+      gamesPlayed,
+      newsletterNew,
+      newsletterActive,
+      submissions,
       openBugs,
+      pendingSubs,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ emailVerified: true }),
-      Review.countDocuments(),
-      GuidePost.countDocuments(),
-      DiscussionTopic.countDocuments({ status: { $ne: "removed" } }),
-      PlatformEvent.countDocuments({ startsAt: { $gte: new Date() } }),
-      NewsletterSubscriber.countDocuments(),
-      GameSubmission.countDocuments({ status: "pending" }),
+      periodDocumentCounts(User),
+      periodDistinctUsers((filter) => TelemetryEvent.distinct("userId", filter)),
+      periodTelemetryCounts(TelemetryEvent, "launcher_connected"),
+      periodDocumentCounts(BugReport),
+      periodTelemetryCounts(TelemetryEvent, "error"),
+      periodTelemetryCounts(TelemetryEvent, "game_started"),
+      periodDocumentCounts(NewsletterSubscriber, { subscribed: true }),
+      NewsletterSubscriber.countDocuments({ subscribed: true }),
+      periodDocumentCounts(GameSubmission),
       BugReport.countDocuments({ status: { $in: ["open", "reviewing"] } }),
+      GameSubmission.countDocuments({ status: "pending" }),
     ]);
+
     return {
       totalUsers,
       verifiedUsers,
-      reviews,
-      guides,
-      discussions,
-      events,
-      newsletter,
-      pendingSubs,
+      newUsers,
+      activeUsers,
+      launcherInstalls,
+      bugs: addPeriodCounts(bugReports, errorEvents),
+      bugReports,
+      errorEvents,
+      gamesPlayed,
+      newsletterNew,
+      newsletterActive,
+      submissions,
       openBugs,
+      pendingSubs,
     };
   } catch (err) {
-    console.error("Failed to load admin counts:", err);
+    console.error("Failed to load admin dashboard KPIs:", err);
+    const empty = emptyPeriodCounts();
     return {
       totalUsers: 0,
       verifiedUsers: 0,
-      reviews: 0,
-      guides: 0,
-      discussions: 0,
-      events: 0,
-      newsletter: 0,
-      pendingSubs: 0,
+      newUsers: empty,
+      activeUsers: empty,
+      launcherInstalls: empty,
+      bugs: empty,
+      bugReports: empty,
+      errorEvents: empty,
+      gamesPlayed: empty,
+      newsletterNew: empty,
+      newsletterActive: 0,
+      submissions: empty,
       openBugs: 0,
+      pendingSubs: 0,
     };
   }
 }
 
 export default async function AdminPage() {
-  const [counts, games, mods, developers] = await Promise.all([
-    getCounts(),
+  const [kpis, games, mods] = await Promise.all([
+    loadDashboardKpis(),
     listAllGames(),
     listAllMods(),
-    listDevelopers(),
   ]);
-  const developerCount = developers.length;
-  const oneClickMods = mods.filter((m) => m.downloadKind !== "external").length;
+
   const brokenVersions =
     games.filter((g) => g.launcherInstall?.versionCheckStatus === "broken").length +
     mods.filter((m) => m.versionCheckStatus === "broken").length;
@@ -88,37 +109,61 @@ export default async function AdminPage() {
         <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
           <Shield className="size-7 text-primary" /> Administration
         </h1>
-        <p className="mt-1 text-muted-foreground">Live MongoDB counts and the editable game catalog.</p>
+        <p className="mt-1 text-muted-foreground">
+          Live product KPIs (today / 7d / 30d vs previous period) and the editable game catalog.
+        </p>
       </div>
 
       <section>
-        <SectionHeader title="Platform Overview" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          <StatTile label="Games" value={String(games.length)} />
-          <StatTile
+        <SectionHeader title="Platform Overview" subtitle="Period columns compare to the prior day / week / month" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <PeriodStatTile
+            label="Total PlayBounders"
+            primary={String(kpis.totalUsers)}
+            hint={`${kpis.verifiedUsers} verified · new below`}
+            href="/admin/users"
+            periods={kpis.newUsers}
+          />
+          <PeriodStatTile
+            label="Active PlayBounders"
+            hint="Identified users with any telemetry"
+            periods={kpis.activeUsers}
+          />
+          <PeriodStatTile
             label="Launcher Installs"
-            value={String(games.reduce((sum, g) => sum + (g.installCount ?? 0), 0))}
+            hint="First-time launcher connects"
+            periods={kpis.launcherInstalls}
           />
-          <StatTile
-            label="One-click mods"
-            value={String(oneClickMods)}
-            hint={`${mods.length - oneClickMods} external links`}
+          <PeriodStatTile
+            label="Bugs"
+            hint={`${kpis.bugReports.month} reports + ${kpis.errorEvents.month} errors (30d) · ${kpis.openBugs} open`}
+            href="/admin/bugs"
+            periods={kpis.bugs}
           />
-          <StatTile
-            label="Version issues"
-            value={String(brokenVersions)}
+          <PeriodStatTile
+            label="Games Played"
+            hint="game_started (site + launcher)"
+            href="/admin/analytics/gameplay"
+            periods={kpis.gamesPlayed}
+          />
+          <PeriodStatTile
+            label="Newsletter Subs"
+            primary={String(kpis.newsletterActive)}
+            hint="Active subscribers · new below"
+            periods={kpis.newsletterNew}
+          />
+          <PeriodStatTile
+            label="Version Issues"
+            primary={String(brokenVersions)}
             hint="Broken game/mod recipe probes"
             href="/admin/version-issues"
           />
-          <StatTile label="Developers" value={String(developerCount)} />
-          <StatTile label="Registered Users" value={String(counts.totalUsers)} hint={`${counts.verifiedUsers} verified`} />
-          <StatTile label="Newsletter Subs" value={String(counts.newsletter)} />
-          <StatTile label="Reviews" value={String(counts.reviews)} />
-          <StatTile label="Guides" value={String(counts.guides)} />
-          <StatTile label="Discussion Posts" value={String(counts.discussions)} />
-          <StatTile label="Upcoming Events" value={String(counts.events)} />
-          <StatTile label="Pending Submissions" value={String(counts.pendingSubs)} />
-          <StatTile label="Open Bugs" value={String(counts.openBugs)} />
+          <PeriodStatTile
+            label="Submissions"
+            hint={`${kpis.pendingSubs} pending`}
+            href="/admin/submissions"
+            periods={kpis.submissions}
+          />
         </div>
       </section>
 
@@ -146,14 +191,14 @@ export default async function AdminPage() {
               className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
             >
               <Inbox className="size-4" /> Submissions
-              {counts.pendingSubs > 0 ? ` (${counts.pendingSubs})` : ""}
+              {kpis.pendingSubs > 0 ? ` (${kpis.pendingSubs})` : ""}
             </Link>
             <Link
               href="/admin/bugs"
               className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
             >
               <Bug className="size-4" /> Bugs
-              {counts.openBugs > 0 ? ` (${counts.openBugs})` : ""}
+              {kpis.openBugs > 0 ? ` (${kpis.openBugs})` : ""}
             </Link>
             <Link
               href="/admin/events/new"

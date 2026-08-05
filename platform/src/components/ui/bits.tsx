@@ -128,6 +128,86 @@ export function StatTile({
   return <div className="rounded-xl border border-border bg-card p-4">{inner}</div>;
 }
 
+type PeriodValues = {
+  day: number;
+  week: number;
+  month: number;
+  dayPrev?: number;
+  weekPrev?: number;
+  monthPrev?: number;
+};
+
+function PeriodCell({
+  label,
+  value,
+  prev,
+}: {
+  label: string;
+  value: number;
+  prev?: number;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+      <p className="text-lg font-bold tabular-nums">{value}</p>
+      {prev != null && (
+        <p className="text-[10px] text-muted-foreground">vs {prev}</p>
+      )}
+    </div>
+  );
+}
+
+/** KPI card with today / 7d / 30d columns and optional lifetime primary value. */
+export function PeriodStatTile({
+  label,
+  primary,
+  hint,
+  href,
+  periods,
+}: {
+  label: string;
+  /** Lifetime / snapshot figure shown above the period columns. */
+  primary?: string;
+  hint?: string;
+  href?: string;
+  periods?: PeriodValues | null;
+}) {
+  const inner = (
+    <>
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
+      {primary != null && <p className="mt-1 text-2xl font-bold tabular-nums">{primary}</p>}
+      {hint && (
+        <p className={cn("text-xs text-muted-foreground", primary != null ? "mt-0.5" : "mt-1")}>
+          {hint}
+        </p>
+      )}
+      {periods && (
+        <div
+          className={cn(
+            "grid grid-cols-3 gap-2 border-t border-border/60 pt-2",
+            primary != null || hint ? "mt-3" : "mt-2"
+          )}
+        >
+          <PeriodCell label="Today" value={periods.day} prev={periods.dayPrev} />
+          <PeriodCell label="7d" value={periods.week} prev={periods.weekPrev} />
+          <PeriodCell label="30d" value={periods.month} prev={periods.monthPrev} />
+        </div>
+      )}
+    </>
+  );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="block rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-card/80"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="rounded-xl border border-border bg-card p-4">{inner}</div>;
+}
+
 export function EmptyHint({ icon: Icon = Users, children }: { icon?: typeof Users; children: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">

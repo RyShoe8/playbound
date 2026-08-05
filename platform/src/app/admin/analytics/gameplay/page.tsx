@@ -1,7 +1,11 @@
 import Link from "next/link";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
-import { SectionHeader, StatTile } from "@/components/ui/bits";
+import { listAllGames } from "@/lib/catalog";
+import { listDevelopers } from "@/lib/developers";
+import { listAllMods } from "@/lib/mods";
+import { PeriodStatTile, SectionHeader, StatTile } from "@/components/ui/bits";
+import { emptyPeriodCounts, periodTelemetryCounts } from "@/lib/admin/analyticsPeriods";
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -245,13 +249,28 @@ export default async function GameplayAnalyticsPage({
   const sp = await searchParams;
   let data: Awaited<ReturnType<typeof loadGameplayAnalytics>> | null = null;
   let loadError = false;
+  let catalog = { games: 0, mods: 0, developers: 0 };
+  let telemetryEvents = emptyPeriodCounts();
 
   try {
-    data = await loadGameplayAnalytics({
-      game: sp.game,
-      from: sp.from,
-      to: sp.to,
-    });
+    const [gameplay, games, mods, developers, events] = await Promise.all([
+      loadGameplayAnalytics({
+        game: sp.game,
+        from: sp.from,
+        to: sp.to,
+      }),
+      listAllGames(),
+      listAllMods(),
+      listDevelopers(),
+      periodTelemetryCounts(TelemetryEvent),
+    ]);
+    data = gameplay;
+    catalog = {
+      games: games.length,
+      mods: mods.length,
+      developers: developers.length,
+    };
+    telemetryEvents = events;
   } catch (err) {
     console.error("Failed to load gameplay analytics", err);
     loadError = true;
@@ -295,6 +314,21 @@ export default async function GameplayAnalyticsPage({
             <StatTile
               label="Unique players (7d)"
               value={String(data.uniquePlayers7d)}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Games" value={String(catalog.games)} href="/admin/games" />
+            <StatTile label="Mods" value={String(catalog.mods)} href="/admin/mods" />
+            <StatTile
+              label="Developers"
+              value={String(catalog.developers)}
+              href="/admin/developers"
+            />
+            <PeriodStatTile
+              label="Events"
+              hint="All telemetry events"
+              periods={telemetryEvents}
             />
           </div>
 
