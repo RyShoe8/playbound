@@ -30,7 +30,10 @@ jobs:
         working-directory: launcher
 
       - name: Build macOS Launcher
-        run: npm run dist:mac
+        run: |
+          if [ -z "$CSC_LINK" ]; then unset CSC_LINK; fi
+          if [ -z "$CSC_KEY_PASSWORD" ]; then unset CSC_KEY_PASSWORD; fi
+          npm run dist:mac
         working-directory: launcher
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
