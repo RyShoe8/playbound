@@ -220,6 +220,10 @@ export function GlobalServerBrowser({
   // Guards against an earlier, slower request resolving after a later one and
   // painting servers for a game the user has already navigated away from.
   const requestSeq = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+  const viewerGeoFetched = useRef(false);
+  /** Instant switch-back for recently viewed games (base list, before mod filter). */
+  const listCache = useRef(new Map<string, ApiResponse>());
 
   const loadServers = useCallback(async (slug: string, mod: CatalogMod | null) => {
     if (!slug) {
@@ -229,25 +233,68 @@ export function GlobalServerBrowser({
     const seq = ++requestSeq.current;
     const isStale = () => seq !== requestSeq.current;
 
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    const cacheKey = slug;
+    const cached = listCache.current.get(cacheKey);
+    if (cached) {
+      let servers = Array.isArray(cached.servers) ? cached.servers : [];
+      setModNote("");
+      if (mod) {
+        const filtered = filterServersForMod(servers, mod);
+        setModNote(
+          filtered.matched
+            ? `Showing servers matching ${mod.title}.`
+            : `No gameType match for ${mod.title} — showing all ${slug} servers.`
+        );
+        servers = filtered.servers;
+      }
+      setData({ ...cached, servers });
+    } else {
+      setData(null);
+    }
+
     setLoading(true);
-    setModNote("");
+    if (!cached) setModNote("");
     try {
+      const needGeo = !viewerGeoFetched.current;
       const [serversRes, geoRes] = await Promise.all([
-        fetch(`/api/games/${encodeURIComponent(slug)}/servers`, { cache: "no-store" }),
-        fetch("/api/geo/me", { cache: "no-store" }).catch(() => null),
+        fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
+          cache: "no-store",
+          signal: ac.signal,
+        }),
+        needGeo
+          ? fetch("/api/geo/me", { cache: "no-store", signal: ac.signal }).catch(() => null)
+          : Promise.resolve(null),
       ]);
+      if (isStale() || ac.signal.aborted) return;
+
       const json = serversRes.ok
         ? ((await serversRes.json()) as ApiResponse)
         : { supported: false, servers: [] };
       if (isStale()) return;
+
+      listCache.current.set(cacheKey, json);
+      if (listCache.current.size > 12) {
+        const oldest = listCache.current.keys().next().value;
+        if (oldest) listCache.current.delete(oldest);
+      }
+
       if (geoRes?.ok) {
         const geo = await geoRes.json();
+        viewerGeoFetched.current = true;
         setViewer({
           countryCode: geo.countryCode ?? null,
           lat: geo.lat ?? null,
           lon: geo.lon ?? null,
         });
+      } else if (needGeo) {
+        // Avoid hammering geo/me on every switch after a failure.
+        viewerGeoFetched.current = true;
       }
+
       let servers = Array.isArray(json.servers) ? json.servers : [];
       if (mod) {
         const filtered = filterServersForMod(servers, mod);
@@ -257,6 +304,8 @@ export function GlobalServerBrowser({
           setModNote(`No gameType match for ${mod.title} — showing all ${slug} servers.`);
         }
         servers = filtered.servers;
+      } else {
+        setModNote("");
       }
       setData({ ...json, servers });
       if (slug && lastViewedSlug.current !== slug) {
@@ -264,7 +313,8 @@ export function GlobalServerBrowser({
         void track("server_viewed", { gameSlug: slug });
       }
     } catch {
-      if (!isStale()) setData({ supported: false, servers: [] });
+      if (ac.signal.aborted || isStale()) return;
+      if (!cached) setData({ supported: false, servers: [] });
     } finally {
       if (!isStale()) setLoading(false);
     }
@@ -275,6 +325,9 @@ export function GlobalServerBrowser({
       ? mods.find((m) => m.slug === effectiveModSlug) || null
       : null;
     void loadServers(effectiveGameSlug, mod);
+    return () => {
+      abortRef.current?.abort();
+    };
   }, [effectiveGameSlug, effectiveModSlug, mods, loadServers]);
 
   const estFor = useCallback(
@@ -497,7 +550,7 @@ export function GlobalServerBrowser({
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center gap-1">
                         <Users className="size-3.5 text-muted-foreground" />
-                        {s.players}/{s.maxPlayers ?? "—"}
+                        {s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{s.map || "—"}</td>

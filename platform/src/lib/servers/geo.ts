@@ -175,8 +175,9 @@ function isUnknownCountryCode(code: string | null | undefined): boolean {
 
 function needsGeoLookup(location: ServerLocation | null): boolean {
   if (!location) return true;
-  if (isUnknownCountryCode(location.countryCode)) return true;
-  return location.lat == null || location.lon == null;
+  // Known country → fill Est. from centroid in refineLocation; skip ipwho.is.
+  if (!isUnknownCountryCode(location.countryCode)) return false;
+  return true;
 }
 
 function preferCountryCode(existing: string | undefined, looked: string | undefined): string {

@@ -1099,7 +1099,7 @@ function paintServersTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${escapeHtml(s.name)}</strong>${s.gameType ? `<div class="server-meta">${escapeHtml(s.gameType)}</div>` : ""}</td>
-      <td>${s.players ?? 0}/${s.maxPlayers ?? "—"}</td>
+      <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
       <td>${escapeHtml(s.map || "—")}</td>
       <td>${escapeHtml(formatServerLocation(s))}</td>
       <td class="ping-cell" data-ping-id="${escapeHtml(id)}">${pingLabel}</td>
@@ -1832,7 +1832,7 @@ async function renderGameDetailView(slug) {
                 (s) => `
               <tr>
                 <td><strong>${escapeHtml(s.name)}</strong></td>
-                <td>${s.players ?? 0}/${s.maxPlayers ?? 0}</td>
+                <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
                 <td>${escapeHtml(s.map || "Standard")}</td>
                 <td>
                   <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>

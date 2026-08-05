@@ -60,6 +60,7 @@ configured, failures return an error + empty list (no fake lobby row).
 | `zero-k` | ZKS TCP (presence; battles with credentials) |
 | `0ad` | XMPP MUC push (pointer without creds; full list with creds) |
 | `veloren` | HTTP serverlist + UDP query_port ServerInfo |
+| `openttd` | HTML listing + top-N detail enrich (~2 min) |
 
-HTTP-only titles (Beyond All Reason, OpenRA, OpenTTD, SuperTuxKart, …) are
+HTTP-only titles (Beyond All Reason, OpenRA, SuperTuxKart, …) are
 fetched directly by Vercel providers — not this service.
