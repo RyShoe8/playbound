@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   emptyGameMedia,
+  fetchGithubReadmeMedia,
   fetchSteamStoreMedia,
   fetchWebsiteMedia,
   inferSteamAppId,
@@ -22,6 +23,13 @@ const schema = z.object({
     .max(20)
     .optional()
     .nullable(),
+  githubRepo: z
+    .string()
+    .trim()
+    .regex(/^[\w.-]+\/[\w.-]+$/)
+    .max(120)
+    .optional()
+    .nullable(),
   slug: z.string().trim().max(80).optional().nullable(),
   coverImage: z.string().trim().max(500).optional().nullable(),
   screenshots: z.array(z.string().trim().max(500)).max(20).optional().nullable(),
@@ -40,10 +48,11 @@ export async function POST(req: Request) {
       screenshots: body.screenshots ?? undefined,
     });
     const url = body.url?.trim() || null;
+    const githubRepo = body.githubRepo?.trim() || null;
 
-    if (!steamAppId && !url) {
+    if (!steamAppId && !url && !githubRepo) {
       return NextResponse.json(
-        { error: "Provide a website URL, Steam app id, or media URLs that contain a Steam id" },
+        { error: "Provide a website URL, Steam app id, GitHub repo, or media URLs that contain a Steam id" },
         { status: 400 }
       );
     }
@@ -67,6 +76,15 @@ export async function POST(req: Request) {
       try {
         const site = await fetchWebsiteMedia(url);
         if (site) bundle = mergeGameMedia(bundle, site);
+      } catch {
+        /* soft-fail */
+      }
+    }
+
+    if (githubRepo && bundle.screenshots.length < 4) {
+      try {
+        const gh = await fetchGithubReadmeMedia(githubRepo);
+        if (gh) bundle = mergeGameMedia(bundle, gh);
       } catch {
         /* soft-fail */
       }

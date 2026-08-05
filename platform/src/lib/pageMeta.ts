@@ -1,7 +1,11 @@
 /** Shared HTML / Open Graph helpers for admin import + media fetch. */
 
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
-import { isScreenshotCandidate, readImgPixelSize } from "@/lib/mediaImageFilter";
+import {
+  isScreenshotCandidate,
+  pickLargestSrcset,
+  readImgPixelSize,
+} from "@/lib/mediaImageFilter";
 
 export function stripHtml(html: string): string {
   return html
@@ -77,6 +81,9 @@ const BROWSER_HEADERS: Record<string, string> = {
   "accept-language": "en-US,en;q=0.9",
 };
 
+const CONTENT_PATH_RE =
+  /\/(?:screenshot|gallery|media|features|about|news|blog|showcase|press)(?:s)?(?:\/|$|\?)/i;
+
 /**
  * Rejects anything that is not a public http(s) endpoint.
  *
@@ -142,6 +149,24 @@ function pushVideo(out: string[], raw: string | null | undefined, baseUrl?: stri
   out.push(normalized);
 }
 
+function pushImage(
+  out: string[],
+  raw: string | null | undefined,
+  baseUrl: string,
+  opts?: { requireRaster?: boolean; width?: number | null; height?: number | null }
+) {
+  if (!raw?.trim() || raw.startsWith("data:")) return;
+  let abs: string;
+  try {
+    abs = absoluteUrl(baseUrl, raw.trim());
+  } catch {
+    return;
+  }
+  if (!isScreenshotCandidate(abs, opts ?? { requireRaster: true })) return;
+  if (out.includes(abs)) return;
+  out.push(abs);
+}
+
 function parsePageMeta(html: string, finalUrl: string): PageMeta {
   const ogTitle = metaContent(html, "og:title");
   const twTitle = metaContent(html, "twitter:title");
@@ -155,14 +180,7 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
 
   const images: string[] = [];
   for (const key of ["og:image", "twitter:image", "twitter:image:src"]) {
-    const raw = metaContent(html, key);
-    if (raw) {
-      const abs = absoluteUrl(finalUrl, raw);
-      // OG/cover: allow non-raster hosts, still drop social/junk-named URLs.
-      if (isScreenshotCandidate(abs, { requireRaster: false }) && !images.includes(abs)) {
-        images.push(abs);
-      }
-    }
+    pushImage(images, metaContent(html, key), finalUrl, { requireRaster: false });
   }
   for (const abs of collectBodyImages(html, finalUrl)) {
     if (!images.includes(abs)) images.push(abs);
@@ -193,26 +211,99 @@ function parsePageMeta(html: string, finalUrl: string): PageMeta {
   };
 }
 
-/** Pull large-looking <img> URLs from HTML body beyond OG tags. */
+/** Pull gallery-ish URLs from <img>, video posters, and srcset. */
 function collectBodyImages(html: string, finalUrl: string): string[] {
   const out: string[] = [];
+
   for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
     const tag = m[0];
+    const { width, height } = readImgPixelSize(tag);
+    const srcset = tag.match(/\bsrcset=["']([^"']+)["']/i)?.[1];
+    if (srcset) {
+      pushImage(out, pickLargestSrcset(srcset), finalUrl, { requireRaster: true, width, height });
+    }
     const src = tag.match(/\bsrc=["']([^"']+)["']/i)?.[1]?.trim();
-    if (!src || src.startsWith("data:")) continue;
-    let abs: string;
+    pushImage(out, src, finalUrl, { requireRaster: true, width, height });
+    if (out.length >= 20) return out;
+  }
+
+  for (const m of html.matchAll(/<video\b[^>]*>/gi)) {
+    const poster = m[0].match(/\bposter=["']([^"']+)["']/i)?.[1];
+    pushImage(out, poster, finalUrl, { requireRaster: true });
+    if (out.length >= 20) return out;
+  }
+
+  for (const m of html.matchAll(/<source\b[^>]*?\bsrcset=["']([^"']+)["'][^>]*>/gi)) {
+    pushImage(out, pickLargestSrcset(m[1]), finalUrl, { requireRaster: true });
+    if (out.length >= 20) return out;
+  }
+
+  return out;
+}
+
+/** Same-origin content pages that may hold galleries when the homepage is thin. */
+function collectContentLinks(html: string, baseUrl: string): string[] {
+  let origin: string;
+  try {
+    origin = new URL(baseUrl).origin;
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const m of html.matchAll(/<a\b[^>]*?\bhref=["']([^"'#]+)["']/gi)) {
+    const raw = m[1]?.trim();
+    if (!raw || raw.startsWith("mailto:") || raw.startsWith("javascript:")) continue;
+    let abs: URL;
     try {
-      abs = absoluteUrl(finalUrl, src);
+      abs = assertPublicHttpUrl(new URL(raw, baseUrl).toString());
     } catch {
       continue;
     }
-    const { width, height } = readImgPixelSize(tag);
-    if (!isScreenshotCandidate(abs, { requireRaster: true, width, height })) continue;
-    if (out.includes(abs)) continue;
-    out.push(abs);
-    if (out.length >= 20) break;
+    if (abs.origin !== origin) continue;
+    if (!CONTENT_PATH_RE.test(abs.pathname)) continue;
+    const href = `${abs.origin}${abs.pathname}`.replace(/\/$/, "") || abs.origin;
+    const baseNorm = baseUrl.replace(/\/$/, "");
+    if (href === baseNorm || href === baseUrl) continue;
+    if (out.includes(href)) continue;
+    out.push(href);
+    if (out.length >= 8) break;
   }
   return out;
+}
+
+async function enrichWithRelatedPages(meta: PageMeta, html: string, finalUrl: string): Promise<PageMeta> {
+  if (meta.images.length >= 4) return meta;
+  const links = collectContentLinks(html, finalUrl).slice(0, 3);
+  if (!links.length) return meta;
+
+  const images = [...meta.images];
+  const videos = [...meta.videos];
+
+  for (const link of links) {
+    try {
+      const page = await fetchDirectHtml(assertPublicHttpUrl(link));
+      if (!page || page.status < 200 || page.status >= 300) continue;
+      if (looksLikeCheckpoint(page.html)) continue;
+      const extra = parsePageMeta(page.html, page.finalUrl);
+      for (const img of extra.images) {
+        if (!images.includes(img)) images.push(img);
+        if (images.length >= 20) break;
+      }
+      for (const v of extra.videos) {
+        if (!videos.includes(v)) videos.push(v);
+        if (videos.length >= 10) break;
+      }
+      if (images.length >= 20) break;
+    } catch {
+      /* soft-fail related page */
+    }
+  }
+
+  return {
+    ...meta,
+    images: images.slice(0, 20),
+    videos: videos.slice(0, 10),
+  };
 }
 
 const ATTR_URL_RES = [
@@ -255,7 +346,7 @@ function collectVideosFromText(text: string): string[] {
   return out;
 }
 
-function parseJinaMarkdown(text: string, sourceUrl: string): PageMeta | null {
+function parseJinaMarkdown(text: string, _sourceUrl: string): PageMeta | null {
   const titleMatch = text.match(/^Title:\s*(.+)$/im);
   const title = (titleMatch?.[1] || "").trim().slice(0, 120);
   if (!title || /security checkpoint|just a moment|access denied/i.test(title)) return null;
@@ -361,8 +452,9 @@ export async function tryFetchPageMeta(url: string): Promise<PageMetaResult> {
     const blockedStatus = direct.status === 429 || direct.status === 403 || direct.status === 503;
     const checkpoint = looksLikeCheckpoint(direct.html);
     if (direct.status >= 200 && direct.status < 300 && !checkpoint) {
-      const meta = parsePageMeta(direct.html, direct.finalUrl);
+      let meta = parsePageMeta(direct.html, direct.finalUrl);
       if (metaIsUsable(meta)) {
+        meta = await enrichWithRelatedPages(meta, direct.html, direct.finalUrl);
         return { ok: true, meta, via: "direct" };
       }
     }
