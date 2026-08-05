@@ -1130,7 +1130,7 @@ function paintServersTable() {
         try {
           const res = await window.playbound.install(slug);
           if (res.status === "installer-opened") {
-            setStatus("Installer opened — searching your drives for the game…");
+            setStatus("Installer opened — waiting for installer to finish…");
             setProgress(null);
             openGameDetail(slug, currentView);
             return;
@@ -1614,7 +1614,7 @@ async function renderGameDetailView(slug) {
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "installer-opened") {
-          setStatus("Installer opened — searching your drives for the game…");
+          setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "external") {
@@ -1642,7 +1642,7 @@ async function renderGameDetailView(slug) {
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "installer-opened") {
-          setStatus("Installer opened — searching your drives for the game…");
+          setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);
           renderGameDetailView(slug);
         } else if (res.status === "external") {
@@ -1911,7 +1911,7 @@ function renderDeepLinkView(ctx) {
       try {
         const res = await window.playbound.install(ctx.slug);
         if (res.status === "installer-opened") {
-          setStatus("Installer opened — searching your drives for the game…");
+          setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);
           openGameDetail(ctx.slug, "deepLink");
           return;

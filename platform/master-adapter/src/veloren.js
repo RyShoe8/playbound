@@ -143,18 +143,33 @@ export async function pollVeloren() {
   const rows = Array.isArray(data?.servers) ? data.servers : [];
 
   const infos = await mapPool(rows.slice(0, MAX_SERVERS), 12, async (row) => {
-    const queryPort = Number(row.query_port);
     if (!row.address || !row.port) return { row, info: null };
-    if (!Number.isFinite(queryPort) || queryPort <= 0) return { row, info: null };
-    const info = await queryServerInfo(String(row.address), queryPort);
+    const gamePort = Number(row.port);
+    const listed = Number(row.query_port);
+    // Official list often omits query_port; Airshipper defaults query to 14006.
+    const candidates = [];
+    if (Number.isFinite(listed) && listed > 0) candidates.push(listed);
+    if (!candidates.includes(14006)) candidates.push(14006);
+    if (Number.isFinite(gamePort) && gamePort > 0) {
+      const plus2 = gamePort + 2;
+      if (!candidates.includes(plus2)) candidates.push(plus2);
+    }
+
+    let info = null;
+    for (const qp of candidates) {
+      info = await queryServerInfo(String(row.address), qp);
+      if (info) break;
+    }
     return { row, info };
   });
 
   /** @type {import('./types.js').GameServer[]} */
   const servers = [];
+  let enriched = 0;
   for (const entry of infos) {
     if (!entry?.row) continue;
     const { row, info } = entry;
+    if (info) enriched += 1;
     const host = await resolveHost(String(row.address));
     const port = Number(row.port);
     const modeParts = [];
@@ -177,6 +192,8 @@ export async function pollVeloren() {
       protected: false,
     });
   }
+
+  console.log(`[veloren] enriched ${enriched}/${servers.length} servers with player counts`);
 
   servers.sort(
     (a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name)

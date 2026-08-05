@@ -49,10 +49,12 @@ export const GAMES = [
     kind: "dpmaster",
     masterHost: "master.unvanquished.net",
     masterPort: 27950,
-    query: "getserversExt Unvanquished 86 empty full ipv4",
-    altQueries: ["getservers 86 empty full"],
+    // Plain getservers is more reliable than Ext+ipv4 against this master.
+    query: "getservers 86 empty full",
+    altQueries: ["getserversExt Unvanquished 86 empty full ipv4", "getserversExt Unvanquished 86 empty full"],
     nameKeys: ["sv_hostname", "hostname", "host"],
-    gamenameAllow: /unvanquished|tremulous/i,
+    // Daemon getinfo reports gamename=unv (not "unvanquished").
+    gamenameAllow: /\bunv\b|unvanquished|tremulous/i,
     gamenameDeny: /mineclonia|minetest|luanti/i,
   },
   { slug: "mindustry", kind: "mindustry", source: "github:MindustryServerList" },
@@ -102,7 +104,8 @@ function pickPlayers(info) {
   if (!Number.isFinite(clients)) {
     clients = Number(info._statusPlayers ?? 0) || 0;
   }
-  const bots = Number(info.bots ?? info.sv_privateClients ?? NaN);
+  // Only subtract real bot counters — sv_privateClients is private slots, not bots.
+  const bots = Number(info.bots ?? info.bot_count ?? info.g_bots ?? NaN);
   if (Number.isFinite(bots) && bots > 0) {
     clients = Math.max(0, clients - bots);
   }

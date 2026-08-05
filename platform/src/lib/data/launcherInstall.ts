@@ -103,6 +103,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     fileName: "airshipper-installer.exe",
     versionLabel: "0.17.0",
     note: "Installs Airshipper, which downloads and updates Veloren.",
+    exeHint: "airshipper",
+    registryTitles: ["Airshipper", "Veloren"],
     knownExePaths: [
       "%LOCALAPPDATA%\\Programs\\Airshipper\\airshipper.exe",
       "%LOCALAPPDATA%\\airshipper\\airshipper.exe",
