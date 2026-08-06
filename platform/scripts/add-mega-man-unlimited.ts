@@ -1,16 +1,20 @@
 /**
  * Add Mega Man Unlimited (and its Xbox controller config mod) to the catalog.
  *
- * A one-off, not part of the build. `seed:games` deliberately skips entirely
- * once the catalog has any games in it, so adding an entry to the static seed
- * file would never reach an existing database — this writes directly instead.
+ * `seed:games` deliberately skips entirely once the catalog has any games in
+ * it, so adding an entry to the static seed file would never reach an existing
+ * database — this writes directly instead.
  *
- * Idempotent: every write is an upsert keyed on slug, so re-running it updates
- * rather than duplicating, and it will not clobber unrelated records.
+ * INSERT-ONLY. A record that already exists is left completely alone, matching
+ * seed:developers and seed:collections. That is what makes it safe to run on
+ * every deploy: an upsert would rewrite these three records from the values
+ * hardcoded below, so publishing the game or fixing its release year in the
+ * admin would be silently reverted by the next deploy.
  *
  * Usage:
  *   npx tsx scripts/add-mega-man-unlimited.ts            # dry run
  *   npx tsx scripts/add-mega-man-unlimited.ts --apply
+ *   npx tsx scripts/add-mega-man-unlimited.ts --apply --soft-fail   # the build
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -107,8 +111,10 @@ async function main() {
   const apply = process.argv.includes("--apply");
 
   if (!process.env.MONGODB_URI) {
-    console.error("MONGODB_URI is not set — point it at the target database and retry.");
-    process.exit(1);
+    // Matches the seed scripts: a build without a database is a normal
+    // situation (a fork, a preview without secrets), not a failure.
+    console.warn("add:mega-man-unlimited skipped — MONGODB_URI is not set.");
+    process.exit(0);
   }
 
   const dbConnect = (await import("../src/lib/db")).default;
@@ -123,32 +129,51 @@ async function main() {
   const existingGame = await CatalogGame.findOne({ slug: GAME.slug }).lean();
   const existingMod = await CatalogMod.findOne({ slug: MOD.slug }).lean();
 
-  plan.push(`${existingDev ? "update" : "create"} developer  ${DEVELOPER.slug}`);
-  plan.push(`${existingGame ? "update" : "create"} game       ${GAME.slug}  (${GAME.sizeMB} MB)`);
-  plan.push(`${existingMod ? "update" : "create"} mod        ${MOD.slug}`);
+  plan.push(`${existingDev ? "SKIP (exists)" : "create"} developer  ${DEVELOPER.slug}`);
+  plan.push(`${existingGame ? "SKIP (exists)" : "create"} game       ${GAME.slug}  (${GAME.sizeMB} MB)`);
+  plan.push(`${existingMod ? "SKIP (exists)" : "create"} mod        ${MOD.slug}`);
 
-  console.log(apply ? "Applying:" : "DRY RUN — would apply (pass --apply to write):");
+  console.log(apply ? "add:mega-man-unlimited —" : "add:mega-man-unlimited — DRY RUN (pass --apply to write):");
   for (const line of plan) console.log(`  ${line}`);
 
   if (!apply) {
     process.exit(0);
   }
 
-  await Developer.findOneAndUpdate(
-    { slug: DEVELOPER.slug },
-    { $set: DEVELOPER },
-    { upsert: true, new: true }
-  );
-  await CatalogGame.findOneAndUpdate({ slug: GAME.slug }, { $set: GAME }, { upsert: true, new: true });
-  await CatalogMod.findOneAndUpdate({ slug: MOD.slug }, { $set: MOD }, { upsert: true, new: true });
+  // Create only. An existing record is never touched — see the header.
+  let created = 0;
+  if (!existingDev) {
+    await Developer.create(DEVELOPER);
+    created++;
+  }
+  if (!existingGame) {
+    await CatalogGame.create(GAME);
+    created++;
+  }
+  if (!existingMod) {
+    await CatalogMod.create(MOD);
+    created++;
+  }
 
-  console.log("\nDone. Both are drafts — publish them from the admin once reviewed.");
+  if (created === 0) {
+    console.log("  Nothing to do — all three already exist.");
+    process.exit(0);
+  }
+
+  console.log(`\nCreated ${created} record(s). Both are drafts — publish from the admin once reviewed.`);
   console.log(`  Game:  /admin/games/${GAME.slug}/edit`);
   console.log(`  Mod:   /admin/mods/${MOD.slug}/edit`);
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error("add-mega-man-unlimited failed:", err);
+  console.error("add:mega-man-unlimited failed:", err);
+
+  // The deploy passes --soft-fail so a database blip cannot block a release
+  // over a catalog addition. Insert-only, so the next deploy simply retries.
+  if (process.argv.includes("--soft-fail")) {
+    console.error("add:mega-man-unlimited: continuing anyway (--soft-fail).");
+    process.exit(0);
+  }
   process.exit(1);
 });
