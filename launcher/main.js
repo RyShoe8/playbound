@@ -2057,7 +2057,16 @@ async function placeModFiles(slug, install, baseDirOverride) {
   const backups = [];
   const written = [];
 
-  const isZip = /\.zip$/i.test(dl.name) || install.downloadKind === "github-zip" || install.downloadKind === "direct-zip";
+  /**
+   * Decided by the file itself, not by downloadKind.
+   *
+   * downloadKind only offers github-zip / direct-zip / external, so a mod that
+   * ships a single loose file — a controller config, say — had to be marked as
+   * a zip kind and was then handed to Expand-Archive, which cannot extract a
+   * non-archive and failed. Existing mods still route to extraction because
+   * their assets really are .zip files; anything else is now copied into place.
+   */
+  const isZip = /\.zip$/i.test(dl.name);
   if (isZip && !/\.jar$/i.test(dl.name)) {
     sendProgress({ phase: "extracting" });
     await extractZip(downloadPath, targetDir);
