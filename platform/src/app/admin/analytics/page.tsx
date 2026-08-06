@@ -1,6 +1,8 @@
 import Link from "next/link";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import User from "@/lib/models/User";
+import { Types } from "mongoose";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
 
 type SearchParams = Promise<{
@@ -111,6 +113,16 @@ async function loadAnalytics(filters: {
     }).then((ids) => ids.length),
   ]);
 
+  const uniqueUserIds = Array.from(new Set(recent.map((doc: any) => doc.userId).filter(Boolean)))
+    .filter((id: any) => typeof id === "string" && Types.ObjectId.isValid(id));
+  const users = await User.find({ _id: { $in: uniqueUserIds } }).select("username").lean();
+  const usernameMap = new Map(users.map((u: any) => [String(u._id), u.username]));
+
+  const recentWithUsernames = recent.map((doc: any) => ({
+    ...doc,
+    username: doc.userId ? usernameMap.get(doc.userId) || null : null
+  }));
+
   return {
     eventsToday,
     events7d,
@@ -119,7 +131,7 @@ async function loadAnalytics(filters: {
     identifiedUsers7d,
     topEvents,
     dailyVolume,
-    recent,
+    recent: recentWithUsernames,
     eventsTodayPrev,
     events7dPrev,
     events30dPrev,
@@ -370,7 +382,7 @@ export default async function AdminAnalyticsPage({
                           {pathFromEvent(doc)}
                         </td>
                         <td className="px-4 py-2.5 font-mono text-xs">
-                          {doc.userId || "—"}
+                          {doc.username || doc.userId || "—"}
                         </td>
                         <td className="px-4 py-2.5">{doc.country || "—"}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">
