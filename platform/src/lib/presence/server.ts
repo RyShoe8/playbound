@@ -6,7 +6,9 @@ import {
   normalizePage,
   STALE_AFTER_MS,
   type ClientReportableStatus,
+  PRESENCE_OS,
   type PresenceDevice,
+  type PresenceOs,
   type PresencePlatform,
 } from "@/lib/presence/types";
 
@@ -49,6 +51,39 @@ export function detectDevice(
   return deviceTypeFromUaDevice(null) as PresenceDevice;
 }
 
+/**
+ * Operating system from the User-Agent.
+ *
+ * Separate from device on purpose: a MacBook is macOS *and* a desktop, and
+ * Stage 2 wants the OS to answer "can this friend run what I'm inviting them
+ * to" — a question form factor cannot answer.
+ *
+ * The launcher states its OS explicitly in its User-Agent
+ * (`playbound-launcher/0.1.33 (macos; arm64)`), so that is checked first and
+ * trusted over browser sniffing.
+ */
+export function detectOs(userAgent: string | null | undefined): PresenceOs {
+  const ua = userAgent || "";
+
+  const launcher = /playbound-launcher\/\S+\s*\(([^;)]+)/i.exec(ua);
+  if (launcher) {
+    const reported = launcher[1].trim().toLowerCase();
+    if ((PRESENCE_OS as readonly string[]).includes(reported)) {
+      return reported as PresenceOs;
+    }
+  }
+
+  // Order matters: iOS and Android must be tested before the desktop families,
+  // since both carry tokens ("like Mac OS X", "Linux") that would otherwise
+  // match first.
+  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  if (/Windows/i.test(ua)) return "windows";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "macos";
+  if (/Linux|X11|CrOS/i.test(ua)) return "linux";
+  return "unknown";
+}
+
 export interface PresenceContext {
   userId: string;
   userAgent: string | null;
@@ -75,6 +110,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
   const now = new Date();
   const platform = detectPlatform(ctx.userAgent);
   const device = detectDevice(ctx.userAgent, platform);
+  const os = detectOs(ctx.userAgent);
   const page = normalizePage(update.page);
 
   await Presence.findOneAndUpdate(
@@ -84,6 +120,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
         status: update.status ?? "online",
         platform,
         device,
+        os,
         currentPage: page,
         currentGameId: update.gameId ?? null,
         currentEditionId: update.editionId ?? null,
@@ -103,7 +140,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
       { $set: { lastHeartbeat: now } },
       { new: true }
     );
-    if (existing) return { platform, device, sessionId };
+    if (existing) return { platform, device, os, sessionId };
   }
 
   // No usable session — open one. crypto.randomUUID is available in the Node
@@ -114,6 +151,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
     userId: ctx.userId,
     platform,
     device,
+    os,
     status: "active",
     startedAt: now,
     lastHeartbeat: now,
@@ -121,7 +159,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
     userAgent: ctx.userAgent?.slice(0, 500) ?? null,
   });
 
-  return { platform, device, sessionId };
+  return { platform, device, os, sessionId };
 }
 
 /**

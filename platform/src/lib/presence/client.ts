@@ -175,6 +175,7 @@ export async function startPresence(initial: HeartbeatPayload) {
       sessionId: string;
       platform: "web" | "launcher" | "mobile" | "tv";
       device: "desktop" | "tablet" | "mobile" | "launcher";
+      os?: string;
       heartbeatIntervalMs?: number;
     };
 
