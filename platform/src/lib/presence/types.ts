@@ -70,9 +70,31 @@ export type PresencePlatform = (typeof PRESENCE_PLATFORMS)[number];
 /**
  * Device form factor. Mirrors DeviceType in lib/compatibility plus "launcher",
  * which is a distinct experience rather than a screen size.
+ *
+ * Operating system is deliberately NOT in here. A MacBook is both macOS and a
+ * desktop, so folding the two axes into one enum makes it impossible to say
+ * both — see PRESENCE_OS below.
  */
-export const PRESENCE_DEVICES = ["desktop", "macos", "tablet", "mobile", "launcher"] as const;
+export const PRESENCE_DEVICES = ["desktop", "tablet", "mobile", "launcher"] as const;
 export type PresenceDevice = (typeof PRESENCE_DEVICES)[number];
+
+/**
+ * Operating system, tracked separately from form factor.
+ *
+ * Useful to Stage 2 on its own terms: "can this friend actually run the game
+ * I'm inviting them to" is an OS question, not a screen-size one. The launcher
+ * reports it in its User-Agent (`playbound-launcher/x.y.z (macos; arm64)`);
+ * browsers are sniffed.
+ */
+export const PRESENCE_OS = [
+  "windows",
+  "macos",
+  "linux",
+  "ios",
+  "android",
+  "unknown",
+] as const;
+export type PresenceOs = (typeof PRESENCE_OS)[number];
 
 export const PLATFORM_SESSION_STATUSES = ["active", "ended"] as const;
 export type PlatformSessionStatus = (typeof PLATFORM_SESSION_STATUSES)[number];
@@ -94,6 +116,7 @@ export interface PresenceState {
   status: PresenceStatus;
   platform: PresencePlatform;
   device: PresenceDevice;
+  os: PresenceOs;
   currentGameId?: string | null;
   currentEditionId?: string | null;
   currentPage?: string | null;

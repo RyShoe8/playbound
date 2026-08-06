@@ -1,6 +1,7 @@
 import { Schema, model, models, type Types } from "mongoose";
 import {
   PRESENCE_DEVICES,
+  PRESENCE_OS,
   PRESENCE_PLATFORMS,
   PRESENCE_STATUSES,
 } from "@/lib/presence/types";
@@ -33,6 +34,8 @@ const PresenceSchema = new Schema(
       index: true,
     },
     platform: { type: String, enum: PRESENCE_PLATFORMS, default: "web" },
+    /** Operating system, tracked separately from form factor. */
+    os: { type: String, enum: PRESENCE_OS, default: "unknown", index: true },
     device: { type: String, enum: PRESENCE_DEVICES, default: "desktop" },
 
     /** Game/edition currently being viewed or played. Slugs, matching routing. */
@@ -68,6 +71,7 @@ export type PresenceDoc = {
   status: string;
   platform: string;
   device: string;
+  os?: string;
   currentGameId?: string | null;
   currentEditionId?: string | null;
   currentPage?: string | null;

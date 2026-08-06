@@ -2,6 +2,7 @@ import { Schema, model, models, type Types } from "mongoose";
 import {
   PLATFORM_SESSION_STATUSES,
   PRESENCE_DEVICES,
+  PRESENCE_OS,
   PRESENCE_PLATFORMS,
 } from "@/lib/presence/types";
 
@@ -27,6 +28,8 @@ const PlatformSessionSchema = new Schema(
       index: true,
     },
     platform: { type: String, enum: PRESENCE_PLATFORMS, default: "web", index: true },
+    /** Operating system, tracked separately from form factor. */
+    os: { type: String, enum: PRESENCE_OS, default: "unknown" },
     device: { type: String, enum: PRESENCE_DEVICES, default: "desktop" },
     status: {
       type: String,
@@ -63,6 +66,7 @@ export type PlatformSessionDoc = {
   userId: Types.ObjectId;
   platform: string;
   device: string;
+  os?: string;
   status: string;
   startedAt: Date;
   endedAt?: Date | null;
