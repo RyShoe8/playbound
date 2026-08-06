@@ -27,6 +27,25 @@ export const GENRES = [
 
 export const LAUNCH_METHODS = ["browser", "install", "server"] as const;
 
+/**
+ * Drop array entries that are not in a closed set, instead of rejecting the
+ * whole payload.
+ *
+ * A stored value outside the set is unfixable through the admin: the form only
+ * renders checkboxes for values it knows, so an unrecognised one cannot be
+ * seen or unticked, yet it is still submitted and still fails validation. The
+ * record becomes permanently unsaveable — the error names the valid options
+ * while the field appears to already hold one of them.
+ *
+ * Filtering makes bad data self-healing: the next save quietly discards it.
+ * Genuinely empty selections are still caught by the schema's own min() rule.
+ */
+function dropUnknown(allowed: readonly string[]) {
+  const set = new Set(allowed);
+  return (value: unknown) =>
+    Array.isArray(value) ? value.filter((v) => typeof v === "string" && set.has(v)) : value;
+}
+
 export const PLATFORMS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"] as const;
 
 export const FEATURES = [
@@ -202,7 +221,7 @@ export const gamePayloadSchema = z.object({
   description: z.string().trim().min(1).max(8000),
   developerSlug: z.string().trim().min(1).max(80),
   developerName: z.string().trim().max(120).optional().nullable(),
-  genres: z.array(z.enum(GENRES)).default([]),
+  genres: z.preprocess(dropUnknown(GENRES), z.array(z.enum(GENRES)).default([])),
   tags: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
   aliases: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
   license: z.string().trim().min(1).max(120),
@@ -210,7 +229,10 @@ export const gamePayloadSchema = z.object({
   sizeMB: z.number().min(0).max(1_000_000),
   platforms: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
   features: z.array(z.string().trim().min(1).max(60)).max(40).default([]),
-  launchMethods: z.array(z.enum(LAUNCH_METHODS)).min(1),
+  launchMethods: z.preprocess(
+    dropUnknown(LAUNCH_METHODS),
+    z.array(z.enum(LAUNCH_METHODS)).min(1, "Pick at least one launch method")
+  ),
   browserPlayable: z.boolean().default(false),
   steamDeck: z.boolean().default(false),
   website: z.string().trim().url().max(500),
