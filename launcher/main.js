@@ -2041,6 +2041,22 @@ async function placeModFiles(slug, install, baseDirOverride) {
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", "mods", dl.name);
   await downloadTo(dl.url, downloadPath);
 
+  /**
+   * Files this mod replaced, and where the originals were parked.
+   *
+   * Some mods are not additive — a controller config, for example, overwrites
+   * a file the game shipped. Without a copy of the original, uninstalling
+   * would leave the game permanently modded. Recorded in state so uninstall
+   * can put things back.
+   *
+   * Only the single-file path backs up today. Doing the same for archives
+   * means enumerating the zip before extracting to learn which paths it will
+   * clobber, which is a bigger change than any current mod needs — zip mods
+   * behave exactly as they did before.
+   */
+  const backups = [];
+  const written = [];
+
   const isZip = /\.zip$/i.test(dl.name) || install.downloadKind === "github-zip" || install.downloadKind === "direct-zip";
   if (isZip && !/\.jar$/i.test(dl.name)) {
     sendProgress({ phase: "extracting" });
@@ -2048,6 +2064,19 @@ async function placeModFiles(slug, install, baseDirOverride) {
   } else {
     sendProgress({ phase: "extracting" });
     const dest = path.join(targetDir, path.basename(dl.name));
+    if (fs.existsSync(dest)) {
+      const backupPath = `${dest}.playbound-backup`;
+      // Never overwrite an existing backup: reinstalling the mod would
+      // otherwise replace the pristine original with the modded copy.
+      if (!fs.existsSync(backupPath)) {
+        await fsp.copyFile(dest, backupPath);
+      }
+      backups.push({ path: dest, backup: backupPath });
+    } else {
+      // Nothing was there, so the mod added this file and uninstall should
+      // take it away again.
+      written.push(dest);
+    }
     await fsp.copyFile(downloadPath, dest);
   }
   await fsp.rm(downloadPath, { force: true });
@@ -2064,6 +2093,8 @@ async function placeModFiles(slug, install, baseDirOverride) {
     installedAt: new Date().toISOString(),
     ...(exe ? { exe } : {}),
     ...(portable ? { portable: true } : {}),
+    ...(backups.length > 0 ? { backups } : {}),
+    ...(written.length > 0 ? { written } : {}),
   };
   saveState(state);
   void syncLibrary(slug, "install", dl.version, {
@@ -2463,12 +2494,39 @@ async function uninstallMod(slug) {
   if (!state.__mods__ || !state.__mods__[slug]) return { status: "not-installed" };
   const info = state.__mods__[slug];
   const baseGameSlug = info.baseGameSlug || null;
+
+  /**
+   * Put back anything this mod overwrote, and remove what it added.
+   *
+   * Best effort: a missing backup or a locked file must not stop the mod being
+   * removed from the library, or it becomes impossible to uninstall.
+   */
+  let restored = 0;
+  for (const entry of Array.isArray(info.backups) ? info.backups : []) {
+    try {
+      if (entry?.backup && fs.existsSync(entry.backup)) {
+        await fsp.copyFile(entry.backup, entry.path);
+        await fsp.rm(entry.backup, { force: true });
+        restored++;
+      }
+    } catch (err) {
+      console.warn(`[mod] restore failed for ${entry?.path}:`, err?.message || err);
+    }
+  }
+  for (const file of Array.isArray(info.written) ? info.written : []) {
+    try {
+      await fsp.rm(file, { force: true });
+    } catch (err) {
+      console.warn(`[mod] cleanup failed for ${file}:`, err?.message || err);
+    }
+  }
+
   delete state.__mods__[slug];
   saveState(state);
   if (baseGameSlug) {
     void syncLibrary(slug, "uninstall", undefined, { kind: "mod", baseGameSlug });
   }
-  return { status: "uninstalled", dir: info.dir || null, baseGameSlug };
+  return { status: "uninstalled", dir: info.dir || null, baseGameSlug, restored };
 }
 
 function sanitizeShortcutName(name) {
