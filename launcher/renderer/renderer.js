@@ -131,6 +131,35 @@ function buildActivityPanelHtml(stats, title = "Activity") {
     </aside>`;
 }
 
+/**
+ * Placeholder shown while live stats are in flight.
+ *
+ * Mirrors the real card's structure — same wrapper, same four-cell grid, same
+ * popular list and footer — so the slot reserves its final height instead of
+ * collapsing to nothing and shoving the header down when data lands. The
+ * labels are real; only the values are pending, which reads as loading rather
+ * than as broken.
+ */
+function buildCatalogStatsSkeletonHtml() {
+  const cell = (label) =>
+    `<div><dt>${label}</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>`;
+  const popularRow = `<li><span class="stat-skeleton stat-skeleton-line" aria-hidden="true"></span></li>`;
+  return `
+    <aside class="catalog-stats-card" aria-busy="true">
+      <dl class="catalog-stats-grid">
+        ${cell("Games")}
+        ${cell("Mods")}
+        ${cell("Editions")}
+        ${cell("Active Players")}
+      </dl>
+      <div class="catalog-stats-popular">
+        <h3>Most Popular Right Now</h3>
+        <ol>${popularRow.repeat(3)}</ol>
+      </div>
+      <p class="catalog-stats-footer">Across supported games • Updated every 15 min</p>
+    </aside>`;
+}
+
 function buildCatalogStatsCardHtml(live) {
   if (!live) {
     return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable offline.</p></aside>`;
@@ -442,8 +471,11 @@ async function renderHomeView() {
     window.playbound.getCatalog(),
   ]);
 
-  // Filled in asynchronously below; the slot keeps its placeholder until then.
+  // Reserve the card's space up front so the header does not jump when the
+  // real numbers arrive.
   const statsSlot = document.getElementById("home-stats-slot");
+  if (statsSlot) statsSlot.innerHTML = buildCatalogStatsSkeletonHtml();
+
   void (async () => {
     const live = await (window.playbound.getLiveStats?.() ?? Promise.resolve(null));
     // The user may have navigated away while this was in flight, in which case
