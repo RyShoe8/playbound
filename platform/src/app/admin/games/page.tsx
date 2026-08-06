@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllGames } from "@/lib/catalog";
 import { editionCountsByGame } from "@/lib/editions";
-import { GameArt } from "@/components/GameArt";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
+import { AdminGamesTable } from "@/components/admin/AdminGamesTable";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
@@ -29,72 +29,10 @@ export default async function AdminGamesPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead>
-            <tr className="border-b border-border bg-secondary/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-              <th className="px-4 py-3 font-semibold">Game</th>
-              <th className="px-4 py-3 font-semibold">Slug</th>
-              <th className="px-4 py-3 font-semibold">Installs</th>
-              <th className="px-4 py-3 font-semibold">Version</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Updated</th>
-              <th className="px-4 py-3 font-semibold" />
-            </tr>
-          </thead>
-          <tbody>
-            {games.map((g) => (
-              <tr key={g.slug} className="border-b border-border bg-card last:border-0">
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <GameArt game={g} showTitle={false} iconSize="sm" className="size-8 rounded-md" />
-                    <span className="font-semibold">{g.title}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 text-muted-foreground">{g.slug}</td>
-                <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
-                  {g.installCount ?? 0}
-                </td>
-                <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
-                  {g.launcherInstall?.detectedVersion || g.launcherInstall?.versionLabel || "—"}
-                </td>
-                <td className="px-4 py-2.5">
-                  <span
-                    className={
-                      g.status === "published"
-                        ? "font-semibold text-primary"
-                        : g.status === "testing"
-                          ? "font-semibold text-amber-600 dark:text-amber-300"
-                          : "text-muted-foreground"
-                    }
-                  >
-                    {g.status === "published" ? "Published" : g.status === "testing" ? "Testing" : "Draft"}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-muted-foreground">
-                  {g.updatedAt ? new Date(g.updatedAt).toLocaleString() : "—"}
-                </td>
-                <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                  <Link
-                    href={`/admin/games/${g.slug}/editions`}
-                    className="mr-3 text-xs font-semibold text-muted-foreground hover:underline"
-                  >
-                    Editions
-                    {(editionCounts.get(g.slug) ?? 0) > 0 && (
-                      <span className="ml-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold">
-                        {editionCounts.get(g.slug)}
-                      </span>
-                    )}
-                  </Link>
-                  <Link href={`/admin/games/${g.slug}/edit`} className="font-semibold text-primary hover:underline">
-                    Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Rows and search live in a client component so filtering is instant.
+          A Map cannot cross the server/client boundary, so counts are passed
+          as a plain object. */}
+      <AdminGamesTable games={games} editionCounts={Object.fromEntries(editionCounts)} />
     </div>
   );
 }
