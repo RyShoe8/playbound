@@ -1,6 +1,7 @@
 import Link from "next/link";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import User from "@/lib/models/User";
 import { listAllGames } from "@/lib/catalog";
 import { listDevelopers } from "@/lib/developers";
 import { listAllMods } from "@/lib/mods";
@@ -229,6 +230,30 @@ async function loadGameplayAnalytics(filters: {
   const playTimeData = totalPlayTimeAgg[0] || { totalMs: 0, count: 0, avgMs: 0 };
   const uniquePlayersCount = uniquePlayers7d[0]?.count || 0;
 
+  /**
+   * Resolve the ids on the recent events to usernames.
+   *
+   * Telemetry stores only a user id, which is unreadable in the table. One
+   * lookup for the distinct ids on this page of results — never one per row —
+   * and anonymous events simply have no id to resolve.
+   */
+  const userIds = [...new Set(recentEvents.map((d) => d.userId).filter(Boolean))];
+  const usernamesById: Record<string, string> = {};
+  if (userIds.length > 0) {
+    try {
+      const users = await User.find({ _id: { $in: userIds } })
+        .select("username")
+        .lean();
+      for (const u of users as { _id: unknown; username?: string }[]) {
+        if (u.username) usernamesById[String(u._id)] = u.username;
+      }
+    } catch (err) {
+      // A failed lookup must not take the whole page down; the table falls
+      // back to showing the raw id.
+      console.error("Failed to resolve usernames for recent events:", err);
+    }
+  }
+
   return {
     totalSessions7d,
     totalPlayTimeMs: playTimeData.totalMs,
@@ -238,6 +263,7 @@ async function loadGameplayAnalytics(filters: {
     topGamesBySessions,
     dailySessions,
     recentEvents,
+    usernamesById,
   };
 }
 
@@ -644,8 +670,27 @@ export default async function GameplayAnalyticsPage({
                           <td className="px-4 py-2.5 text-muted-foreground">
                             {(props.platform as string) || "—"}
                           </td>
-                          <td className="px-4 py-2.5 font-mono text-xs">
-                            {doc.userId || "—"}
+                          {/* Username where we can resolve it. An id with no
+                              matching user (deleted account) still shows the
+                              id rather than an empty cell, so the event is not
+                              silently attributed to nobody. */}
+                          <td className="px-4 py-2.5 text-xs">
+                            {doc.userId ? (
+                              data.usernamesById[String(doc.userId)] ? (
+                                <span className="font-semibold">
+                                  {data.usernamesById[String(doc.userId)]}
+                                </span>
+                              ) : (
+                                <span
+                                  className="font-mono text-muted-foreground"
+                                  title="No account matches this id — it may have been deleted."
+                                >
+                                  {String(doc.userId)}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-muted-foreground">Anonymous</span>
+                            )}
                           </td>
                           <td className="px-4 py-2.5">
                             {doc.country || "—"}
