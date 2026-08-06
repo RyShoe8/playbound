@@ -426,20 +426,34 @@ async function renderHomeView() {
 
   document.getElementById("home-browse-games")?.addEventListener("click", () => navigateTo("games"));
 
-  const [recent, installed, catalog, live] = await Promise.all([
+  /**
+   * Local data only. Recently-played, installed and the catalog are all read
+   * from memory or disk in the main process, so these resolve immediately.
+   *
+   * Live stats are deliberately NOT awaited here. That call goes over the
+   * network, and having it inside this Promise.all meant the entire homepage —
+   * including three lists already sitting in memory — stayed blank until it
+   * came back. On a slow or unreachable connection that was the whole 5+
+   * second wait for any content at all.
+   */
+  const [recent, installed, catalog] = await Promise.all([
     window.playbound.getRecentlyPlayed(),
     window.playbound.getInstalled(),
     window.playbound.getCatalog(),
-    window.playbound.getLiveStats?.() || Promise.resolve(null),
   ]);
 
+  // Filled in asynchronously below; the slot keeps its placeholder until then.
   const statsSlot = document.getElementById("home-stats-slot");
-  if (statsSlot) {
+  void (async () => {
+    const live = await (window.playbound.getLiveStats?.() ?? Promise.resolve(null));
+    // The user may have navigated away while this was in flight, in which case
+    // the slot no longer exists — or has been replaced by a newer render.
+    if (!statsSlot || !statsSlot.isConnected) return;
     statsSlot.innerHTML = buildCatalogStatsCardHtml(live);
     statsSlot.querySelectorAll("[data-popular-slug]").forEach((btn) => {
       btn.addEventListener("click", () => openGameDetail(btn.dataset.popularSlug, "home"));
     });
-  }
+  })();
 
   const recentSec = document.getElementById("home-recent-section");
   const recentGrid = document.getElementById("home-recent-grid");
@@ -487,6 +501,9 @@ async function renderLibraryView() {
   document.getElementById("btn-sync-lib-settings")?.addEventListener("click", () => {
     void syncLibraryNow({ quiet: false });
   });
+
+  // Without this the Library view rendered its shell and never filled in.
+  await renderLibraryList();
 }
 
 // ── Friends View ──────────────────────────────────────────────
@@ -686,6 +703,14 @@ function buildFriendsSectionHtml(title, list, type) {
 }
 // ─────────────────────────────────────────────────────────────────
 
+/**
+ * Populate the library list.
+ *
+ * This body lost its `function` declaration when the Friends view was inserted
+ * above it, leaving a top-level `await` in a file loaded as a classic script —
+ * which is a parse error, so the entire renderer failed to load.
+ */
+async function renderLibraryList() {
   const [installed, installedMods, modsCat] = await Promise.all([
     window.playbound.getInstalled(),
     window.playbound.getInstalledMods?.() || Promise.resolve([]),
@@ -693,6 +718,7 @@ function buildFriendsSectionHtml(title, list, type) {
   ]);
   const modTitles = new Map((modsCat.mods || []).map((m) => [m.slug, m.title]));
   const list = document.getElementById("library-list");
+  if (!list) return;
   const hasGames = installed && installed.length > 0;
   const hasMods = installedMods && installedMods.length > 0;
 
