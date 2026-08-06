@@ -26,7 +26,7 @@ export type MobilePlayGame = {
 
 /** Desktop gets the PlayBound Launcher; phones/tablets never do. */
 export function shouldOfferLauncher(device: DeviceType): boolean {
-  return device === "desktop";
+  return device === "desktop" || device === "macos";
 }
 
 export function parseMobileOs(ua: string | null | undefined): MobileOs {
