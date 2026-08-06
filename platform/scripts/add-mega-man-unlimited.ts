@@ -47,8 +47,12 @@ const GAME = {
     "A free fan-made action platformer built in the style of the classic NES Mega Man games, with eight original Robot Masters, hand-drawn pixel art and an original chiptune soundtrack. Designed to be genuinely difficult in the way the originals were, rather than nostalgic decoration.",
   developerSlug: DEVELOPER.slug,
   developerName: DEVELOPER.name,
-  genres: ["Platformer", "Action"],
-  tags: ["fan-game", "retro", "precision-platformer", "single-player"],
+  // Genres are a closed set validated by the Game type — "Action" is not one
+  // of them and made the record unsaveable in the admin.
+  genres: ["Platformer"],
+  // Tags are Title Case with spaces, matching the rest of the catalog
+  // ("Base Building", "Arena Shooter") rather than slug style.
+  tags: ["Fan Game", "Retro", "Precision Platformer", "Single Player"],
   aliases: ["MMU", "Megaman Unlimited"],
   license: "Freeware (fan game)",
   releaseYear: 2013,
@@ -155,8 +159,42 @@ async function main() {
     created++;
   }
 
+  /**
+   * Repair the two values this script originally shipped wrong.
+   *
+   * The first version set an "Action" genre, which is not in the closed set the
+   * Game type allows, and slug-style tags. The invalid genre made the record
+   * unsaveable from the admin, so it cannot be fixed by hand there without
+   * first clearing the genre.
+   *
+   * Deliberately narrow: it only rewrites a field that still holds one of those
+   * exact bad values, so any genre or tag choice made since is left alone. Once
+   * repaired it matches nothing and does nothing.
+   */
+  const BAD_GENRE = "Action";
+  const BAD_TAGS = ["fan-game", "retro", "precision-platformer", "single-player"];
+
+  if (existingGame) {
+    const g = existingGame as { genres?: string[]; tags?: string[] };
+    const repair: Record<string, unknown> = {};
+
+    if (Array.isArray(g.genres) && g.genres.includes(BAD_GENRE)) {
+      repair.genres = g.genres.filter((x) => x !== BAD_GENRE);
+    }
+    if (Array.isArray(g.tags) && g.tags.some((t) => BAD_TAGS.includes(t))) {
+      repair.tags = GAME.tags;
+    }
+
+    if (Object.keys(repair).length > 0) {
+      console.log(`  repair game       ${GAME.slug}  (${Object.keys(repair).join(", ")})`);
+      if (apply) {
+        await CatalogGame.updateOne({ slug: GAME.slug }, { $set: repair });
+      }
+    }
+  }
+
   if (created === 0) {
-    console.log("  Nothing to do — all three already exist.");
+    console.log("  Nothing else to do — all three already exist.");
     process.exit(0);
   }
 
