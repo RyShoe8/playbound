@@ -27,7 +27,8 @@
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",
     "typecheck": "tsc --noEmit",
     "verify:maintenance": "tsx scripts/verify-maintenance.ts",
-    "check:auth-urls": "tsx scripts/check-auth-urls.ts"
+    "check:auth-urls": "tsx scripts/check-auth-urls.ts",
+    "add:mega-man-unlimited": "tsx scripts/add-mega-man-unlimited.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
