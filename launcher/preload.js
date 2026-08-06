@@ -1,13 +1,12 @@
 const { contextBridge, ipcRenderer } = require("electron");
-const Platform = require("./platform");
 
 contextBridge.exposeInMainWorld("playbound", {
   platform: {
-    getOS: () => Platform.getOS(),
-    getOSVersion: () => Platform.getOSVersion(),
-    getArchitecture: () => Platform.getArchitecture(),
-    supportsDesktopShortcuts: () => Platform.supportsDesktopShortcuts(),
-    supportsDock: () => Platform.supportsDock(),
+    getOS: () => (process.platform === "win32" ? "windows" : process.platform === "darwin" ? "macos" : "linux"),
+    getOSVersion: () => process.getSystemVersion(),
+    getArchitecture: () => process.arch,
+    supportsDesktopShortcuts: () => process.platform === "win32",
+    supportsDock: () => process.platform === "darwin",
   },
   // Existing
   getContext: () => ipcRenderer.invoke("get-context"),

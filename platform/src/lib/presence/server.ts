@@ -130,7 +130,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
       // how long the user has been present.
       $setOnInsert: { userId: ctx.userId, startedAt: now },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   let sessionId = update.sessionId || null;
@@ -138,7 +138,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
     const existing = await PlatformSession.findOneAndUpdate(
       { sessionId, userId: ctx.userId, status: "active" },
       { $set: { lastHeartbeat: now } },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (existing) return { platform, device, os, sessionId };
   }
@@ -190,7 +190,7 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
     },
     // Upsert so a heartbeat arriving after a sweep (or a server restart)
     // silently restores presence instead of failing.
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   ).lean();
 
   if (update.sessionId) {
@@ -243,7 +243,7 @@ export async function endPresence(ctx: PresenceContext, sessionId?: string | nul
 
   const filter: Record<string, unknown> = { userId: ctx.userId, status: "active" };
   if (sessionId) filter.sessionId = sessionId;
-  await PlatformSession.updateMany(filter, closeSessionUpdate(now));
+  await PlatformSession.updateMany(filter, closeSessionUpdate(now), { updatePipeline: true });
 }
 
 /**
@@ -274,7 +274,8 @@ export async function sweepStalePresence(now = new Date()) {
 
   const sessions = await PlatformSession.updateMany(
     { status: "active", lastHeartbeat: { $lt: cutoff } },
-    closeSessionUpdate(now)
+    closeSessionUpdate(now),
+    { updatePipeline: true }
   );
 
   return {
