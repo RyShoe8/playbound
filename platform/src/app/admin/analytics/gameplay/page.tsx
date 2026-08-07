@@ -2,6 +2,7 @@ import Link from "next/link";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
+import { LocalTime } from "@/components/LocalTime";
 import { listAllGames } from "@/lib/catalog";
 import { listDevelopers } from "@/lib/developers";
 import { listAllMods } from "@/lib/mods";
@@ -640,10 +641,18 @@ export default async function GameplayAnalyticsPage({
                           key={String(doc._id)}
                           className="border-t border-border bg-card"
                         >
+                          {/* Formatted client-side: this is a server
+                              component, so toLocaleString() here would use the
+                              server's clock (UTC on Vercel) rather than the
+                              viewer's. */}
                           <td className="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                            {doc.createdAt
-                              ? new Date(doc.createdAt).toLocaleString()
-                              : "—"}
+                            <LocalTime
+                              value={
+                                doc.createdAt
+                                  ? new Date(doc.createdAt).toISOString()
+                                  : null
+                              }
+                            />
                           </td>
                           <td className="px-4 py-2.5">
                             <span

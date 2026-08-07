@@ -577,7 +577,7 @@ async function renderFriendsView() {
           <h1 class="view-title" style="margin: 0">Friends</h1>
           <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and manage friend requests.</p>
         </div>
-        <button class="btn-secondary btn-sm" id="btn-add-friend" onclick="window.playbound.openExternal('https://playbound.club/search?tab=users')">Add Friend on Web</button>
+        <button class="btn-secondary btn-sm" id="btn-add-friend" onclick="window.playbound.openExternal('https://playbound.club/friends')">Add Friend</button>
       </div>
       <div id="friends-content-area" style="margin-top: 20px;">
         <p class="view-sub">Loading friends...</p>
@@ -657,7 +657,7 @@ async function refreshFriendsData() {
       html = `
         <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px;">
           <p class="view-sub">You don't have any friends yet.</p>
-          <button class="btn-primary" style="margin-top: 12px" onclick="window.playbound.openExternal('https://playbound.club/search?tab=users')">Find Friends</button>
+          <button class="btn-primary" style="margin-top: 12px" onclick="window.playbound.openExternal('https://playbound.club/friends')">Find Friends</button>
         </div>
       `;
     }
