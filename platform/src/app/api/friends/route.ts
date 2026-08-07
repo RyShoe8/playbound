@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
+import DiscordConnection from "@/lib/models/DiscordConnection";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -32,7 +33,6 @@ export async function GET() {
         username: friendUser.username,
         email: friendUser.email,
         image: friendUser.image,
-        discordLinked: !!friendUser.connectedAccounts?.discord?.discordUserId,
         friendshipId: doc._id,
         acceptedAt: doc.acceptedAt,
       };
@@ -40,7 +40,12 @@ export async function GET() {
 
     // Get presence for all friends
     const friendIds = friendUsers.map((u) => u.id);
-    const presences = await Presence.find({ userId: { $in: friendIds } }).lean();
+    const [presences, discordConnections] = await Promise.all([
+      Presence.find({ userId: { $in: friendIds } }).lean(),
+      DiscordConnection.find({ userId: { $in: friendIds } }).select("userId").lean()
+    ]);
+    
+    const discordLinkedSet = new Set(discordConnections.map(dc => dc.userId.toString()));
     
     const presenceMap = new Map();
     for (const p of presences) {
@@ -57,6 +62,7 @@ export async function GET() {
 
     const friends = friendUsers.map((user) => ({
       ...user,
+      discordLinked: discordLinkedSet.has(user.id.toString()),
       presence: presenceMap.get(user.id.toString()) || { status: "offline" },
     }));
 
