@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Gamepad2, House, LibraryBig, Puzzle, Server, Shield } from "lucide-react";
+import { Gamepad2, House, LibraryBig, Mouse, Puzzle, Server, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Home", icon: House },
   { href: "/discover", label: "Games", icon: Gamepad2 },
+  { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/library", label: "Library", icon: LibraryBig },

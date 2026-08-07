@@ -6,10 +6,11 @@ import { useSession } from "next-auth/react";
 import {
   CalendarDays,
   Gamepad2,
-  House,
+  Home,
   LibraryBig,
   Mail,
   MessagesSquare,
+  Mouse,
   Play,
   Puzzle,
   Server,
@@ -24,8 +25,9 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 
 const nav = [
-  { href: "/", label: "Home", icon: House },
+  { href: "/", label: "Home", icon: Home, exact: true },
   { href: "/discover", label: "Games", icon: Gamepad2 },
+  { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/events", label: "Events", icon: CalendarDays },
