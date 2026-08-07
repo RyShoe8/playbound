@@ -51,8 +51,6 @@ type FriendsState = {
   removeFriend: (friendId: string) => Promise<void>;
   blockUser: (targetUserId: string) => Promise<void>;
   setSelectedFriend: (friend: FriendUser | null) => void;
-  isMobilePanelOpen: boolean;
-  setMobilePanelOpen: (isOpen: boolean) => void;
   startPolling: (intervalMs?: number) => void;
   stopPolling: () => void;
 };
@@ -69,9 +67,6 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
   blockedUsers: [],
   loading: false,
   selectedFriend: null,
-  isMobilePanelOpen: false,
-
-  setMobilePanelOpen: (isOpen: boolean) => set({ isMobilePanelOpen: isOpen }),
 
   fetchFriends: async () => {
     try {

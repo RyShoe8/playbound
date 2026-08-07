@@ -3,17 +3,19 @@
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { Users } from "lucide-react";
+import Link from "next/link";
 
 export function MobileFriendsButton() {
   const { status } = useSession();
-  const { incomingRequests, setMobilePanelOpen } = useFriendsStore();
+  const { incomingRequests } = useFriendsStore();
 
   if (status !== "authenticated") return null;
 
   return (
-    <button 
-      onClick={() => setMobilePanelOpen(true)}
+    <Link 
+      href="/friends"
       className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary xl:hidden relative"
+      title="Friends"
     >
       <Users className="size-5" />
       {incomingRequests.length > 0 && (
@@ -21,6 +23,6 @@ export function MobileFriendsButton() {
           {incomingRequests.length}
         </span>
       )}
-    </button>
+    </Link>
   );
 }

@@ -15,6 +15,7 @@ import {
   Server,
   Shield,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ const nav = [
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/weekly", label: "Weekly", icon: Mail },
+  { href: "/friends", label: "Friends", icon: Users },
   { href: "/standards", label: "Our Standard", icon: ShieldCheck },
 ];
 

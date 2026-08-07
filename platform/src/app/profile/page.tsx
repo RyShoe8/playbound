@@ -47,7 +47,6 @@ export default async function ProfilePage() {
   let guides: { gameSlug: string; title: string; createdAt: Date }[] = [];
   let posts: { gameSlug: string; title: string; slug: string; createdAt: Date }[] = [];
   let community = { topicCount: 0, replyCount: 0, helpfulCount: 0 };
-  let discordLinked: { username: string; avatarUrl?: string | null } | null = null;
   let googleConnected = false;
   let friendsCount = 0;
   let pendingRequestsCount = 0;
@@ -89,12 +88,6 @@ export default async function ProfilePage() {
     if (user?.authProviders?.includes("google")) {
       googleConnected = true;
     }
-    if (user?.connectedAccounts?.discord?.discordUserId) {
-      discordLinked = {
-        username: user.connectedAccounts.discord.username ?? "Discord",
-        avatarUrl: user.connectedAccounts.discord.avatarUrl,
-      };
-    }
     friendsCount = fCount ?? 0;
     pendingRequestsCount = pCount ?? 0;
   } catch (err) {
@@ -133,7 +126,7 @@ export default async function ProfilePage() {
         </div>
       </section>
 
-      <ConnectedAccounts googleConnected={googleConnected} discordLinked={discordLinked} />
+      <ConnectedAccounts googleConnected={googleConnected} />
 
       <section>
         <SectionHeader title="Your Contributions" />

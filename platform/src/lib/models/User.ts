@@ -48,15 +48,8 @@ const UserSchema = new Schema({
     warnings: { type: Number, default: 0 },
     suspendedUntil: { type: Date, default: null },
   },
-  /** Optional linked Discord identity (Phase 5). */
-  connectedAccounts: {
-    discord: {
-      discordUserId: { type: String, default: null },
-      username: { type: String, default: null },
-      avatarUrl: { type: String, default: null },
-      connectedAt: { type: Date, default: null },
-    },
-  },
+  /** Optional linked identities (Phase 5). */
+  connectedAccounts: {},
   /** Client-facing discovery preferences (mirrored in localStorage for guests). */
   preferences: {
     compatibilityFilter: {

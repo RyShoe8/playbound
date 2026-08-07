@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import dbConnect from "@/lib/db";
-import User from "@/lib/models/User";
+import DiscordConnection from "@/lib/models/DiscordConnection";
+import { encryptString } from "@/lib/encryption";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -39,8 +40,8 @@ export async function GET(req: Request) {
   if (!tokenRes.ok) {
     return NextResponse.redirect(back("discord=error"));
   }
-  const token = (await tokenRes.json()) as { access_token?: string };
-  if (!token.access_token) {
+  const token = (await tokenRes.json()) as { access_token?: string; refresh_token?: string; expires_in?: number };
+  if (!token.access_token || !token.refresh_token || typeof token.expires_in !== "number") {
     return NextResponse.redirect(back("discord=error"));
   }
 
@@ -62,18 +63,26 @@ export async function GET(req: Request) {
     : null;
 
   await dbConnect();
-  await User.updateOne(
-    { _id: userId },
+  
+  const encryptedAccess = encryptString(token.access_token);
+  const encryptedRefresh = encryptString(token.refresh_token);
+  const expiresAt = new Date(Date.now() + token.expires_in * 1000);
+
+  await DiscordConnection.findOneAndUpdate(
+    { userId },
     {
       $set: {
-        "connectedAccounts.discord": {
-          discordUserId: me.id,
-          username: me.global_name || me.username,
-          avatarUrl,
-          connectedAt: new Date(),
-        },
+        discordId: me.id,
+        username: me.username,
+        globalName: me.global_name || null,
+        avatar: avatarUrl,
+        accessToken: encryptedAccess,
+        refreshToken: encryptedRefresh,
+        expiresAt,
+        linkedAt: new Date(),
       },
-    }
+    },
+    { upsert: true, new: true }
   );
 
   const res = NextResponse.redirect(back("discord=linked"));
