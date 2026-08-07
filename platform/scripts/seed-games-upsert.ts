@@ -10,18 +10,37 @@ import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
 
-/** New titles introduced in the OSS catalog wave — created as drafts. */
+/** New titles introduced in catalog waves — created as drafts. */
 export const DRAFT_ON_CREATE = new Set([
   "openrct2",
   "freeciv",
   "flightgear",
   "freedoom",
   "lincity-ng",
-  "daggerfall-unity",
-  "openarena",
+  "tes-arena",
+  "daggerfall",
   "pixreveal",
   "gamebuddies-io",
+  "everquest",
+  "star-wars-galaxies",
+  "starcraft",
+  "diablo-2",
+  "wolfenstein",
+  "war-thunder",
+  "world-of-tanks",
+  "apex-legends",
+  "hearthstone",
+  "team-fortress-2",
+  "genshin-impact",
+  "dota-2",
+  "league-of-legends",
+  "valorant",
+  "counter-strike-2",
+  "quake-champions",
 ]);
+
+/** Standalone remasters superseded by parent-game editions — keep rows but unpublish. */
+export const SUPERSEDED_GAME_SLUGS = new Set(["openarena", "daggerfall-unity"]);
 
 function isThinMedia(doc: {
   coverImage?: string | null;
@@ -174,8 +193,29 @@ async function main() {
     }
   }
 
+  let superseded = 0;
+  for (const slug of SUPERSEDED_GAME_SLUGS) {
+    const res = await CatalogGame.updateOne(
+      { slug },
+      {
+        $set: {
+          published: false,
+          status: "draft",
+          tagline:
+            slug === "openarena"
+              ? "Superseded — use the OpenArena edition on The Elder Scrolls: Arena."
+              : "Superseded — use the Daggerfall Unity edition on Daggerfall.",
+        },
+      }
+    );
+    if (res.matchedCount) {
+      superseded++;
+      console.log(`SUPERSEDE ${slug}`);
+    }
+  }
+
   console.log(
-    `seed:games-upsert done — created=${created} draftRefresh=${refreshedDraft} publishedPatch=${patchedPublished}`
+    `seed:games-upsert done — created=${created} draftRefresh=${refreshedDraft} publishedPatch=${patchedPublished} superseded=${superseded}`
   );
   process.exit(0);
 }

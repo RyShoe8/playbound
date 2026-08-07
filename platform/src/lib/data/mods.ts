@@ -2,10 +2,12 @@
  * Curated seed catalog of community mods for games with Mod Support.
  * Seeded into Mongo via scripts/seed-mods.ts (upsert by slug).
  *
- * Wave content lives in fossModsWave.ts (~20–25 mods per FOSS title).
+ * Waves: fossModsWave (7 FOSS titles) + phase2 remasters/live hubs.
  */
 import type { ModSeed } from "./modSeedHelpers";
 import { fossModsWave } from "./fossModsWave";
+import { phase2ModsRemasters } from "./phase2ModsRemasters";
+import { phase2ModsLive } from "./phase2ModsLive";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -16,7 +18,7 @@ const COVER_OVERRIDES: Record<string, string> = {
   "openra-combined-arms": "/mods/openra-combined-arms/cover.webp",
 };
 
-export const mods: ModSeed[] = fossModsWave.map((m) =>
+export const mods: ModSeed[] = [...fossModsWave, ...phase2ModsRemasters, ...phase2ModsLive].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
 
