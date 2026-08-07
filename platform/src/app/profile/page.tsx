@@ -13,7 +13,6 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { ConnectedAccounts } from "@/components/ConnectedAccounts";
 import { SignOutButton } from "@/components/SignOutButton";
 import User from "@/lib/models/User";
-import Friend from "@/lib/models/Friend";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -48,12 +47,10 @@ export default async function ProfilePage() {
   let posts: { gameSlug: string; title: string; slug: string; createdAt: Date }[] = [];
   let community = { topicCount: 0, replyCount: 0, helpfulCount: 0 };
   let googleConnected = false;
-  let friendsCount = 0;
-  let pendingRequestsCount = 0;
 
   try {
     await dbConnect();
-    const [r, g, p, user, fCount, pCount] = await Promise.all([
+    const [r, g, p, user] = await Promise.all([
       Review.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
       GuidePost.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
       DiscussionTopic.find({ authorId: userId, status: { $ne: "removed" } })
@@ -61,14 +58,6 @@ export default async function ProfilePage() {
         .limit(10)
         .lean(),
       User.findById(userId).select("community connectedAccounts authProviders").lean(),
-      Friend.countDocuments({
-        $or: [{ requesterId: userId }, { recipientId: userId }],
-        status: "accepted",
-      }),
-      Friend.countDocuments({
-        recipientId: userId,
-        status: "pending",
-      }),
     ]);
     reviews = r;
     guides = g;
@@ -88,8 +77,6 @@ export default async function ProfilePage() {
     if (user?.authProviders?.includes("google")) {
       googleConnected = true;
     }
-    friendsCount = fCount ?? 0;
-    pendingRequestsCount = pCount ?? 0;
   } catch (err) {
     console.error("Failed to load profile activity:", err);
   }
@@ -117,14 +104,6 @@ export default async function ProfilePage() {
         initialUsername={session.user.username}
         email={session.user.email ?? ""}
       />
-
-      <section>
-        <SectionHeader title="Friends" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-          <StatTile label="Friends" value={String(friendsCount)} />
-          <StatTile label="Pending Requests" value={String(pendingRequestsCount)} />
-        </div>
-      </section>
 
       <ConnectedAccounts
         googleConnected={googleConnected}
