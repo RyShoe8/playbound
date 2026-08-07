@@ -77,6 +77,7 @@ module.exports = {
     {
       provider: "generic",
       url: "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/",
+      channel: signingActive ? "latest" : "admin"
     },
   ],
 

@@ -230,7 +230,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   wolfenstein: {
     enabled: true,
     kind: "github-zip",
-    repo: "EscapeLag/ECWolf",
+    repo: "ECWolfEngine/ECWolf",
     assetPattern: "ecwolf.*windows.*\\.zip$|win64.*\\.zip$|\\.zip$",
     note: "ECWolf source port — add legal Wolf3D shareware/data separately.",
     exeHint: "ecwolf",

@@ -979,7 +979,7 @@ const facts: Game[] = [
     launchMethods: ["install"],
     steamDeck: true,
     website: "https://maniacsvault.net/ecwolf/",
-    githubRepo: "EscapeLag/ECWolf",
+    githubRepo: "ECWolfEngine/ECWolf",
     browserPlayable: false,
     gameOfWeek: false,
     hiddenGem: true,
