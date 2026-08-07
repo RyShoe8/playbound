@@ -9,6 +9,8 @@ import {
 } from "@/lib/liveActivity";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
+export const maxDuration = 60;
+
 /**
  * GET /api/launcher/live-stats
  * GET /api/launcher/live-stats?game=slug
