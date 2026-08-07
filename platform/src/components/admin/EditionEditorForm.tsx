@@ -462,12 +462,12 @@ export function EditionEditorForm({
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-4">
-        <p className={label}>Import from Steam, GitHub, or any website URL</p>
+        <p className={label}>Import from Steam, Epic, GitHub, or any website URL</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <input
             value={importUrl}
             onChange={(e) => setImportUrl(e.target.value)}
-            placeholder="https://… or Steam / GitHub URL"
+            placeholder="https://… or Steam / Epic / GitHub URL"
             className={`${field} mt-0 flex-1`}
           />
           <button
@@ -480,8 +480,8 @@ export function EditionEditorForm({
           </button>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Same sources as games. Pick the parent game first. Review install method and media
-          before saving.
+          Same sources as games. Epic URLs set install method to Epic Games Store. Pick the parent
+          game first. Review install method and media before saving.
         </p>
         {warning && (
           <p className="mt-2 text-sm text-amber-500" role="status">

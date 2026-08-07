@@ -10,6 +10,7 @@ import {
   rehostMediaBundle,
   type GameMediaBundle,
 } from "@/lib/fetchGameMedia";
+import { fetchEpicStoreMedia, parseEpicProductSlug } from "@/lib/epicStore";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 export const maxDuration = 120;
@@ -69,9 +70,20 @@ export async function POST(req: Request) {
       bundle = mergeGameMedia(bundle, await fetchSteamStoreMedia(steamAppId));
     }
 
-    // Always scrape the website for non-Steam games; for Steam, fill shot or video gaps.
+    const epicSlug = url ? parseEpicProductSlug(url) : null;
+    if (epicSlug && (!steamAppId || bundle.screenshots.length < 4 || bundle.videos.length === 0)) {
+      try {
+        bundle = mergeGameMedia(bundle, await fetchEpicStoreMedia(epicSlug));
+      } catch {
+        /* soft-fail Epic */
+      }
+    }
+
+    // Scrape the website for non-Epic pages; for Steam, fill shot or video gaps.
     const shouldScrapeSite =
-      Boolean(url) && (!steamAppId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
+      Boolean(url) &&
+      !epicSlug &&
+      (!steamAppId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
     if (shouldScrapeSite && url) {
       try {
         const site = await fetchWebsiteMedia(url);

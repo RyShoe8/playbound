@@ -5,6 +5,7 @@ import { compressImageBuffer } from "@/lib/compressImage";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
+import { fetchEpicStoreMedia, parseEpicProductSlug } from "@/lib/epicStore";
 
 export {
   coverLooksLikeSteamHeader,
@@ -245,8 +246,8 @@ export async function fetchGithubReadmeMedia(repo: string): Promise<GameMediaBun
 }
 
 /**
- * Prefer Steam when an app id is present, then fill gaps from the website / GitHub README.
- * Website failures do not throw when Steam succeeded.
+ * Prefer Steam when an app id is present, then Epic store-content, then fill gaps
+ * from the website / GitHub README. Website failures do not throw when Steam/Epic succeeded.
  */
 export async function fetchCombinedGameMedia(opts: {
   steamAppId?: string | null;
@@ -261,8 +262,19 @@ export async function fetchCombinedGameMedia(opts: {
   }
 
   const url = opts.url?.trim();
+  const epicSlug = url ? parseEpicProductSlug(url) : null;
+  if (epicSlug && (!steamId || bundle.screenshots.length < 4 || bundle.videos.length === 0)) {
+    try {
+      bundle = mergeGameMedia(bundle, await fetchEpicStoreMedia(epicSlug));
+    } catch {
+      /* soft-fail Epic */
+    }
+  }
+
   const shouldScrapeSite =
-    Boolean(url) && (!steamId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
+    Boolean(url) &&
+    !epicSlug &&
+    (!steamId || bundle.screenshots.length < 4 || bundle.videos.length === 0);
   if (shouldScrapeSite && url) {
     try {
       const site = await fetchWebsiteMedia(url);
@@ -287,7 +299,7 @@ export async function fetchCombinedGameMedia(opts: {
   }
 
   if (!bundle.coverImage && bundle.screenshots.length === 0 && bundle.videos.length === 0) {
-    if (!steamId) throw new Error("Could not fetch media from website");
+    if (!steamId && !epicSlug) throw new Error("Could not fetch media from website");
   }
 
   return bundle;

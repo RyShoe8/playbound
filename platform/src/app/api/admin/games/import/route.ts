@@ -31,6 +31,11 @@ import {
   steamPlatforms,
   steamReleaseYear,
 } from "@/lib/adminImportHelpers";
+import {
+  extractEpicProduct,
+  fetchEpicProduct,
+  parseEpicProductSlug,
+} from "@/lib/epicStore";
 
 const importSchema = z.object({
   url: z.string().trim().url().max(500),
@@ -206,6 +211,85 @@ async function fromSteam(
   };
 }
 
+async function fromEpic(
+  productSlug: string
+): Promise<{ draft: GamePayload; extras: ImportExtras }> {
+  const product = await fetchEpicProduct(productSlug);
+  const epic = extractEpicProduct(product, productSlug);
+
+  const mapped = mapLabelsToGenresAndTags(epic.tags);
+  const genres = asGenres(mapped.genres);
+  const tags = mapped.tags
+    .map((t) => t.replace(/\b\w/g, (c) => c.toUpperCase()))
+    .slice(0, 16);
+  const features = mapLabelsToFeatures(epic.tags);
+  const slug = slugifyTitle(epic.title);
+
+  let developerSlug = "indie-web";
+  let developerName: string | null = null;
+  let developerNote: string | undefined;
+  const developerCandidate = epic.developers[0] || epic.publishers[0] || null;
+  if (developerCandidate) {
+    const resolved = await resolveOrCreateDeveloper({
+      name: developerCandidate,
+      website: epic.homepageUrl || epic.storeUrl,
+      tagline: `${developerCandidate} — from Epic Games Store credits`,
+    });
+    if (resolved) {
+      developerSlug = resolved.slug;
+      developerName = resolved.name;
+      developerNote = resolved.created
+        ? `Created published developer “${resolved.name}” (${resolved.slug}) from Epic credits.`
+        : `Matched developer “${resolved.name}” (${resolved.slug}) from Epic credits.`;
+    }
+  }
+
+  const communityLinks = epic.discordInviteUrl
+    ? {
+        officialDiscord: {
+          inviteUrl: epic.discordInviteUrl,
+          serverName: null,
+          verified: false,
+          verifiedSourceUrl: null,
+          verifiedAt: null,
+        },
+        playboundDiscord: null,
+      }
+    : null;
+
+  return {
+    extras: { developerNote },
+    draft: {
+      ...emptyGameDraft(),
+      slug,
+      title: epic.title,
+      tagline: epic.shortDescription.slice(0, 200) || epic.title,
+      description: epic.description || epic.shortDescription,
+      website: epic.homepageUrl || epic.storeUrl,
+      developerSlug,
+      developerName,
+      coverImage: epic.coverImage,
+      screenshots: epic.screenshots.slice(0, MAX_SCREENSHOTS),
+      videos: epic.videos.slice(0, MAX_VIDEOS),
+      genres: genres.length ? genres : [],
+      features,
+      tags,
+      aliases: [],
+      platforms: epic.platforms,
+      sizeMB: 0,
+      releaseYear: epic.releaseYear,
+      launchMethods: ["install"],
+      browserPlayable: false,
+      license: "See Epic Games Store",
+      systemRequirements: epic.systemRequirements,
+      communityLinks,
+      art: defaultArtFor(genres, slug),
+      published: false,
+      launcherInstall: null,
+    },
+  };
+}
+
 /**
  * Fetch the repository README as raw text.
  *
@@ -339,7 +423,7 @@ async function fromWebsite(
     let developerSlug = "indie-web";
     let developerName: string | null = null;
     let developerNote: string | undefined;
-    if (meta.siteName?.trim() && !/steam|github|itch\.io|google/i.test(meta.siteName)) {
+    if (meta.siteName?.trim() && !/steam|github|itch\.io|google|epic/i.test(meta.siteName)) {
       const resolved = await resolveOrCreateDeveloper({
         name: meta.siteName.trim(),
         website: url,
@@ -432,6 +516,7 @@ export async function POST(req: Request) {
     const { url } = importSchema.parse(await req.json());
     const steamId = parseSteamAppId(url);
     const github = parseGithubRepo(url);
+    const epicSlug = parseEpicProductSlug(url);
 
     let base: GamePayload;
     let steamIsFree: boolean | null = null;
@@ -443,6 +528,8 @@ export async function POST(req: Request) {
       ({ draft: base, steamIsFree, extras } = await fromSteam(steamId));
     } else if (url.includes("github.com") || (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()) && github)) {
       ({ draft: base, sourceMaterial, extras } = await fromGithub(github!));
+    } else if (epicSlug) {
+      ({ draft: base, extras } = await fromEpic(epicSlug));
     } else if (steamId) {
       ({ draft: base, steamIsFree, extras } = await fromSteam(steamId));
     } else {
