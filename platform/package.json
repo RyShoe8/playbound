@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run check:auth-urls && npm run migrate:review-index:apply && npm run migrate:library-platform:apply && npm run fix:game-media && npm run seed:launcher-install && npm run seed:mods && npm run fix:mod-media && npm run seed:editions && npm run seed:developers && npm run seed:collections && npm run seed:weekly",
+    "build": "next build && npm run check:auth-urls && npm run migrate:review-index:apply && npm run migrate:library-platform:apply && npm run fix:game-media && npm run seed:launcher-install && npm run seed:mods && npm run fix:mod-media && npm run seed:editions && npm run seed:developers && npm run seed:collections && npm run seed:weekly && npm run add:games-wave-3:apply",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
@@ -29,7 +29,9 @@
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",
     "typecheck": "tsc --noEmit",
     "verify:maintenance": "tsx scripts/verify-maintenance.ts",
-    "check:auth-urls": "tsx scripts/check-auth-urls.ts"
+    "check:auth-urls": "tsx scripts/check-auth-urls.ts",
+    "add:games-wave-3": "tsx scripts/add-games-wave-3.ts",
+    "add:games-wave-3:apply": "tsx scripts/add-games-wave-3.ts --apply --soft-fail"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
