@@ -162,7 +162,7 @@ function MobileOrphanRow({
   );
 }
 
-function DesktopLibraryCard({
+function DesktopLibraryRow({
   game,
   meta,
   mods,
@@ -177,21 +177,42 @@ function DesktopLibraryCard({
   const saved = Boolean(meta?.saved);
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <GameCard game={game} className="w-full sm:w-full" />
-      <StatusBadges installed={installed} saved={saved} game={game} />
-      {installed && showLauncherActions ? (
-        <DesktopInstalledActions slug={game.slug} />
-      ) : (
-        <Link
-          href={`/games/${game.slug}`}
-          className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
-        >
-          <ExternalLink className="size-3" /> Open game
-        </Link>
-      )}
-      <LibraryModsDisclosure mods={mods} />
-    </div>
+    <article className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30">
+      <Link href={`/games/${game.slug}`} className="relative w-28 shrink-0 overflow-hidden rounded-lg shadow-sm transition-transform hover:scale-105">
+        <GameArt game={game} className="aspect-[3/4]" />
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <Link href={`/games/${game.slug}`} className="block truncate text-xl font-bold hover:underline">
+              {game.title}
+            </Link>
+            <p className="truncate text-sm text-muted-foreground">{game.genres.join(" A ")}</p>
+          </div>
+          <GamePlatformBadges game={game} compact singleLine />
+        </div>
+        <div className="mt-2">
+          <StatusBadges installed={installed} saved={saved} game={game} />
+        </div>
+        <div className="mt-auto pt-3 flex flex-wrap gap-2">
+          {installed && showLauncherActions ? (
+            <DesktopInstalledActions slug={game.slug} />
+          ) : (
+            <Link
+              href={`/games/${game.slug}`}
+              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
+            >
+              <ExternalLink className="size-3" /> Open game
+            </Link>
+          )}
+        </div>
+        {mods.length > 0 && (
+          <div className="mt-2">
+            <LibraryModsDisclosure mods={mods} />
+          </div>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -264,10 +285,10 @@ export function LibraryGrid({
             ))}
           </div>
 
-          {/* Desktop / tablet grid */}
-          <div className="hidden grid-cols-2 items-start gap-5 sm:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {/* Desktop / tablet list */}
+          <div className="hidden flex-col gap-4 sm:flex lg:grid lg:grid-cols-2 xl:grid-cols-3">
             {visibleGames.map((game) => (
-              <DesktopLibraryCard
+              <DesktopLibraryRow
                 key={game.slug}
                 game={game}
                 meta={bySlug.get(game.slug)}
@@ -281,20 +302,30 @@ export function LibraryGrid({
                 .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
                 .join(" ");
               return (
-                <div
+                <article
                   key={entry.gameSlug}
-                  className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-3"
+                  className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
                 >
-                  <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-secondary text-2xl font-extrabold text-muted-foreground">
+                  <div className="flex w-28 shrink-0 items-center justify-center rounded-lg bg-secondary text-4xl font-extrabold text-muted-foreground shadow-sm">
                     {title.charAt(0)}
                   </div>
-                  <p className="truncate text-sm font-bold">{title}</p>
-                  <StatusBadges installed={entry.installed} saved={entry.saved} />
-                  {entry.installed && showLauncherActions ? (
-                    <DesktopInstalledActions slug={entry.gameSlug} />
-                  ) : null}
-                  <LibraryModsDisclosure mods={modsByBase[entry.gameSlug] || []} />
-                </div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <p className="truncate text-xl font-bold">{title}</p>
+                    <div className="mt-2">
+                      <StatusBadges installed={entry.installed} saved={entry.saved} />
+                    </div>
+                    <div className="mt-auto pt-3 flex flex-wrap gap-2">
+                      {entry.installed && showLauncherActions ? (
+                        <DesktopInstalledActions slug={entry.gameSlug} />
+                      ) : null}
+                    </div>
+                    {modsByBase[entry.gameSlug] && modsByBase[entry.gameSlug].length > 0 && (
+                      <div className="mt-2">
+                        <LibraryModsDisclosure mods={modsByBase[entry.gameSlug]} />
+                      </div>
+                    )}
+                  </div>
+                </article>
               );
             })}
           </div>

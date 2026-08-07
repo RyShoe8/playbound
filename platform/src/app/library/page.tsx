@@ -7,9 +7,11 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
-import { gamesFor } from "@/lib/catalog";
+import { gamesFor, listGames } from "@/lib/catalog";
+import { isLauncherInstallable } from "@/lib/launcher";
 import { listMods } from "@/lib/mods";
 import { LibraryGrid } from "@/components/LibraryGrid";
+import { AddGameButton } from "@/components/AddGameButton";
 import { EmptyHint } from "@/components/ui/bits";
 import {
   isLibraryPlatform,
@@ -117,6 +119,12 @@ export default async function LibraryPage() {
     modsByBase[entry.baseGameSlug] = list;
   }
 
+  const allGames = await listGames();
+  const installableGames = allGames
+    .filter(isLauncherInstallable)
+    .map((g) => ({ slug: g.slug, title: g.title }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -127,13 +135,17 @@ export default async function LibraryPage() {
             installed with the PlayBound app or added from the catalog, with mods under each game.
           </p>
         </div>
-        <Link
-          href="/discover"
-          className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
-        >
-          <Plus className="mr-2 size-4" />
-          Add Game
-        </Link>
+        {isLibraryPlatform(viewerPlatform) ? (
+          <AddGameButton games={installableGames} />
+        ) : (
+          <Link
+            href="/discover"
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+          >
+            <Plus className="mr-2 size-4" />
+            Add Game
+          </Link>
+        )}
       </div>
 
       {/* Without this, a desktop user whose games are all on their phone sees

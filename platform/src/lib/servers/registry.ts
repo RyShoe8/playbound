@@ -5,6 +5,7 @@ import { fetchOpenRaServers } from "./providers/openra";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchWarzone2100Servers } from "./providers/warzone-2100";
+import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
@@ -36,7 +37,10 @@ const providers: Record<string, ServerProvider> = {
     slug: "warzone-2100",
     fetchServers: fetchWarzone2100Servers,
   },
-  "zero-k": { slug: "zero-k", fetchServers: () => fetchRemoteWithLobbyAuth("zero-k") },
+  "zero-k": {
+    slug: "zero-k",
+    fetchServers: fetchZeroKServers,
+  },
   "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
 };
 
