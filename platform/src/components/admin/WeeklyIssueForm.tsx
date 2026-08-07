@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  WeeklyNewsletterBuilder,
+  initialNewsletterDraft,
+} from "@/components/admin/WeeklyNewsletterBuilder";
+import type { CatalogGamePrefill } from "@/lib/newsletterEmail";
 
-type GameOption = { slug: string; title: string };
+type GameOption = CatalogGamePrefill;
 
 export function WeeklyIssueForm({
   mode,
@@ -12,13 +17,22 @@ export function WeeklyIssueForm({
   games,
 }: {
   mode: "create" | "edit";
-  initial: { id?: string; gameSlug: string; publishedAt: string; published: boolean };
+  initial: {
+    id?: string;
+    gameSlug: string;
+    publishedAt: string;
+    published: boolean;
+    emailDraft?: unknown;
+  };
   games: GameOption[];
 }) {
   const router = useRouter();
   const [gameSlug, setGameSlug] = useState(initial.gameSlug);
   const [publishedAt, setPublishedAt] = useState(initial.publishedAt);
   const [published, setPublished] = useState(initial.published);
+  const [emailDraft, setEmailDraft] = useState(() =>
+    initialNewsletterDraft(initial.emailDraft, initial.publishedAt)
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,7 +46,7 @@ export function WeeklyIssueForm({
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ gameSlug, publishedAt, published }),
+        body: JSON.stringify({ gameSlug, publishedAt, published, emailDraft }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -75,35 +89,46 @@ export function WeeklyIssueForm({
   const label = "text-xs font-semibold text-muted-foreground";
 
   return (
-    <form onSubmit={save} className="mx-auto max-w-lg space-y-4">
-      <div>
-        <label className={label}>Featured game</label>
-        <select required value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} className={field}>
-          <option value="">Select a game…</option>
-          {games.map((g) => (
-            <option key={g.slug} value={g.slug}>
-              {g.title}
-            </option>
-          ))}
-        </select>
+    <form onSubmit={save} className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-lg space-y-4">
+        <div>
+          <label className={label}>Featured game</label>
+          <select required value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} className={field}>
+            <option value="">Select a game…</option>
+            {games.map((g) => (
+              <option key={g.slug} value={g.slug}>
+                {g.title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={label}>Publication date (Wednesday)</label>
+          <input
+            required
+            type="date"
+            value={publishedAt}
+            onChange={(e) => setPublishedAt(e.target.value)}
+            className={field}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Slug and ISO week are derived from this date. Prefer Wednesdays to match the newsletter.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
+          Published on /weekly
+        </label>
       </div>
-      <div>
-        <label className={label}>Publication date (Wednesday)</label>
-        <input
-          required
-          type="date"
-          value={publishedAt}
-          onChange={(e) => setPublishedAt(e.target.value)}
-          className={field}
-        />
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Slug and ISO week are derived from this date. Prefer Wednesdays to match the newsletter.
-        </p>
-      </div>
-      <label className="flex items-center gap-2 text-sm font-semibold">
-        <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
-        Published on /weekly
-      </label>
+
+      <WeeklyNewsletterBuilder
+        draft={emailDraft}
+        onChange={setEmailDraft}
+        games={games}
+        featuredSlug={gameSlug}
+        publishedAt={publishedAt}
+      />
+
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-2 pt-2">
         <button

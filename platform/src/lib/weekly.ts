@@ -37,6 +37,7 @@ function toIssue(doc: Record<string, unknown>): WeeklyIssue {
     gameSlug,
     publishedAt: String(doc.publishedAt).slice(0, 10),
     published: doc.published !== false,
+    emailDraft: doc.emailDraft ?? undefined,
   };
 }
 

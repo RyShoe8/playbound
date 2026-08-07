@@ -8,6 +8,8 @@ const WeeklyIssueSchema = new Schema(
     gameSlug: { type: String, required: true, index: true },
     publishedAt: { type: String, required: true },
     published: { type: Boolean, default: true, index: true },
+    /** Newsletter builder payload — HTML is rendered on demand, not stored. */
+    emailDraft: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );
