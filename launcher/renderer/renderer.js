@@ -577,12 +577,44 @@ async function renderFriendsView() {
           <h1 class="view-title" style="margin: 0">Friends</h1>
           <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and manage friend requests.</p>
         </div>
-        <button class="btn-secondary btn-sm" id="btn-add-friend" onclick="window.playbound.openExternal('https://playbound.club/friends')">Add Friend</button>
+        <button class="btn-secondary btn-sm" id="btn-toggle-add-friend">Add Friend</button>
       </div>
+      
+      <div id="add-friends-panel" style="display: none; margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+          <h2 style="margin: 0; font-size: 16px; font-weight: bold; margin-right: 8px;">Add friends</h2>
+          <button class="btn-primary btn-sm" id="add-friends-tab-username" style="border-radius: 16px; padding: 4px 12px;">By username</button>
+          <button class="btn-secondary btn-sm" id="add-friends-tab-players" style="border-radius: 16px; padding: 4px 12px; border: none; background: transparent; color: var(--text-muted);">Find players</button>
+        </div>
+
+        <form id="add-friends-form-username" style="display: flex; gap: 8px;">
+          <input type="text" class="input-text" id="add-friends-username-input" placeholder="Username or email" style="flex: 1;" />
+          <button type="submit" class="btn-primary" id="btn-search-username" style="border-radius: 16px; padding: 0 16px;">Search</button>
+        </form>
+
+        <form id="add-friends-form-players" style="display: none; flex-direction: column; gap: 8px;">
+          <p class="view-sub" style="font-size: 12px; margin: 0;">Find people with a game in their library, or anyone playing a genre.</p>
+          <div style="display: flex; gap: 8px;">
+            <select class="input-text" id="add-friends-game-select" style="flex: 1;">
+              <option value="">Any game...</option>
+            </select>
+            <select class="input-text" id="add-friends-genre-select" style="flex: 1;">
+              <option value="">Any genre...</option>
+            </select>
+            <button type="submit" class="btn-primary" id="btn-search-players" style="border-radius: 16px; padding: 0 16px;">Find</button>
+          </div>
+        </form>
+
+        <div id="add-friends-message" style="margin-top: 12px; font-size: 14px; color: var(--text-muted); display: none;"></div>
+        <div id="add-friends-results" style="margin-top: 12px;"></div>
+      </div>
+
       <div id="friends-content-area" style="margin-top: 20px;">
         <p class="view-sub">Loading friends...</p>
       </div>
     `;
+
+    document.getElementById("btn-toggle-add-friend").onclick = () => toggleAddFriendsPanel();
   }
 
   await refreshFriendsData();
@@ -657,7 +689,7 @@ async function refreshFriendsData() {
       html = `
         <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px;">
           <p class="view-sub">You don't have any friends yet.</p>
-          <button class="btn-primary" style="margin-top: 12px" onclick="window.playbound.openExternal('https://playbound.club/friends')">Find Friends</button>
+          <button class="btn-primary" style="margin-top: 12px" onclick="toggleAddFriendsPanel(true)">Find Friends</button>
         </div>
       `;
     }
@@ -2965,3 +2997,199 @@ window.playbound.getContext().then((data) => {
   if (data) renderDeepLinkView(data);
   else navigateTo("home");
 });
+
+// --- ADD FRIENDS LOGIC ---
+let _addFriendsMode = "username";
+let _addFriendsSent = {};
+
+async function toggleAddFriendsPanel(forceShow) {
+  const panel = document.getElementById("add-friends-panel");
+  if (!panel) return;
+  const isHidden = panel.style.display === "none";
+  if (isHidden || forceShow) {
+    panel.style.display = "block";
+    if (!panel.dataset.initialized) {
+      panel.dataset.initialized = "true";
+      initAddFriendsPanel();
+    }
+  } else {
+    panel.style.display = "none";
+  }
+}
+
+async function initAddFriendsPanel() {
+  const tabUser = document.getElementById("add-friends-tab-username");
+  const tabPlayers = document.getElementById("add-friends-tab-players");
+  const formUser = document.getElementById("add-friends-form-username");
+  const formPlayers = document.getElementById("add-friends-form-players");
+  const msg = document.getElementById("add-friends-message");
+  const resultsDiv = document.getElementById("add-friends-results");
+
+  const setMode = (mode) => {
+    _addFriendsMode = mode;
+    msg.style.display = "none";
+    resultsDiv.innerHTML = "";
+    if (mode === "username") {
+      tabUser.className = "btn-primary btn-sm";
+      tabUser.style.background = "";
+      tabUser.style.color = "";
+      tabPlayers.className = "btn-secondary btn-sm";
+      tabPlayers.style.background = "transparent";
+      tabPlayers.style.border = "none";
+      tabPlayers.style.color = "var(--text-muted)";
+      formUser.style.display = "flex";
+      formPlayers.style.display = "none";
+    } else {
+      tabPlayers.className = "btn-primary btn-sm";
+      tabPlayers.style.background = "";
+      tabPlayers.style.color = "";
+      tabUser.className = "btn-secondary btn-sm";
+      tabUser.style.background = "transparent";
+      tabUser.style.border = "none";
+      tabUser.style.color = "var(--text-muted)";
+      formPlayers.style.display = "flex";
+      formUser.style.display = "none";
+    }
+  };
+
+  tabUser.onclick = () => setMode("username");
+  tabPlayers.onclick = () => setMode("players");
+
+  const catalog = await window.playbound.getCatalog().catch(() => []);
+  const gamesList = Array.isArray(catalog) ? catalog : catalog?.games || [];
+  const gameSelect = document.getElementById("add-friends-game-select");
+  const genreSelect = document.getElementById("add-friends-genre-select");
+  
+  gamesList.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.slug;
+    opt.textContent = g.title;
+    gameSelect.appendChild(opt);
+  });
+  
+  const genres = Array.from(new Set(gamesList.flatMap(g => g.tags || []))).sort();
+  genres.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g;
+    opt.textContent = g;
+    genreSelect.appendChild(opt);
+  });
+  
+  gameSelect.onchange = () => { if (gameSelect.value) genreSelect.value = ""; };
+  genreSelect.onchange = () => { if (genreSelect.value) gameSelect.value = ""; };
+
+  const renderResults = (users) => {
+    if (!users || users.length === 0) {
+      msg.textContent = _addFriendsMode === "username" ? "Nobody matched that." : "Nobody else has that in their library yet.";
+      msg.style.display = "block";
+      resultsDiv.innerHTML = "";
+      return;
+    }
+    
+    msg.style.display = "none";
+    resultsDiv.innerHTML = users.map(u => {
+      const isSent = _addFriendsSent[u.id];
+      let btnHtml = "";
+      if (u.friendStatus === "friends") {
+        btnHtml = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">✓ Friends</span>`;
+      } else if (u.friendStatus === "incoming_request") {
+        btnHtml = `<span style="font-size: 12px; font-weight: bold; color: var(--primary);">Wants to be friends</span>`;
+      } else if (u.friendStatus === "outgoing_request" || isSent) {
+        btnHtml = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">🕒 Requested</span>`;
+      } else {
+        btnHtml = `<button type="button" class="btn-primary btn-sm btn-send-request" data-id="${escapeHtml(u.id)}" style="border-radius: 16px; padding: 4px 12px; font-size: 12px;">+ Add</button>`;
+      }
+      
+      const extra = u.sharedGames && u.sharedGames.length > 0 
+        ? `<div style="font-size: 11px; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+            ${escapeHtml(u.sharedGames.join(", "))}${(u.sharedCount || 0) > u.sharedGames.length ? ` +${(u.sharedCount || 0) - u.sharedGames.length} more` : ""}
+           </div>`
+        : "";
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px;">
+          <div style="min-width: 0; padding-right: 12px;">
+            <div style="font-weight: bold; font-size: 14px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(u.username)}</div>
+            ${extra}
+          </div>
+          <div style="flex-shrink: 0;" id="request-btn-wrap-${escapeHtml(u.id)}">
+            ${btnHtml}
+          </div>
+        </div>
+      `;
+    }).join("");
+    
+    resultsDiv.querySelectorAll(".btn-send-request").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        _addFriendsSent[id] = true;
+        const wrap = document.getElementById(`request-btn-wrap-${id}`);
+        wrap.innerHTML = `<span style="font-size: 12px; font-weight: bold; color: var(--text-muted);">🕒 Requested</span>`;
+        
+        try {
+          const res = await window.playbound.sendFriendRequest(id);
+          if (res.error) throw new Error(res.error);
+        } catch (err) {
+          _addFriendsSent[id] = false;
+          wrap.innerHTML = `<button type="button" class="btn-primary btn-sm btn-send-request" data-id="${escapeHtml(id)}" style="border-radius: 16px; padding: 4px 12px; font-size: 12px;">+ Add</button>`;
+          msg.textContent = err.message || "Couldn't send request.";
+          msg.style.color = "var(--danger)";
+          msg.style.display = "block";
+          // Re-bind click on failure
+          const newBtn = wrap.querySelector(".btn-send-request");
+          if (newBtn) newBtn.onclick = btn.onclick;
+        }
+      };
+    });
+  };
+
+  const doSearch = async (promise) => {
+    msg.textContent = "Searching...";
+    msg.style.color = "var(--text-muted)";
+    msg.style.display = "block";
+    resultsDiv.innerHTML = "";
+    document.getElementById("btn-search-username").disabled = true;
+    document.getElementById("btn-search-players").disabled = true;
+    
+    try {
+      const res = await promise;
+      if (res.error) throw new Error(res.error);
+      renderResults(res.users || []);
+    } catch (err) {
+      msg.textContent = err.message || "Couldn't reach the server.";
+      msg.style.color = "var(--danger)";
+      msg.style.display = "block";
+    } finally {
+      document.getElementById("btn-search-username").disabled = false;
+      document.getElementById("btn-search-players").disabled = false;
+    }
+  };
+
+  formUser.onsubmit = (e) => {
+    e.preventDefault();
+    const q = document.getElementById("add-friends-username-input").value.trim();
+    if (q.length < 3) {
+      msg.textContent = "Enter at least 3 characters.";
+      msg.style.color = "var(--danger)";
+      msg.style.display = "block";
+      resultsDiv.innerHTML = "";
+      return;
+    }
+    doSearch(window.playbound.searchUsers(q));
+  };
+
+  formPlayers.onsubmit = (e) => {
+    e.preventDefault();
+    const g = gameSelect.value;
+    const gn = genreSelect.value;
+    if (!g && !gn) {
+      msg.textContent = "Pick a game or a genre.";
+      msg.style.color = "var(--danger)";
+      msg.style.display = "block";
+      resultsDiv.innerHTML = "";
+      return;
+    }
+    const params = g ? { game: g } : { genre: gn };
+    doSearch(window.playbound.discoverPlayers(params));
+  };
+}
