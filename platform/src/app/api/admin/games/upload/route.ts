@@ -26,7 +26,10 @@ export async function POST(req: Request) {
     if (file.size > 8 * 1024 * 1024) {
       return NextResponse.json({ error: "Max file size is 8MB" }, { status: 400 });
     }
-    if (!file.type.startsWith("image/")) {
+    const name = file.name.toLowerCase();
+    const looksLikeImage =
+      file.type.startsWith("image/") || /\.(jpe?g|png|gif|webp|avif|bmp)$/i.test(name);
+    if (!looksLikeImage) {
       return NextResponse.json({ error: "Only image uploads are allowed" }, { status: 400 });
     }
 
