@@ -3,6 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import { getGame } from "@/lib/catalog";
+import { newsletterEmailDraftSchema } from "@/lib/newsletterEmailSchema";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { buildIssueFromDate, listWeeklyIssuesAdmin } from "@/lib/weekly";
 
@@ -10,6 +11,7 @@ const createSchema = z.object({
   gameSlug: z.string().trim().min(1).max(80),
   publishedAt: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   published: z.boolean().optional().default(true),
+  emailDraft: newsletterEmailDraftSchema.optional().nullable(),
 });
 
 export async function GET() {
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
     const doc = await WeeklyIssue.create({
       ...built,
       published: body.published !== false,
+      emailDraft: body.emailDraft ?? null,
     });
 
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });

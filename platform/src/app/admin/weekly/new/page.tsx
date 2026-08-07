@@ -13,13 +13,20 @@ export default async function AdminNewWeeklyPage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">New weekly issue</h1>
         <p className="mt-1 text-muted-foreground">
-          Pick the featured game and Wednesday publication date. Public copy comes from the catalog.
+          Pick the featured game and Wednesday publication date, then build the newsletter HTML below.
         </p>
       </div>
       <WeeklyIssueForm
         mode="create"
         initial={{ gameSlug: "", publishedAt: today, published: true }}
-        games={games.map((g) => ({ slug: g.slug, title: g.title }))}
+        games={games.map((g) => ({
+          slug: g.slug,
+          title: g.title,
+          tagline: g.tagline,
+          description: g.description,
+          coverImage: g.coverImage,
+          whyWePickedIt: g.whyWePickedIt,
+        }))}
       />
     </div>
   );

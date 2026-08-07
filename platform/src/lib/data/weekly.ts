@@ -10,6 +10,8 @@ export interface WeeklyIssueSeed {
   /** ISO date (YYYY-MM-DD), typically Wednesday. */
   publishedAt: string;
   published?: boolean;
+  /** Optional newsletter builder draft (Mongo / admin only). */
+  emailDraft?: unknown;
 }
 
 /** Canonical URL slug for an issue. Stable forever. */

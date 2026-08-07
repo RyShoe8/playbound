@@ -32,8 +32,16 @@ export default async function AdminEditWeeklyPage({
           gameSlug: issue.gameSlug,
           publishedAt: issue.publishedAt,
           published: issue.published,
+          emailDraft: issue.emailDraft,
         }}
-        games={games.map((g) => ({ slug: g.slug, title: g.title }))}
+        games={games.map((g) => ({
+          slug: g.slug,
+          title: g.title,
+          tagline: g.tagline,
+          description: g.description,
+          coverImage: g.coverImage,
+          whyWePickedIt: g.whyWePickedIt,
+        }))}
       />
     </div>
   );
