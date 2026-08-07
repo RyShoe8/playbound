@@ -83,6 +83,11 @@ async function enrichDraft(
 
   const enriched: GamePayload = {
     ...withBar,
+    // Keep Prefill drafts savable under gamePayloadSchema aliases.max(60).
+    aliases: (withBar.aliases ?? [])
+      .map((a) => a.trim().slice(0, 60))
+      .filter(Boolean)
+      .slice(0, 20),
     installSteps: deriveInstallSteps(withBar),
     faq: deriveFaq(withBar),
   };
@@ -166,13 +171,6 @@ async function fromSteam(
     }
   }
 
-  const aliases = [title, short.slice(0, 80)].filter(Boolean);
-  // Keep unique aliases that differ from the slugified title
-  const aliasList = [...new Set(aliases.map((a) => a.trim()).filter((a) => a && a !== title))].slice(
-    0,
-    8
-  );
-
   return {
     steamIsFree,
     extras: { developerNote },
@@ -191,7 +189,8 @@ async function fromSteam(
       genres: genres.length ? genres : [],
       features,
       tags,
-      aliases: aliasList,
+      // Search aliases are manual nicknames (e.g. "WoW"); never auto-fill from store blurb.
+      aliases: [],
       platforms,
       sizeMB,
       releaseYear,

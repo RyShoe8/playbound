@@ -13,6 +13,7 @@ import {
   publishBlockedMessage,
 } from "@/lib/enrich";
 import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
+import { firstZodErrorMessage } from "@/lib/zodError";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: firstZodErrorMessage(err) }, { status: 400 });
     }
     console.error("Admin create game error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

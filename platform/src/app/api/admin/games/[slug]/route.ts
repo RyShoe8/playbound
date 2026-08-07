@@ -17,6 +17,7 @@ import {
   staticReferenceWarning,
   type SlugRenameReport,
 } from "@/lib/renameGameSlug";
+import { firstZodErrorMessage } from "@/lib/zodError";
 
 export async function PATCH(
   req: Request,
@@ -119,7 +120,7 @@ export async function PATCH(
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: firstZodErrorMessage(err) }, { status: 400 });
     }
     console.error("Admin update game error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

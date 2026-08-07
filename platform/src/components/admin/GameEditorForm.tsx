@@ -1195,22 +1195,23 @@ export function GameEditorForm({
           <div>
             <label className={label}>Search aliases</label>
             <textarea
-              rows={2}
+              rows={3}
               value={(form.aliases ?? []).join("\n")}
               onChange={(e) =>
                 patch(
                   "aliases",
                   e.target.value
-                    .split(/[\n,]/)
+                    .split("\n")
                     .map((s) => s.trim())
                     .filter(Boolean)
                 )
               }
               className={`${field} h-auto py-2`}
+              placeholder={"WoW\nC&C\nCommand and Conquer"}
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Shorthand people search by — &ldquo;WoW&rdquo;, &ldquo;C&amp;C&rdquo;. Never displayed,
-              only matched. One per line.
+              Optional nicknames for search only (never shown on the public page). Put one alias per
+              line — no commas. Max 60 characters each, up to 20 aliases.
             </p>
           </div>
         </AdminCollapsibleSection>

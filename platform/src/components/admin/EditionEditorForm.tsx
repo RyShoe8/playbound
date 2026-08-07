@@ -976,10 +976,21 @@ export function EditionEditorForm({
             <textarea
               rows={3}
               value={form.aliases.join("\n")}
-              onChange={(e) => patch("aliases", toList(e.target.value))}
+              onChange={(e) =>
+                patch(
+                  "aliases",
+                  e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                )
+              }
               className={area}
-              placeholder="Turtle&#10;TWoW"
+              placeholder={"Turtle\nTWoW"}
             />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Optional nicknames for search only. One per line — no commas. Max 80 characters each.
+            </p>
           </div>
           <div>
             <label className={label}>Server name</label>
