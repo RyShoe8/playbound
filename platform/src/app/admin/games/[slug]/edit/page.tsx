@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { listDevelopers } from "@/lib/developers";
 import { getGame } from "@/lib/catalog";
 import type { GamePayload } from "@/lib/gamePayload";
@@ -81,11 +82,16 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Edit {game.title}</h1>
-        <p className="mt-1 text-muted-foreground">
-          Published goes live for everyone; Testing is admin-only on the site and launcher.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Edit {game.title}</h1>
+          <p className="mt-1 text-muted-foreground">
+            Published goes live for everyone; Testing is admin-only on the site and launcher.
+          </p>
+        </div>
+        <Link href={`/admin/games/${game.slug}/editions`} className="btn-secondary whitespace-nowrap">
+          Manage Editions
+        </Link>
       </div>
       <GameEditorForm
         mode="edit"
