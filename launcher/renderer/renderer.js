@@ -18,6 +18,8 @@ const gamesFilters = {
 /** Compatible | all — mirrors site GameCompatibilityToggle (desktop rules). */
 let compatibilityFilter = "compatible";
 let currentEditionDetail = null; // { gameSlug, editionSlug }
+let _liveStatsPromise = null;
+let _liveStatsTime = 0;
 
 const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
@@ -477,7 +479,13 @@ async function renderHomeView() {
   if (statsSlot) statsSlot.innerHTML = buildCatalogStatsSkeletonHtml();
 
   void (async () => {
-    const live = await (window.playbound.getLiveStats?.() ?? Promise.resolve(null));
+    const now = Date.now();
+    if (!_liveStatsPromise || now - _liveStatsTime > 60_000) {
+      _liveStatsPromise = window.playbound.getLiveStats?.() ?? Promise.resolve(null);
+      _liveStatsTime = now;
+    }
+    
+    const live = await _liveStatsPromise;
     // The user may have navigated away while this was in flight, in which case
     // the slot no longer exists — or has been replaced by a newer render.
     if (!statsSlot || !statsSlot.isConnected) return;
