@@ -8,6 +8,20 @@ import {
   filterGamesForPreference,
   type GameLike,
 } from "@/lib/compatibility/compatibility";
+import { Avatar } from "@/components/ui/bits";
+
+export type TopPlayer = {
+  id: string;
+  username: string;
+  image?: string;
+  durationMs?: number;
+};
+
+function hueFromName(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i) * 17) % 360;
+  return h;
+}
 
 export type ActivityStatsRow = {
   label: string;
@@ -19,10 +33,12 @@ export function ActivityStatsCard({
   title = "Activity",
   playingNow,
   rows,
+  topPlayers,
 }: {
   title?: string;
   playingNow: number;
   rows: ActivityStatsRow[];
+  topPlayers?: TopPlayer[];
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -43,6 +59,26 @@ export function ActivityStatsCard({
             </div>
           ))}
         </dl>
+      )}
+      {topPlayers && topPlayers.length > 0 && (
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase mb-2">
+            Top Players
+          </p>
+          <ul className="space-y-2">
+            {topPlayers.map((player) => (
+              <li key={player.id} className="flex items-center gap-2">
+                <Avatar name={player.username} hue={hueFromName(player.username)} size="sm" />
+                <Link
+                  href={`/users/${player.username}`}
+                  className="text-sm font-medium hover:text-primary hover:underline truncate"
+                >
+                  {player.username}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       <p className="mt-3 text-[11px] text-muted-foreground">Updated every 15 minutes</p>
     </div>

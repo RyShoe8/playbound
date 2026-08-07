@@ -471,3 +471,60 @@ export function getModLiveStats(modSlug: string): Promise<EntityLiveStats> {
     tags: ["live-activity", `live-activity-mod-${modSlug}`],
   })();
 }
+
+export type TopPlayer = {
+  id: string;
+  username: string;
+  image?: string;
+  durationMs: number;
+};
+
+async function computeGameTopPlayers(gameSlug: string, limit = 3): Promise<TopPlayer[]> {
+  await dbConnect();
+  
+  const topUsers = await TelemetryEvent.aggregate([
+    {
+      $match: {
+        event: "game_ended",
+        "properties.gameSlug": gameSlug,
+        userId: { $ne: null }
+      }
+    },
+    {
+      $group: {
+        _id: "$userId",
+        totalDurationMs: { $sum: "$properties.durationMs" }
+      }
+    },
+    { $sort: { totalDurationMs: -1 } },
+    { $limit: limit }
+  ]);
+
+  if (topUsers.length === 0) return [];
+
+  const User = (await import("@/lib/models/User")).default;
+  const userIds = topUsers.map((u: any) => u._id);
+  const users = await User.find({ _id: { $in: userIds } }).select("username image").lean();
+  
+  const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+  
+  return topUsers
+    .map((u: any) => {
+      const user = userMap.get(u._id.toString());
+      if (!user) return null;
+      return {
+        id: u._id.toString(),
+        username: user.username,
+        image: user.image ?? undefined,
+        durationMs: u.totalDurationMs
+      };
+    })
+    .filter(Boolean) as TopPlayer[];
+}
+
+export function getGameTopPlayers(gameSlug: string, limit = 3): Promise<TopPlayer[]> {
+  return unstable_cache(() => computeGameTopPlayers(gameSlug, limit), ["live-activity-top-players", gameSlug, String(limit)], {
+    revalidate: CACHE_SECONDS,
+    tags: ["live-activity", `live-activity-game-${gameSlug}`],
+  })();
+}

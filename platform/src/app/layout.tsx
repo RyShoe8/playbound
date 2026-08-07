@@ -84,12 +84,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
+      <head>
         {/* CMP before telemetry scripts so consent can gate tags.
             beforeInteractive is only allowed in the root layout. */}
         {IS_PRODUCTION ? (
           <Script src={COOKIE_SCRIPT_SRC} strategy="beforeInteractive" charSet="UTF-8" />
         ) : null}
+      </head>
+      <body className="min-h-full">
         {/* Site-wide entity graph. Present on every page so Organization and
             WebSite can be referenced by @id from page-level schema. */}
         <JsonLd data={graph(organizationSchema(), websiteSchema())} />

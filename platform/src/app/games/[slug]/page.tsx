@@ -35,7 +35,11 @@ import { CommunityCard } from "@/components/discussion/CommunityCard";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { visibleCategories } from "@/lib/discussion/categories";
 import { getDiscordPresence } from "@/lib/discordPresence";
-import { getGameLiveStats, type EntityLiveStats } from "@/lib/liveActivity";
+import {
+  getGameLiveStats,
+  getGameTopPlayers,
+  type EntityLiveStats,
+} from "@/lib/liveActivity";
 import { PlayingNowBadge } from "@/components/ActivityStats";
 import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 import { GameFriendsWidget } from "@/components/friends/GameFriendsWidget";
@@ -172,6 +176,7 @@ export default async function GamePage({
     game.communityLinks?.playboundDiscord?.guildId
   );
   const liveStats = await getGameLiveStats(game.slug);
+  const topPlayers = await getGameTopPlayers(game.slug);
 
   let initiallyInLibrary = false;
   if (session?.user) {
@@ -363,6 +368,7 @@ export default async function GamePage({
             discordPresence={discordPresence}
             editions={editions}
             liveStats={liveStats}
+            topPlayers={topPlayers}
           />
         )}
         {tab === "install" && (
@@ -435,6 +441,7 @@ function OverviewTab({
   discordPresence,
   editions,
   liveStats,
+  topPlayers,
 }: {
   game: Game;
   developer: Developer | undefined;
@@ -444,6 +451,7 @@ function OverviewTab({
   discordPresence?: { online?: number; members?: number } | null;
   editions: Edition[];
   liveStats: EntityLiveStats;
+  topPlayers: Awaited<ReturnType<typeof getGameTopPlayers>>;
 }) {
   if (!game) return null;
 
@@ -623,6 +631,7 @@ function OverviewTab({
       <aside className="min-w-0 space-y-4">
         <ActivityStatsCard
           playingNow={liveStats.playingNow}
+          topPlayers={topPlayers}
           rows={[
             { label: "Players this month", value: liveStats.playersThisMonth },
             ...(liveStats.multiplayerPlayers > 0

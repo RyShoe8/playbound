@@ -20,13 +20,13 @@ const csp = [
   // (dev tooling, previews) keep working; cross-origin framing is what matters.
   "frame-ancestors 'self'",
   "form-action 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://analytics.ahrefs.com https://www.google.com https://www.gstatic.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://analytics.ahrefs.com https://www.google.com https://www.gstatic.com https://cdn.cookie-script.com`,
   "style-src 'self' 'unsafe-inline'",
   // Game art comes from many upstream CDNs; next/image remotePatterns is the
   // real allowlist for optimized images.
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://analytics.ahrefs.com https://www.googletagmanager.com https://www.google.com https://*.steamstatic.com https://steamcdn-a.akamaihd.net",
+  "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://analytics.ahrefs.com https://www.googletagmanager.com https://www.google.com https://*.steamstatic.com https://steamcdn-a.akamaihd.net https://cdn.cookie-script.com https://eu.cookie-script.com",
   // reCAPTCHA's challenge plus the trailer embeds produced by
   // classifyMediaUrl() in lib/mediaEmbed.ts.
   "frame-src 'self' https://www.google.com https://www.gstatic.com https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",

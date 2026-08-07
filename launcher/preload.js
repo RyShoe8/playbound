@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld("playbound", {
   // Existing
   getContext: () => ipcRenderer.invoke("get-context"),
   chooseDirectory: (defaultPath) => ipcRenderer.invoke("choose-directory", defaultPath),
-  install: (slug, targetDir, editionSlug) =>
-    ipcRenderer.invoke("install", slug, targetDir, editionSlug || null),
+  install: (slug, targetDir, editionSlug, addons) =>
+    ipcRenderer.invoke("install", slug, targetDir, editionSlug || null, addons),
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),

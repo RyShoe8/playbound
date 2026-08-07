@@ -26,6 +26,15 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "Warzone2100/warzone2100",
     assetPattern: "win_x64_archive\\.zip$",
     exeHint: "warzone2100",
+    addons: [
+      {
+        id: "hq-videos",
+        name: "High Quality Campaign Videos",
+        description: "Includes high-quality video sequences for the single-player campaign. (1GB)",
+        url: "https://sourceforge.net/projects/warzone2100/files/warzone2100/Videos/high-quality-en/sequences.wz/download",
+        fileName: "sequences.wz",
+      },
+    ],
   },
   supertuxkart: {
     enabled: true,

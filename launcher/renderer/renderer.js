@@ -2002,6 +2002,25 @@ async function renderGameDetailView(slug) {
                  <select class="input-text" id="detail-edition-pick" style="max-width:320px;margin:8px 0 14px">${editionPickerOptions}</select>`
               : ""
           }
+          ${
+            detail.addons && detail.addons.length > 0
+              ? `<div class="detail-addons-picker" style="margin: 0.75rem 0;">
+                 <p style="font-weight:600; margin-bottom:0.5rem; font-size:13px; color:#a1a1aa;">Optional Downloads</p>
+                 ${detail.addons
+                   .map(
+                     (a) =>
+                       `<label style="display:block; font-size:13px; margin-bottom:0.25rem; color:#e2e8f0; display:flex; align-items:flex-start; gap:0.5rem; cursor:pointer;">
+                          <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked style="margin-top:2px;" />
+                          <div>
+                            <div>${escapeHtml(a.name)}</div>
+                            <div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.description || "")}</div>
+                          </div>
+                        </label>`
+                   )
+                   .join("")}
+               </div>`
+              : ""
+          }
           <div class="detail-hero-actions" style="margin-bottom:16px">
             <button class="btn-primary" type="button" id="install-tab-install">Install selected edition</button>
             ${detail.website ? `<button class="btn-secondary" type="button" id="install-tab-website">Official website</button>` : ""}
@@ -2055,10 +2074,16 @@ async function renderGameDetailView(slug) {
     return def?.editionSlug || null;
   }
 
+  function selectedAddons() {
+    const checkboxes = document.querySelectorAll(".addon-checkbox");
+    return Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+  }
+
   async function runInstall(editionSlug) {
     setStatus("Starting install...");
     try {
-      const res = await window.playbound.install(slug, null, editionSlug || null);
+      const addons = selectedAddons();
+      const res = await window.playbound.install(slug, null, editionSlug || null, addons);
       if (res.status === "installed") {
         setStatus("Install complete!");
         setProgress(null);
@@ -2700,6 +2725,25 @@ function renderDeepLinkView(ctx) {
       <p class="settings-hint">${escapeHtml(entry?.blurb || "")}</p>
       
       <div style="margin-top: 20px; display: flex; gap: 10px;" id="dl-actions"></div>
+      ${
+        entry?.addons && entry.addons.length > 0
+          ? `<div class="detail-addons-picker" style="margin: 0.75rem 0;">
+               <p style="font-weight:600; margin-bottom:0.5rem; font-size:13px; color:#a1a1aa;">Optional Downloads</p>
+               ${entry.addons
+                 .map(
+                   (a) =>
+                     `<label style="display:block; font-size:13px; margin-bottom:0.25rem; color:#e2e8f0; display:flex; align-items:flex-start; gap:0.5rem; cursor:pointer;">
+                        <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked style="margin-top:2px;" />
+                        <div>
+                          <div>${escapeHtml(a.name)}</div>
+                          <div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.description || "")}</div>
+                        </div>
+                      </label>`
+                 )
+                 .join("")}
+             </div>`
+          : ""
+      }
     </div>
   `;
 
@@ -2712,7 +2756,9 @@ function renderDeepLinkView(ctx) {
     document.getElementById("dl-act-run").addEventListener("click", async () => {
       setStatus("Installing...");
       try {
-        const res = await window.playbound.install(ctx.slug, null, ctx.editionSlug || null);
+        const checkboxes = document.querySelectorAll(".addon-checkbox");
+        const addons = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+        const res = await window.playbound.install(ctx.slug, null, ctx.editionSlug || null, addons);
         if (res.status === "installer-opened") {
           setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);
@@ -2807,11 +2853,12 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-window.playbound.onProgress(({ phase, received, total }) => {
+window.playbound.onProgress(({ phase, received, total, addon }) => {
   if (phase === "resolving") setStatus("Resolving download package...");
   else if (phase === "downloading") {
     const pct = total ? Math.round((received / total) * 100) : null;
-    setStatus(`Downloading... ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
+    const prefix = addon ? `Downloading ${addon}...` : "Downloading...";
+    setStatus(`${prefix} ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
     setProgress(pct);
   } else if (phase === "extracting") {
     setStatus("Extracting game files...");
