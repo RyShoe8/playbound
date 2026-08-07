@@ -57,9 +57,10 @@ export async function fetchZeroKServers(): Promise<GameServer[]> {
                 port: 8200,
                 players: header.PlayerCount || 0,
                 maxPlayers: maxPlayers,
-                password: hasPassword,
+                protected: hasPassword,
                 map: header.Map || "Unknown",
-                gameVersion: header.Game || "Zero-K",
+                gameType: header.Game || "Zero-K",
+                location: null,
               });
             }
           } catch (e) {

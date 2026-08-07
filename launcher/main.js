@@ -3369,6 +3369,29 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  win.webContents.setWindowOpenHandler(({ url, features }) => {
+    if (url.includes("popout=true")) {
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          width: 350,
+          height: 750,
+          minWidth: 300,
+          minHeight: 500,
+          autoHideMenuBar: true,
+          titleBarStyle: "hidden",
+          titleBarOverlay: {
+            color: "#0a0a0a",
+            symbolColor: "#ffffff",
+            height: 36,
+          },
+        }
+      };
+    }
+    return { action: "allow" };
+  });
+
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
   win.on("minimize", (e) => {
     e.preventDefault();
