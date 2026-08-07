@@ -1,6 +1,10 @@
 /**
- * Patch coverImage from seed data onto existing Mongo catalog mods.
- * Runs after seed:mods so production picks up new covers on every deploy.
+ * Backfill coverImage from seed data onto existing Mongo catalog mods whose
+ * cover is still empty.
+ *
+ * Backfill-only, not overwrite — see fix-game-media.ts for why. This used to
+ * $set unconditionally on every deploy, silently reverting any cover an
+ * admin uploaded through the admin panel back to the seed's static image.
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -22,19 +26,17 @@ async function main() {
   for (const seed of mods) {
     if (!seed.coverImage) continue;
 
-    const result = await CatalogMod.updateOne(
-      { slug: seed.slug },
-      { $set: { coverImage: seed.coverImage } }
-    );
+    const existing = await CatalogMod.findOne({ slug: seed.slug })
+      .select("coverImage")
+      .lean<{ coverImage?: string | null }>();
+    if (!existing || existing.coverImage) continue;
 
-    if (result.matchedCount === 0) continue;
-    if (result.modifiedCount > 0) {
-      patched++;
-      console.log(`OK  ${seed.slug}`);
-    }
+    await CatalogMod.updateOne({ slug: seed.slug }, { $set: { coverImage: seed.coverImage } });
+    patched++;
+    console.log(`OK  ${seed.slug}`);
   }
 
-  console.log(`Patched cover art for ${patched} mod(s).`);
+  console.log(`Backfilled cover art for ${patched} mod(s).`);
   process.exit(0);
 }
 
