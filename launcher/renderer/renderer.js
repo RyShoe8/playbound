@@ -162,7 +162,7 @@ function buildCatalogStatsSkeletonHtml() {
 
 function buildCatalogStatsCardHtml(live) {
   if (!live) {
-    return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable offline.</p></aside>`;
+    return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable.</p></aside>`;
   }
   const popular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
   const popularHtml =
@@ -2233,9 +2233,14 @@ async function renderGameDetailView(slug) {
       <button class="btn-danger" id="act-uninstall">Uninstall</button>
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
-      setStatus("Launching...");
-      await window.playbound.play(slug);
-      startGameSession(slug, detail.title || slug);
+      try {
+        setStatus("Launching...");
+        await window.playbound.play(slug);
+        startGameSession(slug, detail.title || slug);
+        setStatus(`Launched ${detail.title || slug}`);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
     });
     const btnShortcut = document.getElementById("act-shortcut");
     if (btnShortcut) {
@@ -2663,9 +2668,14 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
     }
   });
   document.getElementById("edition-play")?.addEventListener("click", async () => {
-    setStatus("Launching...");
-    await window.playbound.play(gameSlug);
-    startGameSession(gameSlug, edition.gameTitle || gameSlug);
+    try {
+      setStatus("Launching...");
+      await window.playbound.play(gameSlug);
+      startGameSession(gameSlug, edition.gameTitle || gameSlug);
+      setStatus(`Launched ${edition.gameTitle || gameSlug}`);
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
   });
   container.querySelectorAll("[data-ext]").forEach((btn) => {
     btn.addEventListener("click", () => window.playbound.openExternal(btn.dataset.ext));

@@ -60,6 +60,9 @@ module.exports = {
     if (exePath.endsWith(".app")) {
       return ["open", "-a", exePath];
     }
+    if (exePath.toLowerCase().endsWith(".jar")) {
+      return ["java", "-jar", exePath];
+    }
     return [exePath];
   }
 };

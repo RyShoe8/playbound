@@ -6,11 +6,12 @@ import { useDiscordStore } from "@/stores/discordStore";
 
 export function ConnectedAccounts({
   googleConnected,
+  discordConfigured,
 }: {
   googleConnected: boolean;
+  discordConfigured: boolean;
 }) {
   const { discordLinked, discordProfile, loading, refresh, unlink } = useDiscordStore();
-  const discordConfigured = Boolean(process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID);
 
   useEffect(() => {
     refresh();

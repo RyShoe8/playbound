@@ -64,6 +64,9 @@ module.exports = {
     process.kill(pid);
   },
   getGameLaunchCommand(exePath) {
+    if (exePath.toLowerCase().endsWith(".jar")) {
+      return ["java", "-jar", exePath];
+    }
     return [exePath];
   }
 };

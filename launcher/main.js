@@ -3061,7 +3061,7 @@ ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
       // Every other call in this file is bounded; this one was not, so a slow
       // or black-holed connection could leave it pending indefinitely. Live
       // stats are decorative — a missing number is fine, a hung request is not.
-      signal: AbortSignal.timeout(6_000),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;
     return await res.json();
