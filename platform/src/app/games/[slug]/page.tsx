@@ -26,6 +26,7 @@ import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { CompatibleMoreLikeThis } from "@/components/CompatibleGameCardGrid";
+import { CompatibleGearList } from "@/components/gear/CompatibleGearList";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { GameIncompatibilityBanner } from "@/components/GameIncompatibilityBanner";
 import { ContentForm } from "@/components/ContentForm";
@@ -619,6 +620,11 @@ function OverviewTab({
             </ul>
           </section>
         )}
+
+        <section>
+          {/* @ts-expect-error Async Server Component */}
+          <CompatibleGearList gameSlug={game.slug} gameTitle={game.title} />
+        </section>
 
         {similar.length > 0 && (
           <section>

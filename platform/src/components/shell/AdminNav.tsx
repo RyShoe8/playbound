@@ -17,6 +17,7 @@ import {
   MessagesSquare,
   Puzzle,
   Users,
+  Mouse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,6 +48,7 @@ const links: NavItem[] = [
     ],
   },
   { href: "/admin/collections", label: "Collections", icon: Layers },
+  { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/developers", label: "Developers", icon: Building2 },
   { href: "/admin/community", label: "Community", icon: MessagesSquare },
   { href: "/admin/weekly", label: "Weekly", icon: Mail },
