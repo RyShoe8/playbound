@@ -86,6 +86,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        {/* Impact.com partner verification. Uses value= per their spec, not the
+            usual content= — do not "fix" this to match other meta tags. */}
+        <meta
+          name="impact-site-verification"
+          {...{ value: "32cad13b-3ac1-453f-b345-41c04db444ae" }}
+        />
         {/* CMP before telemetry scripts so consent can gate tags.
             beforeInteractive is only allowed in the root layout. */}
         {IS_PRODUCTION ? (
