@@ -120,6 +120,41 @@ body {
   flex-shrink: 0;
 }
 
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 2px 14px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+
+.nav-btn.sub-nav-btn {
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 10px;
+}
+
+.nav-btn.sub-nav-btn .nav-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.nav-btn.sub-nav-btn[hidden] {
+  display: none !important;
+}
+
+.nav-group.has-active-child > .nav-btn:not(.sub-nav-btn):not(.active) {
+  color: var(--text-main);
+}
+
 .sidebar-bottom {
   display: flex;
   flex-direction: column;
