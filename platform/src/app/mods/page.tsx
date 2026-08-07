@@ -4,13 +4,14 @@ import { listMods } from "@/lib/mods";
 import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
-import { ModsCatalog } from "@/components/ModsCatalog";
+import { ModsFilters } from "@/components/ModsFilters";
+
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata = pageMetadata({
   title: "Free Game Mods & Add-ons",
   description:
-    "Every mod, total conversion and add-on pack for games in the PlayBound catalog — grouped by game, all free, one-click installable.",
+    "Every mod, total conversion and add-on pack for games in the PlayBound catalog — searchable by game, all free, one-click installable.",
   path: "/mods",
 });
 
@@ -20,22 +21,8 @@ export default async function ModsIndexPage() {
     listMods({ includeTesting }),
     listGames({ includeTesting }),
   ]);
-  const gameBySlug = new Map(games.map((g) => [g.slug, g]));
-
-  const grouped = new Map<string, typeof mods>();
-  for (const mod of mods) {
-    const list = grouped.get(mod.baseGameSlug) ?? [];
-    list.push(mod);
-    grouped.set(mod.baseGameSlug, list);
-  }
-  const sections = [...grouped.entries()]
-    .sort((a, b) => {
-      const nameA = gameBySlug.get(a[0])?.title ?? a[0];
-      const nameB = gameBySlug.get(b[0])?.title ?? b[0];
-      return nameA.localeCompare(nameB);
-    })
-    .map(([gameSlug, list]) => ({ gameSlug, mods: list }));
-
+  // Mods are no longer grouped into per-game sections here — the list is flat
+  // and filtered client-side, so only the slug→game lookup is still needed.
   const gamesBySlug: Record<
     string,
     | {
@@ -60,7 +47,7 @@ export default async function ModsIndexPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
           {
@@ -86,22 +73,24 @@ export default async function ModsIndexPage() {
         )}
       />
 
-      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-        <Puzzle className="size-4" /> Mods &amp; add-ons
+      {/* Header matches the games index: title, one line of context, then
+          straight into the filter toolbar. */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
+            <Puzzle className="size-6 text-primary" /> Mods
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Free add-ons for games in the PlayBound catalog — total conversions, map
+            packs, AI opponents and content libraries.
+          </p>
+        </div>
       </div>
-      <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-        Free mods and add-ons
-      </h1>
-      <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-        {mods.length} free add-on{mods.length === 1 ? "" : "s"} for games in the
-        PlayBound catalog — total conversions, map packs, AI opponents and content
-        libraries. All free, all installable through the launcher.
-      </p>
 
-      {sections.length === 0 ? (
+      {mods.length === 0 ? (
         <p className="mt-10 text-muted-foreground">No mods published yet.</p>
       ) : (
-        <ModsCatalog sections={sections} gamesBySlug={gamesBySlug} />
+        <ModsFilters mods={mods} gamesBySlug={gamesBySlug} />
       )}
     </div>
   );
