@@ -16,6 +16,7 @@ import {
   type EditionInstallConfig,
   type InstallMethod,
 } from "@/lib/editionTypes";
+import { SizeInput } from "@/components/admin/SizeInput";
 
 const label = "block text-xs font-semibold text-muted-foreground";
 const field =
@@ -621,14 +622,14 @@ function InstallMethodFields({
             value={config.official_download?.url ?? ""}
             onChange={(v) => patchConfig("official_download", { url: v })}
           />
-          <Field
-            label="Download size (MB)"
-            type="number"
-            value={String(config.official_download?.sizeMB ?? "")}
-            onChange={(v) =>
-              patchConfig("official_download", { sizeMB: Number(v) || undefined })
-            }
-          />
+          <div>
+            <label className={label}>Download size (MB)</label>
+            <SizeInput
+              value={config.official_download?.sizeMB}
+              onChange={(v) => patchConfig("official_download", { sizeMB: v })}
+              className={field}
+            />
+          </div>
         </>
       );
     case "external_installer":

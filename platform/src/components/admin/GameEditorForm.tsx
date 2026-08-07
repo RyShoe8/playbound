@@ -45,6 +45,7 @@ import {
   StringListEditor,
 } from "@/components/admin/EditorialFields";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
+import { SizeInput } from "@/components/admin/SizeInput";
 
 /** Games with a live PlayBound server list provider (keep in sync with registry). */
 const WIRED_SERVER_PROVIDERS = new Set([
@@ -796,11 +797,10 @@ export function GameEditorForm({
           </div>
           <div>
             <label className={label}>Size (MB)</label>
-            <input
-              type="number"
+            <SizeInput
               required
               value={form.sizeMB}
-              onChange={(e) => patch("sizeMB", Number(e.target.value))}
+              onChange={(v) => patch("sizeMB", v || 0)}
               className={field}
             />
           </div>
