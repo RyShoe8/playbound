@@ -1,7 +1,7 @@
 /** Shared media fetch, Steam inference, merge, and Blob rehost for admin Refresh. */
 
 import { put } from "@vercel/blob";
-import { compressImageBuffer } from "@/lib/compressImage";
+import { compressImageBuffer, toDetachedBuffer } from "@/lib/compressImage";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
@@ -319,7 +319,7 @@ export async function rehostImageToBlob(opts: {
       next: { revalidate: 0 },
     });
     if (!res.ok) return null;
-    const input = Buffer.from(await res.arrayBuffer());
+    const input = toDetachedBuffer(await res.arrayBuffer());
     const compressed = await compressImageBuffer(input);
     const slug = (opts.slug || "upload").replace(/[^a-z0-9-]/gi, "-").slice(0, 80) || "upload";
     const kind = opts.kind.replace(/[^a-z0-9-]/gi, "-").slice(0, 40) || "shot";

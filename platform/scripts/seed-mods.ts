@@ -37,6 +37,26 @@ async function main() {
   );
 
   let upserted = 0;
+
+  // OpenArena was briefly miscategorized under TES Arena — drop those seed rows.
+  const mistakenOpenArenaUnderTes = [
+    "tes-arena-openarena",
+    "tes-arena-oa-maps",
+    "tes-arena-oa-moddb",
+    "tes-arena-oa-wiki",
+    "tes-arena-oa-source",
+    "tes-arena-textures-oa",
+    "tes-arena-bots",
+    "tes-arena-ioq3",
+    "tes-arena-ctf",
+  ];
+  const removedMistaken = await CatalogMod.deleteMany({
+    slug: { $in: mistakenOpenArenaUnderTes },
+  });
+  if (removedMistaken.deletedCount) {
+    console.log(`Removed ${removedMistaken.deletedCount} mistaken OpenArena-under-TES mod seed(s).`);
+  }
+
   for (const seed of mods) {
     const m = ensureDerivedModFields(seed, baseTitles.get(seed.baseGameSlug));
     const developerName = developersBySlug.get(m.developerSlug)?.name ?? null;

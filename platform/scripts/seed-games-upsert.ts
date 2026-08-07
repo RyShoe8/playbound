@@ -19,6 +19,7 @@ export const DRAFT_ON_CREATE = new Set([
   "lincity-ng",
   "tes-arena",
   "daggerfall",
+  "openarena",
   "pixreveal",
   "gamebuddies-io",
   "everquest",
@@ -40,7 +41,7 @@ export const DRAFT_ON_CREATE = new Set([
 ]);
 
 /** Standalone remasters superseded by parent-game editions — keep rows but unpublish. */
-export const SUPERSEDED_GAME_SLUGS = new Set(["openarena", "daggerfall-unity"]);
+export const SUPERSEDED_GAME_SLUGS = new Set(["daggerfall-unity"]);
 
 function isThinMedia(doc: {
   coverImage?: string | null;
@@ -201,10 +202,7 @@ async function main() {
         $set: {
           published: false,
           status: "draft",
-          tagline:
-            slug === "openarena"
-              ? "Superseded — use the OpenArena edition on The Elder Scrolls: Arena."
-              : "Superseded — use the Daggerfall Unity edition on Daggerfall.",
+          tagline: "Superseded — use the Daggerfall Unity edition on Daggerfall.",
         },
       }
     );

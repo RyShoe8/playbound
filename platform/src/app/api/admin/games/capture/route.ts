@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { compressImageBuffer } from "@/lib/compressImage";
+import { blobToDetachedBuffer, compressImageBuffer } from "@/lib/compressImage";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 const schema = z.object({
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     if (!imgRes.ok) {
       return NextResponse.json({ error: "Failed to download captured screenshot" }, { status: 502 });
     }
-    const bytes = Buffer.from(await imgRes.arrayBuffer());
+    const bytes = await blobToDetachedBuffer(await imgRes.blob());
     let compressed;
     try {
       compressed = await compressImageBuffer(bytes);
