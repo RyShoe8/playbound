@@ -87,10 +87,27 @@ export default function RootLayout({
     >
       <head>
         {/* Impact.com partner verification. Uses value= per their spec, not the
-            usual content= — do not "fix" this to match other meta tags. */}
+            usual content= — do not "fix" this to match other meta tags.
+            React treats `value` as a controlled DOM property (the same
+            mechanism behind controlled <input>/<select>) rather than a plain
+            attribute, so once the client hydrates it silently drops `value`
+            from this node — correct in the raw SSR response (what a plain
+            HTTP-fetch verifier reads), gone from the live DOM afterward. The
+            inline script below is a second, React-independent copy so a
+            verifier that renders JS still finds it after hydration. */}
         <meta
           name="impact-site-verification"
           {...{ value: "32cad13b-3ac1-453f-b345-41c04db444ae" }}
+        />
+        <script
+          // Runs synchronously during initial HTML parsing, before React
+          // hydrates, and creates a DOM node React never owns or touches —
+          // so hydration can't strip its `value` attribute the way it does
+          // the JSX-rendered tag above.
+          dangerouslySetInnerHTML={{
+            __html:
+              'document.head.insertAdjacentHTML("afterbegin",\'<meta name="impact-site-verification" value="32cad13b-3ac1-453f-b345-41c04db444ae">\');',
+          }}
         />
         {/* CMP before telemetry scripts so consent can gate tags.
             beforeInteractive is only allowed in the root layout. */}
