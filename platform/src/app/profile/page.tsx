@@ -126,7 +126,10 @@ export default async function ProfilePage() {
         </div>
       </section>
 
-      <ConnectedAccounts googleConnected={googleConnected} />
+      <ConnectedAccounts
+        googleConnected={googleConnected}
+        discordConfigured={Boolean(process.env.DISCORD_CLIENT_ID)}
+      />
 
       <section>
         <SectionHeader title="Your Contributions" />
