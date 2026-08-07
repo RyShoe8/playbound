@@ -46,6 +46,16 @@ export default async function ModsIndexPage() {
     };
   }
 
+  /**
+   * A mod's own status can be published while its base game is still a
+   * draft — nothing enforces the two together. Drop those here rather than
+   * downstream: ModsFilters' game selector is built from the mods list's own
+   * baseGameSlug values, so an unfiltered list would surface a draft game as
+   * a selectable option (and its mod as a dead link to a page that doesn't
+   * exist yet for a regular visitor).
+   */
+  const liveMods = mods.filter((m) => Boolean(gamesBySlug[m.baseGameSlug]));
+
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
       <JsonLd
@@ -58,8 +68,8 @@ export default async function ModsIndexPage() {
           },
           {
             "@type": "ItemList",
-            numberOfItems: mods.length,
-            itemListElement: mods.map((m, i) => ({
+            numberOfItems: liveMods.length,
+            itemListElement: liveMods.map((m, i) => ({
               "@type": "ListItem",
               position: i + 1,
               name: m.title,
@@ -87,10 +97,10 @@ export default async function ModsIndexPage() {
         </div>
       </div>
 
-      {mods.length === 0 ? (
+      {liveMods.length === 0 ? (
         <p className="mt-10 text-muted-foreground">No mods published yet.</p>
       ) : (
-        <ModsFilters mods={mods} gamesBySlug={gamesBySlug} />
+        <ModsFilters mods={liveMods} gamesBySlug={gamesBySlug} />
       )}
     </div>
   );

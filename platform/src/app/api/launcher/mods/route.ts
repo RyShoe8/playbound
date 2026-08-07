@@ -19,25 +19,32 @@ export async function GET(req: Request) {
     ]);
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
-    const entries = mods.map((m) => {
-      const base = gameBySlug.get(m.baseGameSlug);
-      return {
-        slug: m.slug,
-        title: m.title,
-        baseGameSlug: m.baseGameSlug,
-        tagline: m.tagline,
-        coverImage: absoluteMediaUrl(m.coverImage, origin),
-        baseGameCoverImage: absoluteMediaUrl(base?.coverImage, origin),
-        downloadKind: m.downloadKind,
-        approxSize: sizeLabelFromMB(m.sizeMB) || null,
-        art: [m.art.from, m.art.to] as [string, string],
-        status: m.status || "published",
-        testing: m.status === "testing",
-        baseHasServers:
-          hasServerProvider(m.baseGameSlug) || isKnownServerGame(m.baseGameSlug),
-        baseSupported: hasServerProvider(m.baseGameSlug),
-      };
-    });
+    // A mod's own status can be published while its base game is still a
+    // draft — nothing enforces the two together. Drop those here: the
+    // launcher has no page to show for a game that isn't live yet, so a mod
+    // for one would be an install button that leads nowhere.
+    const entries = mods
+      .filter((m) => gameBySlug.has(m.baseGameSlug))
+      .map((m) => {
+        const base = gameBySlug.get(m.baseGameSlug);
+        return {
+          slug: m.slug,
+          title: m.title,
+          baseGameSlug: m.baseGameSlug,
+          baseGameTitle: base?.title,
+          tagline: m.tagline,
+          coverImage: absoluteMediaUrl(m.coverImage, origin),
+          baseGameCoverImage: absoluteMediaUrl(base?.coverImage, origin),
+          downloadKind: m.downloadKind,
+          approxSize: sizeLabelFromMB(m.sizeMB) || null,
+          art: [m.art.from, m.art.to] as [string, string],
+          status: m.status || "published",
+          testing: m.status === "testing",
+          baseHasServers:
+            hasServerProvider(m.baseGameSlug) || isKnownServerGame(m.baseGameSlug),
+          baseSupported: hasServerProvider(m.baseGameSlug),
+        };
+      });
 
     return NextResponse.json(
       { mods: entries },

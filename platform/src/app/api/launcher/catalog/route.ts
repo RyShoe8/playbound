@@ -45,6 +45,7 @@ export async function GET(req: Request) {
                 platforms: Array.isArray(g.platforms) ? g.platforms : [],
                 browserPlayable: Boolean(g.browserPlayable),
                 steamDeck: Boolean(g.steamDeck),
+                createdAt: g.createdAt || null,
               }
             : null;
         }
@@ -67,6 +68,7 @@ export async function GET(req: Request) {
           platforms: Array.isArray(g.platforms) ? g.platforms : [],
           browserPlayable: Boolean(g.browserPlayable),
           steamDeck: Boolean(g.steamDeck),
+          createdAt: g.createdAt || null,
           ...(cover ? { coverImage: cover } : {}),
         };
       })

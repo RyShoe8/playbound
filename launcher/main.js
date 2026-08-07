@@ -2768,6 +2768,7 @@ ipcMain.handle("get-catalog", () => {
     platforms: Array.isArray(e.platforms) ? e.platforms : [],
     browserPlayable: Boolean(e.browserPlayable),
     steamDeck: Boolean(e.steamDeck),
+    createdAt: e.createdAt || null,
   }));
 });
 ipcMain.handle("get-servers", async (_event, slug) => {

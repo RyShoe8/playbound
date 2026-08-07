@@ -507,37 +507,37 @@ async function renderHomeView() {
       </div>
       <div id="home-stats-slot"></div>
     </div>
-    
+
     <div id="home-recent-section" class="hidden">
       <div class="section-header">Recently Played</div>
       <div id="home-recent-grid" class="game-grid"></div>
     </div>
 
-    <div class="section-header">Installed Games</div>
-    <div id="home-installed-grid" class="game-grid"></div>
-
     <div class="section-header">
-      <span>Featured Catalog</span>
+      <span>Newest Games</span>
       <button class="btn-secondary btn-sm" id="home-browse-games">Browse Games</button>
     </div>
-    <div id="home-catalog-grid" class="game-grid"></div>
+    <div id="home-newest-grid" class="game-grid"></div>
+
+    <div class="section-header">Most Popular Games</div>
+    <div id="home-popular-grid" class="game-grid"></div>
   `;
 
   document.getElementById("home-browse-games")?.addEventListener("click", () => navigateTo("games"));
 
   /**
-   * Local data only. Recently-played, installed and the catalog are all read
-   * from memory or disk in the main process, so these resolve immediately.
+   * Local data only. Recently-played and the catalog are both read from
+   * memory or disk in the main process, so these resolve immediately.
    *
    * Live stats are deliberately NOT awaited here. That call goes over the
    * network, and having it inside this Promise.all meant the entire homepage —
-   * including three lists already sitting in memory — stayed blank until it
-   * came back. On a slow or unreachable connection that was the whole 5+
-   * second wait for any content at all.
+   * including lists already sitting in memory — stayed blank until it came
+   * back. On a slow or unreachable connection that was the whole 5+ second
+   * wait for any content at all. "Most Popular" is filled in once live stats
+   * resolve, same as the stats card below.
    */
-  const [recent, installed, catalog] = await Promise.all([
+  const [recent, catalog] = await Promise.all([
     window.playbound.getRecentlyPlayed(),
-    window.playbound.getInstalled(),
     window.playbound.getCatalog(),
   ]);
 
@@ -545,6 +545,11 @@ async function renderHomeView() {
   // real numbers arrive.
   const statsSlot = document.getElementById("home-stats-slot");
   if (statsSlot) statsSlot.innerHTML = buildCatalogStatsSkeletonHtml();
+
+  const popularGrid = document.getElementById("home-popular-grid");
+  if (popularGrid) {
+    popularGrid.innerHTML = `<p class="view-sub">Loading popularity data…</p>`;
+  }
 
   void (async () => {
     const now = Date.now();
@@ -585,6 +590,23 @@ async function renderHomeView() {
     statsSlot.querySelectorAll("[data-popular-slug]").forEach((btn) => {
       btn.addEventListener("click", () => openGameDetail(btn.dataset.popularSlug, "home"));
     });
+
+    if (popularGrid && popularGrid.isConnected) {
+      const byGame = Array.isArray((live || _liveStatsLastGood)?.byGame)
+        ? (live || _liveStatsLastGood).byGame
+        : [];
+      const bySlug = new Map(catalog.map((g) => [g.slug, g]));
+      const popular = filterByCompatibility(
+        byGame
+          .map((row) => bySlug.get(row.slug))
+          .filter(Boolean)
+      ).slice(0, 8);
+      if (popular.length > 0) {
+        popularGrid.replaceChildren(...popular.map(createGameCard));
+      } else {
+        popularGrid.innerHTML = `<p class="view-sub">No popularity data yet.</p>`;
+      }
+    }
   })();
 
   const recentSec = document.getElementById("home-recent-section");
@@ -594,22 +616,13 @@ async function renderHomeView() {
     recentGrid.replaceChildren(...filterByCompatibility(recent).map(createGameCard));
   }
 
-  const installedGrid = document.getElementById("home-installed-grid");
-  const installedFiltered = filterByCompatibility(installed || []);
-  if (installedFiltered.length > 0) {
-    installedGrid.replaceChildren(...installedFiltered.map(createGameCard));
-  } else {
-    installedGrid.innerHTML = `<p class="view-sub">No games installed yet. <a href="#" id="home-empty-games">Browse Games</a></p>`;
-    document.getElementById("home-empty-games")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      navigateTo("games");
-    });
-  }
-
-  const catalogGrid = document.getElementById("home-catalog-grid");
-  catalogGrid.replaceChildren(
-    ...filterByCompatibility(catalog).slice(0, 4).map(createGameCard)
-  );
+  const newestGrid = document.getElementById("home-newest-grid");
+  const newest = [...filterByCompatibility(catalog)].sort((a, b) => {
+    const ta = Date.parse(a.createdAt || "") || 0;
+    const tb = Date.parse(b.createdAt || "") || 0;
+    return tb - ta;
+  });
+  newestGrid.replaceChildren(...newest.slice(0, 8).map(createGameCard));
 }
 
 async function renderLibraryView() {
@@ -1304,7 +1317,12 @@ async function renderModsView() {
       </div>
       <button class="btn-secondary btn-sm" id="btn-open-mods-web">Open playbound.club/mods</button>
     </div>
-    <input type="search" class="input-text" id="mods-search" placeholder="Search mods…" style="margin-top: 16px; max-width: 360px" />
+    <div class="games-filters" id="mods-filters">
+      <input type="search" class="input-text" id="mods-search" placeholder="Search mods or games…" />
+      <select class="input-text" id="mods-game" aria-label="Filter by game">
+        <option value="">All games</option>
+      </select>
+    </div>
     <p class="view-sub" id="mods-count" style="margin: 10px 0 0 0"></p>
     <div id="mods-grid" class="game-grid" style="margin-top: 16px"></div>
   `;
@@ -1314,14 +1332,40 @@ async function renderModsView() {
   });
 
   const res = await window.playbound.getModsCatalog();
+  // The API already drops mods whose base game isn't live, so every entry
+  // here has a real game behind it — nothing to filter twice.
   const mods = res.mods || [];
   const search = document.getElementById("mods-search");
+  const gameSelect = document.getElementById("mods-game");
+
+  const gameOptions = new Map();
+  for (const m of mods) {
+    if (m.baseGameSlug && !gameOptions.has(m.baseGameSlug)) {
+      gameOptions.set(m.baseGameSlug, m.baseGameTitle || m.baseGameSlug);
+    }
+  }
+  [...gameOptions.entries()]
+    .sort((a, b) => String(a[1]).localeCompare(String(b[1])))
+    .forEach(([slug, title]) => {
+      const opt = document.createElement("option");
+      opt.value = slug;
+      opt.textContent = title;
+      gameSelect.appendChild(opt);
+    });
+
   const paint = () => {
     const q = (search.value || "").trim().toLowerCase();
+    const gameSlug = gameSelect.value;
     let list = mods.slice();
+    if (gameSlug) {
+      list = list.filter((m) => m.baseGameSlug === gameSlug);
+    }
     if (q) {
       list = list.filter((m) =>
-        [m.title, m.tagline, m.slug, m.baseGameSlug].join(" ").toLowerCase().includes(q)
+        [m.title, m.tagline, m.slug, m.baseGameTitle, m.baseGameSlug]
+          .join(" ")
+          .toLowerCase()
+          .includes(q)
       );
     }
     list.sort((a, b) => String(a.title).localeCompare(String(b.title)));
@@ -1345,7 +1389,7 @@ async function renderModsView() {
           <div class="card-banner" style="background:${bgGrad}">${escapeHtml((mod.title || "?").charAt(0))}</div>
           <div class="card-body">
             <div class="card-title">${escapeHtml(mod.title)}</div>
-            <div class="card-blurb">${escapeHtml(mod.tagline || mod.baseGameSlug || "")}</div>
+            <div class="card-blurb">${escapeHtml(mod.tagline || mod.baseGameTitle || mod.baseGameSlug || "")}</div>
             <div class="card-footer">
               <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(mod.approxSize || "")}</span>
               <button class="btn-primary btn-sm btn-mod-install" type="button">Install</button>
@@ -1393,6 +1437,7 @@ async function renderModsView() {
     );
   };
   search.addEventListener("input", paint);
+  gameSelect.addEventListener("change", paint);
   paint();
 }
 
