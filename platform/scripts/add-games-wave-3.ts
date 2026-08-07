@@ -425,38 +425,38 @@ const GAMES = [
     slug: "among-us",
     title: "Among Us",
     tagline: "A social deduction game of teamwork and betrayal for 4–15 players, in space.",
+    // Steam's SKU is $4.99, which breaks this catalog's genuinely-free premise
+    // (see qualityBar.genuinelyFree and the "isAccessibleForFree: true" claim
+    // every game emits in JsonLd.tsx). So no steamAppId and no Steam
+    // launcherInstall here — only the two channels that are actually free are
+    // presented as install routes. Steam gets one honest sentence in the
+    // description and nothing more; it is not an edition on this listing.
     description:
-      "A social deduction game where most of the crew runs tasks around a spaceship while a hidden handful of impostors try to pick everyone off without getting caught. Discussion and voting between rounds are where the game actually happens — reading people, building alibis, catching someone in a lie. Free on mobile; a small one-time purchase on Steam.",
+      "A social deduction game where most of the crew runs tasks around a spaceship while a hidden handful of impostors try to pick everyone off without getting caught. Discussion and voting between rounds are where the game actually happens — reading people, building alibis, catching someone in a lie. Free on mobile, ad-supported; a paid, ad-free version also exists on Steam and other storefronts for $4.99.",
     developerSlug: "innersloth",
     developerName: "Innersloth",
     genres: ["Social Deduction"],
     tags: ["Social Deduction", "Party", "Space"],
     aliases: [],
-    license: "Free to Play (mobile) — $4.99 one-time on Steam",
+    license: "Free to Play (mobile, ad-supported)",
     releaseYear: 2018,
     sizeMB: 1057,
-    platforms: ["Windows", "Android", "iOS"],
+    platforms: ["Android", "iOS"],
     features: ["Multiplayer", "Co-op", "Cross-play", "Controller Support"],
     launchMethods: ["install"],
     browserPlayable: false,
     steamDeck: false,
     website: "https://www.innersloth.com/games/among-us/",
-    steamAppId: "945360",
     androidStoreUrl: "https://play.google.com/store/apps/details?id=com.innersloth.spacemafia",
     iosStoreUrl: "https://apps.apple.com/us/app/among-us/id1351168404",
     art: { from: "#7f1d1d", to: "#fbbf24", icon: "Target" },
     coverImage: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/945360/header.jpg",
     screenshots: ["https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/945360/ss_b7374128e5b786a302a716bca038d604b00ffe46.1920x1080.jpg"],
     systemRequirements: {
-      min: "Windows 10 (32-bit), Intel i3-4330, 1 GB RAM, Intel HD Graphics 4600. iOS/Android storefronts list device-specific requirements.",
-      recommended: "Windows 10 (64-bit), Intel i3-4330, 4 GB RAM, GeForce GTX 650.",
+      min: "iOS 13.0 or later, or Android 5.0 or later. See app store listing for device-specific requirements.",
+      recommended: "iOS 13.0 or later, or Android 5.0 or later. See app store listing for device-specific requirements.",
     },
-    launcherInstall: {
-      enabled: true,
-      kind: "external",
-      url: "https://store.steampowered.com/app/945360/",
-      note: "$4.99 one-time on Steam. Free on Google Play and the App Store, where the game is ad-supported instead.",
-    },
+    launcherInstall: null,
     status: "draft",
     published: false,
     managedBy: "admin",
