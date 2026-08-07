@@ -75,6 +75,11 @@ const GAMES = [
     browserPlayable: false,
     steamDeck: false,
     website: "https://kay-yu.itch.io/holocure",
+    // Verified via store.steampowered.com/api/storesearch — "HoloCure - Save
+    // the Fans!". Lets deriveInstallMethod() fall back to a Steam deep link
+    // for the virtual edition once launcherInstall (below) is skipped as
+    // external, rather than sending readers to the itch page.
+    steamAppId: "2420510",
     art: { from: "#1e1b4b", to: "#f472b6", icon: "Swords" },
     systemRequirements: {
       min: "Windows 7 or later. No dedicated graphics required.",
