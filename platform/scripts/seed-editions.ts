@@ -19,6 +19,15 @@ async function main() {
 
   await dbConnect();
 
+  // Mistaken Phase 2 link: OpenArena is a Quake III fan game, not TES Arena.
+  const removedBadEdition = await Edition.deleteOne({
+    gameSlug: "tes-arena",
+    slug: "openarena",
+  });
+  if (removedBadEdition.deletedCount) {
+    console.log("Removed mistaken edition tes-arena/openarena");
+  }
+
   if (!editions.length) {
     console.log("seed:editions — no seed editions defined.");
     process.exit(0);

@@ -1,6 +1,6 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
-import { compressImageBuffer } from "@/lib/compressImage";
+import { blobToDetachedBuffer, compressImageBuffer } from "@/lib/compressImage";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
 export async function POST(req: Request) {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only image uploads are allowed" }, { status: 400 });
     }
 
-    const input = Buffer.from(await file.arrayBuffer());
+    const input = await blobToDetachedBuffer(file);
     let compressed;
     try {
       compressed = await compressImageBuffer(input);

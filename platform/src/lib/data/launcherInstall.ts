@@ -220,6 +220,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     assetPattern: "win64.*\\.zip$|windows.*\\.zip$|\\.zip$",
     exeHint: "lincity|lincity-ng",
   },
+  openarena: {
+    enabled: true,
+    kind: "direct-zip",
+    url: "https://downloads.sourceforge.net/openarena/openarena-0.8.8.zip",
+    exeHint: "openarena",
+    connectArgs: ["+connect", "{host}:{port}"],
+  },
   wolfenstein: {
     enabled: true,
     kind: "github-zip",

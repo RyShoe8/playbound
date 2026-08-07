@@ -1,5 +1,6 @@
 /**
- * Phase 2 draft editions: Arena/Daggerfall remasters, EQ private eras, SWG community.
+ * Phase 2 draft editions: Daggerfall Unity remaster, EQ private eras, SWG community.
+ * (OpenArena is a standalone Quake-style game — not an Elder Scrolls edition.)
  * Seed script forces coming_soon + unlisted unless overridden here.
  */
 import type {
@@ -50,33 +51,6 @@ export type EditionSeed = {
 };
 
 export const editions: EditionSeed[] = [
-  {
-    gameSlug: "tes-arena",
-    slug: "openarena",
-    name: "OpenArena",
-    shortDescription: "Free Quake III–style arena shooter — PlayBound's default playable path.",
-    description:
-      "OpenArena is a free and open-source arena FPS compatible with Quake III Arena gameplay. Deathmatch, CTF, and tournament modes without proprietary game files. Listed as the default remaster-style edition under The Elder Scrolls: Arena franchise row for discoverability alongside the freeware classic.",
-    type: "remaster",
-    isDefault: true,
-    sortOrder: 10,
-    links: {
-      website: "https://openarena.ws",
-    },
-    installMethod: "playbound_installer",
-    installConfig: {
-      playbound_installer: {
-        kind: "direct-zip",
-        url: "https://downloads.sourceforge.net/openarena/openarena-0.8.8.zip",
-        exeHint: "openarena",
-        connectArgs: ["+connect", "{host}:{port}"],
-      },
-    },
-    features: ["Multiplayer", "Dedicated Servers", "LAN Support", "Mod Support"],
-    tags: ["Free", "FPS", "Arena"],
-    aliases: ["OA", "Open Arena"],
-    verificationLevel: "community_verified",
-  },
   {
     gameSlug: "daggerfall",
     slug: "daggerfall-unity",

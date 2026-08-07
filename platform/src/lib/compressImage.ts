@@ -10,12 +10,34 @@ export type CompressedImage = {
 };
 
 /**
+ * Copy bytes into a standalone Node Buffer.
+ *
+ * Newer undici/fetch rejects bodies backed by SharedArrayBuffer. File.arrayBuffer(),
+ * Response.arrayBuffer(), and some sharp outputs can surface that and break
+ * `@vercel/blob` put() with: "ArrayBuffer: SharedArrayBuffer is not allowed".
+ */
+export function toDetachedBuffer(input: ArrayBuffer | ArrayBufferView | Buffer): Buffer {
+  const view =
+    input instanceof ArrayBuffer
+      ? new Uint8Array(input)
+      : new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
+  const copy = new Uint8Array(view.byteLength);
+  copy.set(view);
+  return Buffer.from(copy);
+}
+
+/** Read a Blob/File into a detached Buffer safe for sharp + Blob put(). */
+export async function blobToDetachedBuffer(blob: Blob): Promise<Buffer> {
+  return toDetachedBuffer(await blob.arrayBuffer());
+}
+
+/**
  * Normalize owned images to WebP: EXIF-orient, fit inside 2560×2560 (no upscale),
  * quality ~82. Strips most metadata via the encode pipeline.
  */
 export async function compressImageBuffer(input: Buffer): Promise<CompressedImage> {
   try {
-    const buffer = await sharp(input, { failOn: "none" })
+    const buffer = await sharp(toDetachedBuffer(input), { failOn: "none" })
       .rotate()
       .resize({
         width: IMAGE_MAX_EDGE,
@@ -31,7 +53,7 @@ export async function compressImageBuffer(input: Buffer): Promise<CompressedImag
     }
 
     return {
-      buffer,
+      buffer: toDetachedBuffer(buffer),
       contentType: "image/webp",
       extension: "webp",
     };
