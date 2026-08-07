@@ -3181,8 +3181,50 @@ ipcMain.handle("remove-friend", async (_event, friendId) => {
     return { error: err.message };
   }
 });
-// ----------------------------
+ipcMain.handle("search-users", async (_event, query) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/search?q=${encodeURIComponent(query)}`, { headers: launcherApiHeaders() });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error || "Failed to search users");
+    }
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
 
+ipcMain.handle("discover-players", async (_event, params) => {
+  try {
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${getApiBase()}/api/friends/discover?${query}`, { headers: launcherApiHeaders() });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error || "Failed to discover players");
+    }
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("send-friend-request", async (_event, targetUserId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/request`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ targetUserId })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error || "Failed to send request");
+    }
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+// ----------------------------
 ipcMain.handle("get-recently-played", () => {
   const settings = loadSettings();
   const recent = settings.recentlyPlayed || {};

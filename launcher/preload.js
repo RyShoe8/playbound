@@ -43,7 +43,9 @@ contextBridge.exposeInMainWorld("playbound", {
   acceptFriendRequest: (requestId) => ipcRenderer.invoke("accept-friend-request", requestId),
   declineFriendRequest: (requestId) => ipcRenderer.invoke("decline-friend-request", requestId),
   removeFriend: (friendId) => ipcRenderer.invoke("remove-friend", friendId),
-
+  searchUsers: (query) => ipcRenderer.invoke("search-users", query),
+  discoverPlayers: (params) => ipcRenderer.invoke("discover-players", params),
+  sendFriendRequest: (targetUserId) => ipcRenderer.invoke("send-friend-request", targetUserId),
   // Catalog / servers / mods
   getCatalog: () => ipcRenderer.invoke("get-catalog"),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
