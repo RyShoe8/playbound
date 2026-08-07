@@ -41,6 +41,14 @@ const GENRE_ALIASES: Record<string, (typeof GENRES)[number]> = {
   arcade: "Arcade",
   casual: "Arcade",
   pirate: "Pirate",
+  // Epic store-content meta.tags (humanized SCREAMING_SNAKE)
+  action: "Arcade",
+  adventure: "Arcade",
+  exploration: "Sandbox",
+  horror: "Arcade",
+  survival: "Sandbox",
+  open: "Sandbox",
+  "open world": "Sandbox",
 };
 
 /** Steam category descriptions → closed FEATURES. */
@@ -52,6 +60,7 @@ const FEATURE_ALIASES: Record<string, (typeof FEATURES)[number]> = {
   "online multiplayer": "Multiplayer",
   "single-player": "Singleplayer",
   singleplayer: "Singleplayer",
+  "single player": "Singleplayer",
   "co-op": "Co-op",
   coop: "Co-op",
   "online co-op": "Co-op",
@@ -64,8 +73,11 @@ const FEATURE_ALIASES: Record<string, (typeof FEATURES)[number]> = {
   "lan support": "LAN Support",
   "local multi-player": "LAN Support",
   "cross-platform multiplayer": "Cross-play",
+  "cross play": "Cross-play",
+  "cross-play": "Cross-play",
   "full controller support": "Controller Support",
   "partial controller support": "Controller Support",
+  "controller support": "Controller Support",
   "steam workshop": "Mod Support",
   "includes level editor": "Level Editor",
   "includes level editing tools": "Map Editor",

@@ -651,12 +651,12 @@ export function GameEditorForm({
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-4">
-        <p className={label}>Import from Steam, GitHub, or any website URL</p>
+        <p className={label}>Import from Steam, Epic, GitHub, or any website URL</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <input
             value={importUrl}
             onChange={(e) => setImportUrl(e.target.value)}
-            placeholder="https://tinywind.io/ or Steam / GitHub URL"
+            placeholder="https://store.epicgames.com/p/… or Steam / GitHub / site URL"
             className={`${field} mt-0 flex-1`}
           />
           <button
@@ -669,7 +669,8 @@ export function GameEditorForm({
           </button>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Website URLs default to browser-playable drafts. Steam/GitHub stay installable. Review before publishing.
+          Website URLs default to browser-playable drafts. Steam, Epic, and GitHub stay installable.
+          Review before publishing.
         </p>
         {warning && (
           <p className="mt-2 text-sm text-amber-500" role="status">

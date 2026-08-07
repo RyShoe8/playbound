@@ -12,6 +12,11 @@ import {
   steamGenreLabels,
   steamSupportedLanguages,
 } from "@/lib/adminImportHelpers";
+import {
+  extractEpicProduct,
+  fetchEpicProduct,
+  parseEpicProductSlug,
+} from "@/lib/epicStore";
 
 const importSchema = z.object({
   url: z.string().trim().url().max(500),
@@ -136,6 +141,49 @@ async function fromSteam(
       },
       installMethod: "steam",
       installConfig: { steam: { appId } },
+    },
+  };
+}
+
+async function fromEpic(
+  productSlug: string,
+  gameSlug: string
+): Promise<{ draft: EditionDraft }> {
+  const product = await fetchEpicProduct(productSlug);
+  const epic = extractEpicProduct(product, productSlug);
+  const mapped = mapLabelsToGenresAndTags(epic.tags);
+  const features = mapLabelsToFeatures(epic.tags);
+  const tags = mapped.tags
+    .map((t) => t.replace(/\b\w/g, (c) => c.toUpperCase()))
+    .slice(0, 16);
+
+  const draft = baseDraft(gameSlug, epic.title);
+  return {
+    draft: {
+      ...draft,
+      shortDescription: epic.shortDescription.slice(0, 300) || epic.title,
+      description: epic.description || epic.shortDescription,
+      tags,
+      features,
+      aliases: [],
+      branding: {
+        logo: "",
+        heroImage: epic.coverImage || "",
+        screenshots: epic.screenshots.slice(0, MAX_SCREENSHOTS),
+        videos: epic.videos.slice(0, MAX_VIDEOS),
+      },
+      links: {
+        ...draft.links,
+        website: epic.homepageUrl || epic.storeUrl,
+        discord: epic.discordInviteUrl || draft.links.discord,
+      },
+      requirements: {
+        min: epic.systemRequirements.min,
+        recommended: epic.systemRequirements.recommended,
+        notes: "",
+      },
+      installMethod: "epic",
+      installConfig: { epic: { productSlug } },
     },
   };
 }
@@ -282,6 +330,7 @@ export async function POST(req: Request) {
 
     const steamId = parseSteamAppId(url);
     const github = parseGithubRepo(url);
+    const epicSlug = parseEpicProductSlug(url);
 
     let draft: EditionDraft;
     let sourceMaterial: string | null = null;
@@ -294,6 +343,8 @@ export async function POST(req: Request) {
       (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()) && github)
     ) {
       ({ draft, sourceMaterial } = await fromGithub(github!, gameSlug));
+    } else if (epicSlug) {
+      ({ draft } = await fromEpic(epicSlug, gameSlug));
     } else if (steamId) {
       ({ draft } = await fromSteam(steamId, gameSlug));
     } else {
