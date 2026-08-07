@@ -1889,7 +1889,7 @@ async function writeJarLauncher(gameDir, jarName) {
 
 /* ── core actions ──────────────────────────────────────────── */
 
-async function installGame(slug, targetDir, editionSlug) {
+async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   let entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
 
   let editionMeta = null;
@@ -1970,6 +1970,7 @@ async function installGame(slug, targetDir, editionSlug) {
     const exe = path.join(gameDir, destName);
     await fsp.copyFile(downloadPath, exe);
     await fsp.rm(downloadPath, { force: true });
+    await processAddons(entry, gameDir, selectedAddons);
     markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
@@ -1984,6 +1985,7 @@ async function installGame(slug, targetDir, editionSlug) {
     await fsp.copyFile(downloadPath, jarPath);
     await fsp.rm(downloadPath, { force: true });
     const exe = await writeJarLauncher(gameDir, dl.name);
+    await processAddons(entry, gameDir, selectedAddons);
     markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
@@ -1999,11 +2001,23 @@ async function installGame(slug, targetDir, editionSlug) {
   const exe = findExecutable(gameDir, entry.exeHint);
   if (!exe) throw new Error("Extracted, but no executable found");
 
+  await processAddons(entry, gameDir, selectedAddons);
   markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
   sendProgress({ phase: "done" });
   void reportInstall(slug);
   void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
   return { status: "installed", version: dl.version, dir: gameDir };
+}
+
+async function processAddons(entry, gameDir, selectedAddons) {
+  if (!entry.addons || !Array.isArray(selectedAddons) || selectedAddons.length === 0) return;
+  for (const addonId of selectedAddons) {
+    const addon = entry.addons.find((a) => a.id === addonId);
+    if (!addon) continue;
+    sendProgress({ phase: "downloading", addon: addon.name });
+    const dest = path.join(gameDir, addon.fileName);
+    await downloadTo(addon.url, dest);
+  }
 }
 
 async function locateGameExecutable(slug) {
@@ -2584,9 +2598,9 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   return result.filePaths[0];
 });
 
-ipcMain.handle("install", (_event, slug, targetDir, editionSlug) =>
-  installGame(slug, targetDir, editionSlug || null)
-);
+  ipcMain.handle("install", (_event, slug, targetDir, editionSlug, addons) =>
+    installGame(slug, targetDir, editionSlug || null, addons)
+  );
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));

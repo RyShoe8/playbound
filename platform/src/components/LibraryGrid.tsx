@@ -177,7 +177,7 @@ function DesktopLibraryCard({
   const saved = Boolean(meta?.saved);
 
   return (
-    <div className="flex h-full min-w-0 flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <GameCard game={game} className="w-full sm:w-full" />
       <StatusBadges installed={installed} saved={saved} game={game} />
       {installed && showLauncherActions ? (
@@ -265,7 +265,7 @@ export function LibraryGrid({
           </div>
 
           {/* Desktop / tablet grid */}
-          <div className="hidden grid-cols-2 gap-5 sm:grid md:grid-cols-3 lg:grid-cols-4">
+          <div className="hidden grid-cols-2 items-start gap-5 sm:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {visibleGames.map((game) => (
               <DesktopLibraryCard
                 key={game.slug}

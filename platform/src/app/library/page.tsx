@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
-import { LibraryBig, LogIn } from "lucide-react";
+import { LibraryBig, LogIn, Plus } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
@@ -119,12 +119,21 @@ export default async function LibraryPage() {
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
-        <p className="mt-1 text-muted-foreground">
-          What you have on <strong>{LIBRARY_PLATFORM_LABELS[viewerPlatform]}</strong> — games
-          installed with the PlayBound app or added from the catalog, with mods under each game.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
+          <p className="mt-1 text-muted-foreground">
+            What you have on <strong>{LIBRARY_PLATFORM_LABELS[viewerPlatform]}</strong> — games
+            installed with the PlayBound app or added from the catalog, with mods under each game.
+          </p>
+        </div>
+        <Link
+          href="/discover"
+          className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+        >
+          <Plus className="mr-2 size-4" />
+          Add Game
+        </Link>
       </div>
 
       {/* Without this, a desktop user whose games are all on their phone sees

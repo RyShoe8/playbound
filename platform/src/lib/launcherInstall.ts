@@ -12,6 +12,14 @@ export const LAUNCHER_INSTALL_KINDS = [
 
 export type LauncherInstallKind = (typeof LAUNCHER_INSTALL_KINDS)[number];
 
+export type LauncherInstallAddon = {
+  id: string;
+  name: string;
+  description?: string;
+  url: string;
+  fileName: string;
+};
+
 /** Stored on CatalogGame and used by site CTAs + launcher API. */
 export type LauncherInstall = {
   enabled: boolean;
@@ -34,6 +42,7 @@ export type LauncherInstall = {
   versionCheckStatus?: string | null;
   versionCheckNote?: string | null;
   autoUpdatePinned?: boolean;
+  addons?: LauncherInstallAddon[];
 };
 
 /** Shape returned to the Electron launcher (catalog row). */
@@ -59,6 +68,7 @@ export type LauncherCatalogEntry = {
   genres?: string[];
   tags?: string[];
   multiplayer?: boolean;
+  addons?: LauncherInstallAddon[];
 };
 
 export function absoluteMediaUrl(pathOrUrl: string | null | undefined, origin: string): string | null {
@@ -199,5 +209,6 @@ export function toLauncherCatalogEntry(input: {
   if (li.installRoot) entry.installRoot = li.installRoot;
   if (li.connectArgs?.length) entry.connectArgs = li.connectArgs;
   if (li.note) entry.note = li.note;
+  if (li.addons?.length) entry.addons = li.addons;
   return entry;
 }
