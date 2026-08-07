@@ -5,6 +5,7 @@ import {
   emptyGameDraft,
   slugifyTitle,
   type GamePayload,
+  GENRES,
 } from "@/lib/gamePayload";
 import { stripHtml, tryFetchPageMeta, softTitleFromUrl } from "@/lib/pageMeta";
 import { parseSteamStoreMedia, MAX_SCREENSHOTS, MAX_VIDEOS } from "@/lib/fetchGameMedia";
@@ -19,10 +20,32 @@ import {
   fetchUpstreamActivity,
   editorialReadiness,
 } from "@/lib/enrich";
+import {
+  mapLabelsToFeatures,
+  mapLabelsToGenresAndTags,
+  resolveOrCreateDeveloper,
+  steamCategoryLabels,
+  steamDeveloperCandidate,
+  steamDiskSizeMB,
+  steamGenreLabels,
+  steamPlatforms,
+  steamReleaseYear,
+} from "@/lib/adminImportHelpers";
 
 const importSchema = z.object({
   url: z.string().trim().url().max(500),
 });
+
+type ImportExtras = {
+  developerNote?: string;
+};
+
+type Genre = (typeof GENRES)[number];
+
+function asGenres(values: string[]): Genre[] {
+  const allowed = new Set<string>(GENRES);
+  return values.filter((v): v is Genre => allowed.has(v));
+}
 
 /**
  * Fill the derivable half of the editorial fields.
@@ -88,7 +111,7 @@ function parseGithubRepo(url: string): string | null {
 
 async function fromSteam(
   appId: string
-): Promise<{ draft: GamePayload; steamIsFree: boolean | null }> {
+): Promise<{ draft: GamePayload; steamIsFree: boolean | null; extras: ImportExtras }> {
   const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`, {
     headers: { "user-agent": "PlayBoundAdmin/1.0" },
     next: { revalidate: 0 },
@@ -106,49 +129,53 @@ async function fromSteam(
   const detailed = stripHtml(String(data.detailed_description ?? short));
   const website = (data.website as string) || `https://store.steampowered.com/app/${appId}`;
   const { coverImage: header, screenshots, videos } = parseSteamStoreMedia(data);
-  const genreTags = Array.isArray(data.genres)
-    ? (data.genres as { description?: string }[])
-        .map((g) => g.description)
-        .filter((x): x is string => Boolean(x))
-        .slice(0, 8)
-    : [];
 
-  // Extract sizeMB from pc_requirements disk space text
+  const mapped = mapLabelsToGenresAndTags(steamGenreLabels(data));
+  const genres = asGenres(mapped.genres);
+  const tags = mapped.tags;
+  const features = mapLabelsToFeatures(steamCategoryLabels(data));
+  const sizeMB = steamDiskSizeMB(data);
+
   const pcReq = data.pc_requirements as { minimum?: string; recommended?: string } | string | null;
   const pcReqMin = typeof pcReq === "object" && pcReq ? pcReq.minimum || "" : "";
   const pcReqRec = typeof pcReq === "object" && pcReq ? pcReq.recommended || "" : "";
-  const diskText = stripHtml(pcReqMin) + " " + stripHtml(pcReqRec);
-  const diskMatch = diskText.match(/(\d+(?:\.\d+)?)\s*(GB|MB)\s*(?:available|free|disk|hard|storage|space)/i);
-  let sizeMB = 0;
-  if (diskMatch) {
-    const val = parseFloat(diskMatch[1]);
-    sizeMB = diskMatch[2].toUpperCase() === "GB" ? Math.round(val * 1000) : Math.round(val);
-  }
-
-  // Extract system requirements text
   const sysMin = pcReqMin ? stripHtml(pcReqMin).slice(0, 500) || "See Steam store page" : "See Steam store page";
   const sysRec = pcReqRec ? stripHtml(pcReqRec).slice(0, 500) || "See Steam store page" : "See Steam store page";
 
-  // Extract release year
-  const releaseDateStr = (data.release_date as { date?: string })?.date || "";
-  const yearMatch = releaseDateStr.match(/\b(19|20)\d{2}\b/);
-  const releaseYear = yearMatch ? parseInt(yearMatch[0], 10) : new Date().getFullYear();
-
-  // Extract platforms
-  const steamPlatforms = data.platforms as { windows?: boolean; mac?: boolean; linux?: boolean } | null;
-  const platforms: string[] = [];
-  if (steamPlatforms?.windows) platforms.push("Windows");
-  if (steamPlatforms?.mac) platforms.push("macOS");
-  if (steamPlatforms?.linux) platforms.push("Linux");
-  if (platforms.length === 0) platforms.push("Windows");
-
-  // Steam's own free-to-play flag. Note this says nothing about pay-to-win or
-  // cosmetic monetisation, so it is treated as one signal rather than proof.
+  const releaseYear = steamReleaseYear(data);
+  const platforms = steamPlatforms(data);
   const steamIsFree = typeof data.is_free === "boolean" ? (data.is_free as boolean) : null;
 
   const slug = slugifyTitle(title);
+  const publisher = steamDeveloperCandidate(data);
+  let developerSlug = "indie-web";
+  let developerName: string | null = null;
+  let developerNote: string | undefined;
+  if (publisher) {
+    const resolved = await resolveOrCreateDeveloper({
+      name: publisher,
+      website,
+      tagline: `${publisher} — from Steam store credits`,
+    });
+    if (resolved) {
+      developerSlug = resolved.slug;
+      developerName = resolved.name;
+      developerNote = resolved.created
+        ? `Created published developer “${resolved.name}” (${resolved.slug}) from Steam credits.`
+        : `Matched developer “${resolved.name}” (${resolved.slug}) from Steam credits.`;
+    }
+  }
+
+  const aliases = [title, short.slice(0, 80)].filter(Boolean);
+  // Keep unique aliases that differ from the slugified title
+  const aliasList = [...new Set(aliases.map((a) => a.trim()).filter((a) => a && a !== title))].slice(
+    0,
+    8
+  );
+
   return {
     steamIsFree,
+    extras: { developerNote },
     draft: {
       ...emptyGameDraft(),
       slug,
@@ -156,10 +183,15 @@ async function fromSteam(
       tagline: short.slice(0, 200) || title,
       description: detailed.slice(0, 8000) || short,
       website,
+      developerSlug,
+      developerName,
       coverImage: header,
       screenshots,
       videos,
-      tags: genreTags,
+      genres: genres.length ? genres : [],
+      features,
+      tags,
+      aliases: aliasList,
       platforms,
       sizeMB,
       releaseYear,
@@ -167,7 +199,7 @@ async function fromSteam(
       browserPlayable: false,
       license: "See Steam store page",
       systemRequirements: { min: sysMin, recommended: sysRec },
-      art: defaultArtFor([], slug),
+      art: defaultArtFor(genres, slug),
       published: false,
       launcherInstall: null,
       steamAppId: appId,
@@ -205,7 +237,7 @@ async function fetchReadme(repo: string): Promise<string | null> {
 
 async function fromGithub(
   repo: string
-): Promise<{ draft: GamePayload; sourceMaterial: string | null }> {
+): Promise<{ draft: GamePayload; sourceMaterial: string | null; extras: ImportExtras }> {
   const res = await fetch(`https://api.github.com/repos/${repo}`, {
     headers: {
       accept: "application/vnd.github+json",
@@ -225,6 +257,9 @@ async function fromGithub(
     html_url?: string;
     license?: { spdx_id?: string; name?: string } | null;
     topics?: string[];
+    created_at?: string;
+    owner?: { login?: string; type?: string; html_url?: string };
+    language?: string | null;
   };
 
   const title = data.name || repo.split("/")[1];
@@ -235,9 +270,36 @@ async function fromGithub(
     : data.license?.name || "Open Source";
   const slug = slugifyTitle(title);
   const sourceMaterial = await fetchReadme(repo);
+  const mapped = mapLabelsToGenresAndTags(data.topics ?? []);
+  const genres = asGenres(mapped.genres);
+  const tags = [...mapped.tags];
+  if (data.language && !tags.includes(data.language)) tags.push(data.language);
+  const releaseYear = data.created_at
+    ? new Date(data.created_at).getFullYear()
+    : new Date().getFullYear();
+
+  const ownerName = data.owner?.login?.trim();
+  let developerSlug = "indie-web";
+  let developerName: string | null = null;
+  let developerNote: string | undefined;
+  if (ownerName) {
+    const resolved = await resolveOrCreateDeveloper({
+      name: ownerName,
+      website: data.owner?.html_url || `https://github.com/${ownerName}`,
+      tagline: `GitHub ${data.owner?.type === "Organization" ? "organization" : "user"}`,
+    });
+    if (resolved) {
+      developerSlug = resolved.slug;
+      developerName = resolved.name;
+      developerNote = resolved.created
+        ? `Created published developer “${resolved.name}” (${resolved.slug}) from GitHub owner.`
+        : `Matched developer “${resolved.name}” (${resolved.slug}) from GitHub owner.`;
+    }
+  }
 
   return {
     sourceMaterial,
+    extras: { developerNote },
     draft: {
       ...emptyGameDraft(),
       slug,
@@ -246,13 +308,17 @@ async function fromGithub(
       description,
       website,
       githubRepo: repo,
+      developerSlug,
+      developerName,
       coverImage: `https://opengraph.githubassets.com/1/${repo}`,
       license,
-      tags: (data.topics ?? []).slice(0, 12),
+      genres,
+      tags: tags.slice(0, 16),
+      releaseYear,
       platforms: ["Windows", "macOS", "Linux"],
       launchMethods: ["install"],
       browserPlayable: false,
-      art: defaultArtFor([], slug),
+      art: defaultArtFor(genres, slug),
       published: false,
       launcherInstall: null,
     },
@@ -261,7 +327,7 @@ async function fromGithub(
 
 async function fromWebsite(
   url: string
-): Promise<{ draft: GamePayload; warning?: string }> {
+): Promise<{ draft: GamePayload; warning?: string; extras: ImportExtras }> {
   const result = await tryFetchPageMeta(url);
 
   if (result.ok) {
@@ -271,7 +337,26 @@ async function fromWebsite(
     const slug = slugifyTitle(title);
     const cover = meta.images[0] ?? null;
 
+    let developerSlug = "indie-web";
+    let developerName: string | null = null;
+    let developerNote: string | undefined;
+    if (meta.siteName?.trim() && !/steam|github|itch\.io|google/i.test(meta.siteName)) {
+      const resolved = await resolveOrCreateDeveloper({
+        name: meta.siteName.trim(),
+        website: url,
+        tagline: meta.description?.slice(0, 200) || undefined,
+      });
+      if (resolved) {
+        developerSlug = resolved.slug;
+        developerName = resolved.name;
+        developerNote = resolved.created
+          ? `Created published developer “${resolved.name}” (${resolved.slug}) from site name.`
+          : `Matched developer “${resolved.name}” (${resolved.slug}) from site name.`;
+      }
+    }
+
     return {
+      extras: { developerNote },
       draft: {
         ...emptyGameDraft(),
         slug,
@@ -279,7 +364,8 @@ async function fromWebsite(
         tagline: description.slice(0, 200),
         description,
         website: url,
-        developerSlug: "indie-web",
+        developerSlug,
+        developerName,
         coverImage: cover,
         screenshots: meta.images.slice(0, MAX_SCREENSHOTS),
         videos: meta.videos.slice(0, MAX_VIDEOS),
@@ -288,6 +374,7 @@ async function fromWebsite(
         browserPlayable: true,
         sizeMB: 0,
         license: "Free to play",
+        genres: ["Arcade"],
         tags: ["Browser", "Indie"],
         systemRequirements: {
           min: "Modern web browser",
@@ -309,6 +396,7 @@ async function fromWebsite(
 
   return {
     warning,
+    extras: {},
     draft: {
       ...emptyGameDraft(),
       slug,
@@ -350,18 +438,20 @@ export async function POST(req: Request) {
     let steamIsFree: boolean | null = null;
     let sourceMaterial: string | null = null;
     let warning: string | undefined;
+    let extras: ImportExtras = {};
 
     if (steamId && (url.includes("steam") || /^\d+$/.test(url.trim()))) {
-      ({ draft: base, steamIsFree } = await fromSteam(steamId));
+      ({ draft: base, steamIsFree, extras } = await fromSteam(steamId));
     } else if (url.includes("github.com") || (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()) && github)) {
-      ({ draft: base, sourceMaterial } = await fromGithub(github!));
+      ({ draft: base, sourceMaterial, extras } = await fromGithub(github!));
     } else if (steamId) {
-      ({ draft: base, steamIsFree } = await fromSteam(steamId));
+      ({ draft: base, steamIsFree, extras } = await fromSteam(steamId));
     } else {
-      ({ draft: base, warning } = await fromWebsite(url));
+      ({ draft: base, warning, extras } = await fromWebsite(url));
     }
 
     const { draft, evidence, suggestions, missing } = await enrichDraft(base, { steamIsFree });
+    if (extras.developerNote) evidence.unshift(extras.developerNote);
 
     return NextResponse.json({
       draft,

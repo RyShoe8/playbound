@@ -92,6 +92,7 @@ export function ModEditorForm({
       setSourceMaterial((data.sourceMaterial as string | null) ?? null);
       setWarning(typeof data.warning === "string" ? data.warning : "");
       setBusy(false);
+      router.refresh();
     } catch {
       setError("Couldn't reach the server.");
       setBusy(false);
@@ -151,7 +152,7 @@ export function ModEditorForm({
           <input
             value={importUrl}
             onChange={(e) => setImportUrl(e.target.value)}
-            placeholder="https://github.com/owner/repo or a project page URL"
+            placeholder="https://github.com/owner/repo, Steam, or a project page URL"
             className={`${field} mt-0 flex-1`}
           />
           <button
@@ -164,8 +165,8 @@ export function ModEditorForm({
           </button>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Pick the base game below first — install steps and the FAQ are generated
-          against it.
+          Same sources as games (Steam, GitHub, website). Pick the base game below first —
+          install steps and the FAQ are generated against it.
         </p>
         {warning && (
           <p className="mt-2 text-sm text-amber-500" role="status">

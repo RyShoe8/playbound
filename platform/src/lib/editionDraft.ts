@@ -1,5 +1,10 @@
-import type { EditionDraft } from "@/components/admin/EditionEditorForm";
 import type { Edition } from "@/lib/editionTypes";
+import type {
+  EditionFaqItem,
+  EditionInstallConfig,
+  EditionPatchNote,
+  InstallMethod,
+} from "@/lib/editionTypes";
 
 /**
  * Draft shapes for the admin edition form.
@@ -9,6 +14,42 @@ import type { Edition } from "@/lib/editionTypes";
  * internals, and so the empty shape lives next to the conversion from a stored
  * Edition rather than being duplicated.
  */
+
+export interface EditionDraft {
+  id?: string;
+  gameSlug: string;
+  slug: string;
+  name: string;
+  shortDescription: string;
+  description: string;
+  type: string;
+  status: string;
+  visibility: string;
+  sortOrder: number;
+  isDefault: boolean;
+  branding: {
+    logo: string;
+    heroImage: string;
+    screenshots: string[];
+    videos: string[];
+    artHue?: number;
+  };
+  links: { website: string; discord: string; wiki: string; github: string; forum: string };
+  installMethod: InstallMethod;
+  installConfig: EditionInstallConfig;
+  requirements: { min: string; recommended: string; notes: string };
+  features: string[];
+  tags: string[];
+  aliases: string[];
+  serverName: string;
+  languages: string[];
+  version: string;
+  patchNotes: EditionPatchNote[];
+  faq: EditionFaqItem[];
+  verified: boolean;
+  verificationLevel: string;
+  verificationNote: string;
+}
 
 export function emptyEditionDraft(gameSlug: string): EditionDraft {
   return {
@@ -22,10 +63,12 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
     visibility: "public",
     sortOrder: 0,
     isDefault: false,
-    branding: { logo: "", heroImage: "", screenshots: [], videos: [] },
+    branding: { logo: "", heroImage: "", screenshots: [], videos: [], artHue: undefined },
     links: { website: "", discord: "", wiki: "", github: "", forum: "" },
     installMethod: "manual",
-    installConfig: {},
+    installConfig: {
+      manual: { steps: [{ platform: "all", text: "", command: null }] },
+    },
     requirements: { min: "", recommended: "", notes: "" },
     features: [],
     tags: [],
@@ -33,6 +76,8 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
     serverName: "",
     languages: [],
     version: "",
+    patchNotes: [],
+    faq: [],
     verified: false,
     verificationLevel: "untested",
     verificationNote: "",
@@ -58,6 +103,7 @@ export function editionToDraft(edition: Edition): EditionDraft {
       heroImage: edition.branding.heroImage ?? "",
       screenshots: edition.branding.screenshots ?? [],
       videos: edition.branding.videos ?? [],
+      artHue: edition.branding.artHue,
     },
     links: {
       website: edition.links.website ?? "",
@@ -79,6 +125,8 @@ export function editionToDraft(edition: Edition): EditionDraft {
     serverName: edition.serverName ?? "",
     languages: edition.languages,
     version: edition.version ?? "",
+    patchNotes: edition.patchNotes ?? [],
+    faq: edition.faq ?? [],
     verified: edition.verified,
     verificationLevel: edition.verificationLevel,
     verificationNote: edition.verificationNote ?? "",

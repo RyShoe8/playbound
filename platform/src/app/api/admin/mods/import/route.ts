@@ -3,7 +3,8 @@ import { z } from "zod";
 import { getGame } from "@/lib/catalog";
 import { emptyModDraft, slugifyTitle, type ModPayload } from "@/lib/modPayload";
 import { defaultArtFor } from "@/lib/gamePayload";
-import { tryFetchPageMeta, softTitleFromUrl } from "@/lib/pageMeta";
+import { tryFetchPageMeta, softTitleFromUrl, stripHtml } from "@/lib/pageMeta";
+import { parseSteamStoreMedia } from "@/lib/fetchGameMedia";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import {
   deriveModInstallSteps,
@@ -11,13 +12,30 @@ import {
   modEditorialReadiness,
   fetchUpstreamActivity,
 } from "@/lib/enrich";
+import {
+  resolveOrCreateDeveloper,
+  steamDeveloperCandidate,
+  steamDiskSizeMB,
+  steamReleaseYear,
+} from "@/lib/adminImportHelpers";
 import type { CatalogModPublic } from "@/lib/mods";
+
+type ImportExtras = { developerNote?: string };
 
 const importSchema = z.object({
   url: z.string().trim().url().max(500),
   /** Which catalog game this add-on is for. */
   baseGameSlug: z.string().trim().min(1).max(80),
 });
+
+function parseSteamAppId(url: string): string | null {
+  const m =
+    url.match(/store\.steampowered\.com\/app\/(\d+)/i) ||
+    url.match(/steamcommunity\.com\/app\/(\d+)/i);
+  if (m) return m[1];
+  if (/^\d+$/.test(url.trim())) return url.trim();
+  return null;
+}
 
 function parseGithubRepo(url: string): string | null {
   const m = url.match(/github\.com\/([^/\s]+)\/([^/\s?#]+)/i);
@@ -55,10 +73,82 @@ async function fetchReadme(repo: string): Promise<string | null> {
   }
 }
 
+async function fromSteam(
+  appId: string,
+  baseGameSlug: string
+): Promise<{ draft: Partial<ModPayload>; extras: ImportExtras }> {
+  const res = await fetch(
+    `https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`,
+    {
+      headers: { "user-agent": "PlayBoundAdmin/1.0" },
+      next: { revalidate: 0 },
+    }
+  );
+  if (!res.ok) throw new Error("Steam API request failed");
+  const json = (await res.json()) as Record<
+    string,
+    { success?: boolean; data?: Record<string, unknown> }
+  >;
+  const entry = json[appId];
+  if (!entry?.success || !entry.data) throw new Error("Steam app not found or unavailable");
+  const data = entry.data;
+  const title = String(data.name ?? "Mod");
+  const short = String(data.short_description ?? "");
+  const detailed = stripHtml(String(data.detailed_description ?? short));
+  const website = (data.website as string) || `https://store.steampowered.com/app/${appId}`;
+  const { coverImage, screenshots } = parseSteamStoreMedia(data);
+  const slug = slugifyTitle(`${baseGameSlug}-${title}`);
+  const sizeMB = steamDiskSizeMB(data);
+  const releaseYear = steamReleaseYear(data);
+
+  let developerSlug = "indie-web";
+  let developerName: string | null = null;
+  let developerNote: string | undefined;
+  const publisher = steamDeveloperCandidate(data);
+  if (publisher) {
+    const resolved = await resolveOrCreateDeveloper({
+      name: publisher,
+      website,
+      tagline: `${publisher} — from Steam store credits`,
+    });
+    if (resolved) {
+      developerSlug = resolved.slug;
+      developerName = resolved.name;
+      developerNote = resolved.created
+        ? `Created published developer “${resolved.name}” (${resolved.slug}) from Steam credits.`
+        : `Matched developer “${resolved.name}” (${resolved.slug}) from Steam credits.`;
+    }
+  }
+
+  return {
+    extras: { developerNote },
+    draft: {
+      ...emptyModDraft(baseGameSlug),
+      slug,
+      title,
+      tagline: short.slice(0, 200) || title,
+      description: detailed.slice(0, 8000) || short,
+      website,
+      developerSlug,
+      developerName,
+      license: "See Steam store page",
+      releaseYear,
+      sizeMB: sizeMB || 0,
+      downloadKind: "external",
+      directUrl: website,
+      assetPattern: null,
+      coverImage,
+      screenshots: screenshots.slice(0, 8),
+      art: defaultArtFor([], slug),
+      published: false,
+    },
+  };
+}
+
 async function fromGithub(
   repo: string,
   baseGameSlug: string
-): Promise<{ draft: Partial<ModPayload>; sourceMaterial: string | null }> {
+): Promise<{ draft: Partial<ModPayload>; sourceMaterial: string | null; extras: ImportExtras }> {
   const res = await fetch(`https://api.github.com/repos/${repo}`, {
     headers: {
       accept: "application/vnd.github+json",
@@ -80,6 +170,8 @@ async function fromGithub(
     license?: { spdx_id?: string; name?: string } | null;
     created_at?: string;
     pushed_at?: string;
+    topics?: string[];
+    owner?: { login?: string; type?: string; html_url?: string };
   };
 
   const rawName = data.name || repo.split("/")[1];
@@ -96,8 +188,34 @@ async function fromGithub(
   const slug = slugifyTitle(`${baseGameSlug}-${rawName}`);
   const sourceMaterial = await fetchReadme(repo);
 
+  let developerSlug = "indie-web";
+  let developerName: string | null = null;
+  let developerNote: string | undefined;
+  const ownerName = data.owner?.login?.trim();
+  if (ownerName) {
+    const resolved = await resolveOrCreateDeveloper({
+      name: ownerName,
+      website: data.owner?.html_url || `https://github.com/${ownerName}`,
+      tagline: `GitHub ${data.owner?.type === "Organization" ? "organization" : "user"}`,
+    });
+    if (resolved) {
+      developerSlug = resolved.slug;
+      developerName = resolved.name;
+      developerNote = resolved.created
+        ? `Created published developer “${resolved.name}” (${resolved.slug}) from GitHub owner.`
+        : `Matched developer “${resolved.name}” (${resolved.slug}) from GitHub owner.`;
+    }
+  }
+
+  const topicHint = (data.topics ?? []).slice(0, 8).join(", ");
+  const compatibility =
+    topicHint.length > 0
+      ? `GitHub topics: ${topicHint}. Confirm compatibility with the current ${baseGameSlug} release.`
+      : "";
+
   return {
     sourceMaterial,
+    extras: { developerNote },
     draft: {
       ...emptyModDraft(baseGameSlug),
       slug,
@@ -106,12 +224,15 @@ async function fromGithub(
       description,
       website,
       githubRepo: repo,
+      developerSlug,
+      developerName,
       license,
       releaseYear,
       downloadKind: "github-zip",
       assetPattern: "\\.zip$",
       coverImage: `https://opengraph.githubassets.com/1/${repo}`,
       art: defaultArtFor([], slug),
+      compatibility: compatibility || undefined,
       published: false,
     },
   };
@@ -120,7 +241,7 @@ async function fromGithub(
 async function fromWebsite(
   url: string,
   baseGameSlug: string
-): Promise<{ draft: Partial<ModPayload>; warning?: string }> {
+): Promise<{ draft: Partial<ModPayload>; warning?: string; extras: ImportExtras }> {
   const result = await tryFetchPageMeta(url);
 
   if (result.ok) {
@@ -129,7 +250,25 @@ async function fromWebsite(
     const description = meta.description || `Add-on for ${baseGameSlug}.`;
     const slug = slugifyTitle(`${baseGameSlug}-${title}`);
 
+    let developerSlug = "indie-web";
+    let developerName: string | null = null;
+    let developerNote: string | undefined;
+    if (meta.siteName?.trim() && !/steam|github|itch\.io|google|modrinth|curseforge/i.test(meta.siteName)) {
+      const resolved = await resolveOrCreateDeveloper({
+        name: meta.siteName.trim(),
+        website: url,
+      });
+      if (resolved) {
+        developerSlug = resolved.slug;
+        developerName = resolved.name;
+        developerNote = resolved.created
+          ? `Created published developer “${resolved.name}” (${resolved.slug}) from site name.`
+          : `Matched developer “${resolved.name}” (${resolved.slug}) from site name.`;
+      }
+    }
+
     return {
+      extras: { developerNote },
       draft: {
         ...emptyModDraft(baseGameSlug),
         slug,
@@ -137,6 +276,8 @@ async function fromWebsite(
         tagline: description.slice(0, 200),
         description,
         website: url,
+        developerSlug,
+        developerName,
         downloadKind: "external",
         directUrl: url,
         assetPattern: null,
@@ -157,6 +298,7 @@ async function fromWebsite(
 
   return {
     warning,
+    extras: {},
     draft: {
       ...emptyModDraft(baseGameSlug),
       slug,
@@ -196,14 +338,20 @@ export async function POST(req: Request) {
     }
 
     const repo = parseGithubRepo(url);
+    const steamId = parseSteamAppId(url);
     let base: Partial<ModPayload>;
     let sourceMaterial: string | null = null;
     let warning: string | undefined;
+    let extras: ImportExtras = {};
 
-    if (repo && (url.includes("github.com") || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()))) {
-      ({ draft: base, sourceMaterial } = await fromGithub(repo, baseGameSlug));
+    if (steamId && (url.includes("steam") || /^\d+$/.test(url.trim()))) {
+      ({ draft: base, extras } = await fromSteam(steamId, baseGameSlug));
+    } else if (repo && (url.includes("github.com") || /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(url.trim()))) {
+      ({ draft: base, sourceMaterial, extras } = await fromGithub(repo, baseGameSlug));
+    } else if (steamId) {
+      ({ draft: base, extras } = await fromSteam(steamId, baseGameSlug));
     } else {
-      ({ draft: base, warning } = await fromWebsite(url, baseGameSlug));
+      ({ draft: base, warning, extras } = await fromWebsite(url, baseGameSlug));
     }
 
     const forDerivation = base as unknown as CatalogModPublic;
@@ -214,6 +362,7 @@ export async function POST(req: Request) {
     };
 
     const evidence: string[] = [];
+    if (extras.developerNote) evidence.push(extras.developerNote);
     if (base.githubRepo) {
       const activity = await fetchUpstreamActivity(base.githubRepo);
       evidence.push(

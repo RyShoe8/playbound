@@ -306,6 +306,7 @@ export function GameEditorForm({
       setWarning(typeof data.warning === "string" ? data.warning : "");
       setLauncherDiscoverNote("");
       setBusy(false);
+      router.refresh();
     } catch {
       setError("Couldn't reach the server.");
       setBusy(false);

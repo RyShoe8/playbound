@@ -284,6 +284,7 @@ const navBtns = document.querySelectorAll(".nav-btn");
 const views = {
   home: document.getElementById("view-home"),
   games: document.getElementById("view-games"),
+  editions: document.getElementById("view-editions"),
   mods: document.getElementById("view-mods"),
   servers: document.getElementById("view-servers"),
   events: document.getElementById("view-events"),
@@ -294,6 +295,34 @@ const views = {
   editionDetail: document.getElementById("view-edition-detail"),
   deepLink: document.getElementById("view-deep-link"),
 };
+
+const GAMES_FAMILY_VIEWS = new Set([
+  "games",
+  "mods",
+  "editions",
+  "gameDetail",
+  "editionDetail",
+]);
+
+function editionsContextSlug() {
+  return currentDetailSlug || currentEditionDetail?.gameSlug || null;
+}
+
+function updateGamesFamilyNav() {
+  const editionsBtn = document.getElementById("nav-editions");
+  const showEditions =
+    Boolean(editionsContextSlug()) &&
+    (currentView === "gameDetail" ||
+      currentView === "editionDetail" ||
+      currentView === "editions");
+  if (editionsBtn) {
+    editionsBtn.hidden = !showEditions;
+    editionsBtn.setAttribute("aria-hidden", showEditions ? "false" : "true");
+  }
+
+  const gamesGroup = document.querySelector(".nav-group");
+  gamesGroup?.classList.toggle("has-active-child", GAMES_FAMILY_VIEWS.has(currentView));
+}
 const connectionDot = document.getElementById("connection-dot");
 const connectionLabel = document.getElementById("connection-label");
 const statusMsg = document.getElementById("statusbar-msg");
@@ -304,18 +333,39 @@ const fmtBytes = (n) =>
   n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${Math.round(n / 1e3)} KB`;
 
 function navigateTo(viewName, params = {}) {
+  if (viewName === "editions" && !editionsContextSlug() && !params.gameSlug) {
+    navigateTo("games");
+    return;
+  }
+
   currentView = viewName;
   const navKey =
-    viewName === "gameDetail" || viewName === "editionDetail" ? null : viewName;
+    viewName === "gameDetail" || viewName === "editionDetail"
+      ? null
+      : viewName === "editions"
+        ? "editions"
+        : viewName;
   navBtns.forEach((btn) => {
-    btn.classList.toggle("active", Boolean(navKey) && btn.dataset.view === navKey);
+    const isGamesParent =
+      btn.dataset.view === "games" && !btn.classList.contains("sub-nav-btn");
+    const active =
+      (Boolean(navKey) && btn.dataset.view === navKey) ||
+      (isGamesParent &&
+        (viewName === "games" ||
+          viewName === "mods" ||
+          viewName === "gameDetail" ||
+          viewName === "editionDetail" ||
+          viewName === "editions"));
+    btn.classList.toggle("active", active);
   });
   Object.keys(views).forEach((k) => {
     views[k]?.classList.toggle("active", k === viewName);
   });
+  updateGamesFamilyNav();
 
   if (viewName === "home") renderHomeView();
   else if (viewName === "games") renderGamesView();
+  else if (viewName === "editions") renderEditionsView(params.gameSlug);
   else if (viewName === "mods") renderModsView();
   else if (viewName === "servers") renderServersView();
   else if (viewName === "events") renderEventsView();
@@ -330,9 +380,21 @@ function navigateTo(viewName, params = {}) {
 
 navBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
-    if (btn.dataset.view) navigateTo(btn.dataset.view);
+    if (!btn.dataset.view) return;
+    if (btn.dataset.view === "editions") {
+      const slug = editionsContextSlug();
+      if (!slug) {
+        navigateTo("games");
+        return;
+      }
+      navigateTo("editions", { gameSlug: slug });
+      return;
+    }
+    navigateTo(btn.dataset.view);
   });
 });
+
+updateGamesFamilyNav();
 
 document.getElementById("sidebar-discord")?.addEventListener("click", (e) => {
   e.preventDefault();
@@ -1094,6 +1156,112 @@ function buildModsDisclosure(gameMods, modTitles) {
   wrap.appendChild(toggle);
   wrap.appendChild(panel);
   return wrap;
+}
+
+async function renderEditionsView(gameSlugParam) {
+  const gameSlug = gameSlugParam || editionsContextSlug();
+  const container = views.editions;
+  if (!container) return;
+
+  if (!gameSlug) {
+    container.innerHTML = `
+      <div class="section-header" style="margin-top:0">
+        <div>
+          <h1 class="view-title" style="margin:0">Editions</h1>
+          <p class="view-sub" style="margin:4px 0 0 0">Open a game first to browse its editions.</p>
+        </div>
+        <button class="btn-secondary btn-sm" id="btn-editions-to-games">Browse games</button>
+      </div>
+    `;
+    document.getElementById("btn-editions-to-games")?.addEventListener("click", () => {
+      navigateTo("games");
+    });
+    return;
+  }
+
+  currentDetailSlug = gameSlug;
+  updateGamesFamilyNav();
+
+  container.innerHTML = `
+    <div class="section-header" style="margin-top:0">
+      <div>
+        <button type="button" class="btn-secondary btn-sm" id="editions-back-game">← Back to game</button>
+        <h1 class="view-title" style="margin:12px 0 0 0">Editions</h1>
+        <p class="view-sub" style="margin:4px 0 0 0" id="editions-sub">Loading editions for ${escapeHtml(gameSlug)}…</p>
+      </div>
+    </div>
+    <div id="editions-grid" class="game-grid" style="margin-top:16px"></div>
+  `;
+
+  document.getElementById("editions-back-game")?.addEventListener("click", () => {
+    openGameDetail(gameSlug, "games");
+  });
+
+  let catalogTitle = gameSlug;
+  try {
+    const catalogRes = await window.playbound.getCatalog?.();
+    const game = (catalogRes?.games || []).find((g) => g.slug === gameSlug);
+    if (game?.title) catalogTitle = game.title;
+  } catch {
+    /* ignore */
+  }
+
+  const sub = document.getElementById("editions-sub");
+  if (sub) sub.textContent = `Alternate builds and versions of ${catalogTitle}.`;
+
+  const grid = document.getElementById("editions-grid");
+  try {
+    const res = await window.playbound.getEditions?.(gameSlug);
+    const editions = res?.editions || [];
+    if (!grid) return;
+    if (!editions.length) {
+      grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No editions listed for this game — the default install recipe is used.</p>`;
+      return;
+    }
+    grid.replaceChildren(
+      ...editions.map((ed) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "game-card";
+        card.style.textAlign = "left";
+        card.style.cursor = "pointer";
+        const cover = ed.coverImage || ed.heroImage || "";
+        card.innerHTML = `
+          <div class="card-banner" style="background:linear-gradient(135deg,#1e293b,#7c3aed)">
+            ${cover ? "" : escapeHtml((ed.editionName || "?").charAt(0))}
+          </div>
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(ed.editionName || ed.editionSlug)}</div>
+            <div class="card-blurb">${escapeHtml(
+              [ed.editionType, ed.isDefault ? "Default" : "", ed.shortDescription]
+                .filter(Boolean)
+                .join(" · ")
+            )}</div>
+          </div>
+        `;
+        if (cover) {
+          const banner = card.querySelector(".card-banner");
+          banner.textContent = "";
+          const img = document.createElement("img");
+          img.className = "card-cover";
+          img.src = cover;
+          img.alt = "";
+          img.loading = "lazy";
+          banner.appendChild(img);
+        }
+        card.addEventListener("click", () => {
+          openEditionDetail(gameSlug, ed.editionSlug);
+        });
+        return card;
+      })
+    );
+  } catch (err) {
+    if (grid) {
+      grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">${escapeHtml(
+        err.message || String(err)
+      )}</p>`;
+    }
+  }
 }
 
 async function renderModsView() {
