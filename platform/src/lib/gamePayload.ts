@@ -8,6 +8,19 @@ import {
 } from "@/lib/launcherInstall";
 import { CATALOG_STATUSES } from "@/lib/catalogStatus";
 
+/**
+ * The closed set of genres a game may carry.
+ *
+ * Must stay in sync with the Genre union in src/lib/data/types.ts — the two
+ * are separate so the type layer does not have to depend on zod. A value in
+ * one but not the other will typecheck in some places and fail validation in
+ * others.
+ *
+ * The second row was added for live-service titles, which the original list
+ * (built around the open-source catalog) could not describe: an MMO, a
+ * survival game or a battle-royale shooter had no honest option and would have
+ * been forced into RPG or Simulation.
+ */
 export const GENRES = [
   "Strategy",
   "RTS",
@@ -23,6 +36,18 @@ export const GENRES = [
   "Space",
   "Arcade",
   "Pirate",
+  "MMO",
+  "Survival",
+  "Shooter",
+  "Action",
+  "Adventure",
+  "Sports",
+  "Fighting",
+  "Social Deduction",
+  "Card Game",
+  "Idle",
+  "Horror",
+  "MOBA",
 ] as const;
 
 export const LAUNCH_METHODS = ["browser", "install", "server"] as const;

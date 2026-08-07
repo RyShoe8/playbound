@@ -2,6 +2,11 @@ import type { LauncherInstall } from "@/lib/launcherInstall";
 
 export type LaunchMethod = "browser" | "install" | "server";
 
+/**
+ * Must stay in sync with GENRES in src/lib/gamePayload.ts, which is what
+ * actually validates incoming payloads. Kept separate so this module does not
+ * have to depend on zod.
+ */
 export type Genre =
   | "Strategy"
   | "RTS"
@@ -16,7 +21,19 @@ export type Genre =
   | "Tower Defense"
   | "Space"
   | "Arcade"
-  | "Pirate";
+  | "Pirate"
+  | "MMO"
+  | "Survival"
+  | "Shooter"
+  | "Action"
+  | "Adventure"
+  | "Sports"
+  | "Fighting"
+  | "Social Deduction"
+  | "Card Game"
+  | "Idle"
+  | "Horror"
+  | "MOBA";
 
 export interface GameArt {
   /** CSS color stops for the generated cover gradient (fallback) */
