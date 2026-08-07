@@ -1323,16 +1323,18 @@ async function refreshServersPickersAndList() {
   }
 
   if (!serversState.selectedSlug || !supported.some((g) => g.slug === serversState.selectedSlug)) {
-    serversState.selectedSlug = supported[0].slug;
+    serversState.selectedSlug = "";
     serversState.selectedModSlug = "";
   }
 
-  gameSelect.innerHTML = supported
-    .map(
-      (g) =>
-        `<option value="${escapeHtml(g.slug)}" ${g.slug === serversState.selectedSlug ? "selected" : ""}>${escapeHtml(g.title)}</option>`
-    )
-    .join("");
+  gameSelect.innerHTML =
+    `<option value="" disabled ${!serversState.selectedSlug ? "selected" : ""}>Select a game...</option>` +
+    supported
+      .map(
+        (g) =>
+          `<option value="${escapeHtml(g.slug)}" ${g.slug === serversState.selectedSlug ? "selected" : ""}>${escapeHtml(g.title)}</option>`
+      )
+      .join("");
 
   fillModDropdown(serversState.selectedSlug);
 
@@ -1378,6 +1380,20 @@ async function loadServersBrowser() {
 async function fetchAndShowServers(baseSlug, mod) {
   const wrap = document.getElementById("servers-table-wrap");
   if (!wrap) return;
+
+  if (!baseSlug) {
+    wrap.innerHTML = `<div class="empty-hint">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-server">
+          <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+          <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+          <line x1="6" x2="6.01" y1="6" y2="6"/>
+          <line x1="6" x2="6.01" y1="18" y2="18"/>
+        </svg>
+        <p>Pick a game above to see who's playing right now.</p>
+      </div>`;
+    return;
+  }
+
   wrap.innerHTML = `<p class="view-sub">Fetching servers…</p>`;
 
   const data = await window.playbound.getServers(baseSlug);

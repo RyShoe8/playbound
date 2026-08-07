@@ -199,9 +199,16 @@ export function GlobalServerBrowser({
    * the stale value, then the effect reset the state and fired a second one.
    * Deriving here means the invalid value never reaches the fetch at all.
    */
+  /**
+   * Empty until a game is actually chosen.
+   *
+   * This used to fall back to visibleGames[0], so merely opening the page
+   * queried master servers for a game nobody had asked about. A deep link
+   * (?game=…) still selects immediately — that is an explicit choice — but an
+   * unqualified visit now costs nothing until the reader picks one.
+   */
   const effectiveGameSlug = useMemo(
-    () =>
-      visibleGames.some((g) => g.slug === gameSlug) ? gameSlug : visibleGames[0]?.slug || "",
+    () => (visibleGames.some((g) => g.slug === gameSlug) ? gameSlug : ""),
     [visibleGames, gameSlug]
   );
 
@@ -322,9 +329,22 @@ export function GlobalServerBrowser({
   }, []);
 
   useEffect(() => {
+    // No game chosen yet — do not query anything. Clearing the selection also
+    // clears stale results so the prompt is not shown above another game's
+    // server list.
+    if (!effectiveGameSlug) {
+      // Only cancel any in-flight request. State is deliberately left alone —
+      // the render checks effectiveGameSlug first, so stale results are never
+      // shown, and clearing it here would be a synchronous setState in an
+      // effect for no visible benefit.
+      abortRef.current?.abort();
+      return;
+    }
+
     const mod = effectiveModSlug
       ? mods.find((m) => m.slug === effectiveModSlug) || null
       : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadServers(effectiveGameSlug, mod);
     return () => {
       abortRef.current?.abort();
@@ -423,6 +443,7 @@ export function GlobalServerBrowser({
             disabled={!catalogLoaded || visibleGames.length === 0}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
           >
+            <option value="" disabled>Select a game...</option>
             {visibleGames.map((g) => (
               <option key={g.slug} value={g.slug}>
                 {g.title}
@@ -510,6 +531,12 @@ export function GlobalServerBrowser({
           {installedOnly
             ? "No installed games have live server browsers. Install a multiplayer title or turn off Installed only."
             : "No server providers available."}
+        </EmptyHint>
+      ) : !effectiveGameSlug ? (
+        // Nothing is fetched until a game is picked, so say so rather than
+        // showing an empty list that looks like a failed load.
+        <EmptyHint icon={Server}>
+          Pick a game above to see who&apos;s playing right now.
         </EmptyHint>
       ) : loading && !data ? (
         <p className="text-sm text-muted-foreground">Loading servers…</p>
