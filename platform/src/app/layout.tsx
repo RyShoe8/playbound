@@ -11,6 +11,7 @@ import { PresenceProvider } from "@/components/PresenceProvider";
 import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
 import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
+import { PopoutDetector } from "@/components/PopoutDetector";
 import {
   SITE_URL,
   SITE_NAME,
@@ -103,14 +104,15 @@ export default function RootLayout({
                 SessionProvider because presence only exists for signed-in
                 users, and mounted once so only one session is ever opened. */}
             <PresenceProvider />
+            <PopoutDetector />
             <CompatibilityShell>
-              <Sidebar />
-              <div className="flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
-                <TopBar />
+              <div className="shell-sidebar"><Sidebar /></div>
+              <div className="shell-main flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
+                <div className="shell-topbar"><TopBar /></div>
                 <main className="flex-1">{children}</main>
-                <Footer />
+                <div className="shell-footer"><Footer /></div>
               </div>
-              <MobileNav />
+              <div className="shell-mobilenav"><MobileNav /></div>
             </CompatibilityShell>
           </TelemetryProvider>
         </SessionProvider>

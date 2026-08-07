@@ -21,8 +21,8 @@ export async function GET(req: Request) {
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-  const redirectUri = process.env.DISCORD_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) {
+  const redirectUri = new URL("/api/auth/discord/callback", req.url).toString();
+  if (!clientId || !clientSecret) {
     return NextResponse.redirect(back("discord=error"));
   }
 

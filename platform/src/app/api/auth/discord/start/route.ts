@@ -11,8 +11,8 @@ export async function GET(req: Request) {
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
-  const redirectUri = process.env.DISCORD_REDIRECT_URI;
-  if (!clientId || !redirectUri) {
+  const redirectUri = new URL("/api/auth/discord/callback", req.url).toString();
+  if (!clientId) {
     return NextResponse.json({ error: "Discord OAuth not configured" }, { status: 503 });
   }
 

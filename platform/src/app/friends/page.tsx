@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { FriendsView } from "@/components/friends/FriendsView";
+import { PopoutButton } from "@/components/friends/PopoutButton";
 
 export const metadata: Metadata = {
   title: "Friends",
@@ -9,11 +10,14 @@ export const metadata: Metadata = {
 export default function FriendsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
-        <p className="mt-2 text-muted-foreground">
-          See who&apos;s playing and manage friend requests.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
+          <p className="mt-2 text-muted-foreground">
+            See who&apos;s playing and manage friend requests.
+          </p>
+        </div>
+        <PopoutButton />
       </div>
       <FriendsView />
     </div>

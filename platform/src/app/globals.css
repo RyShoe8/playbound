@@ -128,3 +128,15 @@
   }
 }
 
+
+body.is-popout .shell-sidebar,
+body.is-popout .shell-topbar,
+body.is-popout .shell-footer,
+body.is-popout .shell-mobilenav {
+  display: none !important;
+}
+
+body.is-popout .shell-main {
+  padding-left: 0 !important;
+  padding-bottom: 0 !important;
+}
