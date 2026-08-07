@@ -3,12 +3,19 @@
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
+import { AddFriends } from "@/components/friends/AddFriends";
 import { Avatar } from "@/components/ui/bits";
-import { Gamepad2, Globe, Search, UserMinus, UserPlus } from "lucide-react";
+import { Gamepad2, Globe, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 
-export function FriendsView() {
+export function FriendsView({
+  games,
+  genres,
+}: {
+  games: { slug: string; title: string }[];
+  genres: string[];
+}) {
   const { status } = useSession();
   const {
     playingFriends,
@@ -49,15 +56,7 @@ export function FriendsView() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <Link 
-          href="/search?tab=users" 
-          className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
-        >
-          <Search className="size-4" />
-          Find Friends
-        </Link>
-      </div>
+      <AddFriends games={games} genres={genres} />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Active Friends Column */}
