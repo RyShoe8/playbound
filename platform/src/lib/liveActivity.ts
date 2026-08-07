@@ -8,13 +8,15 @@
 import { unstable_cache } from "next/cache";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
-import { listPublicEditionsForGame } from "@/lib/editions";
 import { listServersForGame } from "@/lib/servers/registry";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import EditionModel from "@/lib/models/Edition";
 
 const CACHE_SECONDS = 900;
 const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
+/** Cap per-game master-server polls so cold catalog stats finish under launcher/API budgets. */
+const MULTIPLAYER_FANOUT_MS = 4500;
 
 export type CatalogPopularGame = {
   slug: string;
@@ -72,6 +74,51 @@ async function multiplayerForGame(slug: string): Promise<{ players: number; serv
     };
   } catch {
     return { players: 0, servers: 0 };
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve(fallback);
+      }
+    }, ms);
+    promise.then(
+      (value) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        }
+      },
+      () => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(fallback);
+        }
+      }
+    );
+  });
+}
+
+/** Public non-virtual edition counts per game — one aggregate instead of N list round-trips. */
+async function publicEditionCountsByGame(): Promise<Record<string, number>> {
+  try {
+    await dbConnect();
+    const rows = await EditionModel.aggregate<{ _id: string; count: number }>([
+      { $match: { visibility: "public" } },
+      { $group: { _id: "$gameSlug", count: { $sum: 1 } } },
+    ]);
+    const out: Record<string, number> = {};
+    for (const row of rows) out[row._id] = row.count;
+    return out;
+  } catch (err) {
+    console.error("[liveActivity] edition counts failed:", err);
+    return {};
   }
 }
 
@@ -309,11 +356,18 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
   const [games, mods] = await Promise.all([listGames(), listMods()]);
   const multiplayer = games.filter((g) => g.launchMethods.includes("server"));
 
-  const [settled, platformPlayers, platformByGame, editionLists] = await Promise.all([
-    Promise.allSettled(multiplayer.map(async (g) => multiplayerForGame(g.slug))),
+  const [settled, platformPlayers, platformByGame, editionCountBySlug] = await Promise.all([
+    Promise.allSettled(
+      multiplayer.map((g) =>
+        withTimeout(multiplayerForGame(g.slug), MULTIPLAYER_FANOUT_MS, {
+          players: 0,
+          servers: 0,
+        })
+      )
+    ),
     countActivePlatformPlayers(),
     countActivePlatformPlayersByGame(),
-    Promise.all(games.map((g) => listPublicEditionsForGame(g))),
+    publicEditionCountsByGame(),
   ]);
 
   const mpBySlug = new Map<string, number>();
@@ -326,13 +380,10 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     }
   });
 
-  const editionCountBySlug: Record<string, number> = {};
   let editionCount = 0;
-  games.forEach((g, i) => {
-    const n = (editionLists[i] ?? []).filter((e) => !e.virtual).length;
-    editionCountBySlug[g.slug] = n;
-    editionCount += n;
-  });
+  for (const g of games) {
+    editionCount += Number(editionCountBySlug[g.slug]) || 0;
+  }
 
   const byGame = [...games]
     .map((g) => ({
@@ -435,7 +486,7 @@ async function computeModLiveStats(modSlug: string): Promise<EntityLiveStats> {
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v4"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v5"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();

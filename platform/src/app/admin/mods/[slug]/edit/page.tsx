@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { listDevelopers } from "@/lib/developers";
 import { listAllGames } from "@/lib/catalog";
 import { getModAdmin } from "@/lib/mods";
@@ -55,7 +56,13 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Edit {initial.title}</h1>
+        <Link
+          href={`/admin/games/${initial.baseGameSlug}/mods`}
+          className="text-sm font-semibold text-muted-foreground hover:underline"
+        >
+          ← Mods for {initial.baseGameSlug}
+        </Link>
+        <h1 className="mt-1 text-3xl font-extrabold tracking-tight">Edit {initial.title}</h1>
         <p className="mt-1 text-muted-foreground">Published mods appear on the base game&apos;s Mods tab.</p>
       </div>
       <ModEditorForm

@@ -20,6 +20,8 @@ let compatibilityFilter = "compatible";
 let currentEditionDetail = null; // { gameSlug, editionSlug }
 let _liveStatsPromise = null;
 let _liveStatsTime = 0;
+/** Last successful catalog live-stats payload (survives failed refreshes). */
+let _liveStatsLastGood = null;
 
 const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
@@ -163,7 +165,11 @@ function buildCatalogStatsSkeletonHtml() {
 }
 
 function buildCatalogStatsCardHtml(live) {
-  if (!live) {
+  const usable =
+    live &&
+    live.ok !== false &&
+    typeof live.gameCount === "number";
+  if (!usable) {
     return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable.</p></aside>`;
   }
   const popular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
@@ -542,16 +548,40 @@ async function renderHomeView() {
 
   void (async () => {
     const now = Date.now();
-    if (!_liveStatsPromise || now - _liveStatsTime > 60_000) {
-      _liveStatsPromise = window.playbound.getLiveStats?.() ?? Promise.resolve(null);
-      _liveStatsTime = now;
+    const cacheFresh = _liveStatsPromise && now - _liveStatsTime <= 60_000;
+
+    async function fetchCatalogLiveStats() {
+      const raw = await (window.playbound.getLiveStats?.() ?? Promise.resolve(null));
+      if (raw && raw.ok !== false && typeof raw.gameCount === "number") {
+        _liveStatsLastGood = raw;
+        return raw;
+      }
+      return null;
     }
-    
+
+    if (!cacheFresh) {
+      _liveStatsTime = now;
+      _liveStatsPromise = (async () => {
+        let live = await fetchCatalogLiveStats();
+        if (!live) {
+          await new Promise((r) => setTimeout(r, 750));
+          live = await fetchCatalogLiveStats();
+        }
+        // Only cache successes — failures must not stick for 60s.
+        if (!live) {
+          _liveStatsPromise = null;
+          _liveStatsTime = 0;
+          return _liveStatsLastGood;
+        }
+        return live;
+      })();
+    }
+
     const live = await _liveStatsPromise;
     // The user may have navigated away while this was in flight, in which case
     // the slot no longer exists — or has been replaced by a newer render.
     if (!statsSlot || !statsSlot.isConnected) return;
-    statsSlot.innerHTML = buildCatalogStatsCardHtml(live);
+    statsSlot.innerHTML = buildCatalogStatsCardHtml(live || _liveStatsLastGood);
     statsSlot.querySelectorAll("[data-popular-slug]").forEach((btn) => {
       btn.addEventListener("click", () => openGameDetail(btn.dataset.popularSlug, "home"));
     });

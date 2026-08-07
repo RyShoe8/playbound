@@ -89,9 +89,14 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
             Published goes live for everyone; Testing is admin-only on the site and launcher.
           </p>
         </div>
-        <Link href={`/admin/games/${game.slug}/editions`} className="btn-secondary whitespace-nowrap">
-          Manage Editions
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/admin/games/${game.slug}/editions`} className="btn-secondary whitespace-nowrap">
+            Manage Editions
+          </Link>
+          <Link href={`/admin/games/${game.slug}/mods`} className="btn-secondary whitespace-nowrap">
+            Manage Mods
+          </Link>
+        </div>
       </div>
       <GameEditorForm
         mode="edit"

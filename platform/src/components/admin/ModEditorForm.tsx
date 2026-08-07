@@ -117,7 +117,7 @@ export function ModEditorForm({
         setBusy(false);
         return;
       }
-      router.push("/admin/mods");
+      router.push(`/admin/games/${form.baseGameSlug}/mods`);
       router.refresh();
     } catch {
       setError("Couldn't reach the server.");
@@ -136,7 +136,7 @@ export function ModEditorForm({
         setBusy(false);
         return;
       }
-      router.push("/admin/mods");
+      router.push(`/admin/games/${form.baseGameSlug}/mods`);
       router.refresh();
     } catch {
       setError("Couldn't reach the server.");

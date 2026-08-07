@@ -3064,23 +3064,40 @@ ipcMain.handle("save-settings", (_event, patch) => {
 });
 
 ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
-  try {
-    const params = new URLSearchParams();
-    if (opts?.game) params.set("game", opts.game);
-    if (opts?.mod) params.set("mod", opts.mod);
-    if (opts?.edition) params.set("edition", opts.edition);
-    const qs = params.toString();
-    const res = await fetch(`${getApiBase()}/api/launcher/live-stats${qs ? `?${qs}` : ""}`, {
+  const params = new URLSearchParams();
+  if (opts?.game) params.set("game", opts.game);
+  if (opts?.mod) params.set("mod", opts.mod);
+  if (opts?.edition) params.set("edition", opts.edition);
+  const qs = params.toString();
+  const url = `${getApiBase()}/api/launcher/live-stats${qs ? `?${qs}` : ""}`;
+
+  async function attempt() {
+    const res = await fetch(url, {
       headers: launcherApiHeaders(),
-      // Every other call in this file is bounded; this one was not, so a slow
-      // or black-holed connection could leave it pending indefinitely. Live
-      // stats are decorative — a missing number is fine, a hung request is not.
-      signal: AbortSignal.timeout(10_000),
+      // Cold catalog compute can fan out to master servers (12–18s ceilings).
+      // Keep below maxDuration on the API; high enough to usually get a warm or
+      // deadline-bounded response.
+      signal: AbortSignal.timeout(30_000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+    }
     return await res.json();
-  } catch {
-    return null;
+  }
+
+  try {
+    return await attempt();
+  } catch (err) {
+    const first = err instanceof Error ? err.message : String(err);
+    console.warn("[live-stats] first attempt failed:", first);
+    try {
+      return await attempt();
+    } catch (err2) {
+      const second = err2 instanceof Error ? err2.message : String(err2);
+      console.warn("[live-stats] retry failed:", second);
+      return null;
+    }
   }
 });
 
