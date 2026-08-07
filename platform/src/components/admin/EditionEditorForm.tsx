@@ -110,6 +110,7 @@ export function EditionEditorForm({
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
+  const pendingImageKindRef = useRef<"cover" | "shot">("shot");
   const [form, setForm] = useState<EditionDraft>({
     ...initial,
     patchNotes: initial.patchNotes ?? [],
@@ -386,30 +387,45 @@ export function EditionEditorForm({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    const kind = pendingImageKindRef.current;
     setBusy(true);
     setError("");
+    setMediaNote(kind === "cover" ? "Uploading hero…" : "Uploading screenshot…");
     try {
       const body = new FormData();
       body.set("file", file);
       body.set("slug", uploadSlugFor(form));
-      body.set("kind", uploadKind);
+      body.set("kind", kind);
       const res = await fetch("/api/admin/games/upload", { method: "POST", body });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(data?.error ?? "Upload failed");
+        const msg = data?.error ?? "Upload failed";
+        setError(msg);
+        setMediaNote(msg);
         setBusy(false);
         return;
       }
-      if (uploadKind === "cover") {
+      if (!data?.url || typeof data.url !== "string") {
+        const msg = "Upload succeeded but no image URL was returned.";
+        setError(msg);
+        setMediaNote(msg);
+        setBusy(false);
+        return;
+      }
+      if (kind === "cover") {
         patchBranding({ heroImage: data.url });
+        setMediaNote("Hero uploaded — save the edition to persist.");
       } else {
         patchBranding({
           screenshots: [...(form.branding.screenshots ?? []), data.url].slice(0, 20),
         });
+        setMediaNote("Screenshot uploaded — save the edition to persist.");
       }
       setBusy(false);
     } catch {
-      setError("Couldn't reach the server.");
+      const msg = "Couldn't reach the server.";
+      setError(msg);
+      setMediaNote(msg);
       setBusy(false);
     }
   }
@@ -461,6 +477,22 @@ export function EditionEditorForm({
 
   return (
     <div className="space-y-6">
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
+        className="sr-only"
+        tabIndex={-1}
+        onChange={onFileSelected}
+      />
+      <input
+        ref={videoFileRef}
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime"
+        className="sr-only"
+        tabIndex={-1}
+        onChange={onVideoFileSelected}
+      />
       <div className="rounded-xl border border-border bg-card p-4">
         <p className={label}>Import from Steam, Epic, GitHub, or any website URL</p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -665,8 +697,9 @@ export function EditionEditorForm({
             type="button"
             disabled={busy}
             onClick={() => {
+              pendingImageKindRef.current = "cover";
               setUploadKind("cover");
-              fileRef.current?.click();
+              window.setTimeout(() => fileRef.current?.click(), 0);
             }}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
           >
@@ -676,8 +709,9 @@ export function EditionEditorForm({
             type="button"
             disabled={busy}
             onClick={() => {
+              pendingImageKindRef.current = "shot";
               setUploadKind("shot");
-              fileRef.current?.click();
+              window.setTimeout(() => fileRef.current?.click(), 0);
             }}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
           >
@@ -704,14 +738,6 @@ export function EditionEditorForm({
           >
             Upload video
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
-          <input
-            ref={videoFileRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            className="hidden"
-            onChange={onVideoFileSelected}
-          />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

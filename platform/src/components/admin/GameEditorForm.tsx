@@ -150,6 +150,8 @@ export function GameEditorForm({
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
+  /** Sync intent for the shared image picker — setState alone races the file dialog. */
+  const pendingImageKindRef = useRef<"cover" | "shot">("shot");
   const [form, setForm] = useState<GamePayload>(initial);
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [busy, setBusy] = useState(false);
@@ -539,31 +541,46 @@ export function GameEditorForm({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    const kind = pendingImageKindRef.current;
     setBusy(true);
     setError("");
+    setMediaNote(kind === "cover" ? "Uploading cover…" : "Uploading screenshot…");
     try {
       const body = new FormData();
       body.set("file", file);
       body.set("slug", form.slug || "upload");
-      body.set("kind", uploadKind);
+      body.set("kind", kind);
       const res = await fetch("/api/admin/games/upload", { method: "POST", body });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(data?.error ?? "Upload failed");
+        const msg = data?.error ?? "Upload failed";
+        setError(msg);
+        setMediaNote(msg);
         setBusy(false);
         return;
       }
-      if (uploadKind === "cover") {
+      if (!data?.url || typeof data.url !== "string") {
+        const msg = "Upload succeeded but no image URL was returned.";
+        setError(msg);
+        setMediaNote(msg);
+        setBusy(false);
+        return;
+      }
+      if (kind === "cover") {
         patch("coverImage", data.url);
+        setMediaNote("Cover uploaded — save the game to persist.");
       } else {
         setForm((prev) => ({
           ...prev,
           screenshots: [...(prev.screenshots ?? []), data.url].slice(0, 20),
         }));
+        setMediaNote("Screenshot uploaded — save the game to persist.");
       }
       setBusy(false);
     } catch {
-      setError("Couldn't reach the server.");
+      const msg = "Couldn't reach the server.";
+      setError(msg);
+      setMediaNote(msg);
       setBusy(false);
     }
   }
@@ -680,6 +697,23 @@ export function GameEditorForm({
       </div>
 
       <form onSubmit={save} className="space-y-4">
+        {/* Keep pickers outside collapsible <details> so change events aren't dropped. */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
+          className="sr-only"
+          tabIndex={-1}
+          onChange={onFileSelected}
+        />
+        <input
+          ref={videoFileRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          className="sr-only"
+          tabIndex={-1}
+          onChange={onVideoFileSelected}
+        />
         <AdminCollapsibleSection title="Basics" defaultOpen>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -872,8 +906,10 @@ export function GameEditorForm({
               type="button"
               disabled={busy}
               onClick={() => {
+                pendingImageKindRef.current = "cover";
                 setUploadKind("cover");
-                fileRef.current?.click();
+                // Defer so the input stays stable if a surrounding <details> toggles.
+                window.setTimeout(() => fileRef.current?.click(), 0);
               }}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
             >
@@ -883,8 +919,9 @@ export function GameEditorForm({
               type="button"
               disabled={busy}
               onClick={() => {
+                pendingImageKindRef.current = "shot";
                 setUploadKind("shot");
-                fileRef.current?.click();
+                window.setTimeout(() => fileRef.current?.click(), 0);
               }}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
             >
@@ -911,14 +948,6 @@ export function GameEditorForm({
             >
               Upload video
             </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
-            <input
-              ref={videoFileRef}
-              type="file"
-              accept="video/mp4,video/webm,video/quicktime"
-              className="hidden"
-              onChange={onVideoFileSelected}
-            />
           </div>
           {form.coverImage ? (
             <div className="flex items-start gap-3">
