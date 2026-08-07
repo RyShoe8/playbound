@@ -154,11 +154,15 @@ export function GlobalServerBrowser({
         const supported = (serversJson.games || []).filter((g: IndexGame) => g.supported);
         setGames(supported);
         setMods(modsJson.mods || []);
-        const preferred =
-          (queryGame && supported.find((g: IndexGame) => g.slug === queryGame)?.slug) ||
-          supported[0]?.slug ||
-          "";
-        setGameSlug(preferred);
+        // Deep link (?game=…) selects immediately. Otherwise leave empty —
+        // never fall back to supported[0] (that was auto-fetching 0 A.D. etc.).
+        if (queryGame && supported.some((g: IndexGame) => g.slug === queryGame)) {
+          setGameSlug(queryGame);
+        } else {
+          setGameSlug((prev) =>
+            prev && supported.some((g: IndexGame) => g.slug === prev) ? prev : ""
+          );
+        }
         if (queryMod) setModSlug(queryMod);
       } catch {
         /* ignore */
@@ -424,13 +428,6 @@ export function GlobalServerBrowser({
 
   return (
     <div className="space-y-4">
-      {catalogLoaded && visibleGames.length === 0 ? (
-        <EmptyHint icon={Server}>
-          No live servers for games compatible with this device. Switch to All Games to browse every
-          title.
-        </EmptyHint>
-      ) : null}
-
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Game
@@ -443,7 +440,7 @@ export function GlobalServerBrowser({
             disabled={!catalogLoaded || visibleGames.length === 0}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
           >
-            <option value="" disabled>Select a game...</option>
+            <option value="">Select a game…</option>
             {visibleGames.map((g) => (
               <option key={g.slug} value={g.slug}>
                 {g.title}
@@ -526,15 +523,13 @@ export function GlobalServerBrowser({
 
       {!catalogLoaded ? (
         <p className="text-sm text-muted-foreground">Loading server catalog…</p>
-      ) : !effectiveGameSlug || (installedOnly && !visibleGames.length) ? (
+      ) : visibleGames.length === 0 ? (
         <EmptyHint icon={Server}>
           {installedOnly
             ? "No installed games have live server browsers. Install a multiplayer title or turn off Installed only."
-            : "No server providers available."}
+            : "No live servers for games compatible with this device. Switch to All Games to browse every title."}
         </EmptyHint>
       ) : !effectiveGameSlug ? (
-        // Nothing is fetched until a game is picked, so say so rather than
-        // showing an empty list that looks like a failed load.
         <EmptyHint icon={Server}>
           Pick a game above to see who&apos;s playing right now.
         </EmptyHint>
