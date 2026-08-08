@@ -25,6 +25,7 @@ export async function generateMetadata({
     await dbConnect();
     const topic = await DiscussionTopic.findOne({
       gameSlug: slug,
+      modSlug: null,
       slug: topicSlug,
       status: { $ne: "removed" },
     })
@@ -56,6 +57,7 @@ export default async function DiscussionTopicPage({
 
   const topic = await DiscussionTopic.findOne({
     gameSlug: slug,
+    modSlug: null,
     slug: topicSlug,
     status: { $ne: "removed" },
   }).lean();
@@ -78,6 +80,7 @@ export default async function DiscussionTopicPage({
   const topicView = {
     _id: String(topic._id),
     gameSlug: topic.gameSlug,
+    modSlug: topic.modSlug ?? null,
     slug: topic.slug,
     title: topic.title,
     body: topic.body,

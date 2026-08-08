@@ -943,6 +943,22 @@ body {
   font-weight: 700;
 }
 
+button.library-mod-title {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+button.library-mod-title:hover {
+  color: var(--accent, #7dd3fc);
+  text-decoration: underline;
+}
+
 .library-mods-label {
   font-size: 12px;
   font-weight: 700;

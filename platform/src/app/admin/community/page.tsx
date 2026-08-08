@@ -50,6 +50,7 @@ export default async function AdminCommunityPage() {
           id: String(t._id),
           title: t.title,
           gameSlug: t.gameSlug,
+          modSlug: t.modSlug ?? null,
           slug: t.slug,
           status: t.status,
         }))}
@@ -57,6 +58,7 @@ export default async function AdminCommunityPage() {
           id: String(t._id),
           title: t.title,
           gameSlug: t.gameSlug,
+          modSlug: t.modSlug ?? null,
           slug: t.slug,
           status: t.status,
         }))}

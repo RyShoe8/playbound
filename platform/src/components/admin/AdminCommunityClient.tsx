@@ -14,7 +14,14 @@ type Report = {
   createdAt: string;
 };
 
-type TopicRef = { id: string; title: string; gameSlug: string; slug: string; status: string };
+type TopicRef = {
+  id: string;
+  title: string;
+  gameSlug: string;
+  modSlug?: string | null;
+  slug: string;
+  status: string;
+};
 type Suspended = { id: string; username: string; email: string; until: string | null };
 type Audit = {
   id: string;
@@ -118,7 +125,14 @@ export function AdminCommunityClient({
         <h2 className="text-lg font-bold">Locked discussions</h2>
         {locked.map((t) => (
           <div key={t.id} className="rounded-xl border border-border bg-card p-3 text-sm">
-            <Link href={`/games/${t.gameSlug}/discussion/${t.slug}`} className="font-semibold hover:text-primary">
+            <Link
+              href={
+                t.modSlug
+                  ? `/mods/${t.modSlug}/discussion/${t.slug}`
+                  : `/games/${t.gameSlug}/discussion/${t.slug}`
+              }
+              className="font-semibold hover:text-primary"
+            >
               {t.title}
             </Link>
             <button

@@ -603,7 +603,7 @@ export type ModReadiness = {
   missing: string[];
 };
 
-const MIN_MOD_DESCRIPTION_WORDS = 80;
+const MIN_MOD_DESCRIPTION_WORDS = 30;
 
 export type ModReadinessSource = {
   longDescription?: string | null;

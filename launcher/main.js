@@ -3124,6 +3124,19 @@ ipcMain.handle("get-game-guides", async (_event, slug) => {
   }
 });
 
+ipcMain.handle("get-mod-guides", async (_event, slug) => {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/launcher/mods/${encodeURIComponent(slug)}/guides`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return { guides: [] };
+    return await res.json();
+  } catch {
+    return { guides: [] };
+  }
+});
+
 ipcMain.handle("get-game-releases", async (_event, slug) => {
   try {
     const res = await fetch(
@@ -3330,6 +3343,40 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
       entry.kind === "github-installer" || entry.kind === "direct-installer",
     pendingInstaller: Boolean(info?.pending) || getPendingInstaller()?.slug === slug,
     scanning: Boolean(info?.pending && info?.scanning),
+  };
+});
+
+ipcMain.handle("get-mod-detail", async (_event, slug) => {
+  let rich = null;
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/mods/${encodeURIComponent(slug)}`, {
+      headers: launcherApiHeaders(),
+    });
+    if (res.ok) rich = await res.json();
+  } catch {
+    /* offline */
+  }
+  if (!rich) return null;
+
+  const state = loadState();
+  const modsBag = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const info = modsBag[slug];
+
+  return {
+    ...rich,
+    coverImage: resolveMediaUrl(rich.coverImage) || null,
+    screenshots: (Array.isArray(rich.screenshots) ? rich.screenshots : [])
+      .map((src) => resolveMediaUrl(src))
+      .filter(Boolean),
+    baseGame: rich.baseGame
+      ? {
+          ...rich.baseGame,
+          coverImage: resolveMediaUrl(rich.baseGame.coverImage) || null,
+        }
+      : null,
+    installed: Boolean(info),
+    installedPath: info?.dir || null,
+    version: info?.version || null,
   };
 });
 

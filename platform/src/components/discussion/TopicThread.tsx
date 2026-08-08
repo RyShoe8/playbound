@@ -23,6 +23,7 @@ function hueFromName(name: string): number {
 export type TopicView = {
   _id: string;
   gameSlug: string;
+  modSlug?: string | null;
   slug: string;
   title: string;
   body: string;
@@ -71,15 +72,16 @@ export function TopicThread({
 }) {
   const [quoteId, setQuoteId] = useState<string | null>(null);
   const cat = CATEGORY_META[topic.category];
+  const root = topic.modSlug ? `/mods/${topic.modSlug}` : `/games/${topic.gameSlug}`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <nav className="text-sm text-muted-foreground">
-        <Link href={`/games/${topic.gameSlug}`} className="hover:text-foreground">
+        <Link href={root} className="hover:text-foreground">
           {gameTitle}
         </Link>
         {" › "}
-        <Link href={`/games/${topic.gameSlug}?tab=discussion`} className="hover:text-foreground">
+        <Link href={`${root}?tab=discussion`} className="hover:text-foreground">
           Discussion
         </Link>
         {" › "}

@@ -3,7 +3,10 @@ let currentView = "home";
 let accountState = { connected: false };
 let deepLinkCtx = null;
 let currentDetailSlug = null;
+let currentModDetailSlug = null;
 let detailReturnView = "games";
+let modDetailActiveTab = "overview";
+let detailActiveTab = "overview";
 let updateStatus = { phase: "idle" };
 
 /** Games catalog filter state (persists across re-renders of the view). */
@@ -298,6 +301,7 @@ const views = {
   friends: document.getElementById("view-friends"),
   settings: document.getElementById("view-settings"),
   gameDetail: document.getElementById("view-game-detail"),
+  modDetail: document.getElementById("view-mod-detail"),
   editionDetail: document.getElementById("view-edition-detail"),
   deepLink: document.getElementById("view-deep-link"),
 };
@@ -307,6 +311,7 @@ const GAMES_FAMILY_VIEWS = new Set([
   "mods",
   "editions",
   "gameDetail",
+  "modDetail",
   "editionDetail",
 ]);
 
@@ -346,7 +351,7 @@ function navigateTo(viewName, params = {}) {
 
   currentView = viewName;
   const navKey =
-    viewName === "gameDetail" || viewName === "editionDetail"
+    viewName === "gameDetail" || viewName === "editionDetail" || viewName === "modDetail"
       ? null
       : viewName === "editions"
         ? "editions"
@@ -360,6 +365,7 @@ function navigateTo(viewName, params = {}) {
         (viewName === "games" ||
           viewName === "mods" ||
           viewName === "gameDetail" ||
+          viewName === "modDetail" ||
           viewName === "editionDetail" ||
           viewName === "editions"));
     btn.classList.toggle("active", active);
@@ -379,6 +385,7 @@ function navigateTo(viewName, params = {}) {
   else if (viewName === "friends") renderFriendsView();
   else if (viewName === "settings") renderSettingsView();
   else if (viewName === "gameDetail") renderGameDetailView(params.slug);
+  else if (viewName === "modDetail") renderModDetailView(params.slug);
   else if (viewName === "editionDetail") {
     renderEditionDetailView(params.gameSlug, params.editionSlug);
   }
@@ -1159,13 +1166,17 @@ function buildModsDisclosure(gameMods, modTitles) {
     const row = document.createElement("div");
     row.className = "library-mod-row";
     row.innerHTML = `
-      <span class="library-mod-title">${escapeHtml(title)}</span>
+      <button type="button" class="library-mod-title linkish">${escapeHtml(title)}</button>
       <div class="library-mod-actions">
         <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
         ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
         <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
       </div>
     `;
+    row.querySelector(".library-mod-title")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openModDetail(mod.slug, "library");
+    });
     row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
@@ -1415,7 +1426,7 @@ async function renderModsView() {
           try {
             setStatus(`Installing ${mod.title}…`);
             const result = await window.playbound.installMod(mod.slug);
-            if (result?.status === "external-opened") {
+            if (result?.status === "external" || result?.status === "external-opened") {
               setStatus("Opened download page in browser.");
             } else {
               setStatus(`Installed ${mod.title}`);
@@ -1428,7 +1439,7 @@ async function renderModsView() {
         });
         card.addEventListener("click", (e) => {
           if (e.target.closest("button")) return;
-          window.playbound.openExternal(`https://playbound.club/mods/${mod.slug}`);
+          openModDetail(mod.slug, "mods");
         });
         return card;
       })
@@ -2168,7 +2179,6 @@ async function renderSettingsView() {
   });
 }
 
-let detailActiveTab = "overview";
 /** Sort state for game-detail servers table */
 const detailServersSort = { sort: "players", sortDir: "desc" };
 
@@ -2766,15 +2776,20 @@ async function renderGameDetailView(slug) {
         }
       }
       modsList.appendChild(row);
+      const titleEl = row.querySelector(".mod-row-title");
+      if (titleEl) {
+        titleEl.style.cursor = "pointer";
+        titleEl.addEventListener("click", () => openModDetail(mod.slug, "gameDetail"));
+      }
       void window.playbound.getLiveStats?.({ mod: mod.slug }).then((stats) => {
         if (!stats || !row.isConnected) return;
-        const titleEl = row.querySelector(".mod-row-title");
-        if (!titleEl) return;
+        const titleNode = row.querySelector(".mod-row-title");
+        if (!titleNode) return;
         const chip = document.createElement("span");
         chip.className = "playing-now-chip";
         chip.style.marginLeft = "8px";
         chip.textContent = `${formatStatNumber(stats.playingNow)} playing now`;
-        titleEl.appendChild(chip);
+        titleNode.appendChild(chip);
       });
     }
   } else {
@@ -2862,9 +2877,315 @@ async function renderGameDetailView(slug) {
 
 function openGameDetail(slug, fromView) {
   const origin = fromView || currentView;
-  detailReturnView = ["games", "library", "home", "servers"].includes(origin) ? origin : "games";
+  detailReturnView = ["games", "library", "home", "servers", "mods"].includes(origin)
+    ? origin
+    : "games";
   detailActiveTab = "overview";
   navigateTo("gameDetail", { slug });
+}
+
+function openModDetail(slug, fromView) {
+  const origin = fromView || currentView;
+  detailReturnView = ["games", "library", "home", "servers", "mods", "gameDetail"].includes(origin)
+    ? origin
+    : "mods";
+  modDetailActiveTab = "overview";
+  navigateTo("modDetail", { slug });
+}
+
+async function renderModDetailView(slug) {
+  currentModDetailSlug = slug;
+  const container = views.modDetail;
+  if (!container) return;
+  container.innerHTML = `<p class="view-sub">Loading mod details...</p>`;
+
+  const detail = await window.playbound.getModDetail?.(slug);
+  if (!detail) {
+    container.innerHTML = `<p class="view-sub">Mod not found.</p>`;
+    return;
+  }
+
+  const bgGrad =
+    Array.isArray(detail.art) && detail.art.length >= 2
+      ? `linear-gradient(135deg, ${detail.art[0]}, ${detail.art[1]})`
+      : `linear-gradient(135deg, #312e81, #a78bfa)`;
+  const coverUrl = detail.coverImage || detail.baseGame?.coverImage || "";
+  const coverHtml = coverUrl
+    ? `<div class="detail-cover"><img src="${escapeHtml(coverUrl)}" alt="" loading="lazy" /></div>`
+    : `<div class="detail-cover detail-cover-fallback" style="background:${bgGrad}"><span>${escapeHtml(
+        (detail.title || "?").charAt(0)
+      )}</span></div>`;
+
+  const faqHtml = (detail.faq || [])
+    .map(
+      (item) =>
+        `<div class="faq-card"><h3>${escapeHtml(item.q || item.question || "FAQ")}</h3><p>${escapeHtml(item.a || item.answer || "")}</p></div>`
+    )
+    .join("");
+
+  const installSteps = (detail.installSteps || [])
+    .map(
+      (step, i) =>
+        `<div class="faq-card"><h3>Step ${i + 1}</h3><p>${escapeHtml(step.text || "")}${
+          step.command ? `<br/><code>${escapeHtml(step.command)}</code>` : ""
+        }</p></div>`
+    )
+    .join("");
+
+  const shots = (detail.screenshots || [])
+    .slice(0, 12)
+    .map(
+      (src) =>
+        `<a class="shot-thumb" href="${escapeHtml(src)}" data-ext="${escapeHtml(src)}"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></a>`
+    )
+    .join("");
+
+  const external = detail.downloadKind === "external";
+  const baseTitle = detail.baseGame?.title || detail.baseGame?.slug || "";
+
+  container.innerHTML = `
+    <button class="btn-secondary btn-sm" id="mod-detail-back" style="margin-bottom: 12px">← Back</button>
+
+    <section class="detail-hero">
+      ${coverHtml}
+      <div class="detail-hero-copy">
+        <div class="chip-row"><span class="chip chip-accent">Mod</span>${
+          baseTitle ? `<span class="chip">For ${escapeHtml(baseTitle)}</span>` : ""
+        }</div>
+        <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
+        <p class="view-sub detail-hero-sub">${escapeHtml(detail.tagline || "")}${
+          detail.approxSize ? ` · ${escapeHtml(detail.approxSize)}` : ""
+        }${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+        <div class="detail-hero-actions" id="mod-detail-actions"></div>
+      </div>
+    </section>
+
+    <nav class="detail-tabs" id="mod-detail-tabs">
+      <button type="button" class="detail-tab ${modDetailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
+      <button type="button" class="detail-tab ${modDetailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
+      <button type="button" class="detail-tab ${modDetailActiveTab === "media" ? "active" : ""}" data-tab="media">Media</button>
+      <button type="button" class="detail-tab ${modDetailActiveTab === "faq" ? "active" : ""}" data-tab="faq">FAQ</button>
+      <button type="button" class="detail-tab ${modDetailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
+    </nav>
+
+    <div class="detail-tab-panels">
+      <div class="detail-tab-panel ${modDetailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
+        ${
+          detail.whatItChanges
+            ? `<section class="detail-section"><h2 class="detail-section-title">What it changes</h2><p>${escapeHtml(
+                detail.whatItChanges
+              )}</p></section>`
+            : ""
+        }
+        <section class="detail-section">
+          <h2 class="detail-section-title">About</h2>
+          <p style="white-space:pre-wrap">${escapeHtml(
+            detail.longDescription || detail.description || detail.tagline || ""
+          )}</p>
+        </section>
+        ${
+          detail.compatibility
+            ? `<section class="detail-section"><h2 class="detail-section-title">Compatibility</h2><p>${escapeHtml(
+                detail.compatibility
+              )}</p></section>`
+            : ""
+        }
+        <div class="detail-hero-actions" style="margin-top:12px">
+          <button type="button" class="btn-secondary btn-sm" data-web-tab="reviews">Reviews on site</button>
+          <button type="button" class="btn-secondary btn-sm" data-web-tab="discussion">Discussion on site</button>
+          <button type="button" class="btn-secondary btn-sm" id="mod-detail-open-site">Open on playbound.club</button>
+        </div>
+      </div>
+      <div class="detail-tab-panel ${modDetailActiveTab === "install" ? "active" : ""}" data-panel="install">
+        <section class="detail-section">
+          <h2 class="detail-section-title">${external ? "Download" : "Install"}</h2>
+          <p class="view-sub">${
+            external
+              ? "This mod opens an external download page. Place files in the game mods folder afterward."
+              : `Installs into ${escapeHtml(detail.installRelativePath || "mods")} for ${escapeHtml(
+                  baseTitle || "the base game"
+                )}.`
+          }</p>
+          ${installSteps || "<p class=\"view-sub\">No extra install steps listed.</p>"}
+        </section>
+      </div>
+      <div class="detail-tab-panel ${modDetailActiveTab === "media" ? "active" : ""}" data-panel="media">
+        ${
+          shots
+            ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>`
+            : `<p class="view-sub">No media yet.</p>`
+        }
+      </div>
+      <div class="detail-tab-panel ${modDetailActiveTab === "faq" ? "active" : ""}" data-panel="faq">
+        ${faqHtml || `<p class="view-sub">No FAQ yet.</p>`}
+      </div>
+      <div class="detail-tab-panel ${modDetailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="mod-detail-guides-sec"><p class="view-sub">Loading guides…</p></div>
+    </div>
+  `;
+
+  const guidesSec = document.getElementById("mod-detail-guides-sec");
+  void (async () => {
+    const guidesRes =
+      (await window.playbound.getModGuides?.(slug)) || { guides: [] };
+    const guides = guidesRes?.guides || [];
+    if (!guidesSec) return;
+    if (!guides.length) {
+      guidesSec.innerHTML = `<p class="view-sub">No guides yet. <a href="#" id="mod-guides-open-site">Write one on playbound.club</a></p>`;
+      document.getElementById("mod-guides-open-site")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.playbound.openExternal(
+          `https://playbound.club/mods/${encodeURIComponent(slug)}?tab=guides`
+        );
+      });
+    } else {
+      guidesSec.innerHTML = `<div class="guide-list">${guides
+        .map(
+          (g) =>
+            `<a class="guide-card" href="#" data-url="${escapeHtml(g.url || "")}"><strong>${escapeHtml(
+              g.title
+            )}</strong><span class="view-sub">${escapeHtml(g.username || "")}${
+              g.createdAt ? ` · ${escapeHtml(String(g.createdAt).slice(0, 10))}` : ""
+            }</span><p>${escapeHtml(g.excerpt || "")}</p></a>`
+        )
+        .join("")}</div>`;
+      guidesSec.querySelectorAll("[data-url]").forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (el.dataset.url) window.playbound.openExternal(el.dataset.url);
+        });
+      });
+    }
+  })();
+
+  document.getElementById("mod-detail-back")?.addEventListener("click", () => {
+    const back = ["mods", "library", "home", "games", "gameDetail", "servers"].includes(
+      detailReturnView
+    )
+      ? detailReturnView
+      : "mods";
+    if (back === "gameDetail" && currentDetailSlug) {
+      navigateTo("gameDetail", { slug: currentDetailSlug });
+    } else {
+      navigateTo(back);
+    }
+  });
+
+  document.getElementById("mod-detail-open-site")?.addEventListener("click", () => {
+    window.playbound.openExternal(`https://playbound.club/mods/${encodeURIComponent(slug)}`);
+  });
+  container.querySelectorAll("[data-web-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      window.playbound.openExternal(
+        `https://playbound.club/mods/${encodeURIComponent(slug)}?tab=${encodeURIComponent(
+          btn.dataset.webTab
+        )}`
+      );
+    });
+  });
+  container.querySelectorAll("a.shot-thumb").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.playbound.openExternal(a.dataset.ext);
+    });
+  });
+  document.getElementById("mod-detail-tabs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-tab]");
+    if (!btn) return;
+    modDetailActiveTab = btn.dataset.tab;
+    container.querySelectorAll(".detail-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.tab === modDetailActiveTab);
+    });
+    container.querySelectorAll(".detail-tab-panel").forEach((p) => {
+      p.classList.toggle("active", p.dataset.panel === modDetailActiveTab);
+    });
+  });
+
+  const actions = document.getElementById("mod-detail-actions");
+  if (!actions) return;
+
+  if (detail.installed && !external) {
+    actions.innerHTML = `
+      <button class="btn-success" id="mod-act-play">Play</button>
+      ${
+        detail.installedPath
+          ? `<button class="btn-secondary" id="mod-act-folder">${
+              window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"
+            }</button>`
+          : ""
+      }
+      <button class="btn-danger" id="mod-act-uninstall">Uninstall</button>
+      <button class="btn-secondary" id="mod-act-reinstall">Reinstall</button>
+    `;
+    document.getElementById("mod-act-play")?.addEventListener("click", async () => {
+      try {
+        setStatus(`Launching ${detail.title}…`);
+        await window.playbound.playMod(slug);
+        setStatus(`Launched ${detail.title}`);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    document.getElementById("mod-act-folder")?.addEventListener("click", () => {
+      if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
+    });
+    document.getElementById("mod-act-uninstall")?.addEventListener("click", async () => {
+      if (!confirm(`Remove mod ${detail.title}?`)) return;
+      try {
+        setStatus(`Removing ${detail.title}…`);
+        await window.playbound.uninstallMod(slug);
+        setStatus(`Removed ${detail.title}`);
+        renderModDetailView(slug);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    document.getElementById("mod-act-reinstall")?.addEventListener("click", async () => {
+      try {
+        setStatus(`Installing ${detail.title}…`);
+        await window.playbound.installMod(slug);
+        setStatus(`Installed ${detail.title}`);
+        setProgress(null);
+        renderModDetailView(slug);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+        setProgress(null);
+      }
+    });
+  } else {
+    actions.innerHTML = `
+      <button class="btn-primary" id="mod-act-install">${
+        external ? "Open download page" : "Install"
+      }</button>
+      ${
+        detail.baseGame?.slug
+          ? `<button class="btn-secondary" id="mod-act-base">View base game</button>`
+          : ""
+      }
+    `;
+    document.getElementById("mod-act-install")?.addEventListener("click", async () => {
+      try {
+        setStatus(external ? `Opening download page for ${detail.title}…` : `Installing ${detail.title}…`);
+        const result = await window.playbound.installMod(slug);
+        if (result?.status === "external") {
+          setStatus("Opened download page in browser.");
+          setProgress(null);
+        } else if (result?.status === "waiting-base") {
+          setStatus("Installing base game first — finish the setup wizard…");
+          setProgress(null);
+        } else {
+          setStatus(`Installed ${detail.title}`);
+          setProgress(null);
+          renderModDetailView(slug);
+        }
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+        setProgress(null);
+      }
+    });
+    document.getElementById("mod-act-base")?.addEventListener("click", () => {
+      if (detail.baseGame?.slug) openGameDetail(detail.baseGame.slug, "modDetail");
+    });
+  }
 }
 
 function openEditionDetail(gameSlug, editionSlug) {

@@ -27,6 +27,7 @@ export type TopicListItem = {
 
 export function DiscussionBoard({
   gameSlug,
+  modSlug,
   gameTitle,
   isSignedIn,
   categories,
@@ -36,7 +37,8 @@ export function DiscussionBoard({
   query,
   presence,
 }: {
-  gameSlug: string;
+  gameSlug?: string;
+  modSlug?: string;
   gameTitle: string;
   isSignedIn: boolean;
   categories: CategoryMeta[];
@@ -51,7 +53,9 @@ export function DiscussionBoard({
   };
   presence?: { online?: number; members?: number } | null;
 }) {
-  const base = `/games/${gameSlug}?tab=discussion`;
+  const root = modSlug ? `/mods/${modSlug}` : `/games/${gameSlug}`;
+  const base = `${root}?tab=discussion`;
+  const topicPath = (topicSlug: string) => `${root}/discussion/${topicSlug}`;
   const withParams = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     p.set("tab", "discussion");
@@ -60,7 +64,7 @@ export function DiscussionBoard({
     if (merged.sort && merged.sort !== "activity") p.set("sort", merged.sort);
     if (merged.filter && merged.filter !== "all") p.set("filter", merged.filter);
     if (merged.q) p.set("q", merged.q);
-    return `/games/${gameSlug}?${p.toString()}`;
+    return `${root}?${p.toString()}`;
   };
 
   const activeCategory = query.category ?? "all";
@@ -76,15 +80,22 @@ export function DiscussionBoard({
               Ask questions, share fixes, and talk about {gameTitle}.
             </p>
           </div>
-          <TopicComposer gameSlug={gameSlug} categories={categories} isSignedIn={isSignedIn} />
+          <TopicComposer
+            gameSlug={gameSlug}
+            modSlug={modSlug}
+            categories={categories}
+            isSignedIn={isSignedIn}
+          />
         </div>
-        <CommunityCard
-          gameSlug={gameSlug}
-          gameTitle={gameTitle}
-          communityLinks={communityLinks}
-          presence={presence}
-          compact
-        />
+        {!modSlug && gameSlug ? (
+          <CommunityCard
+            gameSlug={gameSlug}
+            gameTitle={gameTitle}
+            communityLinks={communityLinks}
+            presence={presence}
+            compact
+          />
+        ) : null}
       </div>
 
       <form action={base} method="get" className="flex flex-wrap gap-2">
@@ -161,7 +172,7 @@ export function DiscussionBoard({
           </h3>
           <div className="divide-y divide-border rounded-xl border border-border bg-card">
             {pinned.map((t) => (
-              <TopicRow key={String(t._id)} gameSlug={gameSlug} topic={t} />
+              <TopicRow key={String(t._id)} href={topicPath(t.slug)} topic={t} />
             ))}
           </div>
         </section>
@@ -189,10 +200,7 @@ export function DiscussionBoard({
                   {topics.map((t) => (
                     <tr key={String(t._id)} className="hover:bg-secondary/20">
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/games/${gameSlug}/discussion/${t.slug}`}
-                          className="font-semibold hover:text-primary"
-                        >
+                        <Link href={topicPath(t.slug)} className="font-semibold hover:text-primary">
                           {t.isPinned && <Pin className="mr-1 inline size-3.5 text-primary" />}
                           {t.title}
                         </Link>
@@ -216,7 +224,7 @@ export function DiscussionBoard({
               {topics.map((t) => (
                 <Link
                   key={String(t._id)}
-                  href={`/games/${gameSlug}/discussion/${t.slug}`}
+                  href={topicPath(t.slug)}
                   className="block rounded-xl border border-border bg-card p-4"
                 >
                   <p className="font-semibold">{t.title}</p>
@@ -237,12 +245,9 @@ export function DiscussionBoard({
   );
 }
 
-function TopicRow({ gameSlug, topic: t }: { gameSlug: string; topic: TopicListItem }) {
+function TopicRow({ href, topic: t }: { href: string; topic: TopicListItem }) {
   return (
-    <Link
-      href={`/games/${gameSlug}/discussion/${t.slug}`}
-      className="flex items-start gap-2 px-4 py-3 hover:bg-secondary/20"
-    >
+    <Link href={href} className="flex items-start gap-2 px-4 py-3 hover:bg-secondary/20">
       <Pin className="mt-0.5 size-4 shrink-0 text-primary" />
       <div>
         <p className="font-semibold">{t.title}</p>

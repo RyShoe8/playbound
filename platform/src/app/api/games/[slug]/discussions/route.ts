@@ -42,6 +42,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   const query: Record<string, unknown> = {
     gameSlug: slug,
+    modSlug: null,
     status: { $ne: "removed" },
   };
 
@@ -121,13 +122,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     }
 
     const topicSlug = await uniqueTopicSlug(slug, clean.title!, async (s) => {
-      const hit = await DiscussionTopic.exists({ gameSlug: slug, slug: s });
+      const hit = await DiscussionTopic.exists({ gameSlug: slug, modSlug: null, slug: s });
       return Boolean(hit);
     });
 
     const now = new Date();
     const topic = await DiscussionTopic.create({
       gameSlug: slug,
+      modSlug: null,
       authorId: session.user.id,
       authorUsername: session.user.username,
       title: clean.title,

@@ -21,7 +21,7 @@ export async function GET(
     }
 
     await dbConnect();
-    const docs = await GuidePost.find({ gameSlug: slug })
+    const docs = await GuidePost.find({ gameSlug: slug, modSlug: null })
       .sort({ createdAt: -1 })
       .limit(30)
       .lean();

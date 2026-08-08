@@ -27,6 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     await dbConnect();
     await GuidePost.create({
       gameSlug: slug,
+      modSlug: null,
       userId: session.user.id,
       username: session.user.username,
       ...body,
