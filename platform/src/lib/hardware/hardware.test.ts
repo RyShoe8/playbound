@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeCpuName, normalizeGpuName } from "./normalize";
 import { evaluateCompatibility } from "./compatibility";
-import { effectiveHardwareRequirements, mergeRequirementSpecs } from "./mergeRequirements";
+import { effectiveHardwareRequirements, hasStructuredRequirements, mergeRequirementSpecs } from "./mergeRequirements";
 import { tierMeets } from "./tiers";
 import {
   parseFreeTextRequirementsBlock,
@@ -163,5 +163,14 @@ describe("parseFreeTextRequirements", () => {
       source: "unverified",
       enteredBy: "free-text-parser",
     });
+    expect(hasStructuredRequirements(block)).toBe(true);
+  });
+
+  it("OpenRA-style seed block is structured", () => {
+    const block = parseFreeTextRequirementsBlock({
+      min: "2 GHz dual-core CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
+      recommended: "3 GHz quad-core CPU · 4 GB RAM · Dedicated GPU · 2 GB storage",
+    });
+    expect(hasStructuredRequirements(block)).toBe(true);
   });
 });

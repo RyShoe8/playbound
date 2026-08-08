@@ -15,6 +15,10 @@ type Props = {
   /** Guest primary label */
   guestLabel?: string;
   className?: string;
+  /** Fired when the deep link handoff reports the launcher opened. */
+  onLauncherOpened?: () => void;
+  /** Override status hint (e.g. parent is polling for profile). */
+  statusHint?: string | null;
 };
 
 /**
@@ -27,6 +31,8 @@ export function CheckCompatibilityCta({
   signedInLabel = "Open PlayBound to sync your PC",
   guestLabel = "Get the launcher",
   className = "mt-3 inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground hover:brightness-110",
+  onLauncherOpened,
+  statusHint,
 }: Props) {
   const { status } = useSession();
   const { track } = useTelemetry();
@@ -36,6 +42,8 @@ export function CheckCompatibilityCta({
   useEffect(() => {
     setHint(null);
   }, [status]);
+
+  const displayedHint = statusHint ?? hint;
 
   function trackClick() {
     track("check_compatibility_cta_clicked", {
@@ -52,7 +60,8 @@ export function CheckCompatibilityCta({
       onResult: (result) => {
         setBusy(false);
         if (result === "launched") {
-          setHint("Opened PlayBound — syncing your hardware. Refresh this page in a moment.");
+          setHint("Opened PlayBound — syncing your hardware…");
+          onLauncherOpened?.();
         } else {
           setHint("Couldn’t open the app. Install or open PlayBound, then try again.");
         }
@@ -66,8 +75,8 @@ export function CheckCompatibilityCta({
         <button type="button" disabled={busy} onClick={tryOpenLauncher} className={className}>
           {signedInLabel}
         </button>
-        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-        {hint?.includes("Couldn’t") ? (
+        {displayedHint ? <p className="text-xs text-muted-foreground">{displayedHint}</p> : null}
+        {displayedHint?.includes("Couldn’t") ? (
           <Link href="/launcher" className="block text-xs font-semibold text-primary hover:underline">
             Go to launcher download page
           </Link>
@@ -92,7 +101,7 @@ export function CheckCompatibilityCta({
       >
         I already have PlayBound — open it
       </button>
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      {displayedHint ? <p className="text-xs text-muted-foreground">{displayedHint}</p> : null}
     </div>
   );
 }
