@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import { listAllGames } from "@/lib/catalog";
 import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
+import dbConnect from "@/lib/db";
+import WeeklyIssue from "@/lib/models/WeeklyIssue";
 
 export const metadata: Metadata = { title: "Admin · New weekly issue" };
 
 export default async function AdminNewWeeklyPage() {
   const games = await listAllGames();
   const today = new Date().toISOString().slice(0, 10);
+
+  await dbConnect();
+  const lastIssue = await WeeklyIssue.findOne({}).sort({ createdAt: -1 }).lean();
+  const emailDraft = lastIssue?.emailDraft && typeof lastIssue.emailDraft === "object"
+    ? { footer: (lastIssue.emailDraft as any).footer }
+    : undefined;
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -18,7 +26,7 @@ export default async function AdminNewWeeklyPage() {
       </div>
       <WeeklyIssueForm
         mode="create"
-        initial={{ gameSlug: "", publishedAt: today, published: true }}
+        initial={{ gameSlug: "", publishedAt: today, published: true, emailDraft }}
         games={games.map((g) => ({
           slug: g.slug,
           title: g.title,

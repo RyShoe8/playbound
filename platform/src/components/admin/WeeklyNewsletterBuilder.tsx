@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { upload } from "@vercel/blob/client";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import {
   buildNewsletterHtml,
@@ -133,6 +134,22 @@ export function WeeklyNewsletterBuilder({
     URL.revokeObjectURL(url);
   }
 
+  async function handleUpload(file: File | null | undefined, callback: (url: string) => void) {
+    if (!file) return;
+    try {
+      const slug = featuredSlug || "newsletter";
+      const pathname = `games/${slug}/newsletter-${Date.now()}.${file.name.split('.').pop()}`;
+      const blob = await upload(pathname, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/games/upload/client",
+      });
+      callback(blob.url);
+    } catch (err) {
+      console.error(err);
+      alert("Image upload failed");
+    }
+  }
+
   return (
     <AdminCollapsibleSection title="Newsletter email" defaultOpen badge={<span className="ml-2 text-xs font-normal text-muted-foreground">HTML builder</span>}>
       <p className="text-sm text-muted-foreground">
@@ -175,16 +192,12 @@ export function WeeklyNewsletterBuilder({
             </div>
             <div>
               <label className={label}>Hero image URL</label>
-              <input className={field} value={draft.featured.imageUrl} onChange={(e) => updateFeatured({ imageUrl: e.target.value })} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className={label}>CTA label</label>
-                <input className={field} value={draft.featured.ctaLabel} onChange={(e) => updateFeatured({ ctaLabel: e.target.value })} />
-              </div>
-              <div>
-                <label className={label}>CTA URL</label>
-                <input className={field} value={draft.featured.ctaUrl} onChange={(e) => updateFeatured({ ctaUrl: e.target.value })} />
+              <div className="mt-1 flex gap-2">
+                <input className={field + " mt-0"} value={draft.featured.imageUrl} onChange={(e) => updateFeatured({ imageUrl: e.target.value })} />
+                <label className="flex cursor-pointer items-center justify-center rounded-lg border border-border bg-secondary px-3 text-xs font-semibold hover:bg-secondary/80">
+                  Upload
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUpload(e.target.files?.[0], (url) => updateFeatured({ imageUrl: url }))} />
+                </label>
               </div>
             </div>
           </section>
@@ -212,6 +225,7 @@ export function WeeklyNewsletterBuilder({
                 game={game}
                 catalog={games}
                 onChange={(next) => setNewGame(index, next)}
+                onUpload={(file) => handleUpload(file, (url) => setNewGame(index, { ...game, imageUrl: url }))}
                 onRemove={() =>
                   update({
                     newGames:
@@ -254,6 +268,15 @@ export function WeeklyNewsletterBuilder({
                 index={index}
                 game={game}
                 onChange={(next) => setEpicGame(index, next)}
+                onUpload={(file) => handleUpload(file, (url) => setEpicGame(index, { ...game, imageUrl: url }))}
+                onScrape={async (url) => {
+                  try {
+                    const res = await fetch("/api/admin/epic-scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+                    const data = await res.json();
+                    if (res.ok) setEpicGame(index, { ...game, title: data.title || game.title, description: data.description || game.description, imageUrl: data.imageUrl || game.imageUrl });
+                    else alert("Scrape failed: " + data.error);
+                  } catch (e) { alert("Scrape failed"); }
+                }}
                 onRemove={() =>
                   update({
                     epic: {
@@ -274,6 +297,10 @@ export function WeeklyNewsletterBuilder({
             <div>
               <label className={label}>Community label</label>
               <input className={field} value={draft.footer.communityLabel} onChange={(e) => updateFooter({ communityLabel: e.target.value })} />
+            </div>
+            <div>
+              <label className={label}>Facebook URL</label>
+              <input className={field} value={draft.footer.facebookUrl} onChange={(e) => updateFooter({ facebookUrl: e.target.value })} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
@@ -335,6 +362,7 @@ function MiniGameFields({
   game: NewsletterMiniGame;
   catalog: CatalogGamePrefill[];
   onChange: (next: NewsletterMiniGame) => void;
+  onUpload: (file: File | null) => void;
   onRemove: () => void;
 }) {
   return (
@@ -375,7 +403,13 @@ function MiniGameFields({
       </div>
       <div>
         <label className={label}>Image URL</label>
-        <input className={field} value={game.imageUrl} onChange={(e) => onChange({ ...game, imageUrl: e.target.value })} />
+        <div className="mt-1 flex gap-2">
+          <input className={field + " mt-0"} value={game.imageUrl} onChange={(e) => onChange({ ...game, imageUrl: e.target.value })} />
+          <label className="flex cursor-pointer items-center justify-center rounded-lg border border-border bg-secondary px-3 text-xs font-semibold hover:bg-secondary/80">
+            Upload
+            <input type="file" className="hidden" accept="image/*" onChange={(e) => onUpload(e.target.files?.[0] || null)} />
+          </label>
+        </div>
       </div>
       <div>
         <label className={label}>Link URL</label>
@@ -389,13 +423,18 @@ function EpicGameFields({
   index,
   game,
   onChange,
+  onUpload,
+  onScrape,
   onRemove,
 }: {
   index: number;
   game: NewsletterEpicGame;
   onChange: (next: NewsletterEpicGame) => void;
+  onUpload: (file: File | null) => void;
+  onScrape: (url: string) => void;
   onRemove: () => void;
 }) {
+  const [scrapeUrl, setScrapeUrl] = useState("");
   return (
     <div className="space-y-2 rounded-lg border border-border/60 p-3">
       <div className="flex items-center justify-between gap-2">
@@ -403,6 +442,13 @@ function EpicGameFields({
         <button type="button" className={btnGhost} onClick={onRemove}>
           Remove
         </button>
+      </div>
+      <div>
+        <label className={label}>Scrape from Epic URL</label>
+        <div className="mt-1 flex gap-2">
+          <input className={field + " mt-0"} placeholder="https://store.epicgames.com/..." value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} />
+          <button type="button" className="rounded-lg border border-border bg-secondary px-3 text-xs font-semibold hover:bg-secondary/80" onClick={() => { if (scrapeUrl) onScrape(scrapeUrl); setScrapeUrl(""); }}>Scrape</button>
+        </div>
       </div>
       <div>
         <label className={label}>Title</label>
@@ -415,7 +461,13 @@ function EpicGameFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className={label}>Thumbnail URL</label>
-          <input className={field} value={game.imageUrl} onChange={(e) => onChange({ ...game, imageUrl: e.target.value })} />
+          <div className="mt-1 flex gap-2">
+            <input className={field + " mt-0"} value={game.imageUrl} onChange={(e) => onChange({ ...game, imageUrl: e.target.value })} />
+            <label className="flex cursor-pointer items-center justify-center rounded-lg border border-border bg-secondary px-3 text-xs font-semibold hover:bg-secondary/80">
+              Upload
+              <input type="file" className="hidden" accept="image/*" onChange={(e) => onUpload(e.target.files?.[0] || null)} />
+            </label>
+          </div>
         </div>
         <div>
           <label className={label}>Badge</label>
