@@ -12,10 +12,15 @@ import {
   tryFetchPageMeta,
 } from "@/lib/pageMeta";
 import { rehostImageToBlob } from "@/lib/fetchGameMedia";
-import { isAmazonProductUrl, parseAmazonProduct } from "@/lib/amazonGear";
+import {
+  dedupeProductImages,
+  isAmazonProductUrl,
+  parseAmazonProduct,
+  type GearCategory,
+} from "@/lib/amazonGear";
 
-const MAX_SCREENSHOTS = 8;
-const MAX_CANDIDATE_IMAGES = 20;
+/** Keep cover + screenshots aligned with candidate picker capacity. */
+const MAX_GALLERY_IMAGES = 20;
 
 export type GearImportAffiliate = {
   retailer: string;
@@ -29,6 +34,7 @@ export type GearImportDraft = {
   title: string;
   slug: string;
   description: string;
+  category: GearCategory | null;
   coverImage: string | null;
   screenshots: string[];
   manufacturer: string | null;
@@ -209,29 +215,31 @@ async function tryFetchHtml(url: string): Promise<string | null> {
   }
 }
 
-async function rehostPreferred(
+/**
+ * Rehost the full unique gallery. Cover = first; screenshots = rest.
+ * candidateImages uses the same ordered URLs (rehosted when possible).
+ */
+async function rehostGallery(
   urls: string[],
   slug: string
-): Promise<{ cover: string | null; shots: string[] }> {
-  const clean = urls.filter(Boolean).slice(0, MAX_SCREENSHOTS + 1);
-  if (!clean.length) return { cover: null, shots: [] };
+): Promise<{ cover: string | null; shots: string[]; candidates: string[] }> {
+  const clean = dedupeProductImages(urls, MAX_GALLERY_IMAGES);
+  if (!clean.length) return { cover: null, shots: [], candidates: [] };
 
-  const coverSrc = clean[0];
-  const shotSrcs = clean.slice(1, MAX_SCREENSHOTS + 1);
   const gearSlug = `gear-${slug || "import"}`.slice(0, 80);
+  const hosted: string[] = [];
 
-  const cover =
-    (await rehostImageToBlob({ sourceUrl: coverSrc, slug: gearSlug, kind: "cover" })) || coverSrc;
-
-  const shots: string[] = [];
-  for (let i = 0; i < shotSrcs.length; i++) {
-    const src = shotSrcs[i];
-    const hosted =
-      (await rehostImageToBlob({ sourceUrl: src, slug: gearSlug, kind: `shot-${i}` })) || src;
-    if (hosted && hosted !== cover && !shots.includes(hosted)) shots.push(hosted);
+  for (let i = 0; i < clean.length; i++) {
+    const src = clean[i];
+    const kind = i === 0 ? "cover" : `shot-${i - 1}`;
+    const url =
+      (await rehostImageToBlob({ sourceUrl: src, slug: gearSlug, kind })) || src;
+    if (url && !hosted.includes(url)) hosted.push(url);
   }
 
-  return { cover, shots };
+  const cover = hosted[0] || null;
+  const shots = hosted.slice(1);
+  return { cover, shots, candidates: hosted };
 }
 
 function mergeUniqueUrls(...lists: string[][]): string[] {
@@ -262,6 +270,7 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
   let price: string | null = null;
   let shipping: string | null = null;
   let manufacturer: string | null = null;
+  let category: GearCategory | null = null;
   let platforms: string[] = [];
   let videos: string[] = [];
 
@@ -272,6 +281,7 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
     if (parsed.price) price = parsed.price;
     if (parsed.shipping) shipping = parsed.shipping;
     if (parsed.manufacturer) manufacturer = parsed.manufacturer;
+    if (parsed.category) category = parsed.category;
     platforms = parsed.platforms;
     videos = parsed.videos;
     images = parsed.images;
@@ -318,7 +328,6 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
   if (!title) title = softTitleFromUrl(url);
   if (!description) description = "";
 
-  // Non-Amazon cleanup / Amazon titles already cleaned in parseAmazonProduct
   if (!amazon) {
     title = title
       .replace(/\s*[|\-–—]\s*Amazon\..*$/i, "")
@@ -333,12 +342,11 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
 
   const slug = slugifyTitle(title).slice(0, 80) || "gear-item";
   const retailer = detectRetailer(url, siteName);
-  const candidateImages = images.slice(0, MAX_CANDIDATE_IMAGES);
-  // Default cover + gallery from first N; admin cover picker can override from candidates.
-  const { cover, shots } = await rehostPreferred(candidateImages, slug);
+  const uniqueImages = dedupeProductImages(images, MAX_GALLERY_IMAGES);
+  const { cover, shots, candidates } = await rehostGallery(uniqueImages, slug);
 
   if (!price) warnings.push("No price found on the page — you can enter it manually.");
-  if (!cover && candidateImages.length === 0) warnings.push("No product image found.");
+  if (!cover && candidates.length === 0) warnings.push("No product image found.");
 
   const affiliate: GearImportAffiliate = {
     retailer,
@@ -354,12 +362,13 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
       title,
       slug,
       description,
+      category,
       coverImage: cover,
       screenshots: shots,
       manufacturer,
       platforms,
       videos,
-      candidateImages,
+      candidateImages: candidates,
       affiliateLinks: [affiliate],
     },
     retailer,

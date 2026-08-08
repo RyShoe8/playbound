@@ -39,6 +39,7 @@ type ImportPayload = {
     title: string;
     slug: string;
     description: string;
+    category?: string | null;
     coverImage: string | null;
     screenshots: string[];
     manufacturer?: string | null;
@@ -51,6 +52,13 @@ type ImportPayload = {
   price: string | null;
   warnings?: string[];
 };
+
+function parseCommaList(val: string): string[] {
+  return val
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 function upsertAffiliateLink(
   links: GearDraft["affiliateLinks"],
@@ -83,6 +91,9 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
   const [importNote, setImportNote] = useState("");
   const [candidateImages, setCandidateImages] = useState<string[]>([]);
   const [videoDraft, setVideoDraft] = useState("");
+  const [platformsText, setPlatformsText] = useState(initial.platforms.join(", "));
+  const [bestForText, setBestForText] = useState(initial.bestFor.join(", "));
+  const [categoryTouched, setCategoryTouched] = useState(mode === "edit");
   const [productFilled, setProductFilled] = useState(
     Boolean(initial.title.trim() || initial.coverImage || initial.description.trim())
   );
@@ -97,6 +108,14 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
   function patch<K extends keyof GearDraft>(key: K, value: GearDraft[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function syncListFieldsFromText() {
+    setForm((prev) => ({
+      ...prev,
+      platforms: parseCommaList(platformsText),
+      bestFor: parseCommaList(bestForText),
+    }));
   }
 
   function addAffiliateLink() {
@@ -119,13 +138,6 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     );
   }
 
-  function handleListChange(key: "platforms" | "bestFor", val: string) {
-    patch(
-      key,
-      val.split(",").map((s) => s.trim()).filter(Boolean)
-    );
-  }
-
   async function callImport(url: string): Promise<ImportPayload> {
     const res = await fetch("/api/admin/gear/import", {
       method: "POST",
@@ -141,55 +153,62 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
   function applyProductFill(payload: ImportPayload, opts: { replaceSlug: boolean }) {
     const link = payload.draft.affiliateLinks[0];
-    const candidates = payload.draft.candidateImages?.filter(Boolean) ?? [];
-    const seeded = [
-      ...candidates,
-      ...(payload.draft.coverImage ? [payload.draft.coverImage] : []),
-      ...(payload.draft.screenshots ?? []),
-    ];
-    const uniqueCandidates = seeded.filter((u, i) => seeded.indexOf(u) === i);
-    if (uniqueCandidates.length > 0) setCandidateImages(uniqueCandidates);
+    // Same ordered unique list the server used for cover + screenshots.
+    const candidates =
+      payload.draft.candidateImages?.filter(Boolean) ??
+      [
+        ...(payload.draft.coverImage ? [payload.draft.coverImage] : []),
+        ...(payload.draft.screenshots ?? []),
+      ];
+    if (candidates.length > 0) setCandidateImages(candidates);
 
-    setForm((prev) => ({
-      ...prev,
-      title: payload.draft.title || prev.title,
-      slug:
-        opts.replaceSlug && mode === "create" && !prev.slug.trim()
-          ? payload.draft.slug
-          : mode === "create" && !prev.slug.trim()
+    const nextPlatforms =
+      payload.draft.platforms && payload.draft.platforms.length > 0
+        ? payload.draft.platforms
+        : null;
+    if (nextPlatforms) setPlatformsText(nextPlatforms.join(", "));
+
+    setForm((prev) => {
+      const canApplyCategory =
+        !categoryTouched &&
+        Boolean(payload.draft.category) &&
+        (mode === "create" ? prev.category === "Controllers" || !prev.category : !prev.category);
+
+      return {
+        ...prev,
+        title: payload.draft.title || prev.title,
+        slug:
+          opts.replaceSlug && mode === "create" && !prev.slug.trim()
             ? payload.draft.slug
-            : prev.slug,
-      description: payload.draft.description || prev.description,
-      manufacturer:
-        payload.draft.manufacturer !== undefined
-          ? payload.draft.manufacturer
-          : prev.manufacturer,
-      platforms:
-        payload.draft.platforms && payload.draft.platforms.length > 0
-          ? payload.draft.platforms
-          : prev.platforms,
-      videos:
-        payload.draft.videos && payload.draft.videos.length > 0
-          ? payload.draft.videos
-          : prev.videos ?? [],
-      coverImage: payload.draft.coverImage || prev.coverImage,
-      screenshots:
-        payload.draft.screenshots?.length > 0
-          ? payload.draft.screenshots
-          : prev.screenshots ?? [],
-      affiliateLinks: link ? upsertAffiliateLink(prev.affiliateLinks, link) : prev.affiliateLinks,
-    }));
+            : mode === "create" && !prev.slug.trim()
+              ? payload.draft.slug
+              : prev.slug,
+        description: payload.draft.description || prev.description,
+        category: canApplyCategory && payload.draft.category ? payload.draft.category : prev.category,
+        manufacturer:
+          payload.draft.manufacturer !== undefined
+            ? payload.draft.manufacturer
+            : prev.manufacturer,
+        platforms: nextPlatforms ?? prev.platforms,
+        videos:
+          payload.draft.videos && payload.draft.videos.length > 0
+            ? payload.draft.videos
+            : prev.videos ?? [],
+        coverImage: payload.draft.coverImage || prev.coverImage,
+        screenshots:
+          payload.draft.screenshots?.length > 0
+            ? payload.draft.screenshots
+            : prev.screenshots ?? [],
+        affiliateLinks: link ? upsertAffiliateLink(prev.affiliateLinks, link) : prev.affiliateLinks,
+      };
+    });
     setProductFilled(true);
   }
 
   function pickCoverFromCandidate(url: string) {
-    setForm((prev) => {
-      const shots = [
-        ...(prev.coverImage && prev.coverImage !== url ? [prev.coverImage] : []),
-        ...(prev.screenshots ?? []).filter((s) => s !== url),
-      ].slice(0, 20);
-      return { ...prev, coverImage: url, screenshots: shots };
-    });
+    // Cover = picked; screenshots = every other candidate (same set, no extras).
+    const shots = candidateImages.filter((u) => u !== url);
+    setForm((prev) => ({ ...prev, coverImage: url, screenshots: shots }));
   }
 
   async function importProduct() {
@@ -331,10 +350,15 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     setBusy(true);
     setError("");
     try {
+      const payload: GearDraft = {
+        ...form,
+        platforms: parseCommaList(platformsText),
+        bestFor: parseCommaList(bestForText),
+      };
       const res = await fetch(mode === "create" ? "/api/admin/gear" : `/api/admin/gear/${initial.slug}`, {
         method: mode === "create" ? "POST" : "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -469,7 +493,10 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           <label className={label}>Category</label>
           <PremiumSelect
             value={form.category}
-            onChange={(e) => patch("category", e.target.value)}
+            onChange={(e) => {
+              setCategoryTouched(true);
+              patch("category", e.target.value);
+            }}
             className={field}
           >
             <option value="Controllers">Controllers</option>
@@ -496,8 +523,9 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       <div>
         <label className={label}>Platforms (comma separated)</label>
         <input
-          value={form.platforms.join(", ")}
-          onChange={(e) => handleListChange("platforms", e.target.value)}
+          value={platformsText}
+          onChange={(e) => setPlatformsText(e.target.value)}
+          onBlur={syncListFieldsFromText}
           className={field}
           placeholder="Windows, macOS, Xbox"
         />
@@ -517,8 +545,9 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       <div>
         <label className={label}>Best For Genres (comma separated)</label>
         <input
-          value={form.bestFor.join(", ")}
-          onChange={(e) => handleListChange("bestFor", e.target.value)}
+          value={bestForText}
+          onChange={(e) => setBestForText(e.target.value)}
+          onBlur={syncListFieldsFromText}
           className={field}
           placeholder="FPS, Platformer"
         />
@@ -618,9 +647,11 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
                   <button
                     type="button"
                     onClick={() => {
+                      const removed = form.screenshots![i];
                       const next = [...form.screenshots!];
                       next.splice(i, 1);
                       patch("screenshots", next);
+                      setCandidateImages((prev) => prev.filter((u) => u !== removed));
                     }}
                     className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-black"
                   >
