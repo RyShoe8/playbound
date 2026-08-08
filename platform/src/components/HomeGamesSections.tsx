@@ -11,24 +11,25 @@ import { SectionHeader } from "@/components/ui/bits";
 const FEATURED_GAMES_LIMIT = 12;
 
 export function HomeGamesSections({
-  games,
-  gems,
+  latest,
+  popular,
 }: {
-  /** Full published catalog — filtered client-side to match Discover. */
-  games: Game[];
-  gems: Game[];
+  /** Newest published games first — filtered client-side to match Discover. */
+  latest: Game[];
+  /** Highest overall playtime first — filtered client-side to match Discover. */
+  popular: Game[];
 }) {
-  const featured = useFilteredGames(games, { limit: FEATURED_GAMES_LIMIT });
-  const filteredGems = useFilteredGames(gems);
-  const animKey = `${featured.map((g) => g.slug).join(",")}|${filteredGems.map((g) => g.slug).join(",")}`;
+  const featured = useFilteredGames(latest, { limit: FEATURED_GAMES_LIMIT });
+  const filteredPopular = useFilteredGames(popular, { limit: FEATURED_GAMES_LIMIT });
+  const animKey = `${featured.map((g) => g.slug).join(",")}|${filteredPopular.map((g) => g.slug).join(",")}`;
 
   return (
     <div className="space-y-12">
       <CompatibleGamesFade animKey={animKey} className="space-y-12">
         <section>
           <SectionHeader
-            title="Games"
-            subtitle={`${featured.length} free titles — a sample of what's on PlayBound`}
+            title="Latest Games"
+            subtitle="Recently added to the catalog"
             href="/discover"
           />
           <CardRow>
@@ -44,15 +45,15 @@ export function HomeGamesSections({
           </CardRow>
         </section>
 
-        {filteredGems.length > 0 && (
+        {filteredPopular.length > 0 && (
           <section>
             <SectionHeader
-              title="Hidden Gems"
-              subtitle="Editor picks — criminally underplayed, genuinely excellent"
-              href="/discover?filter=hidden"
+              title="Most Popular Games"
+              subtitle="Ranked by total playtime on PlayBound"
+              href="/discover"
             />
             <CardRow>
-              {filteredGems.map((g, i) => (
+              {filteredPopular.map((g, i) => (
                 <div
                   key={g.slug}
                   className="h-full opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
