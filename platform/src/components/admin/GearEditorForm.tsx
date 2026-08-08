@@ -5,6 +5,7 @@ import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, Plus, X } from "lucide-react";
 import { GENRES, GEAR_PLATFORMS, slugifyTitle } from "@/lib/gamePayload";
+import { GEAR_CATEGORIES } from "@/lib/amazonGear";
 
 const label = "block text-xs font-semibold text-muted-foreground";
 const field =
@@ -534,14 +535,11 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             }}
             className={field}
           >
-            <option value="Controllers">Controllers</option>
-            <option value="Mobile">Mobile</option>
-            <option value="TV">TV</option>
-            <option value="Audio">Audio</option>
-            <option value="Accessories">Accessories</option>
-            <option value="Storage">Storage</option>
-            <option value="Mouse">Mouse</option>
-            <option value="Keyboard">Keyboard</option>
+            {GEAR_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </PremiumSelect>
         </div>
         <div>
