@@ -8,6 +8,7 @@ import { stripHtml } from "@/lib/pageMeta";
 
 export const GEAR_CATEGORIES = [
   "Controllers",
+  "Handhelds",
   "Mobile",
   "TV",
   "Audio",
@@ -42,6 +43,10 @@ function filterGearPlatforms(labels: string[]): string[] {
 const CATEGORY_KEYWORDS: { re: RegExp; category: GearCategory }[] = [
   { re: /\b(gaming\s*)?mouse\b|\bmice\b/i, category: "Mouse" },
   { re: /\b(gaming\s*)?keyboards?\b|\bmechanical keyboard\b/i, category: "Keyboard" },
+  {
+    re: /\b(steam\s*deck|rog\s*ally|legion\s*go|msi\s*claw|ayaneo|ayn\s*odin|gaming\s*handheld|windows\s*handheld|pc\s*handheld|handheld\s*(pc|console|gaming))\b/i,
+    category: "Handhelds",
+  },
   {
     re: /\b(controllers?|gamepads?|joy-?pads?|xbox elite|dualsense|dualshock)\b/i,
     category: "Controllers",

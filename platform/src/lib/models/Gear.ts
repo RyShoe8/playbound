@@ -1,4 +1,5 @@
 import { Schema, model, models } from "mongoose";
+import { GEAR_CATEGORIES } from "@/lib/amazonGear";
 
 const AffiliateLinkSchema = new Schema(
   {
@@ -18,7 +19,7 @@ const GearSchema = new Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Controllers", "Mobile", "TV", "Audio", "Accessories", "Storage", "Mouse", "Keyboard"],
+      enum: [...GEAR_CATEGORIES],
       index: true,
     },
     description: { type: String, default: "" },
