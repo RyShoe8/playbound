@@ -665,6 +665,26 @@ async function renderLibraryView() {
 // ── Friends View ──────────────────────────────────────────────
 let friendsPollInterval = null;
 
+function wireFriendsAppearOfflineButton() {
+  const btn = document.getElementById("btn-appear-offline");
+  if (!btn || !window.playbound.getAppearOffline) {
+    if (btn) btn.style.display = "none";
+    return;
+  }
+  window.playbound.getAppearOffline().then((res) => {
+    let on = Boolean(res?.appearOffline);
+    btn.textContent = on ? "Go online" : "Appear offline";
+    btn.title = "Appear offline so friends don’t see you as online or playing";
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const result = await window.playbound.setAppearOffline(!on);
+      if (!result?.error) on = !on;
+      btn.textContent = on ? "Go online" : "Appear offline";
+      btn.disabled = false;
+    };
+  });
+}
+
 async function renderFriendsView() {
   const container = views.friends;
   
@@ -693,7 +713,10 @@ async function renderFriendsView() {
           <h1 class="view-title" style="margin: 0">Friends</h1>
           <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and manage friend requests.</p>
         </div>
-        <button class="btn-secondary btn-sm" id="btn-toggle-add-friend">Add Friend</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <button class="btn-secondary btn-sm" id="btn-appear-offline">Loading…</button>
+          <button class="btn-secondary btn-sm" id="btn-toggle-add-friend">Add Friend</button>
+        </div>
       </div>
       
       <div id="add-friends-panel" style="display: none; margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);">
@@ -740,6 +763,7 @@ async function renderFriendsView() {
     `;
 
     document.getElementById("btn-toggle-add-friend").onclick = () => toggleAddFriendsPanel();
+    wireFriendsAppearOfflineButton();
   }
 
   await refreshFriendsData();
@@ -2264,16 +2288,6 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
-      <label class="settings-label">Presence</label>
-      <p class="settings-hint">Appear offline so friends don’t see you as online or playing.</p>
-      <div style="margin-top: 10px;">
-        <button class="btn-secondary btn-sm" id="set-btn-appear-offline" ${accountState.connected ? "" : "disabled"}>
-          Loading…
-        </button>
-      </div>
-    </div>
-
-    <div class="settings-group">
       <label class="settings-label">Your Gaming PC</label>
       <p class="settings-hint">Used to check game compatibility on playbound.club. Synced when you sign in.</p>
       <div id="set-hw-summary" style="margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted);">Loading…</div>
@@ -2284,7 +2298,7 @@ async function renderSettingsView() {
 
     <div class="settings-group">
       <label class="settings-label">Java runtime</label>
-      <p class="settings-hint">Needed for jar games like Mindustry. PlayBound can install a private Temurin JDK 17 (not your system Java).</p>
+      <p class="settings-hint">Needed for jar games like Mindustry. PlayBound can install a private Temurin JDK 17, or use Java already on your system.</p>
       <div id="set-java-status" style="margin-top: 8px; font-size: 13px; color: var(--text-muted);">Checking…</div>
       <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn-secondary btn-sm" id="set-btn-java-install">Install / repair Java</button>
@@ -2326,22 +2340,6 @@ async function renderSettingsView() {
     renderSettingsView();
   });
 
-  const appearBtn = document.getElementById("set-btn-appear-offline");
-  if (appearBtn && accountState.connected && window.playbound.getAppearOffline) {
-    window.playbound.getAppearOffline().then((res) => {
-      const on = Boolean(res?.appearOffline);
-      appearBtn.textContent = on ? "Stop appearing offline" : "Appear offline";
-      appearBtn.onclick = async () => {
-        appearBtn.disabled = true;
-        await window.playbound.setAppearOffline(!on);
-        appearBtn.disabled = false;
-        renderSettingsView();
-      };
-    });
-  } else if (appearBtn) {
-    appearBtn.textContent = "Sign in to manage presence";
-  }
-
   const hwSummary = document.getElementById("set-hw-summary");
   const hwRefresh = document.getElementById("set-btn-hw-refresh");
   async function fillHwSummary() {
@@ -2360,18 +2358,26 @@ async function renderSettingsView() {
         p.gpus && p.primaryGpuIndex != null
           ? p.gpus[p.primaryGpuIndex]
           : p.gpus?.[0];
+      const cpuLabel = p.cpu?.displayName || p.cpu?.rawName || "Unknown";
+      const gpuLabel = gpu?.displayName || gpu?.rawName || "GPU not detected";
       const ram =
         p.memory?.totalMB != null
           ? p.memory.totalMB >= 1024
             ? `${Math.round(p.memory.totalMB / 1024)} GB`
             : `${p.memory.totalMB} MB`
-          : "Unknown RAM";
+          : "Unknown";
+      const errs = Array.isArray(p.detectionErrors) ? p.detectionErrors.filter(Boolean) : [];
       hwSummary.innerHTML = `
-        <div><strong>CPU</strong> ${escapeHtml(p.cpu?.rawName || "Unknown")}</div>
-        <div><strong>GPU</strong> ${escapeHtml(gpu?.rawName || "Unknown")}</div>
+        <div><strong>CPU</strong> ${escapeHtml(cpuLabel)}</div>
+        <div><strong>GPU</strong> ${escapeHtml(gpuLabel)}</div>
         <div><strong>Memory</strong> ${escapeHtml(ram)}</div>
         <div><strong>OS</strong> ${escapeHtml([p.os?.name || p.os?.family, p.os?.version].filter(Boolean).join(" ") || "Unknown")}</div>
         ${res?.syncedAt ? `<div style="margin-top:6px;opacity:0.8;">Last synced: ${escapeHtml(String(res.syncedAt).slice(0, 19).replace("T", " "))}</div>` : ""}
+        ${
+          errs.length
+            ? `<div style="margin-top:8px;font-size:12px;opacity:0.75;">Notes: ${escapeHtml(errs.slice(0, 3).join("; "))}</div>`
+            : ""
+        }
       `;
     } catch (err) {
       hwSummary.textContent = err?.message || "Detection failed.";
@@ -2398,18 +2404,29 @@ async function renderSettingsView() {
 
   const javaStatus = document.getElementById("set-java-status");
   const javaBtn = document.getElementById("set-btn-java-install");
-  function fillJavaStatus() {
+  async function fillJavaStatus() {
     if (!javaStatus) return;
-    const jr = settings.javaRuntime;
-    if (jr?.installed) {
-      javaStatus.textContent = `Installed (JDK ${jr.version || "17"})`;
-      if (javaBtn) javaBtn.textContent = "Reinstall Java";
-    } else {
-      javaStatus.textContent = "Not installed";
-      if (javaBtn) javaBtn.textContent = "Install Java";
+    try {
+      const st = window.playbound.getJavaStatus
+        ? await window.playbound.getJavaStatus()
+        : { managed: settings.javaRuntime, systemAvailable: false };
+      const managed = st?.managed || settings.javaRuntime || {};
+      if (managed.installed) {
+        javaStatus.textContent = `PlayBound Java ${managed.version || "17"} installed`;
+        if (javaBtn) javaBtn.textContent = "Reinstall Java";
+      } else if (st?.systemAvailable || st?.usable) {
+        javaStatus.textContent =
+          "Using system Java (works for Mindustry). Optional: install PlayBound’s private JDK 17.";
+        if (javaBtn) javaBtn.textContent = "Install PlayBound Java";
+      } else {
+        javaStatus.textContent = "Not found — install from here or Adoptium";
+        if (javaBtn) javaBtn.textContent = "Install Java";
+      }
+    } catch {
+      javaStatus.textContent = "Couldn’t check Java status";
     }
   }
-  fillJavaStatus();
+  void fillJavaStatus();
   if (javaBtn && window.playbound.ensureManagedJava) {
     javaBtn.onclick = async () => {
       javaBtn.disabled = true;
@@ -2422,10 +2439,10 @@ async function renderSettingsView() {
         if (!res?.ok) throw new Error(res?.error || "Install failed");
         setStatus("Java 17 ready.");
         settings.javaRuntime = { installed: true, version: "17" };
-        fillJavaStatus();
+        await fillJavaStatus();
       } catch (err) {
         setStatus(err?.message || "Java install failed", true);
-        fillJavaStatus();
+        await fillJavaStatus();
       } finally {
         javaBtn.disabled = false;
       }

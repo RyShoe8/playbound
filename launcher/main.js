@@ -4001,6 +4001,21 @@ ipcMain.handle("ensure-managed-java", async (_event, opts) => {
     return { ok: false, error: err.message };
   }
 });
+
+ipcMain.handle("get-java-status", async () => {
+  try {
+    const managed = managedJava.status();
+    const resolved = GameLauncher.resolveJavaBinary();
+    return {
+      managed,
+      systemAvailable: Boolean(resolved) && !(managed.javaBin && resolved === managed.javaBin),
+      resolvedJavaBin: resolved || null,
+      usable: Boolean(resolved || managed.installed),
+    };
+  } catch (err) {
+    return { error: err.message, managed: { installed: false }, systemAvailable: false, usable: false };
+  }
+});
 ipcMain.handle("get-app-version", () => ({
   version: app.getVersion(),
   packaged: app.isPackaged,
@@ -4248,6 +4263,20 @@ async function collectHardwareProfile() {
     });
     return profile;
   } catch (err) {
+    try {
+      const hw = loadHardwareModule();
+      if (hw?.minimalHardwareFallback) {
+        return await hw.minimalHardwareFallback({
+          app,
+          gameDir: settings.gamesDir || DEFAULT_GAMES_DIR,
+          reason: err?.message || String(err),
+        });
+      }
+    } catch {
+      /* fall through */
+    }
+    const cpus = os.cpus() || [];
+    const first = cpus[0];
     return {
       schemaVersion: 1,
       collectedAt: new Date().toISOString(),
@@ -4258,13 +4287,19 @@ async function collectHardwareProfile() {
         arch: process.arch === "arm64" ? "arm64" : process.arch === "ia32" ? "x86" : "x64",
         bitness: process.arch === "ia32" ? 32 : 64,
       },
-      cpu: { rawName: "Unknown CPU" },
+      cpu: {
+        rawName: first?.model || "Unknown CPU",
+        manufacturer: null,
+        model: first?.model || null,
+        cores: cpus.length || null,
+        threads: cpus.length || null,
+      },
       gpus: [],
       primaryGpuIndex: null,
       primaryGpuConfidence: "low",
-      memory: { totalMB: null },
+      memory: { totalMB: Math.round(os.totalmem() / (1024 * 1024)) },
       storage: {},
-      detectionErrors: [err?.message || String(err)],
+      detectionErrors: [err?.message || String(err), "gpu: not detected"],
     };
   }
 }

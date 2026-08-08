@@ -115,6 +115,8 @@ export function FriendsView({
 }) {
   const { status } = useSession();
   const [addOpen, setAddOpen] = useState(false);
+  const [appearOffline, setAppearOffline] = useState(false);
+  const [appearBusy, setAppearBusy] = useState(false);
   const {
     playingFriends,
     onlineFriends,
@@ -133,9 +135,30 @@ export function FriendsView({
     if (status === "authenticated") {
       startPolling(30000);
       telemetry.track("friends_page_viewed", {});
+      void fetch("/api/presence/visibility")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) setAppearOffline(Boolean(data.appearOffline));
+        })
+        .catch(() => {});
     }
     return () => stopPolling();
   }, [status, startPolling, stopPolling]);
+
+  async function toggleAppearOffline() {
+    const next = !appearOffline;
+    setAppearBusy(true);
+    try {
+      const res = await fetch("/api/presence/visibility", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ appearOffline: next }),
+      });
+      if (res.ok) setAppearOffline(next);
+    } finally {
+      setAppearBusy(false);
+    }
+  }
 
   if (status === "loading") {
     return <div className="animate-pulse text-muted-foreground">Loading friends...</div>;
@@ -171,13 +194,24 @@ export function FriendsView({
             See who&apos;s playing and manage friend requests.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setAddOpen((v) => !v)}
-          className="shrink-0 rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80"
-        >
-          {addOpen ? "Close" : "Add Friend"}
-        </button>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={appearBusy}
+            onClick={() => void toggleAppearOffline()}
+            className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80 disabled:opacity-60"
+            title="Appear offline so friends don’t see you as online or playing"
+          >
+            {appearBusy ? "Saving…" : appearOffline ? "Go online" : "Appear offline"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAddOpen((v) => !v)}
+            className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80"
+          >
+            {addOpen ? "Close" : "Add Friend"}
+          </button>
+        </div>
       </div>
 
       {addOpen ? (

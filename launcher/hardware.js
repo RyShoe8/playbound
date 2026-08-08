@@ -78,20 +78,23 @@ async function trySystemInformation() {
       si.fsSize().catch(() => []),
     ]);
 
-    const gpus = (graphics?.controllers || []).map((c) => {
-      const rawName = c.model || c.name || "Unknown GPU";
-      return {
-        rawName,
-        manufacturer: c.vendor || null,
-        model: c.model || null,
-        vramMB: c.vram != null && Number(c.vram) > 0 ? Math.round(Number(c.vram)) : null,
-        driverVersion: c.driverVersion || null,
-        vendorId: c.vendorId != null ? String(c.vendorId) : null,
-        deviceId: c.deviceId != null ? String(c.deviceId) : null,
-        isIntegrated: isIntegratedGpu(rawName),
-        isVirtual: isVirtualGpu(rawName),
-      };
-    });
+    const gpus = (graphics?.controllers || [])
+      .map((c) => {
+        const rawName = String(c.model || c.name || "").trim();
+        if (!rawName) return null;
+        return {
+          rawName,
+          manufacturer: c.vendor || null,
+          model: c.model || null,
+          vramMB: c.vram != null && Number(c.vram) > 0 ? Math.round(Number(c.vram)) : null,
+          driverVersion: c.driverVersion || null,
+          vendorId: c.vendorId != null ? String(c.vendorId) : null,
+          deviceId: c.deviceId != null ? String(c.deviceId) : null,
+          isIntegrated: isIntegratedGpu(rawName),
+          isVirtual: isVirtualGpu(rawName),
+        };
+      })
+      .filter(Boolean);
 
     let totalAvailableMB = null;
     if (Array.isArray(fsSize) && fsSize.length) {
@@ -131,10 +134,41 @@ function fallbackCpu() {
     manufacturer: null,
     model: first?.model || null,
     arch: os.arch(),
-    cores: os.cpus()?.length || null,
-    threads: os.cpus()?.length || null,
+    cores: cpus.length || null,
+    threads: cpus.length || null,
     baseFrequencyGHz: first?.speed ? first.speed / 1000 : null,
     features: [],
+  };
+}
+
+function cpuFromSystemInformation(siCpu) {
+  if (!siCpu) return null;
+  const brand = String(siCpu.brand || "").trim();
+  const manufacturer = String(siCpu.manufacturer || "").trim();
+  let rawName = "";
+  if (brand) {
+    const mfgToken = manufacturer.split(/\s+/)[0] || "";
+    rawName =
+      mfgToken && !brand.toLowerCase().includes(mfgToken.toLowerCase())
+        ? `${manufacturer} ${brand}`.trim()
+        : brand;
+  } else if (manufacturer) {
+    rawName = manufacturer;
+  }
+  if (!rawName || /^unknown/i.test(rawName)) return null;
+  return {
+    rawName,
+    manufacturer: manufacturer || null,
+    model: brand || manufacturer || null,
+    arch: siCpu.arch || os.arch(),
+    cores: siCpu.physicalCores || siCpu.cores || null,
+    threads: siCpu.cores || null,
+    baseFrequencyGHz: siCpu.speed ? Number(siCpu.speed) : null,
+    features: Array.isArray(siCpu.flags)
+      ? siCpu.flags.slice(0, 32)
+      : typeof siCpu.flags === "string"
+        ? siCpu.flags.split(/\s+/).slice(0, 32)
+        : [],
   };
 }
 
@@ -144,26 +178,29 @@ async function tryElectronGpu(app) {
     const info = await app.getGPUInfo("complete");
     const devices = info?.gpuDevice || info?.auxAttributes?.gpuDevice || [];
     const list = Array.isArray(devices) ? devices : [];
-    return list.map((d) => {
-      const rawName = d.deviceString || d.description || "Unknown GPU";
-      return {
-        rawName,
-        manufacturer: d.driverVendor || null,
-        model: d.deviceString || null,
-        vramMB: null,
-        driverVersion: d.driverVersion || null,
-        vendorId: d.vendorId != null ? String(d.vendorId) : null,
-        deviceId: d.deviceId != null ? String(d.deviceId) : null,
-        isIntegrated: isIntegratedGpu(rawName),
-        isVirtual: isVirtualGpu(rawName),
-      };
-    });
+    return list
+      .map((d) => {
+        const rawName = String(d.deviceString || d.description || "").trim();
+        if (!rawName) return null;
+        return {
+          rawName,
+          manufacturer: d.driverVendor || null,
+          model: d.deviceString || null,
+          vramMB: null,
+          driverVersion: d.driverVersion || null,
+          vendorId: d.vendorId != null ? String(d.vendorId) : null,
+          deviceId: d.deviceId != null ? String(d.deviceId) : null,
+          isIntegrated: isIntegratedGpu(rawName),
+          isVirtual: isVirtualGpu(rawName),
+        };
+      })
+      .filter(Boolean);
   } catch {
     return [];
   }
 }
 
-function resolveInstallDrive(gamesDir, fsSize) {
+function resolveInstallDrive(gameDir, fsSize) {
   if (!gameDir || !Array.isArray(fsSize) || !fsSize.length) return null;
   try {
     const resolved = path.resolve(gameDir);
@@ -199,72 +236,29 @@ function resolveInstallDrive(gamesDir, fsSize) {
 }
 
 /**
- * @param {{ app?: import('electron').App, gameDir?: string }} opts
+ * Node/Electron-only profile when systeminformation is unavailable or detect throws.
+ * @param {{ app?: import('electron').App, gameDir?: string, reason?: string }} opts
  */
-async function detectHardware(opts = {}) {
+async function minimalHardwareFallback(opts = {}) {
   const errors = [];
-  const collectedAt = new Date().toISOString();
-
-  const si = await trySystemInformation();
-  if (si.error) errors.push(`systeminformation: ${si.error}`);
-
-  let gpus = si.gpus || [];
-  if (!gpus.length && opts.app) {
-    const electronGpus = await tryElectronGpu(opts.app);
-    if (electronGpus.length) gpus = electronGpus;
-    else errors.push("gpu: no controllers detected");
+  if (opts.reason) errors.push(String(opts.reason));
+  const cpu = fallbackCpu();
+  if (!cpu.rawName || /^unknown/i.test(cpu.rawName)) {
+    errors.push("cpu: os.cpus() returned no model");
   }
-
-  let cpu;
-  if (si.cpu) {
-    const brand = si.cpu.brand || si.cpu.manufacturer || "";
-    const rawName = [si.cpu.manufacturer, brand].filter(Boolean).join(" ") || brand || "Unknown CPU";
-    cpu = {
-      rawName,
-      manufacturer: si.cpu.manufacturer || null,
-      model: brand || null,
-      arch: si.cpu.arch || os.arch(),
-      cores: si.cpu.physicalCores || si.cpu.cores || null,
-      threads: si.cpu.cores || null,
-      baseFrequencyGHz: si.cpu.speed ? Number(si.cpu.speed) : null,
-      features: Array.isArray(si.cpu.flags)
-        ? si.cpu.flags.slice(0, 32)
-        : typeof si.cpu.flags === "string"
-          ? si.cpu.flags.split(/\s+/).slice(0, 32)
-          : [],
-    };
-  } else {
-    cpu = fallbackCpu();
-    errors.push("cpu: using os.cpus fallback");
+  let gpus = [];
+  if (opts.app) {
+    gpus = await tryElectronGpu(opts.app);
   }
-
+  if (!gpus.length) errors.push("gpu: not detected");
   const { index: primaryGpuIndex, confidence: primaryGpuConfidence } = pickPrimaryGpu(gpus);
-
-  const memTotal = si.mem?.total != null ? mb(si.mem.total) : mb(os.totalmem());
-  const memAvail = si.mem?.available != null ? mb(si.mem.available) : null;
-
-  const family = mapOsFamily(process.platform);
-  const osName = si.osInfo?.distro || si.osInfo?.codename || null;
-  const osVersion = si.osInfo?.release || os.release() || null;
-
-  const installDrive = resolveInstallDrive(opts.gameDir, si.fsSize || []);
-
-  // Ensure game dir exists check doesn't throw
-  if (opts.gameDir) {
-    try {
-      fs.accessSync(path.parse(path.resolve(opts.gameDir)).root);
-    } catch {
-      /* ignore */
-    }
-  }
-
   return {
     schemaVersion: 1,
-    collectedAt,
+    collectedAt: new Date().toISOString(),
     os: {
-      family,
-      name: osName,
-      version: osVersion,
+      family: mapOsFamily(process.platform),
+      name: null,
+      version: os.release() || null,
       arch: mapArch(process.arch || os.arch()),
       bitness: process.arch === "ia32" ? 32 : 64,
     },
@@ -273,15 +267,91 @@ async function detectHardware(opts = {}) {
     primaryGpuIndex,
     primaryGpuConfidence,
     memory: {
-      totalMB: memTotal,
-      availableMB: memAvail,
+      totalMB: mb(os.totalmem()),
+      availableMB: null,
     },
-    storage: {
-      totalAvailableMB: si.totalAvailableMB ?? null,
-      installDrive,
-    },
+    storage: {},
     detectionErrors: errors,
   };
 }
 
-module.exports = { detectHardware, pickPrimaryGpu };
+/**
+ * @param {{ app?: import('electron').App, gameDir?: string }} opts
+ */
+async function detectHardware(opts = {}) {
+  try {
+    const errors = [];
+    const collectedAt = new Date().toISOString();
+
+    const si = await trySystemInformation();
+    if (si.error) errors.push(`systeminformation: ${si.error}`);
+
+    let gpus = si.gpus || [];
+    if (!gpus.length && opts.app) {
+      const electronGpus = await tryElectronGpu(opts.app);
+      if (electronGpus.length) gpus = electronGpus;
+      else errors.push("gpu: no controllers detected");
+    } else if (!gpus.length) {
+      errors.push("gpu: no controllers detected");
+    }
+
+    let cpu = cpuFromSystemInformation(si.cpu);
+    if (!cpu) {
+      cpu = fallbackCpu();
+      errors.push(si.cpu ? "cpu: empty SI brand, using os.cpus" : "cpu: using os.cpus fallback");
+    }
+
+    const { index: primaryGpuIndex, confidence: primaryGpuConfidence } = pickPrimaryGpu(gpus);
+
+    const memTotal = si.mem?.total != null ? mb(si.mem.total) : mb(os.totalmem());
+    const memAvail = si.mem?.available != null ? mb(si.mem.available) : null;
+    if (memTotal == null) errors.push("memory: total unknown");
+
+    const family = mapOsFamily(process.platform);
+    const osName = si.osInfo?.distro || si.osInfo?.codename || null;
+    const osVersion = si.osInfo?.release || os.release() || null;
+
+    const installDrive = resolveInstallDrive(opts.gameDir, si.fsSize || []);
+
+    if (opts.gameDir) {
+      try {
+        fs.accessSync(path.parse(path.resolve(opts.gameDir)).root);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    return {
+      schemaVersion: 1,
+      collectedAt,
+      os: {
+        family,
+        name: osName,
+        version: osVersion,
+        arch: mapArch(process.arch || os.arch()),
+        bitness: process.arch === "ia32" ? 32 : 64,
+      },
+      cpu,
+      gpus,
+      primaryGpuIndex,
+      primaryGpuConfidence,
+      memory: {
+        totalMB: memTotal ?? mb(os.totalmem()),
+        availableMB: memAvail,
+      },
+      storage: {
+        totalAvailableMB: si.totalAvailableMB ?? null,
+        installDrive,
+      },
+      detectionErrors: errors,
+    };
+  } catch (err) {
+    return minimalHardwareFallback({
+      app: opts.app,
+      gameDir: opts.gameDir,
+      reason: `detectHardware: ${err?.message || err}`,
+    });
+  }
+}
+
+module.exports = { detectHardware, pickPrimaryGpu, minimalHardwareFallback };
