@@ -11,7 +11,15 @@ const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
-const { detectHardware } = require("./hardware");
+
+function loadHardwareModule() {
+  try {
+    return require("./hardware");
+  } catch (err) {
+    console.warn("[hardware] module unavailable:", err?.message || err);
+    return null;
+  }
+}
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
 let catalog = bundledCatalog.map((e) => ({ ...e }));
@@ -883,6 +891,56 @@ const telemetry = createTelemetry({
     }
   },
 });
+
+/** Avoid double-reporting crashes bootstrap already wrote. */
+let mainProcessErrorReported = false;
+
+function reportMainProcessError(err, phase = "main") {
+  if (mainProcessErrorReported) return;
+  mainProcessErrorReported = true;
+  const message = err?.message || String(err || "Unknown error");
+  const code =
+    err?.code === "MODULE_NOT_FOUND" || /Cannot find module/i.test(message)
+      ? "MODULE_NOT_FOUND"
+      : err?.code || "UNCAUGHT_EXCEPTION";
+  void telemetry.error({
+    code,
+    message: String(message).slice(0, 1000),
+    source: "launcher",
+    phase,
+  });
+}
+
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err);
+  reportMainProcessError(err, "uncaughtException");
+});
+
+process.on("unhandledRejection", (reason) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  console.error("[unhandledRejection]", err);
+  reportMainProcessError(err, "unhandledRejection");
+});
+
+/** Replay a crash that happened before telemetry was available (offline/startup). */
+async function flushLastCrashReport() {
+  const file = path.join(app.getPath("userData"), "last-crash.json");
+  try {
+    if (!fs.existsSync(file)) return;
+    const raw = JSON.parse(fs.readFileSync(file, "utf8"));
+    const code = raw?.code || "UNCAUGHT_EXCEPTION";
+    const message = String(raw?.message || "Previous launcher crash").slice(0, 1000);
+    void telemetry.error({
+      code,
+      message,
+      source: "launcher",
+      phase: raw?.phase ? `replay:${raw.phase}` : "replay",
+    });
+    fs.unlinkSync(file);
+  } catch (err) {
+    console.warn("[telemetry] flushLastCrashReport failed:", err?.message || err);
+  }
+}
 
 /**
  * Identity for an edition event, derived from the catalog entry / install state.
@@ -4167,7 +4225,11 @@ ipcMain.handle("block-user", async (_event, targetUserId) => {
 async function collectHardwareProfile() {
   const settings = loadSettings();
   try {
-    const profile = await detectHardware({
+    const hw = loadHardwareModule();
+    if (!hw?.detectHardware) {
+      throw new Error("Hardware module not available in this build");
+    }
+    const profile = await hw.detectHardware({
       app,
       gameDir: settings.gamesDir || DEFAULT_GAMES_DIR,
     });
@@ -4826,6 +4888,8 @@ if (gotLock) {
     if (process.argv.includes("--test-deep-link")) return testDeepLink();
     const uninstallIdx = process.argv.indexOf("--test-uninstall");
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
+
+    void flushLastCrashReport();
 
     await refreshRemoteCatalog();
     for (const entry of catalog) {
