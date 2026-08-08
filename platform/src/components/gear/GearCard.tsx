@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { PlayboundCertifiedBadge } from "./PlayboundCertifiedBadge";
-import type { GearDraft } from "./admin/GearEditorForm"; // Reusing type for convenience, or we can define it properly
+import type { GearDraft } from "../admin/GearEditorForm"; // Reusing type for convenience, or we can define it properly
 
 export function GearCard({ gear, rank, notes }: { gear: any; rank?: string | null; notes?: string }) {
   // We can sort affiliate links by some criteria or just show them
