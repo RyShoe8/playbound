@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Friend from "@/lib/models/Friend";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -20,7 +19,6 @@ export async function GET(req: Request) {
 
   try {
     await dbConnect();
-    const userId = session.user.id;
 
     // Search by username or exact email
     const users = await User.find({

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
+import { getFriendsUserId } from "@/lib/friendsAuth";
+import { markFriendRequestNotificationsRead } from "@/lib/notifications";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -16,10 +16,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request ID is required" }, { status: 400 });
     }
 
-    const userId = session.user.id;
     await dbConnect();
 
-    // The user declining must be the recipient or the requester cancelling it.
     const friendRequest = await Friend.findOne({
       _id: requestId,
       $or: [{ recipientId: userId }, { requesterId: userId }],
@@ -30,8 +28,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Friend request not found" }, { status: 404 });
     }
 
-    // Either delete or mark declined. Deleting makes it possible to send again cleanly.
+    const friendshipId = String(friendRequest._id);
+    const recipientId = String(friendRequest.recipientId);
     await friendRequest.deleteOne();
+
+    void markFriendRequestNotificationsRead({
+      userId: recipientId,
+      friendshipId,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

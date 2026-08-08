@@ -1,22 +1,19 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
 import DiscordConnection from "@/lib/models/DiscordConnection";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+export async function GET(req: Request) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     await dbConnect();
-    const userId = session.user.id;
 
-    // Get all accepted friendships
     const friendships = await Friend.find({
       $or: [{ requesterId: userId }, { recipientId: userId }],
       status: "accepted",
@@ -38,15 +35,14 @@ export async function GET() {
       };
     });
 
-    // Get presence for all friends
     const friendIds = friendUsers.map((u) => u.id);
     const [presences, discordConnections] = await Promise.all([
       Presence.find({ userId: { $in: friendIds } }).lean(),
-      DiscordConnection.find({ userId: { $in: friendIds } }).select("userId").lean()
+      DiscordConnection.find({ userId: { $in: friendIds } }).select("userId").lean(),
     ]);
-    
-    const discordLinkedSet = new Set(discordConnections.map(dc => dc.userId.toString()));
-    
+
+    const discordLinkedSet = new Set(discordConnections.map((dc) => dc.userId.toString()));
+
     const presenceMap = new Map();
     for (const p of presences) {
       presenceMap.set(p.userId.toString(), {
@@ -56,7 +52,7 @@ export async function GET() {
         currentEditionId: p.currentEditionId,
         currentPage: p.currentPage,
         lastHeartbeat: p.lastHeartbeat,
-        lastSeen: p.lastHeartbeat, // alias for frontend convenience if needed
+        lastSeen: p.lastHeartbeat,
       });
     }
 

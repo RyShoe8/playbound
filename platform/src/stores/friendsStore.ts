@@ -56,6 +56,7 @@ type FriendsState = {
 };
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+let pollSubscribers = 0;
 
 export const useFriendsStore = create<FriendsState>((set, get) => ({
   friends: [],
@@ -186,11 +187,12 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
   setSelectedFriend: (friend) => set({ selectedFriend: friend }),
 
   startPolling: (intervalMs = 30000) => {
-    if (pollInterval) clearInterval(pollInterval);
-    // Initial fetch
+    pollSubscribers += 1;
+    // Always refresh when a subscriber mounts.
     get().fetchFriends();
     get().fetchRequests();
-    
+    if (pollInterval) return;
+
     pollInterval = setInterval(() => {
       get().fetchFriends();
       get().fetchRequests();
@@ -198,7 +200,8 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
   },
 
   stopPolling: () => {
-    if (pollInterval) {
+    pollSubscribers = Math.max(0, pollSubscribers - 1);
+    if (pollSubscribers === 0 && pollInterval) {
       clearInterval(pollInterval);
       pollInterval = null;
     }

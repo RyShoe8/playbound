@@ -1,21 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
-import User from "@/lib/models/User";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+export async function GET(req: Request) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     await dbConnect();
-    const userId = session.user.id;
 
-    // Fetch incoming and outgoing requests
     const [incomingDocs, outgoingDocs] = await Promise.all([
       Friend.find({ recipientId: userId, status: "pending" })
         .populate({ path: "requesterId", select: "username email image connectedAccounts" })
@@ -25,13 +21,18 @@ export async function GET() {
         .lean(),
     ]);
 
-    const formatUser = (userDoc: any) => ({
-      id: userDoc._id,
-      username: userDoc.username,
-      email: userDoc.email,
-      image: userDoc.image,
-      discordLinked: !!userDoc.connectedAccounts?.discord?.discordUserId,
-    });
+    const formatUser = (userDoc: any) => {
+      if (!userDoc || !userDoc._id) {
+        return { id: "", username: "Unknown", email: null, image: null, discordLinked: false };
+      }
+      return {
+        id: userDoc._id,
+        username: userDoc.username,
+        email: userDoc.email,
+        image: userDoc.image,
+        discordLinked: !!userDoc.connectedAccounts?.discord?.discordUserId,
+      };
+    };
 
     const incoming = incomingDocs.map((doc) => ({
       id: doc._id,
