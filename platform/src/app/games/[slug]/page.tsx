@@ -622,7 +622,6 @@ function OverviewTab({
         )}
 
         <section>
-          {/* @ts-expect-error Async Server Component */}
           <CompatibleGearList gameSlug={game.slug} gameTitle={game.title} />
         </section>
 
