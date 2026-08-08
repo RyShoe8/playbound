@@ -97,13 +97,15 @@ export function ReportButton({
 export function ReplyComposer({
   topicId,
   gameSlug,
+  loginCallbackUrl,
   isSignedIn,
   locked,
   quotedReplyId,
   onClearQuote,
 }: {
   topicId: string;
-  gameSlug: string;
+  gameSlug?: string | null;
+  loginCallbackUrl?: string;
   isSignedIn: boolean;
   locked: boolean;
   quotedReplyId?: string | null;
@@ -114,14 +116,14 @@ export function ReplyComposer({
   const [body, setBody] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
+  const signInHref = `/login?callbackUrl=${encodeURIComponent(
+    loginCallbackUrl || (gameSlug ? `/games/${gameSlug}/discussion` : "/")
+  )}`;
 
   if (!isSignedIn) {
     return (
       <p className="text-sm text-muted-foreground">
-        <Link
-          href={`/login?callbackUrl=/games/${gameSlug}/discussion`}
-          className="font-semibold text-primary hover:underline"
-        >
+        <Link href={signInHref} className="font-semibold text-primary hover:underline">
           Sign in
         </Link>{" "}
         to reply.
@@ -144,7 +146,7 @@ export function ReplyComposer({
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        void track("discussion_reply", { topicId, gameId: gameSlug });
+        void track("discussion_reply", { topicId, gameId: gameSlug || undefined });
         setBody("");
         onClearQuote?.();
         setState("idle");

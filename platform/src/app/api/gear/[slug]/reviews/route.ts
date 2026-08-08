@@ -4,7 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
-import { getMod } from "@/lib/mods";
+import Gear from "@/lib/models/Gear";
 
 const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -12,11 +12,24 @@ const reviewSchema = z.object({
   body: z.string().min(40).max(4000),
 });
 
+export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  await dbConnect();
+  const gear = await Gear.findOne({ slug, status: "published" }).select("slug").lean();
+  if (!gear) {
+    return NextResponse.json({ error: "Unknown gear" }, { status: 404 });
+  }
+
+  const reviews = await Review.find({ gearSlug: slug }).sort({ createdAt: -1 }).lean();
+  return NextResponse.json({ reviews });
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const mod = await getMod(slug);
-  if (!mod) {
-    return NextResponse.json({ error: "Unknown mod" }, { status: 404 });
+  await dbConnect();
+  const gear = await Gear.findOne({ slug, status: "published" }).select("slug").lean();
+  if (!gear) {
+    return NextResponse.json({ error: "Unknown gear" }, { status: 404 });
   }
 
   const session = await getServerSession(authOptions);
@@ -26,21 +39,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   try {
     const body = reviewSchema.parse(await req.json());
-    await dbConnect();
 
     const existing = await Review.findOne({
-      modSlug: slug,
+      gearSlug: slug,
       userId: session.user.id,
     });
     if (existing) {
-      return NextResponse.json({ error: "You've already reviewed this mod" }, { status: 400 });
+      return NextResponse.json({ error: "You've already reviewed this gear" }, { status: 400 });
     }
 
     await Review.create({
-      gameSlug: mod.baseGameSlug,
+      gameSlug: null,
       editionSlug: null,
-      modSlug: slug,
-      gearSlug: null,
+      modSlug: null,
+      gearSlug: slug,
       userId: session.user.id,
       username: session.user.username,
       ...body,
@@ -56,9 +68,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       error !== null &&
       (error as { code?: number }).code === 11000
     ) {
-      return NextResponse.json({ error: "You've already reviewed this mod" }, { status: 409 });
+      return NextResponse.json({ error: "You've already reviewed this gear" }, { status: 409 });
     }
-    console.error("Mod review creation error:", error);
+    console.error("Gear review creation error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

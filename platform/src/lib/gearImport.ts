@@ -1,6 +1,7 @@
 /**
- * Affilliate-link import for admin gear drafts.
+ * Affiliate-link import for admin gear drafts.
  * Uses Open Graph / page meta + JSON-LD Product/Offer when available.
+ * Amazon URLs use a dedicated HTML parser (About this item, gallery, etc.).
  */
 
 import { slugifyTitle } from "@/lib/gamePayload";
@@ -11,8 +12,10 @@ import {
   tryFetchPageMeta,
 } from "@/lib/pageMeta";
 import { rehostImageToBlob } from "@/lib/fetchGameMedia";
+import { isAmazonProductUrl, parseAmazonProduct } from "@/lib/amazonGear";
 
 const MAX_SCREENSHOTS = 8;
+const MAX_CANDIDATE_IMAGES = 20;
 
 export type GearImportAffiliate = {
   retailer: string;
@@ -28,6 +31,10 @@ export type GearImportDraft = {
   description: string;
   coverImage: string | null;
   screenshots: string[];
+  manufacturer: string | null;
+  platforms: string[];
+  videos: string[];
+  candidateImages: string[];
   affiliateLinks: GearImportAffiliate[];
 };
 
@@ -90,6 +97,7 @@ function formatPrice(amount: unknown, currency?: string | null): string | null {
 type JsonLdProduct = {
   name?: string;
   description?: string;
+  brand?: string | { name?: string };
   image?: string | string[] | { url?: string }[];
   offers?:
     | {
@@ -158,6 +166,14 @@ function offerPrice(product: JsonLdProduct): string | null {
   return null;
 }
 
+function brandFromProduct(product: JsonLdProduct): string | null {
+  const b = product.brand;
+  if (!b) return null;
+  if (typeof b === "string") return b.trim().slice(0, 80) || null;
+  if (typeof b === "object" && b.name) return String(b.name).trim().slice(0, 80) || null;
+  return null;
+}
+
 function metaTag(html: string, key: string): string | null {
   const patterns = [
     new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content=["']([^"']+)["']`, "i"),
@@ -218,6 +234,16 @@ async function rehostPreferred(
   return { cover, shots };
 }
 
+function mergeUniqueUrls(...lists: string[][]): string[] {
+  const out: string[] = [];
+  for (const list of lists) {
+    for (const u of list) {
+      if (u && !out.includes(u)) out.push(u);
+    }
+  }
+  return out;
+}
+
 /**
  * Build a gear draft from an affiliate / product URL.
  * Always keeps the pasted URL as the affiliate link destination.
@@ -225,6 +251,7 @@ async function rehostPreferred(
 export async function importGearFromUrl(rawUrl: string): Promise<GearImportResult> {
   const url = assertPublicHttpUrl(rawUrl).toString();
   const warnings: string[] = [];
+  const amazon = isAmazonProductUrl(url);
 
   const [metaResult, html] = await Promise.all([tryFetchPageMeta(url), tryFetchHtml(url)]);
 
@@ -233,17 +260,34 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
   let images: string[] = [];
   let siteName: string | null = null;
   let price: string | null = null;
+  let shipping: string | null = null;
+  let manufacturer: string | null = null;
+  let platforms: string[] = [];
+  let videos: string[] = [];
+
+  if (html && amazon) {
+    const parsed = parseAmazonProduct(html);
+    if (parsed.title) title = parsed.title;
+    if (parsed.description) description = parsed.description;
+    if (parsed.price) price = parsed.price;
+    if (parsed.shipping) shipping = parsed.shipping;
+    if (parsed.manufacturer) manufacturer = parsed.manufacturer;
+    platforms = parsed.platforms;
+    videos = parsed.videos;
+    images = parsed.images;
+  }
 
   if (html) {
     const products = extractJsonLdProducts(html);
     const product = products[0];
     if (product) {
-      if (product.name) title = String(product.name).trim().slice(0, 200);
-      if (product.description) {
+      if (!title && product.name) title = String(product.name).trim().slice(0, 200);
+      if (!description && product.description) {
         description = stripHtml(String(product.description)).slice(0, 8000);
       }
-      images = asImageList(product.image);
-      price = offerPrice(product);
+      if (!manufacturer) manufacturer = brandFromProduct(product);
+      images = mergeUniqueUrls(images, asImageList(product.image));
+      if (!price) price = offerPrice(product);
     }
 
     if (!price) {
@@ -266,12 +310,7 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
     siteName = meta.siteName;
     if (!title && meta.title) title = meta.title;
     if (!description && meta.description) description = meta.description;
-    if (images.length === 0) images = meta.images;
-    else {
-      for (const img of meta.images) {
-        if (!images.includes(img)) images.push(img);
-      }
-    }
+    images = mergeUniqueUrls(images, meta.images);
   } else {
     warnings.push(metaResult.message);
   }
@@ -279,25 +318,33 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
   if (!title) title = softTitleFromUrl(url);
   if (!description) description = "";
 
-  // Clean Amazon-style titles ("Buy X Online at Low Prices in India…")
-  title = title
-    .replace(/\s*[|\-–—]\s*Amazon\..*$/i, "")
-    .replace(/^Buy\s+/i, "")
-    .trim()
-    .slice(0, 200);
+  // Non-Amazon cleanup / Amazon titles already cleaned in parseAmazonProduct
+  if (!amazon) {
+    title = title
+      .replace(/\s*[|\-–—]\s*Amazon\..*$/i, "")
+      .replace(/^Buy\s+/i, "")
+      .trim()
+      .slice(0, 200);
+  } else {
+    title = title.trim().slice(0, 200);
+  }
+
+  if (amazon && !shipping) shipping = "Prime / usually 1–2 days";
 
   const slug = slugifyTitle(title).slice(0, 80) || "gear-item";
   const retailer = detectRetailer(url, siteName);
-  const { cover, shots } = await rehostPreferred(images, slug);
+  const candidateImages = images.slice(0, MAX_CANDIDATE_IMAGES);
+  // Default cover + gallery from first N; admin cover picker can override from candidates.
+  const { cover, shots } = await rehostPreferred(candidateImages, slug);
 
   if (!price) warnings.push("No price found on the page — you can enter it manually.");
-  if (!cover) warnings.push("No product image found.");
+  if (!cover && candidateImages.length === 0) warnings.push("No product image found.");
 
   const affiliate: GearImportAffiliate = {
     retailer,
     url,
     price,
-    shipping: null,
+    shipping,
     isActive: true,
   };
 
@@ -309,6 +356,10 @@ export async function importGearFromUrl(rawUrl: string): Promise<GearImportResul
       description,
       coverImage: cover,
       screenshots: shots,
+      manufacturer,
+      platforms,
+      videos,
+      candidateImages,
       affiliateLinks: [affiliate],
     },
     retailer,

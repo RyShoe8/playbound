@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
@@ -11,6 +10,7 @@ import {
   loadPosterGate,
 } from "@/lib/discussion/permissions";
 import { accountAllowsLinks, sanitizeTopicInput } from "@/lib/discussion/sanitize";
+import { revalidateDiscussionTopicPaths } from "@/lib/discussion/paths";
 
 const patchSchema = z.object({
   title: z.string().min(3).max(150).optional(),
@@ -78,8 +78,7 @@ export async function PATCH(
     if (raw.hasSpoilers !== undefined) topic.hasSpoilers = raw.hasSpoilers;
     await topic.save();
 
-    revalidatePath(`/games/${topic.gameSlug}`);
-    revalidatePath(`/games/${topic.gameSlug}/discussion/${topic.slug}`);
+    await revalidateDiscussionTopicPaths(topic);
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -116,6 +115,6 @@ export async function DELETE(
     { $set: { status: "removed" } }
   );
 
-  revalidatePath(`/games/${topic.gameSlug}`);
+  await revalidateDiscussionTopicPaths(topic);
   return NextResponse.json({ success: true });
 }

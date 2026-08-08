@@ -19,6 +19,10 @@ const modEndpoints: Record<Kind, (slug: string) => string> = {
   guide: (slug) => `/api/mods/${slug}/guides`,
 };
 
+const gearEndpoints: Record<"review", (slug: string) => string> = {
+  review: (slug) => `/api/gear/${slug}/reviews`,
+};
+
 const copy: Record<Kind, { cta: string; titlePlaceholder: string; bodyPlaceholder: string; bodyRows: number }> = {
   review: {
     cta: "Post Review",
@@ -39,6 +43,8 @@ export function ContentForm({
   kind,
   gameSlug,
   modSlug,
+  gearSlug,
+  gearCategory,
   isSignedIn,
   editionSlug,
   editionName,
@@ -47,6 +53,9 @@ export function ContentForm({
   gameSlug?: string;
   /** When set, post to mod APIs and link to /mods/... */
   modSlug?: string;
+  /** When set, post gear reviews and link to /gear/... */
+  gearSlug?: string;
+  gearCategory?: string;
   isSignedIn: boolean;
   /** Set on an edition page so reviews/guides attach to that edition. */
   editionSlug?: string;
@@ -61,12 +70,21 @@ export function ContentForm({
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(kind === "review");
 
-  const pageBase = modSlug
-    ? `/mods/${modSlug}`
-    : editionSlug && gameSlug
-      ? `/games/${gameSlug}/editions/${editionSlug}`
-      : `/games/${gameSlug}`;
-  const endpoint = modSlug ? modEndpoints[kind](modSlug) : gameEndpoints[kind](gameSlug || "");
+  const categoryPath = (gearCategory || "gear").toLowerCase();
+  const pageBase = gearSlug
+    ? `/gear/${categoryPath}/${gearSlug}`
+    : modSlug
+      ? `/mods/${modSlug}`
+      : editionSlug && gameSlug
+        ? `/games/${gameSlug}/editions/${editionSlug}`
+        : `/games/${gameSlug}`;
+  const endpoint = gearSlug
+    ? kind === "review"
+      ? gearEndpoints.review(gearSlug)
+      : ""
+    : modSlug
+      ? modEndpoints[kind](modSlug)
+      : gameEndpoints[kind](gameSlug || "");
 
   if (!isSignedIn) {
     return (
@@ -81,9 +99,11 @@ export function ContentForm({
         {kind === "review"
           ? editionName
             ? `rate and review the ${editionName} edition`
-            : modSlug
-              ? "rate and review this mod"
-              : "rate and review this game"
+            : gearSlug
+              ? "rate and review this product"
+              : modSlug
+                ? "rate and review this mod"
+                : "rate and review this game"
           : "publish a guide"}
         .
       </p>
@@ -115,11 +135,16 @@ export function ContentForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
           kind === "review"
-            ? { rating, title, body, ...(modSlug ? {} : { editionSlug: editionSlug ?? null }) }
+            ? {
+                rating,
+                title,
+                body,
+                ...(modSlug || gearSlug ? {} : { editionSlug: editionSlug ?? null }),
+              }
             : {
                 title,
                 body,
-                ...(modSlug ? {} : { editionSlug: editionSlug ?? null }),
+                ...(modSlug || gearSlug ? {} : { editionSlug: editionSlug ?? null }),
               }
         ),
       });
@@ -129,6 +154,7 @@ export function ContentForm({
           void track("review_created", {
             gameSlug: gameSlug || undefined,
             modSlug: modSlug || undefined,
+            gearSlug: gearSlug || undefined,
             rating,
             editionSlug,
           });

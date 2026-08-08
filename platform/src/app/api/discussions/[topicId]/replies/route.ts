@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
@@ -10,6 +9,7 @@ import User from "@/lib/models/User";
 import { loadPosterGate } from "@/lib/discussion/permissions";
 import { assertReplyRateLimit } from "@/lib/discussion/rateLimit";
 import { accountAllowsLinks, sanitizeReplyInput } from "@/lib/discussion/sanitize";
+import { replyGameSlugKey, revalidateDiscussionTopicPaths } from "@/lib/discussion/paths";
 
 const createSchema = z.object({
   body: z.string().min(5).max(10000),
@@ -90,7 +90,7 @@ export async function POST(
 
     const reply = await DiscussionReply.create({
       topicId: topic._id,
-      gameSlug: topic.gameSlug,
+      gameSlug: replyGameSlugKey(topic),
       authorId: session.user.id,
       authorUsername: session.user.username,
       body: clean.body,
@@ -119,8 +119,7 @@ export async function POST(
       { $inc: { "community.replyCount": 1 } }
     );
 
-    revalidatePath(`/games/${topic.gameSlug}`);
-    revalidatePath(`/games/${topic.gameSlug}/discussion/${topic.slug}`);
+    await revalidateDiscussionTopicPaths(topic);
 
     return NextResponse.json({ success: true, replyId: String(reply._id) }, { status: 201 });
   } catch (error) {

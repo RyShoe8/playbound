@@ -22,9 +22,11 @@ const GearSchema = new Schema(
       index: true,
     },
     description: { type: String, default: "" },
+    manufacturer: { type: String, default: null },
     playboundCertified: { type: Boolean, default: false },
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },
+    videos: { type: [String], default: [] },
     platforms: { type: [String], default: [] },
     bestFor: { type: [String], default: [] },
     status: {

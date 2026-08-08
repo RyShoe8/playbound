@@ -16,9 +16,11 @@ export type GearDraft = {
   title: string;
   category: string;
   description: string;
+  manufacturer: string | null;
   playboundCertified: boolean;
   coverImage: string | null;
   screenshots?: string[];
+  videos?: string[];
   platforms: string[];
   bestFor: string[];
   status: "draft" | "published";
@@ -39,6 +41,10 @@ type ImportPayload = {
     description: string;
     coverImage: string | null;
     screenshots: string[];
+    manufacturer?: string | null;
+    platforms?: string[];
+    videos?: string[];
+    candidateImages?: string[];
     affiliateLinks: GearDraft["affiliateLinks"];
   };
   retailer: string;
@@ -75,6 +81,8 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
   const [mediaNote, setMediaNote] = useState("");
   const [importUrl, setImportUrl] = useState("");
   const [importNote, setImportNote] = useState("");
+  const [candidateImages, setCandidateImages] = useState<string[]>([]);
+  const [videoDraft, setVideoDraft] = useState("");
   const [productFilled, setProductFilled] = useState(
     Boolean(initial.title.trim() || initial.coverImage || initial.description.trim())
   );
@@ -133,6 +141,15 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
   function applyProductFill(payload: ImportPayload, opts: { replaceSlug: boolean }) {
     const link = payload.draft.affiliateLinks[0];
+    const candidates = payload.draft.candidateImages?.filter(Boolean) ?? [];
+    const seeded = [
+      ...candidates,
+      ...(payload.draft.coverImage ? [payload.draft.coverImage] : []),
+      ...(payload.draft.screenshots ?? []),
+    ];
+    const uniqueCandidates = seeded.filter((u, i) => seeded.indexOf(u) === i);
+    if (uniqueCandidates.length > 0) setCandidateImages(uniqueCandidates);
+
     setForm((prev) => ({
       ...prev,
       title: payload.draft.title || prev.title,
@@ -143,6 +160,18 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             ? payload.draft.slug
             : prev.slug,
       description: payload.draft.description || prev.description,
+      manufacturer:
+        payload.draft.manufacturer !== undefined
+          ? payload.draft.manufacturer
+          : prev.manufacturer,
+      platforms:
+        payload.draft.platforms && payload.draft.platforms.length > 0
+          ? payload.draft.platforms
+          : prev.platforms,
+      videos:
+        payload.draft.videos && payload.draft.videos.length > 0
+          ? payload.draft.videos
+          : prev.videos ?? [],
       coverImage: payload.draft.coverImage || prev.coverImage,
       screenshots:
         payload.draft.screenshots?.length > 0
@@ -151,6 +180,16 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       affiliateLinks: link ? upsertAffiliateLink(prev.affiliateLinks, link) : prev.affiliateLinks,
     }));
     setProductFilled(true);
+  }
+
+  function pickCoverFromCandidate(url: string) {
+    setForm((prev) => {
+      const shots = [
+        ...(prev.coverImage && prev.coverImage !== url ? [prev.coverImage] : []),
+        ...(prev.screenshots ?? []).filter((s) => s !== url),
+      ].slice(0, 20);
+      return { ...prev, coverImage: url, screenshots: shots };
+    });
   }
 
   async function importProduct() {
@@ -444,20 +483,30 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           </PremiumSelect>
         </div>
         <div>
-          <label className={label}>Platforms (comma separated)</label>
+          <label className={label}>Manufacturer</label>
           <input
-            value={form.platforms.join(", ")}
-            onChange={(e) => handleListChange("platforms", e.target.value)}
+            value={form.manufacturer || ""}
+            onChange={(e) => patch("manufacturer", e.target.value.trim() ? e.target.value : null)}
             className={field}
-            placeholder="Windows, macOS, Xbox"
+            placeholder="e.g. Microsoft, Logitech"
           />
         </div>
       </div>
 
       <div>
+        <label className={label}>Platforms (comma separated)</label>
+        <input
+          value={form.platforms.join(", ")}
+          onChange={(e) => handleListChange("platforms", e.target.value)}
+          className={field}
+          placeholder="Windows, macOS, Xbox"
+        />
+      </div>
+
+      <div>
         <label className={label}>Description</label>
         <textarea
-          rows={3}
+          rows={5}
           value={form.description}
           onChange={(e) => patch("description", e.target.value)}
           className={area}
@@ -506,6 +555,41 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
         {mediaNote && <p className="text-xs text-muted-foreground">{mediaNote}</p>}
 
+        {candidateImages.length > 0 && (
+          <div className="space-y-2">
+            <label className={label}>Pick cover from imported gallery</label>
+            <p className="text-xs text-muted-foreground">
+              Click an image to set it as the cover. Remaining images stay in the screenshot gallery.
+            </p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+              {candidateImages.map((url) => {
+                const selected = form.coverImage === url;
+                return (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => pickCoverFromCandidate(url)}
+                    className={
+                      "relative overflow-hidden rounded-md border bg-secondary/20 transition-colors " +
+                      (selected
+                        ? "border-primary ring-2 ring-primary/40"
+                        : "border-border hover:border-primary/50")
+                    }
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="aspect-square w-full object-cover" />
+                    {selected && (
+                      <span className="absolute inset-x-0 bottom-0 bg-primary/90 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        Cover
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {form.coverImage && (
           <div className="space-y-2">
             <label className={label}>Cover Image</label>
@@ -525,7 +609,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
         {(form.screenshots?.length ?? 0) > 0 && (
           <div className="space-y-2">
-            <label className={label}>Screenshots</label>
+            <label className={label}>Screenshots / gallery</label>
             <div className="flex flex-wrap gap-2">
               {form.screenshots!.map((url, i) => (
                 <div key={i} className="relative inline-block overflow-hidden rounded-md border border-border">
@@ -547,6 +631,57 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             </div>
           </div>
         )}
+
+        <div className="space-y-2">
+          <label className={label}>Videos</label>
+          {(form.videos?.length ?? 0) > 0 && (
+            <ul className="space-y-1">
+              {form.videos!.map((url, i) => (
+                <li
+                  key={`${url}-${i}`}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2 text-xs"
+                >
+                  <span className="min-w-0 flex-1 truncate">{url}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...(form.videos ?? [])];
+                      next.splice(i, 1);
+                      patch("videos", next);
+                    }}
+                    className="shrink-0 text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              value={videoDraft}
+              onChange={(e) => setVideoDraft(e.target.value)}
+              className={field + " mt-0 sm:flex-1"}
+              placeholder="https://… mp4, YouTube, or Vimeo URL"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const url = videoDraft.trim();
+                if (!url) return;
+                if ((form.videos ?? []).includes(url)) {
+                  setVideoDraft("");
+                  return;
+                }
+                patch("videos", [...(form.videos ?? []), url].slice(0, 12));
+                setVideoDraft("");
+              }}
+              className="h-9 shrink-0 rounded-full border border-border bg-secondary px-4 text-sm font-bold hover:bg-secondary/80"
+            >
+              Add video
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-6 pt-2">
