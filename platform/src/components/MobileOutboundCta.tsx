@@ -6,7 +6,7 @@ import { Download, ExternalLink, MonitorPlay } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { telemetry } from "@/lib/telemetry";
 import { useGameSession } from "@/hooks/useGameSession";
-import type { MobileOutbound } from "@/lib/mobilePlay";
+import { parseMobileOs, type MobileOutbound } from "@/lib/mobilePlay";
 
 /**
  * The mobile "get it / play it" button.
@@ -25,6 +25,9 @@ import type { MobileOutbound } from "@/lib/mobilePlay";
  * Browser games are different: they are played, not installed, so the click
  * opens a play session instead (see useGameSession) and the entry is filed
  * under the "web" platform, which every device can see.
+ *
+ * Store opens also fire `launch_attempted` (phase mobile-store-launch) for
+ * analytics — duration/presence are not tracked until a native bridge exists.
  */
 export function MobileOutboundCta({
   game,
@@ -32,6 +35,8 @@ export function MobileOutboundCta({
   surface,
   className,
   children,
+  /** When true, do not upsert a library install (e.g. already installed locally). */
+  skipLibraryClaim = false,
 }: {
   game: Game;
   outbound: MobileOutbound;
@@ -39,6 +44,7 @@ export function MobileOutboundCta({
   surface: string;
   className?: string;
   children?: React.ReactNode;
+  skipLibraryClaim?: boolean;
 }) {
   const { startSession } = useGameSession();
   // Read here rather than threaded from each caller — all three mobile CTAs
@@ -62,11 +68,24 @@ export function MobileOutboundCta({
     if (isPlay) {
       // Browser game: this is a play session, not an install.
       startSession(game.slug, game.title);
+    } else {
+      const os = parseMobileOs(
+        typeof navigator !== "undefined" ? navigator.userAgent : ""
+      );
+      const platform = os === "other" ? "mobile" : os;
+      void telemetry.track("launch_attempted", {
+        gameSlug: game.slug,
+        gameTitle: game.title,
+        platform,
+        source: "website",
+        phase: "mobile-store-launch",
+        surface,
+      });
     }
 
     // Only signed-in users have a library to add to. Anonymous visitors still
     // get the link and the click event — nothing is blocked on auth.
-    if (!isSignedIn || claimed) return;
+    if (!isSignedIn || claimed || skipLibraryClaim) return;
     setClaimed(true);
 
     // Fire-and-forget: the navigation must not wait on our own API, and a

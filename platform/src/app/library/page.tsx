@@ -17,8 +17,8 @@ import {
   isLibraryPlatform,
   LIBRARY_PLATFORM_LABELS,
   platformFromUserAgent,
-  visiblePlatformsFor,
 } from "@/lib/libraryPlatform";
+import { buildLibraryUnionEntries } from "@/lib/libraryUnion";
 import { shouldOfferLauncherFromUa } from "@/lib/mobilePlay";
 
 export const metadata: Metadata = {
@@ -51,17 +51,18 @@ export default async function LibraryPage() {
     );
   }
 
-  let entries: { gameSlug: string; installed: boolean; saved: boolean }[] = [];
+  let entries: {
+    gameSlug: string;
+    installed: boolean;
+    saved: boolean;
+    ownedElsewhere: boolean;
+  }[] = [];
   let modEntries: { modSlug: string; baseGameSlug: string }[] = [];
-  /** Games owned on other devices, so an empty page can explain itself. */
-  let elsewhereCount = 0;
+  /** Cross-platform-ineligible titles still owned only on other devices. */
+  let hiddenElsewhereCount = 0;
 
-  // The library is per-device: a game installed from the Play Store on a phone
-  // is not installed on this desktop, and listing it here would offer a Play
-  // button that cannot work.
   const userAgent = (await headers()).get("user-agent") || "";
   const viewerPlatform = platformFromUserAgent(userAgent);
-  const visible = visiblePlatformsFor(viewerPlatform);
   const offerLauncherDownload = shouldOfferLauncherFromUa(userAgent);
   const isMac = /Mac OS X|Macintosh/i.test(userAgent);
   const downloadUrl = isMac
@@ -86,19 +87,24 @@ export default async function LibraryPage() {
         .sort({ updatedAt: -1 })
         .lean(),
     ]);
-    // Entries predating the platform field were all written by the launcher,
-    // which is desktop-only — so that is their platform, not a guess.
-    const platformOf = (r: { platform?: string }) =>
-      isLibraryPlatform(r.platform) ? r.platform : "desktop";
 
-    entries = rows
-      .filter((r) => visible.includes(platformOf(r)))
-      .map((r) => ({
-        gameSlug: r.gameSlug,
+    const candidateSlugs = [...new Set(rows.map((r) => String(r.gameSlug)))];
+    const catalogGames = await gamesFor(candidateSlugs, { includeUnpublished: true });
+    const gamesBySlug = new Map(catalogGames.map((g) => [g.slug, g]));
+
+    const union = buildLibraryUnionEntries(
+      rows.map((r) => ({
+        gameSlug: String(r.gameSlug),
+        platform: r.platform as string | undefined,
         installed: Boolean(r.installed),
-        saved: Boolean(r.saved) && !r.installed,
-      }));
-    elsewhereCount = rows.filter((r) => !visible.includes(platformOf(r))).length;
+        saved: Boolean(r.saved),
+      })),
+      gamesBySlug,
+      viewerPlatform
+    );
+    entries = union.entries;
+    hiddenElsewhereCount = union.hiddenElsewhereCount;
+
     modEntries = modRows.map((r) => ({
       modSlug: String(r.modSlug),
       baseGameSlug: String(r.baseGameSlug),
@@ -138,8 +144,8 @@ export default async function LibraryPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
           <p className="mt-1 text-muted-foreground">
-            What you have on <strong>{LIBRARY_PLATFORM_LABELS[viewerPlatform]}</strong> — games
-            installed with the PlayBound app or added from the catalog, with mods under each game.
+            Games you own on <strong>{LIBRARY_PLATFORM_LABELS[viewerPlatform]}</strong>, plus
+            cross-platform titles from your other devices — install here if needed.
           </p>
         </div>
         {isLibraryPlatform(viewerPlatform) ? (
@@ -155,21 +161,18 @@ export default async function LibraryPage() {
         )}
       </div>
 
-      {/* Without this, a desktop user whose games are all on their phone sees
-          an empty page and assumes the library lost them. */}
-      {elsewhereCount > 0 && (
+      {hiddenElsewhereCount > 0 && (
         <p className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground">
-          {elsewhereCount} more game{elsewhereCount === 1 ? "" : "s"} in your library on other
-          devices. A library is per device, since installing on your phone doesn&apos;t install on
-          your computer — open PlayBound there to see them.
+          {hiddenElsewhereCount} more game{hiddenElsewhereCount === 1 ? "" : "s"} only on other
+          devices and not available on this one — open PlayBound there to play them.
         </p>
       )}
 
       {!hasAny ? (
         <div className="space-y-4">
           <EmptyHint icon={LibraryBig}>
-            {elsewhereCount > 0
-              ? `Nothing here on ${LIBRARY_PLATFORM_LABELS[viewerPlatform]} yet — your ${elsewhereCount} game${elsewhereCount === 1 ? "" : "s"} are installed on another device.`
+            {hiddenElsewhereCount > 0
+              ? `Nothing playable on ${LIBRARY_PLATFORM_LABELS[viewerPlatform]} yet — your ${hiddenElsewhereCount} game${hiddenElsewhereCount === 1 ? "" : "s"} stay on another device.`
               : "Your library is empty. Install with the PlayBound app, or open a game page and add one you already own."}
           </EmptyHint>
           <div className="flex flex-wrap justify-center gap-2">

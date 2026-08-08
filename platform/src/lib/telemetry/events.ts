@@ -154,7 +154,10 @@ export type TelemetryEventMap = {
   launch_attempted: EditionProps & {
     platform?: string;
     launcherVersion?: string;
+    /** e.g. browser-play, mobile-store-launch */
     phase?: string;
+    source?: string;
+    surface?: string;
   } & Extra;
 
   /** Launch did not reach a tracked play session (Java missing, spawn fail, etc.). */
