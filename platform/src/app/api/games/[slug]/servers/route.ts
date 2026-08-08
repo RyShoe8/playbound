@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGame } from "@/lib/catalog";
-import { listServersForGame } from "@/lib/servers/registry";
+import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
 
 export const revalidate = 30;
 
@@ -14,7 +14,9 @@ export async function GET(
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
-  if (!game.launchMethods.includes("server")) {
+  const markedServer = game.launchMethods.includes("server");
+  const hasProvider = hasServerProvider(slug);
+  if (!markedServer && !hasProvider) {
     return NextResponse.json({
       supported: false,
       servers: [],

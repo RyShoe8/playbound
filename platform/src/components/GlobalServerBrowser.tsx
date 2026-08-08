@@ -3,7 +3,7 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, RefreshCw, Server, Users } from "lucide-react";
 import { launcherJoinUrl, isOneClickSlug } from "@/lib/launcher";
 import type { GameServer } from "@/lib/servers/types";
@@ -30,6 +30,13 @@ type CatalogMod = {
   baseGameSlug: string;
   baseSupported?: boolean;
   baseHasServers?: boolean;
+};
+
+type EditionOption = {
+  slug: string;
+  name: string;
+  virtual?: boolean;
+  visibility?: string;
 };
 
 type Props = {
@@ -103,11 +110,25 @@ function filterServersForMod(servers: GameServer[], mod: CatalogMod): {
   return { matched: false, servers };
 }
 
+/** Real public editions (≥2) → edition browser mode instead of mods. */
+function choosablePublicEditions(list: EditionOption[]): EditionOption[] {
+  const publicReal = list.filter(
+    (e) => e.visibility !== "hidden" && e.visibility !== "unlisted" && !e.virtual
+  );
+  // API already filters hidden; keep public + active-ish. Unlisted stay off the dropdown.
+  const usable =
+    publicReal.length > 0
+      ? publicReal
+      : list.filter((e) => !e.virtual && e.visibility !== "hidden");
+  return usable.length >= 2 ? usable : [];
+}
+
 export function GlobalServerBrowser({
   installedGameSlugs,
   installedModSlugs,
   signedIn,
 }: Props) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const queryGame = searchParams.get("game")?.trim() || "";
   const queryMod = searchParams.get("mod")?.trim() || "";
@@ -118,6 +139,7 @@ export function GlobalServerBrowser({
 
   const [games, setGames] = useState<IndexGame[]>([]);
   const [mods, setMods] = useState<CatalogMod[]>([]);
+  const [editions, setEditions] = useState<EditionOption[]>([]);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [gameSlug, setGameSlug] = useState(queryGame);
   const [modSlug, setModSlug] = useState(queryMod);
@@ -128,11 +150,12 @@ export function GlobalServerBrowser({
   const [viewer, setViewer] = useState<ViewerGeo | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [modNote, setModNote] = useState("");
+  const [filterNote, setFilterNote] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("players");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const { mode, device } = useCompatibilityFilter();
   const lastViewedSlug = useRef<string | null>(null);
+  const urlSyncSkip = useRef(true);
 
   function setSort(key: SortKey) {
     if (key === sortKey) {
@@ -157,8 +180,6 @@ export function GlobalServerBrowser({
         const supported = (serversJson.games || []).filter((g: IndexGame) => g.supported);
         setGames(supported);
         setMods(modsJson.mods || []);
-        // Deep link (?game=…) selects immediately. Otherwise leave empty —
-        // never fall back to supported[0] (that was auto-fetching 0 A.D. etc.).
         if (queryGame && supported.some((g: IndexGame) => g.slug === queryGame)) {
           setGameSlug(queryGame);
         } else {
@@ -197,157 +218,200 @@ export function GlobalServerBrowser({
     return list;
   }, [games, installedOnly, installedGames, mode, device.type]);
 
-  /**
-   * The selection is validated during render rather than corrected afterwards
-   * in an effect.
-   *
-   * Reconciling in an effect meant an out-of-range slug — a ?mod= deep link
-   * that is filtered out, or a selection hidden by "installed only" — was
-   * still visible to the fetch effect for one render. That fired a request for
-   * the stale value, then the effect reset the state and fired a second one.
-   * Deriving here means the invalid value never reaches the fetch at all.
-   */
-  /**
-   * Empty until a game is actually chosen.
-   *
-   * This used to fall back to visibleGames[0], so merely opening the page
-   * queried master servers for a game nobody had asked about. A deep link
-   * (?game=…) still selects immediately — that is an explicit choice — but an
-   * unqualified visit now costs nothing until the reader picks one.
-   */
   const effectiveGameSlug = useMemo(
     () => (visibleGames.some((g) => g.slug === gameSlug) ? gameSlug : ""),
     [visibleGames, gameSlug]
   );
 
+  // Load editions when game changes.
+  useEffect(() => {
+    let cancelled = false;
+    if (!effectiveGameSlug) {
+      setEditions([]);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/games/${encodeURIComponent(effectiveGameSlug)}/editions`,
+          { cache: "no-store" }
+        );
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        const list = (json.editions || []) as EditionOption[];
+        if (!cancelled) setEditions(list);
+      } catch {
+        if (!cancelled) setEditions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveGameSlug]);
+
+  const editionOptions = useMemo(() => choosablePublicEditions(editions), [editions]);
+  const editionMode = editionOptions.length >= 2;
+
+  const editionNameBySlug = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of editionOptions) map.set(e.slug, e.name);
+    return map;
+  }, [editionOptions]);
+
   const visibleMods = useMemo(() => {
+    if (editionMode) return [];
     let list = mods.filter(
       (m) => m.baseGameSlug === effectiveGameSlug && (m.baseSupported || m.baseHasServers)
     );
     if (installedOnly) list = list.filter((m) => installedMods.has(m.slug));
     return list;
-  }, [mods, effectiveGameSlug, installedOnly, installedMods]);
+  }, [mods, effectiveGameSlug, installedOnly, installedMods, editionMode]);
 
-  const effectiveModSlug = useMemo(
-    () => (modSlug && visibleMods.some((m) => m.slug === modSlug) ? modSlug : ""),
-    [visibleMods, modSlug]
-  );
+  const effectiveModSlug = useMemo(() => {
+    if (editionMode) return "";
+    return modSlug && visibleMods.some((m) => m.slug === modSlug) ? modSlug : "";
+  }, [visibleMods, modSlug, editionMode]);
 
-  // Guards against an earlier, slower request resolving after a later one and
-  // painting servers for a game the user has already navigated away from.
+  const effectiveEditionSlug = useMemo(() => {
+    if (!editionMode) return "";
+    return editionSlug && editionOptions.some((e) => e.slug === editionSlug) ? editionSlug : "";
+  }, [editionMode, editionSlug, editionOptions]);
+
+  // Keep URL shareable (game + edition/mod).
+  useEffect(() => {
+    if (!catalogLoaded) return;
+    if (urlSyncSkip.current) {
+      urlSyncSkip.current = false;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (effectiveGameSlug) params.set("game", effectiveGameSlug);
+    if (editionMode && effectiveEditionSlug) params.set("edition", effectiveEditionSlug);
+    if (!editionMode && effectiveModSlug) params.set("mod", effectiveModSlug);
+    const qs = params.toString();
+    const next = qs ? `/servers?${qs}` : "/servers";
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current !== next) {
+      router.replace(next, { scroll: false });
+    }
+  }, [
+    catalogLoaded,
+    effectiveGameSlug,
+    effectiveEditionSlug,
+    effectiveModSlug,
+    editionMode,
+    router,
+  ]);
+
   const requestSeq = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
   const viewerGeoFetched = useRef(false);
-  /** Instant switch-back for recently viewed games (base list, before mod filter). */
   const listCache = useRef(new Map<string, ApiResponse>());
 
-  const loadServers = useCallback(async (slug: string, mod: CatalogMod | null, edition = "") => {
-    if (!slug) {
-      setData(null);
-      return;
-    }
-    const seq = ++requestSeq.current;
-    const isStale = () => seq !== requestSeq.current;
+  const loadServers = useCallback(
+    async (slug: string, mod: CatalogMod | null, edition = "", editionLabel = "") => {
+      if (!slug) {
+        setData(null);
+        return;
+      }
+      const seq = ++requestSeq.current;
+      const isStale = () => seq !== requestSeq.current;
 
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
 
-    const applyFilters = (raw: GameServer[]) => {
-      let servers = raw;
-      setModNote("");
-      if (mod) {
-        const filtered = filterServersForMod(servers, mod);
-        setModNote(
-          filtered.matched
-            ? `Showing servers matching ${mod.title}.`
-            : `No gameType match for ${mod.title} — showing all ${slug} servers.`
-        );
-        servers = filtered.servers;
-      } else if (edition) {
-        const needle = edition.toLowerCase();
-        const matched = servers.filter((s) => (s.gameType || "").toLowerCase() === needle);
-        if (matched.length) {
-          setModNote(`Showing servers for edition “${edition}”.`);
+      const applyFilters = (raw: GameServer[]) => {
+        let servers = raw;
+        setFilterNote("");
+        if (mod) {
+          const filtered = filterServersForMod(servers, mod);
+          setFilterNote(
+            filtered.matched
+              ? `Showing servers matching ${mod.title}.`
+              : `No gameType match for ${mod.title} — showing all ${slug} servers.`
+          );
+          servers = filtered.matched ? filtered.servers : servers;
+        } else if (edition) {
+          const needle = edition.toLowerCase();
+          const matched = servers.filter((s) => (s.gameType || "").toLowerCase() === needle);
+          const label = editionLabel || edition;
+          setFilterNote(
+            matched.length
+              ? `Showing servers for ${label}.`
+              : `No live servers for ${label} right now.`
+          );
+          // Exact edition filter only — never silently fall back to all servers.
           servers = matched;
-        } else {
-          setModNote(`No servers tagged ${edition} — showing all ${slug} servers.`);
         }
-      }
-      return servers;
-    };
+        return servers;
+      };
 
-    const cacheKey = slug;
-    const cached = listCache.current.get(cacheKey);
-    if (cached) {
-      const servers = applyFilters(Array.isArray(cached.servers) ? cached.servers : []);
-      setData({ ...cached, servers });
-    } else {
-      setData(null);
-    }
-
-    setLoading(true);
-    if (!cached) setModNote("");
-    try {
-      const needGeo = !viewerGeoFetched.current;
-      const [serversRes, geoRes] = await Promise.all([
-        fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
-          cache: "no-store",
-          signal: ac.signal,
-        }),
-        needGeo
-          ? fetch("/api/geo/me", { cache: "no-store", signal: ac.signal }).catch(() => null)
-          : Promise.resolve(null),
-      ]);
-      if (isStale() || ac.signal.aborted) return;
-
-      const json = serversRes.ok
-        ? ((await serversRes.json()) as ApiResponse)
-        : { supported: false, servers: [] };
-      if (isStale()) return;
-
-      listCache.current.set(cacheKey, json);
-      if (listCache.current.size > 12) {
-        const oldest = listCache.current.keys().next().value;
-        if (oldest) listCache.current.delete(oldest);
+      const cacheKey = slug;
+      const cached = listCache.current.get(cacheKey);
+      if (cached) {
+        const servers = applyFilters(Array.isArray(cached.servers) ? cached.servers : []);
+        setData({ ...cached, servers });
+      } else {
+        setData(null);
       }
 
-      if (geoRes?.ok) {
-        const geo = await geoRes.json();
-        viewerGeoFetched.current = true;
-        setViewer({
-          countryCode: geo.countryCode ?? null,
-          lat: geo.lat ?? null,
-          lon: geo.lon ?? null,
-        });
-      } else if (needGeo) {
-        // Avoid hammering geo/me on every switch after a failure.
-        viewerGeoFetched.current = true;
-      }
+      setLoading(true);
+      if (!cached) setFilterNote("");
+      try {
+        const needGeo = !viewerGeoFetched.current;
+        const [serversRes, geoRes] = await Promise.all([
+          fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
+            cache: "no-store",
+            signal: ac.signal,
+          }),
+          needGeo
+            ? fetch("/api/geo/me", { cache: "no-store", signal: ac.signal }).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+        if (isStale() || ac.signal.aborted) return;
 
-      const servers = applyFilters(Array.isArray(json.servers) ? json.servers : []);
-      setData({ ...json, servers });
-      if (slug && lastViewedSlug.current !== slug) {
-        lastViewedSlug.current = slug;
-        void telemetry.track("server_viewed", { gameSlug: slug });
+        const json = serversRes.ok
+          ? ((await serversRes.json()) as ApiResponse)
+          : { supported: false, servers: [] };
+        if (isStale()) return;
+
+        listCache.current.set(cacheKey, json);
+        if (listCache.current.size > 12) {
+          const oldest = listCache.current.keys().next().value;
+          if (oldest) listCache.current.delete(oldest);
+        }
+
+        if (geoRes?.ok) {
+          const geo = await geoRes.json();
+          viewerGeoFetched.current = true;
+          setViewer({
+            countryCode: geo.countryCode ?? null,
+            lat: geo.lat ?? null,
+            lon: geo.lon ?? null,
+          });
+        } else if (needGeo) {
+          viewerGeoFetched.current = true;
+        }
+
+        const servers = applyFilters(Array.isArray(json.servers) ? json.servers : []);
+        setData({ ...json, servers });
+        if (slug && lastViewedSlug.current !== slug) {
+          lastViewedSlug.current = slug;
+          void telemetry.track("server_viewed", { gameSlug: slug });
+        }
+      } catch {
+        if (ac.signal.aborted || isStale()) return;
+        if (!cached) setData({ supported: false, servers: [] });
+      } finally {
+        if (!isStale()) setLoading(false);
       }
-    } catch {
-      if (ac.signal.aborted || isStale()) return;
-      if (!cached) setData({ supported: false, servers: [] });
-    } finally {
-      if (!isStale()) setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
-    // No game chosen yet — do not query anything. Clearing the selection also
-    // clears stale results so the prompt is not shown above another game's
-    // server list.
     if (!effectiveGameSlug) {
-      // Only cancel any in-flight request. State is deliberately left alone —
-      // the render checks effectiveGameSlug first, so stale results are never
-      // shown, and clearing it here would be a synchronous setState in an
-      // effect for no visible benefit.
       abortRef.current?.abort();
       return;
     }
@@ -355,12 +419,22 @@ export function GlobalServerBrowser({
     const mod = effectiveModSlug
       ? mods.find((m) => m.slug === effectiveModSlug) || null
       : null;
+    const editionLabel = effectiveEditionSlug
+      ? editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug
+      : "";
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadServers(effectiveGameSlug, mod, editionSlug);
+    void loadServers(effectiveGameSlug, mod, effectiveEditionSlug, editionLabel);
     return () => {
       abortRef.current?.abort();
     };
-  }, [effectiveGameSlug, effectiveModSlug, editionSlug, mods, loadServers]);
+  }, [
+    effectiveGameSlug,
+    effectiveModSlug,
+    effectiveEditionSlug,
+    editionNameBySlug,
+    mods,
+    loadServers,
+  ]);
 
   const estFor = useCallback(
     (s: GameServer) => {
@@ -375,9 +449,14 @@ export function GlobalServerBrowser({
     const q = search.trim().toLowerCase();
     let list = data?.servers || [];
     if (q) {
-      list = list.filter((s) =>
-        `${s.name} ${s.map || ""} ${s.gameType || ""} ${s.players}/${s.maxPlayers}`.toLowerCase().includes(q)
-      );
+      list = list.filter((s) => {
+        const editionLabel = s.gameType
+          ? editionNameBySlug.get(s.gameType) || s.gameType
+          : "";
+        return `${s.name} ${s.map || ""} ${s.gameType || ""} ${editionLabel} ${s.players}/${s.maxPlayers}`
+          .toLowerCase()
+          .includes(q);
+      });
     }
     const sorted = list.slice().sort((a, b) => {
       if (sortKey === "players") {
@@ -402,7 +481,7 @@ export function GlobalServerBrowser({
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [data, search, sortKey, sortDir, estFor]);
+  }, [data, search, sortKey, sortDir, estFor, editionNameBySlug]);
 
   const totalPlayers = useMemo(
     () => rows.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
@@ -433,6 +512,12 @@ export function GlobalServerBrowser({
     );
   }
 
+  function selectGame(next: string) {
+    setGameSlug(next);
+    setModSlug("");
+    setEditionSlug("");
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
@@ -440,10 +525,7 @@ export function GlobalServerBrowser({
           Game
           <PremiumSelect
             value={effectiveGameSlug}
-            onChange={(e) => {
-              setGameSlug(e.target.value);
-              setModSlug("");
-            }}
+            onChange={(e) => selectGame(e.target.value)}
             disabled={!catalogLoaded || visibleGames.length === 0}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
           >
@@ -455,21 +537,49 @@ export function GlobalServerBrowser({
             ))}
           </PremiumSelect>
         </label>
-        <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
-          Mod
-          <PremiumSelect
-            value={effectiveModSlug}
-            onChange={(e) => setModSlug(e.target.value)}
-            className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
-          >
-            <option value="">Base game</option>
-            {visibleMods.map((m) => (
-              <option key={m.slug} value={m.slug}>
-                {m.title}
-              </option>
-            ))}
-          </PremiumSelect>
-        </label>
+
+        {editionMode ? (
+          <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
+            Edition
+            <PremiumSelect
+              value={effectiveEditionSlug}
+              onChange={(e) => {
+                setEditionSlug(e.target.value);
+                setModSlug("");
+              }}
+              disabled={!effectiveGameSlug}
+              className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
+            >
+              <option value="">All editions</option>
+              {editionOptions.map((e) => (
+                <option key={e.slug} value={e.slug}>
+                  {e.name}
+                </option>
+              ))}
+            </PremiumSelect>
+          </label>
+        ) : (
+          <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
+            Mod
+            <PremiumSelect
+              value={effectiveModSlug}
+              onChange={(e) => {
+                setModSlug(e.target.value);
+                setEditionSlug("");
+              }}
+              disabled={!effectiveGameSlug}
+              className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40 disabled:opacity-50"
+            >
+              <option value="">Base game</option>
+              {visibleMods.map((m) => (
+                <option key={m.slug} value={m.slug}>
+                  {m.title}
+                </option>
+              ))}
+            </PremiumSelect>
+          </label>
+        )}
+
         <label className="flex min-w-[180px] flex-[1.2] flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Search
           <input
@@ -498,8 +608,14 @@ export function GlobalServerBrowser({
         <button
           type="button"
           onClick={() => {
-            const mod = effectiveModSlug ? mods.find((m) => m.slug === effectiveModSlug) || null : null;
-            void loadServers(effectiveGameSlug, mod);
+            listCache.current.delete(effectiveGameSlug);
+            const mod = effectiveModSlug
+              ? mods.find((m) => m.slug === effectiveModSlug) || null
+              : null;
+            const editionLabel = effectiveEditionSlug
+              ? editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug
+              : "";
+            void loadServers(effectiveGameSlug, mod, effectiveEditionSlug, editionLabel);
           }}
           className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-secondary px-3 text-xs font-bold"
         >
@@ -512,10 +628,11 @@ export function GlobalServerBrowser({
           <Link href="/login?callbackUrl=/servers" className="font-semibold text-primary hover:underline">
             Sign in
           </Link>{" "}
-          and connect the launcher to filter by installed games and mods.
+          and connect the launcher to filter by installed games
+          {editionMode ? "" : " and mods"}.
         </p>
       )}
-      {modNote && <p className="text-xs text-muted-foreground">{modNote}</p>}
+      {filterNote && <p className="text-xs text-muted-foreground">{filterNote}</p>}
       {data?.error && (
         <p className="text-xs font-semibold text-destructive">
           Couldn&apos;t refresh live list: {data.error}
@@ -546,7 +663,11 @@ export function GlobalServerBrowser({
         <EmptyHint icon={Server}>Live listings for {selectedTitle} aren&apos;t wired yet.</EmptyHint>
       ) : rows.length === 0 ? (
         <EmptyHint icon={Server}>
-          {data?.error ? "No servers returned (see error above)." : "No servers match."}
+          {data?.error
+            ? "No servers returned (see error above)."
+            : effectiveEditionSlug
+              ? `No servers for ${editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug}.`
+              : "No servers match."}
         </EmptyHint>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
@@ -564,12 +685,15 @@ export function GlobalServerBrowser({
             <tbody>
               {rows.map((s) => {
                 const addr = `${s.host}:${s.port}`;
+                const editionLabel = s.gameType
+                  ? editionNameBySlug.get(s.gameType) || s.gameType
+                  : null;
                 return (
                   <tr key={s.id || addr} className="border-b border-border last:border-0">
                     <td className="px-3 py-3">
                       <div className="font-semibold">{s.name}</div>
-                      {s.gameType && (
-                        <div className="text-xs text-muted-foreground">{s.gameType}</div>
+                      {editionLabel && (
+                        <div className="text-xs text-muted-foreground">{editionLabel}</div>
                       )}
                       {s.protected && (
                         <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -602,7 +726,11 @@ export function GlobalServerBrowser({
                             Join
                           </a>
                         ) : (
-                          <LauncherInstallButton slug={effectiveGameSlug} label="Install" className="px-3 py-1 text-xs" />
+                          <LauncherInstallButton
+                            slug={effectiveGameSlug}
+                            label="Install"
+                            className="px-3 py-1 text-xs"
+                          />
                         )}
                         <button
                           type="button"
