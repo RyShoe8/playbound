@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import DiscussionReply from "@/lib/models/DiscussionReply";
-import { getGame } from "@/lib/catalog";
+import { getMod } from "@/lib/mods";
 import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
 import { pageMetadata, privateMetadata } from "@/lib/seo";
 import { TopicThread } from "@/components/discussion/TopicThread";
@@ -18,14 +18,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug, topicSlug } = await params;
   const includeTesting = await viewerIsAdmin();
-  const game = await getGame(slug, { includeTesting });
-  if (!game) return privateMetadata("Discussion");
-  if (game.status === "testing") return privateMetadata("Discussion");
+  const mod = await getMod(slug, { includeTesting });
+  if (!mod) return privateMetadata("Discussion");
+  if (mod.status === "testing") return privateMetadata("Discussion");
   try {
     await dbConnect();
     const topic = await DiscussionTopic.findOne({
-      gameSlug: slug,
-      modSlug: null,
+      modSlug: slug,
       slug: topicSlug,
       status: { $ne: "removed" },
     })
@@ -33,31 +32,30 @@ export async function generateMetadata({
       .lean();
     if (!topic) return privateMetadata("Discussion");
     return pageMetadata({
-      title: `${topic.title} · ${game.title} discussion`,
-      description: `Discussion about ${game.title} on PlayBound.`,
-      path: `/games/${slug}/discussion/${topicSlug}`,
+      title: `${topic.title} · ${mod.title} discussion`,
+      description: `Discussion about ${mod.title} on PlayBound.`,
+      path: `/mods/${slug}/discussion/${topicSlug}`,
     });
   } catch {
     return privateMetadata("Discussion");
   }
 }
 
-export default async function DiscussionTopicPage({
+export default async function ModDiscussionTopicPage({
   params,
 }: {
   params: Promise<{ slug: string; topicSlug: string }>;
 }) {
   const { slug, topicSlug } = await params;
   const includeTesting = await viewerIsAdmin();
-  const game = await getGame(slug, { includeTesting });
-  if (!game) notFound();
+  const mod = await getMod(slug, { includeTesting });
+  if (!mod) notFound();
 
   const session = await getServerSession(authOptions);
   await dbConnect();
 
   const topic = await DiscussionTopic.findOne({
-    gameSlug: slug,
-    modSlug: null,
+    modSlug: slug,
     slug: topicSlug,
     status: { $ne: "removed" },
   }).lean();
@@ -80,7 +78,7 @@ export default async function DiscussionTopicPage({
   const topicView = {
     _id: String(topic._id),
     gameSlug: topic.gameSlug,
-    modSlug: topic.modSlug ?? null,
+    modSlug: topic.modSlug ?? slug,
     slug: topic.slug,
     title: topic.title,
     body: topic.body,
@@ -113,7 +111,7 @@ export default async function DiscussionTopicPage({
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
       <TopicThread
-        gameTitle={game.title}
+        gameTitle={mod.title}
         topic={topicView}
         replies={replyViews}
         accepted={accepted ? replyViews.find((r) => r._id === String(accepted._id)) ?? null : null}

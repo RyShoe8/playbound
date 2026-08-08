@@ -12,10 +12,12 @@ type Related = { slug: string; title: string; replyCount: number };
 
 export function TopicComposer({
   gameSlug,
+  modSlug,
   categories,
   isSignedIn,
 }: {
-  gameSlug: string;
+  gameSlug?: string;
+  modSlug?: string;
   categories: CategoryMeta[];
   isSignedIn: boolean;
 }) {
@@ -31,6 +33,11 @@ export function TopicComposer({
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
 
+  const pageBase = modSlug ? `/mods/${modSlug}` : `/games/${gameSlug}`;
+  const apiBase = modSlug ? `/api/mods/${modSlug}/discussions` : `/api/games/${gameSlug}/discussions`;
+  const topicHref = (topicSlug: string) =>
+    modSlug ? `/mods/${modSlug}/discussion/${topicSlug}` : `/games/${gameSlug}/discussion/${topicSlug}`;
+
   useEffect(() => {
     if (title.trim().length < 8) {
       setRelated([]);
@@ -38,9 +45,7 @@ export function TopicComposer({
     }
     const handle = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/games/${gameSlug}/discussions?q=${encodeURIComponent(title.trim())}&limit=5`
-        );
+        const res = await fetch(`${apiBase}?q=${encodeURIComponent(title.trim())}&limit=5`);
         const data = await res.json();
         setRelated(
           (data.topics ?? []).map((t: { slug: string; title: string; replyCount: number }) => ({
@@ -54,13 +59,13 @@ export function TopicComposer({
       }
     }, 400);
     return () => clearTimeout(handle);
-  }, [title, gameSlug]);
+  }, [title, apiBase]);
 
   if (!isSignedIn) {
     return (
       <p className="text-sm text-muted-foreground">
         <Link
-          href={`/login?callbackUrl=/games/${gameSlug}?tab=discussion`}
+          href={`/login?callbackUrl=${encodeURIComponent(`${pageBase}?tab=discussion`)}`}
           className="font-semibold text-primary hover:underline"
         >
           Sign in
@@ -88,7 +93,7 @@ export function TopicComposer({
     setMessage("");
     try {
       const recaptchaToken = await getRecaptchaToken("discussion_topic");
-      const res = await fetch(`/api/games/${gameSlug}/discussions`, {
+      const res = await fetch(apiBase, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -106,7 +111,8 @@ export function TopicComposer({
       const data = await res.json().catch(() => null);
       if (res.ok && data?.topic?.href) {
         void track("discussion_created", {
-          gameId: gameSlug,
+          gameId: gameSlug || undefined,
+          modSlug: modSlug || undefined,
           topicId: data.topic.id || data.topic.slug || undefined,
         });
         router.push(data.topic.href);
@@ -137,10 +143,7 @@ export function TopicComposer({
           <ul className="mt-2 space-y-1">
             {related.map((r) => (
               <li key={r.slug}>
-                <Link
-                  href={`/games/${gameSlug}/discussion/${r.slug}`}
-                  className="text-primary hover:underline"
-                >
+                <Link href={topicHref(r.slug)} className="text-primary hover:underline">
                   {r.title}
                 </Link>
                 <span className="text-muted-foreground"> · {r.replyCount} replies</span>

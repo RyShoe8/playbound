@@ -68,7 +68,7 @@ export function ModsCatalog({
                     · {section.mods.length} mod{section.mods.length === 1 ? "" : "s"}
                   </span>
                 </h2>
-                <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
                   {section.mods.map((mod) => (
                     <li key={mod.slug}>
                       <ModCard

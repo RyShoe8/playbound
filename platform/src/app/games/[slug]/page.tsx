@@ -35,6 +35,7 @@ import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { CommunityCard } from "@/components/discussion/CommunityCard";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { visibleCategories } from "@/lib/discussion/categories";
+import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import {
   getGameLiveStats,
@@ -207,7 +208,7 @@ export default async function GamePage({
 
   // Real review data only — aggregateRating is never synthesised.
   const reviewDocs = await safeQuery(
-    () => Review.find({ gameSlug: game.slug }).select("rating").lean(),
+    () => Review.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).select("rating").lean(),
     [] as { rating?: number }[]
   );
   const rated = reviewDocs.filter((r) => typeof r.rating === "number");
@@ -391,7 +392,7 @@ export default async function GamePage({
           <GuidesTab
             gameSlug={game.slug}
             isSignedIn={Boolean(session?.user)}
-            items={await safeQuery(() => GuidePost.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+            items={await safeQuery(() => GuidePost.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).sort({ createdAt: -1 }).limit(30).lean(), [])}
           />
         )}
         {tab === "achievements" && <AchievementsTab />}
@@ -418,7 +419,7 @@ export default async function GamePage({
           <ReviewList
             gameSlug={game.slug}
             isSignedIn={Boolean(session?.user)}
-            items={await safeQuery(() => Review.find({ gameSlug: game.slug }).sort({ createdAt: -1 }).limit(30).lean(), [])}
+            items={await safeQuery(() => Review.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).sort({ createdAt: -1 }).limit(30).lean(), [])}
             // The game tab shows reviews of every edition together, so each
             // one is labelled with what it actually covers.
             showEditionLabels
@@ -894,6 +895,7 @@ async function DiscussionTabSection({
 
   const mongoQuery: Record<string, unknown> = {
     gameSlug: game.slug,
+    ...gameScopedUgcFilter(),
     status: { $ne: "removed" },
   };
   if (category && category !== "all") mongoQuery.category = category;

@@ -16,6 +16,12 @@ const ReviewSchema = new Schema({
    * deleted and recreated under the same slug.
    */
   editionSlug: { type: String, default: null, index: true },
+  /**
+   * When set, this review is about a catalog mod (not the base game / edition).
+   * gameSlug still stores the mod's baseGameSlug for reporting. List/create on
+   * mod pages filter strictly by modSlug.
+   */
+  modSlug: { type: String, default: null, index: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   username: { type: String, required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
@@ -25,16 +31,15 @@ const ReviewSchema = new Schema({
 });
 
 /**
- * One review per user per edition, plus one per user for the game itself
- * (editionSlug: null).
+ * One review per user per (game, edition, mod) tuple.
+ * - Game-level: editionSlug null, modSlug null
+ * - Edition: editionSlug set, modSlug null
+ * - Mod: modSlug set (editionSlug null); gameSlug = base game
  *
- * This supersedes the old { gameSlug, userId } unique index, which would have
- * stopped someone reviewing both the Official and the Turtle WoW editions of
- * the same game. Mongo does not drop a superseded index automatically, so
- * until `npm run migrate:review-index` runs the old one-review-per-game
- * constraint is still enforced by the database.
+ * Includes modSlug so reviewing a base game does not block reviewing its mods.
  */
-ReviewSchema.index({ gameSlug: 1, editionSlug: 1, userId: 1 }, { unique: true });
+ReviewSchema.index({ gameSlug: 1, editionSlug: 1, modSlug: 1, userId: 1 }, { unique: true });
+ReviewSchema.index({ modSlug: 1, userId: 1 }, { unique: true, partialFilterExpression: { modSlug: { $type: "string" } } });
 
 const Review = models.Review || model("Review", ReviewSchema);
 export default Review;

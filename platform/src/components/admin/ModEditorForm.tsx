@@ -262,7 +262,7 @@ export function ModEditorForm({
             title="Long description"
             hint="80+ words of original editorial. Do not paste the project README — that is duplicate content and will not rank."
             value={form.longDescription ?? ""}
-            minWords={80}
+            minWords={30}
             rows={10}
             onChange={(v) => patch("longDescription", v)}
           />

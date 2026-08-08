@@ -50,6 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     const existing = await Review.findOne({
       gameSlug: slug,
       editionSlug,
+      modSlug: null,
       userId: session.user.id,
     });
     if (existing) {
@@ -66,6 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     await Review.create({
       gameSlug: slug,
       editionSlug,
+      modSlug: null,
       userId: session.user.id,
       username: session.user.username,
       ...body,

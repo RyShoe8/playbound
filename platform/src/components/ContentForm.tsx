@@ -9,9 +9,14 @@ import { useTelemetry } from "@/lib/telemetry";
 
 type Kind = "review" | "guide";
 
-const endpoints: Record<Kind, (slug: string) => string> = {
+const gameEndpoints: Record<Kind, (slug: string) => string> = {
   review: (slug) => `/api/games/${slug}/reviews`,
   guide: (slug) => `/api/games/${slug}/guides`,
+};
+
+const modEndpoints: Record<Kind, (slug: string) => string> = {
+  review: (slug) => `/api/mods/${slug}/reviews`,
+  guide: (slug) => `/api/mods/${slug}/guides`,
 };
 
 const copy: Record<Kind, { cta: string; titlePlaceholder: string; bodyPlaceholder: string; bodyRows: number }> = {
@@ -33,12 +38,15 @@ const copy: Record<Kind, { cta: string; titlePlaceholder: string; bodyPlaceholde
 export function ContentForm({
   kind,
   gameSlug,
+  modSlug,
   isSignedIn,
   editionSlug,
   editionName,
 }: {
   kind: Kind;
-  gameSlug: string;
+  gameSlug?: string;
+  /** When set, post to mod APIs and link to /mods/... */
+  modSlug?: string;
   isSignedIn: boolean;
   /** Set on an edition page so the review attaches to that edition. */
   editionSlug?: string;
@@ -53,11 +61,14 @@ export function ContentForm({
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(kind === "review");
 
+  const pageBase = modSlug ? `/mods/${modSlug}` : `/games/${gameSlug}`;
+  const endpoint = modSlug ? modEndpoints[kind](modSlug) : gameEndpoints[kind](gameSlug || "");
+
   if (!isSignedIn) {
     return (
       <p className="text-sm text-muted-foreground">
         <Link
-          href={`/login?callbackUrl=/games/${gameSlug}?tab=${kind === "review" ? "reviews" : "guides"}`}
+          href={`/login?callbackUrl=${encodeURIComponent(`${pageBase}?tab=${kind === "review" ? "reviews" : "guides"}`)}`}
           className="font-semibold text-primary hover:underline"
         >
           Sign in
@@ -66,7 +77,9 @@ export function ContentForm({
         {kind === "review"
           ? editionName
             ? `rate and review the ${editionName} edition`
-            : "rate and review this game"
+            : modSlug
+              ? "rate and review this mod"
+              : "rate and review this game"
           : "publish a guide"}
         .
       </p>
@@ -93,17 +106,24 @@ export function ContentForm({
     }
     setState("busy");
     try {
-      const res = await fetch(endpoints[kind](gameSlug), {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
-          kind === "review" ? { rating, title, body, editionSlug: editionSlug ?? null } : { title, body }
+          kind === "review"
+            ? { rating, title, body, ...(modSlug ? {} : { editionSlug: editionSlug ?? null }) }
+            : { title, body }
         ),
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
         if (kind === "review") {
-          void track("review_created", { gameSlug, rating, editionSlug });
+          void track("review_created", {
+            gameSlug: gameSlug || undefined,
+            modSlug: modSlug || undefined,
+            rating,
+            editionSlug,
+          });
         }
         setTitle("");
         setBody("");

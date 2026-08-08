@@ -5,15 +5,19 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
-import { DISCUSSION_CATEGORIES } from "@/lib/discussion/categories";
+import { DISCUSSION_CATEGORIES, CATEGORY_META, isValidCategory, visibleCategories } from "@/lib/discussion/categories";
 import User from "@/lib/models/User";
+import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
-import { isValidCategory, visibleCategories } from "@/lib/discussion/categories";
 import { loadPosterGate } from "@/lib/discussion/permissions";
 import { assertTopicRateLimit } from "@/lib/discussion/rateLimit";
 import { accountAllowsLinks, sanitizeTopicInput } from "@/lib/discussion/sanitize";
 import { uniqueTopicSlug } from "@/lib/discussion/slugify";
 import { recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
+
+const MOD_FALLBACK_CATEGORIES = DISCUSSION_CATEGORIES.filter((c) =>
+  ["general", "help", "technical", "guides", "feedback", "announcements", "mods"].includes(c)
+);
 
 const createSchema = z.object({
   title: z.string().min(3).max(150),
@@ -24,11 +28,17 @@ const createSchema = z.object({
   recaptchaToken: z.string().optional(),
 });
 
+async function categoriesForMod(baseGameSlug: string) {
+  const game = await getGame(baseGameSlug);
+  if (game) return visibleCategories(game);
+  return MOD_FALLBACK_CATEGORIES.map((id) => CATEGORY_META[id]);
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = await getGame(slug);
-  if (!game) {
-    return NextResponse.json({ error: "Unknown game" }, { status: 404 });
+  const mod = await getMod(slug);
+  if (!mod) {
+    return NextResponse.json({ error: "Unknown mod" }, { status: 404 });
   }
 
   const url = new URL(req.url);
@@ -41,8 +51,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   await dbConnect();
 
   const query: Record<string, unknown> = {
-    gameSlug: slug,
-    modSlug: null,
+    modSlug: slug,
     status: { $ne: "removed" },
   };
 
@@ -69,18 +78,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   else if (sort === "unanswered") sortSpec = { replyCount: 1, createdAt: -1 };
 
   const topics = await DiscussionTopic.find(query).sort(sortSpec).limit(limit).lean();
+  const categories = await categoriesForMod(mod.baseGameSlug);
 
-  return NextResponse.json({
-    topics,
-    categories: visibleCategories(game),
-  });
+  return NextResponse.json({ topics, categories });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const game = await getGame(slug);
-  if (!game) {
-    return NextResponse.json({ error: "Unknown game" }, { status: 404 });
+  const mod = await getMod(slug);
+  if (!mod) {
+    return NextResponse.json({ error: "Unknown mod" }, { status: 404 });
   }
 
   const session = await getServerSession(authOptions);
@@ -90,9 +97,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   try {
     const raw = createSchema.parse(await req.json());
-    const allowed = visibleCategories(game).map((c) => c.id);
+    const categories = await categoriesForMod(mod.baseGameSlug);
+    const allowed = categories.map((c) => c.id);
     if (!allowed.includes(raw.category)) {
-      return NextResponse.json({ error: "Category not available for this game." }, { status: 400 });
+      return NextResponse.json({ error: "Category not available for this mod." }, { status: 400 });
     }
 
     const captcha = await verifyRecaptcha(raw.recaptchaToken, "discussion_topic");
@@ -122,14 +130,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     }
 
     const topicSlug = await uniqueTopicSlug(slug, clean.title!, async (s) => {
-      const hit = await DiscussionTopic.exists({ gameSlug: slug, modSlug: null, slug: s });
+      const hit = await DiscussionTopic.exists({ modSlug: slug, slug: s });
       return Boolean(hit);
     });
 
     const now = new Date();
     const topic = await DiscussionTopic.create({
-      gameSlug: slug,
-      modSlug: null,
+      gameSlug: mod.baseGameSlug,
+      modSlug: slug,
       authorId: session.user.id,
       authorUsername: session.user.username,
       title: clean.title,
@@ -143,13 +151,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       participantCount: 1,
     });
 
-    await User.updateOne(
-      { _id: session.user.id },
-      { $inc: { "community.topicCount": 1 } }
-    );
+    await User.updateOne({ _id: session.user.id }, { $inc: { "community.topicCount": 1 } });
 
-    revalidatePath(`/games/${slug}`);
-    revalidatePath(`/games/${slug}/discussion/${topicSlug}`);
+    revalidatePath(`/mods/${slug}`);
+    revalidatePath(`/mods/${slug}/discussion/${topicSlug}`);
 
     return NextResponse.json(
       {
@@ -157,7 +162,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         topic: {
           id: String(topic._id),
           slug: topic.slug,
-          href: `/games/${slug}/discussion/${topic.slug}`,
+          href: `/mods/${slug}/discussion/${topic.slug}`,
         },
       },
       { status: 201 }
@@ -166,7 +171,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
-    console.error("Discussion create error:", error);
+    console.error("Mod discussion create error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

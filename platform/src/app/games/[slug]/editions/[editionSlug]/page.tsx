@@ -107,7 +107,7 @@ export default async function EditionPage({ params }: { params: Params }) {
   // null, which is every review predating editions) stay on the game page.
   const reviews = await safeQuery(
     () =>
-      Review.find({ gameSlug: game.slug, editionSlug: edition.slug })
+      Review.find({ gameSlug: game.slug, editionSlug: edition.slug, modSlug: null })
         .sort({ createdAt: -1 })
         .limit(30)
         .lean(),

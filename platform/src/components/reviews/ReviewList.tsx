@@ -47,6 +47,7 @@ export function RatingStars({ value, size = "size-4" }: { value: number; size?: 
  */
 export function ReviewList({
   gameSlug,
+  modSlug,
   isSignedIn,
   items,
   editionSlug,
@@ -55,7 +56,8 @@ export function ReviewList({
   showEditionLabels = false,
   editionNamesBySlug,
 }: {
-  gameSlug: string;
+  gameSlug?: string;
+  modSlug?: string;
   isSignedIn: boolean;
   items: ReviewItem[];
   editionSlug?: string;
@@ -64,7 +66,7 @@ export function ReviewList({
   editionNamesBySlug?: Map<string, string>;
 }) {
   const avg = averageRating(items);
-  const subject = editionName ? `the ${editionName} edition` : "it";
+  const subject = editionName ? `the ${editionName} edition` : modSlug ? "this mod" : "it";
 
   return (
     <div className="space-y-6">
@@ -85,11 +87,12 @@ export function ReviewList({
 
       <div>
         <h3 className="mb-3 text-sm font-bold">
-          {editionName ? `Review ${editionName}` : "Write a review"}
+          {editionName ? `Review ${editionName}` : modSlug ? "Review this mod" : "Write a review"}
         </h3>
         <ContentForm
           kind="review"
           gameSlug={gameSlug}
+          modSlug={modSlug}
           isSignedIn={isSignedIn}
           editionSlug={editionSlug}
           editionName={editionName}
@@ -113,7 +116,7 @@ export function ReviewList({
                 {/* Which edition a review covers changes how to read it, so on
                     the game page — where reviews of several editions sit side
                     by side — each one says what it is about. */}
-                {showEditionLabels && label && (
+                {showEditionLabels && label && gameSlug && (
                   <Link
                     href={`/games/${gameSlug}/editions/${r.editionSlug}`}
                     className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase text-muted-foreground hover:text-foreground"

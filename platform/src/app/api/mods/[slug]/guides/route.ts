@@ -4,7 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import GuidePost from "@/lib/models/GuidePost";
-import { getGame } from "@/lib/catalog";
+import { getMod } from "@/lib/mods";
 
 const guideSchema = z.object({
   title: z.string().min(3).max(150),
@@ -13,8 +13,9 @@ const guideSchema = z.object({
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  if (!(await getGame(slug))) {
-    return NextResponse.json({ error: "Unknown game" }, { status: 404 });
+  const mod = await getMod(slug);
+  if (!mod) {
+    return NextResponse.json({ error: "Unknown mod" }, { status: 404 });
   }
 
   const session = await getServerSession(authOptions);
@@ -26,8 +27,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     const body = guideSchema.parse(await req.json());
     await dbConnect();
     await GuidePost.create({
-      gameSlug: slug,
-      modSlug: null,
+      gameSlug: mod.baseGameSlug,
+      modSlug: slug,
       userId: session.user.id,
       username: session.user.username,
       ...body,
@@ -37,7 +38,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
-    console.error("Guide creation error:", error);
+    console.error("Mod guide creation error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

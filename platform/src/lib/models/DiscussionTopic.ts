@@ -12,6 +12,7 @@ export type TopicStatus = (typeof TOPIC_STATUSES)[number];
 export interface DiscussionTopicDoc {
   _id: Types.ObjectId;
   gameSlug: string;
+  modSlug?: string | null;
   authorId: Types.ObjectId;
   authorUsername: string;
   title: string;
@@ -37,6 +38,8 @@ export interface DiscussionTopicDoc {
 const DiscussionTopicSchema = new Schema(
   {
     gameSlug: { type: String, required: true, index: true },
+    /** When set, topic belongs to a catalog mod; gameSlug is the base game. */
+    modSlug: { type: String, default: null, index: true },
     authorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     authorUsername: { type: String, required: true },
     title: { type: String, required: true, maxlength: 150 },
@@ -72,8 +75,14 @@ const DiscussionTopicSchema = new Schema(
 DiscussionTopicSchema.index({ gameSlug: 1, status: 1, lastReplyAt: -1 });
 DiscussionTopicSchema.index({ gameSlug: 1, category: 1, lastReplyAt: -1 });
 DiscussionTopicSchema.index({ gameSlug: 1, isPinned: -1, lastReplyAt: -1 });
+DiscussionTopicSchema.index({ modSlug: 1, status: 1, lastReplyAt: -1 });
 DiscussionTopicSchema.index({ authorId: 1, createdAt: -1 });
-DiscussionTopicSchema.index({ gameSlug: 1, slug: 1 }, { unique: true });
+// Unique topic slug per game OR per mod (modSlug null for game topics).
+DiscussionTopicSchema.index({ gameSlug: 1, modSlug: 1, slug: 1 }, { unique: true });
+DiscussionTopicSchema.index(
+  { modSlug: 1, slug: 1 },
+  { unique: true, partialFilterExpression: { modSlug: { $type: "string" } } }
+);
 DiscussionTopicSchema.index({ title: "text", body: "text", tags: "text" });
 
 const DiscussionTopic =
