@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage } = require("electron");
 const { spawn, execFileSync } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
@@ -521,7 +522,7 @@ function handleDeepLink(parsed) {
   }
   if (parsed.action === "uninstall" && parsed.slug) {
     showMainWindow();
-    void confirmAndUninstallGame(parsed.slug).catch((err) => {
+    void confirmAndUninstallGame(parsed.slug, parsed.editionSlug || null).catch((err) => {
       console.warn("uninstall failed:", err?.message || err);
       notifyAccount({
         connected: Boolean(loadSettings().launcherToken),
@@ -629,6 +630,108 @@ function loadState() {
 function saveState(state) {
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+const DEFAULT_EDITION_SLUG = "official";
+
+/**
+ * Ensure a game install record has an editions map. Legacy flat entries
+ * (exe/dir at the top level) migrate into editions[editionSlug].
+ */
+function ensureGameInstallRecord(raw) {
+  if (!raw || typeof raw !== "object") {
+    return { editions: {} };
+  }
+  const game = { ...raw };
+  if (!game.editions || typeof game.editions !== "object") {
+    game.editions = {};
+    if (game.exe || game.dir || game.pending) {
+      const ed = game.editionSlug || DEFAULT_EDITION_SLUG;
+      game.editions[ed] = {
+        version: game.version || null,
+        exe: game.exe || null,
+        dir: game.dir || null,
+        installedAt: game.installedAt || null,
+        editionSlug: ed,
+        editionName: game.editionName || "Official",
+        editionType: game.editionType || "official",
+        pending: Boolean(game.pending),
+        scanning: Boolean(game.scanning),
+        connectArgs: Array.isArray(game.connectArgs) ? game.connectArgs : undefined,
+      };
+    }
+  }
+  return game;
+}
+
+function listEditionEntries(game) {
+  const g = ensureGameInstallRecord(game);
+  return Object.values(g.editions || {}).filter((e) => e && typeof e === "object");
+}
+
+function pickPrimaryEdition(game) {
+  const editions = listEditionEntries(game);
+  const ready = editions.filter((e) => e.exe && fs.existsSync(e.exe));
+  ready.sort((a, b) => String(b.installedAt || "").localeCompare(String(a.installedAt || "")));
+  if (ready.length) return ready[0];
+  const pending = editions.find((e) => e.pending);
+  return pending || null;
+}
+
+/** Keep flat summary fields in sync for older callers. */
+function syncGameInstallSummary(game) {
+  const primary = pickPrimaryEdition(game);
+  if (!primary) {
+    delete game.exe;
+    delete game.dir;
+    delete game.version;
+    delete game.editionSlug;
+    delete game.editionName;
+    delete game.editionType;
+    delete game.pending;
+    delete game.scanning;
+    delete game.connectArgs;
+    return game;
+  }
+  game.version = primary.version || null;
+  game.exe = primary.exe || null;
+  game.dir = primary.dir || null;
+  game.installedAt = primary.installedAt || null;
+  game.editionSlug = primary.editionSlug || DEFAULT_EDITION_SLUG;
+  game.editionName = primary.editionName || "Official";
+  game.editionType = primary.editionType || "official";
+  game.pending = Boolean(primary.pending) && !(primary.exe && fs.existsSync(primary.exe));
+  game.scanning = Boolean(primary.scanning);
+  if (Array.isArray(primary.connectArgs)) game.connectArgs = primary.connectArgs;
+  else delete game.connectArgs;
+  return game;
+}
+
+function getEditionRecord(state, slug, editionSlug) {
+  const game = ensureGameInstallRecord(state[slug]);
+  const ed = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  return game.editions?.[ed] || null;
+}
+
+function editionInstallDir(slug, editionSlug) {
+  return path.join(DEFAULT_GAMES_DIR, slug, editionSlug || DEFAULT_EDITION_SLUG);
+}
+
+function installedEditionsPayload(slug) {
+  const state = loadState();
+  const game = ensureGameInstallRecord(state[slug]);
+  return listEditionEntries(game)
+    .filter((e) => (e.exe && fs.existsSync(e.exe)) || e.pending)
+    .map((e) => ({
+      editionSlug: e.editionSlug || DEFAULT_EDITION_SLUG,
+      editionName: e.editionName || "Official",
+      editionType: e.editionType || "official",
+      version: e.version || null,
+      dir: e.dir || null,
+      exe: e.exe && fs.existsSync(e.exe) ? e.exe : null,
+      pending: Boolean(e.pending) && !(e.exe && fs.existsSync(e.exe)),
+      connectArgs: Array.isArray(e.connectArgs) ? e.connectArgs : null,
+    }));
 }
 
 function loadSettings() {
@@ -753,6 +856,12 @@ function catalogEntryFromEdition(edition) {
       installRoot: cfg.installRoot || undefined,
       connectArgs: Array.isArray(cfg.connectArgs) ? cfg.connectArgs : undefined,
       note: cfg.note || undefined,
+      postInstallDiscord: cfg.postInstallDiscord || undefined,
+      postInstallEqw: Boolean(cfg.postInstallEqw),
+      overlayUrl: cfg.overlayUrl || undefined,
+      overlayFileName: cfg.overlayFileName || undefined,
+      requiresBaseDir: Boolean(cfg.requiresBaseDir),
+      checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
       art: Array.isArray(edition.art) ? edition.art : ["#312e81", "#a78bfa"],
       coverImage: edition.coverImage || null,
       approxSize: edition.sizeMB ? `~${edition.sizeMB} MB` : "",
@@ -760,6 +869,7 @@ function catalogEntryFromEdition(edition) {
       editionName: edition.editionName,
       editionType: edition.editionType || "official",
       editionId: edition.editionId,
+      editionLinks: edition.links || null,
     };
   }
   return null;
@@ -1072,6 +1182,25 @@ async function downloadTo(url, dest, attempts = 3) {
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
+async function verifyChecksumMd5(filePath, expectedMd5) {
+  if (!expectedMd5) return;
+  const want = String(expectedMd5).trim().toLowerCase();
+  if (!/^[a-f0-9]{32}$/.test(want)) return;
+  const hash = crypto.createHash("md5");
+  await new Promise((resolve, reject) => {
+    const stream = fs.createReadStream(filePath);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("error", reject);
+    stream.on("end", resolve);
+  });
+  const got = hash.digest("hex");
+  if (got !== want) {
+    throw new Error(
+      `Download checksum mismatch (expected ${want}, got ${got}). Try again or open the project site for a manual download.`
+    );
+  }
+}
+
 async function reportInstall(slug) {
   try {
     const base = getApiBase();
@@ -1364,6 +1493,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
     editionSlug: entry?.editionSlug,
     editionName: entry?.editionName,
     editionType: entry?.editionType,
+    connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
   });
   notifyInstallDetected(slug);
   sendProgress({ phase: "done" });
@@ -1388,7 +1518,11 @@ function startInstallerPoll(slug, entry, version) {
   stopInstallerPoll();
   stopExeScan(slug);
   installerPollSlug = slug;
-  markPendingInstall(slug, version);
+  markPendingInstall(slug, version, {
+    editionSlug: entry?.editionSlug,
+    editionName: entry?.editionName,
+    editionType: entry?.editionType,
+  });
 
   const started = Date.now();
   const maxMs = 10 * 60 * 1000;
@@ -1560,41 +1694,56 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
   }
 }
 
-function markInstalled(slug, { version, exe, dir, editionSlug, editionName, editionType }) {
+function markInstalled(slug, { version, exe, dir, editionSlug, editionName, editionType, connectArgs }) {
   stopExeScan(slug);
   stopInstallerPoll();
   const state = loadState();
-  const prev = state[slug] || {};
-  state[slug] = {
+  const game = ensureGameInstallRecord(state[slug]);
+  const ed = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  const prev = game.editions[ed] || {};
+  game.editions[ed] = {
     version,
     exe,
     dir,
     installedAt: new Date().toISOString(),
-    editionSlug: editionSlug || prev.editionSlug || "official",
+    editionSlug: ed,
     editionName: editionName || prev.editionName || "Official",
     editionType: editionType || prev.editionType || "official",
+    connectArgs: Array.isArray(connectArgs)
+      ? connectArgs
+      : Array.isArray(prev.connectArgs)
+        ? prev.connectArgs
+        : undefined,
   };
+  syncGameInstallSummary(game);
+  state[slug] = game;
   saveState(state);
   clearPendingInstaller(slug);
   void syncLibrary(slug, "install", version);
 }
 
 /** Show the game in Library immediately while we look for the exe. */
-function markPendingInstall(slug, version) {
+function markPendingInstall(slug, version, editionExtra = {}) {
   const state = loadState();
-  const existing = state[slug];
+  const game = ensureGameInstallRecord(state[slug]);
+  const ed = editionExtra.editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  const existing = game.editions[ed];
   if (existing?.exe && fs.existsSync(existing.exe)) return existing;
   const alreadyPending = Boolean(existing?.pending);
-  state[slug] = {
+  game.editions[ed] = {
+    ...(existing || {}),
     pending: true,
-    // Full-drive scan is delayed; known-path poll first.
     scanning: false,
     version: version || existing?.version || null,
     installedAt: existing?.installedAt || new Date().toISOString(),
+    editionSlug: ed,
+    editionName: editionExtra.editionName || existing?.editionName || "Official",
+    editionType: editionExtra.editionType || existing?.editionType || "official",
   };
+  syncGameInstallSummary(game);
+  state[slug] = game;
   saveState(state);
   setPendingInstaller(slug, version);
-  // Skip redundant pending IPC — re-renders Library and causes flicker.
   if (!alreadyPending && win && !win.isDestroyed()) {
     win.webContents.send("install-scan", {
       slug,
@@ -1602,15 +1751,19 @@ function markPendingInstall(slug, version) {
       message: `Waiting for ${slug} install to finish…`,
     });
   }
-  return state[slug];
+  return game.editions[ed];
 }
 
 function setPendingScanning(slug, scanning) {
   const state = loadState();
-  const info = state[slug];
+  const game = ensureGameInstallRecord(state[slug]);
+  const ed = game.editionSlug || DEFAULT_EDITION_SLUG;
+  const info = game.editions[ed];
   if (!info?.pending) return;
   info.scanning = Boolean(scanning);
-  state[slug] = info;
+  game.editions[ed] = info;
+  syncGameInstallSummary(game);
+  state[slug] = game;
   saveState(state);
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-scan", {
@@ -1620,15 +1773,23 @@ function setPendingScanning(slug, scanning) {
   }
 }
 
-function dismissPendingInstall(slug) {
+function dismissPendingInstall(slug, editionSlug = null) {
   stopExeScan(slug);
   stopInstallerPoll();
   const state = loadState();
-  const info = state[slug];
+  const game = ensureGameInstallRecord(state[slug]);
+  const ed = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  const info = game.editions[ed];
   if (info?.pending && !(info.exe && fs.existsSync(info.exe))) {
-    delete state[slug];
-    saveState(state);
+    delete game.editions[ed];
   }
+  if (Object.keys(game.editions).length === 0) {
+    delete state[slug];
+  } else {
+    syncGameInstallSummary(game);
+    state[slug] = game;
+  }
+  saveState(state);
   clearPendingInstaller(slug);
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-scan", { slug, phase: "dismissed" });
@@ -1935,29 +2096,50 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   }
 
   const editionExtra = {
-    editionSlug: entry.editionSlug || editionMeta?.editionSlug || "official",
+    editionSlug: entry.editionSlug || editionMeta?.editionSlug || DEFAULT_EDITION_SLUG,
     editionName: entry.editionName || editionMeta?.editionName || "Official",
     editionType: entry.editionType || editionMeta?.editionType || "official",
+    connectArgs: Array.isArray(entry.connectArgs) ? entry.connectArgs : undefined,
   };
 
-  const gameDir = targetDir || path.join(DEFAULT_GAMES_DIR, entry.slug);
+  if (entry.kind === "locate-then-zip") {
+    return installLocateThenZip(slug, entry, editionExtra);
+  }
+
+  const gameDir =
+    targetDir ||
+    (editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
+      ? editionInstallDir(entry.slug, editionExtra.editionSlug)
+      : path.join(DEFAULT_GAMES_DIR, entry.slug));
 
   sendProgress({ phase: "resolving" });
   const dl = await resolveDownload(entry);
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", dl.name);
-  await downloadTo(dl.url, downloadPath);
+  try {
+    await downloadTo(dl.url, downloadPath);
+  } catch (err) {
+    const site = entry.editionLinks?.website || entry.url;
+    const hint =
+      site && String(site).startsWith("http")
+        ? ` Open ${site} if the mirror is down.`
+        : "";
+    throw new Error(`${err.message || err}.${hint}`);
+  }
+  if (entry.checksumMd5) {
+    await verifyChecksumMd5(downloadPath, entry.checksumMd5);
+  }
 
   if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
     sendProgress({ phase: "installer-ready" });
     await shell.openPath(downloadPath);
     const known = findKnownExecutable(entry);
     if (known) {
-      const result = markInstalledFromExe(slug, entry, known, dl.version);
+      const result = markInstalledFromExe(slug, { ...entry, ...editionExtra }, known, dl.version);
       void reportInstall(slug);
       void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
       return result;
     }
-    startInstallerPoll(slug, entry, dl.version);
+    startInstallerPoll(slug, { ...entry, ...editionExtra }, dl.version);
     void reportInstall(slug);
     void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
     return { status: "installer-opened", version: dl.version };
@@ -1994,6 +2176,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   }
 
   sendProgress({ phase: "extracting" });
+  // Only wipe the edition-specific folder — never the parent game folder.
   await fsp.rm(gameDir, { recursive: true, force: true });
   await extractZip(downloadPath, gameDir);
   await fsp.rm(downloadPath, { force: true });
@@ -2002,11 +2185,20 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   if (!exe) throw new Error("Extracted, but no executable found");
 
   await processAddons(entry, gameDir, selectedAddons);
+  await maybeApplyEditionPostInstall(entry, gameDir);
   markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
   sendProgress({ phase: "done" });
   void reportInstall(slug);
   void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
-  return { status: "installed", version: dl.version, dir: gameDir };
+
+  const postNote = await maybeOpenEditionPostInstallHandoff(entry, gameDir);
+  return {
+    status: "installed",
+    version: dl.version,
+    dir: gameDir,
+    editionSlug: editionExtra.editionSlug,
+    note: postNote || null,
+  };
 }
 
 async function processAddons(entry, gameDir, selectedAddons) {
@@ -2018,6 +2210,145 @@ async function processAddons(entry, gameDir, selectedAddons) {
     const dest = path.join(gameDir, addon.fileName);
     await downloadTo(addon.url, dest);
   }
+}
+
+/**
+ * Quarm: drop latest eqw.dll into the client folder when a GitHub recipe
+ * (or default CoastalRedwood repo) is available.
+ */
+async function maybeApplyEditionPostInstall(entry, gameDir) {
+  if (!entry?.postInstallEqw && entry?.editionSlug !== "project-quarm") return;
+  try {
+    const repo = "CoastalRedwood/eqw_takp";
+    const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+      headers: { accept: "application/vnd.github+json", "user-agent": "playbound-launcher" },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const asset = (data.assets || []).find((a) => /\.dll$/i.test(a.name) || /eqw/i.test(a.name));
+    const url = asset?.browser_download_url;
+    if (!url) return;
+    const destName = asset.name.toLowerCase().endsWith(".dll") ? asset.name : "eqw.dll";
+    const dest = path.join(gameDir, destName === "eqw.dll" ? "eqw.dll" : destName);
+    sendProgress({ phase: "downloading", addon: "eqw.dll" });
+    await downloadTo(url, dest);
+    if (destName.toLowerCase() !== "eqw.dll") {
+      await fsp.copyFile(dest, path.join(gameDir, "eqw.dll")).catch(() => {});
+    }
+  } catch (err) {
+    console.warn("eqw.dll post-install skipped:", err?.message || err);
+  }
+}
+
+async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
+  // Only Quarm-style recipes (explicit flag / URL) — not every edition with a Discord link.
+  const discord =
+    (typeof entry?.postInstallDiscord === "string" && entry.postInstallDiscord) ||
+    (entry?.postInstallDiscord === true &&
+      (entry?.editionLinks?.discord || "https://discord.gg/projectquarm")) ||
+    (entry?.editionSlug === "project-quarm"
+      ? entry?.editionLinks?.discord || "https://discord.gg/projectquarm"
+      : null);
+  if (!discord) return null;
+  try {
+    await shell.openExternal(discord);
+  } catch {
+    /* ignore */
+  }
+  if (gameDir && fs.existsSync(gameDir)) {
+    try {
+      await shell.openPath(gameDir);
+    } catch {
+      /* ignore */
+    }
+  }
+  return "Base client installed. Download the latest patch from Discord #server-files and extract it into the opened folder.";
+}
+
+/**
+ * P99-style: user picks an existing Titanium client folder, we copy it into
+ * the edition dir, then merge an overlay zip (P99Files) without wiping assets.
+ */
+async function installLocateThenZip(slug, entry, editionExtra) {
+  const result = await dialog.showOpenDialog(win || undefined, {
+    title: `Select existing ${entry.title || slug} / Titanium folder (eqgame.exe)`,
+    properties: ["openDirectory"],
+  });
+  if (result.canceled || !result.filePaths?.[0]) {
+    const wiki =
+      entry?.editionLinks?.wiki ||
+      entry?.note ||
+      "https://www.project1999.com/";
+    try {
+      await shell.openExternal(
+        typeof wiki === "string" && wiki.startsWith("http") ? wiki : "https://wiki.project1999.com/"
+      );
+    } catch {
+      /* ignore */
+    }
+    return {
+      status: "cancelled",
+      note: "Select a legal Titanium EverQuest install folder, then try Install again.",
+    };
+  }
+
+  let sourceDir = result.filePaths[0];
+  const sourceExe = path.join(sourceDir, "eqgame.exe");
+  if (!fs.existsSync(sourceExe)) {
+    // Allow picking a parent; search one level down.
+    const nested = fs
+      .readdirSync(sourceDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => path.join(sourceDir, d.name))
+      .find((dir) => fs.existsSync(path.join(dir, "eqgame.exe")));
+    if (nested) sourceDir = nested;
+    else {
+      throw new Error("That folder does not contain eqgame.exe. Pick your Titanium EverQuest install.");
+    }
+  }
+
+  const gameDir =
+    editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
+      ? editionInstallDir(slug, editionExtra.editionSlug)
+      : path.join(DEFAULT_GAMES_DIR, slug);
+
+  sendProgress({ phase: "extracting" });
+  await fsp.rm(gameDir, { recursive: true, force: true });
+  await fsp.mkdir(path.dirname(gameDir), { recursive: true });
+  await fsp.cp(sourceDir, gameDir, { recursive: true });
+
+  const overlayUrl = entry.overlayUrl || entry.url;
+  if (!overlayUrl) throw new Error("No overlay zip URL configured for this edition.");
+
+  sendProgress({ phase: "resolving" });
+  const overlayName = entry.overlayFileName || entry.fileName || "overlay.zip";
+  const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
+  await downloadTo(overlayUrl, downloadPath);
+  sendProgress({ phase: "extracting" });
+  // Merge overlay into the copied Titanium tree (do not delete gameDir).
+  await extractZip(downloadPath, gameDir);
+  await fsp.rm(downloadPath, { force: true });
+
+  const exe = findExecutable(gameDir, entry.exeHint || "eqgame");
+  if (!exe) throw new Error("Install copied, but eqgame.exe was not found.");
+
+  const version = entry.versionLabel || "located+overlay";
+  markInstalled(slug, {
+    version,
+    exe,
+    dir: gameDir,
+    ...editionExtra,
+    connectArgs: editionExtra.connectArgs || entry.connectArgs || ["patchme"],
+  });
+  sendProgress({ phase: "done" });
+  void reportInstall(slug);
+  void telemetry.editionInstalled(editionInfoFor(slug, { version, ...editionExtra }));
+  return {
+    status: "installed",
+    version,
+    dir: gameDir,
+    editionSlug: editionExtra.editionSlug,
+  };
 }
 
 async function locateGameExecutable(slug) {
@@ -2175,14 +2506,43 @@ async function installMod(slug, baseDirOverride) {
   return placeModFiles(slug, install, baseDirOverride);
 }
 
-async function playGame(slug, join = null) {
+async function playGame(slug, join = null, editionSlug = null) {
   const state = loadState();
-  const info = state[slug];
-  if (!info || !fs.existsSync(info.exe)) throw new Error("Not installed");
+  const game = ensureGameInstallRecord(state[slug]);
+  const edSlug = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  let info = game.editions?.[edSlug] || null;
+  if ((!info || !(info.exe && fs.existsSync(info.exe))) && game.exe && fs.existsSync(game.exe)) {
+    info = {
+      exe: game.exe,
+      dir: game.dir,
+      version: game.version,
+      editionSlug: game.editionSlug,
+      connectArgs: game.connectArgs,
+    };
+  }
+  if (!info || !info.exe || !fs.existsSync(info.exe)) {
+    throw new Error(editionSlug ? "That edition is not installed" : "Not installed");
+  }
+
+  // Prefer connectArgs stored on the edition install; fall back to catalog entry.
+  let connectArgs = Array.isArray(info.connectArgs) ? info.connectArgs : null;
   const entry = catalog.find((e) => e.slug === slug);
+  if (!connectArgs && Array.isArray(entry?.connectArgs)) connectArgs = entry.connectArgs;
+
+  // Edition recipe may not be on the base catalog — refresh from launcher editions API.
+  if (!connectArgs && editionSlug) {
+    try {
+      const ed = await resolveEditionForInstall(slug, editionSlug);
+      const fromEd = catalogEntryFromEdition(ed);
+      if (Array.isArray(fromEd?.connectArgs)) connectArgs = fromEd.connectArgs;
+    } catch {
+      /* offline */
+    }
+  }
+
   const args = [];
-  if (join?.host && join?.port && Array.isArray(entry?.connectArgs)) {
-    for (const template of entry.connectArgs) {
+  if (join?.host && join?.port && Array.isArray(connectArgs)) {
+    for (const template of connectArgs) {
       args.push(
         String(template)
           .replaceAll("{host}", join.host)
@@ -2190,22 +2550,44 @@ async function playGame(slug, join = null) {
           .replaceAll("{name}", join.name || "")
       );
     }
+  } else if (Array.isArray(connectArgs) && connectArgs.length) {
+    // Static args like "patchme" (P99) — apply when not templated for server join.
+    const staticArgs = connectArgs.filter((t) => !String(t).includes("{host}"));
+    args.push(...staticArgs.map(String));
   }
-  spawnTrackedExe(slug, info.exe, args);
-  // Opens a play session; the matching sendGameExited() closes it with a real
-  // duration rather than guessing one.
-  void telemetry.editionLaunched(editionInfoFor(slug, { version: info.version }));
 
-  // Track recently played
+  spawnTrackedExe(slug, info.exe, args);
+  void telemetry.editionLaunched(
+    editionInfoFor(slug, {
+      version: info.version,
+      editionSlug: info.editionSlug || edSlug,
+    })
+  );
+
   const settings = loadSettings();
   if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
   settings.recentlyPlayed[slug] = { lastPlayed: new Date().toISOString() };
   saveSettings(settings);
 
+  // Touch summary so "primary" edition matches last played.
+  try {
+    const st = loadState();
+    const g = ensureGameInstallRecord(st[slug]);
+    if (g.editions?.[edSlug]) {
+      g.editions[edSlug].installedAt = new Date().toISOString();
+      syncGameInstallSummary(g);
+      st[slug] = g;
+      saveState(st);
+    }
+  } catch {
+    /* ignore */
+  }
+
   return {
     status: "launched",
-    connect: args.length > 0 ? `${join.host}:${join.port}` : null,
-    manualConnect: Boolean(join?.host && join?.port && !entry?.connectArgs?.length),
+    connect: args.length > 0 && join?.host ? `${join.host}:${join.port}` : null,
+    manualConnect: Boolean(join?.host && join?.port && !connectArgs?.length),
+    editionSlug: info.editionSlug || edSlug,
   };
 }
 
@@ -2397,7 +2779,7 @@ async function openModFolder(slug) {
   return { status: "opened", dir: info.dir };
 }
 
-async function confirmAndUninstallGame(slug) {
+async function confirmAndUninstallGame(slug, editionSlug = null) {
   const state = loadState();
   const info = state[slug];
   if (!info) throw new Error("Game is not installed");
@@ -2409,11 +2791,13 @@ async function confirmAndUninstallGame(slug) {
     defaultId: 1,
     cancelId: 1,
     title: "Uninstall game",
-    message: `Uninstall ${title}?`,
-    detail: "This removes the install folder from this PC.",
+    message: editionSlug ? `Uninstall ${title} — ${editionSlug}?` : `Uninstall ${title}?`,
+    detail: editionSlug
+      ? "Removes only this edition folder. Other editions stay installed."
+      : "This removes all PlayBound edition folders for this game from this PC.",
   });
   if (response !== 0) return { status: "cancelled" };
-  return uninstallGame(slug);
+  return uninstallGame(slug, editionSlug || null);
 }
 
 async function confirmAndUninstallMod(slug) {
@@ -2435,37 +2819,68 @@ async function confirmAndUninstallMod(slug) {
   return uninstallMod(slug);
 }
 
-async function uninstallGame(slug) {
+async function uninstallGame(slug, editionSlug = null) {
   stopExeScan(slug);
   stopInstallerPoll();
   const state = loadState();
-  const info = state[slug];
-  if (!info) return { status: "not-installed" };
-  // Pending-only: just drop tracking (no folder to delete).
-  if (info.pending && !(info.exe && fs.existsSync(info.exe))) {
-    delete state[slug];
+  const game = ensureGameInstallRecord(state[slug]);
+  if (!state[slug]) return { status: "not-installed" };
+
+  if (editionSlug) {
+    if (!game.editions?.[editionSlug]) {
+      return { status: "not-installed", editionSlug };
+    }
+    const info = game.editions[editionSlug];
+    if (info.pending && !(info.exe && fs.existsSync(info.exe))) {
+      delete game.editions[editionSlug];
+    } else {
+      if (info.dir) {
+        // Never delete a sibling edition directory — only this edition's folder.
+        await fsp.rm(info.dir, { recursive: true, force: true });
+      }
+      delete game.editions[editionSlug];
+    }
+    if (Object.keys(game.editions).length === 0) {
+      delete state[slug];
+    } else {
+      syncGameInstallSummary(game);
+      state[slug] = game;
+    }
     saveState(state);
     clearPendingInstaller(slug);
-    return { status: "dismissed" };
+    void syncLibrary(slug, "uninstall");
+    void telemetry.editionUninstalled(editionInfoFor(slug, { editionSlug }));
+    return { status: "uninstalled", dir: info?.dir || null, editionSlug };
   }
-  if (info.dir) await fsp.rm(info.dir, { recursive: true, force: true });
+
+  // Uninstall all editions for the game when no editionSlug is passed.
+  for (const info of listEditionEntries(game)) {
+    if (info.dir) await fsp.rm(info.dir, { recursive: true, force: true });
+  }
+  // Legacy flat dir if any remain outside editions/
+  if (game.dir && !Object.values(game.editions || {}).some((e) => e.dir === game.dir)) {
+    await fsp.rm(game.dir, { recursive: true, force: true });
+  }
   delete state[slug];
   saveState(state);
   clearPendingInstaller(slug);
   void syncLibrary(slug, "uninstall");
   void telemetry.editionUninstalled(editionInfoFor(slug));
-  return { status: "uninstalled", dir: info.dir };
+  return { status: "uninstalled", dir: game.dir || null };
 }
 
 function listInstalledGames() {
   const state = loadState();
   const games = [];
-  for (const [slug, info] of Object.entries(state)) {
+  for (const [slug, raw] of Object.entries(state)) {
     if (slug === "__mods__") continue;
-    if (!info || typeof info !== "object") continue;
-    const ready = Boolean(info.exe && fs.existsSync(info.exe));
-    const pending = Boolean(info.pending) && !ready;
-    if (!ready && !pending) continue;
+    if (!raw || typeof raw !== "object") continue;
+    const game = ensureGameInstallRecord(raw);
+    syncGameInstallSummary(game);
+    const editions = installedEditionsPayload(slug);
+    const ready = Boolean(game.exe && fs.existsSync(game.exe));
+    const pending = Boolean(game.pending) && !ready;
+    if (!ready && !pending && editions.length === 0) continue;
     const entry = catalog.find((e) => e.slug === slug);
     games.push({
       slug,
@@ -2480,11 +2895,14 @@ function listInstalledGames() {
       platforms: Array.isArray(entry?.platforms) ? entry.platforms : [],
       browserPlayable: Boolean(entry?.browserPlayable),
       steamDeck: Boolean(entry?.steamDeck),
-      version: info.version || null,
-      dir: info.dir || null,
-      exe: ready ? info.exe : null,
+      version: game.version || null,
+      dir: game.dir || null,
+      exe: ready ? game.exe : null,
       pending,
-      scanning: Boolean(pending && info.scanning),
+      scanning: Boolean(pending && game.scanning),
+      editionSlug: game.editionSlug || null,
+      editionName: game.editionName || null,
+      installedEditions: editions,
     });
   }
   games.sort((a, b) => String(a.title).localeCompare(String(b.title)));
@@ -2604,7 +3022,9 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));
-ipcMain.handle("play", (_event, slug, join) => playGame(slug, join || null));
+ipcMain.handle("play", (_event, slug, join, editionSlug) =>
+  playGame(slug, join || null, editionSlug || null)
+);
 ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
 ipcMain.handle("post-telemetry", async (_event, payload) => {
   try {
@@ -2643,7 +3063,9 @@ ipcMain.handle("post-telemetry", async (_event, payload) => {
     return { ok: false };
   }
 });
-ipcMain.handle("uninstall", (_event, slug) => uninstallGame(slug));
+ipcMain.handle("uninstall", (_event, slug, editionSlug) =>
+  uninstallGame(slug, editionSlug || null)
+);
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
 ipcMain.handle("uninstall-mod", (_event, slug) => uninstallMod(slug));
@@ -3284,7 +3706,8 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
   if (!entry) return null;
   const state = loadState();
-  const info = state[slug];
+  const info = syncGameInstallSummary(ensureGameInstallRecord(state[slug]));
+  const editionsInstalled = installedEditionsPayload(slug);
 
   let rich = null;
   try {
@@ -3334,11 +3757,13 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     approxSize: rich?.approxSize || entry.approxSize || "",
     multiplayer: Boolean(rich?.multiplayer ?? entry.multiplayer),
     mods,
-    installed: Boolean(info?.exe && fs.existsSync(info.exe)),
+    installed:
+      editionsInstalled.some((e) => e.exe) || Boolean(info?.exe && fs.existsSync(info.exe)),
     installedPath: info?.dir || null,
     version: info?.version || null,
     installedEditionSlug: info?.editionSlug || null,
     installedEditionName: info?.editionName || null,
+    installedEditions: editionsInstalled,
     isInstallerKind:
       entry.kind === "github-installer" || entry.kind === "direct-installer",
     pendingInstaller: Boolean(info?.pending) || getPendingInstaller()?.slug === slug,

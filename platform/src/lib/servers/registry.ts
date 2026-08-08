@@ -1,5 +1,6 @@
 import { getServerLobbyAuth } from "@/lib/catalog";
 import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
+import { fetchEverQuestServers } from "./providers/everquest";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenRaServers } from "./providers/openra";
 import { fetchRemoteMaster } from "./providers/remote";
@@ -42,6 +43,7 @@ const providers: Record<string, ServerProvider> = {
     fetchServers: fetchZeroKServers,
   },
   "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
+  everquest: { slug: "everquest", fetchServers: fetchEverQuestServers },
 };
 
 /** Slugs that support multiplayer servers but have no adapter yet. */

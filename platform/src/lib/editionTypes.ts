@@ -151,6 +151,20 @@ export interface EditionInstallConfig {
     installRoot?: string | null;
     connectArgs?: string[];
     note?: string | null;
+    /** MD5 of a pinned direct zip (hex). */
+    checksumMd5?: string | null;
+    md5?: string | null;
+    /** After zip extract: open Discord for manual patch (Quarm). */
+    postInstallDiscord?: string | boolean | null;
+    /** Fetch latest eqw.dll from CoastalRedwood/eqw_takp. */
+    postInstallEqw?: boolean;
+    /** Overlay zip URL for locate-then-zip (P99Files). */
+    overlayUrl?: string | null;
+    overlayFileName?: string | null;
+    /** Prompt user to pick an existing base client folder first. */
+    requiresBaseDir?: boolean;
+    /** Numbered get-to-playing steps shown on the edition page + launcher. */
+    steps?: { platform?: string; text: string; command?: string | null }[];
   };
   external_installer?: { url?: string; instructions?: string };
   manual?: {

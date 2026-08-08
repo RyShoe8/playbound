@@ -22,7 +22,6 @@ export const DRAFT_ON_CREATE = new Set([
   "openarena",
   "pixreveal",
   "gamebuddies-io",
-  "everquest",
   "star-wars-galaxies",
   "starcraft",
   "diablo-2",
@@ -163,11 +162,14 @@ async function main() {
             qualityBar: g.qualityBar ?? null,
             ...(launcher && !prev.launcherInstall ? { launcherInstall: launcher } : {}),
             ...(launcher && prevStatus === "draft" ? { launcherInstall: launcher } : {}),
+            ...(g.status === "published"
+              ? { status: "published", published: true }
+              : {}),
           },
         }
       );
       refreshedDraft++;
-      console.log(`DRAFT  ${g.slug}`);
+      console.log(`DRAFT  ${g.slug}${g.status === "published" ? "→published" : ""}`);
       continue;
     }
 

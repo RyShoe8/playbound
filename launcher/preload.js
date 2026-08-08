@@ -16,10 +16,11 @@ contextBridge.exposeInMainWorld("playbound", {
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
-  play: (slug, join) => ipcRenderer.invoke("play", slug, join || null),
+  play: (slug, join, editionSlug) =>
+    ipcRenderer.invoke("play", slug, join || null, editionSlug || null),
   playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
   postTelemetry: (payload) => ipcRenderer.invoke("post-telemetry", payload),
-  uninstall: (slug) => ipcRenderer.invoke("uninstall", slug),
+  uninstall: (slug, editionSlug) => ipcRenderer.invoke("uninstall", slug, editionSlug || null),
   getInstalled: () => ipcRenderer.invoke("get-installed"),
   getInstalledMods: () => ipcRenderer.invoke("get-installed-mods"),
   uninstallMod: (slug) => ipcRenderer.invoke("uninstall-mod", slug),

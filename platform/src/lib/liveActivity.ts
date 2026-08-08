@@ -77,6 +77,23 @@ async function multiplayerForGame(slug: string): Promise<{ players: number; serv
   }
 }
 
+/** Sum master-server rows tagged with a specific edition slug as gameType. */
+async function multiplayerForEdition(
+  gameSlug: string,
+  editionSlug: string
+): Promise<{ players: number; servers: number }> {
+  try {
+    const result = await listServersForGame(gameSlug);
+    const servers = (result.servers ?? []).filter((s) => s.gameType === editionSlug);
+    return {
+      players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
+      servers: servers.length,
+    };
+  } catch {
+    return { players: 0, servers: 0 };
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
     let settled = false;
@@ -446,17 +463,18 @@ async function computeEditionLiveStats(
   gameSlug: string,
   editionSlug: string
 ): Promise<EntityLiveStats> {
-  const [platformPlayers, playersThisMonth] = await Promise.all([
+  const [platformPlayers, playersThisMonth, mp] = await Promise.all([
     countActivePlatformPlayers({ gameSlug, editionSlug }),
     countPlayersThisMonth({ gameSlug, editionSlug }),
+    multiplayerForEdition(gameSlug, editionSlug),
   ]);
   const asOf = new Date().toISOString();
   return {
-    multiplayerPlayers: 0,
+    multiplayerPlayers: mp.players,
     platformPlayers,
-    playingNow: platformPlayers,
+    playingNow: mp.players + platformPlayers,
     playersThisMonth,
-    serverCount: 0,
+    serverCount: mp.servers,
     installsThisMonth: 0,
     installsAllTime: null,
     asOf,
@@ -486,7 +504,7 @@ async function computeModLiveStats(modSlug: string): Promise<EntityLiveStats> {
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v5"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v6"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();
