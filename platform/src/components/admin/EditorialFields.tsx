@@ -237,7 +237,7 @@ export function QualityBarEditor({
     finished: false,
     activelyMaintained: false,
     standsAlone: false,
-    wontDisappear: false,
+    highQuality: false,
     verdict: "",
     lastVerified: new Date().toISOString().slice(0, 10),
   };

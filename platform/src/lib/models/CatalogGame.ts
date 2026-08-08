@@ -66,6 +66,8 @@ const QualityBarSchema = new Schema(
     finished: { type: Boolean, default: false },
     activelyMaintained: { type: Boolean, default: false },
     standsAlone: { type: Boolean, default: false },
+    highQuality: { type: Boolean, default: false },
+    /** Legacy field — kept so older Mongo docs still load; read via normalizeQualityBar. */
     wontDisappear: { type: Boolean, default: false },
     verdict: { type: String, default: "" },
     lastVerified: { type: String, default: "" },

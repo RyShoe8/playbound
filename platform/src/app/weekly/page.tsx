@@ -61,7 +61,7 @@ export default async function WeeklyIndexPage() {
         <Link href="/standards" className="font-semibold text-primary hover:underline">
           PlayBound Bar
         </Link>{" "}
-        — genuinely free, finished, maintained, good on its own merits, and impossible to shut down.
+        — genuinely free, finished, maintained, good on its own merits, and high quality only.
         Here is every issue.
       </p>
 

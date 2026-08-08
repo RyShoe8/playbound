@@ -60,8 +60,8 @@ export interface QualityBar {
   activelyMaintained: boolean;
   /** Good enough that we would recommend it even if it cost money. */
   standsAlone: boolean;
-  /** Open-source or self-hostable — no shutdown can take it away. */
-  wontDisappear: boolean;
+  /** Selective enough to earn a place — not free-game noise or shovelware. */
+  highQuality: boolean;
   /** Self-contained quotable sentence summarising the assessment. */
   verdict: string;
   /** ISO date the assessment was last checked. */

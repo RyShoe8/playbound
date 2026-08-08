@@ -146,7 +146,7 @@ export default async function HomePage() {
               five published criteria
             </Link>
             : genuinely free, finished, actively maintained, good on its own merits, and
-            impossible to shut down. {games.length} games so far. One new pick every
+            high quality only. {games.length} games so far. One new pick every
             Wednesday.
           </p>
         </div>
