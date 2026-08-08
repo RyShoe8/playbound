@@ -35,6 +35,11 @@ export function resolveModVisual(
     return { kind: "image", url: modCover, source: "mod" };
   }
 
+  const baseCover = (baseGame?.coverImage || "").trim();
+  if (baseCover) {
+    return { kind: "image", url: baseCover, source: "baseGame" };
+  }
+
   const from = mod.art?.from?.trim();
   const to = mod.art?.to?.trim();
   if (from && to) {
@@ -44,11 +49,6 @@ export function resolveModVisual(
       to,
       label: (mod.title || "?").charAt(0).toUpperCase(),
     };
-  }
-
-  const baseCover = (baseGame?.coverImage || "").trim();
-  if (baseCover) {
-    return { kind: "image", url: baseCover, source: "baseGame" };
   }
 
   return {

@@ -82,7 +82,11 @@ export function ModsCatalog({
                               }
                             : null
                         }
-                        meta={[mod.license, mod.sizeMB ? `~${mod.sizeMB} MB` : null]
+                        meta={[
+                          game?.title ? `For ${game.title}` : (mod.baseGameSlug ? `For ${mod.baseGameSlug}` : null),
+                          mod.license, 
+                          mod.sizeMB ? `~${mod.sizeMB} MB` : null
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                       />

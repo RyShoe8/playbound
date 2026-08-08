@@ -1391,17 +1391,15 @@ async function renderModsView() {
             <div class="card-title">${escapeHtml(mod.title)}</div>
             <div class="card-blurb">${escapeHtml(mod.tagline || mod.baseGameTitle || mod.baseGameSlug || "")}</div>
             <div class="card-footer">
-              <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(mod.approxSize || "")}</span>
+              <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml([mod.baseGameTitle ? `For ${mod.baseGameTitle}` : (mod.baseGameSlug ? `For ${mod.baseGameSlug}` : null), mod.approxSize].filter(Boolean).join(" · "))}</span>
               <button class="btn-primary btn-sm btn-mod-install" type="button">Install</button>
             </div>
           </div>
         `;
-        // Cascade: mod cover → art gradient (already on banner) → base-game cover
+        // Cascade: mod cover → base-game cover → art gradient
         const coverUrl = mod.coverImage || mod.baseGameCoverImage || "";
         const useBaseFallback = !mod.coverImage && Boolean(mod.baseGameCoverImage);
-        const hasArt =
-          Array.isArray(mod.art) && mod.art.length >= 2 && mod.art[0] && mod.art[1];
-        if (mod.coverImage || (!hasArt && mod.baseGameCoverImage)) {
+        if (coverUrl) {
           const banner = card.querySelector(".card-banner");
           banner.textContent = "";
           const img = document.createElement("img");
