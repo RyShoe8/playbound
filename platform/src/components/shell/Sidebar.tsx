@@ -27,13 +27,13 @@ import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 const nav = [
   { href: "/", label: "Home", icon: Home, exact: true },
   { href: "/discover", label: "Games", icon: Gamepad2 },
-  { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/events", label: "Events", icon: CalendarDays },
-  { href: "/library", label: "Library", icon: LibraryBig },
-  { href: "/weekly", label: "Weekly", icon: Mail },
   { href: "/friends", label: "Friends", icon: Users },
+  { href: "/library", label: "Library", icon: LibraryBig },
+  { href: "/gear", label: "Gear", icon: Mouse },
+  { href: "/weekly", label: "Weekly", icon: Mail },
   { href: "/standards", label: "Our Standard", icon: ShieldCheck },
 ];
 

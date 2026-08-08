@@ -1,7 +1,7 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 
@@ -18,6 +18,7 @@ export type GearDraft = {
   description: string;
   playboundCertified: boolean;
   coverImage: string | null;
+  screenshots?: string[];
   platforms: string[];
   bestFor: string[];
   status: "draft" | "published";
@@ -29,6 +30,10 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
   const [form, setForm] = useState<GearDraft>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mediaNote, setMediaNote] = useState("");
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const pendingImageKindRef = useRef<"cover" | "shot">("cover");
 
   function patch<K extends keyof GearDraft>(key: K, value: GearDraft[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -59,6 +64,63 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       key,
       val.split(",").map((s) => s.trim()).filter(Boolean)
     );
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const kind = pendingImageKindRef.current;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Upload a JPG, PNG, or WebP image.");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    setMediaNote(kind === "cover" ? "Uploading cover…" : "Uploading screenshot…");
+
+    try {
+      const body = new FormData();
+      body.set("file", file);
+      body.set("slug", `gear-${form.slug || "upload"}`);
+      body.set("kind", kind);
+
+      const res = await fetch("/api/admin/games/upload", { method: "POST", body });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data?.error ?? "Upload failed";
+        setError(msg);
+        setMediaNote(msg);
+        setBusy(false);
+        return;
+      }
+
+      if (!data?.url || typeof data.url !== "string") {
+        const msg = "Upload succeeded but no image URL was returned.";
+        setError(msg);
+        setMediaNote(msg);
+        setBusy(false);
+        return;
+      }
+
+      if (kind === "cover") {
+        patch("coverImage", data.url);
+        setMediaNote("Cover uploaded — save the gear to persist.");
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          screenshots: [...(prev.screenshots ?? []), data.url].slice(0, 20),
+        }));
+        setMediaNote("Screenshot uploaded — save the gear to persist.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Image upload failed";
+      setError(msg);
+      setMediaNote(msg);
+    }
+    setBusy(false);
   }
 
   async function save() {
@@ -105,6 +167,14 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
   return (
     <div className="space-y-8 pb-12">
+      <input
+        type="file"
+        ref={fileRef}
+        onChange={handleImageUpload}
+        className="hidden"
+        accept="image/jpeg,image/png,image/webp"
+      />
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Title</label>
@@ -135,7 +205,6 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           <PremiumSelect
             value={form.category}
             onChange={(e) => patch("category", e.target.value)}
-            className={field}
           >
             <option value="Controllers">Controllers</option>
             <option value="Mobile">Mobile</option>
@@ -148,12 +217,12 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           </PremiumSelect>
         </div>
         <div>
-          <label className={label}>Cover Image URL (optional)</label>
+          <label className={label}>Platforms (comma separated)</label>
           <input
-            value={form.coverImage || ""}
-            onChange={(e) => patch("coverImage", e.target.value)}
+            value={form.platforms.join(", ")}
+            onChange={(e) => handleListChange("platforms", e.target.value)}
             className={field}
-            placeholder="/gear/xbox-controller.jpg"
+            placeholder="Windows, macOS, Xbox"
           />
         </div>
       </div>
@@ -168,26 +237,87 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           placeholder="Detailed editorial review..."
         />
       </div>
+      
+      <div>
+        <label className={label}>Best For Genres (comma separated)</label>
+        <input
+          value={form.bestFor.join(", ")}
+          onChange={(e) => handleListChange("bestFor", e.target.value)}
+          className={field}
+          placeholder="FPS, Platformer"
+        />
+      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={label}>Platforms (comma separated)</label>
-          <input
-            value={form.platforms.join(", ")}
-            onChange={(e) => handleListChange("platforms", e.target.value)}
-            className={field}
-            placeholder="Windows, macOS, Xbox"
-          />
+      <div className="space-y-4 rounded-xl border border-border p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold">Media Uploads</h3>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                pendingImageKindRef.current = "cover";
+                fileRef.current?.click();
+              }}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Upload Cover
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                pendingImageKindRef.current = "shot";
+                fileRef.current?.click();
+              }}
+              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+            >
+              Upload Screenshot
+            </button>
+          </div>
         </div>
-        <div>
-          <label className={label}>Best For Genres (comma separated)</label>
-          <input
-            value={form.bestFor.join(", ")}
-            onChange={(e) => handleListChange("bestFor", e.target.value)}
-            className={field}
-            placeholder="FPS, Platformer"
-          />
-        </div>
+
+        {mediaNote && <p className="text-xs text-muted-foreground">{mediaNote}</p>}
+
+        {form.coverImage && (
+          <div className="space-y-2">
+            <label className={label}>Cover Image</label>
+            <div className="relative inline-block overflow-hidden rounded-md border border-border">
+              <img src={form.coverImage} alt="Cover" className="h-24 w-auto object-cover" />
+              <button
+                type="button"
+                onClick={() => patch("coverImage", null)}
+                className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-black"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(form.screenshots?.length ?? 0) > 0 && (
+          <div className="space-y-2">
+            <label className={label}>Screenshots</label>
+            <div className="flex flex-wrap gap-2">
+              {form.screenshots!.map((url, i) => (
+                <div key={i} className="relative inline-block overflow-hidden rounded-md border border-border">
+                  <img src={url} alt={`Screenshot ${i + 1}`} className="h-20 w-auto object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...form.screenshots!];
+                      next.splice(i, 1);
+                      patch("screenshots", next);
+                    }}
+                    className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-black"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-6 pt-2">

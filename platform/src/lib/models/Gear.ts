@@ -24,6 +24,7 @@ const GearSchema = new Schema(
     description: { type: String, default: "" },
     playboundCertified: { type: Boolean, default: false },
     coverImage: { type: String, default: null },
+    screenshots: { type: [String], default: [] },
     platforms: { type: [String], default: [] },
     bestFor: { type: [String], default: [] },
     status: {
