@@ -57,12 +57,7 @@ export default async function AdminUsersPage() {
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </td>
                 <td className="px-4 py-2.5">
-                  <span>{u.role}</span>
-                  {u.tester ? (
-                    <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                      tester
-                    </span>
-                  ) : null}
+                  {u.role === "admin" ? "admin" : u.tester ? "Tester" : "user"}
                 </td>
                 <td className="px-4 py-2.5">{u.emailVerified ? "Yes" : "No"}</td>
                 <td className="px-4 py-2.5">{u.disabled ? "Disabled" : "Active"}</td>
