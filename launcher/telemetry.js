@@ -193,6 +193,7 @@ function createTelemetry({
         code: info.code || "UNKNOWN",
         message: String(info.message || "").slice(0, 1000) || undefined,
         source: "launcher",
+        phase: info.phase || undefined,
         gameSlug: info.gameSlug || undefined,
         editionSlug: info.editionSlug || undefined,
         gameTitle: info.gameTitle || undefined,

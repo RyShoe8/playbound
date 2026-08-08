@@ -1,8 +1,8 @@
 {
   "name": "playbound-launcher",
-  "version": "0.1.50",
+  "version": "0.1.51",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
-  "main": "main.js",
+  "main": "bootstrap.js",
   "scripts": {
     "start": "electron .",
     "test:resolve": "electron . --test-resolve",

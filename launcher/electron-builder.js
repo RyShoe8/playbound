@@ -62,7 +62,17 @@ const windowsSigningOptions = signingActive
 module.exports = {
   appId: "gg.playbound.launcher",
   productName: "PlayBound",
-  files: ["main.js", "preload.js", "catalog.js", "telemetry.js", "platform/**/*", "services/**/*", "renderer/**/*"],
+  files: [
+    "main.js",
+    "bootstrap.js",
+    "preload.js",
+    "catalog.js",
+    "telemetry.js",
+    "hardware.js",
+    "platform/**/*",
+    "services/**/*",
+    "renderer/**/*",
+  ],
   protocols: {
     name: "PlayBound Deep Link",
     schemes: ["playbound"],
