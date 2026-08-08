@@ -9,6 +9,7 @@ import { fetchOpenRaServers } from "./providers/openra";
 import { fetchOpenRct2Servers } from "./providers/openrct2";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
+import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
 import { fetchWarzone2100Servers } from "./providers/warzone-2100";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -48,11 +49,16 @@ const providers: Record<string, ServerProvider> = {
   },
   "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
   everquest: { slug: "everquest", fetchServers: fetchEverQuestServers },
-  // Draft catalog games — providers ready; stay hidden on public /servers until published.
+  // Testing catalog games — visible to testers/admins via includeTesting; public
+  // homepage Active Players stays published-only until status flips.
   freeciv: { slug: "freeciv", fetchServers: fetchFreecivServers },
   openarena: { slug: "openarena", fetchServers: fetchOpenArenaServers },
   openrct2: { slug: "openrct2", fetchServers: fetchOpenRct2Servers },
   flightgear: { slug: "flightgear", fetchServers: fetchFlightGearServers },
+  "team-fortress-2": {
+    slug: "team-fortress-2",
+    fetchServers: fetchTeamFortress2Servers,
+  },
 };
 
 /**
@@ -63,7 +69,6 @@ const providers: Record<string, ServerProvider> = {
  * - war-thunder, world-of-tanks, apex-legends, hearthstone, genshin-impact,
  *   dota-2, league-of-legends, valorant, counter-strike-2, quake-champions
  *   (matchmaking; no public PC master we wire today)
- * - team-fortress-2 (needs Steam Web API + A2S; not wired)
  * - freedoom, lincity-ng, daggerfall, tes-arena, pixreveal (not server-browser games)
  * - gamebuddies-io (browser party; no public master)
  *

@@ -52,13 +52,13 @@ type SiteVerifyResponse = {
 /**
  * Verify a token against Google.
  *
- * Failure policy is deliberately asymmetric:
+ * Failure policy:
  *
  *  - A *definitive* rejection (bad token, wrong action, low score) fails closed.
- *  - A *transport* failure (Google unreachable, timeout) fails **open**, with a
- *    loud log. For a free games site, locking every new user out because
- *    Google had a blip is worse than briefly letting spam through. Flip
- *    RECAPTCHA_FAIL_CLOSED=true if that trade stops being right.
+ *  - A *transport* failure (Google unreachable, timeout) fails closed in
+ *    production (or when RECAPTCHA_FAIL_CLOSED=true). Elsewhere it fails open
+ *    so local/preview without Google blips can still sign up.
+ *  - Missing RECAPTCHA_SECRET_KEY fails closed in production; skipped elsewhere.
  */
 export async function verifyRecaptcha(
   token: string | undefined | null,
@@ -66,10 +66,18 @@ export async function verifyRecaptcha(
   opts: { remoteIp?: string | null } = {}
 ): Promise<RecaptchaResult> {
   const secret = process.env.RECAPTCHA_SECRET_KEY;
+  const isProd =
+    process.env.VERCEL_ENV === "production" ||
+    (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
+  const failClosed =
+    process.env.RECAPTCHA_FAIL_CLOSED === "true" ||
+    (process.env.RECAPTCHA_FAIL_CLOSED !== "false" && isProd);
 
-  // Not configured — local dev, previews, CI. Same self-disabling pattern as
-  // the Google provider so the app stays runnable without secrets.
-  if (!secret) return { ok: true, score: null, skipped: true };
+  // Not configured — local/dev/preview only. Production must set the secret.
+  if (!secret) {
+    if (isProd) return { ok: false, reason: "verification-unavailable", score: null };
+    return { ok: true, score: null, skipped: true };
+  }
 
   if (!token) {
     return { ok: false, reason: "missing-token", score: null };
@@ -94,7 +102,7 @@ export async function verifyRecaptcha(
     data = (await res.json()) as SiteVerifyResponse;
   } catch (err) {
     console.error("[recaptcha] verification unreachable:", err);
-    if (process.env.RECAPTCHA_FAIL_CLOSED === "true") {
+    if (failClosed) {
       return { ok: false, reason: "verification-unavailable", score: null };
     }
     return { ok: true, score: null, skipped: true };

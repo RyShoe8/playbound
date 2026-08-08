@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, KeyRound, MonitorPlay } from "lucide-react";
+import { KeyRound, MonitorPlay } from "lucide-react";
 import { launcherLinkUrl } from "@/lib/launcher";
 
 type Props = {
@@ -13,17 +13,16 @@ type Props = {
 const HANDOFF_DELAY_MS = 2500;
 
 export function LauncherAuthHandoff({ username, autoConnect = false }: Props) {
-  const [token, setToken] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const started = useRef(false);
   const autoStarted = useRef(false);
 
-  const linkUrl = token ? launcherLinkUrl(token) : null;
+  const linkUrl = code ? launcherLinkUrl(code) : null;
 
   useEffect(() => {
-    if (!token || !linkUrl || started.current) return;
+    if (!code || !linkUrl || started.current) return;
     started.current = true;
 
     const a = document.createElement("a");
@@ -40,22 +39,22 @@ export function LauncherAuthHandoff({ username, autoConnect = false }: Props) {
       }, HANDOFF_DELAY_MS);
       return () => window.clearTimeout(t);
     }
-  }, [token, linkUrl, autoConnect]);
+  }, [code, linkUrl, autoConnect]);
 
   async function connect() {
     setBusy(true);
     setError(null);
     started.current = false;
     try {
-      const res = await fetch("/api/library/token", { method: "POST" });
-      const data = (await res.json()) as { token?: string; error?: string };
-      if (!res.ok || !data.token) {
-        setError(data.error || "Couldn't mint launcher token");
+      const res = await fetch("/api/library/handoff", { method: "POST" });
+      const data = (await res.json()) as { code?: string; error?: string };
+      if (!res.ok || !data.code) {
+        setError(data.error || "Couldn't start launcher connect");
         return;
       }
-      setToken(data.token);
+      setCode(data.code);
     } catch {
-      setError("Couldn't mint launcher token");
+      setError("Couldn't start launcher connect");
     } finally {
       setBusy(false);
     }
@@ -68,18 +67,7 @@ export function LauncherAuthHandoff({ username, autoConnect = false }: Props) {
     // Runs once on mount when from=app; connect() is stable for this purpose.
   }, [autoConnect]);
 
-  async function copyToken() {
-    if (!token) return;
-    try {
-      await navigator.clipboard.writeText(token);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  if (!token) {
+  if (!code) {
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
         <KeyRound className="size-10 text-primary" />
@@ -130,24 +118,9 @@ export function LauncherAuthHandoff({ username, autoConnect = false }: Props) {
           Go to library now
         </a>
       )}
-      <div className="mt-2 w-full space-y-2 text-left">
-        <p className="text-xs font-semibold text-muted-foreground">
-          If nothing opens, copy this token into the launcher Settings:
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <code className="max-w-full flex-1 overflow-x-auto rounded-lg border border-border bg-secondary/60 px-3 py-2 text-[11px] break-all">
-            {token}
-          </code>
-          <button
-            type="button"
-            onClick={() => void copyToken()}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold"
-          >
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        If nothing opens, use Sign in from the launcher Settings window instead.
+      </p>
     </div>
   );
 }

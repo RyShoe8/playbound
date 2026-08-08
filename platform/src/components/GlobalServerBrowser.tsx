@@ -365,6 +365,7 @@ export function GlobalServerBrowser({
         const [serversRes, geoRes] = await Promise.all([
           fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
             cache: "no-store",
+            credentials: "same-origin",
             signal: ac.signal,
           }),
           needGeo

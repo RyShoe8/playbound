@@ -10,16 +10,12 @@ import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
 
-/** New titles introduced in catalog waves — created as drafts. */
+/** New titles introduced in catalog waves — created as drafts unless seed sets status. */
 export const DRAFT_ON_CREATE = new Set([
-  "openrct2",
-  "freeciv",
-  "flightgear",
   "freedoom",
   "lincity-ng",
   "tes-arena",
   "daggerfall",
-  "openarena",
   "pixreveal",
   "gamebuddies-io",
   "star-wars-galaxies",
@@ -30,7 +26,6 @@ export const DRAFT_ON_CREATE = new Set([
   "world-of-tanks",
   "apex-legends",
   "hearthstone",
-  "team-fortress-2",
   "genshin-impact",
   "dota-2",
   "league-of-legends",
@@ -164,14 +159,15 @@ async function main() {
             qualityBar: g.qualityBar ?? null,
             ...(launcher && !prev.launcherInstall ? { launcherInstall: launcher } : {}),
             ...(launcher && prevStatus === "draft" ? { launcherInstall: launcher } : {}),
-            ...(g.status === "published"
-              ? { status: "published", published: true }
-              : {}),
+            status: seedStatus,
+            published: statusToPublished(seedStatus),
           },
         }
       );
       refreshedDraft++;
-      console.log(`DRAFT  ${g.slug}${g.status === "published" ? "→published" : ""}`);
+      console.log(
+        `DRAFT  ${g.slug}${prevStatus !== seedStatus ? `→${seedStatus}` : ""}`
+      );
       continue;
     }
 

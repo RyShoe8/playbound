@@ -54,9 +54,9 @@ export function launcherSyncUrl(): string {
   return "playbound://sync";
 }
 
-/** Deep link that hands a launcher token to the desktop app. */
-export function launcherLinkUrl(token: string): string {
-  return `playbound://link?token=${encodeURIComponent(token)}`;
+/** Deep link that hands a one-time handoff code to the desktop app (never the durable bearer). */
+export function launcherLinkUrl(code: string): string {
+  return `playbound://link?code=${encodeURIComponent(code)}`;
 }
 
 /** Launch an installed game via the PlayBound Launcher. */

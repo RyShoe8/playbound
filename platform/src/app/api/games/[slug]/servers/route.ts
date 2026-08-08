@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { getGame } from "@/lib/catalog";
+import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
 
 export const revalidate = 30;
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const game = await getGame(slug);
+  const includeTesting = await requestIncludesTesting(req);
+  const game = await getGame(slug, { includeTesting });
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
@@ -30,7 +32,10 @@ export async function GET(
     { ...result, multiplayer: true },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+        "Cache-Control": includeTesting
+          ? "private, no-store"
+          : "public, s-maxage=30, stale-while-revalidate=60",
+        Vary: "Cookie, Authorization",
       },
     }
   );
