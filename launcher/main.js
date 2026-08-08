@@ -2825,9 +2825,11 @@ function onSpawnedProcessGone(slug) {
  * Handles short bootstrap processes (e.g. OpenRA.exe → RedAlert.exe) by polling
  * catalog exeHint image names after the child exits.
  * Rejects on immediate spawn failure (ENOENT / missing Java) so Play Now is not a false success.
+ * Jar launches wait briefly so a dead WindowsApps java stub cannot report success.
  */
 function spawnTrackedExe(slug, exePath, args = []) {
   clearLaunchTracking(slug);
+  const isJar = /\.jar$/i.test(exePath);
 
   let child;
   try {
@@ -2845,7 +2847,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
     ...new Set(
       [
         normalizeProcessImageName(exePath),
-        ...(/\.(jar)$/i.test(exePath) ? ["javaw.exe", "java.exe"] : []),
+        ...(isJar ? ["javaw.exe", "java.exe"] : []),
         ...hintProcessNames(entry?.exeHint),
       ].filter(Boolean)
     ),
@@ -2878,7 +2880,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
       if (code === "ENOENT") {
         reject(
           new Error(
-            /\.jar$/i.test(exePath)
+            isJar
               ? GameLauncher.JAVA_MISSING_MSG
               : `Couldn't start ${path.basename(exePath)} (file missing or not runnable).`
           )
@@ -2889,6 +2891,35 @@ function spawnTrackedExe(slug, exePath, args = []) {
     };
 
     child.once("error", fail);
+
+    if (isJar) {
+      const JAR_WATCH_MS = 2000;
+      const failEarly = () => fail(new Error(GameLauncher.JAVA_EARLY_EXIT_MSG));
+      const onEarlyExit = () => {
+        if (settled) {
+          onSpawnedProcessGone(slug);
+          return;
+        }
+        failEarly();
+      };
+      child.once("exit", onEarlyExit);
+      setTimeout(() => {
+        if (settled) return;
+        if (child.exitCode != null || child.signalCode != null) {
+          failEarly();
+          return;
+        }
+        if (!child.pid && !isAnyImageRunning(imageNames)) {
+          failEarly();
+          return;
+        }
+        child.removeListener("exit", onEarlyExit);
+        child.on("exit", () => onSpawnedProcessGone(slug));
+        succeed();
+      }, JAR_WATCH_MS);
+      return;
+    }
+
     child.on("exit", () => onSpawnedProcessGone(slug));
 
     // Spawn is async on Windows; wait briefly for error before treating as launched.
