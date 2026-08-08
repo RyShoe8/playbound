@@ -140,6 +140,15 @@ export async function POST(req: Request) {
      */
     const platform = game.browserPlayable ? "web" : platformFromRequest(req);
 
+    const existing = await LibraryEntry.findOne({
+      userId: session.user.id,
+      gameSlug: slug,
+      platform,
+    })
+      .select("installed")
+      .lean();
+    const alreadyInstalled = Boolean(existing?.installed);
+
     const entry = await LibraryEntry.findOneAndUpdate(
       { userId: session.user.id, gameSlug: slug, platform },
       {
@@ -166,15 +175,16 @@ export async function POST(req: Request) {
       { upsert: true, new: true }
     ).lean();
 
-    if (!saving) {
+    // First install on this platform only. Store / browser claims also emit
+    // `game_installed` from MobileOutboundCta (keepalive) so analytics survive
+    // Play Store navigation — skip those sources here to avoid double counts.
+    if (!saving && !alreadyInstalled && source === "manual") {
       void saveEvent({
         event: "game_installed",
         properties: {
           gameSlug: slug,
           gameTitle: game.title,
-          // Distinguishes an assumed store install from a confirmed launcher
-          // one, so install counts can be read honestly.
-          installMethod: source === "store_redirect" ? "mobile_store" : "manual_claim",
+          installMethod: "manual_claim",
           platform,
           source,
         },

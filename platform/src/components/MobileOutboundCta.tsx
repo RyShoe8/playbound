@@ -88,6 +88,25 @@ export function MobileOutboundCta({
     if (!isSignedIn || claimed || skipLibraryClaim) return;
     setClaimed(true);
 
+    const os = parseMobileOs(
+      typeof navigator !== "undefined" ? navigator.userAgent : ""
+    );
+    const platform = isPlay ? "web" : os === "other" ? "mobile" : os;
+    const installMethod = isPlay ? "browser" : "mobile_store";
+    const source = isPlay ? "browser" : "store_redirect";
+
+    // Client-side install event so Mongo/GA4 still record when the store
+    // navigation cancels the library POST. Server also writes on success
+    // (first install only) for a second channel.
+    void telemetry.track("game_installed", {
+      gameSlug: game.slug,
+      gameTitle: game.title,
+      installMethod,
+      platform,
+      source,
+      surface,
+    });
+
     // Fire-and-forget: the navigation must not wait on our own API, and a
     // failed claim must never stop someone reaching the store. keepalive lets
     // the request finish after the page is backgrounded.
@@ -97,7 +116,7 @@ export function MobileOutboundCta({
       body: JSON.stringify({
         slug: game.slug,
         intent: "install",
-        source: isPlay ? "browser" : "store_redirect",
+        source,
       }),
       keepalive: true,
     }).catch(() => undefined);
