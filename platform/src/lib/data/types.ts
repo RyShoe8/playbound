@@ -127,6 +127,11 @@ export interface Game {
   /** Editorial curation flags chosen by PlayBound */
   gameOfWeek: boolean;
   hiddenGem: boolean;
+  /**
+   * Admin checklist: all catalog info for this title has been entered.
+   * Optional on seed objects; missing means incomplete.
+   */
+  complete?: boolean;
   art: GameArt;
   /** Local cover under /public, e.g. /games/openra/cover.webp */
   coverImage?: string;

@@ -59,6 +59,7 @@ function toGame(doc: LeanGame): Game {
     githubRepo: (doc.githubRepo as string) || undefined,
     gameOfWeek: Boolean(doc.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem),
+    complete: Boolean(doc.complete),
     art: doc.art as Game["art"],
     coverImage: (doc.coverImage as string) || seedBySlug.get(String(doc.slug))?.coverImage,
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,

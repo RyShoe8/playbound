@@ -1836,11 +1836,19 @@ export function GameEditorForm({
               ["steamDeck", "Steam Deck"],
               ["gameOfWeek", "Game of the week"],
               ["hiddenGem", "Hidden gem"],
+              ["complete", "Complete"],
             ] as const
           ).map(([key, labelText]) => (
             <label key={key} className="flex items-center gap-2 font-semibold">
               <input type="checkbox" checked={Boolean(form[key])} onChange={(e) => patch(key, e.target.checked)} />
-              {labelText}
+              <span>
+                {labelText}
+                {key === "complete" && (
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    All catalog info entered for this title
+                  </span>
+                )}
+              </span>
             </label>
           ))}
         </div>

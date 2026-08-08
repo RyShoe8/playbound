@@ -131,6 +131,8 @@ const CatalogGameSchema = new Schema(
     githubRepo: { type: String, default: null },
     gameOfWeek: { type: Boolean, default: false },
     hiddenGem: { type: Boolean, default: false },
+    /** Admin checklist: catalog info for this title is fully entered. */
+    complete: { type: Boolean, default: false },
     art: { type: GameArtSchema, required: true },
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },
