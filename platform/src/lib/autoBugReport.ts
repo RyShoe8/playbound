@@ -4,7 +4,7 @@ import BugReport from "@/lib/models/BugReport";
 import type { BugReportSource } from "@/lib/bugReports";
 
 export type AutoBugInput = {
-  event: "launch_failed" | "error";
+  event: "launch_failed" | "install_failed" | "error";
   source: BugReportSource;
   code?: string | null;
   message?: string | null;
@@ -109,7 +109,7 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
   userAgent?: string | null;
 }): Promise<void> {
   const event = opts.event;
-  if (event !== "launch_failed" && event !== "error") return;
+  if (event !== "launch_failed" && event !== "install_failed" && event !== "error") return;
 
   const props = opts.properties || {};
   const sourceProp = typeof props.source === "string" ? props.source : "";
