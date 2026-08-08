@@ -47,7 +47,7 @@ body {
   padding: 20px 14px;
   flex-shrink: 0;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sidebar-brand {
@@ -55,6 +55,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 0 8px 24px 8px;
+  flex-shrink: 0;
 }
 
 .logo-mark {
@@ -81,13 +82,20 @@ body {
   color: var(--accent-light);
 }
 
+.sidebar-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .nav-btn {
@@ -159,21 +167,34 @@ body {
   color: var(--text-main);
 }
 
-.sidebar-bottom {
+.sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
+  flex-shrink: 0;
   padding-top: 14px;
   border-top: 1px solid var(--border);
 }
 
 .sidebar-status {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 4px 8px;
   font-size: 12px;
   color: var(--text-muted);
+  min-width: 0;
+}
+
+#connection-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.sidebar-status .dot {
+  margin-top: 4px;
+  flex-shrink: 0;
 }
 
 .dot {
