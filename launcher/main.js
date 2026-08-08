@@ -2166,9 +2166,10 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     const jarPath = path.join(gameDir, dl.name);
     await fsp.copyFile(downloadPath, jarPath);
     await fsp.rm(downloadPath, { force: true });
-    const exe = await writeJarLauncher(gameDir, dl.name);
+    // Keep play.cmd for Explorer / shortcuts; Play Now launches the jar via javaw.
+    await writeJarLauncher(gameDir, dl.name);
     await processAddons(entry, gameDir, selectedAddons);
-    markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
+    markInstalled(slug, { version: dl.version, exe: jarPath, dir: gameDir, ...editionExtra });
     sendProgress({ phase: "done" });
     void reportInstall(slug);
     void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
@@ -2556,7 +2557,24 @@ async function playGame(slug, join = null, editionSlug = null) {
     args.push(...staticArgs.map(String));
   }
 
-  spawnTrackedExe(slug, info.exe, args);
+  // Legacy github-jar installs pointed at play.cmd — prefer the sidecar .jar.
+  const launchPath = GameLauncher.preferJarBesideLauncher(info.exe);
+  if (launchPath !== info.exe && /\.jar$/i.test(launchPath)) {
+    try {
+      const st = loadState();
+      const g = ensureGameInstallRecord(st[slug]);
+      if (g.editions?.[edSlug]) {
+        g.editions[edSlug].exe = launchPath;
+        syncGameInstallSummary(g);
+        st[slug] = g;
+        saveState(st);
+      }
+    } catch {
+      /* ignore heal persist */
+    }
+  }
+
+  await spawnTrackedExe(slug, launchPath, args);
   void telemetry.editionLaunched(
     editionInfoFor(slug, {
       version: info.version,
@@ -2697,16 +2715,30 @@ function onSpawnedProcessGone(slug) {
  * Spawn a game exe (detached so it can outlive the launcher) and watch for exit.
  * Handles short bootstrap processes (e.g. OpenRA.exe → RedAlert.exe) by polling
  * catalog exeHint image names after the child exits.
+ * Rejects on immediate spawn failure (ENOENT / missing Java) so Play Now is not a false success.
  */
 function spawnTrackedExe(slug, exePath, args = []) {
   clearLaunchTracking(slug);
 
-  const child = GameLauncher.spawnGame(exePath, args);
+  let child;
+  try {
+    child = GameLauncher.spawnGame(exePath, args);
+  } catch (err) {
+    const msg =
+      err?.code === "JAVA_MISSING" || /Java 17\+/i.test(String(err?.message || ""))
+        ? err.message || GameLauncher.JAVA_MISSING_MSG
+        : err?.message || String(err);
+    throw new Error(msg);
+  }
 
   const entry = catalog.find((e) => e.slug === slug);
   const imageNames = [
     ...new Set(
-      [normalizeProcessImageName(exePath), ...hintProcessNames(entry?.exeHint)].filter(Boolean)
+      [
+        normalizeProcessImageName(exePath),
+        ...(/\.(jar)$/i.test(exePath) ? ["javaw.exe", "java.exe"] : []),
+        ...hintProcessNames(entry?.exeHint),
+      ].filter(Boolean)
     ),
   ];
 
@@ -2717,9 +2749,51 @@ function spawnTrackedExe(slug, exePath, args = []) {
     settleTimer: null,
   });
 
-  child.on("exit", () => onSpawnedProcessGone(slug));
-  child.on("error", () => onSpawnedProcessGone(slug));
-  return child;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const succeed = () => {
+      if (settled) return;
+      settled = true;
+      try {
+        child.unref();
+      } catch {
+        /* ignore */
+      }
+      resolve(child);
+    };
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      clearLaunchTracking(slug);
+      const code = err?.code;
+      if (code === "ENOENT") {
+        reject(
+          new Error(
+            /\.jar$/i.test(exePath)
+              ? GameLauncher.JAVA_MISSING_MSG
+              : `Couldn't start ${path.basename(exePath)} (file missing or not runnable).`
+          )
+        );
+        return;
+      }
+      reject(err instanceof Error ? err : new Error(String(err)));
+    };
+
+    child.once("error", fail);
+    child.on("exit", () => onSpawnedProcessGone(slug));
+
+    // Spawn is async on Windows; wait briefly for error before treating as launched.
+    setImmediate(() => {
+      if (settled) return;
+      if (child.pid) {
+        succeed();
+        return;
+      }
+      setTimeout(() => {
+        if (!settled) succeed();
+      }, 150);
+    });
+  });
 }
 
 /** Launch a catalog mod: portable clients use their own exe; content mods open the base game. */
@@ -2744,7 +2818,7 @@ async function playMod(slug) {
   }
 
   if (exe) {
-    spawnTrackedExe(slug, exe, []);
+    await spawnTrackedExe(slug, exe, []);
     const settings = loadSettings();
     if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
     settings.recentlyPlayed[info.baseGameSlug || slug] = { lastPlayed: new Date().toISOString() };
@@ -2986,12 +3060,18 @@ async function createGameShortcut(slug) {
   }
   const entry = catalog.find((e) => e.slug === slug);
   const title = sanitizeShortcutName(entry?.title || slug);
+  // .lnk to a .jar is unreliable; prefer play.cmd when present (github-jar installs).
+  let targetPath = info.exe;
+  if (/\.jar$/i.test(targetPath)) {
+    const cmdBeside = path.join(path.dirname(targetPath), "play.cmd");
+    if (fs.existsSync(cmdBeside)) targetPath = cmdBeside;
+  }
   await Platform.createShortcut({
     title,
-    targetPath: info.exe,
+    targetPath,
     args: "",
     description: `Play ${title}`,
-    icon: info.exe
+    icon: info.exe,
   });
   return { title };
 }
