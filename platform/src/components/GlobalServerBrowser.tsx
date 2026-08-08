@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, RefreshCw, Server, Users } from "lucide-react";
-import { launcherJoinUrl, isOneClickSlug } from "@/lib/launcher";
+import { launcherJoinUrl, launcherPlayUrl, isOneClickSlug } from "@/lib/launcher";
 import type { GameServer } from "@/lib/servers/types";
 import { estimateLatencyMs } from "@/lib/servers/latencyEstimate";
 import { EmptyHint } from "@/components/ui/bits";
@@ -716,37 +716,63 @@ export function GlobalServerBrowser({
                     <td className="px-3 py-3 tabular-nums text-muted-foreground">{formatEstMs(estFor(s))}</td>
                     <td className="px-3 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        {isOneClickSlug(effectiveGameSlug) ? (
-                          <a
-                            href={launcherJoinUrl(effectiveGameSlug, s.host, s.port, s.name)}
-                            onClick={() => {
-                              void telemetry.track("server_join_clicked", {
-                                serverId: `${s.host}:${s.port}`,
-                                gameSlug: effectiveGameSlug,
-                              });
-                            }}
-                            className="rounded-full bg-play px-3 py-1 text-xs font-bold text-play-foreground hover:brightness-110"
-                          >
-                            Join
-                          </a>
+                        {s.gameType === "steam-concurrent" ? (
+                          installedGames.has(effectiveGameSlug) ? (
+                            <a
+                              href={launcherPlayUrl(effectiveGameSlug)}
+                              onClick={() => {
+                                void telemetry.track("server_join_clicked", {
+                                  serverId: `${s.host}:${s.port}`,
+                                  gameSlug: effectiveGameSlug,
+                                  phase: "play",
+                                });
+                              }}
+                              className="rounded-full bg-play px-3 py-1 text-xs font-bold text-play-foreground hover:brightness-110"
+                            >
+                              Play
+                            </a>
+                          ) : (
+                            <LauncherInstallButton
+                              slug={effectiveGameSlug}
+                              label="Install"
+                              className="px-3 py-1 text-xs"
+                            />
+                          )
                         ) : (
-                          <LauncherInstallButton
-                            slug={effectiveGameSlug}
-                            label="Install"
-                            className="px-3 py-1 text-xs"
-                          />
+                          <>
+                            {isOneClickSlug(effectiveGameSlug) ? (
+                              <a
+                                href={launcherJoinUrl(effectiveGameSlug, s.host, s.port, s.name)}
+                                onClick={() => {
+                                  void telemetry.track("server_join_clicked", {
+                                    serverId: `${s.host}:${s.port}`,
+                                    gameSlug: effectiveGameSlug,
+                                  });
+                                }}
+                                className="rounded-full bg-play px-3 py-1 text-xs font-bold text-play-foreground hover:brightness-110"
+                              >
+                                Join
+                              </a>
+                            ) : (
+                              <LauncherInstallButton
+                                slug={effectiveGameSlug}
+                                label="Install"
+                                className="px-3 py-1 text-xs"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(addr);
+                                setCopied(addr);
+                                setTimeout(() => setCopied(null), 1500);
+                              }}
+                              className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
+                            >
+                              {copied === addr ? "Copied" : "Copy"}
+                            </button>
+                          </>
                         )}
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await navigator.clipboard.writeText(addr);
-                            setCopied(addr);
-                            setTimeout(() => setCopied(null), 1500);
-                          }}
-                          className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
-                        >
-                          {copied === addr ? "Copied" : "Copy"}
-                        </button>
                       </div>
                     </td>
                   </tr>

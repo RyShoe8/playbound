@@ -68,6 +68,8 @@ function assertOpenExternalUrl(raw) {
     return u.toString();
   }
   if (proto === "mailto:") return u.toString();
+  // Steam install / run deep links from catalog external recipes.
+  if (proto === "steam:") return u.toString();
   throw new Error(`Blocked external URL scheme: ${proto}`);
 }
 
@@ -99,6 +101,9 @@ function hostAllowedForDownload(hostname) {
   }
   if (host === "zero-k.info" || host.endsWith(".zero-k.info")) return true;
   if (host === "hedgewars.org" || host.endsWith(".hedgewars.org")) return true;
+  if (host === "openarena.ws" || host.endsWith(".openarena.ws")) return true;
+  if (host === "villagersandheroes.com" || host.endsWith(".villagersandheroes.com")) return true;
+  if (host === "download.flightgear.org" || host.endsWith(".flightgear.org")) return true;
   try {
     const apiHost = new URL(getApiBase()).hostname.toLowerCase();
     if (host === apiHost) return true;

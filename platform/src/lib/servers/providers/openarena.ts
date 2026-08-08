@@ -12,7 +12,14 @@ const DEATHMASK_XML =
 
 function stripQuakeColors(text: string): string {
   return String(text || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
     .replace(/\^(\d|x[0-9a-fA-F]{6})/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
