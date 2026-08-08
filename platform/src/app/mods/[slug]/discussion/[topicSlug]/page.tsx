@@ -6,7 +6,7 @@ import dbConnect from "@/lib/db";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import DiscussionReply from "@/lib/models/DiscussionReply";
 import { getMod } from "@/lib/mods";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata, privateMetadata } from "@/lib/seo";
 import { TopicThread } from "@/components/discussion/TopicThread";
 import { canAcceptSolution } from "@/lib/discussion/permissions";
@@ -17,7 +17,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string; topicSlug: string }>;
 }): Promise<Metadata> {
   const { slug, topicSlug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const mod = await getMod(slug, { includeTesting });
   if (!mod) return privateMetadata("Discussion");
   if (mod.status === "testing") return privateMetadata("Discussion");
@@ -47,7 +47,7 @@ export default async function ModDiscussionTopicPage({
   params: Promise<{ slug: string; topicSlug: string }>;
 }) {
   const { slug, topicSlug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const mod = await getMod(slug, { includeTesting });
   if (!mod) notFound();
 

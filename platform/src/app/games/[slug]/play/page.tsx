@@ -4,7 +4,7 @@ import { ArrowLeft, Download, MonitorPlay, Server } from "lucide-react";
 import { getGame } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { GameArt } from "@/components/GameArt";
 import { PlayPageActions, PlayPageHeading } from "@/components/PlayPageActions";
 import { GameFriendsWidget } from "@/components/friends/GameFriendsWidget";
@@ -13,7 +13,7 @@ import { privateMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (game?.status === "testing") return privateMetadata(`Play ${game.title}`);
   return { title: game ? `Play ${game.title}` : "Play" };
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PlayPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) notFound();
 

@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FolderHeart, Hammer, Layers, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import {
   EditionTypeBadge,
   VerificationBadge,
@@ -51,7 +51,7 @@ export default async function SearchPage({
   const hasFilters = genres.length > 0 || tags.length > 0 || platforms.length > 0 || features.length > 0 || !!maxSize;
   const hasSearch = !!q;
   const hasAny = hasSearch || hasFilters;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
 
   // Run structured game filter
   const filter: GameFilter = {

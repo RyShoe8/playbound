@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getGame } from "@/lib/catalog";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata, privateMetadata, sizeLabel } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -9,7 +9,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) return { title: "Game Not Found" };
   if (game.status === "testing") return privateMetadata(`How to Install ${game.title}`);

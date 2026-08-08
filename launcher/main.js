@@ -37,7 +37,7 @@ let exeScanGeneration = 0;
 /** @type {import('electron-updater').UpdateInfo | null} */
 let pendingUpdate = null;
 /** Linked site account is role=admin — uses unsigned admin.yml updater channel. */
-let linkedIsAdmin = false;
+let linkedCanUseAdminChannel = false;
 /** Original NSIS signature verifier — restored when leaving the admin channel. */
 let defaultVerifyUpdateCodeSignature = null;
 
@@ -268,18 +268,18 @@ async function validateLauncherToken(token) {
         "user-agent": "playbound-launcher",
       },
     });
-    if (res.status === 401) return { valid: false, isAdmin: false };
+    if (res.status === 401) return { valid: false, canUseAdminChannel: false };
     // Don't wipe token (or admin channel) on transient errors.
-    if (!res.ok) return { valid: true, isAdmin: linkedIsAdmin, transient: true };
+    if (!res.ok) return { valid: true, canUseAdminChannel: linkedCanUseAdminChannel, transient: true };
     const data = await res.json();
     return {
       valid: data.valid !== false,
       email: data.email || null,
       username: data.username || null,
-      isAdmin: Boolean(data.isAdmin === true || data.role === "admin"),
+      canUseAdminChannel: Boolean(data.canUseAdminChannel === true || data.isAdmin === true || data.isTester === true || data.role === "admin"),
     };
   } catch {
-    return { valid: true, isAdmin: linkedIsAdmin, transient: true };
+    return { valid: true, canUseAdminChannel: linkedCanUseAdminChannel, transient: true };
   }
 }
 
@@ -298,7 +298,7 @@ function getAutoUpdater() {
  * still accept unsigned test builds while linked as an admin.
  */
 function getEffectiveUpdateChannel() {
-  if (!linkedIsAdmin) return "latest";
+  if (!linkedCanUseAdminChannel) return "latest";
   const pref = loadSettings().updateChannel;
   return pref === "latest" ? "latest" : "admin";
 }
@@ -327,31 +327,31 @@ function applyUpdaterChannel() {
   console.log(`[updater] channel=${channel} verifySignature=${skipVerify ? "off" : "on"}`);
 }
 
-function setLinkedIsAdmin(next) {
-  linkedIsAdmin = Boolean(next);
+function setLinkedCanUseAdminChannel(next) {
+  linkedCanUseAdminChannel = Boolean(next);
   applyUpdaterChannel();
 }
 
 async function refreshAdminUpdateChannel() {
   const settings = loadSettings();
   if (!settings.launcherToken) {
-    setLinkedIsAdmin(false);
+    setLinkedCanUseAdminChannel(false);
     return false;
   }
   const check = await validateLauncherToken(settings.launcherToken);
   if (!check.valid) {
-    setLinkedIsAdmin(false);
+    setLinkedCanUseAdminChannel(false);
     return false;
   }
-  setLinkedIsAdmin(Boolean(check.isAdmin));
-  return Boolean(check.isAdmin);
+  setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
+  return Boolean(check.canUseAdminChannel);
 }
 
 function clearLocalToken(message) {
   const settings = loadSettings();
   delete settings.launcherToken;
   saveSettings(settings);
-  setLinkedIsAdmin(false);
+  setLinkedCanUseAdminChannel(false);
   notifyAccount({
     connected: false,
     message: message || "Session expired — sign in again from Settings.",
@@ -381,7 +381,7 @@ async function connectWithToken(token) {
   if (error) {
     message = `Signed in, but sync had issues: ${error}`;
   }
-  setLinkedIsAdmin(Boolean(check.isAdmin));
+  setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
   notifyAccount({
     connected: true,
     synced,
@@ -389,7 +389,7 @@ async function connectWithToken(token) {
     message,
     email: check.email,
     username: check.username,
-    isAdmin: linkedIsAdmin,
+    canUseAdminChannel: linkedCanUseAdminChannel,
   });
   // Admins get testing titles once the bearer is present.
   void refreshRemoteCatalog();
@@ -401,7 +401,7 @@ async function connectWithToken(token) {
     error,
     email: check.email,
     username: check.username,
-    isAdmin: linkedIsAdmin,
+    canUseAdminChannel: linkedCanUseAdminChannel,
   };
 }
 
@@ -409,9 +409,9 @@ async function syncLibraryNow({ quiet = false } = {}) {
   const settings = loadSettings();
   const token = settings.launcherToken;
   if (!token) {
-    setLinkedIsAdmin(false);
+    setLinkedCanUseAdminChannel(false);
     if (!quiet) {
-      notifyAccount({ connected: false, message: "Sign in to sync your library.", isAdmin: false });
+      notifyAccount({ connected: false, message: "Sign in to sync your library.", canUseAdminChannel: false });
     }
     return { connected: false };
   }
@@ -427,7 +427,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
     return { connected: false, error: "unauthorized" };
   }
 
-  setLinkedIsAdmin(Boolean(check.isAdmin));
+  setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
 
   if (!quiet) {
     notifyAccount({
@@ -435,7 +435,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
       message: "Syncing installs…",
       email: check.email,
       username: check.username,
-      isAdmin: linkedIsAdmin,
+      canUseAdminChannel: linkedCanUseAdminChannel,
     });
   }
 
@@ -466,7 +466,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
       message: quiet && !synced && !error && !skipped?.length ? undefined : message,
       email: check.email,
       username: check.username,
-      isAdmin: linkedIsAdmin,
+      canUseAdminChannel: linkedCanUseAdminChannel,
     });
   }
   return {
@@ -476,7 +476,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
     error,
     email: check.email,
     username: check.username,
-    isAdmin: linkedIsAdmin,
+    canUseAdminChannel: linkedCanUseAdminChannel,
   };
 }
 
@@ -3408,21 +3408,21 @@ ipcMain.handle("clipboard-write", (_event, text) => {
 ipcMain.handle("get-account", async () => {
   const settings = loadSettings();
   if (!settings.launcherToken) {
-    setLinkedIsAdmin(false);
-    return { connected: false, apiBase: getApiBase(), isAdmin: false };
+    setLinkedCanUseAdminChannel(false);
+    return { connected: false, apiBase: getApiBase(), canUseAdminChannel: false };
   }
   const check = await validateLauncherToken(settings.launcherToken);
   if (!check.valid) {
     clearLocalToken("Saved session is no longer valid — sign in again from Settings.");
-    return { connected: false, apiBase: getApiBase(), isAdmin: false };
+    return { connected: false, apiBase: getApiBase(), canUseAdminChannel: false };
   }
-  setLinkedIsAdmin(Boolean(check.isAdmin));
+  setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
   return {
     connected: true,
     apiBase: getApiBase(),
     email: check.email || null,
     username: check.username || null,
-    isAdmin: linkedIsAdmin,
+    canUseAdminChannel: linkedCanUseAdminChannel,
   };
 });
 ipcMain.handle("set-launcher-token", (_event, token) => connectWithToken(token));
@@ -3444,9 +3444,9 @@ ipcMain.handle("clear-launcher-token", async () => {
   }
   delete settings.launcherToken;
   saveSettings(settings);
-  setLinkedIsAdmin(false);
-  notifyAccount({ connected: false, isAdmin: false });
-  return { connected: false, isAdmin: false };
+  setLinkedCanUseAdminChannel(false);
+  notifyAccount({ connected: false, canUseAdminChannel: false });
+  return { connected: false, canUseAdminChannel: false };
 });
 ipcMain.handle("sign-in", () => {
   openAuthWindow();
@@ -3764,9 +3764,9 @@ ipcMain.handle("get-settings", () => {
     packaged: app.isPackaged,
     compatibilityFilter:
       settings.compatibilityFilter === "all" ? "all" : "compatible",
-    isAdmin: linkedIsAdmin,
+    canUseAdminChannel: linkedCanUseAdminChannel,
     updateChannel,
-    updateChannelPref: linkedIsAdmin ? updateChannelPref : "latest",
+    updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
   };
 });
 ipcMain.handle("get-app-version", () => ({
@@ -3828,7 +3828,7 @@ ipcMain.handle("save-settings", (_event, patch) => {
     settings.compatibilityFilter = patch.compatibilityFilter;
     void pushCompatibilityPreference(patch.compatibilityFilter);
   }
-  if (linkedIsAdmin && (patch.updateChannel === "admin" || patch.updateChannel === "latest")) {
+  if (linkedCanUseAdminChannel && (patch.updateChannel === "admin" || patch.updateChannel === "latest")) {
     settings.updateChannel = patch.updateChannel;
   }
   saveSettings(settings);
@@ -3836,7 +3836,7 @@ ipcMain.handle("save-settings", (_event, patch) => {
   return {
     ok: true,
     updateChannel: getEffectiveUpdateChannel(),
-    isAdmin: linkedIsAdmin,
+    canUseAdminChannel: linkedCanUseAdminChannel,
   };
 });
 

@@ -2152,9 +2152,12 @@ async function renderSettingsView() {
   const version = ver?.version || settings.version || "—";
   const packaged = Boolean(ver?.packaged ?? settings.packaged);
   const ready = updateStatus.phase === "ready";
-  const isAdmin = Boolean(accountState.isAdmin || settings.isAdmin);
+  const canUseAdminChannel = Boolean(
+    accountState.canUseAdminChannel || settings.canUseAdminChannel
+  );
   const channelPref = settings.updateChannelPref === "latest" ? "latest" : "admin";
-  const activeChannel = settings.updateChannel === "latest" ? "latest" : isAdmin ? "admin" : "latest";
+  const activeChannel =
+    settings.updateChannel === "latest" ? "latest" : canUseAdminChannel ? "admin" : "latest";
   const updateHint = !packaged
     ? "Auto-update runs in installed builds only."
     : ready
@@ -2199,9 +2202,9 @@ async function renderSettingsView() {
       <label class="settings-label">Updates</label>
       <p class="settings-hint">Current version: <strong>${escapeHtml(version)}</strong>. <span id="set-update-hint">${escapeHtml(updateHint)}</span> First install still uses Setup from the site; later updates install in-app. Unsigned builds may show SmartScreen.</p>
       ${
-        isAdmin
+        canUseAdminChannel
           ? `<div style="margin-top: 12px;">
-        <p class="settings-hint" style="margin-bottom: 8px;">Admin update channel — choose which feed Check for updates uses.</p>
+        <p class="settings-hint" style="margin-bottom: 8px;">Update channel for testers and admins — choose which feed Check for updates uses.</p>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-sm ${channelPref === "admin" ? "btn-primary" : "btn-secondary"}" data-channel="admin" id="set-channel-admin">Unsigned (testing)</button>
           <button type="button" class="btn-sm ${channelPref === "latest" ? "btn-primary" : "btn-secondary"}" data-channel="latest" id="set-channel-latest">Signed (release)</button>

@@ -65,7 +65,7 @@ import {
 } from "@/components/JsonLd";
 import { TelemetryOnce } from "@/components/TelemetryOnce";
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
 import { issueForGame, type WeeklyIssue } from "@/lib/weekly";
@@ -100,7 +100,7 @@ const PARAM_TABS = tabs;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) return privateMetadata("Game Not Found");
   if (game.status === "testing") return privateMetadata(gameTitle(game));
@@ -140,7 +140,7 @@ export default async function GamePage({
   const { slug } = await params;
   const sp = await searchParams;
   const { tab: rawTab } = sp;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) {
     // The game may have been renamed; send its old URL to the current one so
@@ -263,7 +263,7 @@ export default async function GamePage({
 
       {game.status === "testing" && (
         <div className="border-b border-amber-500/40 bg-amber-400/10 px-4 py-2 text-center text-sm font-semibold text-amber-700 dark:text-amber-300 sm:px-6 lg:px-8">
-          Testing — admin only
+          Testing
         </div>
       )}
 
@@ -752,7 +752,7 @@ function OverviewTab({
 }
 
 async function ModsTab({ game }: { game: Game }) {
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const mods = await modsForGame(game.slug, { includeTesting });
 
   let installedModSlugs = new Set<string>();

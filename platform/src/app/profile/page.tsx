@@ -13,6 +13,8 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { ConnectedAccounts } from "@/components/ConnectedAccounts";
 import { SignOutButton } from "@/components/SignOutButton";
 import User from "@/lib/models/User";
+import { canAccessTesting } from "@/lib/requestIncludesTesting";
+import { getAdminLauncherDownloadUrl } from "@/lib/launcherDownload";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -95,6 +97,11 @@ export default async function ProfilePage() {
             {session.user.role === "admin" && (
               <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">Admin</span>
             )}
+            {session.user.tester && session.user.role !== "admin" && (
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-muted-foreground">
+                Tester
+              </span>
+            )}
             <SignOutButton className="ml-auto rounded-full border border-border bg-secondary px-4 py-1.5 hover:bg-secondary/70" />
           </div>
         </div>
@@ -103,6 +110,8 @@ export default async function ProfilePage() {
       <ProfileSettings
         initialUsername={session.user.username}
         email={session.user.email ?? ""}
+        canDownloadUnsigned={canAccessTesting(session.user)}
+        unsignedLauncherUrl={getAdminLauncherDownloadUrl()}
       />
 
       <ConnectedAccounts
