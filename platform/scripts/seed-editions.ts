@@ -1,6 +1,7 @@
 /**
- * Upsert curated seed editions. Seed-owned slugs stay unlisted/coming_soon
- * (draft-like) until an admin publishes them in the CMS.
+ * Upsert curated seed editions. Seed-owned slugs default to unlisted/coming_soon
+ * unless the seed sets status/visibility. Parents of public+active seed editions
+ * are promoted to published so /api/launcher/editions can return them.
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -34,6 +35,7 @@ async function main() {
   }
 
   let upserted = 0;
+  const parentsToPublish = new Set<string>();
   for (const seed of editions) {
     const game = await CatalogGame.findOne({ slug: seed.gameSlug }).select("_id").lean();
     await Edition.findOneAndUpdate(
@@ -47,7 +49,7 @@ async function main() {
           shortDescription: seed.shortDescription,
           description: seed.description,
           type: seed.type,
-          // Draft-like until manually promoted in admin.
+          // Draft-like until manually promoted in admin, unless the seed opts in.
           status: seed.status ?? "coming_soon",
           visibility: seed.visibility ?? "unlisted",
           sortOrder: seed.sortOrder ?? 0,
@@ -72,7 +74,21 @@ async function main() {
       { upsert: true, new: true }
     );
     upserted++;
+    if (seed.status === "active" && seed.visibility === "public") {
+      parentsToPublish.add(seed.gameSlug);
+    }
     console.log(`OK  ${seed.gameSlug}/${seed.slug}`);
+  }
+
+  // Launcher editions API only lists editions under visible parent games.
+  for (const gameSlug of parentsToPublish) {
+    const res = await CatalogGame.updateOne(
+      { slug: gameSlug, status: { $ne: "published" } },
+      { $set: { status: "published", published: true } }
+    );
+    if (res.modifiedCount) {
+      console.log(`PUBLISH parent game ${gameSlug}`);
+    }
   }
 
   console.log(`Seeded/updated ${upserted} editions into MongoDB.`);

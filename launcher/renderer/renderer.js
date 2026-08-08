@@ -1108,38 +1108,92 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       renderLibraryView();
     });
     block.appendChild(actions);
-  } else if (!opts.orphan && (game.exe || game.dir)) {
-    actions.innerHTML = `
+  } else if (!opts.orphan && (game.exe || game.dir || (game.installedEditions || []).length)) {
+    const editions = Array.isArray(game.installedEditions)
+      ? game.installedEditions.filter((e) => e.exe || e.dir)
+      : [];
+    if (editions.length > 1) {
+      actions.innerHTML = editions
+        .map(
+          (ed) => `
+        <div class="library-edition-actions">
+          <span class="library-edition-label">${escapeHtml(ed.editionName || ed.editionSlug)}</span>
+          ${ed.exe ? `<button class="btn-success btn-sm btn-lib-play-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Play</button>` : ""}
+          ${ed.dir ? `<button class="btn-secondary btn-sm btn-lib-folder-ed" type="button" data-dir="${escapeHtml(ed.dir)}">Folder</button>` : ""}
+          <button class="btn-danger btn-sm btn-lib-uninstall-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Remove</button>
+        </div>`
+        )
+        .join("");
+      actions.querySelectorAll(".btn-lib-play-ed").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const ed = btn.dataset.edition;
+          try {
+            setStatus(`Launching ${game.title} (${ed})…`);
+            await window.playbound.play(game.slug, null, ed);
+            startGameSession(game.slug, game.title);
+            setStatus(`Launched ${game.title}`);
+          } catch (err) {
+            setStatus(err.message || String(err), true);
+          }
+        });
+      });
+      actions.querySelectorAll(".btn-lib-folder-ed").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (btn.dataset.dir) window.playbound.openFolder(btn.dataset.dir);
+        });
+      });
+      actions.querySelectorAll(".btn-lib-uninstall-ed").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const ed = btn.dataset.edition;
+          const label = editions.find((x) => x.editionSlug === ed)?.editionName || ed;
+          if (!confirm(`Remove ${game.title} — ${label}?`)) return;
+          try {
+            await window.playbound.uninstall(game.slug, ed);
+            setStatus(`Removed ${label}`);
+            renderLibraryView();
+          } catch (err) {
+            setStatus(err.message || String(err), true);
+          }
+        });
+      });
+    } else {
+      const onlyEd = editions[0]?.editionSlug || game.editionSlug || null;
+      actions.innerHTML = `
       <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
-      ${game.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
+      ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
       <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
     `;
-    actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      try {
-        setStatus(`Launching ${game.title}…`);
-        await window.playbound.play(game.slug);
-        startGameSession(game.slug, game.title);
-        setStatus(`Launched ${game.title}`);
-      } catch (err) {
-        setStatus(err.message || String(err), true);
-      }
-    });
-    actions.querySelector(".btn-lib-folder")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (game.dir) window.playbound.openFolder(game.dir);
-    });
-    actions.querySelector(".btn-lib-uninstall")?.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (!confirm(`Uninstall ${game.title}?`)) return;
-      try {
-        await window.playbound.uninstall(game.slug);
-        setStatus(`Uninstalled ${game.title}`);
-        renderLibraryView();
-      } catch (err) {
-        setStatus(err.message || String(err), true);
-      }
-    });
+      actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        try {
+          setStatus(`Launching ${game.title}…`);
+          await window.playbound.play(game.slug, null, onlyEd);
+          startGameSession(game.slug, game.title);
+          setStatus(`Launched ${game.title}`);
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+        }
+      });
+      actions.querySelector(".btn-lib-folder")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const dir = game.dir || editions[0]?.dir;
+        if (dir) window.playbound.openFolder(dir);
+      });
+      actions.querySelector(".btn-lib-uninstall")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Uninstall ${game.title}?`)) return;
+        try {
+          await window.playbound.uninstall(game.slug, onlyEd);
+          setStatus(`Uninstalled ${game.title}`);
+          renderLibraryView();
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+        }
+      });
+    }
     block.appendChild(actions);
   }
 
@@ -3238,6 +3292,43 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
     )
     .join("");
 
+  const editionInstalled = Boolean(
+    (gameDetail?.installedEditions || []).some(
+      (e) => e.editionSlug === editionSlug && e.exe
+    )
+  );
+
+  const playSteps = Array.isArray(edition.installAction?.steps)
+    ? edition.installAction.steps
+    : Array.isArray(edition.installConfig?.playbound_installer?.steps)
+      ? edition.installConfig.playbound_installer.steps
+      : [];
+  const playStepsHtml = playSteps.length
+    ? `<ol class="edition-play-steps">${playSteps
+        .map(
+          (step, i) =>
+            `<li><span class="edition-step-n">${i + 1}</span><div><p>${escapeHtml(
+              step.text || ""
+            )}</p>${
+              step.command
+                ? `<code class="edition-step-cmd">${escapeHtml(step.command)}</code>`
+                : ""
+            }</div></li>`
+        )
+        .join("")}</ol>`
+    : "";
+  const installNote =
+    edition.installAction?.note || edition.installConfig?.playbound_installer?.note || "";
+  const reqNotes = edition.requirements?.notes || "";
+  const faqHtml = (edition.faq || [])
+    .map(
+      (item) =>
+        `<div class="faq-card"><h3>${escapeHtml(item.q || "FAQ")}</h3><p>${escapeHtml(
+          item.a || ""
+        )}</p></div>`
+    )
+    .join("");
+
   container.innerHTML = `
     <button class="btn-secondary btn-sm" id="edition-back" style="margin-bottom:12px">← ${escapeHtml(
       edition.gameTitle || gameSlug
@@ -3256,10 +3347,13 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
         <h1 class="view-title detail-hero-title">${escapeHtml(edition.editionName)}</h1>
         <p class="view-sub detail-hero-sub">${escapeHtml(edition.shortDescription || "")}</p>
         <div class="detail-hero-actions">
-          <button class="btn-primary" id="edition-install">Install this edition</button>
+          <button class="btn-primary" id="edition-install">${
+            editionInstalled ? "Reinstall this edition" : "Install this edition"
+          }</button>
           ${
-            gameDetail?.installed
-              ? `<button class="btn-success" id="edition-play">Play</button>`
+            editionInstalled
+              ? `<button class="btn-success" id="edition-play">Play</button>
+                 <button class="btn-danger" id="edition-uninstall">Uninstall</button>`
               : ""
           }
         </div>
@@ -3268,15 +3362,35 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
     ${buildActivityPanelHtml(liveStats, "Edition activity")}
     <section class="detail-section">
       <h2 class="detail-section-title">About</h2>
-      <p class="detail-prose">${escapeHtml(edition.shortDescription || "")}</p>
+      ${(edition.description || edition.shortDescription || "")
+        .split(/\n\n+/)
+        .filter(Boolean)
+        .map((para) => `<p class="detail-prose">${escapeHtml(para)}</p>`)
+        .join("")}
     </section>
     ${
-      edition.requirements
+      playStepsHtml
+        ? `<section class="detail-section"><h2 class="detail-section-title">How to get playing</h2>${playStepsHtml}${
+            installNote ? `<p class="view-sub" style="margin-top:10px">${escapeHtml(installNote)}</p>` : ""
+          }${
+            reqNotes
+              ? `<p class="edition-req-note">${escapeHtml(reqNotes)}</p>`
+              : ""
+          }</section>`
+        : ""
+    }
+    ${
+      edition.requirements && (edition.requirements.min || edition.requirements.recommended)
         ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
         <div class="req-grid">
           <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(edition.requirements.min || "—")}</p></div>
           <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(edition.requirements.recommended || "—")}</p></div>
         </div></section>`
+        : ""
+    }
+    ${
+      faqHtml
+        ? `<section class="detail-section"><h2 class="detail-section-title">FAQ</h2><div class="faq-list">${faqHtml}</div></section>`
         : ""
     }
     ${
@@ -3294,7 +3408,7 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
     try {
       const res = await window.playbound.install(gameSlug, null, editionSlug);
       if (res.status === "installed") {
-        setStatus("Install complete!");
+        setStatus(res.note || "Install complete!");
         setProgress(null);
         renderEditionDetailView(gameSlug, editionSlug);
       } else if (res.status === "installer-opened") {
@@ -3303,6 +3417,9 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
         openGameDetail(gameSlug, "editionDetail");
       } else if (res.status === "external") {
         setStatus("Opened download page.");
+        setProgress(null);
+      } else if (res.status === "cancelled") {
+        setStatus(res.note || "Install cancelled.");
         setProgress(null);
       }
     } catch (err) {
@@ -3313,9 +3430,19 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
   document.getElementById("edition-play")?.addEventListener("click", async () => {
     try {
       setStatus("Launching...");
-      await window.playbound.play(gameSlug);
+      await window.playbound.play(gameSlug, null, editionSlug);
       startGameSession(gameSlug, edition.gameTitle || gameSlug);
-      setStatus(`Launched ${edition.gameTitle || gameSlug}`);
+      setStatus(`Launched ${edition.editionName || edition.gameTitle || gameSlug}`);
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
+  document.getElementById("edition-uninstall")?.addEventListener("click", async () => {
+    if (!confirm(`Uninstall ${edition.editionName}? Other editions stay installed.`)) return;
+    try {
+      await window.playbound.uninstall(gameSlug, editionSlug);
+      setStatus(`Uninstalled ${edition.editionName}`);
+      renderEditionDetailView(gameSlug, editionSlug);
     } catch (err) {
       setStatus(err.message || String(err), true);
     }
@@ -3399,7 +3526,7 @@ function renderDeepLinkView(ctx) {
       <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
     `;
     document.getElementById("dl-act-run").addEventListener("click", async () => {
-      await window.playbound.play(ctx.slug, ctx.join);
+      await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
       startGameSession(ctx.slug, title);
       navigateTo("home");
     });

@@ -249,15 +249,18 @@ export default async function EditionPage({ params }: { params: Params }) {
               Method — {INSTALL_METHOD_LABELS[edition.installMethod]}
             </p>
 
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <EditionInstallButton action={action} telemetryProps={telemetryProps} />
+            </div>
+
             {action.steps?.length ? (
               <div className="mt-4">
+                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  How to get playing
+                </p>
                 <EditionInstallSteps steps={action.steps} />
               </div>
-            ) : (
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <EditionInstallButton action={action} telemetryProps={telemetryProps} />
-              </div>
-            )}
+            ) : null}
 
             {action.note && <p className="mt-3 text-sm text-muted-foreground">{action.note}</p>}
             {edition.requirements?.notes && (

@@ -67,6 +67,14 @@ const installConfigSchema = z
         installRoot: z.string().trim().max(300).nullish(),
         connectArgs: z.array(z.string().trim().max(200)).max(20).optional(),
         note: z.string().trim().max(500).nullish(),
+        checksumMd5: z.string().trim().max(64).nullish(),
+        md5: z.string().trim().max(64).nullish(),
+        postInstallDiscord: z.union([z.string().trim().max(500), z.boolean()]).nullish(),
+        postInstallEqw: z.boolean().optional(),
+        overlayUrl: z.string().trim().max(500).nullish(),
+        overlayFileName: z.string().trim().max(200).nullish(),
+        requiresBaseDir: z.boolean().optional(),
+        steps: z.array(installStepSchema).max(30).optional(),
       })
       .optional(),
     external_installer: z

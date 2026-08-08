@@ -239,7 +239,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "external",
     url: "https://www.everquest.com",
-    note: "Use Daybreak / official launcher, or pick a community edition (Quarm / P99).",
+    note: "Prefer an edition: EverQuest Live (Daybreak LaunchPad), Project Quarm, or Project 1999.",
   },
   starcraft: {
     enabled: true,

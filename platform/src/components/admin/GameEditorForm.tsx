@@ -64,6 +64,7 @@ const WIRED_SERVER_PROVIDERS = new Set([
   "warzone-2100",
   "zero-k",
   "0ad",
+  "everquest",
 ]);
 
 type DevOption = { slug: string; name: string };

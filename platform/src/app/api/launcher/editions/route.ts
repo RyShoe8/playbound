@@ -62,6 +62,8 @@ export async function GET(req: Request) {
           virtual: edition.virtual,
 
           shortDescription: edition.shortDescription || game.tagline,
+          description: edition.description || "",
+          faq: Array.isArray(edition.faq) ? edition.faq : [],
           version: edition.version ?? null,
           verificationLevel: edition.verificationLevel,
           verified: edition.verified,

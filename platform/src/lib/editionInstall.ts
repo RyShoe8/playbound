@@ -67,6 +67,7 @@ const RESOLVERS: Record<InstallMethod, Resolver> = {
       href: `playbound://install/${edition.gameSlug}?edition=${encodeURIComponent(edition.slug)}`,
       method: "playbound_installer",
       note: cfg.note ?? undefined,
+      steps: Array.isArray(cfg.steps) && cfg.steps.length ? cfg.steps : undefined,
     };
   },
 
