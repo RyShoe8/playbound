@@ -1469,13 +1469,6 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       });
     }
     block.appendChild(actions);
-    const hintHtml = gamePlayHintHtml(game.slug);
-    if (hintHtml) {
-      const hint = document.createElement("div");
-      hint.className = "library-play-hint";
-      hint.innerHTML = hintHtml;
-      block.appendChild(hint);
-    }
   }
 
   if (gameMods.length) {
