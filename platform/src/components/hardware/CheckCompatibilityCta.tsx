@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { launcherSyncUrl } from "@/lib/launcher";
 import { openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
+import { shouldOfferLauncher } from "@/lib/mobilePlay";
+import { useDevice } from "@/hooks/useDevice";
 import { useTelemetry } from "@/lib/telemetry";
 
 type Props = {
@@ -24,6 +26,7 @@ type Props = {
 /**
  * Opens installed launcher via playbound://sync (library + hardware) for signed-in users;
  * guests go to /launcher. Soft fallback to /launcher on handoff miss (no auto-download).
+ * Hidden on phones/tablets — launcher sync is desktop-only.
  */
 export function CheckCompatibilityCta({
   gameSlug,
@@ -34,6 +37,7 @@ export function CheckCompatibilityCta({
   onLauncherOpened,
   statusHint,
 }: Props) {
+  const device = useDevice();
   const { status } = useSession();
   const { track } = useTelemetry();
   const [hint, setHint] = useState<string | null>(null);
@@ -42,6 +46,10 @@ export function CheckCompatibilityCta({
   useEffect(() => {
     setHint(null);
   }, [status]);
+
+  if (!shouldOfferLauncher(device.type)) {
+    return null;
+  }
 
   const displayedHint = statusHint ?? hint;
 

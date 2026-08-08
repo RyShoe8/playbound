@@ -19,6 +19,7 @@ import {
   platformFromUserAgent,
   visiblePlatformsFor,
 } from "@/lib/libraryPlatform";
+import { shouldOfferLauncherFromUa } from "@/lib/mobilePlay";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -61,9 +62,12 @@ export default async function LibraryPage() {
   const userAgent = (await headers()).get("user-agent") || "";
   const viewerPlatform = platformFromUserAgent(userAgent);
   const visible = visiblePlatformsFor(viewerPlatform);
+  const offerLauncherDownload = shouldOfferLauncherFromUa(userAgent);
   const isMac = /Mac OS X|Macintosh/i.test(userAgent);
-  const downloadUrl = isMac 
-    ? process.env.NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL || process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher"
+  const downloadUrl = isMac
+    ? process.env.NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL ||
+      process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL ||
+      "/launcher"
     : process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher";
 
   try {
@@ -103,7 +107,10 @@ export default async function LibraryPage() {
     console.error("Library page load failed:", err);
   }
 
-  const games = await gamesFor(entries.map((e) => e.gameSlug));
+  const games = await gamesFor(
+    entries.map((e) => e.gameSlug),
+    { includeUnpublished: true }
+  );
   const knownSlugs = new Set(games.map((g) => g.slug));
   const orphanEntries = entries.filter((e) => !knownSlugs.has(e.gameSlug));
   const hasAny = entries.length > 0;
@@ -172,12 +179,14 @@ export default async function LibraryPage() {
             >
               Browse Discover
             </Link>
-            <a
-              href={downloadUrl}
-              className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
-            >
-              Download the Launcher
-            </a>
+            {offerLauncherDownload ? (
+              <a
+                href={downloadUrl}
+                className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
+              >
+                Download the Launcher
+              </a>
+            ) : null}
           </div>
         </div>
       ) : (

@@ -98,7 +98,8 @@ export async function POST(req: Request) {
 
   try {
     const { slug, intent, source } = addSchema.parse(await req.json());
-    const game = await getGame(slug);
+    // Allow claiming testing/CMS drafts the user can already open (admins/testers).
+    const game = await getGame(slug, { includeUnpublished: true });
     if (!game) {
       return NextResponse.json({ error: "Unknown game" }, { status: 404 });
     }

@@ -59,7 +59,7 @@ export default async function LauncherPage() {
         </p>
       </section>
 
-      <section>
+      <section className="hidden lg:block">
         <SectionHeader
           title="One-Click Install"
           subtitle="Click a tile to open the launcher and start installing. Requires the launcher downloaded and run once."

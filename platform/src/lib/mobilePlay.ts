@@ -29,6 +29,17 @@ export function shouldOfferLauncher(device: DeviceType): boolean {
   return device === "desktop" || device === "macos";
 }
 
+/**
+ * Server/UA fallback when viewport class is unavailable.
+ * Phones/tablets reporting mobile OS never get launcher downloads.
+ */
+export function shouldOfferLauncherFromUa(ua: string | null | undefined): boolean {
+  const raw = ua || "";
+  if (/Android/i.test(raw)) return false;
+  if (/iPhone|iPad|iPod/i.test(raw)) return false;
+  return true;
+}
+
 export function parseMobileOs(ua: string | null | undefined): MobileOs {
   const raw = ua || "";
   if (/Android/i.test(raw)) return "android";

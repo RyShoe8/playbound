@@ -335,7 +335,23 @@ export async function resolveGameForSync(slug: string): Promise<Game | undefined
   return seed ? seedGameWithInstall(seed) : undefined;
 }
 
-export async function gamesFor(slugs: string[]): Promise<Game[]> {
+export async function gamesFor(
+  slugs: string[],
+  opts?: { includeUnpublished?: boolean }
+): Promise<Game[]> {
+  if (!slugs.length) return [];
+
+  if (opts?.includeUnpublished) {
+    const unique = [...new Set(slugs)];
+    const resolved = await Promise.all(
+      unique.map((s) => getGame(s, { includeUnpublished: true }))
+    );
+    const map = new Map(
+      resolved.filter((g): g is Game => Boolean(g)).map((g) => [g.slug, g])
+    );
+    return slugs.map((s) => map.get(s)).filter((g): g is Game => Boolean(g));
+  }
+
   const all = await listGames();
   const map = new Map(all.map((g) => [g.slug, g]));
   return slugs.map((s) => map.get(s)).filter((g): g is Game => Boolean(g));
