@@ -22,6 +22,8 @@ type IndexGame = {
   platforms?: string[];
   browserPlayable?: boolean;
   steamDeck?: boolean;
+  testing?: boolean;
+  status?: string;
 };
 
 type CatalogMod = {
@@ -171,8 +173,8 @@ export function GlobalServerBrowser({
     (async () => {
       try {
         const [serversRes, modsRes] = await Promise.all([
-          fetch("/api/launcher/servers", { cache: "no-store" }),
-          fetch("/api/launcher/mods", { cache: "no-store" }),
+          fetch("/api/launcher/servers", { cache: "no-store", credentials: "same-origin" }),
+          fetch("/api/launcher/mods", { cache: "no-store", credentials: "same-origin" }),
         ]);
         const serversJson = serversRes.ok ? await serversRes.json() : { games: [] };
         const modsJson = modsRes.ok ? await modsRes.json() : { mods: [] };
@@ -533,6 +535,7 @@ export function GlobalServerBrowser({
             {visibleGames.map((g) => (
               <option key={g.slug} value={g.slug}>
                 {g.title}
+                {g.testing ? " · Testing" : ""}
               </option>
             ))}
           </PremiumSelect>

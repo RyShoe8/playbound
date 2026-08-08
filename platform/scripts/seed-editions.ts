@@ -59,6 +59,7 @@ async function main() {
           installMethod: seed.installMethod,
           installConfig: seed.installConfig ?? {},
           requirements: seed.requirements ?? null,
+          hardwareRequirements: seed.hardwareRequirements ?? null,
           features: seed.features ?? [],
           tags: seed.tags ?? [],
           aliases: seed.aliases ?? [],

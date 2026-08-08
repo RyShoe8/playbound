@@ -117,6 +117,7 @@ async function main() {
       tagline?: string;
       longDescription?: string | null;
       systemRequirements?: unknown;
+      hardwareRequirements?: unknown;
       platforms?: string[];
       features?: string[];
       sizeMB?: number;
@@ -152,6 +153,7 @@ async function main() {
             screenshots: (g.screenshots?.length ? g.screenshots : prev.screenshots) ?? [],
             videos: (g.videos?.length ? g.videos : prev.videos) ?? [],
             systemRequirements: g.systemRequirements,
+            ...(g.hardwareRequirements ? { hardwareRequirements: g.hardwareRequirements } : {}),
             longDescription: g.longDescription ?? prev.longDescription ?? null,
             whyWePickedIt: g.whyWePickedIt ?? null,
             installSteps: g.installSteps ?? [],
@@ -186,6 +188,9 @@ async function main() {
     }
     if (!prev.launcherInstall && launcher) {
       patch.launcherInstall = launcher;
+    }
+    if (!prev.hardwareRequirements && g.hardwareRequirements) {
+      patch.hardwareRequirements = g.hardwareRequirements;
     }
     if (Object.keys(patch).length) {
       await CatalogGame.updateOne({ slug: g.slug }, { $set: patch });

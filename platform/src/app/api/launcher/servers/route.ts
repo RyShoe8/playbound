@@ -38,13 +38,19 @@ export async function GET(req: Request) {
         return a.title.localeCompare(b.title);
       });
 
+    const authPresent =
+      Boolean(req.headers.get("authorization")) || Boolean(req.headers.get("cookie"));
+
     return NextResponse.json(
       { games: entries, providers },
       {
         headers: {
-          "Cache-Control": includeTesting
-            ? "private, no-store"
-            : "public, s-maxage=120, stale-while-revalidate=600",
+          // Authenticated / testing payloads must never be served from a shared CDN cache.
+          "Cache-Control":
+            includeTesting || authPresent
+              ? "private, no-store"
+              : "public, s-maxage=120, stale-while-revalidate=600",
+          Vary: "Cookie, Authorization",
         },
       }
     );

@@ -11,6 +11,7 @@ import type {
   InstallMethod,
   VerificationLevel,
 } from "@/lib/editionTypes";
+import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 
 export type EditionSeed = {
   gameSlug: string;
@@ -39,6 +40,7 @@ export type EditionSeed = {
   installMethod: InstallMethod;
   installConfig?: EditionInstallConfig;
   requirements?: { min?: string; recommended?: string; notes?: string };
+  hardwareRequirements?: HardwareRequirementsBlock | null;
   features?: string[];
   tags?: string[];
   aliases?: string[];
@@ -140,6 +142,32 @@ export const editions: EditionSeed[] = [
       min: "Windows 10 64-bit · Dual-core CPU · 4 GB RAM · DX11 GPU · ~20 GB free",
       recommended: "Windows 10/11 · Quad-core · 8 GB RAM · Dedicated DX11 GPU · SSD",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx11",
+        ],
+        storageMB: 20480,
+        cpuText: "Dual-core CPU",
+        gpuText: "DX11 GPU",
+        notes: "Windows 10 64-bit",
+      },
+      recommended: {
+        ramMB: 8192,
+        apis: [
+          "dx11",
+        ],
+        cpuText: "Quad-core",
+        gpuText: "Dedicated DX11 GPU",
+        gpuTier: "entry",
+        notes: "Windows 10/11 · SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
     serverName: "EverQuest Live",
     features: ["Multiplayer", "PvE", "Free to Play"],
     tags: ["Official", "MMORPG", "F2P", "EQ"],
@@ -224,6 +252,29 @@ export const editions: EditionSeed[] = [
         "Requires a TAKP forum account + linked game (login server) account. Create only one forum account. Quarm patches come from Discord #server-files — not from PlayBound.",
       min: "Windows 10 · Dual-core CPU · 4 GB RAM · DirectX 9/11 GPU · ~4 GB free for client",
       recommended: "Windows 10/11 · Quad-core · 8 GB RAM · Dedicated GPU · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx9",
+        ],
+        storageMB: 4096,
+        cpuText: "Dual-core CPU",
+        gpuText: "DirectX 9/11 GPU",
+        notes: "Windows 10 · for client",
+      },
+      recommended: {
+        ramMB: 8192,
+        cpuText: "Quad-core",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "Windows 10/11 · SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
     serverName: "Project Quarm",
     features: ["Multiplayer", "PvE"],
@@ -312,6 +363,29 @@ export const editions: EditionSeed[] = [
         "Requires (1) a legal Titanium client folder with eqgame.exe and (2) a Project 1999 forum account plus linked login-server account. PlayBound does not redistribute Titanium.",
       min: "Windows 10 · Dual-core CPU · 4 GB RAM · DirectX 9 GPU · Titanium install + ~6 GB free",
       recommended: "Windows 10/11 · Quad-core · 8 GB RAM · Dedicated GPU · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx9",
+        ],
+        storageMB: 6144,
+        cpuText: "Dual-core CPU",
+        gpuText: "DirectX 9 GPU",
+        notes: "Windows 10 · Titanium install +",
+      },
+      recommended: {
+        ramMB: 8192,
+        cpuText: "Quad-core",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "Windows 10/11 · SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
     serverName: "Project 1999",
     features: ["Multiplayer", "PvE", "PvP"],

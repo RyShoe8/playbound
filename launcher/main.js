@@ -3757,6 +3757,17 @@ ipcMain.handle("get-mods-catalog", async () => {
     return { mods: [] };
   }
 });
+ipcMain.handle("get-gear-catalog", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/gear`, {
+      headers: launcherApiHeaders(),
+    });
+    if (!res.ok) return { items: [], categories: [], grouped: {} };
+    return await res.json();
+  } catch {
+    return { items: [], categories: [], grouped: {} };
+  }
+});
 ipcMain.handle("get-events", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/events`, {
@@ -4170,6 +4181,32 @@ ipcMain.handle("get-game-releases", async (_event, slug) => {
     return await res.json();
   } catch {
     return { releases: [], githubRepo: null };
+  }
+});
+
+ipcMain.handle("get-game-reviews", async (_event, slug) => {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/reviews`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return { reviews: [] };
+    return await res.json();
+  } catch {
+    return { reviews: [] };
+  }
+});
+
+ipcMain.handle("get-game-discussions", async (_event, slug) => {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}/discussions`,
+      { headers: launcherApiHeaders() }
+    );
+    if (!res.ok) return { topics: [], boardUrl: null };
+    return await res.json();
+  } catch {
+    return { topics: [], boardUrl: null };
   }
 });
 
