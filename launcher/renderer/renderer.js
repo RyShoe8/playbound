@@ -2413,9 +2413,9 @@ async function renderSettingsView() {
             : "Not signed in"
         }</span>
       </div>
-      <div style="margin-top: 14px; display: flex; gap: 8px;">
+      <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
         <button class="btn-primary btn-sm" id="set-btn-signin">${accountState.connected ? "Switch account" : "Sign in"}</button>
-        ${accountState.connected ? '<button class="btn-danger btn-sm" id="set-btn-signout">Sign out</button>' : ""}
+        ${accountState.connected ? '<button class="btn-danger btn-sm" id="set-btn-signout">Sign out</button>' : '<button type="button" class="btn-secondary btn-sm" id="set-btn-forgot">Forgot password</button>'}
       </div>
     </div>
 
@@ -2480,6 +2480,10 @@ async function renderSettingsView() {
   `;
 
   document.getElementById("set-btn-signin").addEventListener("click", () => window.playbound.signIn());
+  document.getElementById("set-btn-forgot")?.addEventListener("click", () => {
+    const base = (accountState.apiBase || settings.apiBase || "https://playbound.club").replace(/\/$/, "");
+    window.playbound.openExternal(`${base}/forgot-password`);
+  });
   document.getElementById("set-btn-signout")?.addEventListener("click", async () => {
     await window.playbound.clearLauncherToken();
     renderSettingsView();

@@ -42,6 +42,9 @@ export default async function LauncherAuthPage({
         <Link href="/signup" className="text-sm font-semibold text-primary hover:underline">
           Create an account
         </Link>
+        <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+          Forgot password?
+        </Link>
       </div>
     );
   }
