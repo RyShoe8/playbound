@@ -24,10 +24,31 @@ const VERDICT_COLOR: Record<string, string> = {
   unknown: "text-muted-foreground",
 };
 
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 40_000;
+
 function formatRam(mb?: number | null) {
   if (mb == null) return null;
   if (mb >= 1024) return `${Math.round(mb / 1024)} GB`;
   return `${mb} MB`;
+}
+
+async function loadCompatibility(
+  gameSlug: string,
+  editionSlug?: string | null,
+  modsKey?: string
+) {
+  const params = new URLSearchParams({ gameSlug });
+  if (editionSlug) params.set("editionSlug", editionSlug);
+  if (modsKey) params.set("modSlugs", modsKey);
+  const res = await fetch(`/api/hardware/compatibility?${params.toString()}`, {
+    cache: "no-store",
+  });
+  const data = await res.json().catch(() => null);
+  return {
+    hasProfile: Boolean(data?.hasProfile),
+    result: (data?.result ?? null) as CompatibilityResult | null,
+  };
 }
 
 export function GameHardwareCompatibility({
@@ -44,6 +65,8 @@ export function GameHardwareCompatibility({
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncHint, setSyncHint] = useState<string | null>(null);
 
   const modsKey = (modSlugs || []).join(",");
 
@@ -52,15 +75,11 @@ export function GameHardwareCompatibility({
     let cancelled = false;
     (async () => {
       try {
-        const params = new URLSearchParams({ gameSlug });
-        if (editionSlug) params.set("editionSlug", editionSlug);
-        if (modsKey) params.set("modSlugs", modsKey);
-        const res = await fetch(`/api/hardware/compatibility?${params.toString()}`);
-        const data = await res.json().catch(() => null);
+        const data = await loadCompatibility(gameSlug, editionSlug, modsKey);
         if (cancelled) return;
-        setHasProfile(Boolean(data?.hasProfile));
-        setResult(data?.result ?? null);
-        if (data?.result) {
+        setHasProfile(data.hasProfile);
+        setResult(data.result);
+        if (data.result) {
           track("game_compatibility_viewed", {
             gameSlug,
             verdict: data.result.verdict,
@@ -77,6 +96,51 @@ export function GameHardwareCompatibility({
     };
   }, [gameSlug, editionSlug, modsKey, status, track]);
 
+  useEffect(() => {
+    if (!syncing) return;
+    let cancelled = false;
+    const started = Date.now();
+    setSyncHint("Waiting for hardware sync…");
+
+    const tick = async () => {
+      try {
+        const data = await loadCompatibility(gameSlug, editionSlug, modsKey);
+        if (cancelled) return;
+        setHasProfile(data.hasProfile);
+        setResult(data.result);
+        if (data.hasProfile) {
+          setSyncing(false);
+          setSyncHint(null);
+          if (data.result) {
+            track("game_compatibility_viewed", {
+              gameSlug,
+              verdict: data.result.verdict,
+            });
+          }
+          return;
+        }
+      } catch {
+        /* keep polling */
+      }
+      if (cancelled) return;
+      if (Date.now() - started >= POLL_TIMEOUT_MS) {
+        setSyncing(false);
+        setSyncHint(
+          "Still no profile — open PlayBound while signed in, then try again."
+        );
+        return;
+      }
+      window.setTimeout(() => {
+        void tick();
+      }, POLL_INTERVAL_MS);
+    };
+
+    void tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [syncing, gameSlug, editionSlug, modsKey, track]);
+
   if (loading) {
     return (
       <section className="rounded-xl border border-border bg-card p-4">
@@ -91,10 +155,20 @@ export function GameHardwareCompatibility({
       <section className="rounded-xl border border-border bg-card p-4">
         <h2 className="text-lg font-bold">Will this run on your PC?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {result?.summary ||
-            "Open PlayBound while signed in to automatically check this game against your PC."}
+          {syncing
+            ? "Waiting for hardware sync…"
+            : result?.summary ||
+              "Open PlayBound while signed in to automatically check this game against your PC."}
         </p>
-        <CheckCompatibilityCta gameSlug={gameSlug} surface="game_page" />
+        <CheckCompatibilityCta
+          gameSlug={gameSlug}
+          surface="game_page"
+          onLauncherOpened={() => {
+            setSyncHint(null);
+            setSyncing(true);
+          }}
+          statusHint={syncHint}
+        />
       </section>
     );
   }
