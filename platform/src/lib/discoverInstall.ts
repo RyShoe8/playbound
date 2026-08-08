@@ -140,6 +140,11 @@ export async function findDirectInstaller(website: string): Promise<LauncherInst
         if (score > 0) candidates.push({ url: probe, score: score + 15 });
       }
     }
+    if (/villagersandheroes\.com$/i.test(host)) {
+      const probe = "https://villagersandheroes.com/VHSetup.exe";
+      const score = scoreInstallerUrl(probe);
+      if (score > 0) candidates.push({ url: probe, score: score + 20 });
+    }
   } catch {
     /* ignore */
   }
