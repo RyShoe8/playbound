@@ -394,6 +394,7 @@ async function connectWithToken(token) {
   // Admins get testing titles once the bearer is present.
   void refreshRemoteCatalog();
   void pullCompatibilityPreference();
+  startLauncherPresenceLoop();
   return {
     connected: true,
     synced,
@@ -3444,6 +3445,7 @@ ipcMain.handle("clear-launcher-token", async () => {
   }
   delete settings.launcherToken;
   saveSettings(settings);
+  stopLauncherPresenceLoop();
   setLinkedCanUseAdminChannel(false);
   notifyAccount({ connected: false, canUseAdminChannel: false });
   return { connected: false, canUseAdminChannel: false };
@@ -3970,6 +3972,135 @@ ipcMain.handle("decline-friend-request", async (_event, requestId) => {
     });
     if (!res.ok) throw new Error("Failed to decline request");
     return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("cancel-friend-request", async (_event, requestId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/cancel`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ requestId }),
+    });
+    if (!res.ok) throw new Error("Failed to cancel request");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("block-user", async (_event, targetUserId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/block`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ targetUserId }),
+    });
+    if (!res.ok) throw new Error("Failed to block user");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("get-appear-offline", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/presence/visibility`, {
+      headers: launcherApiHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load visibility");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message, appearOffline: false };
+  }
+});
+
+ipcMain.handle("set-appear-offline", async (_event, appearOffline) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/presence/visibility`, {
+      method: "PATCH",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ appearOffline: Boolean(appearOffline) }),
+    });
+    if (!res.ok) throw new Error("Failed to update visibility");
+    return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+let presenceSessionId = null;
+let presenceTimer = null;
+
+async function beatLauncherPresence() {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  const playingSlug = activeLaunches.keys().next().value || null;
+  const body = {
+    status: playingSlug ? "playing" : "online",
+    page: "/launcher",
+    gameId: playingSlug,
+    sessionId: presenceSessionId,
+  };
+  try {
+    const path = presenceSessionId ? "/api/presence/heartbeat" : "/api/presence/start";
+    const res = await fetch(`${getApiBase()}${path}`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return;
+    const data = await res.json().catch(() => ({}));
+    if (data.sessionId) presenceSessionId = data.sessionId;
+  } catch {
+    /* ignore */
+  }
+}
+
+function startLauncherPresenceLoop() {
+  if (presenceTimer) return;
+  void beatLauncherPresence();
+  presenceTimer = setInterval(() => void beatLauncherPresence(), 60_000);
+}
+
+function stopLauncherPresenceLoop() {
+  if (presenceTimer) {
+    clearInterval(presenceTimer);
+    presenceTimer = null;
+  }
+  const settings = loadSettings();
+  if (settings.launcherToken && presenceSessionId) {
+    void fetch(`${getApiBase()}/api/presence/end`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ sessionId: presenceSessionId }),
+    }).catch(() => {});
+  }
+  presenceSessionId = null;
+}
+
+ipcMain.handle("presence-heartbeat", async (_event, payload = {}) => {
+  try {
+    const playingSlug = activeLaunches.keys().next().value || null;
+    const body = {
+      status: payload.status || (playingSlug ? "playing" : "online"),
+      page: payload.page || "/launcher",
+      gameId: payload.gameId || playingSlug,
+      sessionId: presenceSessionId,
+    };
+    const path = presenceSessionId ? "/api/presence/heartbeat" : "/api/presence/start";
+    const res = await fetch(`${getApiBase()}${path}`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error("presence failed");
+    const data = await res.json();
+    if (data.sessionId) presenceSessionId = data.sessionId;
+    startLauncherPresenceLoop();
+    return { ok: true, sessionId: presenceSessionId };
   } catch (err) {
     return { error: err.message };
   }

@@ -1,13 +1,106 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
-import { useFriendsStore } from "@/stores/friendsStore";
+import { useFriendsStore, type FriendUser } from "@/stores/friendsStore";
 import { AddFriends } from "@/components/friends/AddFriends";
 import { Avatar } from "@/components/ui/bits";
-import { Clock, Gamepad2, Globe, UserMinus, UserPlus, X } from "lucide-react";
+import {
+  Clock,
+  ExternalLink,
+  Gamepad2,
+  Globe,
+  LogIn,
+  UserMinus,
+  UserPlus,
+  Ban,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { telemetry } from "@/lib/telemetry";
+
+function FriendRow({
+  friend,
+  subtitle,
+  playing,
+  onRemove,
+  onBlock,
+}: {
+  friend: FriendUser;
+  subtitle: ReactNode;
+  playing?: boolean;
+  onRemove: (id: string) => void;
+  onBlock: (id: string) => void;
+}) {
+  const gameSlug = friend.presence.currentGameId;
+  const gameLabel = friend.presence.currentGameTitle || gameSlug;
+
+  return (
+    <div className="group flex items-center gap-3 rounded-lg p-2 hover:bg-secondary/50">
+      <div className="relative shrink-0">
+        <Avatar name={friend.username} hue={265} size="sm" />
+        <span className="absolute -right-1 -bottom-1 flex size-3.5 items-center justify-center rounded-full bg-card">
+          <span
+            className={`size-2.5 rounded-full ${
+              playing ? "bg-primary" : friend.presence.status === "offline" ? "bg-muted-foreground/40" : "bg-green-500"
+            }`}
+          />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1 truncate">
+        <p className="flex items-center gap-1.5 truncate text-sm font-bold">
+          <Link href={`/users/${encodeURIComponent(friend.username)}`} className="hover:underline">
+            {friend.username}
+          </Link>
+          {friend.discordLinked ? (
+            <a
+              href="https://discord.com/app"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-[#5865F2]"
+              title="Open Discord"
+              onClick={() => telemetry.track("friend_discord_clicked", { source: "friends_list" })}
+            >
+              <ExternalLink className="size-3" />
+            </a>
+          ) : null}
+        </p>
+        <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+        {playing && gameSlug ? (
+          <Link
+            href={`/games/${encodeURIComponent(gameSlug)}`}
+            className="rounded-md bg-primary/15 px-2 py-1 text-[11px] font-bold text-primary hover:bg-primary/25"
+            onClick={() =>
+              telemetry.track("friend_view_game_clicked", { gameSlug, friendId: friend.id })
+            }
+          >
+            View Game
+          </Link>
+        ) : null}
+        <button
+          type="button"
+          title="Remove friend"
+          className="rounded-md bg-secondary p-1.5 text-muted-foreground hover:text-foreground"
+          onClick={() => onRemove(friend.id)}
+        >
+          <UserMinus className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          title="Block"
+          className="rounded-md bg-secondary p-1.5 text-muted-foreground hover:text-destructive"
+          onClick={() => {
+            if (confirm(`Block ${friend.username}?`)) onBlock(friend.id);
+          }}
+        >
+          <Ban className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function FriendsView({
   games,
@@ -27,11 +120,15 @@ export function FriendsView({
     stopPolling,
     acceptRequest,
     declineRequest,
+    cancelRequest,
+    removeFriend,
+    blockUser,
   } = useFriendsStore();
 
   useEffect(() => {
     if (status === "authenticated") {
       startPolling(30000);
+      telemetry.track("friends_page_viewed", {});
     }
     return () => stopPolling();
   }, [status, startPolling, stopPolling]);
@@ -80,7 +177,12 @@ export function FriendsView({
                   >
                     <div className="flex min-w-0 items-center gap-3 truncate">
                       <Avatar name={req.user.username} hue={265} size="sm" />
-                      <span className="truncate text-sm font-semibold">{req.user.username}</span>
+                      <Link
+                        href={`/users/${encodeURIComponent(req.user.username)}`}
+                        className="truncate text-sm font-semibold hover:underline"
+                      >
+                        {req.user.username}
+                      </Link>
                     </div>
                     <div className="flex shrink-0 gap-2">
                       <button
@@ -122,7 +224,12 @@ export function FriendsView({
                     <div className="flex min-w-0 items-center gap-3 truncate">
                       <Avatar name={req.user.username} hue={265} size="sm" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{req.user.username}</p>
+                        <Link
+                          href={`/users/${encodeURIComponent(req.user.username)}`}
+                          className="truncate text-sm font-semibold hover:underline"
+                        >
+                          {req.user.username}
+                        </Link>
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="size-3" /> Pending
                         </p>
@@ -130,7 +237,7 @@ export function FriendsView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => declineRequest(req.id)}
+                      onClick={() => cancelRequest(req.id)}
                       className="rounded-md bg-secondary p-2 text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                       title="Cancel request"
                     >
@@ -162,32 +269,19 @@ export function FriendsView({
             ) : (
               <div className="space-y-2">
                 {playingFriends.map((f) => (
-                  <div
+                  <FriendRow
                     key={f.id}
-                    className="group flex items-center gap-3 rounded-lg p-2 hover:bg-secondary/50"
-                  >
-                    <div className="relative">
-                      <Avatar name={f.username} hue={265} size="sm" />
-                      <span className="absolute -right-1 -bottom-1 flex size-3.5 items-center justify-center rounded-full bg-card">
-                        <span className="size-2.5 rounded-full bg-primary" />
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 truncate">
-                      <p className="flex items-center gap-1 truncate text-sm font-bold">
-                        {f.username}
-                        {f.discordLinked && (
-                          <span
-                            className="h-1.5 w-1.5 rounded-full bg-[#5865F2]"
-                            title="Discord Linked"
-                          />
-                        )}
-                      </p>
-                      <p className="flex items-center gap-1 truncate text-xs text-primary">
+                    friend={f}
+                    playing
+                    onRemove={removeFriend}
+                    onBlock={blockUser}
+                    subtitle={
+                      <span className="flex items-center gap-1 text-primary">
                         <Gamepad2 className="size-3" />
-                        {f.presence.currentGameId}
-                      </p>
-                    </div>
-                  </div>
+                        Playing {f.presence.currentGameTitle || f.presence.currentGameId}
+                      </span>
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -202,32 +296,18 @@ export function FriendsView({
             ) : (
               <div className="space-y-2">
                 {onlineFriends.map((f) => (
-                  <div
+                  <FriendRow
                     key={f.id}
-                    className="group flex items-center gap-3 rounded-lg p-2 hover:bg-secondary/50"
-                  >
-                    <div className="relative">
-                      <Avatar name={f.username} hue={265} size="sm" />
-                      <span className="absolute -right-1 -bottom-1 flex size-3.5 items-center justify-center rounded-full bg-card">
-                        <span className="size-2.5 rounded-full bg-green-500" />
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 truncate">
-                      <p className="flex items-center gap-1 truncate text-sm font-bold">
-                        {f.username}
-                        {f.discordLinked && (
-                          <span
-                            className="h-1.5 w-1.5 rounded-full bg-[#5865F2]"
-                            title="Discord Linked"
-                          />
-                        )}
-                      </p>
-                      <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                    friend={f}
+                    onRemove={removeFriend}
+                    onBlock={blockUser}
+                    subtitle={
+                      <span className="flex items-center gap-1">
                         <Globe className="size-3" />
-                        {f.presence.status === "browsing" ? "Browsing" : f.presence.status}
-                      </p>
-                    </div>
-                  </div>
+                        Online on PlayBound
+                      </span>
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -246,21 +326,13 @@ export function FriendsView({
             ) : (
               <div className="space-y-2">
                 {offlineFriends.map((f) => (
-                  <div key={f.id} className="group flex items-center gap-3 rounded-lg p-2">
-                    <Avatar name={f.username} hue={265} size="sm" />
-                    <div className="min-w-0 flex-1 truncate">
-                      <p className="flex items-center gap-1 truncate text-sm font-bold">
-                        {f.username}
-                        {f.discordLinked && (
-                          <span
-                            className="h-1.5 w-1.5 rounded-full bg-[#5865F2]"
-                            title="Discord Linked"
-                          />
-                        )}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">Offline</p>
-                    </div>
-                  </div>
+                  <FriendRow
+                    key={f.id}
+                    friend={f}
+                    onRemove={removeFriend}
+                    onBlock={blockUser}
+                    subtitle="Offline"
+                  />
                 ))}
               </div>
             )}

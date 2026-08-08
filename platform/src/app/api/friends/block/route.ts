@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import { getFriendsUserId } from "@/lib/friendsAuth";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -21,7 +22,6 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
-    // Upsert a block record. The requester is the one blocking.
     const blockedRelationship = await Friend.findOneAndUpdate(
       {
         $or: [
@@ -30,12 +30,19 @@ export async function POST(req: Request) {
         ],
       },
       {
-        requesterId: userId, // Ensure the blocker is the requester so they can unblock
+        requesterId: userId,
         recipientId: targetUserId,
         status: "blocked",
+        acceptedAt: null,
       },
       { upsert: true, new: true }
     );
+
+    void saveEvent({
+      event: "user_blocked",
+      properties: { targetUserId: String(targetUserId) },
+      userId,
+    });
 
     return NextResponse.json({ success: true, request: blockedRelationship });
   } catch (error) {

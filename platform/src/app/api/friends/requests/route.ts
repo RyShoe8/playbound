@@ -14,21 +14,20 @@ export async function GET(req: Request) {
 
     const [incomingDocs, outgoingDocs] = await Promise.all([
       Friend.find({ recipientId: userId, status: "pending" })
-        .populate({ path: "requesterId", select: "username email image connectedAccounts" })
+        .populate({ path: "requesterId", select: "username image connectedAccounts" })
         .lean(),
       Friend.find({ requesterId: userId, status: "pending" })
-        .populate({ path: "recipientId", select: "username email image connectedAccounts" })
+        .populate({ path: "recipientId", select: "username image connectedAccounts" })
         .lean(),
     ]);
 
     const formatUser = (userDoc: any) => {
       if (!userDoc || !userDoc._id) {
-        return { id: "", username: "Unknown", email: null, image: null, discordLinked: false };
+        return { id: "", username: "Unknown", image: null, discordLinked: false };
       }
       return {
         id: userDoc._id,
         username: userDoc.username,
-        email: userDoc.email,
         image: userDoc.image,
         discordLinked: !!userDoc.connectedAccounts?.discord?.discordUserId,
       };

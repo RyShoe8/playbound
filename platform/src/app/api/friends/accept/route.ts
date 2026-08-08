@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
+import User from "@/lib/models/User";
 import { getFriendsUserId } from "@/lib/friendsAuth";
-import { markFriendRequestNotificationsRead } from "@/lib/notifications";
+import {
+  createFriendAcceptedNotification,
+  markFriendRequestNotificationsRead,
+} from "@/lib/notifications";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -34,9 +39,23 @@ export async function POST(req: Request) {
     friendRequest.acceptedAt = new Date();
     await friendRequest.save();
 
+    const fromUsername =
+      (await User.findById(userId).select("username").lean())?.username || "Someone";
+
     void markFriendRequestNotificationsRead({
       userId,
       friendshipId: String(friendRequest._id),
+    });
+    void createFriendAcceptedNotification({
+      recipientId: String(friendRequest.requesterId),
+      fromUserId: userId,
+      fromUsername: String(fromUsername),
+      friendshipId: String(friendRequest._id),
+    });
+    void saveEvent({
+      event: "friend_request_accepted",
+      properties: { friendshipId: String(friendRequest._id) },
+      userId,
     });
 
     return NextResponse.json({ success: true, request: friendRequest });

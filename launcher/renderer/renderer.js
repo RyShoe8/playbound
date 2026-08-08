@@ -700,7 +700,7 @@ async function renderFriendsView() {
         </div>
 
         <form id="add-friends-form-username" style="display: flex; gap: 8px;">
-          <input type="text" class="input-text" id="add-friends-username-input" placeholder="Username or email" style="flex: 1;" />
+          <input type="text" class="input-text" id="add-friends-username-input" placeholder="Username" style="flex: 1;" />
           <button type="submit" class="btn-primary" id="btn-search-username" style="border-radius: 16px; padding: 0 16px;">Search</button>
         </form>
 
@@ -758,8 +758,12 @@ async function refreshFriendsData() {
     const outgoingRequests = Array.isArray(requestsData?.outgoing) ? requestsData.outgoing : [];
 
     const playing = friends.filter(f => f.presence?.status === "playing");
-    const online = friends.filter(f => ["online", "browsing", "away"].includes(f.presence?.status));
-    const offline = friends.filter(f => f.presence?.status === "offline");
+    const online = friends.filter(f =>
+      ["online", "browsing", "away", "viewing_game", "installing", "launching"].includes(f.presence?.status)
+    );
+    const offline = friends.filter(f =>
+      !playing.includes(f) && !online.includes(f)
+    );
 
     let html = "";
 
@@ -856,7 +860,7 @@ async function refreshFriendsData() {
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.textContent = "Cancelling...";
-        await window.playbound.declineFriendRequest(btn.dataset.id);
+        await window.playbound.cancelFriendRequest(btn.dataset.id);
         refreshFriendsData();
       });
     });
@@ -870,6 +874,26 @@ async function refreshFriendsData() {
       });
     });
 
+    content.querySelectorAll(".btn-view-game").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const slug = btn.dataset.slug;
+        if (slug) navigateTo("gameDetail", { slug });
+      });
+    });
+
+    const onlineCount = playing.length + online.length;
+    const friendsNav = document.querySelector('.nav-btn[data-view="friends"]');
+    if (friendsNav) {
+      const label = friendsNav.querySelector(".nav-label") || friendsNav;
+      // Keep icon; update trailing text node if present
+      friendsNav.setAttribute("data-online-count", String(onlineCount));
+      const badge = friendsNav.querySelector(".friends-online-badge") || document.createElement("span");
+      badge.className = "friends-online-badge";
+      badge.style.cssText = "margin-left:6px;font-size:11px;font-weight:700;opacity:0.75";
+      badge.textContent = onlineCount > 0 ? String(onlineCount) : "";
+      if (!badge.parentElement) friendsNav.appendChild(badge);
+    }
+
   } catch (err) {
     content.innerHTML = `<p class="view-sub" style="color: var(--danger)">Failed to load friends: ${escapeHtml(err.message)}</p>`;
   }
@@ -880,12 +904,14 @@ function buildFriendsSectionHtml(title, list, type) {
   for (const f of list) {
     let statusText = "Offline";
     let statusDot = "";
+    const gameLabel = f.presence?.currentGameTitle || f.presence?.currentGameId || "a game";
+    const gameSlug = f.presence?.currentGameId || "";
     
     if (type === "playing") {
-      statusText = `<span style="color: var(--primary)">Playing ${escapeHtml(f.presence.currentGameId || "a game")}</span>`;
+      statusText = `<span style="color: var(--primary)">Playing ${escapeHtml(gameLabel)}</span>`;
       statusDot = `<span class="status-dot dot-playing"></span>`;
     } else if (type === "online") {
-      statusText = escapeHtml(f.presence.status === "browsing" ? "Browsing" : f.presence.status);
+      statusText = "Online on PlayBound";
       statusDot = `<span class="status-dot dot-online"></span>`;
     }
 
@@ -902,6 +928,11 @@ function buildFriendsSectionHtml(title, list, type) {
           </div>
         </div>
         <div class="friend-actions">
+          ${
+            type === "playing" && gameSlug
+              ? `<button class="btn-primary btn-sm btn-view-game" data-slug="${escapeHtml(gameSlug)}">View Game</button>`
+              : ""
+          }
           <button class="btn-secondary btn-sm btn-remove-friend" data-id="${escapeHtml(f.id)}" title="Remove Friend">
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
           </button>
@@ -2220,6 +2251,16 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">Presence</label>
+      <p class="settings-hint">Appear offline so friends don’t see you as online or playing.</p>
+      <div style="margin-top: 10px;">
+        <button class="btn-secondary btn-sm" id="set-btn-appear-offline" ${accountState.connected ? "" : "disabled"}>
+          Loading…
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Report a bug</label>
       <p class="settings-hint">Send a problem report to the PlayBound team. If you are signed in, it is linked to your account.</p>
       <input type="text" class="input-text" id="set-bug-title" placeholder="Short title" maxlength="160" />
@@ -2253,6 +2294,23 @@ async function renderSettingsView() {
     setStatus("Update channel: signed (release)");
     renderSettingsView();
   });
+
+  const appearBtn = document.getElementById("set-btn-appear-offline");
+  if (appearBtn && accountState.connected && window.playbound.getAppearOffline) {
+    window.playbound.getAppearOffline().then((res) => {
+      const on = Boolean(res?.appearOffline);
+      appearBtn.textContent = on ? "Stop appearing offline" : "Appear offline";
+      appearBtn.onclick = async () => {
+        appearBtn.disabled = true;
+        await window.playbound.setAppearOffline(!on);
+        appearBtn.disabled = false;
+        renderSettingsView();
+      };
+    });
+  } else if (appearBtn) {
+    appearBtn.textContent = "Sign in to manage presence";
+  }
+
   document.getElementById("set-btn-check-update")?.addEventListener("click", async () => {
     setStatus("Checking for updates…");
     const res = await window.playbound.checkForUpdates();

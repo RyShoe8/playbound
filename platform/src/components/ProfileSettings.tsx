@@ -9,6 +9,7 @@ type Props = {
   email: string;
   canDownloadUnsigned?: boolean;
   unsignedLauncherUrl?: string;
+  initialAppearOffline?: boolean;
 };
 
 export function ProfileSettings({
@@ -16,6 +17,7 @@ export function ProfileSettings({
   email,
   canDownloadUnsigned = false,
   unsignedLauncherUrl,
+  initialAppearOffline = false,
 }: Props) {
   const { update } = useSession();
 
@@ -24,12 +26,39 @@ export function ProfileSettings({
   const [profileErr, setProfileErr] = useState("");
   const [profileBusy, setProfileBusy] = useState(false);
 
+  const [appearOffline, setAppearOffline] = useState(initialAppearOffline);
+  const [appearBusy, setAppearBusy] = useState(false);
+  const [appearMsg, setAppearMsg] = useState("");
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
   const [passwordErr, setPasswordErr] = useState("");
   const [passwordBusy, setPasswordBusy] = useState(false);
+
+  async function toggleAppearOffline() {
+    const next = !appearOffline;
+    setAppearBusy(true);
+    setAppearMsg("");
+    try {
+      const res = await fetch("/api/presence/visibility", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ appearOffline: next }),
+      });
+      if (!res.ok) {
+        setAppearMsg("Couldn’t update presence visibility.");
+        return;
+      }
+      setAppearOffline(next);
+      setAppearMsg(next ? "You’re appearing offline to friends." : "Friends can see when you’re online.");
+    } catch {
+      setAppearMsg("Couldn’t reach the server.");
+    } finally {
+      setAppearBusy(false);
+    }
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -175,6 +204,22 @@ export function ProfileSettings({
             {passwordBusy ? "Updating…" : "Change password"}
           </button>
         </form>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <h2 className="text-lg font-extrabold tracking-tight">Presence</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Appear offline so friends don’t see you as online or playing. You’re still signed in.
+        </p>
+        <button
+          type="button"
+          disabled={appearBusy}
+          onClick={toggleAppearOffline}
+          className="mt-4 h-10 rounded-full border border-border bg-secondary px-5 text-sm font-bold transition-colors hover:bg-secondary/70 disabled:opacity-60"
+        >
+          {appearBusy ? "Saving…" : appearOffline ? "Stop appearing offline" : "Appear offline"}
+        </button>
+        {appearMsg ? <p className="mt-2 text-xs text-muted-foreground">{appearMsg}</p> : null}
       </section>
 
       {canDownloadUnsigned && unsignedLauncherUrl ? (

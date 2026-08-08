@@ -3,16 +3,16 @@ import { create } from "zustand";
 export type FriendUser = {
   id: string;
   username: string;
-  email?: string;
   image?: string | null;
   discordLinked: boolean;
   friendshipId: string;
   presence: {
-    status: "online" | "offline" | "playing" | "browsing" | "away";
+    status: string;
     platform?: string;
     currentGameId?: string | null;
     currentEditionId?: string | null;
     currentPage?: string | null;
+    currentGameTitle?: string | null;
     lastHeartbeat?: Date;
     lastSeen?: Date;
   };
@@ -21,7 +21,6 @@ export type FriendUser = {
 export type FriendRequestUser = {
   id: string;
   username: string;
-  email?: string;
   image?: string | null;
   discordLinked: boolean;
 };
@@ -48,6 +47,8 @@ type FriendsState = {
   sendRequest: (targetUserId: string) => Promise<{ success: boolean; error?: string }>;
   acceptRequest: (requestId: string) => Promise<void>;
   declineRequest: (requestId: string) => Promise<void>;
+  cancelRequest: (requestId: string) => Promise<void>;
+  unblockUser: (targetUserId: string) => Promise<void>;
   removeFriend: (friendId: string) => Promise<void>;
   blockUser: (targetUserId: string) => Promise<void>;
   setSelectedFriend: (friend: FriendUser | null) => void;
@@ -77,8 +78,16 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
         const friends: FriendUser[] = data.friends || [];
         
         const playing = friends.filter((f) => f.presence.status === "playing");
-        const online = friends.filter((f) => ["online", "browsing", "away"].includes(f.presence.status));
-        const offline = friends.filter((f) => f.presence.status === "offline");
+        const online = friends.filter((f) =>
+          ["online", "browsing", "away", "viewing_game", "installing", "launching"].includes(f.presence.status)
+        );
+        const offline = friends.filter(
+          (f) =>
+            f.presence.status === "offline" ||
+            !["playing", "online", "browsing", "away", "viewing_game", "installing", "launching"].includes(
+              f.presence.status
+            )
+        );
 
         set({
           friends,
@@ -154,6 +163,21 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
     }
   },
 
+  cancelRequest: async (requestId: string) => {
+    try {
+      const res = await fetch("/api/friends/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      if (res.ok) {
+        await get().fetchRequests();
+      }
+    } catch (err) {
+      console.error("Failed to cancel request", err);
+    }
+  },
+
   removeFriend: async (friendId: string) => {
     try {
       const res = await fetch("/api/friends/remove", {
@@ -181,6 +205,21 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to block user", err);
+    }
+  },
+
+  unblockUser: async (targetUserId: string) => {
+    try {
+      const res = await fetch("/api/friends/unblock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId }),
+      });
+      if (res.ok) {
+        await Promise.all([get().fetchFriends(), get().fetchRequests()]);
+      }
+    } catch (err) {
+      console.error("Failed to unblock user", err);
     }
   },
 

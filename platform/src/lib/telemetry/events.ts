@@ -112,6 +112,17 @@ export type TelemetryEventMap = {
   filter_changed: { surface?: string; filters?: Record<string, unknown> } & Extra;
   error: { message?: string; code?: string; source?: string } & Extra;
 
+  friend_request_sent: { targetUserId?: string } & Extra;
+  friend_request_accepted: { friendshipId?: string; via?: string } & Extra;
+  friend_request_declined: { friendshipId?: string } & Extra;
+  friend_removed: { friendId?: string } & Extra;
+  user_blocked: { targetUserId?: string } & Extra;
+  friends_page_viewed: Extra;
+  friend_profile_viewed: { username?: string } & Extra;
+  friend_view_game_clicked: { gameSlug?: string; friendId?: string } & Extra;
+  friend_discord_clicked: { source?: string } & Extra;
+  appear_offline_toggled: { enabled?: boolean } & Extra;
+
   /** User clicked Play / launcher started a launch attempt. */
   launch_attempted: EditionProps & {
     platform?: string;
