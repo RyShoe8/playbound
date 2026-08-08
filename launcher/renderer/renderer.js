@@ -755,6 +755,7 @@ async function refreshFriendsData() {
 
     const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
     const incomingRequests = Array.isArray(requestsData?.incoming) ? requestsData.incoming : [];
+    const outgoingRequests = Array.isArray(requestsData?.outgoing) ? requestsData.outgoing : [];
 
     const playing = friends.filter(f => f.presence?.status === "playing");
     const online = friends.filter(f => ["online", "browsing", "away"].includes(f.presence?.status));
@@ -765,7 +766,7 @@ async function refreshFriendsData() {
     if (incomingRequests.length > 0) {
       html += `
         <div class="friends-section">
-          <div class="section-header" style="margin-bottom: 12px">Pending Requests</div>
+          <div class="section-header" style="margin-bottom: 12px">Incoming Requests</div>
           <div class="friends-list">
             ${incomingRequests.map(req => `
               <div class="friend-card">
@@ -787,6 +788,30 @@ async function refreshFriendsData() {
       `;
     }
 
+    if (outgoingRequests.length > 0) {
+      html += `
+        <div class="friends-section">
+          <div class="section-header" style="margin-bottom: 12px">Outgoing Requests</div>
+          <div class="friends-list">
+            ${outgoingRequests.map(req => `
+              <div class="friend-card">
+                <div class="friend-card-main">
+                  <div class="friend-avatar">${escapeHtml(req.user.username.charAt(0).toUpperCase())}</div>
+                  <div class="friend-info">
+                    <div class="friend-name">${escapeHtml(req.user.username)}</div>
+                    <div class="friend-status" style="color: var(--text-muted)">Pending</div>
+                  </div>
+                </div>
+                <div class="friend-actions">
+                  <button class="btn-secondary btn-sm btn-cancel-request" data-id="${escapeHtml(req.id)}">Cancel</button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     if (playing.length > 0) {
       html += buildFriendsSectionHtml("Playing", playing, "playing");
     }
@@ -797,10 +822,10 @@ async function refreshFriendsData() {
       html += buildFriendsSectionHtml("Offline", offline, "offline");
     }
 
-    if (!friends.length && !incomingRequests.length) {
+    if (!friends.length && !incomingRequests.length && !outgoingRequests.length) {
       html = `
         <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px;">
-          <p class="view-sub">You don't have any friends yet.</p>
+          <p class="view-sub">No friends yet. Find someone above — outgoing requests will show here until they accept.</p>
           <button class="btn-primary" style="margin-top: 12px" onclick="toggleAddFriendsPanel(true)">Find Friends</button>
         </div>
       `;
@@ -822,6 +847,15 @@ async function refreshFriendsData() {
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.textContent = "Declining...";
+        await window.playbound.declineFriendRequest(btn.dataset.id);
+        refreshFriendsData();
+      });
+    });
+
+    content.querySelectorAll(".btn-cancel-request").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Cancelling...";
         await window.playbound.declineFriendRequest(btn.dataset.id);
         refreshFriendsData();
       });
@@ -3929,6 +3963,7 @@ async function initAddFriendsPanel() {
         try {
           const res = await window.playbound.sendFriendRequest(id);
           if (res.error) throw new Error(res.error);
+          void refreshFriendsData();
         } catch (err) {
           _addFriendsSent[id] = false;
           wrap.innerHTML = `<button type="button" class="btn-primary btn-sm btn-send-request" data-id="${escapeHtml(id)}" style="border-radius: 16px; padding: 4px 12px; font-size: 12px;">+ Add</button>`;

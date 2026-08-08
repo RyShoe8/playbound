@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Friend from "@/lib/models/Friend";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { listGames } from "@/lib/catalog";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
 /**
  * GET /api/friends/discover?game=<slug>  |  ?genre=<Genre>
@@ -18,8 +17,8 @@ import { listGames } from "@/lib/catalog";
  * what someone owns is not this endpoint's business to reveal.
  */
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,7 +32,6 @@ export async function GET(req: Request) {
 
   try {
     await dbConnect();
-    const userId = session.user.id;
 
     // A genre is expanded to the slugs it covers, so both modes reduce to the
     // same "library contains one of these slugs" query.

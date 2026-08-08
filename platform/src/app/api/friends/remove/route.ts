@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -16,7 +15,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Friend user ID is required" }, { status: 400 });
     }
 
-    const userId = session.user.id;
     await dbConnect();
 
     const friendship = await Friend.findOne({

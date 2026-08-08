@@ -1,0 +1,26 @@
+import { Schema, model, models } from "mongoose";
+
+export const NOTIFICATION_TYPES = ["friend_request"] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+const NotificationSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    type: { type: String, required: true, index: true },
+    title: { type: String, required: true, maxlength: 200 },
+    body: { type: String, maxlength: 1000, default: null },
+    href: { type: String, maxlength: 500, default: "/friends" },
+    readAt: { type: Date, default: null },
+    meta: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { timestamps: true }
+);
+
+NotificationSchema.index({ userId: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, readAt: 1 });
+
+const Notification = models.Notification || model("Notification", NotificationSchema);
+export default Notification;

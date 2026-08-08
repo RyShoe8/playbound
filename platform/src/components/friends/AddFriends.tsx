@@ -3,6 +3,7 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
 import { Check, Clock, Gamepad2, Search, UserPlus } from "lucide-react";
+import { useFriendsStore } from "@/stores/friendsStore";
 
 type Result = {
   id: string;
@@ -21,10 +22,6 @@ type Mode = "username" | "players";
  * Both modes render the same result rows because the discover endpoint returns
  * the same shape and status vocabulary as the username search — the only
  * difference is what was asked, not what comes back.
- *
- * The friends page previously linked to /search?tab=users, which does not
- * exist: /search has no concept of users, so the link silently landed on the
- * game search with an ignored parameter and there was no way to add anyone.
  */
 export function AddFriends({
   games,
@@ -33,6 +30,7 @@ export function AddFriends({
   games: { slug: string; title: string }[];
   genres: string[];
 }) {
+  const sendFriendRequest = useFriendsStore((s) => s.sendRequest);
   const [mode, setMode] = useState<Mode>("username");
   const [username, setUsername] = useState("");
   const [game, setGame] = useState("");
@@ -40,7 +38,6 @@ export function AddFriends({
   const [results, setResults] = useState<Result[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  /** Ids with a request in flight or just sent, for per-row button state. */
   const [sent, setSent] = useState<Record<string, boolean>>({});
 
   async function run(url: string) {
@@ -66,8 +63,6 @@ export function AddFriends({
   function searchByUsername(e: React.FormEvent) {
     e.preventDefault();
     const q = username.trim();
-    // The endpoint ignores anything shorter, so say why rather than appearing
-    // to return no matches.
     if (q.length < 3) {
       setError("Enter at least 3 characters.");
       setResults(null);
@@ -89,22 +84,20 @@ export function AddFriends({
 
   async function sendRequest(targetUserId: string) {
     setSent((s) => ({ ...s, [targetUserId]: true }));
-    try {
-      const res = await fetch("/api/friends/request", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ targetUserId }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setError(data?.error ?? "Couldn't send that request.");
-        // Roll the row back so it can be retried rather than looking sent.
-        setSent((s) => ({ ...s, [targetUserId]: false }));
-      }
-    } catch {
-      setError("Couldn't reach the server.");
+    setError("");
+    const result = await sendFriendRequest(targetUserId);
+    if (!result.success) {
+      setError(result.error ?? "Couldn't send that request.");
       setSent((s) => ({ ...s, [targetUserId]: false }));
+      return;
     }
+    setResults((prev) =>
+      prev
+        ? prev.map((u) =>
+            String(u.id) === targetUserId ? { ...u, friendStatus: "outgoing_request" } : u
+          )
+        : prev
+    );
   }
 
   const tab = (value: Mode, label: string) => (
@@ -163,7 +156,6 @@ export function AddFriends({
               value={game}
               onChange={(e) => {
                 setGame(e.target.value);
-                // The two are alternatives, not filters that combine.
                 if (e.target.value) setGenre("");
               }}
               className={`${field} flex-1 min-w-[10rem]`}
@@ -245,7 +237,6 @@ export function AddFriends({
   );
 }
 
-/** Every existing relationship state is shown, so a row never offers an action that would fail. */
 function RequestButton({
   status,
   pending,

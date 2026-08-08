@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
+import { getFriendsUserId } from "@/lib/friendsAuth";
+import { markFriendRequestNotificationsRead } from "@/lib/notifications";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -16,17 +16,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request ID is required" }, { status: 400 });
     }
 
-    const userId = session.user.id;
     await dbConnect();
 
-    const friendRequest = await Friend.findOne({ _id: requestId, recipientId: userId, status: "pending" });
+    const friendRequest = await Friend.findOne({
+      _id: requestId,
+      recipientId: userId,
+      status: "pending",
+    });
     if (!friendRequest) {
-      return NextResponse.json({ error: "Friend request not found or you are not the recipient" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Friend request not found or you are not the recipient" },
+        { status: 404 }
+      );
     }
 
     friendRequest.status = "accepted";
     friendRequest.acceptedAt = new Date();
     await friendRequest.save();
+
+    void markFriendRequestNotificationsRead({
+      userId,
+      friendshipId: String(friendRequest._id),
+    });
 
     return NextResponse.json({ success: true, request: friendRequest });
   } catch (error) {
