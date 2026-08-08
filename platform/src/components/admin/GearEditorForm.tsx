@@ -205,6 +205,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           <PremiumSelect
             value={form.category}
             onChange={(e) => patch("category", e.target.value)}
+            className={field}
           >
             <option value="Controllers">Controllers</option>
             <option value="Mobile">Mobile</option>

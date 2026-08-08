@@ -37,8 +37,16 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
   const selectedOption = options.find((o) => String(o.value) === String(value));
   const displayLabel = selectedOption ? selectedOption.label : "Select...";
 
+  const wrapperClass = (className || "")
+    .split(/\s+/)
+    .filter((c) => {
+      const base = c.split(':').pop() || '';
+      return /^(m[trblxy]?-|w-|min-w-|max-w-|flex-|col-|row-|flex$)/.test(base);
+    })
+    .join(" ");
+
   return (
-    <div className={`relative w-full min-w-[120px] ${className || ""}`} ref={containerRef}>
+    <div className={`relative w-full min-w-[120px] ${wrapperClass}`} ref={containerRef}>
       <select
         value={value}
         onChange={onChange}
