@@ -97,6 +97,8 @@ export async function GET(req: Request) {
         valid: true,
         email: user.email || null,
         username: user.username || null,
+        role: user.role || "user",
+        isAdmin: user.role === "admin",
       });
     } catch (error) {
       console.error("Launcher token validate error:", error);

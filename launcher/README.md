@@ -159,9 +159,18 @@ suspected exposure.
 The launcher updates itself via `electron-updater` against the generic feed
 configured in `electron-builder.js`.
 
+- **Signed releases** (`npm run dist:prod`) publish to `latest.yml` and the public
+  Setup alias. Regular users always poll this channel with signature verification.
+- **Unsigned/dev releases** (`npm run dist` / `dist:dev`) publish to `admin.yml`
+  and `PlayBound-Launcher-Setup-Admin.exe`. Only a launcher linked to a site
+  **admin** account switches to the `admin` channel (signature verify off so a
+  signed install can still accept unsigned test builds). Everyone else stays on
+  `latest`.
+
 `electron-updater` verifies that an update is signed by the same publisher as
-the installed build. Existing unsigned installs will accept the first signed
-release without issue, but once users are on signed builds a change to the
-certificate's subject name will cause updates to be rejected. See
+the installed build (except on the admin channel above). Existing unsigned
+installs will accept the first signed release without issue, but once users are
+on signed builds a change to the certificate's subject name will cause updates
+to be rejected. See
 [certificate changes and auto-updates](../docs/windows-code-signing.md#certificate-changes-and-auto-updates)
 before renewing with different details or switching CA.
