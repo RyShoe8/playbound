@@ -1,7 +1,7 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 import { Plus, X } from "lucide-react";
@@ -27,6 +27,7 @@ import {
   screenshotsAreThin,
 } from "@/lib/mediaThin";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
+import { mergeUniqueMediaUrls } from "@/lib/mediaDedupe";
 import { HlsVideo } from "@/components/HlsVideo";
 import { HardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
 import {
@@ -131,16 +132,8 @@ export function EditionEditorForm({
   const [mediaNote, setMediaNote] = useState("");
   const [videoUrlDraft, setVideoUrlDraft] = useState("");
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
-  const [captureAvailable, setCaptureAvailable] = useState(false);
   const [evidence, setEvidence] = useState<string[]>([]);
   const [sourceMaterial, setSourceMaterial] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/games/capture")
-      .then((r) => r.json())
-      .then((d) => setCaptureAvailable(Boolean(d?.available)))
-      .catch(() => setCaptureAvailable(false));
-  }, []);
 
   function patch<K extends keyof EditionDraft>(key: K, value: EditionDraft[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -257,14 +250,12 @@ export function EditionEditorForm({
       const cleanExisting = existingShots.filter((u) => isScreenshotCandidate(u));
       const cleanIncoming = incomingShots.filter((u) => isScreenshotCandidate(u));
       const thin = screenshotsAreThin(cleanExisting);
-      const unionShots = [...new Set([...cleanExisting, ...cleanIncoming])].slice(0, 20);
-      let nextShots =
-        thin && cleanIncoming.length > cleanExisting.length
-          ? cleanIncoming.slice(0, 20)
-          : unionShots;
-      if (nextShots.length < cleanExisting.length) nextShots = unionShots;
+      let nextShots = mergeUniqueMediaUrls(cleanExisting, cleanIncoming, 20);
+      if (thin && cleanIncoming.length > cleanExisting.length) {
+        nextShots = mergeUniqueMediaUrls(cleanIncoming, cleanExisting, 20);
+      }
 
-      const nextVideos = [...new Set([...existingVideos, ...incomingVideos])].slice(0, 10);
+      const nextVideos = mergeUniqueMediaUrls(existingVideos, incomingVideos, 10);
       const coverIsJunk =
         Boolean(form.branding.heroImage) &&
         !isScreenshotCandidate(form.branding.heroImage, { requireRaster: false });
@@ -350,37 +341,6 @@ export function EditionEditorForm({
       setBusy(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Video upload failed");
-      setBusy(false);
-    }
-  }
-
-  async function captureShot() {
-    const url = form.links.website || importUrl;
-    if (!url.trim()) {
-      setError("Set a website URL first.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/games/capture", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url, slug: uploadSlugFor(form) }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error ?? "Capture failed");
-        setBusy(false);
-        return;
-      }
-      patchBranding({
-        screenshots: [...(form.branding.screenshots ?? []), data.url].slice(0, 20),
-        heroImage: form.branding.heroImage || data.url,
-      });
-      setBusy(false);
-    } catch {
-      setError("Couldn't reach the server.");
       setBusy(false);
     }
   }
@@ -721,19 +681,6 @@ export function EditionEditorForm({
           </button>
           <button
             type="button"
-            disabled={busy || !captureAvailable}
-            onClick={captureShot}
-            title={
-              captureAvailable
-                ? "Capture via Microlink"
-                : "Needs MICROLINK_API_KEY + BLOB_READ_WRITE_TOKEN"
-            }
-            className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-          >
-            Capture screenshot
-          </button>
-          <button
-            type="button"
             disabled={busy}
             onClick={() => videoFileRef.current?.click()}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
@@ -785,27 +732,42 @@ export function EditionEditorForm({
 
         {(form.branding.screenshots?.length ?? 0) > 0 && (
           <div className="flex flex-wrap gap-2">
-            {form.branding.screenshots.map((src) => (
-              <div key={src} className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={src}
-                  alt=""
-                  className="h-20 w-32 rounded-md border border-border object-cover"
-                />
-                <button
-                  type="button"
-                  className="absolute top-1 right-1 rounded bg-black/70 px-1.5 text-[10px] font-bold text-white"
-                  onClick={() =>
-                    patchBranding({
-                      screenshots: form.branding.screenshots.filter((s) => s !== src),
-                    })
-                  }
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+            {form.branding.screenshots.map((src) => {
+              const isCover = form.branding.heroImage === src;
+              return (
+                <div key={src} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt=""
+                    className={
+                      "h-20 w-32 rounded-md object-cover border " +
+                      (isCover ? "border-primary ring-2 ring-primary/40" : "border-border")
+                    }
+                  />
+                  <div className="absolute inset-x-0 bottom-0 flex gap-0.5 p-0.5">
+                    <button
+                      type="button"
+                      className="flex-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-bold text-white"
+                      onClick={() => patchBranding({ heroImage: src })}
+                    >
+                      {isCover ? "Cover" : "Use as cover"}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-black/70 px-1.5 text-[10px] font-bold text-white"
+                      onClick={() =>
+                        patchBranding({
+                          screenshots: form.branding.screenshots.filter((s) => s !== src),
+                        })
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

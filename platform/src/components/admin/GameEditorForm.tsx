@@ -1,7 +1,7 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 import {
@@ -35,6 +35,7 @@ import {
   screenshotsAreThin,
 } from "@/lib/mediaThin";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
+import { mergeUniqueMediaUrls } from "@/lib/mediaDedupe";
 import { HlsVideo } from "@/components/HlsVideo";
 import { HardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
 import {
@@ -163,7 +164,6 @@ export function GameEditorForm({
   const [mediaNote, setMediaNote] = useState("");
   const [videoUrlDraft, setVideoUrlDraft] = useState("");
   const [forcePublishNext, setForcePublishNext] = useState(false);
-  const [captureAvailable, setCaptureAvailable] = useState(false);
   const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
   const [launcherDiscoverNote, setLauncherDiscoverNote] = useState("");
   const [evidence, setEvidence] = useState<string[]>([]);
@@ -255,13 +255,6 @@ export function GameEditorForm({
     setLauncherDiscoverNote(note);
     setBusy(false);
   }
-
-  useEffect(() => {
-    fetch("/api/admin/games/capture")
-      .then((r) => r.json())
-      .then((d) => setCaptureAvailable(Boolean(d?.available)))
-      .catch(() => setCaptureAvailable(false));
-  }, []);
 
   function patch<K extends keyof GamePayload>(key: K, value: GamePayload[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -365,16 +358,13 @@ export function GameEditorForm({
       const cleanExisting = existingShots.filter((u) => isScreenshotCandidate(u));
       const cleanIncoming = incomingShots.filter((u) => isScreenshotCandidate(u));
       const thin = screenshotsAreThin(cleanExisting);
-      const unionShots = [...new Set([...cleanExisting, ...cleanIncoming])].slice(0, 20);
-      let nextShots =
-        thin && cleanIncoming.length > cleanExisting.length
-          ? cleanIncoming.slice(0, 20)
-          : unionShots;
-      if (nextShots.length < cleanExisting.length) {
-        nextShots = unionShots;
+      let nextShots = mergeUniqueMediaUrls(cleanExisting, cleanIncoming, 20);
+      if (thin && cleanIncoming.length > cleanExisting.length) {
+        // Prefer a fuller scrape when the gallery is thin/junk-heavy.
+        nextShots = mergeUniqueMediaUrls(cleanIncoming, cleanExisting, 20);
       }
 
-      const nextVideos = [...new Set([...existingVideos, ...incomingVideos])].slice(0, 10);
+      const nextVideos = mergeUniqueMediaUrls(existingVideos, incomingVideos, 10);
       const coverIsJunk =
         Boolean(form.coverImage) &&
         !isScreenshotCandidate(form.coverImage, { requireRaster: false });
@@ -406,7 +396,7 @@ export function GameEditorForm({
       ) {
         setMediaNote(
           nextShots.length === 0
-            ? "No gallery images on the website — try Capture screenshot or paste image URLs."
+            ? "No gallery images on the website — try Upload screenshot or paste image URLs."
             : "No new media found from website or Steam. Existing media kept."
         );
       } else {
@@ -427,7 +417,7 @@ export function GameEditorForm({
           addedVideos === 0 ? " No trailers found — paste a YouTube URL if you have one." : "";
         const galleryBit =
           nextShots.length === 0
-            ? " No gallery images on the website — try Capture screenshot or paste image URLs."
+            ? " No gallery images on the website — try Upload screenshot or paste image URLs."
             : "";
         setMediaNote(
           `Refresh done — ${steamBit}${coverBit}${junkBit}added ${addedShots} screenshot${
@@ -504,38 +494,6 @@ export function GameEditorForm({
       setBusy(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Video upload failed");
-      setBusy(false);
-    }
-  }
-
-  async function captureShot() {
-    const url = form.website || importUrl;
-    if (!url.trim()) {
-      setError("Set a website URL first.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/games/capture", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url, slug: form.slug || "capture" }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error ?? "Capture failed");
-        setBusy(false);
-        return;
-      }
-      setForm((prev) => ({
-        ...prev,
-        screenshots: [...(prev.screenshots ?? []), data.url].slice(0, 20),
-        coverImage: prev.coverImage || data.url,
-      }));
-      setBusy(false);
-    } catch {
-      setError("Couldn't reach the server.");
       setBusy(false);
     }
   }
@@ -932,19 +890,6 @@ export function GameEditorForm({
             </button>
             <button
               type="button"
-              disabled={busy || !captureAvailable}
-              onClick={captureShot}
-              title={
-                captureAvailable
-                  ? "Capture via Microlink"
-                  : "Needs MICROLINK_API_KEY + BLOB_READ_WRITE_TOKEN"
-              }
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-            >
-              Capture screenshot
-            </button>
-            <button
-              type="button"
               disabled={busy}
               onClick={() => videoFileRef.current?.click()}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
@@ -969,24 +914,43 @@ export function GameEditorForm({
           )}
           {(form.screenshots?.length ?? 0) > 0 && (
             <div className="flex flex-wrap gap-2">
-              {form.screenshots!.map((src) => (
-                <div key={src} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="h-20 w-32 rounded-md object-cover border border-border" />
-                  <button
-                    type="button"
-                    className="absolute top-1 right-1 rounded bg-black/70 px-1.5 text-[10px] font-bold text-white"
-                    onClick={() =>
-                      patch(
-                        "screenshots",
-                        (form.screenshots ?? []).filter((s) => s !== src)
-                      )
-                    }
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+              {form.screenshots!.map((src) => {
+                const isCover = form.coverImage === src;
+                return (
+                  <div key={src} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt=""
+                      className={
+                        "h-20 w-32 rounded-md object-cover border " +
+                        (isCover ? "border-primary ring-2 ring-primary/40" : "border-border")
+                      }
+                    />
+                    <div className="absolute inset-x-0 bottom-0 flex gap-0.5 p-0.5">
+                      <button
+                        type="button"
+                        className="flex-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-bold text-white"
+                        onClick={() => patch("coverImage", src)}
+                      >
+                        {isCover ? "Cover" : "Use as cover"}
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded bg-black/70 px-1.5 text-[10px] font-bold text-white"
+                        onClick={() =>
+                          patch(
+                            "screenshots",
+                            (form.screenshots ?? []).filter((s) => s !== src)
+                          )
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div>

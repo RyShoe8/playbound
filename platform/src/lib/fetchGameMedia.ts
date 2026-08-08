@@ -1,8 +1,13 @@
 /** Shared media fetch, Steam inference, merge, and Blob rehost for admin Refresh. */
 
+import crypto from "crypto";
 import { put } from "@vercel/blob";
 import { compressImageBuffer, toDetachedBuffer } from "@/lib/compressImage";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
+import {
+  mergeUniqueMediaUrls,
+  normalizeMediaSourceUrl,
+} from "@/lib/mediaDedupe";
 import { collectVideosFromHtml, tryFetchPageMeta } from "@/lib/pageMeta";
 import { normalizeVideoUrl } from "@/lib/mediaEmbed";
 import { fetchEpicStoreMedia, parseEpicProductSlug } from "@/lib/epicStore";
@@ -30,25 +35,19 @@ export function toHttpsUrl(url: string): string {
   return url;
 }
 
-/** Append/dedupe URLs; fill cover only if empty; clamp to payload limits. */
+/** Append/dedupe URLs by fingerprint; fill cover only if empty; clamp to payload limits. */
 export function mergeGameMedia(
   existing: GameMediaBundle,
   incoming: GameMediaBundle
 ): GameMediaBundle {
-  const screenshots = [
-    ...new Set(
-      [...(existing.screenshots ?? []), ...(incoming.screenshots ?? [])].filter(Boolean)
-    ),
-  ].slice(0, MAX_SCREENSHOTS);
-
-  const videos = [
-    ...new Set([...(existing.videos ?? []), ...(incoming.videos ?? [])].filter(Boolean)),
-  ].slice(0, MAX_VIDEOS);
-
   return {
     coverImage: existing.coverImage || incoming.coverImage || null,
-    screenshots,
-    videos,
+    screenshots: mergeUniqueMediaUrls(
+      existing.screenshots,
+      incoming.screenshots,
+      MAX_SCREENSHOTS
+    ),
+    videos: mergeUniqueMediaUrls(existing.videos, incoming.videos, MAX_VIDEOS),
   };
 }
 
@@ -313,7 +312,8 @@ export async function rehostImageToBlob(opts: {
 }): Promise<string | null> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
   try {
-    const res = await fetch(toHttpsUrl(opts.sourceUrl), {
+    const sourceUrl = normalizeMediaSourceUrl(opts.sourceUrl);
+    const res = await fetch(sourceUrl, {
       headers: { "user-agent": "PlayBoundAdmin/1.0" },
       signal: AbortSignal.timeout(20_000),
       next: { revalidate: 0 },
@@ -322,14 +322,17 @@ export async function rehostImageToBlob(opts: {
     const input = toDetachedBuffer(await res.arrayBuffer());
     const compressed = await compressImageBuffer(input);
     const slug = (opts.slug || "upload").replace(/[^a-z0-9-]/gi, "-").slice(0, 80) || "upload";
-    const kind = opts.kind.replace(/[^a-z0-9-]/gi, "-").slice(0, 40) || "shot";
+    // kind becomes a short prefix; hash of source makes the path deterministic.
+    const kindPrefix = opts.kind.replace(/[^a-z0-9-]/gi, "-").replace(/shot\d+/i, "shot").slice(0, 40) || "shot";
+    const sourceHash = crypto.createHash("sha256").update(sourceUrl).digest("hex").slice(0, 16);
     const blob = await put(
-      `games/${slug}/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${compressed.extension}`,
+      `games/${slug}/${kindPrefix}-${sourceHash}.${compressed.extension}`,
       compressed.buffer,
       {
         access: "public",
         contentType: compressed.contentType,
         token: process.env.BLOB_READ_WRITE_TOKEN,
+        allowOverwrite: true,
       }
     );
     return blob.url;
@@ -394,8 +397,8 @@ export async function rehostMediaBundle(
     (u) => u && (u.includes("blob.vercel-storage.com") || u.startsWith("/"))
   );
 
-  const resolved = await mapPool(remoteShots, 3, async (sourceUrl, i) => {
-    const blob = await rehostImageToBlob({ sourceUrl, slug, kind: `shot${i}` });
+  const resolved = await mapPool(remoteShots, 3, async (sourceUrl) => {
+    const blob = await rehostImageToBlob({ sourceUrl, slug, kind: "shot" });
     if (blob) {
       rehosted += 1;
       return blob;
@@ -404,7 +407,7 @@ export async function rehostMediaBundle(
     return toHttpsUrl(sourceUrl);
   });
 
-  const screenshots = [...localShots, ...resolved.filter(Boolean)].slice(0, MAX_SCREENSHOTS);
+  const screenshots = mergeUniqueMediaUrls(localShots, resolved.filter(Boolean), MAX_SCREENSHOTS);
 
   return {
     coverImage,
