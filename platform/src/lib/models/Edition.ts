@@ -92,6 +92,19 @@ const EditionSchema = new Schema(
     branding: { type: BrandingSchema, default: () => ({}) },
     links: { type: LinksSchema, default: () => ({}) },
 
+    /**
+     * PlayBound Discord guild channel for this edition (franchise hierarchy).
+     * Distinct from links.discord (external community invite).
+     */
+    playboundDiscord: {
+      guildId: { type: String, default: null },
+      channelId: { type: String, default: null },
+      channelName: { type: String, default: null },
+      inviteCode: { type: String, default: null },
+      inviteUrl: { type: String, default: null },
+      provisionedAt: { type: Date, default: null },
+    },
+
     installMethod: { type: String, enum: INSTALL_METHODS, default: "manual", index: true },
     /**
      * Per-method configuration, keyed by install method. Mixed on purpose:

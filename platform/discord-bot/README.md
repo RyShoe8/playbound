@@ -21,13 +21,30 @@ If slash-command registration logs `Missing Access`, the bot is missing `applica
 
 ## Auto channel provisioning
 
-On boot the bot backfills every **published** catalog game missing `communityLinks.playboundDiscord.channelId` (rate-limited). Publishing a game from admin also triggers a single-game provision.
+On boot the bot backfills published catalog games that need PlayBound channels (rate-limited). Publishing a game from admin, or saving a public active edition under a published game, also triggers provision.
+
+### Layout
+
+**Single game** (fewer than 2 public active editions): one `#slug` text channel under `GAME CHANNELS — A–M` or `N–Z`.
+
+**Multi-edition franchise** (2+ public active editions), e.g. EverQuest:
+
+```
+EverQuest                    (category)
+  ├── #general               (game hub / invite stored on CatalogGame)
+  ├── #official              (edition channel)
+  ├── #project-quarm
+  └── #project-99
+```
+
+Edition invites are stored on each Edition as `playboundDiscord` (separate from `links.discord`, which is the edition’s external community server).
 
 Manual triggers:
 
 - Per game: admin game editor → **Provision PlayBound Channel**
 - All missing: admin Games list → **Provision missing channels**
 - HTTP: `POST /provision-all` with `Authorization: Bearer $BOT_WEBHOOK_SECRET`
+- HTTP: `POST /provision` body `{ "slug": "everquest" }`
 
 ## Provision from admin
 

@@ -7,6 +7,7 @@ import { editionPayloadSchema } from "@/lib/editionPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { getGame } from "@/lib/catalog";
 import { searchEditions } from "@/lib/editions";
+import { requestDiscordProvision } from "@/lib/discordProvision";
 
 /**
  * GET /api/editions?q=turtle
@@ -66,6 +67,18 @@ export async function POST(req: Request) {
         { gameSlug: body.gameSlug, _id: { $ne: doc._id } },
         { $set: { isDefault: false } }
       );
+    }
+
+    // Multi-edition franchise channels: re-provision parent when a public edition appears.
+    if (doc.visibility === "public" && doc.status === "active") {
+      const parentDoc = await CatalogGame.findOne({ slug: body.gameSlug })
+        .select("published status")
+        .lean();
+      const parentPublished =
+        parentDoc?.published === true || parentDoc?.status === "published";
+      if (parentPublished) {
+        void requestDiscordProvision(body.gameSlug);
+      }
     }
 
     return NextResponse.json(

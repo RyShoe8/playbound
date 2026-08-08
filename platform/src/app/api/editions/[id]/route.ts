@@ -7,6 +7,7 @@ import { editionUpdateSchema } from "@/lib/editionPayload";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { getEditionById, isVirtualId } from "@/lib/editions";
 import { resolveInstallAction } from "@/lib/editionInstall";
+import { requestDiscordProvision } from "@/lib/discordProvision";
 
 /** A virtual edition has no document, so nothing can be read, edited or deleted by id. */
 function virtualRejection() {
@@ -87,6 +88,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         { gameSlug: body.gameSlug, _id: { $ne: existing._id } },
         { $set: { isDefault: false } }
       );
+    }
+
+    const parentDoc = await CatalogGame.findOne({ slug: existing.gameSlug })
+      .select("published status")
+      .lean();
+    const parentPublished =
+      parentDoc?.published === true || parentDoc?.status === "published";
+    if (
+      parentPublished &&
+      existing.visibility === "public" &&
+      existing.status === "active"
+    ) {
+      void requestDiscordProvision(existing.gameSlug);
     }
 
     return NextResponse.json({ success: true, id: String(existing._id), slug: existing.slug });
