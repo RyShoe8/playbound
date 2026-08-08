@@ -864,6 +864,20 @@ const facts: Game[] = [
     platforms: ["Windows"],
     features: ["Multiplayer", "Mod Support"],
     launchMethods: ["install", "server"],
+    steamDeck: false,
+    website: "https://www.everquest.com",
+    browserPlayable: false,
+    gameOfWeek: false,
+    hiddenGem: false,
+    art: { from: "#0f172a", to: "#38bdf8", icon: "Castle" },
+    coverImage: "https://www.everquest.com/sites/everquest/files/eq-logo.png",
+    systemRequirements: {
+      min: "Windows 10 · Dual-core CPU · 4 GB RAM · DX11 GPU · 15 GB storage",
+      recommended: "Quad-core CPU · 8 GB RAM · Dedicated GPU · 20 GB storage",
+    },
+  },
+  {
+    slug: "star-wars-galaxies",
     title: "Star Wars Galaxies",
     tagline: "The MMO galaxy lives on through community editions.",
     description:
