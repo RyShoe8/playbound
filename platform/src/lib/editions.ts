@@ -301,6 +301,13 @@ export async function listPublicEditionsForGame(game: Game): Promise<Edition[]> 
   return publicOnly.length > 0 ? publicOnly : all.slice(0, 1);
 }
 
+/** True when the player has a real choice (stored editions, not only virtual Official). */
+export function hasChoosableEditions(editions: Edition[]): boolean {
+  if (editions.length === 0) return false;
+  if (editions.length === 1 && editions[0]?.virtual) return false;
+  return true;
+}
+
 /** The edition to treat as "the" way to play, for install buttons and the launcher. */
 export async function defaultEditionForGame(game: Game): Promise<Edition> {
   const editions = await listEditionsForGame(game);

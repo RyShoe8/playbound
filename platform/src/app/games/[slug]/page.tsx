@@ -19,7 +19,7 @@ import {
 } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
 import { platformFromUserAgent, visiblePlatformsFor } from "@/lib/libraryPlatform";
-import { listPublicEditionsForGame } from "@/lib/editions";
+import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
@@ -40,6 +40,7 @@ import { getDiscordPresence } from "@/lib/discordPresence";
 import {
   getGameLiveStats,
   getGameTopPlayers,
+  getEditionLiveStats,
   type EntityLiveStats,
 } from "@/lib/liveActivity";
 import { PlayingNowBadge } from "@/components/ActivityStats";
@@ -166,12 +167,13 @@ export default async function GamePage({
     () =>
       DiscussionTopic.countDocuments({
         gameSlug: game.slug,
+        ...gameScopedUgcFilter(),
         status: { $ne: "removed" },
       }),
     0
   );
   const reviewCount = await safeQuery(
-    () => Review.countDocuments({ gameSlug: game.slug }),
+    () => Review.countDocuments({ gameSlug: game.slug, ...gameScopedUgcFilter() }),
     0
   );
   const discordPresence = await getDiscordPresence(
@@ -224,6 +226,21 @@ export default async function GamePage({
   // Always non-empty: a game with none stored yields its virtual Official
   // edition, so nothing downstream needs a "no editions" branch.
   const editions = await listPublicEditionsForGame(game);
+  const choosable = hasChoosableEditions(editions);
+
+  let playingNowBySlug: Record<string, number> | undefined;
+  if (choosable) {
+    const settled = await Promise.allSettled(
+      editions.map((e) => getEditionLiveStats(game.slug, e.slug))
+    );
+    playingNowBySlug = {};
+    editions.forEach((e, i) => {
+      const r = settled[i];
+      if (r?.status === "fulfilled") {
+        playingNowBySlug![e.slug] = r.value.playingNow;
+      }
+    });
+  }
 
   return (
     <div>
@@ -272,7 +289,17 @@ export default async function GamePage({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <PlayCta game={game} size="lg" />
+              {choosable ? (
+                <Link
+                  href="#editions"
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-play px-7 text-base font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px"
+                >
+                  <Play className="size-5" />
+                  Choose an edition
+                </Link>
+              ) : (
+                <PlayCta game={game} size="lg" />
+              )}
               <AdaptiveAddToLibraryButton
                 game={game}
                 initiallyInLibrary={initiallyInLibrary}
@@ -369,6 +396,7 @@ export default async function GamePage({
             weeklyIssue={weeklyIssue}
             discordPresence={discordPresence}
             editions={editions}
+            playingNowBySlug={playingNowBySlug}
             liveStats={liveStats}
             topPlayers={topPlayers}
           />
@@ -420,8 +448,7 @@ export default async function GamePage({
             gameSlug={game.slug}
             isSignedIn={Boolean(session?.user)}
             items={await safeQuery(() => Review.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).sort({ createdAt: -1 }).limit(30).lean(), [])}
-            // The game tab shows reviews of every edition together, so each
-            // one is labelled with what it actually covers.
+            // Game-scoped only (editionSlug null). Edition-specific reviews live on edition pages.
             showEditionLabels
             editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
           />
@@ -442,6 +469,7 @@ function OverviewTab({
   weeklyIssue,
   discordPresence,
   editions,
+  playingNowBySlug,
   liveStats,
   topPlayers,
 }: {
@@ -452,6 +480,7 @@ function OverviewTab({
   weeklyIssue?: WeeklyIssue;
   discordPresence?: { online?: number; members?: number } | null;
   editions: Edition[];
+  playingNowBySlug?: Record<string, number>;
   liveStats: EntityLiveStats;
   topPlayers: Awaited<ReturnType<typeof getGameTopPlayers>>;
 }) {
@@ -477,7 +506,11 @@ function OverviewTab({
         {/* Editions sit high on the page: when a game has several, which one
             to install is the reader's first decision, ahead of the blurb.
             Renders nothing for games with only the generated Official one. */}
-        <EditionsSection game={game} editions={editions} />
+        <EditionsSection
+          game={game}
+          editions={editions}
+          playingNowBySlug={playingNowBySlug}
+        />
 
         <section>
           <h2 className="text-lg font-bold">About {game.title}</h2>

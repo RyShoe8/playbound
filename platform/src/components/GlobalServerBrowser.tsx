@@ -111,6 +111,7 @@ export function GlobalServerBrowser({
   const searchParams = useSearchParams();
   const queryGame = searchParams.get("game")?.trim() || "";
   const queryMod = searchParams.get("mod")?.trim() || "";
+  const queryEdition = searchParams.get("edition")?.trim() || "";
 
   const installedGames = useMemo(() => new Set(installedGameSlugs), [installedGameSlugs]);
   const installedMods = useMemo(() => new Set(installedModSlugs), [installedModSlugs]);
@@ -120,6 +121,7 @@ export function GlobalServerBrowser({
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [gameSlug, setGameSlug] = useState(queryGame);
   const [modSlug, setModSlug] = useState(queryMod);
+  const [editionSlug, setEditionSlug] = useState(queryEdition);
   const [installedOnly, setInstalledOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -165,6 +167,7 @@ export function GlobalServerBrowser({
           );
         }
         if (queryMod) setModSlug(queryMod);
+        if (queryEdition) setEditionSlug(queryEdition);
       } catch {
         /* ignore */
       } finally {
@@ -174,7 +177,7 @@ export function GlobalServerBrowser({
     return () => {
       cancelled = true;
     };
-  }, [queryGame, queryMod]);
+  }, [queryGame, queryMod, queryEdition]);
 
   const visibleGames = useMemo(() => {
     let list = games;
@@ -238,7 +241,7 @@ export function GlobalServerBrowser({
   /** Instant switch-back for recently viewed games (base list, before mod filter). */
   const listCache = useRef(new Map<string, ApiResponse>());
 
-  const loadServers = useCallback(async (slug: string, mod: CatalogMod | null) => {
+  const loadServers = useCallback(async (slug: string, mod: CatalogMod | null, edition = "") => {
     if (!slug) {
       setData(null);
       return;
@@ -250,10 +253,8 @@ export function GlobalServerBrowser({
     const ac = new AbortController();
     abortRef.current = ac;
 
-    const cacheKey = slug;
-    const cached = listCache.current.get(cacheKey);
-    if (cached) {
-      let servers = Array.isArray(cached.servers) ? cached.servers : [];
+    const applyFilters = (raw: GameServer[]) => {
+      let servers = raw;
       setModNote("");
       if (mod) {
         const filtered = filterServersForMod(servers, mod);
@@ -263,7 +264,23 @@ export function GlobalServerBrowser({
             : `No gameType match for ${mod.title} — showing all ${slug} servers.`
         );
         servers = filtered.servers;
+      } else if (edition) {
+        const needle = edition.toLowerCase();
+        const matched = servers.filter((s) => (s.gameType || "").toLowerCase() === needle);
+        if (matched.length) {
+          setModNote(`Showing servers for edition “${edition}”.`);
+          servers = matched;
+        } else {
+          setModNote(`No servers tagged ${edition} — showing all ${slug} servers.`);
+        }
       }
+      return servers;
+    };
+
+    const cacheKey = slug;
+    const cached = listCache.current.get(cacheKey);
+    if (cached) {
+      const servers = applyFilters(Array.isArray(cached.servers) ? cached.servers : []);
       setData({ ...cached, servers });
     } else {
       setData(null);
@@ -308,18 +325,7 @@ export function GlobalServerBrowser({
         viewerGeoFetched.current = true;
       }
 
-      let servers = Array.isArray(json.servers) ? json.servers : [];
-      if (mod) {
-        const filtered = filterServersForMod(servers, mod);
-        if (filtered.matched) {
-          setModNote(`Showing servers matching ${mod.title}.`);
-        } else {
-          setModNote(`No gameType match for ${mod.title} — showing all ${slug} servers.`);
-        }
-        servers = filtered.servers;
-      } else {
-        setModNote("");
-      }
+      const servers = applyFilters(Array.isArray(json.servers) ? json.servers : []);
       setData({ ...json, servers });
       if (slug && lastViewedSlug.current !== slug) {
         lastViewedSlug.current = slug;
@@ -350,11 +356,11 @@ export function GlobalServerBrowser({
       ? mods.find((m) => m.slug === effectiveModSlug) || null
       : null;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadServers(effectiveGameSlug, mod);
+    void loadServers(effectiveGameSlug, mod, editionSlug);
     return () => {
       abortRef.current?.abort();
     };
-  }, [effectiveGameSlug, effectiveModSlug, mods, loadServers]);
+  }, [effectiveGameSlug, effectiveModSlug, editionSlug, mods, loadServers]);
 
   const estFor = useCallback(
     (s: GameServer) => {

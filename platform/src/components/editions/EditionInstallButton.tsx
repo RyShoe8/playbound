@@ -1,9 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Download, ExternalLink, Play, Terminal } from "lucide-react";
 import { telemetry } from "@/lib/telemetry";
 import type { InstallAction } from "@/lib/editionInstall";
+import { LAUNCHER_DOWNLOAD_URL, MAC_LAUNCHER_DOWNLOAD_URL } from "@/lib/launcherDownload";
+import {
+  detectLauncherOs,
+  openPlayboundDeepLink,
+} from "@/lib/openPlayboundDeepLink";
+import { cn } from "@/lib/utils";
 
 /**
  * Renders whatever install action an edition resolved to.
@@ -24,6 +31,13 @@ export function EditionInstallButton({
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary";
 }) {
+  const [os, setOs] = useState<"windows" | "macos">("windows");
+  const [handoffNote, setHandoffNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOs(detectLauncherOs());
+  }, []);
+
   const sizes = {
     sm: "h-9 px-4 text-sm",
     md: "h-11 px-6 text-sm",
@@ -59,14 +73,36 @@ export function EditionInstallButton({
     });
   }
 
-  // playbound:// is not a navigable href for next/link — it hands off to the
-  // desktop app, so it stays a plain anchor.
+  // playbound:// handoff — auto-download Setup if the launcher isn't registered.
   if (action.kind === "launcher") {
+    const downloadUrl =
+      os === "macos" ? MAC_LAUNCHER_DOWNLOAD_URL || LAUNCHER_DOWNLOAD_URL : LAUNCHER_DOWNLOAD_URL;
+
     return (
-      <a href={action.href} onClick={record} className={className}>
-        <Icon className="size-4" />
-        {action.label}
-      </a>
+      <div className="flex flex-col items-start gap-1.5">
+        <button
+          type="button"
+          className={cn(className)}
+          onClick={() => {
+            record();
+            setHandoffNote(null);
+            openPlayboundDeepLink(action.href ?? "", {
+              downloadUrl,
+              onResult: (result) => {
+                if (result === "download") {
+                  setHandoffNote("Downloading PlayBound Launcher… Install it, then click again.");
+                } else if (result === "miss") {
+                  setHandoffNote("Launcher didn't open. Download PlayBound, then try again.");
+                }
+              },
+            });
+          }}
+        >
+          <Icon className="size-4" />
+          {action.label}
+        </button>
+        {handoffNote && <p className="max-w-xs text-xs text-muted-foreground">{handoffNote}</p>}
+      </div>
     );
   }
 

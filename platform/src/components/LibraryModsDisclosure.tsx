@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown, FolderOpen, Play, Puzzle, Trash2 } from "lucide-react";
 import {
   launcherOpenModFolderUrl,
@@ -11,6 +12,67 @@ import {
 import { cn } from "@/lib/utils";
 
 export type LibraryModItem = { slug: string; title: string };
+
+function ModRowActions({ slug, title }: { slug: string; title: string }) {
+  const router = useRouter();
+  const [removing, setRemoving] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  async function removeFromLibrary() {
+    if (removing) return;
+    setRemoving(true);
+    try {
+      const res = await fetch(`/api/library/mods?slug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        setRemoving(false);
+        return;
+      }
+      setHidden(true);
+      router.refresh();
+    } catch {
+      setRemoving(false);
+    }
+  }
+
+  if (hidden) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <a
+        href={launcherPlayModUrl(slug)}
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
+        title={`Play ${title}`}
+      >
+        <Play className="size-2.5 fill-current" /> Play
+      </a>
+      <a
+        href={launcherOpenModFolderUrl(slug)}
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
+        title="Open mod folder"
+      >
+        <FolderOpen className="size-2.5" /> Folder
+      </a>
+      <button
+        type="button"
+        disabled={removing}
+        onClick={() => void removeFromLibrary()}
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/25 disabled:opacity-50"
+        title="Remove from library"
+      >
+        <Trash2 className="size-2.5" /> {removing ? "…" : "Remove"}
+      </button>
+      <a
+        href={launcherUninstallModUrl(slug)}
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
+        title="Uninstall from this PC via the PlayBound app"
+      >
+        Uninstall from PC
+      </a>
+    </div>
+  );
+}
 
 export function LibraryModsDisclosure({ mods }: { mods: LibraryModItem[] }) {
   const [open, setOpen] = useState(false);
@@ -40,29 +102,7 @@ export function LibraryModsDisclosure({ mods }: { mods: LibraryModItem[] }) {
               >
                 {m.title}
               </Link>
-              <div className="flex flex-wrap items-center gap-1">
-                <a
-                  href={launcherPlayModUrl(m.slug)}
-                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-play px-2 py-0.5 text-[10px] font-bold text-play-foreground hover:brightness-110"
-                  title={`Play ${m.title}`}
-                >
-                  <Play className="size-2.5 fill-current" /> Play
-                </a>
-                <a
-                  href={launcherOpenModFolderUrl(m.slug)}
-                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
-                  title="Open mod folder"
-                >
-                  <FolderOpen className="size-2.5" /> Folder
-                </a>
-                <a
-                  href={launcherUninstallModUrl(m.slug)}
-                  className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/25"
-                  title="Uninstall"
-                >
-                  <Trash2 className="size-2.5" /> Remove
-                </a>
-              </div>
+              <ModRowActions slug={m.slug} title={m.title} />
             </li>
           ))}
         </ul>

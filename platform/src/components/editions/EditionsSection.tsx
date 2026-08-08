@@ -1,5 +1,6 @@
 import type { Game } from "@/lib/data/types";
 import type { Edition } from "@/lib/editionTypes";
+import { hasChoosableEditions } from "@/lib/editions";
 import { EditionCard } from "./EditionCard";
 
 /**
@@ -9,9 +10,16 @@ import { EditionCard } from "./EditionCard";
  * a section listing one generated row would add noise to every game that has
  * never been given real editions, which is most of the catalog today.
  */
-export function EditionsSection({ game, editions }: { game: Game; editions: Edition[] }) {
-  const onlyVirtual = editions.length === 1 && editions[0]?.virtual;
-  if (editions.length === 0 || onlyVirtual) return null;
+export function EditionsSection({
+  game,
+  editions,
+  playingNowBySlug,
+}: {
+  game: Game;
+  editions: Edition[];
+  playingNowBySlug?: Record<string, number>;
+}) {
+  if (!hasChoosableEditions(editions)) return null;
 
   return (
     <section id="editions" className="space-y-4">
@@ -22,9 +30,14 @@ export function EditionsSection({ game, editions }: { game: Game; editions: Edit
           verification status.
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
         {editions.map((edition) => (
-          <EditionCard key={edition.id} game={game} edition={edition} />
+          <EditionCard
+            key={edition.id}
+            game={game}
+            edition={edition}
+            playingNow={playingNowBySlug?.[edition.slug]}
+          />
         ))}
       </div>
     </section>

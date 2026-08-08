@@ -8,7 +8,7 @@
 import { unstable_cache } from "next/cache";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
-import { listServersForGame } from "@/lib/servers/registry";
+import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import EditionModel from "@/lib/models/Edition";
@@ -17,6 +17,8 @@ const CACHE_SECONDS = 900;
 const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
 /** Cap per-game master-server polls so cold catalog stats finish under launcher/API budgets. */
 const MULTIPLAYER_FANOUT_MS = 4500;
+/** EverQuest login-server polls need longer than the shared fan-out budget. */
+const EVERQUEST_FANOUT_MS = 12000;
 
 export type CatalogPopularGame = {
   slug: string;
@@ -371,15 +373,21 @@ async function countModInstalls(modSlug: string): Promise<{ month: number; allTi
 
 async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
   const [games, mods] = await Promise.all([listGames(), listMods()]);
-  const multiplayer = games.filter((g) => g.launchMethods.includes("server"));
+  const multiplayer = games.filter(
+    (g) => g.launchMethods.includes("server") || hasServerProvider(g.slug)
+  );
 
   const [settled, platformPlayers, platformByGame, editionCountBySlug] = await Promise.all([
     Promise.allSettled(
       multiplayer.map((g) =>
-        withTimeout(multiplayerForGame(g.slug), MULTIPLAYER_FANOUT_MS, {
-          players: 0,
-          servers: 0,
-        })
+        withTimeout(
+          multiplayerForGame(g.slug),
+          g.slug === "everquest" ? EVERQUEST_FANOUT_MS : MULTIPLAYER_FANOUT_MS,
+          {
+            players: 0,
+            servers: 0,
+          }
+        )
       )
     ),
     countActivePlatformPlayers(),
@@ -504,7 +512,7 @@ async function computeModLiveStats(modSlug: string): Promise<EntityLiveStats> {
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v6"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v7"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();

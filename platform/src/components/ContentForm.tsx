@@ -48,7 +48,7 @@ export function ContentForm({
   /** When set, post to mod APIs and link to /mods/... */
   modSlug?: string;
   isSignedIn: boolean;
-  /** Set on an edition page so the review attaches to that edition. */
+  /** Set on an edition page so reviews/guides attach to that edition. */
   editionSlug?: string;
   editionName?: string;
 }) {
@@ -61,7 +61,11 @@ export function ContentForm({
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(kind === "review");
 
-  const pageBase = modSlug ? `/mods/${modSlug}` : `/games/${gameSlug}`;
+  const pageBase = modSlug
+    ? `/mods/${modSlug}`
+    : editionSlug && gameSlug
+      ? `/games/${gameSlug}/editions/${editionSlug}`
+      : `/games/${gameSlug}`;
   const endpoint = modSlug ? modEndpoints[kind](modSlug) : gameEndpoints[kind](gameSlug || "");
 
   if (!isSignedIn) {
@@ -112,7 +116,11 @@ export function ContentForm({
         body: JSON.stringify(
           kind === "review"
             ? { rating, title, body, ...(modSlug ? {} : { editionSlug: editionSlug ?? null }) }
-            : { title, body }
+            : {
+                title,
+                body,
+                ...(modSlug ? {} : { editionSlug: editionSlug ?? null }),
+              }
         ),
       });
       const data = await res.json().catch(() => null);

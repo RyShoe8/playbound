@@ -1,9 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MessagesSquare } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import type { Edition } from "@/lib/editionTypes";
 import { resolveInstallAction } from "@/lib/editionInstall";
 import { editionTelemetryProps } from "@/lib/editions";
+import { GameArt } from "@/components/GameArt";
 import { EditionInstallButton } from "./EditionInstallButton";
 import {
   EditionPopulationBadge,
@@ -15,22 +17,51 @@ import {
 /**
  * One edition in the game page's Editions list.
  *
- * Carries type, certification, population, a short description and both the
- * install and community actions — enough to choose between "Official" and
- * "Turtle WoW" without opening either.
+ * Larger cards with a hero band so players can compare Official vs community
+ * forks (e.g. Turtle WoW) at a glance — art, population, and install actions.
  */
-export function EditionCard({ game, edition }: { game: Game; edition: Edition }) {
+export function EditionCard({
+  game,
+  edition,
+  playingNow,
+}: {
+  game: Game;
+  edition: Edition;
+  playingNow?: number;
+}) {
   const action = resolveInstallAction(edition);
   const telemetryProps = editionTelemetryProps(game, edition);
   const href = `/games/${game.slug}/editions/${edition.slug}`;
   const discord = edition.links.discord;
+  const heroSrc =
+    edition.branding.heroImage || edition.branding.logo || game.coverImage || null;
+  const remote = heroSrc ? /^https?:\/\//i.test(heroSrc) : false;
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+      <div className="relative aspect-[21/9] w-full overflow-hidden bg-secondary sm:h-40 sm:aspect-auto">
+        {heroSrc ? (
+          <Image
+            src={heroSrc}
+            alt=""
+            fill
+            unoptimized={remote}
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+          />
+        ) : (
+          <GameArt game={game} showTitle={false} className="absolute inset-0" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={href} className="text-lg font-extrabold tracking-tight hover:underline">
+            <Link
+              href={href}
+              className="text-xl font-extrabold tracking-tight hover:underline sm:text-2xl"
+            >
               {edition.name}
             </Link>
             {edition.isDefault && (
@@ -40,42 +71,42 @@ export function EditionCard({ game, edition }: { game: Game; edition: Edition })
             )}
           </div>
           {edition.shortDescription && (
-            <p className="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
               {edition.shortDescription}
             </p>
           )}
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <EditionTypeBadge edition={edition} />
-        <VerificationBadge level={edition.verificationLevel} />
-        <EditionStatusBadge edition={edition} />
-        <EditionPopulationBadge edition={edition} />
-        {edition.version && (
-          <span className="text-xs text-muted-foreground">v{edition.version}</span>
-        )}
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <EditionTypeBadge edition={edition} />
+          <VerificationBadge level={edition.verificationLevel} />
+          <EditionStatusBadge edition={edition} />
+          <EditionPopulationBadge edition={edition} population={playingNow} />
+          {edition.version && (
+            <span className="text-xs text-muted-foreground">v{edition.version}</span>
+          )}
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <EditionInstallButton action={action} telemetryProps={telemetryProps} size="sm" />
-        {discord && (
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+          <EditionInstallButton action={action} telemetryProps={telemetryProps} size="md" />
+          {discord && (
+            <Link
+              href={discord}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-secondary px-5 text-sm font-bold hover:bg-secondary/80"
+            >
+              <MessagesSquare className="size-4" />
+              Community
+            </Link>
+          )}
           <Link
-            href={discord}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-secondary px-4 text-sm font-bold hover:bg-secondary/80"
+            href={href}
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-secondary px-5 text-sm font-bold hover:bg-secondary/80"
           >
-            <MessagesSquare className="size-4" />
-            Community
+            Details <ArrowRight className="size-4" />
           </Link>
-        )}
-        <Link
-          href={href}
-          className="inline-flex h-9 items-center gap-1 rounded-full px-3 text-sm font-semibold text-primary hover:underline"
-        >
-          Details <ArrowRight className="size-3.5" />
-        </Link>
+        </div>
       </div>
     </div>
   );

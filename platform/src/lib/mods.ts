@@ -9,6 +9,8 @@ export type CatalogModPublic = {
   tagline: string;
   description: string;
   baseGameSlug: string;
+  /** When set, mod is scoped to one edition; null/absent = base-game-wide. */
+  editionSlug?: string | null;
   developerSlug: string;
   license: string;
   releaseYear: number;
@@ -66,6 +68,7 @@ function toMod(doc: LeanMod): CatalogModPublic {
     tagline: String(doc.tagline),
     description: String(doc.description),
     baseGameSlug: String(doc.baseGameSlug),
+    editionSlug: (doc.editionSlug as string) || null,
     developerSlug: String(doc.developerSlug),
     license: String(doc.license),
     releaseYear: Number(doc.releaseYear),
@@ -124,6 +127,8 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
 
 export async function listMods(opts?: {
   baseGameSlug?: string;
+  /** null = base-wide only; string = that edition; omit = any edition. */
+  editionSlug?: string | null;
   includeUnpublished?: boolean;
   includeTesting?: boolean;
 }): Promise<CatalogModPublic[]> {
@@ -131,6 +136,10 @@ export async function listMods(opts?: {
     await dbConnect();
     const parts: Record<string, unknown>[] = [];
     if (opts?.baseGameSlug) parts.push({ baseGameSlug: opts.baseGameSlug });
+    if (opts && "editionSlug" in opts) {
+      // null matches both explicit null and missing field (legacy docs).
+      parts.push({ editionSlug: opts.editionSlug ?? null });
+    }
     if (!opts?.includeUnpublished) {
       parts.push(mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) }));
     }
@@ -196,8 +205,24 @@ export async function modsForGame(
   baseGameSlug: string,
   opts?: { includeTesting?: boolean }
 ): Promise<CatalogModPublic[]> {
+  // Base game page: prefer mods that are not edition-scoped.
   return listMods({
     baseGameSlug,
+    editionSlug: null,
+    includeUnpublished: false,
+    includeTesting: opts?.includeTesting,
+  });
+}
+
+/** Mods tagged for a specific edition (edition page mods tab). */
+export async function modsForEdition(
+  baseGameSlug: string,
+  editionSlug: string,
+  opts?: { includeTesting?: boolean }
+): Promise<CatalogModPublic[]> {
+  return listMods({
+    baseGameSlug,
+    editionSlug,
     includeUnpublished: false,
     includeTesting: opts?.includeTesting,
   });
