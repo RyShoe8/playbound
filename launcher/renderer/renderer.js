@@ -2118,6 +2118,9 @@ async function renderSettingsView() {
   const version = ver?.version || settings.version || "—";
   const packaged = Boolean(ver?.packaged ?? settings.packaged);
   const ready = updateStatus.phase === "ready";
+  const isAdmin = Boolean(accountState.isAdmin || settings.isAdmin);
+  const channelPref = settings.updateChannelPref === "latest" ? "latest" : "admin";
+  const activeChannel = settings.updateChannel === "latest" ? "latest" : isAdmin ? "admin" : "latest";
   const updateHint = !packaged
     ? "Auto-update runs in installed builds only."
     : ready
@@ -2161,6 +2164,18 @@ async function renderSettingsView() {
     <div class="settings-group">
       <label class="settings-label">Updates</label>
       <p class="settings-hint">Current version: <strong>${escapeHtml(version)}</strong>. <span id="set-update-hint">${escapeHtml(updateHint)}</span> First install still uses Setup from the site; later updates install in-app. Unsigned builds may show SmartScreen.</p>
+      ${
+        isAdmin
+          ? `<div style="margin-top: 12px;">
+        <p class="settings-hint" style="margin-bottom: 8px;">Admin update channel — choose which feed Check for updates uses.</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-sm ${channelPref === "admin" ? "btn-primary" : "btn-secondary"}" data-channel="admin" id="set-channel-admin">Unsigned (testing)</button>
+          <button type="button" class="btn-sm ${channelPref === "latest" ? "btn-primary" : "btn-secondary"}" data-channel="latest" id="set-channel-latest">Signed (release)</button>
+        </div>
+        <p class="settings-hint" style="margin-top: 8px;">Active: <strong>${escapeHtml(activeChannel === "latest" ? "signed (latest)" : "unsigned (admin)")}</strong></p>
+      </div>`
+          : ""
+      }
       <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn-secondary btn-sm" id="set-btn-check-update" ${packaged ? "" : "disabled"}>Check for updates</button>
         <button class="btn-primary btn-sm" id="set-btn-install-update" ${ready ? "" : "disabled"}>Install and restart</button>
@@ -2191,6 +2206,16 @@ async function renderSettingsView() {
       renderSettingsView();
     }
   });
+  document.getElementById("set-channel-admin")?.addEventListener("click", async () => {
+    await window.playbound.saveSettings({ updateChannel: "admin" });
+    setStatus("Update channel: unsigned (testing)");
+    renderSettingsView();
+  });
+  document.getElementById("set-channel-latest")?.addEventListener("click", async () => {
+    await window.playbound.saveSettings({ updateChannel: "latest" });
+    setStatus("Update channel: signed (release)");
+    renderSettingsView();
+  });
   document.getElementById("set-btn-check-update")?.addEventListener("click", async () => {
     setStatus("Checking for updates…");
     const res = await window.playbound.checkForUpdates();
@@ -2202,7 +2227,11 @@ async function renderSettingsView() {
       setStatus(`Update ${res.version} available — downloading…`);
       updateStatus = { phase: "available", version: res.version };
     } else {
-      setStatus("You're up to date.");
+      setStatus(
+        res.channel === "admin"
+          ? "You're up to date on the unsigned channel."
+          : "You're up to date."
+      );
       updateStatus = { phase: "none", version: res.version };
     }
     renderSettingsView();

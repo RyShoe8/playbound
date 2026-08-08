@@ -292,23 +292,31 @@ function getAutoUpdater() {
 }
 
 /**
- * Site admins poll unsigned admin.yml; everyone else stays on signed latest.yml.
+ * Site admins may poll unsigned admin.yml (default) or signed latest.yml via Settings.
+ * Non-admins always stay on signed latest.yml.
  * Signature verify is skipped only on the admin channel so a signed install can
  * still accept unsigned test builds while linked as an admin.
  */
+function getEffectiveUpdateChannel() {
+  if (!linkedIsAdmin) return "latest";
+  const pref = loadSettings().updateChannel;
+  return pref === "latest" ? "latest" : "admin";
+}
+
 function applyUpdaterChannel() {
   if (!app.isPackaged) return;
   const autoUpdater = getAutoUpdater();
   if (!autoUpdater) return;
-  const channel = linkedIsAdmin ? "admin" : "latest";
+  const channel = getEffectiveUpdateChannel();
+  const skipVerify = channel === "admin";
   autoUpdater.channel = channel;
-  autoUpdater.allowPrerelease = linkedIsAdmin;
+  autoUpdater.allowPrerelease = skipVerify;
   try {
     if (!defaultVerifyUpdateCodeSignature && typeof autoUpdater.verifyUpdateCodeSignature === "function") {
       defaultVerifyUpdateCodeSignature = autoUpdater.verifyUpdateCodeSignature.bind(autoUpdater);
     }
     // Setter ignores falsy values — must pass a no-op verifier that returns null (OK).
-    if (linkedIsAdmin) {
+    if (skipVerify) {
       autoUpdater.verifyUpdateCodeSignature = async () => null;
     } else if (defaultVerifyUpdateCodeSignature) {
       autoUpdater.verifyUpdateCodeSignature = defaultVerifyUpdateCodeSignature;
@@ -316,9 +324,7 @@ function applyUpdaterChannel() {
   } catch (err) {
     console.warn("[updater] could not configure signature verify:", err?.message || err);
   }
-  console.log(
-    `[updater] channel=${channel} verifySignature=${linkedIsAdmin ? "off" : "on"}`
-  );
+  console.log(`[updater] channel=${channel} verifySignature=${skipVerify ? "off" : "on"}`);
 }
 
 function setLinkedIsAdmin(next) {
@@ -3680,6 +3686,11 @@ ipcMain.handle("ping-hosts", async (_event, hosts) => {
 });
 ipcMain.handle("get-settings", () => {
   const settings = loadSettings();
+  const updateChannel = getEffectiveUpdateChannel();
+  const updateChannelPref =
+    settings.updateChannel === "latest" || settings.updateChannel === "admin"
+      ? settings.updateChannel
+      : "admin";
   return {
     apiBase: settings.apiBase || DEFAULT_API_BASE,
     gamesDir: settings.gamesDir || DEFAULT_GAMES_DIR,
@@ -3688,6 +3699,9 @@ ipcMain.handle("get-settings", () => {
     packaged: app.isPackaged,
     compatibilityFilter:
       settings.compatibilityFilter === "all" ? "all" : "compatible",
+    isAdmin: linkedIsAdmin,
+    updateChannel,
+    updateChannelPref: linkedIsAdmin ? updateChannelPref : "latest",
   };
 });
 ipcMain.handle("get-app-version", () => ({
@@ -3703,10 +3717,12 @@ ipcMain.handle("check-for-updates", async () => {
   }
   try {
     await refreshAdminUpdateChannel();
+    applyUpdaterChannel();
     const autoUpdater = getAutoUpdater();
     if (!autoUpdater) {
       return { ok: false, reason: "error", message: "electron-updater unavailable" };
     }
+    const channel = getEffectiveUpdateChannel();
     const result = await autoUpdater.checkForUpdates();
     const info = result?.updateInfo || null;
     if (info && info.version && info.version !== app.getVersion()) {
@@ -3715,14 +3731,14 @@ ipcMain.handle("check-for-updates", async () => {
         ok: true,
         updateAvailable: true,
         version: info.version,
-        channel: linkedIsAdmin ? "admin" : "latest",
+        channel,
       };
     }
     return {
       ok: true,
       updateAvailable: false,
       version: app.getVersion(),
-      channel: linkedIsAdmin ? "admin" : "latest",
+      channel,
     };
   } catch (err) {
     return { ok: false, reason: "error", message: err?.message || String(err) };
@@ -3747,8 +3763,16 @@ ipcMain.handle("save-settings", (_event, patch) => {
     settings.compatibilityFilter = patch.compatibilityFilter;
     void pushCompatibilityPreference(patch.compatibilityFilter);
   }
+  if (linkedIsAdmin && (patch.updateChannel === "admin" || patch.updateChannel === "latest")) {
+    settings.updateChannel = patch.updateChannel;
+  }
   saveSettings(settings);
-  return true;
+  applyUpdaterChannel();
+  return {
+    ok: true,
+    updateChannel: getEffectiveUpdateChannel(),
+    isAdmin: linkedIsAdmin,
+  };
 });
 
 ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
@@ -4095,11 +4119,15 @@ function setupAutoUpdater() {
     emit({
       phase: "available",
       version: info.version,
-      channel: linkedIsAdmin ? "admin" : "latest",
+      channel: getEffectiveUpdateChannel(),
     });
   });
   autoUpdater.on("update-not-available", () =>
-    emit({ phase: "none", version: app.getVersion(), channel: linkedIsAdmin ? "admin" : "latest" })
+    emit({
+      phase: "none",
+      version: app.getVersion(),
+      channel: getEffectiveUpdateChannel(),
+    })
   );
   autoUpdater.on("download-progress", (p) =>
     emit({ phase: "downloading", percent: Math.round(p.percent || 0) })
@@ -4109,7 +4137,7 @@ function setupAutoUpdater() {
     emit({
       phase: "ready",
       version: info.version,
-      channel: linkedIsAdmin ? "admin" : "latest",
+      channel: getEffectiveUpdateChannel(),
     });
   });
   autoUpdater.on("error", (err) => emit({ phase: "error", message: err?.message || String(err) }));

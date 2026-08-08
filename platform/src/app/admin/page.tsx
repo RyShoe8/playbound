@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Bug, CalendarDays, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
+import { Bug, CalendarDays, Download, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
@@ -18,6 +18,7 @@ import {
   periodDocumentCounts,
   periodTelemetryCounts,
 } from "@/lib/admin/analyticsPeriods";
+import { getAdminLauncherDownloadUrl } from "@/lib/launcherDownload";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -106,16 +107,26 @@ export default async function AdminPage() {
   const brokenVersions =
     games.filter((g) => g.launcherInstall?.versionCheckStatus === "broken").length +
     mods.filter((m) => m.versionCheckStatus === "broken").length;
+  const adminLauncherUrl = getAdminLauncherDownloadUrl();
 
   return (
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
-          <Shield className="size-7 text-primary" /> Administration
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Live product KPIs (today / 7d / 30d vs previous period) and the editable game catalog.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
+            <Shield className="size-7 text-primary" /> Administration
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Live product KPIs (today / 7d / 30d vs previous period) and the editable game catalog.
+          </p>
+        </div>
+        <a
+          href={adminLauncherUrl}
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold transition-colors hover:bg-secondary/70"
+        >
+          <Download className="size-4" />
+          Unsigned launcher (admin)
+        </a>
       </div>
 
       <section>
