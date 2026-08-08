@@ -575,6 +575,17 @@ async function handleSyncDeepLink() {
   context = null;
   pushContext();
   await syncLibraryNow({ quiet: false });
+  const hw = await syncHardwareProfile({ quiet: true });
+  if (hw?.success) {
+    notifyAccount({
+      connected: true,
+      message: "Library and hardware profile synced.",
+    });
+    // Focus Settings so "Your Gaming PC" is obvious after a web compat CTA.
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("navigate", { view: "settings" });
+    }
+  }
 }
 
 function handleDeepLink(parsed) {
@@ -2962,12 +2973,13 @@ function sendGameExited(slug) {
   }
 }
 
-function clearLaunchTracking(slug) {
+function clearLaunchTracking(slug, { beat = false } = {}) {
   const launch = activeLaunches.get(slug);
   if (!launch) return;
   if (launch.settleTimer) clearTimeout(launch.settleTimer);
   if (launch.pollTimer) clearInterval(launch.pollTimer);
   activeLaunches.delete(slug);
+  if (beat) void beatLauncherPresence();
 }
 
 function normalizeProcessImageName(name) {
@@ -3039,12 +3051,12 @@ function onSpawnedProcessGone(slug) {
       if (current.pollTimer) clearInterval(current.pollTimer);
       current.pollTimer = setInterval(() => {
         if (!isAnyImageRunning(current.imageNames)) {
-          clearLaunchTracking(slug);
+          clearLaunchTracking(slug, { beat: true });
           sendGameExited(slug);
         }
       }, GAME_RUNNING_POLL_MS);
     } else {
-      clearLaunchTracking(slug);
+      clearLaunchTracking(slug, { beat: true });
       sendGameExited(slug);
     }
   }, GAME_EXIT_DEBOUNCE_MS);
@@ -3100,6 +3112,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
       } catch {
         /* ignore */
       }
+      void beatLauncherPresence();
       resolve(child);
     };
     const fail = (err) => {
@@ -4305,6 +4318,34 @@ ipcMain.handle("get-hardware-profile", async () => {
 });
 
 ipcMain.handle("sync-hardware-profile", async () => syncHardwareProfile({ quiet: false }));
+
+ipcMain.handle("get-hardware-compatibility", async (_event, gameSlug, opts = {}) => {
+  try {
+    const settings = loadSettings();
+    if (!settings.launcherToken) {
+      return { hasProfile: false, result: null, signedIn: false };
+    }
+    const params = new URLSearchParams({ gameSlug: String(gameSlug || "") });
+    if (opts?.editionSlug) params.set("editionSlug", String(opts.editionSlug));
+    if (Array.isArray(opts?.modSlugs) && opts.modSlugs.length) {
+      params.set("modSlugs", opts.modSlugs.join(","));
+    }
+    const res = await fetch(`${getApiBase()}/api/hardware/compatibility?${params}`, {
+      headers: launcherApiHeaders(),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { error: data?.error || `HTTP ${res.status}`, hasProfile: false, result: null };
+    }
+    return {
+      hasProfile: Boolean(data?.hasProfile),
+      result: data?.result ?? null,
+      signedIn: true,
+    };
+  } catch (err) {
+    return { error: err.message, hasProfile: false, result: null };
+  }
+});
 
 ipcMain.handle("get-appear-offline", async () => {
   try {

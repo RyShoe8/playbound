@@ -117,7 +117,7 @@ export function Sidebar() {
               <Avatar name={session.user.username ?? session.user.email ?? "?"} hue={265} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">{session.user.username}</p>
-                <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
+                <p className="truncate text-xs text-muted-foreground">Profile &amp; PC</p>
               </div>
             </Link>
             <SignOutButton className="w-full px-2 py-2 text-left hover:bg-sidebar-accent/60" />
