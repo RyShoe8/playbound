@@ -181,17 +181,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     note: "Installs the Unvanquished updater, which downloads the game.",
     connectArgs: ["+connect", "{host}:{port}"],
   },
-  openrct2: {
+  openciv3: {
     enabled: true,
-    kind: "github-installer",
-    repo: "OpenRCT2/OpenRCT2",
-    assetPattern: "OpenRCT2-.*-windows-installer-(x64|win32|arm64)\\.exe$",
-    note: "Needs owned RollerCoaster Tycoon 2 or RCT Classic game data (not included). Install OpenRCT2, then point it at your RCT2 folder on first launch.",
-    knownExePaths: [
-      "%PROGRAMFILES%\\OpenRCT2\\openrct2.exe",
-      "%PROGRAMFILES(X86)%\\OpenRCT2\\openrct2.exe",
-      "%LOCALAPPDATA%\\Programs\\OpenRCT2\\openrct2.exe",
-    ],
+    kind: "github-zip",
+    repo: "C7-Game/OpenCiv3",
+    assetPattern: "OpenCiv3_.*-Windows\\.zip$",
+    exeHint: "OpenCiv3",
+    note: "Runs standalone with placeholder art. Optional: install Civilization III Complete (Steam/GOG) for original graphics — OpenCiv3 auto-detects it.",
   },
   freeciv: {
     enabled: true,

@@ -29,12 +29,12 @@ let _liveStatsLastGood = null;
 const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 
-const OPENRCT2_DATA_HINT =
-  "OpenRCT2 needs owned RollerCoaster Tycoon 2 or RCT Classic game data (not included). On first launch, point it at your RCT2 folder.";
+const OPENCIV3_DATA_HINT =
+  "OpenCiv3 runs standalone with placeholder art. Optional: install Civilization III Complete (Steam/GOG) for original graphics — it auto-detects common installs.";
 
 function gamePlayHintHtml(slug) {
-  if (slug === "openrct2") {
-    return `<p class="view-sub" style="margin:8px 0 0;max-width:36rem">${escapeHtml(OPENRCT2_DATA_HINT)}</p>`;
+  if (slug === "openciv3") {
+    return `<p class="view-sub" style="margin:8px 0 0;max-width:36rem">${escapeHtml(OPENCIV3_DATA_HINT)}</p>`;
   }
   return "";
 }

@@ -6,7 +6,6 @@ import { fetchFreecivServers } from "./providers/freeciv";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenArenaServers } from "./providers/openarena";
 import { fetchOpenRaServers } from "./providers/openra";
-import { fetchOpenRct2Servers } from "./providers/openrct2";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
@@ -54,7 +53,6 @@ const providers: Record<string, ServerProvider> = {
   // homepage Active Players stays published-only until status flips.
   freeciv: { slug: "freeciv", fetchServers: fetchFreecivServers },
   openarena: { slug: "openarena", fetchServers: fetchOpenArenaServers },
-  openrct2: { slug: "openrct2", fetchServers: fetchOpenRct2Servers },
   flightgear: { slug: "flightgear", fetchServers: fetchFlightGearServers },
   "team-fortress-2": {
     slug: "team-fortress-2",

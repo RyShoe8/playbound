@@ -205,14 +205,15 @@ export const developers: Developer[] = [
     artHue: 200,
   },
   {
-    slug: "openrct2-team",
-    name: "OpenRCT2 Contributors",
-    tagline: "Keeping RollerCoaster Tycoon 2 alive.",
-    about: "Volunteers maintaining OpenRCT2, the open-source reimplementation of RCT2.",
-    founded: 2014,
+    slug: "openciv3-team",
+    name: "OpenCiv3 Contributors",
+    tagline: "Civilization III as it could have been.",
+    about:
+      "The fan community building OpenCiv3 (formerly C7) — an open-source, mod-oriented remake of Civilization III.",
+    founded: 2021,
     location: "Worldwide",
-    website: "https://openrct2.io",
-    artHue: 190,
+    website: "https://openciv3.org",
+    artHue: 35,
   },
   {
     slug: "freeciv-team",

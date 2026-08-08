@@ -47,27 +47,6 @@ function m(d: Def): ModSeed {
   });
 }
 
-const openrct2Mods: ModSeed[] = [
-  m({ slug: 'openrct2-openmusic', title: 'OpenMusic', tagline: 'Open replacement music pack.', desc: 'Open replacement music pack.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://github.com/OpenRCT2/OpenMusic', repo: 'OpenRCT2/OpenMusic', changes: 'Adds open music assets.', summary: 'Open replacement music pack.' }),
-  m({ slug: 'openrct2-opensfx', title: 'OpenSFX', tagline: 'Open replacement sound effects.', desc: 'Open replacement sound effects.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://github.com/OpenRCT2/OpenSoundEffects', repo: 'OpenRCT2/OpenSoundEffects', changes: 'Adds open SFX.', summary: 'Open replacement sound effects.' }),
-  m({ slug: 'openrct2-title-sequences', title: 'Title Sequences', tagline: 'Custom title sequences.', desc: 'Custom title sequences.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://github.com/OpenRCT2/title-sequences', repo: 'OpenRCT2/title-sequences', changes: 'Title screen packs.', summary: 'Custom title sequences.' }),
-  m({ slug: 'openrct2-objects', title: 'Official Objects', tagline: 'Official object definitions.', desc: 'Official object definitions.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://github.com/OpenRCT2/objects', repo: 'OpenRCT2/objects', changes: 'Park objects.', summary: 'Official object definitions.' }),
-  m({ slug: 'openrct2-modding-discord', title: 'OpenRCT2 Discord', tagline: 'Community modding hub.', desc: 'Community modding hub.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://discord.gg/openrct2', kind: 'external', changes: 'Find rides and scenarios.', summary: 'Community modding hub.' }),
-  m({ slug: 'openrct2-scenario-pack', title: 'Scenario downloads', tagline: 'Scenarios and saved parks.', desc: 'Scenarios and saved parks.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://openrct2.org/downloads', kind: 'external', changes: 'Community scenarios.', summary: 'Scenarios and saved parks.' }),
-  m({ slug: 'openrct2-cheats-menu', title: 'Cheats docs', tagline: 'Built-in cheat features guide.', desc: 'Built-in cheat features guide.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://docs.openrct2.io/en/latest/features/cheats.html', kind: 'external', changes: 'Debug tooling docs.', summary: 'Built-in cheat features guide.' }),
-  m({ slug: 'openrct2-ride-vehicles', title: 'NEDesigns rides', tagline: 'Custom ride and scenery catalog.', desc: 'Custom ride and scenery catalog.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://www.nedesigns.com/', kind: 'external', changes: 'Custom ride objects.', summary: 'Custom ride and scenery catalog.' }),
-  m({ slug: 'openrct2-multiplayer', title: 'Multiplayer guide', tagline: 'Host and join parks online.', desc: 'Host and join parks online.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://docs.openrct2.io/en/latest/playing/multiplayer.html', kind: 'external', changes: 'Server hosting docs.', summary: 'Host and join parks online.' }),
-  m({ slug: 'openrct2-localisation', title: 'Localisation', tagline: 'Translation packs.', desc: 'Translation packs.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://github.com/OpenRCT2/Localisation', repo: 'OpenRCT2/Localisation', changes: 'UI languages.', summary: 'Translation packs.' }),
-  m({ slug: 'openrct2-custom-scenery', title: 'Custom scenery', tagline: 'Scenery object packs.', desc: 'Scenery object packs.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://www.nedesigns.com/search/?c=scenery', kind: 'external', changes: 'Detailed scenery.', summary: 'Scenery object packs.' }),
-  m({ slug: 'openrct2-rct-data', title: 'RCT data install', tagline: 'Using original RCT data legally.', desc: 'Using original RCT data legally.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://docs.openrct2.io/en/latest/installing/installing.html', kind: 'external', changes: 'Legal data guide.', summary: 'Using original RCT data legally.' }),
-  m({ slug: 'openrct2-master-server', title: 'Server list', tagline: 'Public multiplayer servers.', desc: 'Public multiplayer servers.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://servers.openrct2.io/', kind: 'external', changes: 'Browse live parks.', summary: 'Public multiplayer servers.' }),
-  m({ slug: 'openrct2-plugins', title: 'Plugin API', tagline: 'JS plugin development.', desc: 'JS plugin development.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://docs.openrct2.io/en/latest/for-developers/javascript-api.html', kind: 'external', changes: 'Custom plugins.', summary: 'JS plugin development.' }),
-  m({ slug: 'openrct2-twitch', title: 'Twitch notes', tagline: 'Viewer integration notes.', desc: 'Viewer integration notes.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://docs.openrct2.io/', kind: 'external', changes: 'Streaming plugins.', summary: 'Viewer integration notes.' }),
-  m({ slug: 'openrct2-linux-ports', title: 'Platform builds', tagline: 'Extra platform builds.', desc: 'Extra platform builds.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://openrct2.org/downloads', kind: 'external', changes: 'Alt install channels.', summary: 'Extra platform builds.' }),
-  m({ slug: 'openrct2-replays', title: 'Replay tools', tagline: 'Park replay features.', desc: 'Park replay features.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://docs.openrct2.io/', kind: 'external', changes: 'Debugging parks.', summary: 'Park replay features.' }),
-  m({ slug: 'openrct2-upstream', title: 'OpenRCT2 source', tagline: 'Upstream repository.', desc: 'Upstream repository.', base: 'openrct2', baseTitle: 'OpenRCT2', path: 'mods', website: 'https://github.com/OpenRCT2/OpenRCT2', repo: 'OpenRCT2/OpenRCT2', changes: 'Build from source.', summary: 'Upstream repository.' }),
-];
-
 const freecivMods: ModSeed[] = [
   m({ slug: 'freeciv-modpack', title: 'Modpack hub', tagline: 'Official modpack documentation.', desc: 'Official modpack documentation.', base: 'freeciv', baseTitle: 'Freeciv', path: 'data', website: 'https://www.freeciv.org/wiki/Modpacks', kind: 'external', changes: 'Rulesets and tilesets.', summary: 'Official modpack documentation.' }),
   m({ slug: 'freeciv-classic', title: 'Classic ruleset', tagline: 'Default classic civilization rules.', desc: 'Default classic civilization rules.', base: 'freeciv', baseTitle: 'Freeciv', path: 'data', website: 'https://www.freeciv.org/', kind: 'external', changes: 'Baseline multiplayer.', summary: 'Default classic civilization rules.' }),
@@ -204,7 +183,6 @@ const daggerfallMods: ModSeed[] = [
 ];
 
 export const phase2ModsRemasters: ModSeed[] = [
-  openrct2Mods,
   freecivMods,
   flightgearMods,
   freedoomMods,

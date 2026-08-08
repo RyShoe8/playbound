@@ -3124,10 +3124,7 @@ async function playGame(slug, join = null, editionSlug = null) {
       /spawn\s+unknown/i.test(rawMessage)
     ) {
       code = "SPAWN_UNKNOWN";
-      message = `Couldn't start ${exeName} (wrong CPU architecture or blocked executable). Reinstall this game from PlayBound, or use Locate to pick the correct openrct2.exe / game .exe.`;
-      if (slug !== "openrct2") {
-        message = `Couldn't start ${exeName} (wrong CPU architecture or blocked executable). Try reinstalling or Locate the correct .exe.`;
-      }
+      message = `Couldn't start ${exeName} (wrong CPU architecture or blocked executable). Try reinstalling or use Locate to pick the correct .exe.`;
     } else if (err?.code === "ENOENT" || /ENOENT|not runnable|file missing/i.test(rawMessage)) {
       code = "SPAWN_ENOENT";
     }
