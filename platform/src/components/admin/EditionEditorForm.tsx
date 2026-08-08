@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -534,7 +535,7 @@ export function EditionEditorForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Game</label>
-            <select
+            <PremiumSelect
               value={form.gameSlug}
               onChange={(e) => patch("gameSlug", e.target.value)}
               className={field}
@@ -545,7 +546,7 @@ export function EditionEditorForm({
                   {g.title}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
           </div>
           <div>
             <label className={label}>Edition name</label>
@@ -618,7 +619,7 @@ export function EditionEditorForm({
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className={label}>Type</label>
-            <select
+            <PremiumSelect
               value={form.type}
               onChange={(e) => patch("type", e.target.value)}
               className={field}
@@ -628,11 +629,11 @@ export function EditionEditorForm({
                   {EDITION_TYPE_LABELS[t]}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
           </div>
           <div>
             <label className={label}>Status</label>
-            <select
+            <PremiumSelect
               value={form.status}
               onChange={(e) => patch("status", e.target.value)}
               className={field}
@@ -642,11 +643,11 @@ export function EditionEditorForm({
                   {EDITION_STATUS_LABELS[s]}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
           </div>
           <div>
             <label className={label}>Visibility</label>
-            <select
+            <PremiumSelect
               value={form.visibility}
               onChange={(e) => patch("visibility", e.target.value)}
               className={field}
@@ -656,7 +657,7 @@ export function EditionEditorForm({
                   {v}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
           </div>
         </div>
 
@@ -887,7 +888,7 @@ export function EditionEditorForm({
       <AdminCollapsibleSection title="Installation" defaultOpen>
         <div>
           <label className={label}>Install method</label>
-          <select
+          <PremiumSelect
             value={form.installMethod}
             onChange={(e) => patch("installMethod", e.target.value as InstallMethod)}
             className={field}
@@ -897,7 +898,7 @@ export function EditionEditorForm({
                 {INSTALL_METHOD_LABELS[m]}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
         <div className="mt-4 space-y-3">
           <InstallMethodFields
@@ -1042,7 +1043,7 @@ export function EditionEditorForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Verification level</label>
-            <select
+            <PremiumSelect
               value={form.verificationLevel}
               onChange={(e) => patch("verificationLevel", e.target.value)}
               className={field}
@@ -1052,7 +1053,7 @@ export function EditionEditorForm({
                   {VERIFICATION_LABELS[v]}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
           </div>
           <label className="flex items-center gap-2 self-end pb-2 text-sm font-semibold">
             <input
@@ -1479,7 +1480,7 @@ function ManualSteps({
                 placeholder="Optional command"
               />
             </div>
-            <select
+            <PremiumSelect
               value={step.platform ?? "all"}
               onChange={(e) => {
                 const next = [...list];
@@ -1492,7 +1493,7 @@ function ManualSteps({
               <option value="windows">Windows</option>
               <option value="macos">macOS</option>
               <option value="linux">Linux</option>
-            </select>
+            </PremiumSelect>
             <button
               type="button"
               onClick={() => onChange(list.filter((_, x) => x !== i))}

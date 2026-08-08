@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -785,7 +786,7 @@ export function GameEditorForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Developer</label>
-            <select
+            <PremiumSelect
               value={form.developerSlug}
               onChange={(e) => patch("developerSlug", e.target.value)}
               className={field}
@@ -805,7 +806,7 @@ export function GameEditorForm({
                   {form.developerSlug} (unknown — no such developer)
                 </option>
               )}
-            </select>
+            </PremiumSelect>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Missing one?{" "}
               <a href="/admin/developers/new" className="text-primary hover:underline">
@@ -1589,7 +1590,7 @@ export function GameEditorForm({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className={label}>Install kind</label>
-                    <select
+                    <PremiumSelect
                       value={form.launcherInstall?.kind ?? "external"}
                       onChange={(e) =>
                         patchLauncher({ kind: e.target.value as LauncherInstallKind })
@@ -1601,7 +1602,7 @@ export function GameEditorForm({
                           {k}
                         </option>
                       ))}
-                    </select>
+                    </PremiumSelect>
                   </div>
                   <div>
                     <label className={label}>Note (optional)</label>
@@ -1846,14 +1847,14 @@ export function GameEditorForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Managed by</label>
-            <select
+            <PremiumSelect
               value={form.managedBy}
               onChange={(e) => patch("managedBy", e.target.value as GamePayload["managedBy"])}
               className={field}
             >
               <option value="admin">admin</option>
               <option value="developer">developer</option>
-            </select>
+            </PremiumSelect>
           </div>
           <div>
             <label className={label}>Owner user id (optional)</label>

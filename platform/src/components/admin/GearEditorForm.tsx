@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -131,7 +132,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Category</label>
-          <select
+          <PremiumSelect
             value={form.category}
             onChange={(e) => patch("category", e.target.value)}
             className={field}
@@ -144,7 +145,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             <option value="Storage">Storage</option>
             <option value="Mouse">Mouse</option>
             <option value="Keyboard">Keyboard</option>
-          </select>
+          </PremiumSelect>
         </div>
         <div>
           <label className={label}>Cover Image URL (optional)</label>

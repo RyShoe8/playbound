@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
 import { Check, Clock, Gamepad2, Search, UserPlus } from "lucide-react";
@@ -158,7 +159,7 @@ export function AddFriends({
             Find people with a game in their library, or anyone playing a genre.
           </p>
           <div className="flex flex-wrap gap-2">
-            <select
+            <PremiumSelect
               value={game}
               onChange={(e) => {
                 setGame(e.target.value);
@@ -174,8 +175,8 @@ export function AddFriends({
                   {g.title}
                 </option>
               ))}
-            </select>
-            <select
+            </PremiumSelect>
+            <PremiumSelect
               value={genre}
               onChange={(e) => {
                 setGenre(e.target.value);
@@ -190,7 +191,7 @@ export function AddFriends({
                   {g}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
             <button
               type="submit"
               disabled={busy}

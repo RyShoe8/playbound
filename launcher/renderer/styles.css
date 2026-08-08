@@ -1438,3 +1438,94 @@ textarea.input-text {
     animation: none;
   }
 }
+/* Premium Select Dropdown */
+.premium-select {
+  position: relative;
+  width: 100%;
+  min-width: 120px;
+}
+.premium-select-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+.premium-select-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.premium-select.open .premium-select-btn {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 1px #8b5cf6;
+}
+.premium-select-icon {
+  opacity: 0.5;
+  transition: transform 0.2s ease;
+  display: flex;
+}
+.premium-select.open .premium-select-icon {
+  transform: rotate(180deg);
+}
+.premium-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  margin-top: 4px;
+  max-height: 240px;
+  width: 100%;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 15, 25, 0.95);
+  padding: 4px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-5px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.premium-select.open .premium-select-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.premium-select-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  cursor: pointer;
+  align-items: center;
+  border-radius: 6px;
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+.premium-select-item:hover {
+  background: rgba(139, 92, 246, 0.2);
+  color: #c4b5fd;
+}
+.premium-select-item.selected {
+  background: rgba(139, 92, 246, 0.1);
+  color: #c4b5fd;
+  font-weight: 500;
+}
+.premium-select-check {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a78bfa;
+}

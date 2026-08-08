@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -431,7 +432,7 @@ export function GlobalServerBrowser({
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Game
-          <select
+          <PremiumSelect
             value={effectiveGameSlug}
             onChange={(e) => {
               setGameSlug(e.target.value);
@@ -446,11 +447,11 @@ export function GlobalServerBrowser({
                 {g.title}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </label>
         <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Mod
-          <select
+          <PremiumSelect
             value={effectiveModSlug}
             onChange={(e) => setModSlug(e.target.value)}
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-bold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
@@ -461,7 +462,7 @@ export function GlobalServerBrowser({
                 {m.title}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </label>
         <label className="flex min-w-[180px] flex-[1.2] flex-col gap-1 text-xs font-semibold text-muted-foreground">
           Search
