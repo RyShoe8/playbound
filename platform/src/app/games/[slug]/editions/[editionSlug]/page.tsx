@@ -61,6 +61,7 @@ import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { launcherPlayModUrl } from "@/lib/launcher";
 import { modsForEdition } from "@/lib/mods";
 import { cn } from "@/lib/utils";
+import { GameHardwareCompatibility } from "@/components/hardware/GameHardwareCompatibility";
 
 type Params = Promise<{ slug: string; editionSlug: string }>;
 
@@ -502,6 +503,10 @@ function OverviewTab({
             </div>
           </section>
         )}
+
+        <section>
+          <GameHardwareCompatibility gameSlug={game.slug} editionSlug={edition.slug} />
+        </section>
 
         {requirements && (requirements.min || requirements.recommended) && (
           <section>

@@ -49,6 +49,8 @@ contextBridge.exposeInMainWorld("playbound", {
   setAppearOffline: (appearOffline) => ipcRenderer.invoke("set-appear-offline", appearOffline),
   getHardwareProfile: () => ipcRenderer.invoke("get-hardware-profile"),
   syncHardwareProfile: () => ipcRenderer.invoke("sync-hardware-profile"),
+  getHardwareCompatibility: (gameSlug, opts) =>
+    ipcRenderer.invoke("get-hardware-compatibility", gameSlug, opts || {}),
   ensureManagedJava: (opts) => ipcRenderer.invoke("ensure-managed-java", opts || {}),
   removeFriend: (friendId) => ipcRenderer.invoke("remove-friend", friendId),
   presenceHeartbeat: (payload) => ipcRenderer.invoke("presence-heartbeat", payload || {}),
@@ -90,4 +92,5 @@ contextBridge.exposeInMainWorld("playbound", {
     ipcRenderer.on("mod-install-finished", (_event, data) => cb(data || {})),
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
   onGameExited: (cb) => ipcRenderer.on("game-exited", (_event, data) => cb(data || {})),
+  onNavigate: (cb) => ipcRenderer.on("navigate", (_event, data) => cb(data || {})),
 });

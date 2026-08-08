@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import UserHardwareProfile from "@/lib/models/UserHardwareProfile";
+import HardwareGpu from "@/lib/models/HardwareGpu";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { hardwareProfilePayloadSchema } from "@/lib/hardware/schema";
 import { normalizeAndLinkProfile } from "@/lib/hardware/upsertKnowledge";
 import { normalizeCpuName, normalizeGpuName } from "@/lib/hardware/normalize";
+import { inferGpuTierFromName } from "@/lib/hardware/tiers";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
-function publicProfile(doc: {
+async function publicProfile(doc: {
   collectedAt: Date;
   os: Record<string, unknown>;
   cpu: Record<string, unknown>;
@@ -19,6 +21,20 @@ function publicProfile(doc: {
   detectionErrors?: string[];
   updatedAt?: Date;
 }) {
+  const gpuIds = (doc.gpus || [])
+    .map((g) => g.hardwareGpuId)
+    .filter(Boolean)
+    .map(String);
+  const tierById = new Map<string, string>();
+  if (gpuIds.length) {
+    const rows = await HardwareGpu.find({ _id: { $in: gpuIds } })
+      .select("tier")
+      .lean();
+    for (const row of rows) {
+      tierById.set(String(row._id), String(row.tier || "unknown"));
+    }
+  }
+
   return {
     collectedAt: doc.collectedAt?.toISOString?.() ?? doc.collectedAt,
     updatedAt: doc.updatedAt?.toISOString?.() ?? null,
@@ -31,14 +47,20 @@ function publicProfile(doc: {
       threads: doc.cpu.threads,
       tier: doc.cpu.tier,
     },
-    gpus: (doc.gpus || []).map((g) => ({
-      displayName: g.displayName,
-      manufacturer: g.manufacturer,
-      model: g.model,
-      vramMB: g.vramMB,
-      isIntegrated: g.isIntegrated,
-      isVirtual: g.isVirtual,
-    })),
+    gpus: (doc.gpus || []).map((g) => {
+      const id = g.hardwareGpuId ? String(g.hardwareGpuId) : null;
+      const fromDb = id ? tierById.get(id) : null;
+      const inferred = inferGpuTierFromName(String(g.displayName || g.rawName || ""));
+      return {
+        displayName: g.displayName,
+        manufacturer: g.manufacturer,
+        model: g.model,
+        vramMB: g.vramMB,
+        isIntegrated: g.isIntegrated,
+        isVirtual: g.isVirtual,
+        tier: fromDb || inferred || "unknown",
+      };
+    }),
     primaryGpuIndex: doc.primaryGpuIndex,
     primaryGpuConfidence: doc.primaryGpuConfidence,
     memory: doc.memory,
@@ -57,7 +79,7 @@ export async function GET(req: Request) {
   if (!doc) {
     return NextResponse.json({ profile: null });
   }
-  return NextResponse.json({ profile: publicProfile(doc as never) });
+  return NextResponse.json({ profile: await publicProfile(doc as never) });
 }
 
 export async function PUT(req: Request) {
@@ -136,7 +158,7 @@ export async function PUT(req: Request) {
       userId,
     });
 
-    return NextResponse.json({ success: true, profile: publicProfile(doc as never) });
+    return NextResponse.json({ success: true, profile: await publicProfile(doc as never) });
   } catch (err) {
     console.error("Hardware profile PUT failed:", err);
     if (err && typeof err === "object" && "issues" in err) {

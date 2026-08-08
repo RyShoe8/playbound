@@ -98,6 +98,36 @@ export interface PresenceUpdate {
   sessionId?: string | null;
 }
 
+type PresenceLean = {
+  status?: string;
+  platform?: string;
+  lastHeartbeat?: Date | string | null;
+  currentGameId?: string | null;
+  currentEditionId?: string | null;
+} | null;
+
+/**
+ * When the launcher recently reported `playing`, a concurrent browser tab must
+ * not downgrade that row to browsing/online and wipe the current game.
+ */
+function shouldPreserveLauncherPlaying(
+  existing: PresenceLean,
+  reportingPlatform: PresencePlatform,
+  update: PresenceUpdate,
+  now: Date
+): boolean {
+  if (reportingPlatform !== "web" || !existing) return false;
+  if (existing.status !== "playing" || existing.platform !== "launcher") return false;
+  const hb = existing.lastHeartbeat ? new Date(existing.lastHeartbeat).getTime() : 0;
+  if (!hb || now.getTime() - hb >= STALE_AFTER_MS) return false;
+  const downgradeStatus = update.status != null && update.status !== "playing";
+  const clearGame =
+    update.gameId !== undefined &&
+    (update.gameId == null || update.gameId === "") &&
+    Boolean(existing.currentGameId);
+  return downgradeStatus || clearGame;
+}
+
 /**
  * Begin (or resume) presence and an active platform session.
  *
@@ -113,19 +143,28 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
   const os = detectOs(ctx.userAgent);
   const page = normalizePage(update.page);
 
+  const existing = (await Presence.findOne({ userId: ctx.userId }).lean()) as PresenceLean;
+  const preserve = shouldPreserveLauncherPlaying(existing, platform, update, now);
+
+  const set: Record<string, unknown> = {
+    lastHeartbeat: now,
+    currentPage: page,
+  };
+  if (preserve) {
+    // Keep launcher playing/game; still refresh heartbeat so presence does not stale.
+  } else {
+    set.status = update.status ?? "online";
+    set.platform = platform;
+    set.device = device;
+    set.os = os;
+    set.currentGameId = update.gameId ?? null;
+    set.currentEditionId = update.editionId ?? null;
+  }
+
   await Presence.findOneAndUpdate(
     { userId: ctx.userId },
     {
-      $set: {
-        status: update.status ?? "online",
-        platform,
-        device,
-        os,
-        currentPage: page,
-        currentGameId: update.gameId ?? null,
-        currentEditionId: update.editionId ?? null,
-        lastHeartbeat: now,
-      },
+      $set: set,
       // Only stamped when the row is created, so reconnecting does not reset
       // how long the user has been present.
       $setOnInsert: { userId: ctx.userId, startedAt: now },
@@ -172,15 +211,21 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
 export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
   await dbConnect();
   const now = new Date();
+  const platform = detectPlatform(ctx.userAgent);
+
+  const existing = (await Presence.findOne({ userId: ctx.userId }).lean()) as PresenceLean;
+  const preserve = shouldPreserveLauncherPlaying(existing, platform, update, now);
 
   const set: Record<string, unknown> = { lastHeartbeat: now };
-  if (update.status) set.status = update.status;
+  if (!preserve) {
+    if (update.status) set.status = update.status;
+    if (update.gameId !== undefined) set.currentGameId = update.gameId || null;
+    if (update.editionId !== undefined) set.currentEditionId = update.editionId || null;
+  }
   // `page` is only written when the client sends the key at all, so a
   // heartbeat that omits it leaves the last known page intact rather than
-  // blanking it.
+  // blanking it. Even when preserving playing, web may update currentPage.
   if (update.page !== undefined) set.currentPage = normalizePage(update.page);
-  if (update.gameId !== undefined) set.currentGameId = update.gameId || null;
-  if (update.editionId !== undefined) set.currentEditionId = update.editionId || null;
 
   const presence = await Presence.findOneAndUpdate(
     { userId: ctx.userId },

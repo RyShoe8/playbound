@@ -464,6 +464,10 @@ window.playbound.onAccount((data) => {
   }
 });
 
+window.playbound.onNavigate?.((data) => {
+  if (data?.view) navigateTo(data.view);
+});
+
 window.playbound.onUpdateStatus?.((data) => {
   updateStatus = data || { phase: "idle" };
   const phase = data?.phase;
@@ -2477,6 +2481,82 @@ async function renderSettingsView() {
 /** Sort state for game-detail servers table */
 const detailServersSort = { sort: "players", sortDir: "desc" };
 
+const HW_VERDICT_LABEL = {
+  excellent: "Runs Great",
+  good: "Runs Well",
+  playable: "Playable",
+  limited: "Limited",
+  unsupported: "Unsupported",
+  unknown: "Unknown",
+};
+
+function formatHwRam(mb) {
+  if (mb == null) return null;
+  if (mb >= 1024) return `${Math.round(mb / 1024)} GB`;
+  return `${mb} MB`;
+}
+
+async function fillGameHardwareCompat(slug) {
+  const body = document.getElementById("detail-hw-compat-body");
+  if (!body) return;
+  if (!accountState.connected) {
+    body.innerHTML =
+      "Sign in to check this game against your PC. Sync hardware from Settings after signing in.";
+    return;
+  }
+  try {
+    const data = await window.playbound.getHardwareCompatibility?.(slug);
+    if (!data || data.error) {
+      body.textContent = data?.error || "Couldn’t check compatibility.";
+      return;
+    }
+    if (!data.hasProfile || !data.result || data.result.verdict === "unknown") {
+      body.innerHTML = `${escapeHtml(
+        data.result?.summary ||
+          "Sync your hardware from Settings (Your Gaming PC) to see whether this game will run well."
+      )} <button type="button" class="btn-secondary btn-sm" id="detail-hw-sync" style="margin-left:8px">Sync now</button>`;
+      document.getElementById("detail-hw-sync")?.addEventListener("click", async () => {
+        body.textContent = "Syncing…";
+        await window.playbound.syncHardwareProfile?.();
+        fillGameHardwareCompat(slug);
+      });
+      return;
+    }
+    const r = data.result;
+    const label = HW_VERDICT_LABEL[r.verdict] || "Unknown";
+    const rec = r.compared?.required?.recommended || r.compared?.required?.min || {};
+    const reasons = (r.reasons || [])
+      .slice(0, 5)
+      .map((x) => `<li>${escapeHtml(x.message)}</li>`)
+      .join("");
+    const ram = formatHwRam(r.compared?.user?.ramMB);
+    body.innerHTML = `
+      <p style="font-weight:800;margin:0 0 6px">${escapeHtml(label)}</p>
+      <p class="view-sub" style="margin:0 0 10px">${escapeHtml(r.summary || "")}</p>
+      ${reasons ? `<ul style="margin:0 0 12px;padding-left:18px;font-size:13px;color:var(--text-muted)">${reasons}</ul>` : ""}
+      <div class="req-grid">
+        <div class="req-card">
+          <div class="req-label">Your PC</div>
+          <p>${escapeHtml([r.compared?.user?.gpu, r.compared?.user?.cpu, ram ? `${ram} RAM` : null].filter(Boolean).join(" · ") || "—")}</p>
+        </div>
+        <div class="req-card">
+          <div class="req-label">Game</div>
+          <p>${escapeHtml(
+            [
+              rec.gpuText || rec.gpuTier ? `GPU: ${rec.gpuText || rec.gpuTier}` : null,
+              rec.ramMB ? `RAM: ${formatHwRam(rec.ramMB)}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "Requirements not fully specified"
+          )}</p>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    body.textContent = err?.message || "Couldn’t check compatibility.";
+  }
+}
+
 async function renderGameDetailView(slug) {
   currentDetailSlug = slug;
   const container = views.gameDetail;
@@ -2578,6 +2658,10 @@ async function renderGameDetailView(slug) {
             ? `<section class="detail-section"><h2 class="detail-section-title">Features</h2><ul class="feature-list">${featureItems}</ul></section>`
             : ""
         }
+        <section class="detail-section" id="detail-hw-compat">
+          <h2 class="detail-section-title">Will this run on your PC?</h2>
+          <p class="view-sub" id="detail-hw-compat-body">Checking…</p>
+        </section>
         ${
           detail.systemRequirements
             ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
@@ -2833,6 +2917,7 @@ async function renderGameDetailView(slug) {
     e.preventDefault();
     window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}`);
   });
+  void fillGameHardwareCompat(slug);
   container.querySelectorAll("a.shot-thumb").forEach((a) => {
     a.addEventListener("click", (e) => {
       e.preventDefault();

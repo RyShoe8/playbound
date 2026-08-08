@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useTelemetry } from "@/lib/telemetry";
 import type { CompatibilityResult } from "@/lib/hardware/types";
+import { CheckCompatibilityCta } from "@/components/hardware/CheckCompatibilityCta";
 
 const VERDICT_LABEL: Record<string, string> = {
   excellent: "Runs Great",
@@ -30,21 +31,32 @@ function formatRam(mb?: number | null) {
   return `${mb} MB`;
 }
 
-export function GameHardwareCompatibility({ gameSlug }: { gameSlug: string }) {
+export function GameHardwareCompatibility({
+  gameSlug,
+  editionSlug,
+  modSlugs,
+}: {
+  gameSlug: string;
+  editionSlug?: string | null;
+  modSlugs?: string[];
+}) {
   const { status } = useSession();
   const { track } = useTelemetry();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
 
+  const modsKey = (modSlugs || []).join(",");
+
   useEffect(() => {
     if (status === "loading") return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(
-          `/api/hardware/compatibility?gameSlug=${encodeURIComponent(gameSlug)}`
-        );
+        const params = new URLSearchParams({ gameSlug });
+        if (editionSlug) params.set("editionSlug", editionSlug);
+        if (modsKey) params.set("modSlugs", modsKey);
+        const res = await fetch(`/api/hardware/compatibility?${params.toString()}`);
         const data = await res.json().catch(() => null);
         if (cancelled) return;
         setHasProfile(Boolean(data?.hasProfile));
@@ -64,7 +76,7 @@ export function GameHardwareCompatibility({ gameSlug }: { gameSlug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [gameSlug, status, track]);
+  }, [gameSlug, editionSlug, modsKey, status, track]);
 
   if (loading) {
     return (
@@ -81,17 +93,18 @@ export function GameHardwareCompatibility({ gameSlug }: { gameSlug: string }) {
         <h2 className="text-lg font-bold">Will this run on your PC?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {result?.summary ||
-            "Download or open PlayBound to automatically check this game against your PC."}
+            "Open PlayBound while signed in to automatically check this game against your PC."}
         </p>
-        <Link
-          href="/launcher"
-          onClick={() =>
-            track("check_compatibility_cta_clicked", { gameSlug, surface: "game_page" })
-          }
-          className="mt-3 inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground hover:brightness-110"
-        >
-          Check compatibility
-        </Link>
+        <CheckCompatibilityCta gameSlug={gameSlug} surface="game_page" />
+        {status === "authenticated" ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            After syncing, view your hardware on{" "}
+            <Link href="/profile" className="font-semibold text-primary hover:underline">
+              Profile &amp; PC
+            </Link>
+            .
+          </p>
+        ) : null}
       </section>
     );
   }
@@ -99,12 +112,21 @@ export function GameHardwareCompatibility({ gameSlug }: { gameSlug: string }) {
   const label = VERDICT_LABEL[result.verdict] || "Unknown";
   const color = VERDICT_COLOR[result.verdict] || "text-muted-foreground";
   const rec = result.compared.required.recommended || result.compared.required.min;
+  const reasons = result.reasons || [];
 
   return (
     <section className="rounded-xl border border-border bg-card p-4">
       <h2 className="text-lg font-bold">Will this run on your PC?</h2>
       <p className={`mt-2 text-base font-extrabold ${color}`}>{label}</p>
       <p className="mt-1 text-sm text-muted-foreground">{result.summary}</p>
+
+      {reasons.length > 0 ? (
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          {reasons.slice(0, 6).map((r) => (
+            <li key={`${r.code}-${r.message.slice(0, 40)}`}>{r.message}</li>
+          ))}
+        </ul>
+      ) : null}
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
@@ -125,9 +147,7 @@ export function GameHardwareCompatibility({ gameSlug }: { gameSlug: string }) {
           </p>
           <ul className="mt-1.5 space-y-0.5 text-sm">
             {rec?.gpuText || rec?.gpuTier ? (
-              <li>
-                Recommended GPU: {rec.gpuText || rec.gpuTier}
-              </li>
+              <li>Recommended GPU: {rec.gpuText || rec.gpuTier}</li>
             ) : null}
             {rec?.ramMB ? <li>Recommended RAM: {formatRam(rec.ramMB)}</li> : null}
             {result.compared.required.target?.resolution ||

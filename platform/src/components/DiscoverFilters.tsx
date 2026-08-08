@@ -141,7 +141,7 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
         const gpu = p.gpus?.[idx] || p.gpus?.[0];
         setUserHw({
           cpuTier: p.cpu?.tier,
-          gpuTier: "unknown",
+          gpuTier: gpu?.tier || "unknown",
           ramMB: p.memory?.totalMB,
           osFamily: p.os?.family,
           arch: p.os?.arch,
@@ -366,7 +366,11 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
           onChange={(e) => {
             const v = e.target.value as HwFilter;
             if (!userHw && v) {
-              window.location.href = "/launcher";
+              // Soft prompt — stay on discover; users open launcher via sync/cta elsewhere.
+              setHwFilter("");
+              window.alert(
+                "Open PlayBound while signed in to sync your PC, then use this filter."
+              );
               return;
             }
             setHwFilter(v);

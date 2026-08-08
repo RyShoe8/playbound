@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useTelemetry } from "@/lib/telemetry";
+import { CheckCompatibilityCta } from "@/components/hardware/CheckCompatibilityCta";
 
 type ProfileView = {
   collectedAt: string;
@@ -14,7 +14,7 @@ type ProfileView = {
     threads?: number | null;
     tier?: string;
   };
-  gpus: Array<{ displayName?: string | null; vramMB?: number | null }>;
+  gpus: Array<{ displayName?: string | null; vramMB?: number | null; tier?: string }>;
   primaryGpuIndex: number | null;
   memory: { totalMB?: number | null };
   storage?: {
@@ -102,12 +102,11 @@ export function HardwareProfileCard() {
           Open the PlayBound launcher while signed in to automatically check games against your PC.
           Hardware details stay private to your account.
         </p>
-        <Link
-          href="/launcher"
-          className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
-        >
-          Get the launcher
-        </Link>
+        <CheckCompatibilityCta
+          surface="profile"
+          signedInLabel="Open PlayBound to sync your PC"
+          guestLabel="Get the launcher"
+        />
         {msg ? <p className="mt-2 text-xs text-muted-foreground">{msg}</p> : null}
       </section>
     );
@@ -161,6 +160,7 @@ export function HardwareProfileCard() {
         <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
           <li>
             Arch: {profile.os.arch || "unknown"} · CPU tier: {profile.cpu.tier || "unknown"}
+            {gpu?.tier ? ` · GPU tier: ${gpu.tier}` : ""}
           </li>
           {profile.cpu.cores ? (
             <li>
@@ -188,12 +188,12 @@ export function HardwareProfileCard() {
       </details>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/launcher"
+        <CheckCompatibilityCta
+          surface="profile"
+          signedInLabel="Refresh in launcher"
+          guestLabel="Get the launcher"
           className="inline-flex h-10 items-center rounded-full border border-border bg-secondary px-5 text-sm font-bold hover:bg-secondary/70"
-        >
-          Refresh in launcher
-        </Link>
+        />
         <button
           type="button"
           disabled={busy}
