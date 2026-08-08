@@ -5,10 +5,13 @@ const fs = require("fs");
 const fsp = require("fs/promises");
 const path = require("path");
 const net = require("net");
+const os = require("os");
 const bundledCatalog = require("./catalog");
 const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
+const { createManagedJava } = require("./services/ManagedJava");
+const { detectHardware } = require("./hardware");
 
 /** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
 let catalog = bundledCatalog.map((e) => ({ ...e }));
@@ -394,6 +397,7 @@ async function connectWithToken(token) {
   // Admins get testing titles once the bearer is present.
   void refreshRemoteCatalog();
   void pullCompatibilityPreference();
+  void syncHardwareProfile({ quiet: true });
   startLauncherPresenceLoop();
   return {
     connected: true,
@@ -1244,7 +1248,10 @@ async function downloadTo(url, dest, attempts = 3) {
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "user-agent": "playbound-launcher" } });
+      const res = await fetch(url, {
+        headers: { "user-agent": "playbound-launcher", accept: "*/*" },
+        redirect: "follow",
+      });
       if (!res.ok || !res.body) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -1290,6 +1297,55 @@ async function downloadTo(url, dest, attempts = 3) {
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
+/** PlayBound-managed Temurin JDK (portable under userData). */
+const managedJava = createManagedJava({
+  userDataPath: app.getPath("userData"),
+  loadSettings,
+  saveSettings,
+  downloadTo,
+  onProgress: (payload) => sendProgress(payload),
+});
+GameLauncher.managedJavaResolver = () => managedJava.findManagedJavaBinary();
+
+/**
+ * Prompt to install PlayBound-managed Java. Returns whether install succeeded.
+ * @param {{ gameTitle?: string }} [opts]
+ */
+async function offerManagedJavaInstall(opts = {}) {
+  const existing = managedJava.findManagedJavaBinary();
+  if (existing) return { installed: true, alreadyPresent: true };
+
+  const parent = win && !win.isDestroyed() ? win : null;
+  const result = await dialog.showMessageBox(parent || undefined, {
+    type: "info",
+    title: "Java required",
+    message: `${opts.gameTitle || "This game"} needs Java 17+`,
+    detail:
+      "PlayBound can download and install a private copy of Temurin JDK 17 for you (about 150–200 MB). It won’t change your system Java or PATH.",
+    buttons: ["Install Java", "Cancel"],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+
+  if (result.response !== 0) {
+    return { installed: false, cancelled: true };
+  }
+
+  void telemetry.track("java_runtime_install_started", { version: "17" });
+  sendProgress({ phase: "java", message: "Downloading Java 17…" });
+  const outcome = await managedJava.ensureManagedJava();
+  if (outcome.ok && outcome.javaBin) {
+    void telemetry.track("java_runtime_install_succeeded", { version: "17" });
+    sendProgress({ phase: "java", message: "Java 17 ready — launching…" });
+    return { installed: true, javaBin: outcome.javaBin };
+  }
+
+  const error = outcome.error || "Install failed";
+  void telemetry.track("java_runtime_install_failed", { message: error });
+  return { installed: false, error };
 }
 
 async function verifyChecksumMd5(filePath, expectedMd5) {
@@ -2707,6 +2763,87 @@ async function playGame(slug, join = null, editionSlug = null) {
     if (err?.code === "JAVA_MISSING" || /Java 17\+/i.test(message)) code = "JAVA_MISSING";
     else if (/exited immediately/i.test(message)) code = "JAVA_EARLY_EXIT";
     else if (/ENOENT|not runnable|file missing/i.test(message)) code = "SPAWN_ENOENT";
+
+    // Offer one-click managed Java install, then retry once.
+    if (code === "JAVA_MISSING") {
+      const offered = await offerManagedJavaInstall({ gameTitle: entry?.title || slug });
+      if (offered.installed) {
+        try {
+          await spawnTrackedExe(slug, launchPath, args);
+          // Fall through to success path below via jumping past failure
+          void telemetry.editionLaunched(
+            editionInfoFor(slug, {
+              version: info.version,
+              editionSlug: info.editionSlug || edSlug,
+            })
+          );
+          const settingsOk = loadSettings();
+          if (!settingsOk.recentlyPlayed) settingsOk.recentlyPlayed = {};
+          settingsOk.recentlyPlayed[slug] = { lastPlayed: new Date().toISOString() };
+          saveSettings(settingsOk);
+          try {
+            const st = loadState();
+            const g = ensureGameInstallRecord(st[slug]);
+            if (g.editions?.[edSlug]) {
+              g.editions[edSlug].installedAt = new Date().toISOString();
+              syncGameInstallSummary(g);
+              st[slug] = g;
+              saveState(st);
+            }
+          } catch {
+            /* ignore */
+          }
+          return {
+            status: "launched",
+            connect: args.length > 0 && join?.host ? `${join.host}:${join.port}` : null,
+            manualConnect: Boolean(join?.host && join?.port && !connectArgs?.length),
+            editionSlug: info.editionSlug || edSlug,
+            javaInstalled: true,
+          };
+        } catch (retryErr) {
+          const retryMessage = retryErr?.message || String(retryErr);
+          void telemetry.launchFailed({
+            ...editionInfoFor(slug, {
+              version: info.version,
+              editionSlug: info.editionSlug || edSlug,
+            }),
+            code: "JAVA_MISSING",
+            message: retryMessage,
+            phase: "spawn-after-java-install",
+          });
+          throw retryErr instanceof Error ? retryErr : new Error(retryMessage);
+        }
+      }
+      if (offered.cancelled) {
+        void telemetry.launchFailed({
+          ...editionInfoFor(slug, {
+            version: info.version,
+            editionSlug: info.editionSlug || edSlug,
+          }),
+          code: "JAVA_MISSING",
+          message: "User declined managed Java install",
+          phase: "spawn",
+        });
+        throw new Error(
+          "Java 17+ is required. Install it from Settings → Java runtime, then try again."
+        );
+      }
+      if (offered.error) {
+        void telemetry.launchFailed({
+          ...editionInfoFor(slug, {
+            version: info.version,
+            editionSlug: info.editionSlug || edSlug,
+          }),
+          code: "JAVA_MISSING",
+          message: offered.error,
+          phase: "java-install",
+        });
+        throw new Error(
+          `Couldn’t install Java automatically (${offered.error}). Install JDK 17+ from https://adoptium.net/ or retry from Settings.`
+        );
+      }
+    }
+
     void telemetry.launchFailed({
       ...editionInfoFor(slug, {
         version: info.version,
@@ -3769,7 +3906,29 @@ ipcMain.handle("get-settings", () => {
     canUseAdminChannel: linkedCanUseAdminChannel,
     updateChannel,
     updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
+    javaRuntime: managedJava.status(),
   };
+});
+ipcMain.handle("ensure-managed-java", async (_event, opts) => {
+  try {
+    const force = Boolean(opts?.force);
+    if (!force && managedJava.findManagedJavaBinary()) {
+      return { ok: true, ...managedJava.status(), alreadyPresent: true };
+    }
+    void telemetry.track("java_runtime_install_started", { version: "17", surface: "settings" });
+    const outcome = await managedJava.ensureManagedJava({ force });
+    if (outcome.ok) {
+      void telemetry.track("java_runtime_install_succeeded", { version: "17", surface: "settings" });
+      return { ok: true, ...managedJava.status() };
+    }
+    void telemetry.track("java_runtime_install_failed", {
+      message: outcome.error,
+      surface: "settings",
+    });
+    return { ok: false, error: outcome.error };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 ipcMain.handle("get-app-version", () => ({
   version: app.getVersion(),
@@ -4004,6 +4163,86 @@ ipcMain.handle("block-user", async (_event, targetUserId) => {
     return { error: err.message };
   }
 });
+
+async function collectHardwareProfile() {
+  const settings = loadSettings();
+  try {
+    const profile = await detectHardware({
+      app,
+      gameDir: settings.gamesDir || DEFAULT_GAMES_DIR,
+    });
+    return profile;
+  } catch (err) {
+    return {
+      schemaVersion: 1,
+      collectedAt: new Date().toISOString(),
+      os: {
+        family: process.platform === "win32" ? "windows" : process.platform === "darwin" ? "macos" : "linux",
+        name: null,
+        version: os.release?.() || null,
+        arch: process.arch === "arm64" ? "arm64" : process.arch === "ia32" ? "x86" : "x64",
+        bitness: process.arch === "ia32" ? 32 : 64,
+      },
+      cpu: { rawName: "Unknown CPU" },
+      gpus: [],
+      primaryGpuIndex: null,
+      primaryGpuConfidence: "low",
+      memory: { totalMB: null },
+      storage: {},
+      detectionErrors: [err?.message || String(err)],
+    };
+  }
+}
+
+async function syncHardwareProfile({ quiet = false } = {}) {
+  const settings = loadSettings();
+  if (!settings.launcherToken) {
+    return { error: "Not signed in" };
+  }
+  try {
+    const profile = await collectHardwareProfile();
+    const next = { ...settings, hardwareProfile: profile, hardwareProfileCollectedAt: profile.collectedAt };
+    saveSettings(next);
+    const res = await fetch(`${getApiBase()}/api/hardware/profile`, {
+      method: "PUT",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(profile),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.error || `HTTP ${res.status}`);
+    }
+    saveSettings({
+      ...loadSettings(),
+      hardwareProfileSyncedAt: new Date().toISOString(),
+    });
+    if (!quiet) {
+      notifyAccount({
+        connected: true,
+        message: "Hardware profile synced.",
+      });
+    }
+    return { success: true, profile: data?.profile || profile };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+ipcMain.handle("get-hardware-profile", async () => {
+  try {
+    const settings = loadSettings();
+    const profile = await collectHardwareProfile();
+    return {
+      profile,
+      cached: settings.hardwareProfile || null,
+      syncedAt: settings.hardwareProfileSyncedAt || null,
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("sync-hardware-profile", async () => syncHardwareProfile({ quiet: false }));
 
 ipcMain.handle("get-appear-offline", async () => {
   try {

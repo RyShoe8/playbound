@@ -4,7 +4,7 @@ const path = require("path");
 const Platform = require("../platform");
 
 const JAVA_MISSING_MSG =
-  "Java 17+ is required to run this game. Install JDK 17+ from https://adoptium.net/ then try again.";
+  "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
 
 const JAVA_EARLY_EXIT_MSG =
   "The game exited immediately. Install or update Java 17+ from https://adoptium.net/ then try again.";
@@ -14,12 +14,24 @@ const JAVA_EARLY_EXIT_MSG =
  * instead of hardcoded .exe assumptions.
  */
 class GameLauncher {
+  /** Optional: () => string | null — PlayBound-managed Temurin path. */
+  static managedJavaResolver = null;
+
   /**
    * Locate a verified javaw (Windows) or java for launching .jar games.
-   * Skips Windows App-execution-alias stubs and binaries that fail `-version`.
+   * Prefers PlayBound-managed JDK, then PATH / JAVA_HOME / common vendors.
    * @returns {string | null}
    */
   static resolveJavaBinary() {
+    if (typeof this.managedJavaResolver === "function") {
+      try {
+        const managed = this.managedJavaResolver();
+        if (managed && isUsableJavaBinary(managed)) return preferJavawBeside(managed, process.platform === "win32");
+      } catch {
+        /* ignore */
+      }
+    }
+
     const isWin = process.platform === "win32";
     const names = isWin ? ["javaw.exe", "java.exe"] : ["java"];
 
