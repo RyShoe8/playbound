@@ -5,15 +5,9 @@ import CatalogMod from "@/lib/models/CatalogMod";
 import { probeGameInstall, probeModInstall } from "@/lib/catalogVersionProbe";
 import { gameProbePatchFields, modProbePatchFields } from "@/lib/applyVersionProbePatch";
 import { withAutoHealGame, withAutoHealMod } from "@/lib/healBrokenInstall";
+import { cronAuthorized } from "@/lib/cronAuth";
 
 export const maxDuration = 60;
-
-function authorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = req.headers.get("authorization") || "";
-  return auth === `Bearer ${secret}`;
-}
 
 export async function GET(req: Request) {
   return run(req);
@@ -37,7 +31,7 @@ function tally(
 }
 
 async function run(req: Request) {
-  if (!authorized(req)) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

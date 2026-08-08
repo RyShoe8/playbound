@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import { checkRateLimit } from "@/lib/discussion/rateLimit";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 import { isTelemetryExcludedPath } from "@/lib/telemetry/types";
+import { SITE_URL } from "@/lib/site";
 
 export const runtime = "nodejs";
+
+const MAX_PROP_KEYS = 40;
+const MAX_PROP_JSON = 8_000;
 
 const ingestSchema = z.object({
   event: z.string().min(1).max(128),
@@ -13,19 +19,40 @@ const ingestSchema = z.object({
   timestamp: z.string().datetime().or(z.string().min(1)),
   sessionId: z.string().min(8).max(128),
   anonymousId: z.string().min(8).max(128),
+  // Accepted for wire compatibility but ignored — never trust client userId.
   userId: z.string().min(1).max(128).nullable().optional(),
 });
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Accept",
-  "Access-Control-Max-Age": "86400",
-};
+function corsOriginFor(req: Request): string | null {
+  const origin = req.headers.get("origin");
+  if (!origin) return null;
+  try {
+    const u = new URL(origin);
+    const site = new URL(SITE_URL);
+    if (u.origin === site.origin) return u.origin;
+    if (u.hostname.endsWith(".vercel.app") && u.hostname.includes("playbound")) {
+      return u.origin;
+    }
+    if (
+      (u.hostname === "localhost" || u.hostname === "127.0.0.1") &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      return u.origin;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
-function withCors(res: NextResponse): NextResponse {
-  for (const [key, value] of Object.entries(corsHeaders)) {
-    res.headers.set(key, value);
+function withCors(req: Request, res: NextResponse): NextResponse {
+  const allow = corsOriginFor(req);
+  if (allow) {
+    res.headers.set("Access-Control-Allow-Origin", allow);
+    res.headers.set("Vary", "Origin");
+    res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Accept");
+    res.headers.set("Access-Control-Max-Age", "86400");
   }
   return res;
 }
@@ -51,8 +78,19 @@ function clientCountry(req: Request): string | null {
   );
 }
 
-export async function OPTIONS() {
-  return withCors(new NextResponse(null, { status: 204 }));
+function capProperties(props: Record<string, unknown>): Record<string, unknown> {
+  const entries = Object.entries(props).slice(0, MAX_PROP_KEYS);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of entries) {
+    out[k] = v;
+  }
+  const json = JSON.stringify(out);
+  if (json.length <= MAX_PROP_JSON) return out;
+  return { _truncated: true, keys: Object.keys(out).slice(0, 10) };
+}
+
+export async function OPTIONS(req: Request) {
+  return withCors(req, new NextResponse(null, { status: 204 }));
 }
 
 export async function POST(req: Request) {
@@ -60,12 +98,13 @@ export async function POST(req: Request) {
   try {
     json = await req.json();
   } catch {
-    return withCors(NextResponse.json({ error: "Invalid JSON" }, { status: 400 }));
+    return withCors(req, NextResponse.json({ error: "Invalid JSON" }, { status: 400 }));
   }
 
   const parsed = ingestSchema.safeParse(json);
   if (!parsed.success) {
     return withCors(
+      req,
       NextResponse.json(
         { error: "Malformed request", details: parsed.error.flatten() },
         { status: 400 }
@@ -74,7 +113,7 @@ export async function POST(req: Request) {
   }
 
   const body = parsed.data;
-  const props = body.properties || {};
+  const props = capProperties(body.properties || {});
   const path =
     typeof props.path === "string"
       ? props.path.split("?")[0]
@@ -89,7 +128,7 @@ export async function POST(req: Request) {
         : "";
 
   if (path && isTelemetryExcludedPath(path)) {
-    return withCors(NextResponse.json({ ok: true, skipped: true }));
+    return withCors(req, NextResponse.json({ ok: true, skipped: true }));
   }
 
   const ip = clientIp(req);
@@ -102,6 +141,7 @@ export async function POST(req: Request) {
     });
     if (!limit.ok) {
       return withCors(
+        req,
         NextResponse.json(
           { error: "Too many events" },
           {
@@ -112,21 +152,30 @@ export async function POST(req: Request) {
       );
     }
 
+    // Prefer authenticated session; never trust client-supplied userId.
+    let userId: string | null = null;
+    try {
+      const session = await getServerSession(authOptions);
+      userId = session?.user?.id ?? null;
+    } catch {
+      userId = null;
+    }
+
     await saveEvent({
       event: body.event,
       properties: props,
       timestamp: body.timestamp,
       sessionId: body.sessionId,
       anonymousId: body.anonymousId,
-      userId: body.userId ?? null,
+      userId,
       ip,
       country: clientCountry(req),
       userAgent: req.headers.get("user-agent"),
     });
-    return withCors(NextResponse.json({ ok: true }));
+    return withCors(req, NextResponse.json({ ok: true }));
   } catch (err) {
     console.error("[telemetry] save failed", err);
     // Fail-soft to clients — do not leak internals.
-    return withCors(NextResponse.json({ ok: true }));
+    return withCors(req, NextResponse.json({ ok: true }));
   }
 }

@@ -42,6 +42,9 @@ const UserSchema = new Schema({
   // collection scan.
   launcherTokenHash: { type: String, select: false, index: true, sparse: true },
   launcherTokenCreatedAt: { type: Date, select: false },
+  /** One-time short-lived code for playbound://link?code= handoff (never the durable bearer). */
+  launcherHandoffHash: { type: String, select: false, index: true, sparse: true },
+  launcherHandoffExpiresAt: { type: Date, select: false },
   /** Denormalized community counters and moderation state. */
   community: {
     topicCount: { type: Number, default: 0 },

@@ -15,6 +15,14 @@ type OpenRctAddress = {
   port?: number;
 };
 
+/** Master API returns either a flat IP string or `{ v4: string[], v6: string[] }`. */
+type OpenRctIp =
+  | string
+  | {
+      v4?: string[];
+      v6?: string[];
+    };
+
 type OpenRctServer = {
   name?: string;
   description?: string;
@@ -23,7 +31,7 @@ type OpenRctServer = {
   maxPlayers?: number;
   requiresPassword?: boolean;
   passworded?: boolean;
-  ip?: string;
+  ip?: OpenRctIp;
   port?: number;
   addresses?: OpenRctAddress[];
   address?: OpenRctAddress | string;
@@ -38,25 +46,43 @@ function stripRctColors(text: string): string {
     .trim();
 }
 
-function pickHostPort(row: OpenRctServer): { host: string; port: number } | null {
-  if (row.ip && row.port != null && Number(row.port) > 0) {
-    return { host: String(row.ip), port: Number(row.port) };
+function hostFromIpField(ip: OpenRctIp | undefined): string | null {
+  if (!ip) return null;
+  if (typeof ip === "string") {
+    const host = ip.trim();
+    return host || null;
+  }
+  if (typeof ip === "object") {
+    const v4 = Array.isArray(ip.v4) ? ip.v4.find((h) => typeof h === "string" && h.trim()) : undefined;
+    if (v4) return v4.trim();
+    const v6 = Array.isArray(ip.v6) ? ip.v6.find((h) => typeof h === "string" && h.trim()) : undefined;
+    if (v6) return v6.trim();
+  }
+  return null;
+}
+
+/** Exported for unit tests. */
+export function pickHostPort(row: OpenRctServer): { host: string; port: number } | null {
+  const port = row.port != null ? Number(row.port) : NaN;
+  const fromIp = hostFromIpField(row.ip);
+  if (fromIp && Number.isFinite(port) && port > 0) {
+    return { host: fromIp, port };
   }
   const addrs = Array.isArray(row.addresses) ? row.addresses : [];
   for (const a of addrs) {
     const host = a.ip || a.ipAddress;
-    const port = a.port != null ? Number(a.port) : NaN;
-    if (host && Number.isFinite(port) && port > 0) return { host: String(host), port };
+    const p = a.port != null ? Number(a.port) : NaN;
+    if (host && Number.isFinite(p) && p > 0) return { host: String(host), port: p };
   }
   if (typeof row.address === "string" && /:\d+$/.test(row.address)) {
     const [host, portStr] = row.address.split(":");
-    const port = Number(portStr);
-    if (host && Number.isFinite(port) && port > 0) return { host, port };
+    const p = Number(portStr);
+    if (host && Number.isFinite(p) && p > 0) return { host, port: p };
   }
   if (row.address && typeof row.address === "object") {
     const host = row.address.ip || row.address.ipAddress;
-    const port = row.address.port != null ? Number(row.address.port) : NaN;
-    if (host && Number.isFinite(port) && port > 0) return { host: String(host), port };
+    const p = row.address.port != null ? Number(row.address.port) : NaN;
+    if (host && Number.isFinite(p) && p > 0) return { host: String(host), port: p };
   }
   return null;
 }

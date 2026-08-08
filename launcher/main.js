@@ -32,6 +32,127 @@ const DEFAULT_API_BASE = "https://playbound.club";
 /** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
 
+/** Origins the settings UI may retarget as API base. */
+const ALLOWED_API_BASE_HOSTS = new Set([
+  "playbound.club",
+  "www.playbound.club",
+  "localhost",
+  "127.0.0.1",
+]);
+
+function isAllowedApiBase(raw) {
+  try {
+    const u = new URL(String(raw || "").replace(/\/$/, ""));
+    if (u.protocol !== "https:" && !(u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1"))) {
+      return false;
+    }
+    const host = u.hostname.toLowerCase();
+    if (ALLOWED_API_BASE_HOSTS.has(host)) return true;
+    if (host.endsWith(".vercel.app") && host.includes("playbound")) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function assertOpenExternalUrl(raw) {
+  let u;
+  try {
+    u = new URL(String(raw || ""));
+  } catch {
+    throw new Error("Invalid URL");
+  }
+  const proto = u.protocol.toLowerCase();
+  if (proto === "https:") return u.toString();
+  if (proto === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1")) {
+    return u.toString();
+  }
+  if (proto === "mailto:") return u.toString();
+  throw new Error(`Blocked external URL scheme: ${proto}`);
+}
+
+async function safeOpenExternal(raw) {
+  const url = assertOpenExternalUrl(raw);
+  await shell.openExternal(url);
+  return true;
+}
+
+function hostAllowedForDownload(hostname) {
+  const host = String(hostname || "").toLowerCase();
+  if (!host) return false;
+  if (host === "github.com" || host === "www.github.com") return true;
+  if (host.endsWith(".githubusercontent.com")) return true;
+  if (host === "cdn.openttd.org" || host.endsWith(".openttd.org")) return true;
+  if (host.endsWith(".adoptium.net") || host === "api.adoptium.net") return true;
+  if (host === "contentdb.luanti.org" || host.endsWith(".luanti.org")) return true;
+  if (host === "content.minetest.net" || host.endsWith(".minetest.net")) return true;
+  if (host.endsWith(".github.com") && host.includes("objects")) return true;
+  if (host.endsWith(".public.blob.vercel-storage.com")) return true;
+  if (host.endsWith(".vercel-storage.com")) return true;
+  try {
+    const apiHost = new URL(getApiBase()).hostname.toLowerCase();
+    if (host === apiHost) return true;
+  } catch {
+    /* ignore */
+  }
+  if (ALLOWED_API_BASE_HOSTS.has(host)) return true;
+  if (host.endsWith(".vercel.app") && host.includes("playbound")) return true;
+  return false;
+}
+
+function assertDownloadUrl(raw) {
+  let u;
+  try {
+    u = new URL(String(raw || ""));
+  } catch {
+    throw new Error("Invalid download URL");
+  }
+  if (u.protocol !== "https:" && !(u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1"))) {
+    throw new Error("Download URL must be https");
+  }
+  if (!hostAllowedForDownload(u.hostname)) {
+    throw new Error(`Download host not allowed: ${u.hostname}`);
+  }
+  return u.toString();
+}
+
+function normalizeFsPath(p) {
+  return path.resolve(String(p || ""));
+}
+
+function pathUnderRoot(candidate, root) {
+  const full = normalizeFsPath(candidate);
+  const base = normalizeFsPath(root);
+  const rel = path.relative(base, full);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/** Roots where catalog knownExePaths / located installs may live. */
+function allowedExecutableRoots() {
+  const roots = [];
+  try {
+    roots.push(loadSettings().gamesDir || DEFAULT_GAMES_DIR);
+  } catch {
+    roots.push(DEFAULT_GAMES_DIR);
+  }
+  for (const key of ["LOCALAPPDATA", "APPDATA", "PROGRAMFILES", "ProgramFiles(x86)", "USERPROFILE"]) {
+    if (process.env[key]) roots.push(process.env[key]);
+  }
+  try {
+    roots.push(app.getPath("userData"));
+  } catch {
+    /* ignore */
+  }
+  return roots.filter(Boolean);
+}
+
+function isAllowedExecutablePath(exePath) {
+  if (!exePath) return false;
+  const full = normalizeFsPath(exePath);
+  if (full.includes("\0")) return false;
+  return allowedExecutableRoots().some((root) => pathUnderRoot(full, root));
+}
+
 let win = null;
 /** @type {import("electron").Tray | null} */
 let tray = null;
@@ -87,7 +208,7 @@ function parseDeepLink(url) {
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
   // playbound://sync
-  // playbound://link?token=...
+  // playbound://link?code=... (preferred) or legacy ?token=...
   try {
     const normalized = String(url).replace(/^playbound:\/\//i, "https://");
     const u = new URL(normalized);
@@ -95,7 +216,12 @@ function parseDeepLink(url) {
     if (action === "auth") return { action: "auth" };
     if (action === "sync") return { action: "sync" };
     if (action === "link") {
-      return { action: "link", token: u.searchParams.get("token") || "" };
+      return {
+        action: "link",
+        code: u.searchParams.get("code") || "",
+        // Legacy one-release dual support for in-flight browser tabs.
+        token: u.searchParams.get("token") || "",
+      };
     }
     const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
     const slugActions = [
@@ -369,6 +495,48 @@ function clearLocalToken(message) {
   });
 }
 
+async function exchangeHandoffCode(code) {
+  const trimmed = String(code || "").trim();
+  if (!trimmed) return { ok: false, error: "missing_code" };
+  try {
+    const res = await fetch(`${getApiBase()}/api/library/token/exchange`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        accept: "application/json",
+        "user-agent": `playbound-launcher/${app.getVersion()} (${process.platform})`,
+      },
+      body: JSON.stringify({ code: trimmed }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      return { ok: false, error: res.status === 401 ? "unauthorized" : `http_${res.status}` };
+    }
+    const data = await res.json();
+    if (!data?.token) return { ok: false, error: "no_token" };
+    return { ok: true, token: String(data.token) };
+  } catch (err) {
+    console.warn("Handoff exchange failed:", err?.message || err);
+    return { ok: false, error: "network" };
+  }
+}
+
+async function connectWithHandoff(parsed) {
+  if (parsed?.code) {
+    const exchanged = await exchangeHandoffCode(parsed.code);
+    if (!exchanged.ok) {
+      clearLocalToken("Link expired — sign in again from Settings.");
+      return { connected: false, synced: 0, skipped: [], error: exchanged.error };
+    }
+    return connectWithToken(exchanged.token);
+  }
+  // Legacy: durable bearer embedded in URL (older site builds).
+  if (parsed?.token) {
+    return connectWithToken(parsed.token);
+  }
+  return { connected: false, synced: 0, skipped: [], error: "missing_code" };
+}
+
 async function connectWithToken(token) {
   persistLauncherToken(token, { notify: false });
   const check = await validateLauncherToken(token);
@@ -504,14 +672,28 @@ function scheduleLibrarySync() {
   }, LIBRARY_SYNC_INTERVAL_MS);
 }
 
-function extractLinkToken(url) {
+function extractLinkHandoff(url) {
   try {
     const parsed = parseDeepLink(url);
-    if (parsed?.action === "link" && parsed.token) return parsed.token;
+    if (parsed?.action === "link" && (parsed.code || parsed.token)) return parsed;
   } catch {
     /* ignore */
   }
   return null;
+}
+
+function clearAuthWindowSecrets() {
+  if (!authWin || authWin.isDestroyed()) return;
+  try {
+    authWin.webContents.clearHistory();
+  } catch {
+    /* ignore */
+  }
+  try {
+    void authWin.loadURL("about:blank");
+  } catch {
+    /* ignore */
+  }
 }
 
 function openAuthWindow() {
@@ -538,9 +720,10 @@ function openAuthWindow() {
     });
 
     const handleUrl = (url) => {
-      const token = extractLinkToken(url);
-      if (!token) return false;
-      void connectWithToken(token).finally(() => {
+      const handoff = extractLinkHandoff(url);
+      if (!handoff) return false;
+      clearAuthWindowSecrets();
+      void connectWithHandoff(handoff).finally(() => {
         if (authWin && !authWin.isDestroyed()) authWin.close();
       });
       return true;
@@ -561,7 +744,7 @@ function openAuthWindow() {
     void authWin.loadURL(authUrl);
   } catch (err) {
     console.warn("Auth window failed, opening system browser:", err?.message || err);
-    void shell.openExternal(authUrl);
+    void safeOpenExternal(authUrl).catch((e) => console.warn(e?.message || e));
   }
 }
 
@@ -600,8 +783,8 @@ function handleDeepLink(parsed) {
   }
   if (parsed.action === "link") {
     showMainWindow();
-    if (parsed.token) {
-      void connectWithToken(parsed.token);
+    if (parsed.code || parsed.token) {
+      void connectWithHandoff(parsed);
     }
     return;
   }
@@ -882,7 +1065,15 @@ function saveSettings(settings) {
 
 function getApiBase() {
   const settings = loadSettings();
-  return String(settings.apiBase || process.env.PLAYBOUND_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "");
+  const fromSettings = settings.apiBase;
+  if (fromSettings && isAllowedApiBase(fromSettings)) {
+    return String(fromSettings).replace(/\/$/, "");
+  }
+  const fromEnv = process.env.PLAYBOUND_API_BASE;
+  if (fromEnv && isAllowedApiBase(fromEnv)) {
+    return String(fromEnv).replace(/\/$/, "");
+  }
+  return DEFAULT_API_BASE;
 }
 
 /**
@@ -1317,12 +1508,23 @@ async function downloadTo(url, dest, attempts = 3) {
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      const res = await fetch(url, {
-        headers: { "user-agent": "playbound-launcher", accept: "*/*" },
-        redirect: "follow",
-      });
-      if (!res.ok || !res.body) {
-        throw new Error(`HTTP ${res.status}`);
+      let current = assertDownloadUrl(url);
+      let res = null;
+      for (let hop = 0; hop < 8; hop++) {
+        res = await fetch(current, {
+          headers: { "user-agent": "playbound-launcher", accept: "*/*" },
+          redirect: "manual",
+        });
+        if (res.status >= 300 && res.status < 400) {
+          const location = res.headers.get("location");
+          if (!location) throw new Error("Redirect without location");
+          current = assertDownloadUrl(new URL(location, current).toString());
+          continue;
+        }
+        break;
+      }
+      if (!res || !res.ok || !res.body) {
+        throw new Error(`HTTP ${res ? res.status : "failed"}`);
       }
       const total = Number(res.headers.get("content-length")) || 0;
       await fsp.mkdir(path.dirname(dest), { recursive: true });
@@ -1454,15 +1656,46 @@ async function reportInstall(slug) {
 
 function extractZip(zipPath, destDir) {
   return new Promise((resolve, reject) => {
-    const ps = spawn("powershell.exe", [
-      "-NoProfile",
-      "-NonInteractive",
-      "-Command",
-      `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${destDir}' -Force`,
-    ]);
+    const scriptPath = path.join(
+      app.getPath("temp"),
+      `playbound-extract-${process.pid}-${Date.now()}.ps1`
+    );
+    // Fixed script body; paths only via -File parameters (never interpolated).
+    const script =
+      "param([Parameter(Mandatory=$true)][string]$Zip,[Parameter(Mandatory=$true)][string]$Dest)\r\n" +
+      "Expand-Archive -LiteralPath $Zip -DestinationPath $Dest -Force\r\n";
+    try {
+      fs.writeFileSync(scriptPath, script, "utf8");
+    } catch (err) {
+      reject(err);
+      return;
+    }
+    const ps = spawn(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        scriptPath,
+        "-Zip",
+        String(zipPath),
+        "-Dest",
+        String(destDir),
+      ],
+      { windowsHide: true }
+    );
     let err = "";
     ps.stderr.on("data", (d) => (err += d));
-    ps.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`Extract failed: ${err || code}`))));
+    ps.on("close", (code) => {
+      try {
+        fs.unlinkSync(scriptPath);
+      } catch {
+        /* ignore */
+      }
+      code === 0 ? resolve() : reject(new Error(`Extract failed: ${err || code}`));
+    });
   });
 }
 
@@ -1685,11 +1918,13 @@ function findExeUnderGamesDir(entry) {
 function findKnownExecutable(entry) {
   for (const raw of entry.knownExePaths || []) {
     const full = expandWinPath(raw);
-    if (full && fs.existsSync(full)) return full;
+    if (full && fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
   }
   const underGames = findExeUnderGamesDir(entry);
-  if (underGames) return underGames;
-  return findExeFromUninstallRegistry(entry);
+  if (underGames && isAllowedExecutablePath(underGames)) return underGames;
+  const fromReg = findExeFromUninstallRegistry(entry);
+  if (fromReg && isAllowedExecutablePath(fromReg)) return fromReg;
+  return null;
 }
 
 /** Game/content root for mods — prefer installRoot, else walk up from binaries/system. */
@@ -2305,20 +2540,20 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
         editionMeta.links?.website ||
         editionMeta.installAction?.href;
       if (url) {
-        await shell.openExternal(url);
+        await safeOpenExternal(url);
         return { status: "external", editionSlug: editionMeta.editionSlug };
       }
     } else if (editionMeta.installMethod === "external_installer") {
       const url = editionMeta.installConfig?.external_installer?.url || editionMeta.installAction?.href;
       if (url) {
-        await shell.openExternal(url);
+        await safeOpenExternal(url);
         return { status: "external", editionSlug: editionMeta.editionSlug };
       }
     } else if (editionMeta.installAction?.kind === "link" && editionMeta.installAction.href) {
-      await shell.openExternal(editionMeta.installAction.href);
+      await safeOpenExternal(editionMeta.installAction.href);
       return { status: "external", editionSlug: editionMeta.editionSlug };
     } else if (editionMeta.installAction?.kind === "browser" && editionMeta.installAction.href) {
-      await shell.openExternal(editionMeta.installAction.href);
+      await safeOpenExternal(editionMeta.installAction.href);
       return { status: "external", editionSlug: editionMeta.editionSlug };
     }
   }
@@ -2326,7 +2561,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   if (entry.kind === "external") {
-    await shell.openExternal(entry.url);
+    await safeOpenExternal(entry.url);
     return { status: "external" };
   }
 
@@ -2487,7 +2722,7 @@ async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
       : null);
   if (!discord) return null;
   try {
-    await shell.openExternal(discord);
+    await safeOpenExternal(discord);
   } catch {
     /* ignore */
   }
@@ -2516,7 +2751,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
       entry?.note ||
       "https://www.project1999.com/";
     try {
-      await shell.openExternal(
+      await safeOpenExternal(
         typeof wiki === "string" && wiki.startsWith("http") ? wiki : "https://wiki.project1999.com/"
       );
     } catch {
@@ -2707,7 +2942,7 @@ async function installMod(slug, baseDirOverride) {
   const install = await fetchModInstall(slug);
 
   if (install.downloadKind === "external") {
-    await shell.openExternal(install.url || `${getApiBase()}/mods/${slug}`);
+    await safeOpenExternal(install.url || `${getApiBase()}/mods/${slug}`);
     return { status: "external", url: install.url || null };
   }
 
@@ -3071,6 +3306,9 @@ function onSpawnedProcessGone(slug) {
  */
 function spawnTrackedExe(slug, exePath, args = []) {
   clearLaunchTracking(slug);
+  if (!isAllowedExecutablePath(exePath)) {
+    throw new Error("Executable path is outside allowed install locations");
+  }
   const isJar = /\.jar$/i.test(exePath);
 
   let child;
@@ -3603,9 +3841,23 @@ ipcMain.handle("open-folder", async (_event, dir) => {
   return true;
 });
 ipcMain.handle("clear-context", () => clearContext());
-ipcMain.handle("open-external", (_event, url) => shell.openExternal(url));
+ipcMain.handle("open-external", async (_event, url) => {
+  try {
+    return await safeOpenExternal(url);
+  } catch (err) {
+    console.warn("open-external blocked:", err?.message || err);
+    return false;
+  }
+});
 ipcMain.handle("open-deep-link", (_event, url) => {
-  handleDeepLink(parseDeepLink(url));
+  const raw = String(url || "");
+  if (!/^playbound:\/\//i.test(raw)) {
+    console.warn("open-deep-link rejected non-playbound URL");
+    return false;
+  }
+  const parsed = parseDeepLink(raw);
+  if (!parsed) return false;
+  handleDeepLink(parsed);
   return true;
 });
 ipcMain.handle("close-window", () => win?.close());
@@ -3727,7 +3979,7 @@ ipcMain.handle("get-catalog", () => {
 ipcMain.handle("get-servers", async (_event, slug) => {
   try {
     const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { supported: false, servers: [] };
     return await res.json();
@@ -3823,7 +4075,7 @@ ipcMain.handle("get-all-servers", async () => {
       const slug = providers[i];
       try {
         const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
-          headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+          headers: launcherApiHeaders({ accept: "application/json" }),
         });
         if (!res.ok) continue;
         const data = await res.json();
@@ -4080,7 +4332,13 @@ ipcMain.handle("install-update", () => {
 });
 ipcMain.handle("save-settings", (_event, patch) => {
   const settings = loadSettings();
-  if (patch.apiBase != null) settings.apiBase = patch.apiBase;
+  if (patch.apiBase != null) {
+    if (isAllowedApiBase(patch.apiBase)) {
+      settings.apiBase = String(patch.apiBase).replace(/\/$/, "");
+    } else {
+      console.warn("save-settings rejected apiBase:", patch.apiBase);
+    }
+  }
   if (patch.gamesDir != null) settings.gamesDir = patch.gamesDir;
   if (patch.compatibilityFilter === "compatible" || patch.compatibilityFilter === "all") {
     settings.compatibilityFilter = patch.compatibilityFilter;
@@ -4833,6 +5091,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -4950,7 +5209,8 @@ function testDeepLink() {
     ],
     ["playbound://auth", { action: "auth" }],
     ["playbound://sync", { action: "sync" }],
-    ["playbound://link?token=abc", { action: "link", token: "abc" }],
+    ["playbound://link?code=abc", { action: "link", code: "abc", token: "" }],
+    ["playbound://link?token=abc", { action: "link", code: "", token: "abc" }],
     ["playbound://install-mod/cool-mod", { action: "install-mod", slug: "cool-mod" }],
     ["playbound://play-mod/openra-tiberian-dawn-hd", { action: "play-mod", slug: "openra-tiberian-dawn-hd" }],
     ["playbound://open-folder/openra", { action: "open-folder", slug: "openra" }],

@@ -110,16 +110,24 @@ class GameLauncher {
       return child;
     }
 
+    if (/\.(cmd|bat)$/i.test(launchPath)) {
+      const err = new Error(
+        "This install points at a .bat/.cmd launcher. Use Locate to pick the game .exe or .jar instead."
+      );
+      err.code = "SHELL_LAUNCH_BLOCKED";
+      throw err;
+    }
+
     const launchCommand = Platform.getGameLaunchCommand(launchPath);
     const cmd = launchCommand[0];
     const finalArgs = [...launchCommand.slice(1), ...args];
-    const useShell = /\.(cmd|bat)$/i.test(launchPath);
 
     return spawn(cmd, finalArgs, {
       cwd: path.dirname(launchPath),
       detached: true,
       stdio: "ignore",
-      shell: useShell,
+      windowsHide: true,
+      shell: false,
     });
   }
 }

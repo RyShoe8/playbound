@@ -9,6 +9,7 @@ import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import User from "@/lib/models/User";
 import { sendMail, verificationEmailHtml } from "@/lib/mailer";
 import { clientIpFrom, recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
+import { checkRateLimit } from "@/lib/discussion/rateLimit";
 import { absoluteUrl } from "@/lib/site";
 
 const registerSchema = z.object({
@@ -42,10 +43,41 @@ export async function POST(req: Request) {
     const { username, email, password, newsletterOptIn, recaptchaToken } =
       registerSchema.parse(body);
     const normalizedEmail = email.trim().toLowerCase();
+    const ip = clientIpFrom(req) || "unknown";
+
+    await dbConnect();
+
+    const ipLimit = await checkRateLimit(`register:ip:${ip}`, {
+      max: 5,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: "Too many signup attempts. Try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(ipLimit.retryAfterSec) },
+        }
+      );
+    }
+
+    const emailLimit = await checkRateLimit(`register:email:${normalizedEmail}`, {
+      max: 3,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!emailLimit.ok) {
+      return NextResponse.json(
+        { error: "Too many signup attempts. Try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(emailLimit.retryAfterSec) },
+        }
+      );
+    }
 
     // Bot check before any write, and before we spend a Brevo call or an email.
     const captcha = await verifyRecaptcha(recaptchaToken, "signup", {
-      remoteIp: clientIpFrom(req),
+      remoteIp: ip === "unknown" ? null : ip,
     });
     if (!captcha.ok) {
       console.warn(
@@ -57,14 +89,12 @@ export async function POST(req: Request) {
       );
     }
 
-    await dbConnect();
-
     const existingUser = await User.findOne({
       $or: [{ email: normalizedEmail }, { username }],
     });
     if (existingUser) {
       return NextResponse.json(
-        { error: "An account with this email or username already exists" },
+        { error: "Unable to create that account. Try a different email or username." },
         { status: 400 }
       );
     }
@@ -115,7 +145,6 @@ export async function POST(req: Request) {
     const verifyUrl = verificationLink(token, normalizedEmail);
 
     let emailSent = true;
-    let emailError: string | undefined;
     try {
       await sendMail(
         normalizedEmail,
@@ -124,12 +153,11 @@ export async function POST(req: Request) {
       );
     } catch (mailErr) {
       emailSent = false;
-      emailError = mailErr instanceof Error ? mailErr.message : String(mailErr);
       console.error("Failed to send verification email:", mailErr);
     }
 
     return NextResponse.json(
-      { success: true, userId: user._id, emailSent, ...(emailError ? { emailError } : {}) },
+      { success: true, userId: user._id, emailSent },
       { status: 201 }
     );
   } catch (error) {

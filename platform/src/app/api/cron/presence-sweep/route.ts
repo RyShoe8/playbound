@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 import { sweepStalePresence } from "@/lib/presence/server";
+import { cronAuthorized } from "@/lib/cronAuth";
 
 export const maxDuration = 60;
-
-/** Matches the auth used by the other cron routes. */
-function authorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = req.headers.get("authorization") || "";
-  return auth === `Bearer ${secret}`;
-}
 
 /**
  * GET|POST /api/cron/presence-sweep
@@ -23,7 +16,7 @@ function authorized(req: Request): boolean {
  * schedule would leave people showing as online long after they left.
  */
 async function run(req: Request) {
-  if (!authorized(req)) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
