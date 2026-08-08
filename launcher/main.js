@@ -1030,7 +1030,7 @@ function getEditionRecord(state, slug, editionSlug) {
 }
 
 function editionInstallDir(slug, editionSlug) {
-  return path.join(DEFAULT_GAMES_DIR, slug, editionSlug || DEFAULT_EDITION_SLUG);
+  return path.join(gamesRoot(), slug, editionSlug || DEFAULT_EDITION_SLUG);
 }
 
 function installedEditionsPayload(slug) {
@@ -1056,6 +1056,12 @@ function loadSettings() {
   } catch {
     return {};
   }
+}
+
+/** Settings → games directory, falling back to the platform default. */
+function gamesRoot() {
+  const configured = String(loadSettings().gamesDir || "").trim();
+  return configured || DEFAULT_GAMES_DIR;
 }
 
 function saveSettings(settings) {
@@ -1385,7 +1391,7 @@ function buildContextPayload() {
       baseInCatalog: Boolean(baseEntry),
       installed: modInstalled,
       installedPath: modInstalled ? state.__mods__[context.slug].dir : null,
-      defaultDir: baseSlug ? path.join(DEFAULT_GAMES_DIR, baseSlug) : null,
+      defaultDir: baseSlug ? path.join(gamesRoot(), baseSlug) : null,
       join: null,
     };
   }
@@ -1401,7 +1407,7 @@ function buildContextPayload() {
     editionSlug: context.editionSlug || null,
     installed: Boolean(installed),
     installedPath: installed?.dir ?? null,
-    defaultDir: path.join(DEFAULT_GAMES_DIR, entry.slug),
+    defaultDir: path.join(gamesRoot(), entry.slug),
     join: context.action === "join"
       ? { host: context.host || "", port: context.port || 0, name: context.name || "" }
       : null,
@@ -2625,7 +2631,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     targetDir ||
     (editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
       ? editionInstallDir(entry.slug, editionExtra.editionSlug)
-      : path.join(DEFAULT_GAMES_DIR, entry.slug));
+      : path.join(gamesRoot(), entry.slug));
 
   sendProgress({ phase: "resolving" });
   const dl = await resolveDownload(entry);
@@ -2826,7 +2832,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   const gameDir =
     editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
       ? editionInstallDir(slug, editionExtra.editionSlug)
-      : path.join(DEFAULT_GAMES_DIR, slug);
+      : path.join(gamesRoot(), slug);
 
   sendProgress({ phase: "extracting" });
   await fsp.rm(gameDir, { recursive: true, force: true });
@@ -2893,7 +2899,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
   // Full portable clients (OpenRA-style) install beside other PlayBound games.
   const portable = /winportable/i.test(dl.name || "");
   if (portable) {
-    targetDir = path.join(DEFAULT_GAMES_DIR, slug);
+    targetDir = path.join(gamesRoot(), slug);
   }
   if (!targetDir) {
     throw new Error("Base game folder not found — install the game first or choose its folder.");
