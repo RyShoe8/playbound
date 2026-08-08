@@ -4162,6 +4162,23 @@ ipcMain.handle("send-friend-request", async (_event, targetUserId) => {
     return { error: err.message };
   }
 });
+
+ipcMain.handle("invite-friend-by-email", async (_event, email) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/friends/invite`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to send invite");
+    }
+    return data;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
 // ----------------------------
 ipcMain.handle("get-recently-played", () => {
   const settings = loadSettings();

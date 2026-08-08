@@ -53,3 +53,47 @@ export function verificationEmailHtml(username: string, verifyUrl: string) {
     </div>
   `;
 }
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function friendInviteEmailHtml(inviterUsername: string, signupUrl: string) {
+  const name = escapeHtml(inviterUsername || "Someone");
+  return `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h2>${name} invited you to PlayBound</h2>
+      <p>PlayBound is a home for high-quality free games — and a place to see what friends are playing.</p>
+      <p>
+        <a href="${signupUrl}" style="display:inline-block;background:#7c5cf0;color:#fff;
+          padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">
+          Join PlayBound
+        </a>
+      </p>
+      <p>Or paste this link into your browser:<br>${signupUrl}</p>
+      <p style="color:#888;font-size:12px;">This invite expires in 14 days. If you weren't expecting this, you can ignore it.</p>
+    </div>
+  `;
+}
+
+export function friendRequestInviteEmailHtml(inviterUsername: string, friendsUrl: string) {
+  const name = escapeHtml(inviterUsername || "Someone");
+  return `
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      <h2>${name} wants to be friends on PlayBound</h2>
+      <p>Open Friends to accept or decline their request.</p>
+      <p>
+        <a href="${friendsUrl}" style="display:inline-block;background:#7c5cf0;color:#fff;
+          padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold;">
+          Open Friends
+        </a>
+      </p>
+      <p>Or paste this link into your browser:<br>${friendsUrl}</p>
+    </div>
+  `;
+}
+

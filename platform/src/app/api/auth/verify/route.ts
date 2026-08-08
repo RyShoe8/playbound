@@ -36,6 +36,11 @@ export async function POST(req: Request) {
     user.verificationTokenExpires = undefined;
     await user.save();
 
+    const { redeemFriendInvitesForEmail } = await import("@/lib/friends/redeemInvites");
+    void redeemFriendInvitesForEmail(String(email).toLowerCase(), String(user._id)).catch(
+      (err) => console.error("redeemFriendInvitesForEmail failed:", err)
+    );
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Verification error:", error);

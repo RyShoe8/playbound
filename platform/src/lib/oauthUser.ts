@@ -82,6 +82,13 @@ export async function resolveOAuthUser(
 
     if (dirty) await existing.save();
 
+    if (existing.emailVerified || input.emailVerified) {
+      const { redeemFriendInvitesForEmail } = await import("@/lib/friends/redeemInvites");
+      void redeemFriendInvitesForEmail(email, existing._id.toString()).catch((err) =>
+        console.error("redeemFriendInvitesForEmail failed:", err)
+      );
+    }
+
     return {
       ok: true,
       userId: existing._id.toString(),
@@ -104,6 +111,13 @@ export async function resolveOAuthUser(
     emailVerified: true,
     role: isFounderAdminEmail(email) ? "admin" : "user",
   });
+
+  {
+    const { redeemFriendInvitesForEmail } = await import("@/lib/friends/redeemInvites");
+    void redeemFriendInvitesForEmail(email, created._id.toString()).catch((err) =>
+      console.error("redeemFriendInvitesForEmail failed:", err)
+    );
+  }
 
   return {
     ok: true,

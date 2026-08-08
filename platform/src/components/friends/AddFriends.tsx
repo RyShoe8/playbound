@@ -2,7 +2,7 @@
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
-import { Check, Clock, Gamepad2, Search, UserPlus } from "lucide-react";
+import { Check, Clock, Gamepad2, Mail, Search, UserPlus } from "lucide-react";
 import { useFriendsStore } from "@/stores/friendsStore";
 
 type Result = {
@@ -14,14 +14,10 @@ type Result = {
   sharedCount?: number;
 };
 
-type Mode = "username" | "players";
+type Mode = "username" | "players" | "email";
 
 /**
- * Adding friends, two ways.
- *
- * Both modes render the same result rows because the discover endpoint returns
- * the same shape and status vocabulary as the username search — the only
- * difference is what was asked, not what comes back.
+ * Adding friends: username search, library discover, or email invite.
  */
 export function AddFriends({
   games,
@@ -33,6 +29,8 @@ export function AddFriends({
   const sendFriendRequest = useFriendsStore((s) => s.sendRequest);
   const [mode, setMode] = useState<Mode>("username");
   const [username, setUsername] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMsg, setInviteMsg] = useState("");
   const [game, setGame] = useState("");
   const [genre, setGenre] = useState("");
   const [results, setResults] = useState<Result[] | null>(null);
@@ -82,6 +80,41 @@ export function AddFriends({
     void run(`/api/friends/discover?${params}`);
   }
 
+  async function sendEmailInvite(e: React.FormEvent) {
+    e.preventDefault();
+    const email = inviteEmail.trim();
+    if (!email.includes("@")) {
+      setError("Enter a valid email address.");
+      setInviteMsg("");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setInviteMsg("");
+    try {
+      const res = await fetch("/api/friends/invite", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Couldn't send invite.");
+        return;
+      }
+      setInviteMsg(data?.message ?? "Invite sent.");
+      setInviteEmail("");
+      if (data?.mode === "existing") {
+        const { fetchRequests } = useFriendsStore.getState();
+        void fetchRequests();
+      }
+    } catch {
+      setError("Couldn't reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function sendRequest(targetUserId: string) {
     setSent((s) => ({ ...s, [targetUserId]: true }));
     setError("");
@@ -107,6 +140,7 @@ export function AddFriends({
         setMode(value);
         setResults(null);
         setError("");
+        setInviteMsg("");
       }}
       className={`rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
         mode === value
@@ -127,6 +161,7 @@ export function AddFriends({
         <h2 className="mr-2 font-bold">Add friends</h2>
         {tab("username", "By username")}
         {tab("players", "Find players")}
+        {tab("email", "Invite by email")}
       </div>
 
       {mode === "username" ? (
@@ -146,7 +181,7 @@ export function AddFriends({
             <Search className="size-4" /> Search
           </button>
         </form>
-      ) : (
+      ) : mode === "players" ? (
         <form onSubmit={findPlayers} className="mt-3 space-y-2">
           <p className="text-xs text-muted-foreground">
             Find people with a game in their library, or anyone playing a genre.
@@ -193,13 +228,41 @@ export function AddFriends({
             </button>
           </div>
         </form>
+      ) : (
+        <form onSubmit={sendEmailInvite} className="mt-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Invite someone to PlayBound by email. If they already have an account, we’ll send a friend
+            request.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="friend@example.com"
+              aria-label="Email"
+              className={field}
+              required
+            />
+            <button
+              type="submit"
+              disabled={busy}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-60"
+            >
+              <Mail className="size-4" /> Send invite
+            </button>
+          </div>
+          {inviteMsg ? <p className="text-sm text-play">{inviteMsg}</p> : null}
+        </form>
       )}
 
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
 
-      {busy && <p className="mt-3 text-sm text-muted-foreground">Searching…</p>}
+      {busy && mode !== "email" && (
+        <p className="mt-3 text-sm text-muted-foreground">Searching…</p>
+      )}
 
-      {!busy && results?.length === 0 && (
+      {!busy && results?.length === 0 && mode !== "email" && (
         <p className="mt-3 text-sm text-muted-foreground">
           {mode === "username"
             ? "Nobody matched that."
@@ -207,7 +270,7 @@ export function AddFriends({
         </p>
       )}
 
-      {!busy && results && results.length > 0 && (
+      {!busy && results && results.length > 0 && mode !== "email" && (
         <ul className="mt-3 space-y-2">
           {results.map((u) => (
             <li

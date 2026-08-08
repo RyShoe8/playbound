@@ -693,10 +693,11 @@ async function renderFriendsView() {
       </div>
       
       <div id="add-friends-panel" style="display: none; margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);">
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;">
           <h2 style="margin: 0; font-size: 16px; font-weight: bold; margin-right: 8px;">Add friends</h2>
           <button class="btn-primary btn-sm" id="add-friends-tab-username" style="border-radius: 16px; padding: 4px 12px;">By username</button>
           <button class="btn-secondary btn-sm" id="add-friends-tab-players" style="border-radius: 16px; padding: 4px 12px; border: none; background: transparent; color: var(--text-muted);">Find players</button>
+          <button class="btn-secondary btn-sm" id="add-friends-tab-email" style="border-radius: 16px; padding: 4px 12px; border: none; background: transparent; color: var(--text-muted);">Invite by email</button>
         </div>
 
         <form id="add-friends-form-username" style="display: flex; gap: 8px;">
@@ -714,6 +715,14 @@ async function renderFriendsView() {
               <option value="">Any genre...</option>
             </select>
             <button type="submit" class="btn-primary" id="btn-search-players" style="border-radius: 16px; padding: 0 16px;">Find</button>
+          </div>
+        </form>
+
+        <form id="add-friends-form-email" style="display: none; flex-direction: column; gap: 8px;">
+          <p class="view-sub" style="font-size: 12px; margin: 0;">Invite someone to PlayBound by email. If they already have an account, we'll send a friend request.</p>
+          <div style="display: flex; gap: 8px;">
+            <input type="email" class="input-text" id="add-friends-email-input" placeholder="friend@example.com" style="flex: 1;" />
+            <button type="submit" class="btn-primary" id="btn-invite-email" style="border-radius: 16px; padding: 0 16px;">Send invite</button>
           </div>
         </form>
 
@@ -3915,40 +3924,51 @@ async function toggleAddFriendsPanel(forceShow) {
 async function initAddFriendsPanel() {
   const tabUser = document.getElementById("add-friends-tab-username");
   const tabPlayers = document.getElementById("add-friends-tab-players");
+  const tabEmail = document.getElementById("add-friends-tab-email");
   const formUser = document.getElementById("add-friends-form-username");
   const formPlayers = document.getElementById("add-friends-form-players");
+  const formEmail = document.getElementById("add-friends-form-email");
   const msg = document.getElementById("add-friends-message");
   const resultsDiv = document.getElementById("add-friends-results");
+
+  const styleInactiveTab = (el) => {
+    el.className = "btn-secondary btn-sm";
+    el.style.background = "transparent";
+    el.style.border = "none";
+    el.style.color = "var(--text-muted)";
+  };
+  const styleActiveTab = (el) => {
+    el.className = "btn-primary btn-sm";
+    el.style.background = "";
+    el.style.color = "";
+    el.style.border = "";
+  };
 
   const setMode = (mode) => {
     _addFriendsMode = mode;
     msg.style.display = "none";
     resultsDiv.innerHTML = "";
+    styleInactiveTab(tabUser);
+    styleInactiveTab(tabPlayers);
+    styleInactiveTab(tabEmail);
+    formUser.style.display = "none";
+    formPlayers.style.display = "none";
+    formEmail.style.display = "none";
     if (mode === "username") {
-      tabUser.className = "btn-primary btn-sm";
-      tabUser.style.background = "";
-      tabUser.style.color = "";
-      tabPlayers.className = "btn-secondary btn-sm";
-      tabPlayers.style.background = "transparent";
-      tabPlayers.style.border = "none";
-      tabPlayers.style.color = "var(--text-muted)";
+      styleActiveTab(tabUser);
       formUser.style.display = "flex";
-      formPlayers.style.display = "none";
-    } else {
-      tabPlayers.className = "btn-primary btn-sm";
-      tabPlayers.style.background = "";
-      tabPlayers.style.color = "";
-      tabUser.className = "btn-secondary btn-sm";
-      tabUser.style.background = "transparent";
-      tabUser.style.border = "none";
-      tabUser.style.color = "var(--text-muted)";
+    } else if (mode === "players") {
+      styleActiveTab(tabPlayers);
       formPlayers.style.display = "flex";
-      formUser.style.display = "none";
+    } else {
+      styleActiveTab(tabEmail);
+      formEmail.style.display = "flex";
     }
   };
 
   tabUser.onclick = () => setMode("username");
   tabPlayers.onclick = () => setMode("players");
+  tabEmail.onclick = () => setMode("email");
 
   const catalog = await window.playbound.getCatalog().catch(() => []);
   const gamesList = Array.isArray(catalog) ? catalog : catalog?.games || [];
@@ -4087,6 +4107,36 @@ async function initAddFriendsPanel() {
     }
     const params = g ? { game: g } : { genre: gn };
     doSearch(window.playbound.discoverPlayers(params));
+  };
+
+  formEmail.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("add-friends-email-input").value.trim();
+    if (!email.includes("@")) {
+      msg.textContent = "Enter a valid email address.";
+      msg.style.color = "var(--danger)";
+      msg.style.display = "block";
+      return;
+    }
+    const btn = document.getElementById("btn-invite-email");
+    btn.disabled = true;
+    msg.textContent = "Sending…";
+    msg.style.color = "var(--text-muted)";
+    msg.style.display = "block";
+    resultsDiv.innerHTML = "";
+    try {
+      const res = await window.playbound.inviteFriendByEmail(email);
+      if (res.error) throw new Error(res.error);
+      msg.textContent = res.message || "Invite sent.";
+      msg.style.color = "var(--primary)";
+      document.getElementById("add-friends-email-input").value = "";
+      if (res.mode === "existing") void refreshFriendsData();
+    } catch (err) {
+      msg.textContent = err.message || "Couldn't send invite.";
+      msg.style.color = "var(--danger)";
+    } finally {
+      btn.disabled = false;
+    }
   };
 }
 function enhanceSelect(selectEl) {

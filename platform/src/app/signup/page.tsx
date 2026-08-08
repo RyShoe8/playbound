@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, UserPlus } from "lucide-react";
 import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
 import { useTelemetry } from "@/lib/telemetry";
+import { storeInviteTokenFromSearch } from "@/components/friends/FriendInviteClaim";
 
 export default function SignupPage() {
   const { track } = useTelemetry();
@@ -16,6 +17,17 @@ export default function SignupPage() {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [fromInvite, setFromInvite] = useState(false);
+
+  useEffect(() => {
+    const { email: inviteEmail } = storeInviteTokenFromSearch(window.location.search);
+    if (inviteEmail) {
+      setEmail(inviteEmail);
+      setFromInvite(true);
+    } else if (new URLSearchParams(window.location.search).get("invite")) {
+      setFromInvite(true);
+    }
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,7 +84,9 @@ export default function SignupPage() {
         <UserPlus className="mx-auto size-8 text-primary" />
         <h1 className="mt-3 text-2xl font-extrabold tracking-tight">Create your account</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Free forever. Just like every game on PlayBound.
+          {fromInvite
+            ? "Finish signing up to connect with your friend on PlayBound."
+            : "Free forever. Just like every game on PlayBound."}
         </p>
       </div>
 

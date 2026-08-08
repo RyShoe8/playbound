@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { useFriendsStore, type FriendUser } from "@/stores/friendsStore";
 import { AddFriends } from "@/components/friends/AddFriends";
+import { FriendInviteClaim } from "@/components/friends/FriendInviteClaim";
 import { Avatar } from "@/components/ui/bits";
 import {
   Clock,
@@ -158,6 +159,7 @@ export function FriendsView({
 
   return (
     <div className="space-y-8">
+      <FriendInviteClaim />
       <AddFriends games={games} genres={genres} />
 
       {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
