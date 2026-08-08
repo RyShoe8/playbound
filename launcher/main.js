@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen } = require("electron");
 const { spawn, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -5078,11 +5078,17 @@ function ensureTray() {
 }
 
 function createWindow() {
+  const { width: workWidth, height: workHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const width = Math.min(1200, workWidth);
+  const height = Math.min(800, workHeight);
+  const minWidth = Math.min(900, workWidth);
+  const minHeight = Math.min(600, workHeight);
+
   win = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width,
+    height,
+    minWidth,
+    minHeight,
     resizable: true,
     backgroundColor: "#0c0a12",
     title: "PlayBound",
