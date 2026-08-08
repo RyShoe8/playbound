@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld("playbound", {
   searchUsers: (query) => ipcRenderer.invoke("search-users", query),
   discoverPlayers: (params) => ipcRenderer.invoke("discover-players", params),
   sendFriendRequest: (targetUserId) => ipcRenderer.invoke("send-friend-request", targetUserId),
+  inviteFriendByEmail: (email) => ipcRenderer.invoke("invite-friend-by-email", email),
   // Catalog / servers / mods
   getCatalog: () => ipcRenderer.invoke("get-catalog"),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),

@@ -112,6 +112,7 @@ export type TelemetryEventMap = {
   filter_changed: { surface?: string; filters?: Record<string, unknown> } & Extra;
   error: { message?: string; code?: string; source?: string } & Extra;
 
+  friend_invite_sent: { mode?: string } & Extra;
   friend_request_sent: { targetUserId?: string } & Extra;
   friend_request_accepted: { friendshipId?: string; via?: string } & Extra;
   friend_request_declined: { friendshipId?: string } & Extra;
