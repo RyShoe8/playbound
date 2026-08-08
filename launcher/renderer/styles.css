@@ -1209,6 +1209,24 @@ textarea.input-text {
   z-index: 10;
 }
 
+#statusbar-msg {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#statusbar-msg.statusbar-msg--action {
+  color: var(--accent-light);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+#statusbar-msg.statusbar-msg--action:hover {
+  color: var(--text-main);
+}
+
 #statusbar-progress {
   width: 180px;
   height: 6px;
@@ -1216,6 +1234,7 @@ textarea.input-text {
   border-radius: 999px;
   overflow: hidden;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 #statusbar-bar {
