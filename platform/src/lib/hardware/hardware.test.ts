@@ -3,6 +3,10 @@ import { normalizeCpuName, normalizeGpuName } from "./normalize";
 import { evaluateCompatibility } from "./compatibility";
 import { effectiveHardwareRequirements, mergeRequirementSpecs } from "./mergeRequirements";
 import { tierMeets } from "./tiers";
+import {
+  parseFreeTextRequirementsBlock,
+  parseRequirementLine,
+} from "./parseFreeTextRequirements";
 
 describe("normalizeCpuName", () => {
   it("strips trademark and frequency noise", () => {
@@ -111,5 +115,53 @@ describe("evaluateCompatibility", () => {
       }
     );
     expect(r.verdict).toBe("playable");
+  });
+});
+
+describe("parseFreeTextRequirements", () => {
+  it("parses OpenRA-style min line", () => {
+    const s = parseRequirementLine(
+      "2 GHz dual-core CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage"
+    );
+    expect(s?.ramMB).toBe(2048);
+    expect(s?.storageMB).toBe(1024);
+    expect(s?.apis).toContain("opengl");
+    expect(s?.cpuText).toMatch(/2 GHz dual-core/i);
+    expect(s?.gpuText).toMatch(/OpenGL 2\.1/i);
+  });
+
+  it("maps dedicated GPU to entry tier", () => {
+    const s = parseRequirementLine(
+      "3 GHz quad-core CPU · 4 GB RAM · Dedicated GPU · 2 GB storage"
+    );
+    expect(s?.gpuTier).toBe("entry");
+    expect(s?.ramMB).toBe(4096);
+  });
+
+  it("parses GTX wording without inventing tier", () => {
+    const s = parseRequirementLine(
+      "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 4 GB storage"
+    );
+    expect(s?.ramMB).toBe(8192);
+    expect(s?.gpuText).toMatch(/GTX 1050/i);
+    expect(s?.gpuTier).toBeUndefined();
+  });
+
+  it("returns null for vague recommended lines", () => {
+    expect(parseRequirementLine("Any modern machine")).toBeNull();
+  });
+
+  it("builds a block with provenance", () => {
+    const block = parseFreeTextRequirementsBlock({
+      min: "1 GHz CPU · 512 MB RAM · Any GPU · 200 MB storage",
+      recommended: "Any modern machine",
+    });
+    expect(block?.min?.ramMB).toBe(512);
+    expect(block?.min?.storageMB).toBe(200);
+    expect(block?.recommended).toBeUndefined();
+    expect(block?.provenance).toEqual({
+      source: "unverified",
+      enteredBy: "free-text-parser",
+    });
   });
 });

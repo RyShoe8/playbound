@@ -39,6 +39,28 @@ const facts: Game[] = [
       min: "2 GHz dual-core CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
       recommended: "3 GHz quad-core CPU · 4 GB RAM · Dedicated GPU · 2 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 1024,
+        cpuText: "2 GHz dual-core CPU",
+        gpuText: "OpenGL 2.1 GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "3 GHz quad-core CPU",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "xonotic",
@@ -65,6 +87,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "2 GHz CPU · 2 GB RAM · OpenGL 2.0 GPU · 2 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 4 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 2048,
+        cpuText: "2 GHz CPU",
+        gpuText: "OpenGL 2.0 GPU",
+      },
+      recommended: {
+        ramMB: 8192,
+        storageMB: 4096,
+        cpuText: "3 GHz quad-core CPU",
+        gpuText: "GTX 1050 or better",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -94,6 +137,24 @@ const facts: Game[] = [
     systemRequirements: {
       min: "1.6 GHz CPU · 2 GB RAM · Any GPU · 1 GB storage",
       recommended: "2.4 GHz CPU · 4 GB RAM · Any modern GPU · 2 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        storageMB: 1024,
+        cpuText: "1.6 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "2.4 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -125,6 +186,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "2 GHz CPU · 2 GB RAM · OpenGL 3.3 GPU · 1 GB storage",
       recommended: "3 GHz CPU · 4 GB RAM · GTX 750 or better · 2 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 1024,
+        cpuText: "2 GHz CPU",
+        gpuText: "OpenGL 3.3 GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "3 GHz CPU",
+        gpuText: "GTX 750 or better",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -160,6 +242,26 @@ const facts: Game[] = [
       min: "2.5 GHz dual-core CPU · 4 GB RAM · 1 GB VRAM GPU · 5 GB storage",
       recommended: "3.5 GHz quad-core CPU · 8 GB RAM · 2 GB VRAM GPU · 6 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        vramMB: 1024,
+        storageMB: 5120,
+        cpuText: "2.5 GHz dual-core CPU",
+        gpuText: "1 GB VRAM GPU",
+      },
+      recommended: {
+        ramMB: 8192,
+        vramMB: 2048,
+        storageMB: 6144,
+        cpuText: "3.5 GHz quad-core CPU",
+        gpuText: "2 GB VRAM GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "veloren",
@@ -189,6 +291,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "2.5 GHz quad-core CPU · 4 GB RAM · Vulkan-capable GPU · 2 GB storage",
       recommended: "3.5 GHz quad-core CPU · 8 GB RAM · GTX 1060 or better · 3 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "vulkan",
+        ],
+        storageMB: 2048,
+        cpuText: "2.5 GHz quad-core CPU",
+        gpuText: "Vulkan-capable GPU",
+      },
+      recommended: {
+        ramMB: 8192,
+        storageMB: 3072,
+        cpuText: "3.5 GHz quad-core CPU",
+        gpuText: "GTX 1060 or better",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -221,6 +344,24 @@ const facts: Game[] = [
     systemRequirements: {
       min: "1.5 GHz CPU · 1 GB RAM · Any GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        storageMB: 500,
+        cpuText: "1.5 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 1024,
+        cpuText: "2.5 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -256,6 +397,24 @@ const facts: Game[] = [
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 500 MB storage",
       recommended: "2 GHz CPU · 4 GB RAM · Any GPU · 1 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        storageMB: 500,
+        cpuText: "1 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 1024,
+        cpuText: "2 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "endless-sky",
@@ -290,6 +449,27 @@ const facts: Game[] = [
       min: "1.5 GHz CPU · 1 GB RAM · OpenGL 3.0 GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 2 GB RAM · Any modern GPU · 1 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 500,
+        cpuText: "1.5 GHz CPU",
+        gpuText: "OpenGL 3.0 GPU",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 1024,
+        cpuText: "2.5 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "shattered-pixel-dungeon",
@@ -321,6 +501,18 @@ const facts: Game[] = [
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 200 MB storage",
       recommended: "Any modern machine",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        storageMB: 200,
+        cpuText: "1 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "beyond-all-reason",
@@ -348,6 +540,24 @@ const facts: Game[] = [
     systemRequirements: {
       min: "3 GHz quad-core CPU · 8 GB RAM · GTX 960 · 4 GB storage",
       recommended: "4 GHz 8-core CPU · 16 GB RAM · RTX 2060 or better · 6 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 8192,
+        storageMB: 4096,
+        cpuText: "3 GHz quad-core CPU",
+        gpuText: "GTX 960",
+      },
+      recommended: {
+        ramMB: 16384,
+        storageMB: 6144,
+        cpuText: "4 GHz 8-core CPU",
+        gpuText: "RTX 2060 or better",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -382,6 +592,27 @@ const facts: Game[] = [
       min: "1.5 GHz CPU · 2 GB RAM · OpenGL 2.0 GPU · 500 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 500,
+        cpuText: "1.5 GHz CPU",
+        gpuText: "OpenGL 2.0 GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 1024,
+        cpuText: "2.5 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "warzone-2100",
@@ -411,6 +642,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "1.8 GHz CPU · 2 GB RAM · OpenGL 2.1 GPU · 1 GB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 2 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 1024,
+        cpuText: "1.8 GHz CPU",
+        gpuText: "OpenGL 2.1 GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "2.5 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -442,6 +694,18 @@ const facts: Game[] = [
       min: "1 GHz CPU · 512 MB RAM · Any GPU · 300 MB storage",
       recommended: "Any modern machine",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 300,
+        cpuText: "1 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "zero-k",
@@ -470,6 +734,26 @@ const facts: Game[] = [
     systemRequirements: {
       min: "2.2 GHz dual-core CPU · 4 GB RAM · 1 GB VRAM GPU · 3 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · 2 GB VRAM GPU · 4 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        vramMB: 1024,
+        storageMB: 3072,
+        cpuText: "2.2 GHz dual-core CPU",
+        gpuText: "1 GB VRAM GPU",
+      },
+      recommended: {
+        ramMB: 8192,
+        vramMB: 2048,
+        storageMB: 4096,
+        cpuText: "3 GHz quad-core CPU",
+        gpuText: "2 GB VRAM GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -505,6 +789,27 @@ const facts: Game[] = [
       min: "1.5 GHz CPU · 2 GB RAM · OpenGL 3.1 GPU · 600 MB storage",
       recommended: "2.5 GHz CPU · 4 GB RAM · Any modern GPU · 1 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 600,
+        cpuText: "1.5 GHz CPU",
+        gpuText: "OpenGL 3.1 GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 1024,
+        cpuText: "2.5 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "hedgewars",
@@ -534,6 +839,18 @@ const facts: Game[] = [
       min: "1 GHz CPU · 1 GB RAM · Any GPU · 250 MB storage",
       recommended: "Any modern machine",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        storageMB: 250,
+        cpuText: "1 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "unvanquished",
@@ -561,6 +878,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "2 GHz dual-core CPU · 4 GB RAM · OpenGL 3.2 GPU · 2 GB storage",
       recommended: "3 GHz quad-core CPU · 8 GB RAM · GTX 1050 or better · 3 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 2048,
+        cpuText: "2 GHz dual-core CPU",
+        gpuText: "OpenGL 3.2 GPU",
+      },
+      recommended: {
+        ramMB: 8192,
+        storageMB: 3072,
+        cpuText: "3 GHz quad-core CPU",
+        gpuText: "GTX 1050 or better",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -593,6 +931,29 @@ const facts: Game[] = [
       min: "RCT2 data files · 2 GHz CPU · 2 GB RAM · OpenGL 2.0 · 500 MB + RCT2 assets",
       recommended: "RCT2 data files · 3 GHz CPU · 4 GB RAM · Any modern GPU · 2 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 500,
+        cpuText: "2 GHz CPU",
+        gpuText: "OpenGL 2.0",
+        notes: "RCT2 data files · RCT2 assets",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "3 GHz CPU",
+        gpuText: "Any modern GPU",
+        notes: "RCT2 data files",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "freeciv",
@@ -622,6 +983,24 @@ const facts: Game[] = [
       min: "1 GHz CPU · 512 MB RAM · Any GPU · 200 MB storage",
       recommended: "2 GHz CPU · 2 GB RAM · Any GPU · 500 MB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 200,
+        cpuText: "1 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 500,
+        cpuText: "2 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "flightgear",
@@ -649,6 +1028,29 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Dual-core CPU · 4 GB RAM · OpenGL 3 GPU · 20 GB storage",
       recommended: "Quad-core CPU · 8 GB RAM · Dedicated GPU · 40 GB storage for scenery",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 20480,
+        cpuText: "Dual-core CPU",
+        gpuText: "OpenGL 3 GPU",
+      },
+      recommended: {
+        ramMB: 8192,
+        storageMB: 40960,
+        cpuText: "Quad-core CPU",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "for scenery",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -679,6 +1081,24 @@ const facts: Game[] = [
       min: "Any Doom source port · 1 GHz CPU · 512 MB RAM · 100 MB storage",
       recommended: "GZDoom or DSDA-Doom · 2 GHz CPU · 2 GB RAM · 500 MB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 100,
+        cpuText: "1 GHz CPU",
+        notes: "Any Doom source port",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 500,
+        cpuText: "2 GHz CPU",
+        notes: "GZDoom or DSDA-Doom",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "lincity-ng",
@@ -706,6 +1126,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "1 GHz CPU · 512 MB RAM · OpenGL 2.0 · 200 MB storage",
       recommended: "2 GHz CPU · 2 GB RAM · Any GPU · 500 MB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 200,
+        cpuText: "1 GHz CPU",
+        gpuText: "OpenGL 2.0",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 500,
+        cpuText: "2 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -736,6 +1177,26 @@ const facts: Game[] = [
       min: "Owned Daggerfall data · DOSBox or remaster · 512 MB RAM · 500 MB storage",
       recommended: "Daggerfall Unity remaster · Dual-core CPU · 8 GB RAM · DX11 GPU",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 500,
+        notes: "Owned Daggerfall data · DOSBox or remaster",
+      },
+      recommended: {
+        ramMB: 8192,
+        apis: [
+          "dx11",
+        ],
+        cpuText: "Dual-core CPU",
+        gpuText: "DX11 GPU",
+        notes: "Daggerfall Unity remaster",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "tes-arena",
@@ -764,6 +1225,17 @@ const facts: Game[] = [
       min: "DOSBox or compatible · 512 MB RAM · 100 MB storage",
       recommended: "DOSBox Staging · modern PC",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 100,
+        notes: "DOSBox or compatible",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "openarena",
@@ -791,6 +1263,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "1.5 GHz CPU · 512 MB RAM · OpenGL 1.3 · 600 MB storage",
       recommended: "2.5 GHz CPU · 2 GB RAM · Any modern GPU · 1 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        apis: [
+          "opengl",
+        ],
+        storageMB: 600,
+        cpuText: "1.5 GHz CPU",
+        gpuText: "OpenGL 1.3",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 1024,
+        cpuText: "2.5 GHz CPU",
+        gpuText: "Any modern GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -875,6 +1368,29 @@ const facts: Game[] = [
       min: "Windows 10 · Dual-core CPU · 4 GB RAM · DX11 GPU · 15 GB storage",
       recommended: "Quad-core CPU · 8 GB RAM · Dedicated GPU · 20 GB storage",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx11",
+        ],
+        storageMB: 15360,
+        cpuText: "Dual-core CPU",
+        gpuText: "DX11 GPU",
+        notes: "Windows 10",
+      },
+      recommended: {
+        ramMB: 8192,
+        storageMB: 20480,
+        cpuText: "Quad-core CPU",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "star-wars-galaxies",
@@ -902,6 +1418,19 @@ const facts: Game[] = [
     systemRequirements: {
       min: "See your chosen community edition",
       recommended: "Windows 10 · Dual-core · 8 GB RAM · Dedicated GPU",
+    },
+    hardwareRequirements: {
+      recommended: {
+        ramMB: 8192,
+        cpuText: "Dual-core",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "Windows 10",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -931,6 +1460,24 @@ const facts: Game[] = [
       min: "Battle.net app · Dual-core CPU · 4 GB RAM · 8 GB storage",
       recommended: "SSD · 8 GB RAM · Dedicated GPU",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        storageMB: 8192,
+        cpuText: "Dual-core CPU",
+        notes: "Battle.net app",
+      },
+      recommended: {
+        ramMB: 8192,
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "diablo-2",
@@ -958,6 +1505,27 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Battle.net · Quad-core · 8 GB RAM · DX12 GPU · 30 GB storage",
       recommended: "16 GB RAM · RTX-class GPU · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 8192,
+        apis: [
+          "dx12",
+        ],
+        storageMB: 30720,
+        cpuText: "Quad-core",
+        gpuText: "DX12 GPU",
+        notes: "Battle.net",
+      },
+      recommended: {
+        ramMB: 16384,
+        gpuText: "RTX-class GPU",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -988,6 +1556,18 @@ const facts: Game[] = [
       min: "1 GHz CPU · 512 MB RAM · Any GPU · 200 MB storage",
       recommended: "Any modern PC · ECWolf port",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 200,
+        cpuText: "1 GHz CPU",
+        gpuText: "Any GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "war-thunder",
@@ -1017,6 +1597,27 @@ const facts: Game[] = [
       min: "Dual-core · 4 GB RAM · DX11 · 25 GB storage",
       recommended: "Quad-core · 16 GB RAM · GTX 1060+ · SSD",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx11",
+        ],
+        storageMB: 25600,
+        cpuText: "Dual-core",
+        gpuText: "DX11",
+      },
+      recommended: {
+        ramMB: 16384,
+        cpuText: "Quad-core",
+        gpuText: "GTX 1060+",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "world-of-tanks",
@@ -1044,6 +1645,28 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Dual-core · 4 GB RAM · DX11 · 70 GB storage",
       recommended: "Quad-core · 8 GB RAM · Dedicated GPU · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx11",
+        ],
+        storageMB: 71680,
+        cpuText: "Dual-core",
+        gpuText: "DX11",
+      },
+      recommended: {
+        ramMB: 8192,
+        cpuText: "Quad-core",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -1075,6 +1698,24 @@ const facts: Game[] = [
       min: "Quad-core · 8 GB RAM · GTX 640 · 75 GB storage",
       recommended: "6-core · 16 GB RAM · GTX 970+ · SSD",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 8192,
+        storageMB: 76800,
+        cpuText: "Quad-core",
+        gpuText: "GTX 640",
+      },
+      recommended: {
+        ramMB: 16384,
+        cpuText: "6-core",
+        gpuText: "GTX 970+",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "hearthstone",
@@ -1101,6 +1742,22 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Battle.net · Dual-core · 4 GB RAM · 3 GB storage",
       recommended: "SSD · 8 GB RAM",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        storageMB: 3072,
+        cpuText: "Dual-core",
+        notes: "Battle.net",
+      },
+      recommended: {
+        ramMB: 8192,
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -1132,6 +1789,26 @@ const facts: Game[] = [
       min: "1.7 GHz · 512 MB RAM · DX8 · 15 GB storage",
       recommended: "Dual-core · 1 GB RAM · DX9 GPU",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 512,
+        storageMB: 15360,
+        cpuText: "1.7 GHz",
+        gpuText: "DX8",
+      },
+      recommended: {
+        ramMB: 1024,
+        apis: [
+          "dx9",
+        ],
+        cpuText: "Dual-core",
+        gpuText: "DX9 GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "genshin-impact",
@@ -1159,6 +1836,24 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Quad-core · 8 GB RAM · GTX 1030 · 80 GB storage",
       recommended: "6-core · 16 GB RAM · GTX 1060+ · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 8192,
+        storageMB: 81920,
+        cpuText: "Quad-core",
+        gpuText: "GTX 1030",
+      },
+      recommended: {
+        ramMB: 16384,
+        cpuText: "6-core",
+        gpuText: "GTX 1060+",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -1190,6 +1885,30 @@ const facts: Game[] = [
       min: "Dual-core · 4 GB RAM · DX9 · 60 GB storage",
       recommended: "Quad-core · 8 GB RAM · DX11 GPU · SSD",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx9",
+        ],
+        storageMB: 61440,
+        cpuText: "Dual-core",
+        gpuText: "DX9",
+      },
+      recommended: {
+        ramMB: 8192,
+        apis: [
+          "dx11",
+        ],
+        cpuText: "Quad-core",
+        gpuText: "DX11 GPU",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "league-of-legends",
@@ -1218,6 +1937,30 @@ const facts: Game[] = [
       min: "Dual-core · 4 GB RAM · DX10 · 16 GB storage",
       recommended: "Quad-core · 8 GB RAM · DX11 GPU · SSD",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        apis: [
+          "dx10",
+        ],
+        storageMB: 16384,
+        cpuText: "Dual-core",
+        gpuText: "DX10",
+      },
+      recommended: {
+        ramMB: 8192,
+        apis: [
+          "dx11",
+        ],
+        cpuText: "Quad-core",
+        gpuText: "DX11 GPU",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "valorant",
@@ -1245,6 +1988,22 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Intel i3-4150 · 4 GB RAM · GT 730 · 30 GB storage",
       recommended: "i5-9400F · 8 GB RAM · GTX 1050 Ti · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        storageMB: 30720,
+        notes: "Intel i3-4150 · GT 730",
+      },
+      recommended: {
+        ramMB: 8192,
+        gpuText: "GTX 1050 Ti",
+        notes: "i5-9400F · SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
   {
@@ -1276,6 +2035,28 @@ const facts: Game[] = [
       min: "Intel Core 2 · 6 GB RAM · DX11 · 85 GB storage",
       recommended: "Quad-core · 8 GB RAM · Dedicated GPU · SSD",
     },
+    hardwareRequirements: {
+      min: {
+        ramMB: 6144,
+        apis: [
+          "dx11",
+        ],
+        storageMB: 87040,
+        cpuText: "Intel Core 2",
+        gpuText: "DX11",
+      },
+      recommended: {
+        ramMB: 8192,
+        cpuText: "Quad-core",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
   },
   {
     slug: "quake-champions",
@@ -1305,6 +2086,23 @@ const facts: Game[] = [
     systemRequirements: {
       min: "Intel i5-3570 · 8 GB RAM · GTX 760 · 45 GB storage",
       recommended: "i7 · 16 GB RAM · GTX 1060+ · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 8192,
+        storageMB: 46080,
+        gpuText: "GTX 760",
+        notes: "Intel i5-3570",
+      },
+      recommended: {
+        ramMB: 16384,
+        gpuText: "GTX 1060+",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
     },
   },
 ];

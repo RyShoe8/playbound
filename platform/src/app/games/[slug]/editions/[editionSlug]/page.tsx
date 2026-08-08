@@ -271,7 +271,7 @@ export default async function EditionPage({
       </section>
 
       {/* ── Sticky tab nav ───────────────────────────────────────── */}
-      <nav className="no-scrollbar sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <nav className="no-scrollbar sticky top-0 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
         <ScrollActiveTab activeKey={tab} />
         <Link
           href={pageBase}

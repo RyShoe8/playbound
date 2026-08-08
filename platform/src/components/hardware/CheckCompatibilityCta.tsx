@@ -66,12 +66,6 @@ export function CheckCompatibilityCta({
         <button type="button" disabled={busy} onClick={tryOpenLauncher} className={className}>
           {signedInLabel}
         </button>
-        <p className="text-xs text-muted-foreground">
-          Or open PlayBound → Settings → Sync your PC.{" "}
-          <Link href="/profile" className="font-semibold text-primary hover:underline">
-            Profile &amp; PC
-          </Link>
-        </p>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
         {hint?.includes("Couldn’t") ? (
           <Link href="/launcher" className="block text-xs font-semibold text-primary hover:underline">

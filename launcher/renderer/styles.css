@@ -635,6 +635,7 @@ body {
 
 .detail-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin: 0 -28px;
   padding: 0 28px;
@@ -668,6 +669,12 @@ body {
 
 .detail-tab-panel.active {
   display: block;
+}
+
+.fit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
 }
 
 .chip-row {
@@ -1496,7 +1503,84 @@ textarea.input-text {
 .friend-info { display: flex; flex-direction: column; gap: 2px; }  
 .friend-name { font-weight: 600; display: flex; align-items: center; gap: 4px; }  
 .friend-status { font-size: 13px; color: var(--text-muted); }  
-.friend-actions { display: flex; gap: 8px; } 
+.friend-actions { display: flex; gap: 8px; }
+
+/* Gear directory (mirrors site /gear cards) */
+.gear-category-section { margin-bottom: 40px; }
+.gear-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.gear-category-title { margin: 0; font-size: 1.35rem; font-weight: 800; }
+.gear-card-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  .gear-card-grid { grid-template-columns: 1fr 1fr; }
+}
+.gear-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.gear-card:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+.gear-card-img {
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+}
+.gear-card-img-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 28px;
+  color: var(--text-muted);
+}
+.gear-card-body { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.gear-card-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gear-card-title-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-align: left;
+  cursor: pointer;
+}
+.gear-card-title-btn:hover { text-decoration: underline; }
+.gear-card-desc {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.gear-card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 /* ── Live stats loading placeholder ─────────────────────────────
    Sized from the real card's own type metrics rather than fixed

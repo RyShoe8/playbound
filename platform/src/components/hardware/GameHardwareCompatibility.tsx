@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useTelemetry } from "@/lib/telemetry";
 import type { CompatibilityResult } from "@/lib/hardware/types";
@@ -96,15 +95,6 @@ export function GameHardwareCompatibility({
             "Open PlayBound while signed in to automatically check this game against your PC."}
         </p>
         <CheckCompatibilityCta gameSlug={gameSlug} surface="game_page" />
-        {status === "authenticated" ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            After syncing, view your hardware on{" "}
-            <Link href="/profile" className="font-semibold text-primary hover:underline">
-              Profile &amp; PC
-            </Link>
-            .
-          </p>
-        ) : null}
       </section>
     );
   }

@@ -297,8 +297,9 @@ const views = {
   mods: document.getElementById("view-mods"),
   servers: document.getElementById("view-servers"),
   events: document.getElementById("view-events"),
-  library: document.getElementById("view-library"),
   friends: document.getElementById("view-friends"),
+  gear: document.getElementById("view-gear"),
+  library: document.getElementById("view-library"),
   settings: document.getElementById("view-settings"),
   gameDetail: document.getElementById("view-game-detail"),
   modDetail: document.getElementById("view-mod-detail"),
@@ -383,6 +384,7 @@ function navigateTo(viewName, params = {}) {
   else if (viewName === "events") renderEventsView();
   else if (viewName === "library") renderLibraryView();
   else if (viewName === "friends") renderFriendsView();
+  else if (viewName === "gear") renderGearView();
   else if (viewName === "settings") renderSettingsView();
   else if (viewName === "gameDetail") renderGameDetailView(params.slug);
   else if (viewName === "modDetail") renderModDetailView(params.slug);
@@ -988,6 +990,121 @@ function buildFriendsSectionHtml(title, list, type) {
   `;
 }
 // ─────────────────────────────────────────────────────────────────
+
+async function renderGearView() {
+  const container = views.gear;
+  if (!container) return;
+  container.innerHTML = `
+    <div class="section-header" style="margin-top: 0; flex-direction: column; align-items: stretch; gap: 8px;">
+      <div style="text-align: center;">
+        <h1 class="view-title" style="margin: 0">Gear</h1>
+        <p class="view-sub" style="margin: 8px auto 0; max-width: 36rem;">
+          Hardware recommendations driven by the games you actually play. Playbound Certified and tested by the community.
+        </p>
+      </div>
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn-secondary btn-sm" id="btn-open-gear-web">Open playbound.club/gear</button>
+      </div>
+    </div>
+    <div id="gear-directory" style="margin-top: 24px;">
+      <p class="view-sub">Loading gear…</p>
+    </div>
+  `;
+
+  document.getElementById("btn-open-gear-web")?.addEventListener("click", () => {
+    window.playbound.openExternal("https://playbound.club/gear");
+  });
+
+  const dir = document.getElementById("gear-directory");
+  try {
+    const res = (await window.playbound.getGearCatalog?.()) || {};
+    const categories = Array.isArray(res.categories) ? res.categories : [];
+    const grouped = res.grouped && typeof res.grouped === "object" ? res.grouped : {};
+
+    if (!categories.length) {
+      dir.innerHTML = `<p class="view-sub" style="text-align:center;padding:40px 0;">Check back soon for our first batch of recommendations.</p>`;
+      return;
+    }
+
+    dir.innerHTML = categories
+      .map((category) => {
+        const items = Array.isArray(grouped[category]) ? grouped[category] : [];
+        const preview = items.slice(0, 4);
+        const cards = preview
+          .map((gear) => {
+            const img = gear.coverImage
+              ? `<img class="gear-card-img" src="${escapeHtml(gear.coverImage)}" alt="" loading="lazy" />`
+              : `<div class="gear-card-img gear-card-img-fallback">${escapeHtml(
+                  String(gear.category || "?").slice(0, 1)
+                )}</div>`;
+            const links = (gear.affiliateLinks || [])
+              .map(
+                (l) =>
+                  `<button type="button" class="btn-secondary btn-sm gear-buy" data-url="${escapeHtml(
+                    l.url
+                  )}">Buy from ${escapeHtml(l.retailer)}${
+                    l.price ? ` · ${escapeHtml(l.price)}` : ""
+                  }</button>`
+              )
+              .join("");
+            const certified = gear.playboundCertified
+              ? `<span class="chip chip-accent">Playbound Certified</span>`
+              : "";
+            const detailUrl = `https://playbound.club/gear/${encodeURIComponent(
+              String(gear.category || "").toLowerCase()
+            )}/${encodeURIComponent(gear.slug)}`;
+            return `
+              <div class="gear-card">
+                ${img}
+                <div class="gear-card-body">
+                  <div class="gear-card-title-row">
+                    <button type="button" class="gear-card-title-btn" data-url="${escapeHtml(detailUrl)}">${escapeHtml(
+                      gear.title
+                    )}</button>
+                    ${certified}
+                  </div>
+                  <p class="gear-card-desc">${escapeHtml(gear.description || "")}</p>
+                  <div class="gear-card-actions">${links || `<button type="button" class="btn-secondary btn-sm" data-url="${escapeHtml(
+                    detailUrl
+                  )}">View on playbound.club</button>`}</div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        return `
+          <section class="gear-category-section">
+            <div class="gear-category-header">
+              <h2 class="gear-category-title">${escapeHtml(category)}</h2>
+              <button type="button" class="btn-secondary btn-sm gear-view-all" data-category="${escapeHtml(
+                String(category).toLowerCase()
+              )}">View all ${escapeHtml(category)} →</button>
+            </div>
+            <div class="gear-card-grid">${cards}</div>
+          </section>
+        `;
+      })
+      .join("");
+
+    dir.querySelectorAll("[data-url]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const url = btn.getAttribute("data-url");
+        if (url) window.playbound.openExternal(url);
+      });
+    });
+    dir.querySelectorAll(".gear-view-all").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cat = btn.getAttribute("data-category");
+        window.playbound.openExternal(`https://playbound.club/gear/${encodeURIComponent(cat || "")}`);
+      });
+    });
+  } catch (err) {
+    dir.innerHTML = `<p class="view-sub" style="color: var(--danger)">Failed to load gear: ${escapeHtml(
+      err?.message || String(err)
+    )}</p>`;
+  }
+}
 
 /**
  * Populate the library list.
@@ -1772,7 +1889,7 @@ async function refreshServersPickersAndList() {
     supported
       .map(
         (g) =>
-          `<option value="${escapeHtml(g.slug)}" ${g.slug === serversState.selectedSlug ? "selected" : ""}>${escapeHtml(g.title)}</option>`
+          `<option value="${escapeHtml(g.slug)}" ${g.slug === serversState.selectedSlug ? "selected" : ""}>${escapeHtml(g.title)}${g.testing ? " · Testing" : ""}</option>`
       )
       .join("");
 
@@ -2629,6 +2746,38 @@ async function renderGameDetailView(slug) {
     )
     .join("");
 
+  const whyHtml = detail.whyWePickedIt
+    ? `<section class="detail-section">
+        <h2 class="detail-section-title">Why we picked it</h2>
+        <p class="detail-prose">${escapeHtml(detail.whyWePickedIt)}</p>
+      </section>`
+    : "";
+
+  const bestForItems = (detail.bestFor || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  const notForItems = (detail.notFor || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+  const fitHtml =
+    bestForItems || notForItems
+      ? `<section class="detail-section">
+          <h2 class="detail-section-title">Best for</h2>
+          <div class="fit-grid">
+            ${
+              bestForItems
+                ? `<div><div class="req-label">Great when…</div><ul class="feature-list">${bestForItems}</ul></div>`
+                : ""
+            }
+            ${
+              notForItems
+                ? `<div><div class="req-label">Skip if…</div><ul class="feature-list">${notForItems}</ul></div>`
+                : ""
+            }
+          </div>
+        </section>`
+      : "";
+
   const editionPickerOptions = editions
     .map(
       (ed) =>
@@ -2642,7 +2791,7 @@ async function renderGameDetailView(slug) {
     <section class="detail-hero">
       ${coverHtml}
       <div class="detail-hero-copy">
-        <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${playingChip}</div>
+        <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
         <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
         <p class="view-sub detail-hero-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
         <div class="detail-hero-actions" id="detail-actions"></div>
@@ -2655,7 +2804,10 @@ async function renderGameDetailView(slug) {
       <button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>
       <button type="button" class="detail-tab ${detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>
       <button type="button" class="detail-tab ${detailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "achievements" ? "active" : ""}" data-tab="achievements">Achievements</button>
       <button type="button" class="detail-tab ${detailActiveTab === "news" ? "active" : ""}" data-tab="news">News</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "discussion" ? "active" : ""}" data-tab="discussion">Discussion</button>
+      <button type="button" class="detail-tab ${detailActiveTab === "reviews" ? "active" : ""}" data-tab="reviews">Reviews</button>
       <button type="button" class="detail-tab ${detailActiveTab === "media" ? "active" : ""}" data-tab="media">Media</button>
     </nav>
 
@@ -2670,6 +2822,8 @@ async function renderGameDetailView(slug) {
           <h2 class="detail-section-title">About</h2>
           <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
         </section>
+        ${whyHtml}
+        ${fitHtml}
         ${
           featureItems
             ? `<section class="detail-section"><h2 class="detail-section-title">Features</h2><ul class="feature-list">${featureItems}</ul></section>`
@@ -2689,11 +2843,6 @@ async function renderGameDetailView(slug) {
             : ""
         }
         ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
-        <div class="detail-web-tabs">
-          <button type="button" class="btn-secondary btn-sm" data-web-tab="discussion">Discussion on site</button>
-          <button type="button" class="btn-secondary btn-sm" data-web-tab="reviews">Reviews on site</button>
-          <button type="button" class="btn-secondary btn-sm" data-web-tab="achievements">Achievements on site</button>
-        </div>
         <p class="view-sub"><a href="#" id="detail-open-site">Open full page on playbound.club</a></p>
       </div>
       <div class="detail-tab-panel ${detailActiveTab === "install" ? "active" : ""}" data-panel="install">
@@ -2742,7 +2891,13 @@ async function renderGameDetailView(slug) {
       <div class="detail-tab-panel ${detailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="detail-servers-sec"></div>
       <div class="detail-tab-panel ${detailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="detail-mods-sec"></div>
       <div class="detail-tab-panel ${detailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="detail-guides-sec"><p class="view-sub">Loading guides…</p></div>
+      <div class="detail-tab-panel ${detailActiveTab === "achievements" ? "active" : ""}" data-panel="achievements" id="detail-achievements-sec">
+        <p class="view-sub">Platform-wide achievements are planned but not tracked yet.</p>
+        <p class="view-sub"><a href="#" id="achievements-open-site">Open on playbound.club</a></p>
+      </div>
       <div class="detail-tab-panel ${detailActiveTab === "news" ? "active" : ""}" data-panel="news" id="detail-news-sec"><p class="view-sub">Loading releases…</p></div>
+      <div class="detail-tab-panel ${detailActiveTab === "discussion" ? "active" : ""}" data-panel="discussion" id="detail-discussion-sec"><p class="view-sub">Loading discussion…</p></div>
+      <div class="detail-tab-panel ${detailActiveTab === "reviews" ? "active" : ""}" data-panel="reviews" id="detail-reviews-sec"><p class="view-sub">Loading reviews…</p></div>
       <div class="detail-tab-panel ${detailActiveTab === "media" ? "active" : ""}" data-panel="media" id="detail-media-sec"></div>
     </div>
   `;
@@ -2811,23 +2966,25 @@ async function renderGameDetailView(slug) {
   document.getElementById("install-tab-website")?.addEventListener("click", () => {
     if (detail.website) window.playbound.openExternal(detail.website);
   });
-  container.querySelectorAll("[data-web-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tab = btn.getAttribute("data-web-tab");
-      window.playbound.openExternal(
-        `https://playbound.club/games/${encodeURIComponent(slug)}?tab=${encodeURIComponent(tab)}`
-      );
-    });
+  document.getElementById("achievements-open-site")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.playbound.openExternal(
+      `https://playbound.club/games/${encodeURIComponent(slug)}?tab=achievements`
+    );
   });
 
-  // Guides / news / media (lazy fill)
+  // Guides / news / media / discussion / reviews (lazy fill)
   void (async () => {
     const guidesSec = document.getElementById("detail-guides-sec");
     const newsSec = document.getElementById("detail-news-sec");
     const mediaSec = document.getElementById("detail-media-sec");
-    const [guidesRes, releasesRes] = await Promise.all([
+    const discussionSec = document.getElementById("detail-discussion-sec");
+    const reviewsSec = document.getElementById("detail-reviews-sec");
+    const [guidesRes, releasesRes, discussionsRes, reviewsRes] = await Promise.all([
       window.playbound.getGameGuides?.(slug) || Promise.resolve({ guides: [] }),
       window.playbound.getGameReleases?.(slug) || Promise.resolve({ releases: [] }),
+      window.playbound.getGameDiscussions?.(slug) || Promise.resolve({ topics: [] }),
+      window.playbound.getGameReviews?.(slug) || Promise.resolve({ reviews: [] }),
     ]);
     const guides = guidesRes?.guides || [];
     if (guidesSec) {
@@ -2889,6 +3046,68 @@ async function renderGameDetailView(slug) {
           });
         });
       }
+    }
+    if (discussionSec) {
+      const topics = discussionsRes?.topics || [];
+      const boardUrl =
+        discussionsRes?.boardUrl ||
+        `https://playbound.club/games/${encodeURIComponent(slug)}?tab=discussion`;
+      if (!topics.length) {
+        discussionSec.innerHTML = `<p class="view-sub">No discussions yet. <a href="#" id="discussion-open-site">Start one on playbound.club</a></p>`;
+      } else {
+        discussionSec.innerHTML = `<div class="guide-list">${topics
+          .map(
+            (t) =>
+              `<button type="button" class="guide-card" data-url="${escapeHtml(t.url)}" style="text-align:left;cursor:pointer;width:100%;color:inherit;background:rgba(255,255,255,0.02)">
+                <h3>${t.isPinned ? "📌 " : ""}${escapeHtml(t.title)}</h3>
+                <p style="margin-top:6px;font-size:11px">${escapeHtml(t.category || "")}${
+                t.username ? ` · ${escapeHtml(t.username)}` : ""
+              } · ${Number(t.replyCount) || 0} replies${t.isSolved ? " · Solved" : ""}</p>
+              </button>`
+          )
+          .join(
+            ""
+          )}</div><p class="view-sub" style="margin-top:12px"><a href="#" id="discussion-open-site">Open discussion board on playbound.club</a></p>`;
+        discussionSec.querySelectorAll("[data-url]").forEach((el) => {
+          el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+      }
+      document.getElementById("discussion-open-site")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.playbound.openExternal(boardUrl);
+      });
+    }
+    if (reviewsSec) {
+      const reviews = reviewsRes?.reviews || [];
+      if (!reviews.length) {
+        reviewsSec.innerHTML = `<p class="view-sub">No reviews yet. <a href="#" id="reviews-open-site">Write one on playbound.club</a></p>`;
+      } else {
+        reviewsSec.innerHTML = `<div class="guide-list">${reviews
+          .map(
+            (r) =>
+              `<button type="button" class="guide-card" data-url="${escapeHtml(r.url)}" style="text-align:left;cursor:pointer;width:100%;color:inherit;background:rgba(255,255,255,0.02)">
+                <h3>${"★".repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}${"☆".repeat(
+                Math.max(0, 5 - (Number(r.rating) || 0))
+              )} · ${escapeHtml(r.title || "Review")}</h3>
+                <p>${escapeHtml(r.body || "")}</p>
+                <p style="margin-top:6px;font-size:11px">${escapeHtml(r.username || "")}${
+                r.createdAt ? ` · ${escapeHtml(new Date(r.createdAt).toLocaleDateString())}` : ""
+              }</p>
+              </button>`
+          )
+          .join(
+            ""
+          )}</div><p class="view-sub" style="margin-top:12px"><a href="#" id="reviews-open-site">Write or manage reviews on playbound.club</a></p>`;
+        reviewsSec.querySelectorAll("[data-url]").forEach((el) => {
+          el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+      }
+      document.getElementById("reviews-open-site")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.playbound.openExternal(
+          `https://playbound.club/games/${encodeURIComponent(slug)}?tab=reviews`
+        );
+      });
     }
     if (mediaSec) {
       const vids = Array.isArray(detail.videos) ? detail.videos.filter(Boolean) : [];
