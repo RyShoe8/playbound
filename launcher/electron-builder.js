@@ -73,6 +73,8 @@ module.exports = {
     "services/**/*",
     "renderer/**/*",
   ],
+  // systeminformation shells out to helpers; unpack so Windows detection works reliably.
+  asarUnpack: ["**/node_modules/systeminformation/**"],
   protocols: {
     name: "PlayBound Deep Link",
     schemes: ["playbound"],

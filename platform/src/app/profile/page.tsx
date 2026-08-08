@@ -49,7 +49,6 @@ export default async function ProfilePage() {
   let posts: { gameSlug: string; title: string; slug: string; createdAt: Date }[] = [];
   let community = { topicCount: 0, replyCount: 0, helpfulCount: 0 };
   let googleConnected = false;
-  let appearOfflinePref = false;
 
   try {
     await dbConnect();
@@ -80,7 +79,6 @@ export default async function ProfilePage() {
     if (user?.authProviders?.includes("google")) {
       googleConnected = true;
     }
-    appearOfflinePref = Boolean(user?.preferences?.appearOffline);
   } catch (err) {
     console.error("Failed to load profile activity:", err);
   }
@@ -114,7 +112,6 @@ export default async function ProfilePage() {
         email={session.user.email ?? ""}
         canDownloadUnsigned={canAccessTesting(session.user)}
         unsignedLauncherUrl={getAdminLauncherDownloadUrl()}
-        initialAppearOffline={appearOfflinePref}
       />
 
       <ConnectedAccounts
