@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -62,7 +63,7 @@ export function ReportButton({
 
   return (
     <form onSubmit={submit} className="mt-2 space-y-2 rounded-lg border border-border bg-secondary/40 p-3 text-sm">
-      <select
+      <PremiumSelect
         value={reason}
         onChange={(e) => setReason(e.target.value as typeof reason)}
         className="h-8 w-full rounded border border-input bg-background px-2 text-xs"
@@ -72,7 +73,7 @@ export function ReportButton({
             {r.replace(/_/g, " ")}
           </option>
         ))}
-      </select>
+      </PremiumSelect>
       <textarea
         value={details}
         onChange={(e) => setDetails(e.target.value)}

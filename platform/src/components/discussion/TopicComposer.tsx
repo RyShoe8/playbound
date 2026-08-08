@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -149,7 +150,7 @@ export function TopicComposer({
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <select
+        <PremiumSelect
           value={category}
           onChange={(e) => setCategory(e.target.value as typeof category)}
           className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm"
@@ -159,7 +160,7 @@ export function TopicComposer({
               {c.label}
             </option>
           ))}
-        </select>
+        </PremiumSelect>
         <input
           value={tags}
           onChange={(e) => setTags(e.target.value)}

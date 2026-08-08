@@ -3436,3 +3436,94 @@ async function initAddFriendsPanel() {
     doSearch(window.playbound.discoverPlayers(params));
   };
 }
+function enhanceSelect(selectEl) {
+  if (selectEl.dataset.premium) return;
+  selectEl.dataset.premium = "true";
+  selectEl.style.display = "none";
+  
+  const wrapper = document.createElement("div");
+  wrapper.className = "premium-select";
+  if (selectEl.style.flex) wrapper.style.flex = selectEl.style.flex;
+  
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "premium-select-btn";
+  
+  const span = document.createElement("span");
+  btn.appendChild(span);
+  
+  const icon = document.createElement("span");
+  icon.className = "premium-select-icon";
+  icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+  btn.appendChild(icon);
+  
+  const dropdown = document.createElement("div");
+  dropdown.className = "premium-select-dropdown";
+  
+  wrapper.appendChild(btn);
+  wrapper.appendChild(dropdown);
+  selectEl.parentNode.insertBefore(wrapper, selectEl);
+  wrapper.appendChild(selectEl);
+  
+  function renderOptions() {
+    dropdown.innerHTML = "";
+    Array.from(selectEl.options).forEach((opt) => {
+      const item = document.createElement("div");
+      item.className = "premium-select-item" + (opt.selected ? " selected" : "");
+      item.textContent = opt.textContent;
+      if (opt.selected) {
+        const check = document.createElement("span");
+        check.className = "premium-select-check";
+        check.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        item.appendChild(check);
+        span.textContent = opt.textContent;
+      }
+      item.addEventListener("click", () => {
+        selectEl.value = opt.value;
+        selectEl.dispatchEvent(new Event("change"));
+        wrapper.classList.remove("open");
+        renderOptions();
+      });
+      dropdown.appendChild(item);
+    });
+    if (selectEl.options.length > 0 && selectEl.selectedIndex >= 0) {
+      span.textContent = selectEl.options[selectEl.selectedIndex].textContent;
+    }
+  }
+  
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = wrapper.classList.contains("open");
+    document.querySelectorAll(".premium-select").forEach(p => p.classList.remove("open"));
+    if (!isOpen) {
+      wrapper.classList.add("open");
+      renderOptions();
+    }
+  });
+  
+  document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target)) wrapper.classList.remove("open");
+  });
+  
+  selectEl.addEventListener("change", renderOptions);
+  
+  const observer = new MutationObserver(() => renderOptions());
+  observer.observe(selectEl, { childList: true });
+  
+  renderOptions();
+}
+
+const selectObserver = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === 1) {
+        if (node.tagName === "SELECT") enhanceSelect(node);
+        if (node.querySelectorAll) {
+          node.querySelectorAll("select").forEach(enhanceSelect);
+        }
+      }
+    });
+  });
+});
+selectObserver.observe(document.body, { childList: true, subtree: true });
+document.querySelectorAll("select").forEach(enhanceSelect);

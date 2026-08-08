@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,14 +94,14 @@ export function WeeklyIssueForm({
       <div className="mx-auto max-w-lg space-y-4">
         <div>
           <label className={label}>Featured game</label>
-          <select required value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} className={field}>
+          <PremiumSelect required value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} className={field}>
             <option value="">Select a game…</option>
             {games.map((g) => (
               <option key={g.slug} value={g.slug}>
                 {g.title}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
         <div>
           <label className={label}>Publication date (Wednesday)</label>

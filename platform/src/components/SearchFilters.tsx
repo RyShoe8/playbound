@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
@@ -235,7 +236,7 @@ export function SearchFilters() {
             Sort by
           </p>
           <div className="flex items-center gap-1">
-            <select
+            <PremiumSelect
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
               className="h-8 rounded-lg border border-input bg-secondary/50 px-2.5 text-xs font-semibold outline-none focus:border-ring"
@@ -245,7 +246,7 @@ export function SearchFilters() {
                   {o.label}
                 </option>
               ))}
-            </select>
+            </PremiumSelect>
             <button
               type="button"
               onClick={toggleSortDir}
@@ -261,7 +262,7 @@ export function SearchFilters() {
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Max size
           </p>
-          <select
+          <PremiumSelect
             value={maxSize}
             onChange={(e) => setMaxSize(e.target.value)}
             className="h-8 rounded-lg border border-input bg-secondary/50 px-2.5 text-xs font-semibold outline-none focus:border-ring"
@@ -271,7 +272,7 @@ export function SearchFilters() {
                 {o.label}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
       </div>
     </div>

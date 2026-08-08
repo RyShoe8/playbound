@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
@@ -84,7 +85,7 @@ export function ModsFilters({
           />
         </div>
 
-        <select
+        <PremiumSelect
           value={gameSlug}
           onChange={(e) => setGameSlug(e.target.value)}
           aria-label="Filter by game"
@@ -96,7 +97,7 @@ export function ModsFilters({
               {g.title}
             </option>
           ))}
-        </select>
+        </PremiumSelect>
       </div>
 
       {/* ── Count ────────────────────────────────────────────── */}

@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -291,7 +292,7 @@ export function ModEditorForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Base game</label>
-          <select
+          <PremiumSelect
             required
             value={form.baseGameSlug}
             onChange={(e) => patch("baseGameSlug", e.target.value)}
@@ -303,11 +304,11 @@ export function ModEditorForm({
                 {g.title} ({g.slug})
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
         <div>
           <label className={label}>Developer</label>
-          <select
+          <PremiumSelect
             required
             value={form.developerSlug}
             onChange={(e) => patch("developerSlug", e.target.value)}
@@ -326,7 +327,7 @@ export function ModEditorForm({
                 {form.developerSlug} (unknown — no such developer)
               </option>
             )}
-          </select>
+          </PremiumSelect>
           <p className="mt-1 text-[11px] text-muted-foreground">
             Missing one?{" "}
             <a href="/admin/developers/new" className="text-primary hover:underline">
@@ -351,7 +352,7 @@ export function ModEditorForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label className={label}>Download kind</label>
-          <select
+          <PremiumSelect
             value={form.downloadKind}
             onChange={(e) => patch("downloadKind", e.target.value as ModPayload["downloadKind"])}
             className={field}
@@ -361,7 +362,7 @@ export function ModEditorForm({
                 {k}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
         <div>
           <label className={label}>GitHub repo</label>
@@ -471,7 +472,7 @@ export function ModEditorForm({
         </div>
         <div>
           <label className={label}>Managed by</label>
-          <select
+          <PremiumSelect
             value={form.managedBy}
             onChange={(e) => patch("managedBy", e.target.value as ModPayload["managedBy"])}
             className={field}
@@ -481,7 +482,7 @@ export function ModEditorForm({
                 {m}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
         </div>
       </div>
 

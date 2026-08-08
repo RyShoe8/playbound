@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { Check, MonitorSmartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,7 @@ function TopbarControl({
   return (
     <label className="inline-flex h-8 shrink-0 items-center leading-none">
       <span className="sr-only">Game compatibility filter</span>
-      <select
+      <PremiumSelect
         aria-label="Game compatibility filter"
         value={mode}
         onChange={(e) => setMode(e.target.value as CompatibilityFilterMode)}
@@ -116,7 +117,7 @@ function TopbarControl({
             {opt.short}
           </option>
         ))}
-      </select>
+      </PremiumSelect>
     </label>
   );
 }

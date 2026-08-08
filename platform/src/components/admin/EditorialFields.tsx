@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo } from "react";
 import { Check, CircleAlert, Plus, X } from "lucide-react";
@@ -335,7 +336,7 @@ export function DerivedContentEditor({
           {installSteps.map((step, i) => (
             <div key={i} className="rounded-lg border border-border p-2.5">
               <div className="flex gap-2">
-                <select
+                <PremiumSelect
                   value={step.platform}
                   onChange={(e) => {
                     const next = [...installSteps];
@@ -355,7 +356,7 @@ export function DerivedContentEditor({
                   <option value="windows">Windows</option>
                   <option value="macos">macOS</option>
                   <option value="linux">Linux</option>
-                </select>
+                </PremiumSelect>
                 <button
                   type="button"
                   onClick={() => onInstallStepsChange(installSteps.filter((_, x) => x !== i))}

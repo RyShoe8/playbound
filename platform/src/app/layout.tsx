@@ -1,3 +1,4 @@
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -89,7 +90,7 @@ export default function RootLayout({
         {/* Impact.com partner verification. Uses value= per their spec, not the
             usual content= — do not "fix" this to match other meta tags.
             React treats `value` as a controlled DOM property (the same
-            mechanism behind controlled <input>/<select>) rather than a plain
+            mechanism behind controlled <input>/<PremiumSelect>) rather than a plain
             attribute, so once the client hydrates it silently drops `value`
             from this node — correct in the raw SSR response (what a plain
             HTTP-fetch verifier reads), gone from the live DOM afterward. The

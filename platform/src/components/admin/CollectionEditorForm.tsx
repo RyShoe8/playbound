@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -238,7 +239,7 @@ export function CollectionEditorForm({
         </div>
 
         <div className="mt-2 flex gap-2">
-          <select
+          <PremiumSelect
             value={picker}
             onChange={(e) => setPicker(e.target.value)}
             className={`${field} mt-0 flex-1`}
@@ -249,7 +250,7 @@ export function CollectionEditorForm({
                 {g.title}
               </option>
             ))}
-          </select>
+          </PremiumSelect>
           <button
             type="button"
             onClick={() => addGame(picker)}

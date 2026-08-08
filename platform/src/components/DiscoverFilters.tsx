@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -237,7 +238,7 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
         </div>
 
         {/* Genre dropdown */}
-        <select
+        <PremiumSelect
           value={genre}
           onChange={(e) => setGenre(e.target.value)}
           className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
@@ -248,17 +249,17 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
               {g}
             </option>
           ))}
-        </select>
+        </PremiumSelect>
 
         {/* Sort dropdown */}
-        <select
+        <PremiumSelect
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
           className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
         >
           <option value="name">Sort: Name</option>
           <option value="size">Sort: Size</option>
-        </select>
+        </PremiumSelect>
 
         {/* Checkboxes */}
         <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">

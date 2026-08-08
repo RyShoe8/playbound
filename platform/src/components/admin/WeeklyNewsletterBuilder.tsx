@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { upload } from "@vercel/blob/client";
@@ -356,6 +357,7 @@ function MiniGameFields({
   game,
   catalog,
   onChange,
+  onUpload,
   onRemove,
 }: {
   index: number;
@@ -375,7 +377,7 @@ function MiniGameFields({
       </div>
       <div>
         <label className={label}>Prefill from catalog</label>
-        <select
+        <PremiumSelect
           className={field}
           defaultValue=""
           onChange={(e) => {
@@ -391,7 +393,7 @@ function MiniGameFields({
               {g.title}
             </option>
           ))}
-        </select>
+        </PremiumSelect>
       </div>
       <div>
         <label className={label}>Title</label>

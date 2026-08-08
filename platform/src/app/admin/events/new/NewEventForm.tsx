@@ -1,4 +1,5 @@
 "use client";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -58,7 +59,7 @@ export function NewEventForm({ gameOptions }: { gameOptions: { slug: string; tit
       </div>
       <div>
         <label className="text-xs font-semibold text-muted-foreground">Related game (optional)</label>
-        <select
+        <PremiumSelect
           value={gameSlug}
           onChange={(e) => setGameSlug(e.target.value)}
           className="mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
@@ -69,7 +70,7 @@ export function NewEventForm({ gameOptions }: { gameOptions: { slug: string; tit
               {g.title}
             </option>
           ))}
-        </select>
+        </PremiumSelect>
       </div>
       <div>
         <label className="text-xs font-semibold text-muted-foreground">Starts at</label>
