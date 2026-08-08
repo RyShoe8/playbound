@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Genre } from "@/lib/data/types";
+import type { Genre, QualityBar } from "@/lib/data/types";
 import {
   LAUNCHER_INSTALL_KINDS,
   defaultLauncherInstallForWebsite,
@@ -228,15 +228,52 @@ export const faqEntrySchema = z.object({
   a: z.string().trim().min(1).max(3000),
 });
 
-export const qualityBarSchema = z.object({
+const qualityBarFieldsSchema = z.object({
   genuinelyFree: z.boolean().default(false),
   finished: z.boolean().default(false),
   activelyMaintained: z.boolean().default(false),
   standsAlone: z.boolean().default(false),
-  wontDisappear: z.boolean().default(false),
+  highQuality: z.boolean().default(false),
+  /** Accepted on input only — mapped to highQuality, never written back. */
+  wontDisappear: z.boolean().optional(),
   verdict: z.string().trim().max(1000).default(""),
   lastVerified: z.string().trim().max(40).default(""),
 });
+
+export const qualityBarSchema = qualityBarFieldsSchema.transform((bar) => ({
+  genuinelyFree: bar.genuinelyFree,
+  finished: bar.finished,
+  activelyMaintained: bar.activelyMaintained,
+  standsAlone: bar.standsAlone,
+  highQuality: Boolean(bar.highQuality || bar.wontDisappear),
+  verdict: bar.verdict,
+  lastVerified: bar.lastVerified,
+}));
+
+/** Map legacy Mongo/seed bars onto the public QualityBar shape. */
+export function normalizeQualityBar(
+  bar: {
+    genuinelyFree?: boolean;
+    finished?: boolean;
+    activelyMaintained?: boolean;
+    standsAlone?: boolean;
+    highQuality?: boolean;
+    wontDisappear?: boolean;
+    verdict?: string;
+    lastVerified?: string;
+  } | null | undefined
+): QualityBar | null {
+  if (!bar) return null;
+  return {
+    genuinelyFree: Boolean(bar.genuinelyFree),
+    finished: Boolean(bar.finished),
+    activelyMaintained: Boolean(bar.activelyMaintained),
+    standsAlone: Boolean(bar.standsAlone),
+    highQuality: Boolean(bar.highQuality ?? bar.wontDisappear),
+    verdict: typeof bar.verdict === "string" ? bar.verdict : "",
+    lastVerified: typeof bar.lastVerified === "string" ? bar.lastVerified : "",
+  };
+}
 
 const optionalProse = (max: number) =>
   z

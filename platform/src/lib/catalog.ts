@@ -14,6 +14,7 @@ import { searchEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import type { Collection, Developer } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
+import { normalizeQualityBar } from "@/lib/gamePayload";
 
 export type { Game } from "@/lib/data/types";
 // Developers are deliberately no longer re-exported here. They are database
@@ -74,7 +75,20 @@ function toGame(doc: LeanGame): Game {
 
     // Editorial depth. Falls back to the seed entry so hand-written content
     // survives a DB import that does not yet carry these fields.
-    qualityBar: (doc.qualityBar as Game["qualityBar"]) ?? seedBySlug.get(String(doc.slug))?.qualityBar,
+    // normalizeQualityBar maps legacy wontDisappear → highQuality for old docs.
+    qualityBar:
+      normalizeQualityBar(
+        (doc.qualityBar as {
+          genuinelyFree?: boolean;
+          finished?: boolean;
+          activelyMaintained?: boolean;
+          standsAlone?: boolean;
+          highQuality?: boolean;
+          wontDisappear?: boolean;
+          verdict?: string;
+          lastVerified?: string;
+        } | null) ?? seedBySlug.get(String(doc.slug))?.qualityBar
+      ) ?? undefined,
     longDescription:
       (doc.longDescription as string) || seedBySlug.get(String(doc.slug))?.longDescription,
     whyWePickedIt:

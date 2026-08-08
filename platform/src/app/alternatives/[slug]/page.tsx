@@ -60,7 +60,7 @@ export default async function AlternativesPage({
     },
     {
       q: `Are these ${page.commercialGame} alternatives really free?`,
-      a: "Yes. Every game listed here is free with no trial, no paywalled content and no pay-to-win purchases. All are open-source, which means they cannot be delisted or shut down. Each has been assessed against PlayBound's five published criteria.",
+      a: "Yes. Every game listed here is free with no trial, no paywalled content and no pay-to-win purchases. Each has been assessed against PlayBound's five published criteria — including high quality only.",
     },
     {
       q: `Do I need to pay for multiplayer in these ${page.commercialGame} alternatives?`,

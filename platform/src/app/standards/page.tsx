@@ -9,7 +9,7 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata = pageMetadata({
   title: "The PlayBound Bar — Our Standard for Free Games",
   description:
-    "Five criteria every game must clear to make the PlayBound catalog: genuinely free, finished, actively maintained, good on its own merits, and impossible to shut down.",
+    "Five criteria every game must clear to make the PlayBound catalog: genuinely free, finished, actively maintained, good on its own merits, and high quality only.",
   path: "/standards",
 });
 
@@ -27,12 +27,12 @@ const FAQ = [
     a: "Each game carries a last-verified date shown on its page. Maintenance status in particular is re-checked, because a project that was active last year may not be active now. If a game stops meeting the bar, that is recorded rather than hidden.",
   },
   {
-    q: "What does 'won't disappear' mean?",
-    a: "The game is open-source or self-hostable, so no company decision — a shutdown, a delisting, a licence expiry, a server switch-off — can take it away from you. This is the one criterion no commercial free-to-play game can satisfy, and it is why the catalog skews open-source.",
+    q: "What does 'high quality only' mean?",
+    a: "There are tens of thousands of free games. Most are not worth your evening. Criterion five is catalog selectivity: we cut through that noise and only platform games that are actually good. Volume is not a goal, and clearing the other four criteria is not enough if the game itself is mediocre.",
   },
   {
     q: "Does a game have to be open-source to be listed?",
-    a: "Not strictly. The requirement is that it cannot be taken away, which in practice usually means open-source or self-hostable. A genuinely free, permanently downloadable game with no monetisation could qualify without being open-source.",
+    a: "No. Open source is a nice-to-have when present — permanence and community forks are genuine advantages — but it is not a PlayBound Bar criterion. A game earns a place by clearing the five published standards, whether or not its source is public.",
   },
   {
     q: "Who decides?",
@@ -109,8 +109,9 @@ export default async function StandardsPage() {
           A game funded by a battle pass fails criterion one. A promising early-access
           project fails criterion two. An abandoned 2011 release fails criterion
           three. A game that is only interesting because it is free fails criterion
-          four. And any live-service title whose servers can be switched off fails
-          criterion five — which is most of the free games you have heard of.
+          four. Low-quality shovelware and free-game noise fail criterion five —
+          clearing the other boxes is not enough if the game itself is not worth
+          playing.
         </p>
         <p className="mt-3 leading-relaxed text-muted-foreground">
           {verified > 0 ? (

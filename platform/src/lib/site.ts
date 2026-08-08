@@ -15,7 +15,7 @@ export const SITE_NAME = "PlayBound";
 export const SITE_TAGLINE = "High-quality free games, actually worth your time";
 
 export const SITE_DESCRIPTION =
-  "A deliberately small catalog of free games that are genuinely good. Every title clears the PlayBound Bar: genuinely free, finished, actively maintained, and impossible to shut down. One editor's pick every Wednesday.";
+  "A deliberately small catalog of free games that are genuinely good. Every title clears the PlayBound Bar: genuinely free, finished, actively maintained, good on its own merits, and high quality only. One editor's pick every Wednesday.";
 
 /** Public Discord invite (sidebar + Organization.sameAs). */
 export const SITE_DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
@@ -68,10 +68,10 @@ export const QUALITY_BAR = [
       "Good enough that we would recommend it even if it cost money. Free is not the reason it is here.",
   },
   {
-    key: "wontDisappear" as const,
-    title: "Won't disappear",
+    key: "highQuality" as const,
+    title: "High quality only",
     description:
-      "Open-source or self-hostable, so no shutdown, delisting or licence expiry can take it away from you.",
+      "We cut through free-game noise and only platform games that are actually good. Volume is not a goal.",
   },
 ];
 

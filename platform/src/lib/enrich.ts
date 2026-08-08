@@ -207,7 +207,7 @@ export function deriveFaq(game: FaqSource): GameFaq[] {
   if (game.githubRepo) {
     faq.push({
       q: `Is ${game.title} open source?`,
-      a: `Yes. The source code is published at github.com/${game.githubRepo} under ${game.license}, which is why it meets PlayBound's "won't disappear" criterion — no shutdown or delisting can take it away.`,
+      a: `Yes. The source code is published at github.com/${game.githubRepo} under ${game.license}. Open source is a nice property when it is present — it is not required to clear the PlayBound Bar.`,
     });
   }
 
@@ -218,16 +218,16 @@ export function deriveFaq(game: FaqSource): GameFaq[] {
 // Quality bar signals
 // ─────────────────────────────────────────────────────────────
 
-/** Recognised open-source licence identifiers, for the "won't disappear" test. */
+/** Recognised open-source licence identifiers (context for free/maintenance only). */
 const OSI_LICENCE = /\b(GPL|LGPL|AGPL|MIT|BSD|Apache|MPL|Zlib|Unlicense|CC0|Artistic|EPL|ISC)\b/i;
 
 export type QualityBarSignals = {
   /** Criteria that could be established from evidence. */
-  derived: Partial<Pick<QualityBar, "genuinelyFree" | "activelyMaintained" | "wontDisappear">>;
+  derived: Partial<Pick<QualityBar, "genuinelyFree" | "activelyMaintained">>;
   /** Human-readable provenance for each derived value, shown in the admin UI. */
   evidence: string[];
   /** Criteria that need a person. */
-  needsHuman: ("finished" | "standsAlone" | "verdict")[];
+  needsHuman: ("finished" | "standsAlone" | "highQuality" | "verdict")[];
 };
 
 /**
@@ -249,14 +249,13 @@ export function deriveQualityBarSignals(input: {
   const openSource = Boolean(input.license && OSI_LICENCE.test(input.license));
 
   if (openSource) {
-    derived.wontDisappear = true;
-    evidence.push(`Won't disappear: licence "${input.license}" is a recognised open-source licence.`);
+    evidence.push(
+      `Open source: licence "${input.license}" is recognised — useful context for free/maintenance checks, not a Bar criterion on its own.`
+    );
   } else if (input.githubRepo) {
     evidence.push(
-      `Won't disappear: source is on GitHub (${input.githubRepo}) but the licence "${input.license ?? "unknown"}" was not recognised — confirm by hand.`
+      `Open source: source is on GitHub (${input.githubRepo}) but the licence "${input.license ?? "unknown"}" was not recognised — confirm by hand if relevant.`
     );
-  } else {
-    evidence.push("Won't disappear: no open-source licence detected — needs a human decision.");
   }
 
   if (input.steamIsFree === true && openSource) {
@@ -296,7 +295,11 @@ export function deriveQualityBarSignals(input: {
     );
   }
 
-  return { derived, evidence, needsHuman: ["finished", "standsAlone", "verdict"] };
+  return {
+    derived,
+    evidence,
+    needsHuman: ["finished", "standsAlone", "highQuality", "verdict"],
+  };
 }
 
 /** A quality bar with derived criteria applied and the rest left false. */
@@ -306,7 +309,7 @@ export function draftQualityBar(signals: QualityBarSignals): QualityBar {
     finished: false,
     activelyMaintained: signals.derived.activelyMaintained ?? false,
     standsAlone: false,
-    wontDisappear: signals.derived.wontDisappear ?? false,
+    highQuality: false,
     verdict: "",
     lastVerified: new Date().toISOString().slice(0, 10),
   };
