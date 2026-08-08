@@ -92,8 +92,12 @@ export function MobileOutboundCta({
       onClick={handleClick}
       className={className}
     >
-      <Icon className="size-4" />
-      {children ?? outbound.label}
+      {children ?? (
+        <>
+          <Icon className="size-4" />
+          {outbound.label}
+        </>
+      )}
     </a>
   );
 }

@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 const items = [
   { href: "/", label: "Home", icon: House },
   { href: "/discover", label: "Games", icon: Gamepad2 },
-  { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/library", label: "Library", icon: LibraryBig },
+  { href: "/gear", label: "Gear", icon: Mouse },
 ];
 
 export function MobileNav() {

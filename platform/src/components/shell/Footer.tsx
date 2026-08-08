@@ -41,7 +41,11 @@ export function Footer() {
             <Link
               key={href}
               href={href}
-              className="text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              className={
+                href === "/launcher"
+                  ? "hidden text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground lg:inline"
+                  : "text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              }
             >
               {label}
             </Link>

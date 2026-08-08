@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, ExternalLink, FolderOpen, Play, Trash2 } from "lucide-react";
@@ -18,7 +18,8 @@ import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
-import { shouldOfferLauncher } from "@/lib/mobilePlay";
+import { shouldOfferLauncher, resolveMobileOutbound, parseMobileOs } from "@/lib/mobilePlay";
+import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { cn } from "@/lib/utils";
 
 export type LibraryEntryMeta = {
@@ -138,6 +139,13 @@ function MobileLibraryRow({
 }) {
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
+  const [os, setOs] = useState<"android" | "ios" | "other">("other");
+
+  useEffect(() => {
+    setOs(parseMobileOs(navigator.userAgent));
+  }, []);
+
+  const outbound = resolveMobileOutbound(game, os);
 
   return (
     <article className="rounded-xl border border-border bg-card p-3">
@@ -155,9 +163,22 @@ function MobileLibraryRow({
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+        {installed ? (
+          <MobileOutboundCta
+            game={game}
+            outbound={outbound}
+            surface="library_mobile"
+            className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-play px-3 text-sm font-bold text-play-foreground"
+          >
+            <Play className="size-3.5 fill-current" /> Play
+          </MobileOutboundCta>
+        ) : null}
         <Link
           href={`/games/${game.slug}`}
-          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-bold"
+          className={cn(
+            "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-bold",
+            installed ? "flex-none" : "flex-1"
+          )}
         >
           <ExternalLink className="size-3.5" /> Open
         </Link>

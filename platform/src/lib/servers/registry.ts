@@ -10,6 +10,7 @@ import { fetchOpenRct2Servers } from "./providers/openrct2";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
+import { fetchVillagersAndHeroesPlayers } from "./providers/steam-concurrent";
 import { fetchWarzone2100Servers } from "./providers/warzone-2100";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -58,6 +59,11 @@ const providers: Record<string, ServerProvider> = {
   "team-fortress-2": {
     slug: "team-fortress-2",
     fetchServers: fetchTeamFortress2Servers,
+  },
+  // Steam concurrent only (Mad Otter has no public shard API). Undercounts mobile.
+  "villagers-and-heroes": {
+    slug: "villagers-and-heroes",
+    fetchServers: fetchVillagersAndHeroesPlayers,
   },
 };
 

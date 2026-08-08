@@ -9,6 +9,8 @@ import {
   detectLauncherOs,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
+import { shouldOfferLauncher } from "@/lib/mobilePlay";
+import { useDevice } from "@/hooks/useDevice";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/lib/telemetry";
 
@@ -26,6 +28,7 @@ export function LauncherInstallButton({
   className,
   label = "Install with PlayBound Launcher",
 }: Props) {
+  const device = useDevice();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded" | "miss">("idle");
   const [os, setOs] = useState<"windows" | "macos">("windows");
   const { track } = useTelemetry();
@@ -34,6 +37,10 @@ export function LauncherInstallButton({
   useEffect(() => {
     setOs(detectLauncherOs());
   }, []);
+
+  if (!shouldOfferLauncher(device.type)) {
+    return null;
+  }
 
   const downloadUrl = os === "macos" ? MAC_LAUNCHER_DOWNLOAD_URL || LAUNCHER_DOWNLOAD_URL : LAUNCHER_DOWNLOAD_URL;
   const showFallback = status === "downloaded" || status === "miss";

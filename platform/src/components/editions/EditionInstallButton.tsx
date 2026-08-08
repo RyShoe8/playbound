@@ -10,6 +10,8 @@ import {
   detectLauncherOs,
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
+import { shouldOfferLauncher } from "@/lib/mobilePlay";
+import { useDevice } from "@/hooks/useDevice";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,6 +33,7 @@ export function EditionInstallButton({
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary";
 }) {
+  const device = useDevice();
   const [os, setOs] = useState<"windows" | "macos">("windows");
   const [handoffNote, setHandoffNote] = useState<string | null>(null);
 
@@ -74,7 +77,16 @@ export function EditionInstallButton({
   }
 
   // playbound:// handoff — auto-download Setup if the launcher isn't registered.
+  // Phones/tablets never get the launcher, so hide this path entirely.
   if (action.kind === "launcher") {
+    if (!shouldOfferLauncher(device.type)) {
+      return (
+        <p className="max-w-xs text-sm text-muted-foreground">
+          Install this edition with the PlayBound Launcher on a Windows or Mac computer.
+        </p>
+      );
+    }
+
     const downloadUrl =
       os === "macos" ? MAC_LAUNCHER_DOWNLOAD_URL || LAUNCHER_DOWNLOAD_URL : LAUNCHER_DOWNLOAD_URL;
 
