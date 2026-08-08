@@ -2270,6 +2270,24 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">Your Gaming PC</label>
+      <p class="settings-hint">Used to check game compatibility on playbound.club. Synced when you sign in.</p>
+      <div id="set-hw-summary" style="margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted);">Loading…</div>
+      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn-secondary btn-sm" id="set-btn-hw-refresh" ${accountState.connected ? "" : "disabled"}>Sync now</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <label class="settings-label">Java runtime</label>
+      <p class="settings-hint">Needed for jar games like Mindustry. PlayBound can install a private Temurin JDK 17 (not your system Java).</p>
+      <div id="set-java-status" style="margin-top: 8px; font-size: 13px; color: var(--text-muted);">Checking…</div>
+      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn-secondary btn-sm" id="set-btn-java-install">Install / repair Java</button>
+      </div>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Report a bug</label>
       <p class="settings-hint">Send a problem report to the PlayBound team. If you are signed in, it is linked to your account.</p>
       <input type="text" class="input-text" id="set-bug-title" placeholder="Short title" maxlength="160" />
@@ -2318,6 +2336,96 @@ async function renderSettingsView() {
     });
   } else if (appearBtn) {
     appearBtn.textContent = "Sign in to manage presence";
+  }
+
+  const hwSummary = document.getElementById("set-hw-summary");
+  const hwRefresh = document.getElementById("set-btn-hw-refresh");
+  async function fillHwSummary() {
+    if (!hwSummary || !window.playbound.getHardwareProfile) {
+      if (hwSummary) hwSummary.textContent = "Hardware detection unavailable in this build.";
+      return;
+    }
+    try {
+      const res = await window.playbound.getHardwareProfile();
+      const p = res?.profile || res?.cached;
+      if (!p) {
+        hwSummary.textContent = "Could not detect hardware.";
+        return;
+      }
+      const gpu =
+        p.gpus && p.primaryGpuIndex != null
+          ? p.gpus[p.primaryGpuIndex]
+          : p.gpus?.[0];
+      const ram =
+        p.memory?.totalMB != null
+          ? p.memory.totalMB >= 1024
+            ? `${Math.round(p.memory.totalMB / 1024)} GB`
+            : `${p.memory.totalMB} MB`
+          : "Unknown RAM";
+      hwSummary.innerHTML = `
+        <div><strong>CPU</strong> ${escapeHtml(p.cpu?.rawName || "Unknown")}</div>
+        <div><strong>GPU</strong> ${escapeHtml(gpu?.rawName || "Unknown")}</div>
+        <div><strong>Memory</strong> ${escapeHtml(ram)}</div>
+        <div><strong>OS</strong> ${escapeHtml([p.os?.name || p.os?.family, p.os?.version].filter(Boolean).join(" ") || "Unknown")}</div>
+        ${res?.syncedAt ? `<div style="margin-top:6px;opacity:0.8;">Last synced: ${escapeHtml(String(res.syncedAt).slice(0, 19).replace("T", " "))}</div>` : ""}
+      `;
+    } catch (err) {
+      hwSummary.textContent = err?.message || "Detection failed.";
+    }
+  }
+  void fillHwSummary();
+  if (hwRefresh) {
+    hwRefresh.onclick = async () => {
+      hwRefresh.disabled = true;
+      hwSummary.textContent = "Syncing…";
+      try {
+        const res = await window.playbound.syncHardwareProfile();
+        if (res?.error) throw new Error(res.error);
+        setStatus("Hardware profile synced.");
+        await fillHwSummary();
+      } catch (err) {
+        setStatus(err?.message || "Hardware sync failed", true);
+        await fillHwSummary();
+      } finally {
+        hwRefresh.disabled = !accountState.connected;
+      }
+    };
+  }
+
+  const javaStatus = document.getElementById("set-java-status");
+  const javaBtn = document.getElementById("set-btn-java-install");
+  function fillJavaStatus() {
+    if (!javaStatus) return;
+    const jr = settings.javaRuntime;
+    if (jr?.installed) {
+      javaStatus.textContent = `Installed (JDK ${jr.version || "17"})`;
+      if (javaBtn) javaBtn.textContent = "Reinstall Java";
+    } else {
+      javaStatus.textContent = "Not installed";
+      if (javaBtn) javaBtn.textContent = "Install Java";
+    }
+  }
+  fillJavaStatus();
+  if (javaBtn && window.playbound.ensureManagedJava) {
+    javaBtn.onclick = async () => {
+      javaBtn.disabled = true;
+      javaStatus.textContent = "Downloading Java 17…";
+      setStatus("Installing Java 17…");
+      try {
+        const res = await window.playbound.ensureManagedJava({
+          force: Boolean(settings.javaRuntime?.installed),
+        });
+        if (!res?.ok) throw new Error(res?.error || "Install failed");
+        setStatus("Java 17 ready.");
+        settings.javaRuntime = { installed: true, version: "17" };
+        fillJavaStatus();
+      } catch (err) {
+        setStatus(err?.message || "Java install failed", true);
+        fillJavaStatus();
+      } finally {
+        javaBtn.disabled = false;
+      }
+    };
   }
 
   document.getElementById("set-btn-check-update")?.addEventListener("click", async () => {
@@ -3812,8 +3920,9 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-window.playbound.onProgress(({ phase, received, total, addon }) => {
+window.playbound.onProgress(({ phase, received, total, addon, message }) => {
   if (phase === "resolving") setStatus("Resolving download package...");
+  else if (phase === "java") setStatus(message || "Installing Java…");
   else if (phase === "downloading") {
     const pct = total ? Math.round((received / total) * 100) : null;
     const prefix = addon ? `Downloading ${addon}...` : "Downloading...";

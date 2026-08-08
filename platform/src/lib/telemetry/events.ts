@@ -124,6 +124,32 @@ export type TelemetryEventMap = {
   friend_discord_clicked: { source?: string } & Extra;
   appear_offline_toggled: { enabled?: boolean } & Extra;
 
+  hardware_profile_created: {
+    os?: string;
+    arch?: string;
+    cpuTier?: string;
+    gpuTier?: string;
+    ramMB?: number | null;
+    gpuCount?: number;
+  } & Extra;
+  hardware_profile_updated: {
+    os?: string;
+    arch?: string;
+    cpuTier?: string;
+    gpuTier?: string;
+    ramMB?: number | null;
+    gpuCount?: number;
+  } & Extra;
+  hardware_profile_deleted: Extra;
+  compatibility_checked: { gameSlug?: string; verdict?: string; hasProfile?: boolean } & Extra;
+  game_compatibility_viewed: { gameSlug?: string; verdict?: string } & Extra;
+  hardware_details_expanded: Extra;
+  runs_great_filter_used: { filter?: string } & Extra;
+  check_compatibility_cta_clicked: { gameSlug?: string; surface?: string } & Extra;
+
+  /** Reserved for future opt-in anonymized FPS samples — not emitted yet. */
+  // performance_sample_recorded: { gameSlug?: string; hardwareClass?: string } & Extra;
+
   /** User clicked Play / launcher started a launch attempt. */
   launch_attempted: EditionProps & {
     platform?: string;
@@ -139,6 +165,10 @@ export type TelemetryEventMap = {
     launcherVersion?: string;
     phase?: string;
   } & Extra;
+
+  java_runtime_install_started: { version?: string; surface?: string } & Extra;
+  java_runtime_install_succeeded: { version?: string; surface?: string } & Extra;
+  java_runtime_install_failed: { message?: string; surface?: string } & Extra;
 };
 
 export type TelemetryEventName = keyof TelemetryEventMap;
