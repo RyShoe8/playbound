@@ -8,12 +8,14 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { DISCUSSION_CATEGORIES } from "@/lib/discussion/categories";
 import User from "@/lib/models/User";
 import { getGame } from "@/lib/catalog";
+import { getEditionBySlug } from "@/lib/editions";
 import { isValidCategory, visibleCategories } from "@/lib/discussion/categories";
 import { loadPosterGate } from "@/lib/discussion/permissions";
 import { assertTopicRateLimit } from "@/lib/discussion/rateLimit";
 import { accountAllowsLinks, sanitizeTopicInput } from "@/lib/discussion/sanitize";
 import { uniqueTopicSlug } from "@/lib/discussion/slugify";
 import { recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
+import { editionScopedUgcFilter, gameScopedUgcFilter } from "@/lib/ugcTarget";
 
 const createSchema = z.object({
   title: z.string().min(3).max(150),
@@ -21,6 +23,7 @@ const createSchema = z.object({
   category: z.enum(DISCUSSION_CATEGORIES),
   tags: z.array(z.string().max(24)).max(8).optional(),
   hasSpoilers: z.boolean().optional(),
+  editionSlug: z.string().trim().max(80).nullish(),
   recaptchaToken: z.string().optional(),
 });
 
@@ -36,13 +39,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const q = url.searchParams.get("q")?.trim() ?? "";
   const sort = url.searchParams.get("sort") ?? "activity";
   const filter = url.searchParams.get("filter") ?? "all";
+  const edition = url.searchParams.get("edition")?.trim() || null;
   const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") ?? 30)));
 
   await dbConnect();
 
   const query: Record<string, unknown> = {
     gameSlug: slug,
-    modSlug: null,
+    ...(edition ? editionScopedUgcFilter(edition) : gameScopedUgcFilter()),
     status: { $ne: "removed" },
   };
 
@@ -90,6 +94,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   try {
     const raw = createSchema.parse(await req.json());
+    const editionSlug = raw.editionSlug || null;
+
+    if (editionSlug) {
+      const edition = await getEditionBySlug(game, editionSlug);
+      if (!edition) {
+        return NextResponse.json({ error: "Unknown edition" }, { status: 400 });
+      }
+    }
+
     const allowed = visibleCategories(game).map((c) => c.id);
     if (!allowed.includes(raw.category)) {
       return NextResponse.json({ error: "Category not available for this game." }, { status: 400 });
@@ -122,7 +135,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     }
 
     const topicSlug = await uniqueTopicSlug(slug, clean.title!, async (s) => {
-      const hit = await DiscussionTopic.exists({ gameSlug: slug, modSlug: null, slug: s });
+      const hit = await DiscussionTopic.exists({
+        gameSlug: slug,
+        modSlug: null,
+        editionSlug,
+        slug: s,
+      });
       return Boolean(hit);
     });
 
@@ -130,6 +148,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     const topic = await DiscussionTopic.create({
       gameSlug: slug,
       modSlug: null,
+      editionSlug,
       authorId: session.user.id,
       authorUsername: session.user.username,
       title: clean.title,
@@ -149,6 +168,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     );
 
     revalidatePath(`/games/${slug}`);
+    if (editionSlug) {
+      revalidatePath(`/games/${slug}/editions/${editionSlug}`);
+    }
     revalidatePath(`/games/${slug}/discussion/${topicSlug}`);
 
     return NextResponse.json(

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { Download, MonitorPlay } from "lucide-react";
 import { launcherInstallUrl, launcherInstallModUrl } from "@/lib/launcher";
 import { LAUNCHER_DOWNLOAD_URL, MAC_LAUNCHER_DOWNLOAD_URL } from "@/lib/launcherDownload";
+import {
+  detectLauncherOs,
+  openPlayboundDeepLink,
+} from "@/lib/openPlayboundDeepLink";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/lib/telemetry";
 
@@ -16,40 +20,38 @@ type Props = {
   label?: string;
 };
 
-const FALLBACK_MS = 1500;
-
 export function LauncherInstallButton({
   slug,
   kind = "install",
   className,
   label = "Install with PlayBound Launcher",
 }: Props) {
-  const [showFallback, setShowFallback] = useState(false);
+  const [status, setStatus] = useState<"idle" | "trying" | "downloaded" | "miss">("idle");
   const [os, setOs] = useState<"windows" | "macos">("windows");
   const { track } = useTelemetry();
   const deepLink = kind === "install-mod" ? launcherInstallModUrl(slug) : launcherInstallUrl(slug);
-  
+
   useEffect(() => {
-    if (/Mac OS X|Macintosh/i.test(navigator.userAgent)) {
-      setOs("macos");
-    }
+    setOs(detectLauncherOs());
   }, []);
 
   const downloadUrl = os === "macos" ? MAC_LAUNCHER_DOWNLOAD_URL || LAUNCHER_DOWNLOAD_URL : LAUNCHER_DOWNLOAD_URL;
+  const showFallback = status === "downloaded" || status === "miss";
 
   function openLauncher() {
     void track("install_clicked", {
       gameSlug: slug,
       source: kind === "install-mod" ? "launcher_mod" : "launcher",
     });
-    setShowFallback(false);
-    const a = document.createElement("a");
-    a.href = deepLink;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => setShowFallback(true), FALLBACK_MS);
+    setStatus("trying");
+    openPlayboundDeepLink(deepLink, {
+      downloadUrl,
+      onResult: (result) => {
+        if (result === "download") setStatus("downloaded");
+        else if (result === "miss") setStatus("miss");
+        else setStatus("idle");
+      },
+    });
   }
 
   return (
@@ -65,6 +67,9 @@ export function LauncherInstallButton({
         <MonitorPlay className="size-4" />
         {label}
       </button>
+      {status === "downloaded" && (
+        <p className="text-xs font-semibold text-primary">Downloading PlayBound Launcher…</p>
+      )}
       {downloadUrl ? (
         <a
           href={downloadUrl}
@@ -79,10 +84,13 @@ export function LauncherInstallButton({
       )}
       {showFallback && (
         <div className="mt-1 max-w-sm rounded-lg border border-border bg-card px-3 py-2 text-left text-xs text-muted-foreground">
-          <p className="font-semibold text-foreground">Didn&apos;t open?</p>
+          <p className="font-semibold text-foreground">
+            {status === "downloaded" ? "Launcher download started" : "Didn&apos;t open?"}
+          </p>
           <p className="mt-1">
-            Install the PlayBound Launcher and run it once so {os === "macos" ? "macOS" : "Windows"} registers{" "}
-            <code className="text-play">playbound://</code>, then try again.
+            {status === "downloaded"
+              ? `Install and run PlayBound once so ${os === "macos" ? "macOS" : "Windows"} registers playbound://, then click Install again.`
+              : `Install the PlayBound Launcher and run it once so ${os === "macos" ? "macOS" : "Windows"} registers playbound://, then try again.`}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
             {downloadUrl ? (

@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Download, ExternalLink, FolderOpen, Play, Trash2 } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import {
@@ -10,7 +12,6 @@ import {
   launcherUninstallUrl,
 } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
-import { GameCard } from "@/components/GameCard";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
@@ -33,8 +34,32 @@ export type LibraryOrphan = {
 };
 
 function DesktopInstalledActions({ slug }: { slug: string }) {
+  const router = useRouter();
+  const [removing, setRemoving] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const chip =
     "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
+
+  async function removeFromLibrary() {
+    if (removing) return;
+    setRemoving(true);
+    try {
+      const res = await fetch(`/api/library?slug=${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        setRemoving(false);
+        return;
+      }
+      setHidden(true);
+      router.refresh();
+    } catch {
+      setRemoving(false);
+    }
+  }
+
+  if (hidden) return null;
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <a
@@ -57,12 +82,24 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
       >
         Locate
       </a>
+      <button
+        type="button"
+        disabled={removing}
+        onClick={() => void removeFromLibrary()}
+        className={cn(
+          chip,
+          "bg-destructive/15 text-destructive hover:bg-destructive/25 disabled:opacity-50"
+        )}
+        title="Remove from library"
+      >
+        <Trash2 className="size-3" /> {removing ? "Removing…" : "Remove"}
+      </button>
       <a
         href={launcherUninstallUrl(slug)}
-        className={cn(chip, "bg-destructive/15 text-destructive hover:bg-destructive/25")}
-        title="Uninstall"
+        className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
+        title="Uninstall from this PC via the PlayBound app"
       >
-        <Trash2 className="size-3" /> Remove
+        Uninstall from PC
       </a>
     </div>
   );

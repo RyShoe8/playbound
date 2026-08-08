@@ -1,9 +1,9 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Link2, Plus, X } from "lucide-react";
 
 const label = "block text-xs font-semibold text-muted-foreground";
 const field =
@@ -22,8 +22,50 @@ export type GearDraft = {
   platforms: string[];
   bestFor: string[];
   status: "draft" | "published";
-  affiliateLinks: { retailer: string; url: string; price: string | null; shipping: string | null; isActive: boolean }[];
+  affiliateLinks: {
+    retailer: string;
+    url: string;
+    price: string | null;
+    shipping: string | null;
+    isActive: boolean;
+  }[];
 };
+
+type ImportPayload = {
+  ok: true;
+  draft: {
+    title: string;
+    slug: string;
+    description: string;
+    coverImage: string | null;
+    screenshots: string[];
+    affiliateLinks: GearDraft["affiliateLinks"];
+  };
+  retailer: string;
+  price: string | null;
+  warnings?: string[];
+};
+
+function upsertAffiliateLink(
+  links: GearDraft["affiliateLinks"],
+  incoming: GearDraft["affiliateLinks"][number]
+): GearDraft["affiliateLinks"] {
+  const byUrl = links.findIndex((l) => l.url === incoming.url);
+  if (byUrl >= 0) {
+    const next = [...links];
+    next[byUrl] = { ...next[byUrl], ...incoming, url: incoming.url };
+    return next;
+  }
+  const byRetailer = links.findIndex(
+    (l) => l.retailer.toLowerCase() === incoming.retailer.toLowerCase() && !l.url
+  );
+  if (byRetailer >= 0) {
+    const next = [...links];
+    next[byRetailer] = { ...next[byRetailer], ...incoming };
+    return next;
+  }
+  return [...links, incoming];
+}
 
 export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; initial: GearDraft }) {
   const router = useRouter();
@@ -31,9 +73,19 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [mediaNote, setMediaNote] = useState("");
+  const [importUrl, setImportUrl] = useState("");
+  const [importNote, setImportNote] = useState("");
+  const [productFilled, setProductFilled] = useState(
+    Boolean(initial.title.trim() || initial.coverImage || initial.description.trim())
+  );
 
   const fileRef = useRef<HTMLInputElement>(null);
   const pendingImageKindRef = useRef<"cover" | "shot">("cover");
+
+  const hasProductFill = useMemo(
+    () => productFilled || Boolean(form.title.trim() || form.coverImage || form.description.trim()),
+    [productFilled, form.title, form.coverImage, form.description]
+  );
 
   function patch<K extends keyof GearDraft>(key: K, value: GearDraft[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -46,7 +98,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     ]);
   }
 
-  function updateAffiliateLink(index: number, key: string, value: any) {
+  function updateAffiliateLink(index: number, key: string, value: string | boolean | null) {
     const next = [...form.affiliateLinks];
     next[index] = { ...next[index], [key]: value };
     patch("affiliateLinks", next);
@@ -64,6 +116,119 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       key,
       val.split(",").map((s) => s.trim()).filter(Boolean)
     );
+  }
+
+  async function callImport(url: string): Promise<ImportPayload> {
+    const res = await fetch("/api/admin/gear/import", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.error || `Import failed (${res.status})`);
+    }
+    return data as ImportPayload;
+  }
+
+  function applyProductFill(payload: ImportPayload, opts: { replaceSlug: boolean }) {
+    const link = payload.draft.affiliateLinks[0];
+    setForm((prev) => ({
+      ...prev,
+      title: payload.draft.title || prev.title,
+      slug:
+        opts.replaceSlug && mode === "create" && !prev.slug.trim()
+          ? payload.draft.slug
+          : mode === "create" && !prev.slug.trim()
+            ? payload.draft.slug
+            : prev.slug,
+      description: payload.draft.description || prev.description,
+      coverImage: payload.draft.coverImage || prev.coverImage,
+      screenshots:
+        payload.draft.screenshots?.length > 0
+          ? payload.draft.screenshots
+          : prev.screenshots ?? [],
+      affiliateLinks: link ? upsertAffiliateLink(prev.affiliateLinks, link) : prev.affiliateLinks,
+    }));
+    setProductFilled(true);
+  }
+
+  async function importProduct() {
+    const url = importUrl.trim();
+    if (!url || busy) return;
+    setBusy(true);
+    setError("");
+    setImportNote("Fetching product…");
+    try {
+      const payload = await callImport(url);
+      applyProductFill(payload, { replaceSlug: true });
+      const warns = payload.warnings?.filter(Boolean) ?? [];
+      setImportNote(
+        warns.length
+          ? `Imported from ${payload.retailer}. ${warns.join(" ")}`
+          : `Imported product info from ${payload.retailer}.`
+      );
+      setImportUrl("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Import failed";
+      setError(msg);
+      setImportNote(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addStoreLinkOnly() {
+    const url = importUrl.trim();
+    if (!url || busy) return;
+    setBusy(true);
+    setError("");
+    setImportNote("Adding store link…");
+    try {
+      const payload = await callImport(url);
+      const link = payload.draft.affiliateLinks[0];
+      if (link) {
+        setForm((prev) => ({
+          ...prev,
+          affiliateLinks: upsertAffiliateLink(prev.affiliateLinks, link),
+        }));
+      }
+      setImportNote(
+        `Added ${payload.retailer}${payload.price ? ` at ${payload.price}` : ""} for price comparison.`
+      );
+      setImportUrl("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Import failed";
+      setError(msg);
+      setImportNote(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function replaceProductFromLink() {
+    const url = importUrl.trim();
+    if (!url || busy) return;
+    setBusy(true);
+    setError("");
+    setImportNote("Replacing product info…");
+    try {
+      const payload = await callImport(url);
+      applyProductFill(payload, { replaceSlug: false });
+      const warns = payload.warnings?.filter(Boolean) ?? [];
+      setImportNote(
+        warns.length
+          ? `Replaced product info from ${payload.retailer}. ${warns.join(" ")}`
+          : `Replaced product info from ${payload.retailer}.`
+      );
+      setImportUrl("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Import failed";
+      setError(msg);
+      setImportNote(msg);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -175,6 +340,67 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
         accept="image/jpeg,image/png,image/webp"
       />
 
+      <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+        <div className="flex items-start gap-2">
+          <Link2 className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div>
+            <h2 className="font-bold">
+              {hasProductFill ? "Add another store link" : "Paste an affiliate link to start"}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {hasProductFill
+                ? "Default adds a price-compare link. Use “Replace product info” if you prefer this store’s title, description, and images."
+                : "We’ll pull title, description, images, and price when the page exposes them. You can clean everything up below."}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void (hasProductFill ? addStoreLinkOnly() : importProduct());
+              }
+            }}
+            className={field + " mt-0 sm:flex-1"}
+            placeholder="https://www.amazon.com/dp/… or any store product URL"
+            disabled={busy}
+          />
+          {!hasProductFill ? (
+            <button
+              type="button"
+              disabled={busy || !importUrl.trim()}
+              onClick={() => void importProduct()}
+              className="h-9 shrink-0 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60"
+            >
+              {busy ? "Importing…" : "Import product"}
+            </button>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy || !importUrl.trim()}
+                onClick={() => void addStoreLinkOnly()}
+                className="h-9 shrink-0 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60"
+              >
+                {busy ? "Working…" : "Add store link"}
+              </button>
+              <button
+                type="button"
+                disabled={busy || !importUrl.trim()}
+                onClick={() => void replaceProductFromLink()}
+                className="h-9 shrink-0 rounded-full border border-border bg-secondary px-4 text-sm font-bold hover:bg-secondary/80 disabled:opacity-60"
+              >
+                Replace product info
+              </button>
+            </div>
+          )}
+        </div>
+        {importNote && <p className="text-xs text-muted-foreground">{importNote}</p>}
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label}>Title</label>
@@ -238,7 +464,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           placeholder="Detailed editorial review..."
         />
       </div>
-      
+
       <div>
         <label className={label}>Best For Genres (comma separated)</label>
         <input
@@ -284,6 +510,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           <div className="space-y-2">
             <label className={label}>Cover Image</label>
             <div className="relative inline-block overflow-hidden rounded-md border border-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={form.coverImage} alt="Cover" className="h-24 w-auto object-cover" />
               <button
                 type="button"
@@ -302,6 +529,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             <div className="flex flex-wrap gap-2">
               {form.screenshots!.map((url, i) => (
                 <div key={i} className="relative inline-block overflow-hidden rounded-md border border-border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={url} alt={`Screenshot ${i + 1}`} className="h-20 w-auto object-cover" />
                   <button
                     type="button"
@@ -355,7 +583,9 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
         </div>
 
         {form.affiliateLinks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No affiliate links added.</p>
+          <p className="text-sm text-muted-foreground">
+            Paste a link above or add a row manually for price comparison across stores.
+          </p>
         ) : (
           <div className="space-y-3">
             {form.affiliateLinks.map((link, i) => (

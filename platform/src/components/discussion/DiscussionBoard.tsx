@@ -28,6 +28,7 @@ export type TopicListItem = {
 export function DiscussionBoard({
   gameSlug,
   modSlug,
+  editionSlug,
   gameTitle,
   isSignedIn,
   categories,
@@ -39,6 +40,8 @@ export function DiscussionBoard({
 }: {
   gameSlug?: string;
   modSlug?: string;
+  /** When set, board is edition-scoped (filters/composer root under the edition URL). */
+  editionSlug?: string;
   gameTitle: string;
   isSignedIn: boolean;
   categories: CategoryMeta[];
@@ -53,9 +56,17 @@ export function DiscussionBoard({
   };
   presence?: { online?: number; members?: number } | null;
 }) {
-  const root = modSlug ? `/mods/${modSlug}` : `/games/${gameSlug}`;
+  const root = modSlug
+    ? `/mods/${modSlug}`
+    : editionSlug && gameSlug
+      ? `/games/${gameSlug}/editions/${editionSlug}`
+      : `/games/${gameSlug}`;
   const base = `${root}?tab=discussion`;
-  const topicPath = (topicSlug: string) => `${root}/discussion/${topicSlug}`;
+  // Topic detail pages stay on the game discussion URL (no edition discussion route yet).
+  const topicPath = (topicSlug: string) =>
+    modSlug
+      ? `/mods/${modSlug}/discussion/${topicSlug}`
+      : `/games/${gameSlug}/discussion/${topicSlug}`;
   const withParams = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     p.set("tab", "discussion");
@@ -83,6 +94,7 @@ export function DiscussionBoard({
           <TopicComposer
             gameSlug={gameSlug}
             modSlug={modSlug}
+            editionSlug={editionSlug}
             categories={categories}
             isSignedIn={isSignedIn}
           />

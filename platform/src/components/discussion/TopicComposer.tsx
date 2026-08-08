@@ -13,11 +13,13 @@ type Related = { slug: string; title: string; replyCount: number };
 export function TopicComposer({
   gameSlug,
   modSlug,
+  editionSlug,
   categories,
   isSignedIn,
 }: {
   gameSlug?: string;
   modSlug?: string;
+  editionSlug?: string;
   categories: CategoryMeta[];
   isSignedIn: boolean;
 }) {
@@ -33,7 +35,11 @@ export function TopicComposer({
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
 
-  const pageBase = modSlug ? `/mods/${modSlug}` : `/games/${gameSlug}`;
+  const pageBase = modSlug
+    ? `/mods/${modSlug}`
+    : editionSlug && gameSlug
+      ? `/games/${gameSlug}/editions/${editionSlug}`
+      : `/games/${gameSlug}`;
   const apiBase = modSlug ? `/api/mods/${modSlug}/discussions` : `/api/games/${gameSlug}/discussions`;
   const topicHref = (topicSlug: string) =>
     modSlug ? `/mods/${modSlug}/discussion/${topicSlug}` : `/games/${gameSlug}/discussion/${topicSlug}`;
@@ -45,7 +51,12 @@ export function TopicComposer({
     }
     const handle = setTimeout(async () => {
       try {
-        const res = await fetch(`${apiBase}?q=${encodeURIComponent(title.trim())}&limit=5`);
+        const params = new URLSearchParams({
+          q: title.trim(),
+          limit: "5",
+        });
+        if (editionSlug) params.set("edition", editionSlug);
+        const res = await fetch(`${apiBase}?${params.toString()}`);
         const data = await res.json();
         setRelated(
           (data.topics ?? []).map((t: { slug: string; title: string; replyCount: number }) => ({
@@ -59,7 +70,7 @@ export function TopicComposer({
       }
     }, 400);
     return () => clearTimeout(handle);
-  }, [title, apiBase]);
+  }, [title, apiBase, editionSlug]);
 
   if (!isSignedIn) {
     return (
@@ -105,6 +116,7 @@ export function TopicComposer({
             .map((t) => t.trim())
             .filter(Boolean),
           hasSpoilers,
+          ...(editionSlug && !modSlug ? { editionSlug } : {}),
           recaptchaToken: recaptchaToken ?? undefined,
         }),
       });

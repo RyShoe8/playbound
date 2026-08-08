@@ -33,6 +33,8 @@ const CatalogModSchema = new Schema(
     tagline: { type: String, required: true },
     description: { type: String, required: true },
     baseGameSlug: { type: String, required: true, index: true },
+    /** When set, mod is scoped to one edition; null = base-game-wide. */
+    editionSlug: { type: String, default: null, index: true },
     developerSlug: { type: String, required: true },
     developerName: { type: String, default: null },
     license: { type: String, required: true },
