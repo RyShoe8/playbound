@@ -36,6 +36,10 @@ let exeScanJob = null;
 let exeScanGeneration = 0;
 /** @type {import('electron-updater').UpdateInfo | null} */
 let pendingUpdate = null;
+/** Linked site account is role=admin — uses unsigned admin.yml updater channel. */
+let linkedIsAdmin = false;
+/** Original NSIS signature verifier — restored when leaving the admin channel. */
+let defaultVerifyUpdateCodeSignature = null;
 
 /* ── protocol registration ─────────────────────────────────── */
 /* Lets website links like playbound://install/openra hand off to this app. */
@@ -264,23 +268,84 @@ async function validateLauncherToken(token) {
         "user-agent": "playbound-launcher",
       },
     });
-    if (res.status === 401) return { valid: false };
-    if (!res.ok) return { valid: true }; // don't wipe token on transient errors
+    if (res.status === 401) return { valid: false, isAdmin: false };
+    // Don't wipe token (or admin channel) on transient errors.
+    if (!res.ok) return { valid: true, isAdmin: linkedIsAdmin, transient: true };
     const data = await res.json();
     return {
       valid: data.valid !== false,
       email: data.email || null,
       username: data.username || null,
+      isAdmin: Boolean(data.isAdmin === true || data.role === "admin"),
     };
   } catch {
-    return { valid: true };
+    return { valid: true, isAdmin: linkedIsAdmin, transient: true };
   }
+}
+
+function getAutoUpdater() {
+  try {
+    return require("electron-updater").autoUpdater;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Site admins poll unsigned admin.yml; everyone else stays on signed latest.yml.
+ * Signature verify is skipped only on the admin channel so a signed install can
+ * still accept unsigned test builds while linked as an admin.
+ */
+function applyUpdaterChannel() {
+  if (!app.isPackaged) return;
+  const autoUpdater = getAutoUpdater();
+  if (!autoUpdater) return;
+  const channel = linkedIsAdmin ? "admin" : "latest";
+  autoUpdater.channel = channel;
+  autoUpdater.allowPrerelease = linkedIsAdmin;
+  try {
+    if (!defaultVerifyUpdateCodeSignature && typeof autoUpdater.verifyUpdateCodeSignature === "function") {
+      defaultVerifyUpdateCodeSignature = autoUpdater.verifyUpdateCodeSignature.bind(autoUpdater);
+    }
+    // Setter ignores falsy values — must pass a no-op verifier that returns null (OK).
+    if (linkedIsAdmin) {
+      autoUpdater.verifyUpdateCodeSignature = async () => null;
+    } else if (defaultVerifyUpdateCodeSignature) {
+      autoUpdater.verifyUpdateCodeSignature = defaultVerifyUpdateCodeSignature;
+    }
+  } catch (err) {
+    console.warn("[updater] could not configure signature verify:", err?.message || err);
+  }
+  console.log(
+    `[updater] channel=${channel} verifySignature=${linkedIsAdmin ? "off" : "on"}`
+  );
+}
+
+function setLinkedIsAdmin(next) {
+  linkedIsAdmin = Boolean(next);
+  applyUpdaterChannel();
+}
+
+async function refreshAdminUpdateChannel() {
+  const settings = loadSettings();
+  if (!settings.launcherToken) {
+    setLinkedIsAdmin(false);
+    return false;
+  }
+  const check = await validateLauncherToken(settings.launcherToken);
+  if (!check.valid) {
+    setLinkedIsAdmin(false);
+    return false;
+  }
+  setLinkedIsAdmin(Boolean(check.isAdmin));
+  return Boolean(check.isAdmin);
 }
 
 function clearLocalToken(message) {
   const settings = loadSettings();
   delete settings.launcherToken;
   saveSettings(settings);
+  setLinkedIsAdmin(false);
   notifyAccount({
     connected: false,
     message: message || "Session expired — sign in again from Settings.",
@@ -310,6 +375,7 @@ async function connectWithToken(token) {
   if (error) {
     message = `Signed in, but sync had issues: ${error}`;
   }
+  setLinkedIsAdmin(Boolean(check.isAdmin));
   notifyAccount({
     connected: true,
     synced,
@@ -317,19 +383,29 @@ async function connectWithToken(token) {
     message,
     email: check.email,
     username: check.username,
+    isAdmin: linkedIsAdmin,
   });
   // Admins get testing titles once the bearer is present.
   void refreshRemoteCatalog();
   void pullCompatibilityPreference();
-  return { connected: true, synced, skipped, error, email: check.email, username: check.username };
+  return {
+    connected: true,
+    synced,
+    skipped,
+    error,
+    email: check.email,
+    username: check.username,
+    isAdmin: linkedIsAdmin,
+  };
 }
 
 async function syncLibraryNow({ quiet = false } = {}) {
   const settings = loadSettings();
   const token = settings.launcherToken;
   if (!token) {
+    setLinkedIsAdmin(false);
     if (!quiet) {
-      notifyAccount({ connected: false, message: "Sign in to sync your library." });
+      notifyAccount({ connected: false, message: "Sign in to sync your library.", isAdmin: false });
     }
     return { connected: false };
   }
@@ -345,12 +421,15 @@ async function syncLibraryNow({ quiet = false } = {}) {
     return { connected: false, error: "unauthorized" };
   }
 
+  setLinkedIsAdmin(Boolean(check.isAdmin));
+
   if (!quiet) {
     notifyAccount({
       connected: true,
       message: "Syncing installs…",
       email: check.email,
       username: check.username,
+      isAdmin: linkedIsAdmin,
     });
   }
 
@@ -381,9 +460,18 @@ async function syncLibraryNow({ quiet = false } = {}) {
       message: quiet && !synced && !error && !skipped?.length ? undefined : message,
       email: check.email,
       username: check.username,
+      isAdmin: linkedIsAdmin,
     });
   }
-  return { connected: true, synced, skipped, error, email: check.email, username: check.username };
+  return {
+    connected: true,
+    synced,
+    skipped,
+    error,
+    email: check.email,
+    username: check.username,
+    isAdmin: linkedIsAdmin,
+  };
 }
 
 async function startupLibrarySync() {
@@ -3249,18 +3337,21 @@ ipcMain.handle("clipboard-write", (_event, text) => {
 ipcMain.handle("get-account", async () => {
   const settings = loadSettings();
   if (!settings.launcherToken) {
-    return { connected: false, apiBase: getApiBase() };
+    setLinkedIsAdmin(false);
+    return { connected: false, apiBase: getApiBase(), isAdmin: false };
   }
   const check = await validateLauncherToken(settings.launcherToken);
   if (!check.valid) {
     clearLocalToken("Saved session is no longer valid — sign in again from Settings.");
-    return { connected: false, apiBase: getApiBase() };
+    return { connected: false, apiBase: getApiBase(), isAdmin: false };
   }
+  setLinkedIsAdmin(Boolean(check.isAdmin));
   return {
     connected: true,
     apiBase: getApiBase(),
     email: check.email || null,
     username: check.username || null,
+    isAdmin: linkedIsAdmin,
   };
 });
 ipcMain.handle("set-launcher-token", (_event, token) => connectWithToken(token));
@@ -3282,8 +3373,9 @@ ipcMain.handle("clear-launcher-token", async () => {
   }
   delete settings.launcherToken;
   saveSettings(settings);
-  notifyAccount({ connected: false });
-  return { connected: false };
+  setLinkedIsAdmin(false);
+  notifyAccount({ connected: false, isAdmin: false });
+  return { connected: false, isAdmin: false };
 });
 ipcMain.handle("sign-in", () => {
   openAuthWindow();
@@ -3610,14 +3702,28 @@ ipcMain.handle("check-for-updates", async () => {
     return { ok: false, reason: "dev", message: "Updates only run in packaged builds." };
   }
   try {
-    const { autoUpdater } = require("electron-updater");
+    await refreshAdminUpdateChannel();
+    const autoUpdater = getAutoUpdater();
+    if (!autoUpdater) {
+      return { ok: false, reason: "error", message: "electron-updater unavailable" };
+    }
     const result = await autoUpdater.checkForUpdates();
     const info = result?.updateInfo || null;
     if (info && info.version && info.version !== app.getVersion()) {
       pendingUpdate = info;
-      return { ok: true, updateAvailable: true, version: info.version };
+      return {
+        ok: true,
+        updateAvailable: true,
+        version: info.version,
+        channel: linkedIsAdmin ? "admin" : "latest",
+      };
     }
-    return { ok: true, updateAvailable: false, version: app.getVersion() };
+    return {
+      ok: true,
+      updateAvailable: false,
+      version: app.getVersion(),
+      channel: linkedIsAdmin ? "admin" : "latest",
+    };
   } catch (err) {
     return { ok: false, reason: "error", message: err?.message || String(err) };
   }
@@ -3625,7 +3731,8 @@ ipcMain.handle("check-for-updates", async () => {
 ipcMain.handle("install-update", () => {
   if (!app.isPackaged) return { ok: false, message: "Not packaged" };
   try {
-    const { autoUpdater } = require("electron-updater");
+    const autoUpdater = getAutoUpdater();
+    if (!autoUpdater) return { ok: false, message: "electron-updater unavailable" };
     autoUpdater.quitAndInstall(false, true);
     return { ok: true };
   } catch (err) {
@@ -3965,11 +4072,9 @@ ipcMain.handle("get-mod-detail", async (_event, slug) => {
 
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
-  let autoUpdater;
-  try {
-    ({ autoUpdater } = require("electron-updater"));
-  } catch (err) {
-    console.warn("electron-updater unavailable:", err?.message || err);
+  const autoUpdater = getAutoUpdater();
+  if (!autoUpdater) {
+    console.warn("electron-updater unavailable");
     return;
   }
   autoUpdater.autoDownload = true;
@@ -3978,6 +4083,7 @@ function setupAutoUpdater() {
   autoUpdater.disableDifferentialDownload = true;
   autoUpdater.disableWebInstaller = true;
   autoUpdater.setFeedURL({ provider: "generic", url: UPDATER_FEED_URL });
+  applyUpdaterChannel();
 
   const emit = (payload) => {
     if (win && !win.isDestroyed()) win.webContents.send("update-status", payload);
@@ -3986,22 +4092,37 @@ function setupAutoUpdater() {
   autoUpdater.on("checking-for-update", () => emit({ phase: "checking" }));
   autoUpdater.on("update-available", (info) => {
     pendingUpdate = info;
-    emit({ phase: "available", version: info.version });
+    emit({
+      phase: "available",
+      version: info.version,
+      channel: linkedIsAdmin ? "admin" : "latest",
+    });
   });
-  autoUpdater.on("update-not-available", () => emit({ phase: "none", version: app.getVersion() }));
+  autoUpdater.on("update-not-available", () =>
+    emit({ phase: "none", version: app.getVersion(), channel: linkedIsAdmin ? "admin" : "latest" })
+  );
   autoUpdater.on("download-progress", (p) =>
     emit({ phase: "downloading", percent: Math.round(p.percent || 0) })
   );
   autoUpdater.on("update-downloaded", (info) => {
     pendingUpdate = info;
-    emit({ phase: "ready", version: info.version });
+    emit({
+      phase: "ready",
+      version: info.version,
+      channel: linkedIsAdmin ? "admin" : "latest",
+    });
   });
   autoUpdater.on("error", (err) => emit({ phase: "error", message: err?.message || String(err) }));
 
   setTimeout(() => {
-    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-      console.warn("update check failed:", err?.message || err);
-    });
+    void (async () => {
+      try {
+        await refreshAdminUpdateChannel();
+        await autoUpdater.checkForUpdatesAndNotify();
+      } catch (err) {
+        console.warn("update check failed:", err?.message || err);
+      }
+    })();
   }, 4000);
 }
 
