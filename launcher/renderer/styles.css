@@ -926,18 +926,6 @@ body {
   flex: 0 0 auto;
 }
 
-.library-play-hint {
-  width: 100%;
-  margin-top: 2px;
-}
-
-.library-play-hint .view-sub {
-  margin: 0 !important;
-  max-width: none !important;
-  font-size: 11px;
-  line-height: 1.35;
-}
-
 .library-edition-actions {
   display: flex;
   flex-wrap: wrap;

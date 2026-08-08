@@ -963,7 +963,7 @@ const facts: Game[] = [
     tags: ["Turn-Based", "4X", "Multiplayer", "Mods"],
     license: "Open Source (GPL-2.0)",
     releaseYear: 1996,
-    sizeMB: 80,
+    sizeMB: 60,
     status: "testing",
     platforms: ["Windows", "macOS", "Linux"],
     features: ["Multiplayer", "Hotseat", "Mod Support", "Dedicated Servers"],
