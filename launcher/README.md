@@ -162,10 +162,11 @@ configured in `electron-builder.js`.
 - **Signed releases** (`npm run dist:prod`) publish to `latest.yml` and the public
   Setup alias. Regular users always poll this channel with signature verification.
 - **Unsigned/dev releases** (`npm run dist` / `dist:dev`) publish to `admin.yml`
-  and `PlayBound-Launcher-Setup-Admin.exe`. Only a launcher linked to a site
-  **admin** account switches to the `admin` channel (signature verify off so a
-  signed install can still accept unsigned test builds). Everyone else stays on
-  `latest`.
+  and `PlayBound-Launcher-Setup-Admin.exe`. A launcher linked to a site **admin**
+  account uses the `admin` channel by default (signature verify off so a signed
+  install can still accept unsigned test builds). Admins can switch between
+  **Unsigned (testing)** and **Signed (release)** under Settings → Updates.
+  Everyone else stays on `latest`.
 
 `electron-updater` verifies that an update is signed by the same publisher as
 the installed build (except on the admin channel above). Existing unsigned
