@@ -65,7 +65,7 @@ module.exports = {
   },
   getGameLaunchCommand(exePath) {
     if (exePath.toLowerCase().endsWith(".jar")) {
-      return ["java", "-jar", exePath];
+      return ["javaw", "-jar", exePath];
     }
     return [exePath];
   }

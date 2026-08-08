@@ -1,6 +1,10 @@
-const { spawn } = require("child_process");
+const { spawn, execFileSync } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 const Platform = require("../platform");
+
+const JAVA_MISSING_MSG =
+  "Java 17+ is required to run this game. Install JDK 17+ from https://adoptium.net/ then try again.";
 
 /**
  * GameLauncher abstraction that handles executing games based on capabilities
@@ -8,32 +12,180 @@ const Platform = require("../platform");
  */
 class GameLauncher {
   /**
+   * Locate javaw (Windows) or java for launching .jar games.
+   * @returns {string | null}
+   */
+  static resolveJavaBinary() {
+    const isWin = process.platform === "win32";
+    const candidates = isWin ? ["javaw.exe", "java.exe"] : ["java"];
+
+    for (const name of candidates) {
+      const found = whichBinary(isWin ? name.replace(/\.exe$/i, "") : name);
+      if (found) {
+        // On Windows prefer javaw.exe beside java.exe when `where java` hit first.
+        if (isWin && /java\.exe$/i.test(found)) {
+          const javaw = path.join(path.dirname(found), "javaw.exe");
+          if (fs.existsSync(javaw)) return javaw;
+        }
+        return found;
+      }
+    }
+
+    const home = process.env.JAVA_HOME;
+    if (home) {
+      for (const name of candidates) {
+        const p = path.join(home, "bin", name);
+        if (fs.existsSync(p)) return p;
+      }
+    }
+
+    if (isWin) {
+      const fromCommon = findJavaInCommonWindowsPaths();
+      if (fromCommon) return fromCommon;
+    }
+
+    return null;
+  }
+
+  /**
+   * If exe is play.cmd/bat next to a jar (legacy github-jar installs), prefer the jar.
+   * @param {string} exePath
+   * @returns {string}
+   */
+  static preferJarBesideLauncher(exePath) {
+    if (!exePath || !/\.(cmd|bat)$/i.test(exePath)) return exePath;
+    const dir = path.dirname(exePath);
+    const mindustry = path.join(dir, "Mindustry.jar");
+    if (fs.existsSync(mindustry)) return mindustry;
+    try {
+      const jars = fs.readdirSync(dir).filter((f) => /\.jar$/i.test(f));
+      if (jars.length === 1) return path.join(dir, jars[0]);
+      const preferred = jars.find((f) => /^mindustry/i.test(f));
+      if (preferred) return path.join(dir, preferred);
+    } catch {
+      /* ignore */
+    }
+    return exePath;
+  }
+
+  /**
    * Spawns a game process detached and returns the child process.
-   * @param {string} targetPath - Path to the executable or .app bundle
+   * @param {string} targetPath - Path to the executable, .jar, or .app bundle
    * @param {string[]} args - Additional arguments
    * @returns {import("child_process").ChildProcess}
    */
   static spawnGame(targetPath, args = []) {
-    const launchCommand = Platform.getGameLaunchCommand(targetPath);
-    
-    // getGameLaunchCommand returns [cmd, ...implicitArgs]
-    // For Windows, it returns [targetPath]
-    // For Mac with .app, it returns ['open', '-a', targetPath]
-    
+    const launchPath = this.preferJarBesideLauncher(targetPath);
+
+    if (/\.jar$/i.test(launchPath)) {
+      const javaBin = this.resolveJavaBinary();
+      if (!javaBin) {
+        const err = new Error(JAVA_MISSING_MSG);
+        err.code = "JAVA_MISSING";
+        throw err;
+      }
+      const child = spawn(javaBin, ["-jar", launchPath, ...args], {
+        cwd: path.dirname(launchPath),
+        detached: true,
+        stdio: "ignore",
+        windowsHide: true,
+      });
+      return child;
+    }
+
+    const launchCommand = Platform.getGameLaunchCommand(launchPath);
     const cmd = launchCommand[0];
     const finalArgs = [...launchCommand.slice(1), ...args];
+    const useShell = /\.(cmd|bat)$/i.test(launchPath);
 
-    const useShell = /\.(cmd|bat)$/i.test(targetPath);
-    
-    const child = spawn(cmd, finalArgs, {
-      cwd: path.dirname(targetPath),
+    return spawn(cmd, finalArgs, {
+      cwd: path.dirname(launchPath),
       detached: true,
       stdio: "ignore",
       shell: useShell,
     });
-
-    return child;
   }
 }
+
+function whichBinary(name) {
+  try {
+    const cmd = process.platform === "win32" ? "where" : "which";
+    const out = execFileSync(cmd, [name], {
+      encoding: "utf8",
+      timeout: 5000,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const first = String(out || "")
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .find(Boolean);
+    if (first && fs.existsSync(first)) return first;
+  } catch {
+    /* not on PATH */
+  }
+  return null;
+}
+
+function findJavaInCommonWindowsPaths() {
+  const roots = [
+    process.env.ProgramFiles,
+    process.env["ProgramFiles(x86)"],
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs") : null,
+  ].filter(Boolean);
+
+  const vendors = [
+    "Eclipse Adoptium",
+    "Microsoft",
+    "Amazon Corretto",
+    "Zulu",
+    "Java",
+    "AdoptOpenJDK",
+  ];
+
+  for (const root of roots) {
+    for (const vendor of vendors) {
+      const base = path.join(root, vendor);
+      if (!fs.existsSync(base)) continue;
+      let entries = [];
+      try {
+        entries = fs.readdirSync(base, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      // Newest-looking jdk folder first
+      entries = entries
+        .filter((d) => d.isDirectory())
+        .sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true }));
+      for (const d of entries) {
+        for (const name of ["javaw.exe", "java.exe"]) {
+          const p = path.join(base, d.name, "bin", name);
+          if (fs.existsSync(p)) return p;
+        }
+      }
+    }
+    // Oracle-style: Program Files\Java\jdk-17\bin\javaw.exe
+    const javaRoot = path.join(root, "Java");
+    if (fs.existsSync(javaRoot)) {
+      try {
+        const entries = fs
+          .readdirSync(javaRoot, { withFileTypes: true })
+          .filter((d) => d.isDirectory())
+          .sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true }));
+        for (const d of entries) {
+          for (const name of ["javaw.exe", "java.exe"]) {
+            const p = path.join(javaRoot, d.name, "bin", name);
+            if (fs.existsSync(p)) return p;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  return null;
+}
+
+GameLauncher.JAVA_MISSING_MSG = JAVA_MISSING_MSG;
 
 module.exports = GameLauncher;
