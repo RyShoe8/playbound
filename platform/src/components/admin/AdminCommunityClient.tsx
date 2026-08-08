@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LocalTime } from "@/components/LocalTime";
 
 type Report = {
   id: string;
@@ -95,7 +96,7 @@ export function AdminCommunityClient({
                 {r.targetType} · {r.reason}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {r.targetId} · {new Date(r.createdAt).toLocaleString()}
+                {r.targetId} · <LocalTime value={r.createdAt} />
               </p>
               {r.details && <p className="mt-2 text-muted-foreground">{r.details}</p>}
               <div className="mt-3 flex gap-2">
@@ -167,7 +168,7 @@ export function AdminCommunityClient({
           <div key={u.id} className="rounded-xl border border-border bg-card p-3 text-sm">
             <p className="font-semibold">{u.username}</p>
             <p className="text-xs text-muted-foreground">
-              Until {u.until ? new Date(u.until).toLocaleString() : "—"}
+              Until <LocalTime value={u.until || null} />
             </p>
             <button
               type="button"
@@ -185,7 +186,7 @@ export function AdminCommunityClient({
           {audit.map((a) => (
             <div key={a.id} className="rounded border border-border px-2 py-1.5">
               <span className="font-semibold">{a.actorUsername}</span> {a.action} {a.targetType}{" "}
-              {a.targetId.slice(-6)} · {new Date(a.createdAt).toLocaleString()}
+              {a.targetId.slice(-6)} · <LocalTime value={a.createdAt} />
               {a.note ? ` — ${a.note}` : ""}
             </div>
           ))}

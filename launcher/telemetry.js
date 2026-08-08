@@ -163,6 +163,42 @@ function createTelemetry({
       return track("session_started", { ...editionProps(info), sessionKind: "play" });
     },
 
+    /** User clicked Play — before spawn. */
+    launchAttempted(info) {
+      return track("launch_attempted", {
+        ...editionProps(info),
+        phase: info.phase || "play",
+      });
+    },
+
+    /**
+     * Spawn/session never started. Server upserts an Admin bug from this event.
+     * @param {object} info
+     * @param {string} [info.code]
+     * @param {string} [info.message]
+     * @param {string} [info.phase]
+     */
+    launchFailed(info) {
+      return track("launch_failed", {
+        ...editionProps(info),
+        code: info.code || "UNKNOWN",
+        message: String(info.message || "").slice(0, 1000) || undefined,
+        phase: info.phase || "play",
+      });
+    },
+
+    /** Unexpected error for Admin auto-bugs. */
+    error(info) {
+      return track("error", {
+        code: info.code || "UNKNOWN",
+        message: String(info.message || "").slice(0, 1000) || undefined,
+        source: "launcher",
+        gameSlug: info.gameSlug || undefined,
+        editionSlug: info.editionSlug || undefined,
+        gameTitle: info.gameTitle || undefined,
+      });
+    },
+
     /**
      * Game exited. Emits both `game_ended` and `session_ended` — the first is
      * the edition-aware successor to the older game_finished event, the second

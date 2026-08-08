@@ -8,6 +8,7 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import CatalogMod from "@/lib/models/CatalogMod";
 import { VersionIssueRecheck } from "@/components/admin/VersionIssueRecheck";
+import { LocalTime } from "@/components/LocalTime";
 
 export const metadata: Metadata = { title: "Version issues" };
 
@@ -131,7 +132,9 @@ export default async function AdminVersionIssuesPage() {
                     {row.note || "—"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                    {row.lastCheck ? row.lastCheck.toLocaleString() : "—"}
+                    <LocalTime
+                      value={row.lastCheck ? row.lastCheck.toISOString() : null}
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">

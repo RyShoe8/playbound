@@ -35,13 +35,34 @@ export function useGameSession() {
   const startSession = useCallback(
     (slug: string, title: string) => {
       endSession(); // end previous if any
-      sessionRef.current = { slug, title, startedAt: Date.now() };
-      telemetry.track("game_started", {
+      telemetry.track("launch_attempted", {
         gameSlug: slug,
         gameTitle: title,
         platform: "browser",
-        installMethod: "browser",
+        source: "website",
+        phase: "browser-play",
       });
+      try {
+        sessionRef.current = { slug, title, startedAt: Date.now() };
+        telemetry.track("game_started", {
+          gameSlug: slug,
+          gameTitle: title,
+          platform: "browser",
+          installMethod: "browser",
+          source: "website",
+        });
+      } catch (err) {
+        telemetry.track("launch_failed", {
+          gameSlug: slug,
+          gameTitle: title,
+          platform: "browser",
+          source: "website",
+          code: "BROWSER_SESSION_FAILED",
+          message: err instanceof Error ? err.message : String(err),
+          phase: "browser-play",
+        });
+        throw err;
+      }
     },
     [endSession]
   );

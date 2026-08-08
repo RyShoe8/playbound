@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, X, ArrowUp, ArrowDown } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
+import { LocalTime } from "@/components/LocalTime";
 
 export type AdminGameRow = Game & {
   published: boolean;
@@ -257,10 +258,14 @@ export function AdminGamesTable({
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      {g.createdAt ? new Date(g.createdAt).toLocaleString() : "—"}
+                      <LocalTime
+                        value={g.createdAt ? new Date(g.createdAt).toISOString() : null}
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      {g.updatedAt ? new Date(g.updatedAt).toLocaleString() : "—"}
+                      <LocalTime
+                        value={g.updatedAt ? new Date(g.updatedAt).toISOString() : null}
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       <Link

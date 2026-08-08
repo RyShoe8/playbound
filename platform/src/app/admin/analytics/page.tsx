@@ -4,6 +4,7 @@ import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
 import { Types } from "mongoose";
 import { SectionHeader, StatTile } from "@/components/ui/bits";
+import { LocalTime } from "@/components/LocalTime";
 
 type SearchParams = Promise<{
   event?: string;
@@ -371,9 +372,13 @@ export default async function AdminAnalyticsPage({
                         className="border-t border-border bg-card"
                       >
                         <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                          {doc.createdAt
-                            ? new Date(doc.createdAt).toLocaleString()
-                            : "—"}
+                          <LocalTime
+                            value={
+                              doc.createdAt
+                                ? new Date(doc.createdAt).toISOString()
+                                : null
+                            }
+                          />
                         </td>
                         <td className="px-4 py-2.5 font-semibold">
                           {doc.event}
