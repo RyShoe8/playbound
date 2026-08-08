@@ -28,6 +28,7 @@ import {
 } from "@/lib/mediaThin";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { HlsVideo } from "@/components/HlsVideo";
+import { HardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
 import {
   EvidencePanel,
   ProseField,
@@ -946,6 +947,12 @@ export function EditionEditorForm({
             }
             className={field}
             placeholder="Requires a clean 1.12 client — patched clients will not connect."
+          />
+        </div>
+        <div className="mt-4">
+          <HardwareRequirementsEditor
+            value={form.hardwareRequirements}
+            onChange={(hardwareRequirements) => patch("hardwareRequirements", hardwareRequirements)}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">

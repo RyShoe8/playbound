@@ -67,6 +67,7 @@ function toGame(doc: LeanGame): Game {
     screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
     videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : undefined,
     systemRequirements: doc.systemRequirements as Game["systemRequirements"],
+    hardwareRequirements: (doc.hardwareRequirements as Game["hardwareRequirements"]) || null,
 
     // Editorial depth. Falls back to the seed entry so hand-written content
     // survives a DB import that does not yet carry these fields.

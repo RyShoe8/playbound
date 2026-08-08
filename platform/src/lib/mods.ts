@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
 import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
+import type { ModHardwareRequirements } from "@/lib/hardware/types";
 
 export type CatalogModPublic = {
   slug: string;
@@ -41,6 +42,8 @@ export type CatalogModPublic = {
   whatItChanges?: string;
   /** Base game version compatibility, when it matters. */
   compatibility?: string;
+  /** Additive structured hardware requirements. */
+  hardwareRequirements?: ModHardwareRequirements | null;
   installSteps?: InstallStep[];
   faq?: GameFaq[];
   updatedAt?: string;
@@ -95,6 +98,7 @@ function toMod(doc: LeanMod): CatalogModPublic {
     longDescription: (doc.longDescription as string) || undefined,
     whatItChanges: (doc.whatItChanges as string) || undefined,
     compatibility: (doc.compatibility as string) || undefined,
+    hardwareRequirements: (doc.hardwareRequirements as CatalogModPublic["hardwareRequirements"]) || null,
     installSteps: (doc.installSteps as InstallStep[])?.length
       ? (doc.installSteps as InstallStep[])
       : undefined,

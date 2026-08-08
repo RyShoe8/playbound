@@ -26,6 +26,7 @@
     "migrate:library-platform:apply": "tsx scripts/migrate-library-platform.ts --apply --soft-fail",
     "seed:collections": "tsx scripts/seed-collections.ts",
     "seed:weekly": "tsx scripts/seed-weekly.ts",
+    "seed:hardware": "tsx scripts/seed-hardware.ts",
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

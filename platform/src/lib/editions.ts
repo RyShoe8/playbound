@@ -83,6 +83,7 @@ function toEdition(doc: LeanEdition): Edition {
           notes: (requirements.notes as string) || undefined,
         }
       : undefined,
+    hardwareRequirements: (doc.hardwareRequirements as Edition["hardwareRequirements"]) || null,
     features: (doc.features as string[]) ?? [],
     tags: (doc.tags as string[]) ?? [],
     aliases: (doc.aliases as string[]) ?? [],

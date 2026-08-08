@@ -1,4 +1,5 @@
 import { Schema, model, models } from "mongoose";
+import { ModHardwareRequirementsSchema } from "@/lib/models/hardwareRequirementsSchema";
 
 const GameArtSchema = new Schema(
   {
@@ -79,6 +80,7 @@ const CatalogModSchema = new Schema(
     longDescription: { type: String, default: null },
     whatItChanges: { type: String, default: null },
     compatibility: { type: String, default: null },
+    hardwareRequirements: { type: ModHardwareRequirementsSchema, default: null },
     installSteps: { type: [InstallStepSchema], default: [] },
     faq: { type: [FaqSchema], default: [] },
   },

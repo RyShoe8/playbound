@@ -6,6 +6,7 @@ import {
   INSTALL_METHODS,
   VERIFICATION_LEVELS,
 } from "@/lib/editionTypes";
+import { hardwareRequirementsBlockSchema } from "@/lib/hardware/schema";
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -140,6 +141,7 @@ export const editionPayloadSchema = z
         notes: z.string().trim().max(1000).optional(),
       })
       .optional(),
+    hardwareRequirements: hardwareRequirementsBlockSchema.optional().nullable(),
 
     features: z.array(z.string().trim().min(1).max(200)).max(40).default([]),
     tags: z.array(z.string().trim().min(1).max(60)).max(40).default([]),

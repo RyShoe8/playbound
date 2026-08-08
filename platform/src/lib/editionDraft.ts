@@ -5,6 +5,7 @@ import type {
   EditionPatchNote,
   InstallMethod,
 } from "@/lib/editionTypes";
+import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 
 /**
  * Draft shapes for the admin edition form.
@@ -38,6 +39,7 @@ export interface EditionDraft {
   installMethod: InstallMethod;
   installConfig: EditionInstallConfig;
   requirements: { min: string; recommended: string; notes: string };
+  hardwareRequirements?: HardwareRequirementsBlock | null;
   features: string[];
   tags: string[];
   aliases: string[];
@@ -70,6 +72,7 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
       manual: { steps: [{ platform: "all", text: "", command: null }] },
     },
     requirements: { min: "", recommended: "", notes: "" },
+    hardwareRequirements: null,
     features: [],
     tags: [],
     aliases: [],
@@ -119,6 +122,7 @@ export function editionToDraft(edition: Edition): EditionDraft {
       recommended: edition.requirements?.recommended ?? "",
       notes: edition.requirements?.notes ?? "",
     },
+    hardwareRequirements: edition.hardwareRequirements ?? null,
     features: edition.features,
     tags: edition.tags,
     aliases: edition.aliases,

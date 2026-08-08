@@ -6,6 +6,7 @@ import {
   INSTALL_METHODS,
   VERIFICATION_LEVELS,
 } from "@/lib/editionTypes";
+import { HardwareRequirementsBlockSchema } from "@/lib/models/hardwareRequirementsSchema";
 
 const BrandingSchema = new Schema(
   {
@@ -114,6 +115,7 @@ const EditionSchema = new Schema(
     installConfig: { type: Schema.Types.Mixed, default: () => ({}) },
 
     requirements: { type: RequirementsSchema, default: null },
+    hardwareRequirements: { type: HardwareRequirementsBlockSchema, default: null },
     features: { type: [String], default: [] },
     tags: { type: [String], default: [], index: true },
     /** Alternate search names — "Turtle", "TWoW". Indexed; never displayed. */

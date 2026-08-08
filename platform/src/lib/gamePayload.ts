@@ -7,6 +7,7 @@ import {
   type LauncherInstall,
 } from "@/lib/launcherInstall";
 import { CATALOG_STATUSES } from "@/lib/catalogStatus";
+import { hardwareRequirementsBlockSchema } from "@/lib/hardware/schema";
 
 /**
  * The closed set of genres a game may carry.
@@ -366,6 +367,7 @@ export const gamePayloadSchema = z.object({
     min: z.string().trim().min(1).max(500),
     recommended: z.string().trim().min(1).max(500),
   }),
+  hardwareRequirements: hardwareRequirementsBlockSchema.optional().nullable(),
   launcherInstall: launcherInstallSchema.optional().nullable(),
   /** Zero-K / 0 A.D. lobby credentials for richer server listings (admin only). */
   serverLobbyAuth: z
@@ -577,6 +579,7 @@ export const emptyGameDraft = (): GamePayload => ({
     min: "See official site",
     recommended: "See official site",
   },
+  hardwareRequirements: null,
   launcherInstall: null,
   serverLobbyAuth: null,
   published: false,
