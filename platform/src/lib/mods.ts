@@ -211,3 +211,16 @@ export async function getModAdmin(slug: string) {
     return null;
   }
 }
+
+export async function modCountsByGame(): Promise<Map<string, number>> {
+  try {
+    await dbConnect();
+    const rows = await CatalogMod.aggregate<{ _id: string; count: number }>([
+      { $group: { _id: "$baseGameSlug", count: { $sum: 1 } } },
+    ]);
+    return new Map(rows.map((r) => [r._id, r.count]));
+  } catch (err) {
+    console.error("[mods] counts failed:", err);
+    return new Map();
+  }
+}

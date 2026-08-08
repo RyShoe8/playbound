@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllGames } from "@/lib/catalog";
 import { editionCountsByGame } from "@/lib/editions";
+import { modCountsByGame } from "@/lib/mods";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
 import { AdminGamesTable } from "@/components/admin/AdminGamesTable";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
 export default async function AdminGamesPage() {
-  const [games, editionCounts] = await Promise.all([listAllGames(), editionCountsByGame()]);
+  const [games, editionCounts, modCounts] = await Promise.all([listAllGames(), editionCountsByGame(), modCountsByGame()]);
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -32,7 +33,7 @@ export default async function AdminGamesPage() {
       {/* Rows and search live in a client component so filtering is instant.
           A Map cannot cross the server/client boundary, so counts are passed
           as a plain object. */}
-      <AdminGamesTable games={games} editionCounts={Object.fromEntries(editionCounts)} />
+      <AdminGamesTable games={games} editionCounts={Object.fromEntries(editionCounts)} modCounts={Object.fromEntries(modCounts)} />
     </div>
   );
 }
