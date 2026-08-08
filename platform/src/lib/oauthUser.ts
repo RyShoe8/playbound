@@ -22,7 +22,14 @@ export type OAuthProfileInput = {
 };
 
 export type OAuthResolution =
-  | { ok: true; userId: string; username: string; role: "user" | "admin"; needsUsername: boolean }
+  | {
+      ok: true;
+      userId: string;
+      username: string;
+      role: "user" | "admin";
+      tester: boolean;
+      needsUsername: boolean;
+    }
   | { ok: false; reason: string };
 
 /** Placeholder username, replaced by the user on /welcome before they can act. */
@@ -80,6 +87,7 @@ export async function resolveOAuthUser(
       userId: existing._id.toString(),
       username: existing.username,
       role: existing.role,
+      tester: Boolean(existing.tester),
       needsUsername: Boolean(existing.needsUsername),
     };
   }
@@ -102,6 +110,7 @@ export async function resolveOAuthUser(
     userId: created._id.toString(),
     username: created.username,
     role: created.role,
+    tester: Boolean(created.tester),
     needsUsername: true,
   };
 }

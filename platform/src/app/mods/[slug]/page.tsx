@@ -10,7 +10,7 @@ import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getMod } from "@/lib/mods";
 import { getGame } from "@/lib/catalog";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { isLauncherInstallable, launcherPlayModUrl } from "@/lib/launcher";
 import { Badge, EmptyHint } from "@/components/ui/bits";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
@@ -60,7 +60,7 @@ async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const mod = await getMod(slug, { includeTesting });
   if (!mod) return { title: "Mod Not Found" };
   if (mod.status === "testing") return privateMetadata(mod.title);
@@ -95,7 +95,7 @@ export default async function ModPage({
   const { slug } = await params;
   const sp = await searchParams;
   const tab: ModTab = isModTab(sp.tab) ? sp.tab : "overview";
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const mod = await getMod(slug, { includeTesting });
   if (!mod) notFound();
 

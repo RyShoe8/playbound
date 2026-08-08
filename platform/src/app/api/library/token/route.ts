@@ -9,6 +9,7 @@ import {
   userFromLauncherBearer,
 } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { canAccessTesting } from "@/lib/requestIncludesTesting";
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -99,6 +100,8 @@ export async function GET(req: Request) {
         username: user.username || null,
         role: user.role || "user",
         isAdmin: user.role === "admin",
+        isTester: Boolean((user as { tester?: boolean }).tester),
+        canUseAdminChannel: canAccessTesting(user as { role?: string; tester?: boolean }),
       });
     } catch (error) {
       console.error("Launcher token validate error:", error);

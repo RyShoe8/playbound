@@ -103,6 +103,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.username,
           role: user.role,
+          tester: Boolean(user.tester),
         };
       },
     }),
@@ -191,6 +192,7 @@ export const authOptions: NextAuthOptions = {
       // Hand the resolved identity to the jwt callback via the user object.
       user.id = resolved.userId;
       user.role = resolved.role;
+      user.tester = resolved.tester;
       user.name = resolved.username;
       user.needsUsername = resolved.needsUsername;
       return true;
@@ -201,18 +203,20 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.username = user.name ?? undefined;
         token.role = user.role;
+        token.tester = Boolean(user.tester);
         token.needsUsername = Boolean(user.needsUsername);
         token.roleCheckedAt = Date.now();
       } else if (token.id) {
-        // Re-read role from Mongo so promotions/demotions appear without re-login.
+        // Re-read role/tester from Mongo so promotions appear without re-login.
         const last = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
         if (Date.now() - last > 60_000) {
           await dbConnect();
-          const dbUser = await User.findById(token.id).select("role disabled").lean();
+          const dbUser = await User.findById(token.id).select("role tester disabled").lean();
           if (!dbUser || dbUser.disabled) {
             return {};
           }
           token.role = dbUser.role;
+          token.tester = Boolean(dbUser.tester);
           token.roleCheckedAt = Date.now();
         }
       }
@@ -229,6 +233,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
         session.user.role = token.role as "user" | "admin";
+        session.user.tester = Boolean(token.tester);
         session.user.needsUsername = Boolean(token.needsUsername);
       }
       return session;

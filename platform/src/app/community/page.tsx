@@ -6,7 +6,7 @@ import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getGame, listGames } from "@/lib/catalog";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
 
@@ -74,7 +74,7 @@ const kindIcon = { review: Star, guide: BookOpen, discussion: MessagesSquare };
 const kindLabel = { review: "reviewed", guide: "published a guide for", discussion: "started a discussion on" };
 
 export default async function CommunityPage() {
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const activity = await getRecentActivity();
   const rows = await Promise.all(
     activity.map(async (a) => ({

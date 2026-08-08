@@ -30,6 +30,8 @@ const UserSchema = new Schema({
    */
   needsUsername: { type: Boolean, default: false },
   role: { type: String, enum: ["user", "admin"], default: "user" },
+  /** Unsigned launcher channel + testing catalog; independent of admin CMS access. */
+  tester: { type: Boolean, default: false, index: true },
   disabled: { type: Boolean, default: false, index: true },
   emailVerified: { type: Boolean, default: false },
   verificationTokenHash: { type: String, select: false },

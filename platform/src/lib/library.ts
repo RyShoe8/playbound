@@ -35,7 +35,7 @@ export async function userFromLauncherBearer(req: Request) {
   await dbConnect();
   const user = await User.findOne({
     launcherTokenHash: hashLauncherToken(match[1].trim()),
-  }).select("+launcherTokenHash _id disabled email username role");
+  }).select("+launcherTokenHash _id disabled email username role tester");
 
   if (!user || user.disabled) return null;
   return user;

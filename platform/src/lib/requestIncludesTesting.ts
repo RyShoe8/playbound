@@ -2,6 +2,23 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { userFromLauncherBearer } from "@/lib/library";
 
+export function canAccessTesting(
+  user: { role?: string; tester?: boolean } | null | undefined
+): boolean {
+  return user?.role === "admin" || Boolean(user?.tester);
+}
+
+/** True when the signed-in site session may see testing-catalog entries. */
+export async function viewerCanSeeTesting(): Promise<boolean> {
+  try {
+    const session = await getServerSession(authOptions);
+    return canAccessTesting(session?.user);
+  } catch {
+    return false;
+  }
+}
+
+/** @deprecated Prefer viewerCanSeeTesting for catalog; admin CMS stays requireAdminSession. */
 export async function viewerIsAdmin(): Promise<boolean> {
   try {
     const session = await getServerSession(authOptions);
@@ -11,14 +28,14 @@ export async function viewerIsAdmin(): Promise<boolean> {
   }
 }
 
-/** True when the request is from a PlayBound admin (site session or launcher bearer). */
+/** True when the request is from an admin or tester (site session or launcher bearer). */
 export async function requestIncludesTesting(req?: Request): Promise<boolean> {
-  if (await viewerIsAdmin()) return true;
+  if (await viewerCanSeeTesting()) return true;
 
   if (req) {
     try {
       const user = await userFromLauncherBearer(req);
-      if (user && (user as { role?: string }).role === "admin") return true;
+      if (user && canAccessTesting(user as { role?: string; tester?: boolean })) return true;
     } catch {
       /* ignore */
     }

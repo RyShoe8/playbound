@@ -35,7 +35,7 @@ import { resolveInstallAction, resolveSecondaryActions } from "@/lib/editionInst
 import { INSTALL_METHOD_LABELS, VERIFICATION_DESCRIPTIONS } from "@/lib/editionTypes";
 import type { Edition } from "@/lib/editionTypes";
 import type { Game } from "@/lib/data/types";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata, privateMetadata } from "@/lib/seo";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader } from "@/components/ui/bits";
@@ -97,7 +97,7 @@ async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { slug, editionSlug } = await params;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
   if (!game) return privateMetadata("Edition Not Found");
 
@@ -139,7 +139,7 @@ export default async function EditionPage({
   const { slug, editionSlug } = await params;
   const sp = await searchParams;
   const { tab: rawTab } = sp;
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const game = await getGame(slug, { includeTesting });
 
   if (!game) {

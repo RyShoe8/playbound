@@ -1,7 +1,7 @@
 import { Puzzle } from "lucide-react";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
-import { viewerIsAdmin } from "@/lib/requestIncludesTesting";
+import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { ModsFilters } from "@/components/ModsFilters";
@@ -16,7 +16,7 @@ export const metadata = pageMetadata({
 });
 
 export default async function ModsIndexPage() {
-  const includeTesting = await viewerIsAdmin();
+  const includeTesting = await viewerCanSeeTesting();
   const [mods, games] = await Promise.all([
     listMods({ includeTesting }),
     listGames({ includeTesting }),

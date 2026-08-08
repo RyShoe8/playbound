@@ -7,9 +7,16 @@ import { SignOutButton } from "@/components/SignOutButton";
 type Props = {
   initialUsername: string;
   email: string;
+  canDownloadUnsigned?: boolean;
+  unsignedLauncherUrl?: string;
 };
 
-export function ProfileSettings({ initialUsername, email }: Props) {
+export function ProfileSettings({
+  initialUsername,
+  email,
+  canDownloadUnsigned = false,
+  unsignedLauncherUrl,
+}: Props) {
   const { update } = useSession();
 
   const [username, setUsername] = useState(initialUsername);
@@ -169,6 +176,22 @@ export function ProfileSettings({ initialUsername, email }: Props) {
           </button>
         </form>
       </section>
+
+      {canDownloadUnsigned && unsignedLauncherUrl ? (
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-lg font-extrabold tracking-tight">Launcher (testing)</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Download the latest unsigned Windows build for testing. After install, switch between unsigned and signed
+            update feeds in the app Settings.
+          </p>
+          <a
+            href={unsignedLauncherUrl}
+            className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+          >
+            Download unsigned launcher
+          </a>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 sm:hidden">
         <h2 className="text-lg font-extrabold tracking-tight">Session</h2>

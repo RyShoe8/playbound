@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
   await dbConnect();
   const users = await User.find()
-    .select("username email role emailVerified disabled createdAt")
+    .select("username email role tester emailVerified disabled createdAt")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -21,6 +21,7 @@ export default async function AdminUsersPage() {
     username: u.username,
     email: u.email,
     role: u.role as "user" | "admin",
+    tester: Boolean(u.tester),
     emailVerified: Boolean(u.emailVerified),
     disabled: Boolean(u.disabled),
     createdAt: new Date(u.createdAt).toISOString(),
@@ -31,8 +32,8 @@ export default async function AdminUsersPage() {
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Users</h1>
         <p className="mt-1 text-muted-foreground">
-          Promote or demote admins, disable login, or permanently delete accounts. Founder and your own account are
-          protected.
+          Promote or demote admins, grant tester access, disable login, or permanently delete accounts. Founder and your
+          own account are protected.
         </p>
       </div>
 
@@ -55,7 +56,14 @@ export default async function AdminUsersPage() {
                   <p className="font-semibold">{u.username}</p>
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </td>
-                <td className="px-4 py-2.5">{u.role}</td>
+                <td className="px-4 py-2.5">
+                  <span>{u.role}</span>
+                  {u.tester ? (
+                    <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                      tester
+                    </span>
+                  ) : null}
+                </td>
                 <td className="px-4 py-2.5">{u.emailVerified ? "Yes" : "No"}</td>
                 <td className="px-4 py-2.5">{u.disabled ? "Disabled" : "Active"}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">
