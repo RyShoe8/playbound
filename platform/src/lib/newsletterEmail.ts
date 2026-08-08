@@ -25,7 +25,6 @@ export type NewsletterEmailDraft = {
     title: string;
     description: string;
     imageUrl: string;
-    ctaLabel: string;
     ctaUrl: string;
   };
   newSectionTitle: string;
@@ -40,6 +39,7 @@ export type NewsletterEmailDraft = {
     blueskyUrl: string;
     redditUrl: string;
     discordUrl: string;
+    facebookUrl: string;
     unsubscribeUrl: string;
     copyrightYear: number;
   };
@@ -85,7 +85,6 @@ export function emptyNewsletterDraft(opts?: {
       title: "",
       description: "",
       imageUrl: "",
-      ctaLabel: "Play Now on Playbound",
       ctaUrl: origin,
     },
     newSectionTitle: "New on Playbound",
@@ -103,6 +102,7 @@ export function emptyNewsletterDraft(opts?: {
       blueskyUrl: "https://bsky.app",
       redditUrl: "https://www.reddit.com",
       discordUrl: SITE_DISCORD_INVITE,
+      facebookUrl: "https://www.facebook.com",
       unsubscribeUrl: `${origin}/#unsubscribe`,
       copyrightYear: opts?.year ?? new Date().getUTCFullYear(),
     },
@@ -145,7 +145,6 @@ export function prefillFeaturedFromGame(
       description: blurb,
       imageUrl: absoluteMediaUrl(game.coverImage ?? "", siteUrl),
       ctaUrl: gamePageUrl(game.slug, siteUrl),
-      ctaLabel: draft.featured.ctaLabel || "Play Now on Playbound",
       badge: draft.featured.badge || "FEATURED PICK",
     },
   };
@@ -385,7 +384,7 @@ export function buildNewsletterHtml(
             <table cellpadding="0" cellspacing="0">
               <tr>
                 <td>
-                  <a href="${attr(featuredHref)}" class="btn">${text(draft.featured.ctaLabel || "Play Now on Playbound")}</a>
+                  <a href="${attr(featuredHref)}" class="btn">Play Now on Playbound</a>
                 </td>
               </tr>
             </table>
@@ -434,6 +433,8 @@ export function buildNewsletterHtml(
             <a href="${attr(draft.footer.redditUrl)}" style="color: #F8FAFC; text-decoration: none; font-weight: 600; font-size: 13px; margin: 0 10px;">Reddit</a>
             <span style="color: #334155;">•</span>
             <a href="${attr(draft.footer.discordUrl)}" style="color: #F8FAFC; text-decoration: none; font-weight: 600; font-size: 13px; margin: 0 10px;">Discord</a>
+            <span style="color: #334155;">•</span>
+            <a href="${attr(draft.footer.facebookUrl)}" style="color: #F8FAFC; text-decoration: none; font-weight: 600; font-size: 13px; margin: 0 10px;">Facebook</a>
           </td>
         </tr>
         <tr>
