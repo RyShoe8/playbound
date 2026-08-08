@@ -15,6 +15,7 @@ import { GameArt } from "@/components/GameArt";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
+import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
@@ -26,12 +27,14 @@ export type LibraryEntryMeta = {
   gameSlug: string;
   installed: boolean;
   saved: boolean;
+  ownedElsewhere?: boolean;
 };
 
 export type LibraryOrphan = {
   gameSlug: string;
   installed: boolean;
   saved: boolean;
+  ownedElsewhere?: boolean;
 };
 
 function DesktopInstalledActions({ slug }: { slug: string }) {
@@ -109,10 +112,12 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
 function StatusBadges({
   installed,
   saved,
+  ownedElsewhere,
   game,
 }: {
   installed: boolean;
   saved: boolean;
+  ownedElsewhere?: boolean;
   game?: Game;
 }) {
   return (
@@ -123,6 +128,9 @@ function StatusBadges({
         </Badge>
       )}
       {saved && !installed && <Badge tone="brand">Play Later</Badge>}
+      {ownedElsewhere && !installed && (
+        <Badge tone="brand">On another device</Badge>
+      )}
       {game ? <LibraryDeviceHint game={game} /> : null}
     </div>
   );
@@ -139,6 +147,7 @@ function MobileLibraryRow({
 }) {
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
+  const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
   const [os, setOs] = useState<"android" | "ios" | "other">("other");
 
   useEffect(() => {
@@ -158,7 +167,12 @@ function MobileLibraryRow({
             {game.title}
           </Link>
           <p className="truncate text-xs text-muted-foreground">{game.genres.join(" · ")}</p>
-          <StatusBadges installed={installed} saved={saved} game={game} />
+          <StatusBadges
+            installed={installed}
+            saved={saved}
+            ownedElsewhere={ownedElsewhere}
+            game={game}
+          />
           <GamePlatformBadges game={game} compact singleLine />
         </div>
       </div>
@@ -168,16 +182,26 @@ function MobileLibraryRow({
             game={game}
             outbound={outbound}
             surface="library_mobile"
+            skipLibraryClaim
             className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-play px-3 text-sm font-bold text-play-foreground"
           >
             <Play className="size-3.5 fill-current" /> Play
+          </MobileOutboundCta>
+        ) : ownedElsewhere ? (
+          <MobileOutboundCta
+            game={game}
+            outbound={outbound}
+            surface="library_mobile_install"
+            className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-3 text-sm font-bold text-primary-foreground"
+          >
+            <Download className="size-3.5" /> Install
           </MobileOutboundCta>
         ) : null}
         <Link
           href={`/games/${game.slug}`}
           className={cn(
             "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-bold",
-            installed ? "flex-none" : "flex-1"
+            installed || ownedElsewhere ? "flex-none" : "flex-1"
           )}
         >
           <ExternalLink className="size-3.5" /> Open
@@ -210,13 +234,35 @@ function MobileOrphanRow({
         </div>
         <div className="min-w-0 flex-1 space-y-1.5">
           <p className="truncate text-base font-bold">{title}</p>
-          <StatusBadges installed={entry.installed} saved={entry.saved} />
+          <StatusBadges
+            installed={entry.installed}
+            saved={entry.saved}
+            ownedElsewhere={entry.ownedElsewhere}
+          />
         </div>
       </div>
       <div className="mt-2">
         <LibraryModsDisclosure mods={mods} />
       </div>
     </article>
+  );
+}
+
+function MobileOwnedElsewhereInstall({ game }: { game: Game }) {
+  const [os, setOs] = useState<"android" | "ios" | "other">("other");
+  useEffect(() => {
+    setOs(parseMobileOs(navigator.userAgent));
+  }, []);
+  const outbound = resolveMobileOutbound(game, os);
+  return (
+    <MobileOutboundCta
+      game={game}
+      outbound={outbound}
+      surface="library_install"
+      className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground"
+    >
+      <Download className="size-3" /> Install
+    </MobileOutboundCta>
   );
 }
 
@@ -233,6 +279,7 @@ function DesktopLibraryRow({
 }) {
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
+  const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
 
   return (
     <article className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30">
@@ -245,16 +292,29 @@ function DesktopLibraryRow({
             <Link href={`/games/${game.slug}`} className="block truncate text-xl font-bold hover:underline">
               {game.title}
             </Link>
-            <p className="truncate text-sm text-muted-foreground">{game.genres.join(" A ")}</p>
+            <p className="truncate text-sm text-muted-foreground">{game.genres.join(" · ")}</p>
           </div>
           <GamePlatformBadges game={game} compact singleLine />
         </div>
         <div className="mt-2">
-          <StatusBadges installed={installed} saved={saved} game={game} />
+          <StatusBadges
+            installed={installed}
+            saved={saved}
+            ownedElsewhere={ownedElsewhere}
+            game={game}
+          />
         </div>
         <div className="mt-auto pt-3 flex flex-wrap gap-2">
           {installed && showLauncherActions ? (
             <DesktopInstalledActions slug={game.slug} />
+          ) : ownedElsewhere && showLauncherActions ? (
+            <LauncherInstallButton
+              slug={game.slug}
+              label="Install on this PC"
+              className="!px-4 !py-1.5 !text-xs"
+            />
+          ) : ownedElsewhere ? (
+            <MobileOwnedElsewhereInstall game={game} />
           ) : (
             <Link
               href={`/games/${game.slug}`}
@@ -370,7 +430,11 @@ export function LibraryGrid({
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="truncate text-xl font-bold">{title}</p>
                     <div className="mt-2">
-                      <StatusBadges installed={entry.installed} saved={entry.saved} />
+                      <StatusBadges
+                        installed={entry.installed}
+                        saved={entry.saved}
+                        ownedElsewhere={entry.ownedElsewhere}
+                      />
                     </div>
                     <div className="mt-auto pt-3 flex flex-wrap gap-2">
                       {entry.installed && showLauncherActions ? (

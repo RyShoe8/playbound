@@ -4,16 +4,33 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
-import { getGame } from "@/lib/catalog";
+import { gamesFor, getGame } from "@/lib/catalog";
 import type { LibraryEntryDTO } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
-import {
-  isLibraryPlatform,
-  platformFromRequest,
-  visiblePlatformsFor,
-} from "@/lib/libraryPlatform";
+import { platformFromRequest } from "@/lib/libraryPlatform";
+import { buildLibraryUnionEntries } from "@/lib/libraryUnion";
 
-function toDto(doc: {
+function toDto(entry: {
+  gameSlug: string;
+  saved: boolean;
+  installed: boolean;
+  ownedElsewhere?: boolean;
+  version?: string | null;
+  installedAt?: string | null;
+  addedAt?: string;
+}): LibraryEntryDTO {
+  return {
+    gameSlug: entry.gameSlug,
+    saved: entry.saved,
+    installed: entry.installed,
+    ownedElsewhere: Boolean(entry.ownedElsewhere),
+    version: entry.version ?? null,
+    installedAt: entry.installedAt ?? null,
+    addedAt: entry.addedAt ?? new Date(0).toISOString(),
+  };
+}
+
+function docToDto(doc: {
   gameSlug: string;
   saved?: boolean;
   installed: boolean;
@@ -40,7 +57,6 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
     const platform = platformFromRequest(req);
-    const visible = visiblePlatformsFor(platform);
 
     const all = await LibraryEntry.find({
       userId: session.user.id,
@@ -49,27 +65,35 @@ export async function GET(req: Request) {
       .sort({ updatedAt: -1 })
       .lean();
 
-    // Entries written before `platform` existed came from the launcher, so
-    // they are desktop — matching what the migration backfills.
-    const platformOf = (r: { platform?: string }) =>
-      isLibraryPlatform(r.platform) ? r.platform : "desktop";
+    const candidateSlugs = [...new Set(all.map((r) => String(r.gameSlug)))];
+    const catalogGames = await gamesFor(candidateSlugs, { includeUnpublished: true });
+    const gamesBySlug = new Map(catalogGames.map((g) => [g.slug, g]));
 
-    const rows = all.filter((r) => visible.includes(platformOf(r)));
+    const { entries, hiddenElsewhereCount } = buildLibraryUnionEntries(
+      all.map((r) => ({
+        gameSlug: String(r.gameSlug),
+        platform: r.platform as string | undefined,
+        installed: Boolean(r.installed),
+        saved: Boolean(r.saved),
+      })),
+      gamesBySlug,
+      platform
+    );
 
-    // Games owned elsewhere are not shown, but the count is returned so the
-    // library can say so — otherwise a desktop user whose games are all on
-    // their phone sees an empty page with no explanation.
-    const elsewhere: Record<string, number> = {};
-    for (const r of all) {
-      const p = platformOf(r);
-      if (visible.includes(p)) continue;
-      elsewhere[p] = (elsewhere[p] ?? 0) + 1;
-    }
+    const addedBySlug = new Map(
+      all.map((r) => [String(r.gameSlug), new Date(r.addedAt).toISOString()])
+    );
 
     return NextResponse.json({
-      entries: rows.map(toDto),
+      entries: entries.map((e) =>
+        toDto({
+          ...e,
+          addedAt: addedBySlug.get(e.gameSlug),
+        })
+      ),
       platform,
-      otherPlatforms: elsewhere,
+      hiddenElsewhereCount,
+      otherPlatforms: { count: hiddenElsewhereCount },
     });
   } catch (error) {
     console.error("Library list error:", error);
@@ -160,7 +184,7 @@ export async function POST(req: Request) {
       }).catch(() => undefined);
     }
 
-    return NextResponse.json({ entry: toDto(entry!) }, { status: 201 });
+    return NextResponse.json({ entry: docToDto(entry!) }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });

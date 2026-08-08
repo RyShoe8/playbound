@@ -106,6 +106,8 @@ export type LibraryEntryDTO = {
   gameSlug: string;
   saved: boolean;
   installed: boolean;
+  /** True when shown because owned on another platform (not installed here). */
+  ownedElsewhere?: boolean;
   version: string | null;
   installedAt: string | null;
   addedAt: string;
