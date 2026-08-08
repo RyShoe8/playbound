@@ -1,10 +1,30 @@
 /**
  * Upsert curated seed mods into MongoDB.
  * Unlike seed:games, always upserts seed slugs so new mods ship without wiping admin-created mods.
+ * Existing CMS media and title/tagline/description/longDescription are never overwritten
+ * when already set — seed only fills empty gaps.
  */
 import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
+
+function pickText(
+  prev: string | null | undefined,
+  seed: string | null | undefined
+): string | null {
+  const p = typeof prev === "string" ? prev.trim() : "";
+  if (p) return prev as string;
+  const s = typeof seed === "string" ? seed.trim() : "";
+  return s ? (seed as string) : null;
+}
+
+function pickList(
+  prev: string[] | null | undefined,
+  seed: string[] | null | undefined
+): string[] {
+  if (Array.isArray(prev) && prev.length > 0) return prev;
+  return Array.isArray(seed) && seed.length > 0 ? seed : [];
+}
 
 async function main() {
   if (!process.env.MONGODB_URI) {
@@ -62,7 +82,9 @@ async function main() {
     const developerName = developersBySlug.get(m.developerSlug)?.name ?? null;
     const art = m.art ?? defaultArtFor([], m.slug);
     const existing = await CatalogMod.findOne({ slug: m.slug })
-      .select("directUrl detectedVersion lastVersionCheckAt versionCheckStatus autoUpdatePinned")
+      .select(
+        "directUrl detectedVersion lastVersionCheckAt versionCheckStatus autoUpdatePinned title tagline description longDescription coverImage screenshots videos"
+      )
       .lean();
     const prev = existing as {
       directUrl?: string;
@@ -70,6 +92,13 @@ async function main() {
       lastVersionCheckAt?: Date;
       versionCheckStatus?: string;
       autoUpdatePinned?: boolean;
+      title?: string;
+      tagline?: string;
+      description?: string;
+      longDescription?: string | null;
+      coverImage?: string | null;
+      screenshots?: string[] | null;
+      videos?: string[] | null;
     } | null;
     const preserveDirect =
       Boolean(prev?.lastVersionCheckAt) &&
@@ -83,9 +112,9 @@ async function main() {
       {
         $set: {
           slug: m.slug,
-          title: m.title,
-          tagline: m.tagline,
-          description: m.description,
+          title: pickText(prev?.title, m.title) ?? m.title,
+          tagline: pickText(prev?.tagline, m.tagline) ?? m.tagline,
+          description: pickText(prev?.description, m.description) ?? m.description,
           baseGameSlug: m.baseGameSlug,
           developerSlug: m.developerSlug,
           developerName,
@@ -99,13 +128,13 @@ async function main() {
           directUrl: preserveDirect ? prev!.directUrl : m.directUrl ?? null,
           installRelativePath: m.installRelativePath || "mods",
           art,
-          coverImage: m.coverImage ?? null,
-          screenshots: m.screenshots ?? [],
-          videos: m.videos ?? [],
+          coverImage: pickText(prev?.coverImage, m.coverImage),
+          screenshots: pickList(prev?.screenshots, m.screenshots),
+          videos: pickList(prev?.videos, m.videos),
           published: m.published,
           status: m.published ? "published" : "draft",
           managedBy: m.managedBy,
-          longDescription: m.longDescription ?? null,
+          longDescription: pickText(prev?.longDescription, m.longDescription),
           whatItChanges: m.whatItChanges ?? null,
           compatibility: m.compatibility ?? null,
           installSteps: m.installSteps ?? [],

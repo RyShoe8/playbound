@@ -2,9 +2,10 @@
  * Upsert seed games into Mongo even when the catalog is non-empty.
  *
  * - Missing slug → insert (DRAFT_ON_CREATE slugs force draft/unpublished).
- * - Existing draft → refresh seed fields (safe overwrite).
- * - Existing published → only fill empty/thin media + missing launcherInstall;
- *   never demote published/status.
+ * - Existing draft/testing → refresh seed-driven metadata, but never clobber
+ *   CMS media or title/tagline/description/longDescription when already set.
+ * - Existing published → only fill empty media + missing launcherInstall /
+ *   hardwareRequirements; never demote published/status.
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -37,14 +38,29 @@ export const DRAFT_ON_CREATE = new Set([
 /** Standalone remasters superseded by parent-game editions — keep rows but unpublish. */
 export const SUPERSEDED_GAME_SLUGS = new Set(["daggerfall-unity"]);
 
-function isThinMedia(doc: {
-  coverImage?: string | null;
-  screenshots?: string[] | null;
-  videos?: string[] | null;
-}): boolean {
-  const shots = doc.screenshots?.length ?? 0;
-  const vids = doc.videos?.length ?? 0;
-  return !doc.coverImage || shots < 2 || vids < 1;
+function pickText(
+  prev: string | null | undefined,
+  seed: string | null | undefined
+): string | null {
+  const p = typeof prev === "string" ? prev.trim() : "";
+  if (p) return prev as string;
+  const s = typeof seed === "string" ? seed.trim() : "";
+  return s ? (seed as string) : null;
+}
+
+function pickCover(
+  prev: string | null | undefined,
+  seed: string | null | undefined
+): string | null {
+  return pickText(prev, seed);
+}
+
+function pickList(
+  prev: string[] | null | undefined,
+  seed: string[] | null | undefined
+): string[] {
+  if (Array.isArray(prev) && prev.length > 0) return prev;
+  return Array.isArray(seed) && seed.length > 0 ? seed : [];
 }
 
 async function main() {
@@ -104,6 +120,7 @@ async function main() {
     const prev = existing as {
       status?: string;
       published?: boolean;
+      title?: string;
       coverImage?: string | null;
       screenshots?: string[] | null;
       videos?: string[] | null;
@@ -124,9 +141,9 @@ async function main() {
         { slug: g.slug },
         {
           $set: {
-            title: g.title,
-            tagline: g.tagline,
-            description: g.description,
+            title: pickText(prev.title, g.title) ?? g.title,
+            tagline: pickText(prev.tagline, g.tagline) ?? g.tagline,
+            description: pickText(prev.description, g.description) ?? g.description,
             developerSlug: g.developerSlug,
             developerName,
             genres: g.genres,
@@ -144,12 +161,12 @@ async function main() {
             steamAppId: g.steamAppId ?? null,
             githubRepo: g.githubRepo ?? null,
             art: g.art,
-            coverImage: g.coverImage ?? prev.coverImage ?? null,
-            screenshots: (g.screenshots?.length ? g.screenshots : prev.screenshots) ?? [],
-            videos: (g.videos?.length ? g.videos : prev.videos) ?? [],
+            coverImage: pickCover(prev.coverImage, g.coverImage),
+            screenshots: pickList(prev.screenshots, g.screenshots),
+            videos: pickList(prev.videos, g.videos),
             systemRequirements: g.systemRequirements,
             ...(g.hardwareRequirements ? { hardwareRequirements: g.hardwareRequirements } : {}),
-            longDescription: g.longDescription ?? prev.longDescription ?? null,
+            longDescription: pickText(prev.longDescription, g.longDescription),
             whyWePickedIt: g.whyWePickedIt ?? null,
             installSteps: g.installSteps ?? [],
             faq: g.faq ?? [],
@@ -171,16 +188,14 @@ async function main() {
       continue;
     }
 
-    // Published: only fill thin gaps — never demote.
+    // Published: only fill empty media gaps — never demote or replace CMS arrays.
     const patch: Record<string, unknown> = {};
-    if (isThinMedia(prev)) {
-      if (!prev.coverImage && g.coverImage) patch.coverImage = g.coverImage;
-      if ((prev.screenshots?.length ?? 0) < 2 && g.screenshots?.length) {
-        patch.screenshots = g.screenshots;
-      }
-      if ((prev.videos?.length ?? 0) < 1 && g.videos?.length) {
-        patch.videos = g.videos;
-      }
+    if (!prev.coverImage && g.coverImage) patch.coverImage = g.coverImage;
+    if (!(prev.screenshots?.length) && g.screenshots?.length) {
+      patch.screenshots = g.screenshots;
+    }
+    if (!(prev.videos?.length) && g.videos?.length) {
+      patch.videos = g.videos;
     }
     if (!prev.launcherInstall && launcher) {
       patch.launcherInstall = launcher;
@@ -193,7 +208,7 @@ async function main() {
       patchedPublished++;
       console.log(`PATCH  ${g.slug} (${Object.keys(patch).join(",")})`);
     } else {
-      console.log(`SKIP   ${g.slug} (published, nothing thin)`);
+      console.log(`SKIP   ${g.slug} (published, nothing empty)`);
     }
   }
 
