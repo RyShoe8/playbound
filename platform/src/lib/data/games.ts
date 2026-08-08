@@ -925,7 +925,6 @@ const facts: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#1e3a5f", to: "#f59e0b", icon: "Landmark" },
-    coverImage: null,
     screenshots: [],
     systemRequirements: {
       min: "64-bit OS · dual-core CPU · 4 GB RAM · OpenGL 3.3 · ~200 MB (standalone)",
