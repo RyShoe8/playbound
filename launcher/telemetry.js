@@ -187,6 +187,19 @@ function createTelemetry({
       });
     },
 
+    /**
+     * Install never completed. Server upserts an Admin bug from this event
+     * (same path as launch_failed).
+     */
+    installFailed(info) {
+      return track("install_failed", {
+        ...editionProps(info),
+        code: info.code || "INSTALL_FAILED",
+        message: String(info.message || "").slice(0, 1000) || undefined,
+        phase: info.phase || "install",
+      });
+    },
+
     /** Unexpected error for Admin auto-bugs. */
     error(info) {
       return track("error", {

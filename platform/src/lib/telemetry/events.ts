@@ -173,6 +173,15 @@ export type TelemetryEventMap = {
     phase?: string;
   } & Extra;
 
+  /** Game/mod install failed before completion (download blocked, extract, etc.). */
+  install_failed: EditionProps & {
+    code?: string;
+    message?: string;
+    platform?: string;
+    launcherVersion?: string;
+    phase?: string;
+  } & Extra;
+
   java_runtime_install_started: { version?: string; surface?: string } & Extra;
   java_runtime_install_succeeded: { version?: string; surface?: string } & Extra;
   java_runtime_install_failed: { message?: string; surface?: string } & Extra;

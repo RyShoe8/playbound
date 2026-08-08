@@ -89,6 +89,16 @@ function hostAllowedForDownload(hostname) {
   if (host.endsWith(".github.com") && host.includes("objects")) return true;
   if (host.endsWith(".public.blob.vercel-storage.com")) return true;
   if (host.endsWith(".vercel-storage.com")) return true;
+  // One-click catalog hosts (direct-installer / zip / exe recipes).
+  if (host === "files.freeciv.org" || host.endsWith(".freeciv.org")) return true;
+  if (host === "sourceforge.net" || host.endsWith(".sourceforge.net")) return true;
+  if (host === "dl.xonotic.org" || host.endsWith(".xonotic.org")) return true;
+  if (host === "releases.wildfiregames.com" || host.endsWith(".wildfiregames.com")) return true;
+  if (host === "gitlab.com" || host.endsWith(".gitlab.com") || host.endsWith(".gitlab-static.net")) {
+    return true;
+  }
+  if (host === "zero-k.info" || host.endsWith(".zero-k.info")) return true;
+  if (host === "hedgewars.org" || host.endsWith(".hedgewars.org")) return true;
   try {
     const apiHost = new URL(getApiBase()).hostname.toLowerCase();
     if (host === apiHost) return true;
@@ -2571,7 +2581,42 @@ async function writeJarLauncher(gameDir, jarName) {
 
 /* ── core actions ──────────────────────────────────────────── */
 
+function installErrorCode(err) {
+  const msg = String(err?.message || err || "");
+  if (/Download host not allowed/i.test(msg)) return "DOWNLOAD_HOST_BLOCKED";
+  if (/Invalid download URL/i.test(msg)) return "INVALID_DOWNLOAD_URL";
+  if (/checksum/i.test(msg)) return "CHECKSUM_MISMATCH";
+  if (/no executable found/i.test(msg)) return "EXE_NOT_FOUND";
+  if (/Unknown game/i.test(msg)) return "UNKNOWN_GAME";
+  if (/HTTP \d+/i.test(msg)) return "DOWNLOAD_HTTP_ERROR";
+  if (/Couldn't install the base game/i.test(msg)) return "BASE_GAME_INSTALL_FAILED";
+  if (/Download failed/i.test(msg)) return "DOWNLOAD_FAILED";
+  return "INSTALL_FAILED";
+}
+
+function reportInstallFailed(slug, editionSlug, err, phase = "install") {
+  try {
+    void telemetry.installFailed({
+      ...editionInfoFor(slug, { editionSlug: editionSlug || undefined }),
+      code: installErrorCode(err),
+      message: String(err?.message || err || "Install failed").slice(0, 1000),
+      phase,
+    });
+  } catch {
+    /* never block installs on telemetry */
+  }
+}
+
 async function installGame(slug, targetDir, editionSlug, selectedAddons) {
+  try {
+    return await installGameInner(slug, targetDir, editionSlug, selectedAddons);
+  } catch (err) {
+    reportInstallFailed(slug, editionSlug || null, err, "install");
+    throw err;
+  }
+}
+
+async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   let entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
 
   let editionMeta = null;
@@ -2989,6 +3034,15 @@ async function placeModFiles(slug, install, baseDirOverride) {
 }
 
 async function installMod(slug, baseDirOverride) {
+  try {
+    return await installModInner(slug, baseDirOverride);
+  } catch (err) {
+    reportInstallFailed(slug, null, err, "install-mod");
+    throw err;
+  }
+}
+
+async function installModInner(slug, baseDirOverride) {
   sendProgress({ phase: "resolving" });
   const install = await fetchModInstall(slug);
 
