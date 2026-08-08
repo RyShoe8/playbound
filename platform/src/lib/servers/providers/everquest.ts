@@ -1,3 +1,4 @@
+import { applyCountryCentroid, locationFromCountryName } from "../geo";
 import type { GameServer } from "../types";
 import { MAX_SERVERS } from "../types";
 
@@ -7,6 +8,9 @@ import { MAX_SERVERS } from "../types";
  * Official Live worlds: Daybreak Census load bands (low/medium/high) mapped to
  * conservative estimated player counts — Census does not expose exact concurrency.
  * Quarm / P99: exact concurrent counts from the public EQEmulator server list.
+ *
+ * Hosts are synthetic (not joinable endpoints). Locations are region centroids so
+ * the web Est. column can show a rough distance-based latency guess.
  *
  * Do not scrape TAKP zonepop for Quarm — that is a different server.
  */
@@ -23,6 +27,9 @@ const LOAD_BAND_PLAYERS: Record<string, number> = {
   locked: 0,
   down: 0,
 };
+
+const US_LOCATION = applyCountryCentroid({ countryCode: "US" });
+const US_EAST_LOCATION = applyCountryCentroid({ countryCode: "US", region: "US East" });
 
 type CensusRow = {
   name?: string;
@@ -60,6 +67,7 @@ async function fetchOfficialLiveServers(): Promise<GameServer[]> {
   const data = (await res.json()) as { game_server_status_list?: CensusRow[] };
   const rows = Array.isArray(data.game_server_status_list) ? data.game_server_status_list : [];
   const mapped: GameServer[] = [];
+  const liveLocation = locationFromCountryName("United States") ?? US_LOCATION;
 
   for (const row of rows) {
     const name = String(row.name || "").trim();
@@ -77,7 +85,7 @@ async function fetchOfficialLiveServers(): Promise<GameServer[]> {
       maxPlayers: null,
       map: `Load: ${band}`,
       gameType: "official",
-      location: null,
+      location: liveLocation,
       protected: false,
     });
   }
@@ -140,6 +148,7 @@ async function fetchCommunityServers(): Promise<GameServer[]> {
   const html = await res.text();
   const rows = parseEqEmuList(html);
   const mapped: GameServer[] = [];
+  const quarmLocation = locationFromCountryName("United States") ?? US_LOCATION;
 
   for (const row of rows) {
     const name = stripHtml(row.name);
@@ -153,7 +162,7 @@ async function fetchCommunityServers(): Promise<GameServer[]> {
         maxPlayers: 1200,
         map: null,
         gameType: "project-quarm",
-        location: null,
+        location: quarmLocation,
         protected: false,
       });
       continue;
@@ -170,7 +179,7 @@ async function fetchCommunityServers(): Promise<GameServer[]> {
         maxPlayers: null,
         map: realm,
         gameType: "project-99",
-        location: null,
+        location: US_EAST_LOCATION,
         protected: false,
       });
     }
