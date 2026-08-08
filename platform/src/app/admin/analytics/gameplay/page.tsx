@@ -620,14 +620,14 @@ export default async function GameplayAnalyticsPage({
             </div>
           </section>
 
-          {/* ── Recent sessions ────────────────────────────────────────── */}
+          {/* ── Recent activity ────────────────────────────────────────── */}
           <section>
             <SectionHeader
-              title="Recent sessions"
+              title="Recent activity"
               subtitle={
                 sp.game
                   ? `Filtered to ${sp.game}`
-                  : "Latest 40 events"
+                  : "Sessions and mobile store launches · latest 40"
               }
             />
             <form
