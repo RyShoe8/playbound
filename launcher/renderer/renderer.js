@@ -1129,7 +1129,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           e.stopPropagation();
           const ed = btn.dataset.edition;
           try {
-            setStatus(`Launching ${game.title} (${ed})…`);
+            setStatus(`Checking Java / launching ${game.title} (${ed})…`);
             await window.playbound.play(game.slug, null, ed);
             startGameSession(game.slug, game.title);
             setStatus(`Launched ${game.title}`);
@@ -1169,7 +1169,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
         e.stopPropagation();
         try {
-          setStatus(`Launching ${game.title}…`);
+          setStatus(`Checking Java / launching ${game.title}…`);
           await window.playbound.play(game.slug, null, onlyEd);
           startGameSession(game.slug, game.title);
           setStatus(`Launched ${game.title}`);
@@ -2649,7 +2649,7 @@ async function renderGameDetailView(slug) {
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
       try {
-        setStatus("Launching...");
+        setStatus("Checking Java / launching…");
         await window.playbound.play(slug);
         startGameSession(slug, detail.title || slug);
         setStatus(`Launched ${detail.title || slug}`);
@@ -3458,7 +3458,7 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
   });
   document.getElementById("edition-play")?.addEventListener("click", async () => {
     try {
-      setStatus("Launching...");
+      setStatus("Checking Java / launching…");
       await window.playbound.play(gameSlug, null, editionSlug);
       startGameSession(gameSlug, edition.gameTitle || gameSlug);
       setStatus(`Launched ${edition.editionName || edition.gameTitle || gameSlug}`);

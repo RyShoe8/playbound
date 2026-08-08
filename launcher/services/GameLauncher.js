@@ -6,36 +6,35 @@ const Platform = require("../platform");
 const JAVA_MISSING_MSG =
   "Java 17+ is required to run this game. Install JDK 17+ from https://adoptium.net/ then try again.";
 
+const JAVA_EARLY_EXIT_MSG =
+  "The game exited immediately. Install or update Java 17+ from https://adoptium.net/ then try again.";
+
 /**
  * GameLauncher abstraction that handles executing games based on capabilities
  * instead of hardcoded .exe assumptions.
  */
 class GameLauncher {
   /**
-   * Locate javaw (Windows) or java for launching .jar games.
+   * Locate a verified javaw (Windows) or java for launching .jar games.
+   * Skips Windows App-execution-alias stubs and binaries that fail `-version`.
    * @returns {string | null}
    */
   static resolveJavaBinary() {
     const isWin = process.platform === "win32";
-    const candidates = isWin ? ["javaw.exe", "java.exe"] : ["java"];
+    const names = isWin ? ["javaw.exe", "java.exe"] : ["java"];
 
-    for (const name of candidates) {
-      const found = whichBinary(isWin ? name.replace(/\.exe$/i, "") : name);
-      if (found) {
-        // On Windows prefer javaw.exe beside java.exe when `where java` hit first.
-        if (isWin && /java\.exe$/i.test(found)) {
-          const javaw = path.join(path.dirname(found), "javaw.exe");
-          if (fs.existsSync(javaw)) return javaw;
-        }
-        return found;
+    for (const name of names) {
+      for (const found of whichBinaryAll(isWin ? name.replace(/\.exe$/i, "") : name)) {
+        const preferred = preferJavawBeside(found, isWin);
+        if (isUsableJavaBinary(preferred)) return preferred;
       }
     }
 
     const home = process.env.JAVA_HOME;
     if (home) {
-      for (const name of candidates) {
+      for (const name of names) {
         const p = path.join(home, "bin", name);
-        if (fs.existsSync(p)) return p;
+        if (isUsableJavaBinary(p)) return p;
       }
     }
 
@@ -45,6 +44,17 @@ class GameLauncher {
     }
 
     return null;
+  }
+
+  /** @returns {string} Absolute path to a verified Java binary. */
+  static assertJavaReady() {
+    const bin = this.resolveJavaBinary();
+    if (!bin) {
+      const err = new Error(JAVA_MISSING_MSG);
+      err.code = "JAVA_MISSING";
+      throw err;
+    }
+    return bin;
   }
 
   /**
@@ -78,12 +88,7 @@ class GameLauncher {
     const launchPath = this.preferJarBesideLauncher(targetPath);
 
     if (/\.jar$/i.test(launchPath)) {
-      const javaBin = this.resolveJavaBinary();
-      if (!javaBin) {
-        const err = new Error(JAVA_MISSING_MSG);
-        err.code = "JAVA_MISSING";
-        throw err;
-      }
+      const javaBin = this.assertJavaReady();
       const child = spawn(javaBin, ["-jar", launchPath, ...args], {
         cwd: path.dirname(launchPath),
         detached: true,
@@ -107,7 +112,36 @@ class GameLauncher {
   }
 }
 
-function whichBinary(name) {
+function isWindowsAppsStub(filePath) {
+  const normalized = String(filePath || "").replace(/\//g, "\\").toLowerCase();
+  return normalized.includes("\\windowsapps\\");
+}
+
+function preferJavawBeside(found, isWin) {
+  if (!isWin || !found || !/java\.exe$/i.test(found)) return found;
+  const javaw = path.join(path.dirname(found), "javaw.exe");
+  return fs.existsSync(javaw) ? javaw : found;
+}
+
+function isUsableJavaBinary(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return false;
+  if (isWindowsAppsStub(filePath)) return false;
+  try {
+    // `-version` writes to stderr on most JVMs; accept either stream / ignore content.
+    execFileSync(filePath, ["-version"], {
+      encoding: "utf8",
+      timeout: 8000,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** All PATH hits for a binary name (Windows `where` can return several). */
+function whichBinaryAll(name) {
   try {
     const cmd = process.platform === "win32" ? "where" : "which";
     const out = execFileSync(cmd, [name], {
@@ -116,15 +150,13 @@ function whichBinary(name) {
       windowsHide: true,
       stdio: ["ignore", "pipe", "ignore"],
     });
-    const first = String(out || "")
+    return String(out || "")
       .split(/\r?\n/)
       .map((l) => l.trim())
-      .find(Boolean);
-    if (first && fs.existsSync(first)) return first;
+      .filter((l) => l && fs.existsSync(l));
   } catch {
-    /* not on PATH */
+    return [];
   }
-  return null;
 }
 
 function findJavaInCommonWindowsPaths() {
@@ -153,18 +185,16 @@ function findJavaInCommonWindowsPaths() {
       } catch {
         continue;
       }
-      // Newest-looking jdk folder first
       entries = entries
         .filter((d) => d.isDirectory())
         .sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true }));
       for (const d of entries) {
         for (const name of ["javaw.exe", "java.exe"]) {
           const p = path.join(base, d.name, "bin", name);
-          if (fs.existsSync(p)) return p;
+          if (isUsableJavaBinary(p)) return p;
         }
       }
     }
-    // Oracle-style: Program Files\Java\jdk-17\bin\javaw.exe
     const javaRoot = path.join(root, "Java");
     if (fs.existsSync(javaRoot)) {
       try {
@@ -175,7 +205,7 @@ function findJavaInCommonWindowsPaths() {
         for (const d of entries) {
           for (const name of ["javaw.exe", "java.exe"]) {
             const p = path.join(javaRoot, d.name, "bin", name);
-            if (fs.existsSync(p)) return p;
+            if (isUsableJavaBinary(p)) return p;
           }
         }
       } catch {
@@ -187,5 +217,6 @@ function findJavaInCommonWindowsPaths() {
 }
 
 GameLauncher.JAVA_MISSING_MSG = JAVA_MISSING_MSG;
+GameLauncher.JAVA_EARLY_EXIT_MSG = JAVA_EARLY_EXIT_MSG;
 
 module.exports = GameLauncher;
