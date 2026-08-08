@@ -424,7 +424,21 @@ document.querySelectorAll('input[name="compat-filter"]').forEach((input) => {
 
 void loadCompatibilitySetting();
 
+/** @type {null | "install-update" | "check-updates"} */
+let statusAction = null;
+
+function setStatusAction(action) {
+  statusAction = action;
+  statusMsg?.classList.toggle("statusbar-msg--action", Boolean(action));
+  if (statusMsg) {
+    if (action) statusMsg.setAttribute("role", "button");
+    else statusMsg.removeAttribute("role");
+    statusMsg.tabIndex = action ? 0 : -1;
+  }
+}
+
 function setStatus(text, isError = false) {
+  setStatusAction(null);
   statusMsg.textContent = text || "";
   statusMsg.style.color = isError ? "var(--danger)" : "var(--text-muted)";
 }
@@ -437,6 +451,33 @@ function setProgress(pct) {
     statusBar.style.width = `${pct}%`;
   }
 }
+
+async function runStatusAction() {
+  if (!statusAction) return;
+  if (statusAction === "install-update") {
+    setStatus("Installing update and restarting…");
+    await window.playbound.installUpdate();
+    return;
+  }
+  if (statusAction === "check-updates") {
+    setStatus("Checking for updates…");
+    const res = await window.playbound.checkForUpdates();
+    if (!res?.ok) {
+      setStatus(res?.message || "Update check failed", true);
+    }
+  }
+}
+
+statusMsg?.addEventListener("click", () => {
+  void runStatusAction();
+});
+statusMsg?.addEventListener("keydown", (e) => {
+  if (!statusAction) return;
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    void runStatusAction();
+  }
+});
 
 async function refreshAccountStatus() {
   try {
@@ -485,7 +526,9 @@ window.playbound.onUpdateStatus?.((data) => {
     setStatus("Checking for updates…");
     setProgress(null);
   } else if (phase === "available") {
-    setStatus(`Update ${data.version} available…`);
+    statusMsg.textContent = `Update ${data.version} available — click to download`;
+    statusMsg.style.color = "var(--accent-light)";
+    setStatusAction("check-updates");
     setProgress(null);
     patchSettingsHint(`Update ${data.version} available.`);
   } else if (phase === "downloading") {
@@ -494,7 +537,9 @@ window.playbound.onUpdateStatus?.((data) => {
     setProgress(pct);
     patchSettingsHint(`Downloading… ${pct}%`);
   } else if (phase === "ready") {
-    setStatus(`Update ${data.version} ready — install from Settings`);
+    statusMsg.textContent = `Update ${data.version} ready — click to install and restart`;
+    statusMsg.style.color = "var(--accent-light)";
+    setStatusAction("install-update");
     setProgress(null);
     refreshSettings();
   } else if (phase === "none") {
