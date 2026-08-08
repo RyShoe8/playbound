@@ -105,7 +105,7 @@ function parseDeepLink(url) {
       parsed.port = Number(u.searchParams.get("port") || 0);
       parsed.name = u.searchParams.get("name") || "";
     }
-    if (action === "install" || action === "play") {
+    if (action === "install" || action === "play" || action === "uninstall") {
       const edition = u.searchParams.get("edition");
       if (edition) parsed.editionSlug = edition;
     }
@@ -522,7 +522,7 @@ function handleDeepLink(parsed) {
   }
   if (parsed.action === "uninstall" && parsed.slug) {
     showMainWindow();
-    void confirmAndUninstallGame(parsed.slug, parsed.editionSlug || null).catch((err) => {
+    void uninstallGameFromDeepLink(parsed.slug, parsed.editionSlug || null).catch((err) => {
       console.warn("uninstall failed:", err?.message || err);
       notifyAccount({
         connected: Boolean(loadSettings().launcherToken),
@@ -533,7 +533,7 @@ function handleDeepLink(parsed) {
   }
   if (parsed.action === "uninstall-mod" && parsed.slug) {
     showMainWindow();
-    void confirmAndUninstallMod(parsed.slug).catch((err) => {
+    void uninstallModFromDeepLink(parsed.slug).catch((err) => {
       console.warn("uninstall-mod failed:", err?.message || err);
       notifyAccount({
         connected: Boolean(loadSettings().launcherToken),
@@ -587,6 +587,21 @@ function pushContext() {
   if (win && !win.isDestroyed() && !win.webContents.isLoading()) {
     win.webContents.send("context", buildContextPayload());
   }
+}
+
+function afterUiReady(fn) {
+  if (!win || win.isDestroyed()) return;
+  if (!win.webContents.isLoading()) {
+    fn();
+    return;
+  }
+  win.webContents.once("did-finish-load", () => {
+    try {
+      fn();
+    } catch (err) {
+      console.warn("afterUiReady failed:", err?.message || err);
+    }
+  });
 }
 
 async function fetchModInstall(slug) {
@@ -2893,6 +2908,69 @@ async function confirmAndUninstallMod(slug) {
   return uninstallMod(slug);
 }
 
+/** Web handoff already confirmed intent — uninstall without a second dialog. */
+async function uninstallGameFromDeepLink(slug, editionSlug = null) {
+  await ensureCatalogEntry(slug);
+  const entry = catalog.find((e) => e.slug === slug);
+  const title = entry?.title || slug;
+  const state = loadState();
+  if (!state[slug]) {
+    context = null;
+    afterUiReady(() => {
+      pushContext();
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: `${title} is not installed in the launcher.`,
+      });
+    });
+    return { status: "not-installed" };
+  }
+  const result = await uninstallGame(slug, editionSlug || null);
+  context = null;
+  afterUiReady(() => {
+    pushContext();
+    notifyAccount({
+      connected: Boolean(loadSettings().launcherToken),
+      message: `Uninstalled ${title}.`,
+    });
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("install-detected", { slug, uninstalled: true });
+    }
+  });
+  return result;
+}
+
+async function uninstallModFromDeepLink(slug) {
+  const state = loadState();
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const info = mods[slug];
+  const title = info?.title || slug;
+  if (!info) {
+    context = null;
+    afterUiReady(() => {
+      pushContext();
+      notifyAccount({
+        connected: Boolean(loadSettings().launcherToken),
+        message: `${title} is not tracked as an installed mod.`,
+      });
+    });
+    return { status: "not-installed" };
+  }
+  const result = await uninstallMod(slug);
+  context = null;
+  afterUiReady(() => {
+    pushContext();
+    notifyAccount({
+      connected: Boolean(loadSettings().launcherToken),
+      message: `Removed ${title}.`,
+    });
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("install-detected", { slug, uninstalled: true });
+    }
+  });
+  return result;
+}
+
 async function uninstallGame(slug, editionSlug = null) {
   stopExeScan(slug);
   stopInstallerPoll();
@@ -4197,12 +4275,10 @@ if (gotLock) {
     
     createWindow();
     scheduleLibrarySync();
-    if (parsedLaunch && (parsedLaunch.action === "auth" || parsedLaunch.action === "link")) {
+    if (parsedLaunch) {
       handleDeepLink(parsedLaunch);
-    } else if (parsedLaunch) {
-      await setContext(parsedLaunch);
-      void startupLibrarySync();
-    } else {
+    }
+    if (!parsedLaunch || parsedLaunch.action !== "sync") {
       void startupLibrarySync();
     }
     app.on("activate", () => {
