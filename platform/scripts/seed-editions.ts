@@ -81,6 +81,7 @@ async function main() {
   }
 
   // Launcher editions API only lists editions under visible parent games.
+  const { requestDiscordProvision } = await import("../src/lib/discordProvision");
   for (const gameSlug of parentsToPublish) {
     const res = await CatalogGame.updateOne(
       { slug: gameSlug, status: { $ne: "published" } },
@@ -89,6 +90,8 @@ async function main() {
     if (res.modifiedCount) {
       console.log(`PUBLISH parent game ${gameSlug}`);
     }
+    // Always ask the bot — creates franchise category + edition channels when ready.
+    await requestDiscordProvision(gameSlug);
   }
 
   console.log(`Seeded/updated ${upserted} editions into MongoDB.`);
