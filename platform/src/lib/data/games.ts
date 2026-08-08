@@ -906,7 +906,7 @@ const facts: Game[] = [
     title: "OpenRCT2",
     tagline: "RollerCoaster Tycoon 2, open-sourced and still expanding.",
     description:
-      "OpenRCT2 is an open-source re-implementation of RollerCoaster Tycoon 2 with modern multiplayer, UI improvements, and an active park-building community. It needs the original RCT2 data files, then unlocks decades of quality-of-life that the classic never had.",
+      "OpenRCT2 is an open-source re-implementation of RollerCoaster Tycoon 2 with modern multiplayer, UI improvements, and an active park-building community. It needs owned RollerCoaster Tycoon 2 or RCT Classic data files (not included) — after installing OpenRCT2, point it at your RCT2 folder on first launch.",
     developerSlug: "openrct2-team",
     genres: ["Simulation", "Strategy"],
     tags: ["Theme Park", "Management", "Sandbox", "Mods"],

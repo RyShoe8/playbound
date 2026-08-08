@@ -1410,6 +1410,52 @@ function buildContextPayload() {
 
 /* ── release resolution ────────────────────────────────────── */
 
+/**
+ * Prefer a GitHub release asset that matches the host CPU.
+ * Deprioritize arm64 on x64/ia32 hosts (libuv often reports spawn UNKNOWN).
+ */
+function hostArchAssetScore(assetName) {
+  const n = String(assetName || "").toLowerCase();
+  const isArm = /(?:^|[^a-z0-9])(arm64|aarch64)(?:[^a-z0-9]|$)/.test(n);
+  const isX64 = /(?:^|[^a-z0-9])(x64|x86_64|win64|amd64)(?:[^a-z0-9]|$)/.test(n);
+  const isX86 =
+    !isX64 &&
+    !isArm &&
+    /(?:^|[^a-z0-9])(win32|ia32|x86)(?:[^a-z0-9]|$)/.test(n);
+  const arch = process.arch;
+
+  if (arch === "arm64") {
+    if (isArm) return 100;
+    if (isX64) return 40;
+    if (isX86) return 20;
+    return 10;
+  }
+  if (arch === "ia32") {
+    if (isX86) return 100;
+    if (isX64) return 30;
+    if (isArm) return 0;
+    return 10;
+  }
+  // x64 and anything else
+  if (isArm) return 0;
+  if (isX64) return 100;
+  if (isX86) return 50;
+  return 10;
+}
+
+/** Pick the best asset matching assetPattern for this machine. */
+function pickGithubAsset(assets, assetPattern) {
+  const pattern = new RegExp(assetPattern || ".*", "i");
+  const matched = (assets || []).filter((a) => a?.name && pattern.test(a.name));
+  if (!matched.length) return null;
+  matched.sort(
+    (a, b) =>
+      hostArchAssetScore(b.name) - hostArchAssetScore(a.name) ||
+      String(a.name).localeCompare(String(b.name))
+  );
+  return matched[0];
+}
+
 async function resolveDownload(entry) {
   if (entry.kind === "direct-zip" || entry.kind === "direct-installer" || entry.kind === "direct-exe") {
     let name = entry.fileName || path.basename(new URL(entry.url).pathname) || `${entry.slug}.bin`;
@@ -1451,8 +1497,7 @@ async function resolveDownload(entry) {
   });
   if (!res.ok) throw new Error(`GitHub API ${res.status} for ${entry.repo}`);
   const release = await res.json();
-  const pattern = new RegExp(entry.assetPattern, "i");
-  const asset = (release.assets || []).find((a) => pattern.test(a.name));
+  const asset = pickGithubAsset(release.assets, entry.assetPattern);
   if (!asset) throw new Error(`No asset matching /${entry.assetPattern}/ in ${entry.repo} ${release.tag_name}`);
   return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
 }
@@ -1478,8 +1523,7 @@ async function resolveModDownload(install) {
   });
   if (res.ok) {
     const release = await res.json();
-    const pattern = new RegExp(install.assetPattern || "\\.zip$", "i");
-    const asset = (release.assets || []).find((a) => pattern.test(a.name));
+    const asset = pickGithubAsset(release.assets, install.assetPattern || "\\.zip$");
     if (asset) {
       return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
     }
@@ -3062,11 +3106,31 @@ async function playGame(slug, join = null, editionSlug = null) {
   try {
     await spawnTrackedExe(slug, launchPath, args);
   } catch (err) {
-    const message = err?.message || String(err);
+    const rawMessage = err?.message || String(err);
+    const exeName = path.basename(launchPath || "") || "game";
     let code = "UNKNOWN";
-    if (err?.code === "JAVA_MISSING" || /Java 17\+/i.test(message)) code = "JAVA_MISSING";
-    else if (/exited immediately/i.test(message)) code = "JAVA_EARLY_EXIT";
-    else if (/ENOENT|not runnable|file missing/i.test(message)) code = "SPAWN_ENOENT";
+    let message = rawMessage;
+    if (err?.code === "JAVA_MISSING" || /Java 17\+/i.test(rawMessage)) {
+      code = "JAVA_MISSING";
+    } else if (/exited immediately/i.test(rawMessage)) {
+      code = "JAVA_EARLY_EXIT";
+    } else if (err?.code === "SHELL_LAUNCH_BLOCKED" || /bat\/\.cmd launcher/i.test(rawMessage)) {
+      code = "SHELL_LAUNCH_BLOCKED";
+    } else if (/outside allowed install locations/i.test(rawMessage)) {
+      code = "SPAWN_PATH_DENIED";
+    } else if (
+      err?.code === "UNKNOWN" ||
+      /^spawn\s+UNKNOWN/i.test(rawMessage) ||
+      /spawn\s+unknown/i.test(rawMessage)
+    ) {
+      code = "SPAWN_UNKNOWN";
+      message = `Couldn't start ${exeName} (wrong CPU architecture or blocked executable). Reinstall this game from PlayBound, or use Locate to pick the correct openrct2.exe / game .exe.`;
+      if (slug !== "openrct2") {
+        message = `Couldn't start ${exeName} (wrong CPU architecture or blocked executable). Try reinstalling or Locate the correct .exe.`;
+      }
+    } else if (err?.code === "ENOENT" || /ENOENT|not runnable|file missing/i.test(rawMessage)) {
+      code = "SPAWN_ENOENT";
+    }
 
     // Offer one-click managed Java install, then retry once.
     if (code === "JAVA_MISSING") {
@@ -3157,7 +3221,9 @@ async function playGame(slug, join = null, editionSlug = null) {
       message,
       phase: "spawn",
     });
-    throw err instanceof Error ? err : new Error(message);
+    const out = new Error(message);
+    out.code = code;
+    throw out;
   }
 
   void telemetry.editionLaunched(

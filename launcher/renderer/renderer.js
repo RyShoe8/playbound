@@ -29,6 +29,16 @@ let _liveStatsLastGood = null;
 const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 
+const OPENRCT2_DATA_HINT =
+  "OpenRCT2 needs owned RollerCoaster Tycoon 2 or RCT Classic game data (not included). On first launch, point it at your RCT2 folder.";
+
+function gamePlayHintHtml(slug) {
+  if (slug === "openrct2") {
+    return `<p class="view-sub" style="margin:8px 0 0;max-width:36rem">${escapeHtml(OPENRCT2_DATA_HINT)}</p>`;
+  }
+  return "";
+}
+
 function normalizePlatform(value) {
   const t = String(value || "")
     .trim()
@@ -1387,7 +1397,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           <button class="btn-danger btn-sm btn-lib-uninstall-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Remove</button>
         </div>`
         )
-        .join("");
+        .join("") + gamePlayHintHtml(game.slug);
       actions.querySelectorAll(".btn-lib-play-ed").forEach((btn) => {
         btn.addEventListener("click", async (e) => {
           e.stopPropagation();
@@ -1429,6 +1439,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
       ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
       <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
+      ${gamePlayHintHtml(game.slug)}
     `;
       actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -2926,9 +2937,10 @@ async function renderGameDetailView(slug) {
             <button class="btn-primary" type="button" id="install-tab-install">Install selected edition</button>
             ${detail.website ? `<button class="btn-secondary" type="button" id="install-tab-website">Official website</button>` : ""}
           </div>
+          ${gamePlayHintHtml(slug)}
           ${
             detail.systemRequirements
-              ? `<div class="req-grid" style="margin-bottom:16px">
+              ? `<div class="req-grid" style="margin-bottom:16px;margin-top:16px">
               <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
               <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
             </div>`
@@ -3228,6 +3240,7 @@ async function renderGameDetailView(slug) {
       ${window.playbound.platform.supportsDesktopShortcuts() ? `<button class="btn-secondary" id="act-shortcut">Create Shortcut</button>` : ""}
       <button class="btn-secondary" id="act-folder">${window.playbound.platform.getOS() === "macos" ? "Open in Finder" : "Open Folder"}</button>
       <button class="btn-danger" id="act-uninstall">Uninstall</button>
+      ${gamePlayHintHtml(slug)}
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
       try {
@@ -3964,7 +3977,8 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
           ${
             editionInstalled
               ? `<button class="btn-success" id="edition-play">Play</button>
-                 <button class="btn-danger" id="edition-uninstall">Uninstall</button>`
+                 <button class="btn-danger" id="edition-uninstall">Uninstall</button>
+                 ${gamePlayHintHtml(gameSlug)}`
               : ""
           }
         </div>

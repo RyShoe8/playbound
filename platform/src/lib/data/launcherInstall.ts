@@ -185,8 +185,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "github-installer",
     repo: "OpenRCT2/OpenRCT2",
-    assetPattern: "OpenRCT2-.*-windows-x86_64\\.exe$|windows-installer.*\\.exe$",
-    note: "Requires RollerCoaster Tycoon 2 game data files.",
+    assetPattern: "OpenRCT2-.*-windows-installer-(x64|win32|arm64)\\.exe$",
+    note: "Needs owned RollerCoaster Tycoon 2 or RCT Classic game data (not included). Install OpenRCT2, then point it at your RCT2 folder on first launch.",
     knownExePaths: [
       "%PROGRAMFILES%\\OpenRCT2\\openrct2.exe",
       "%PROGRAMFILES(X86)%\\OpenRCT2\\openrct2.exe",
