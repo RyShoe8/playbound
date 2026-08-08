@@ -20,19 +20,14 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
 
-    // Search by username or exact email
+    // Search by username only — never match or expose email.
     const users = await User.find({
       $and: [
         { _id: { $ne: userId } },
-        {
-          $or: [
-            { username: { $regex: query, $options: "i" } },
-            { email: query.toLowerCase() },
-          ],
-        },
+        { username: { $regex: query, $options: "i" } },
       ],
     })
-      .select("username email image connectedAccounts")
+      .select("username image connectedAccounts")
       .limit(20)
       .lean();
 

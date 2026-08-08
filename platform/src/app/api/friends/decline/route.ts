@@ -3,7 +3,9 @@ import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { markFriendRequestNotificationsRead } from "@/lib/notifications";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
+/** Recipient declines an incoming pending request → status declined. */
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
   if (!userId) {
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
 
     const friendRequest = await Friend.findOne({
       _id: requestId,
-      $or: [{ recipientId: userId }, { requesterId: userId }],
+      recipientId: userId,
       status: "pending",
     });
 
@@ -29,12 +31,17 @@ export async function POST(req: Request) {
     }
 
     const friendshipId = String(friendRequest._id);
-    const recipientId = String(friendRequest.recipientId);
-    await friendRequest.deleteOne();
+    friendRequest.status = "declined";
+    await friendRequest.save();
 
     void markFriendRequestNotificationsRead({
-      userId: recipientId,
+      userId,
       friendshipId,
+    });
+    void saveEvent({
+      event: "friend_request_declined",
+      properties: { friendshipId },
+      userId,
     });
 
     return NextResponse.json({ success: true });

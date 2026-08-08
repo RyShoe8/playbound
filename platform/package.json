@@ -28,6 +28,8 @@
     "seed:weekly": "tsx scripts/seed-weekly.ts",
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "verify:maintenance": "tsx scripts/verify-maintenance.ts",
     "check:auth-urls": "tsx scripts/check-auth-urls.ts"
   },
@@ -66,6 +68,7 @@
     "shadcn": "^4.12.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

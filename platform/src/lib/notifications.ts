@@ -45,3 +45,29 @@ export async function createFriendRequestNotification(opts: {
     console.error("createFriendRequestNotification failed:", err);
   }
 }
+
+export async function createFriendAcceptedNotification(opts: {
+  recipientId: string;
+  fromUserId: string;
+  fromUsername: string;
+  friendshipId: string;
+}): Promise<void> {
+  try {
+    await dbConnect();
+    const username = opts.fromUsername || "Someone";
+    await Notification.create({
+      userId: opts.recipientId,
+      type: "friend_request_accepted",
+      title: `${username} accepted your friend request`,
+      body: "You’re friends now — see what they’re playing.",
+      href: "/friends",
+      meta: {
+        friendshipId: String(opts.friendshipId),
+        fromUserId: opts.fromUserId,
+        fromUsername: username,
+      },
+    });
+  } catch (err) {
+    console.error("createFriendAcceptedNotification failed:", err);
+  }
+}

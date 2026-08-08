@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getPresenceUserId } from "@/lib/presenceAuth";
 import { startPresence } from "@/lib/presence/server";
 import { CLIENT_REPORTABLE_STATUSES, HEARTBEAT_INTERVAL_MS } from "@/lib/presence/types";
 
@@ -13,19 +12,9 @@ export const presenceBodySchema = z.object({
   sessionId: z.string().max(100).nullish(),
 });
 
-/**
- * POST /api/presence/start
- *
- * Opens presence and an active platform session. Idempotent — calling it again
- * with the same sessionId resumes rather than duplicating, so a remount or a
- * reconnect is harmless.
- *
- * Anonymous callers get 401 and no row is written: presence without an
- * identity has nobody to be shown to.
- */
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const userId = await getPresenceUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
 
@@ -33,7 +22,7 @@ export async function POST(req: Request) {
     const body = presenceBodySchema.parse(await req.json().catch(() => ({})));
     const result = await startPresence(
       {
-        userId: session.user.id,
+        userId,
         userAgent: req.headers.get("user-agent"),
         referrer: req.headers.get("referer"),
       },
@@ -45,8 +34,6 @@ export async function POST(req: Request) {
       sessionId: result.sessionId,
       platform: result.platform,
       device: result.device,
-      // Returned so the cadence lives on the server: changing it later does
-      // not require every client to ship a new build.
       heartbeatIntervalMs: HEARTBEAT_INTERVAL_MS,
     });
   } catch (err) {

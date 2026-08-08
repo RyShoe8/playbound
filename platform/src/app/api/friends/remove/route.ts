@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import { getFriendsUserId } from "@/lib/friendsAuth";
+import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -30,6 +31,11 @@ export async function POST(req: Request) {
     }
 
     await friendship.deleteOne();
+    void saveEvent({
+      event: "friend_removed",
+      properties: { friendId: String(friendId) },
+      userId,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

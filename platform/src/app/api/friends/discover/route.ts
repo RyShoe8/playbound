@@ -10,7 +10,7 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
  * GET /api/friends/discover?game=<slug>  |  ?genre=<Genre>
  *
  * Find players by what they have in their library, which the username search
- * cannot answer — that only matches on name or email.
+ * cannot answer — that only matches on username.
  *
  * Only the games shared with the requester are returned, never a person's full
  * library: the question being answered is "who else plays this", so the rest of

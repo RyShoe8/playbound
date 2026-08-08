@@ -134,8 +134,8 @@ export function AddFriends({
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username or email"
-            aria-label="Username or email"
+            placeholder="Username"
+            aria-label="Username"
             className={field}
           />
           <button
@@ -215,7 +215,11 @@ export function AddFriends({
               className="flex items-center justify-between gap-3 rounded-lg bg-secondary/30 p-3"
             >
               <div className="min-w-0">
-                <p className="truncate font-semibold">{u.username}</p>
+                <p className="truncate font-semibold">
+                  <a href={`/users/${encodeURIComponent(u.username)}`} className="hover:underline">
+                    {u.username}
+                  </a>
+                </p>
                 {u.sharedGames && u.sharedGames.length > 0 && (
                   <p className="truncate text-xs text-muted-foreground">
                     {u.sharedGames.join(", ")}

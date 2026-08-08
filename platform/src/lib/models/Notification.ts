@@ -1,6 +1,6 @@
 import { Schema, model, models } from "mongoose";
 
-export const NOTIFICATION_TYPES = ["friend_request"] as const;
+export const NOTIFICATION_TYPES = ["friend_request", "friend_request_accepted"] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 const NotificationSchema = new Schema(

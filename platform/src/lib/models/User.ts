@@ -59,6 +59,8 @@ const UserSchema = new Schema({
       enum: ["compatible", "all"],
       default: "compatible",
     },
+    /** When true, friends/public see this user as offline. */
+    appearOffline: { type: Boolean, default: false },
   },
   createdAt: { type: Date, default: Date.now },
 });
