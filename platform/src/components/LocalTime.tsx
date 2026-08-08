@@ -19,34 +19,46 @@ import { useEffect, useState } from "react";
 export function LocalTime({
   value,
   className,
+  mode = "datetime",
 }: {
-  /** ISO 8601 string. */
-  value: string | null | undefined;
+  /** ISO 8601 string or Date. */
+  value: string | Date | null | undefined;
   className?: string;
+  /** `datetime` (default) or `date` only. */
+  mode?: "datetime" | "date";
 }) {
   const [local, setLocal] = useState<string | null>(null);
+  const iso =
+    value instanceof Date
+      ? (Number.isNaN(value.getTime()) ? null : value.toISOString())
+      : value
+        ? String(value)
+        : null;
 
   useEffect(() => {
-    if (!value) return;
-    const d = new Date(value);
+    if (!iso) return;
+    const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return;
     // set-state-in-effect is exactly the pattern needed here: the value can
     // only be computed once a browser exists, so the first render has to be
     // the server's and the second the viewer's. Formatting during render
     // instead would produce a hydration mismatch rather than avoid one.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocal(d.toLocaleString());
-  }, [value]);
+    setLocal(mode === "date" ? d.toLocaleDateString() : d.toLocaleString());
+  }, [iso, mode]);
 
-  if (!value) return <span className={className}>—</span>;
+  if (!iso) return <span className={className}>—</span>;
 
-  const parsed = new Date(value);
+  const parsed = new Date(iso);
   if (Number.isNaN(parsed.getTime())) return <span className={className}>—</span>;
 
-  const fallback = `${parsed.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  const fallback =
+    mode === "date"
+      ? `${parsed.toISOString().slice(0, 10)} UTC`
+      : `${parsed.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 
   return (
-    <time dateTime={value} className={className} suppressHydrationWarning>
+    <time dateTime={iso} className={className} suppressHydrationWarning>
       {local ?? fallback}
     </time>
   );

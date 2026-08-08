@@ -2620,6 +2620,14 @@ async function playGame(slug, join = null, editionSlug = null) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   const edSlug = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  const launchInfo = () =>
+    editionInfoFor(slug, {
+      version: game.version,
+      editionSlug: edSlug,
+    });
+
+  void telemetry.launchAttempted({ ...launchInfo(), phase: join?.host ? "join" : "play" });
+
   let info = game.editions?.[edSlug] || null;
   if ((!info || !(info.exe && fs.existsSync(info.exe))) && game.exe && fs.existsSync(game.exe)) {
     info = {
@@ -2631,7 +2639,14 @@ async function playGame(slug, join = null, editionSlug = null) {
     };
   }
   if (!info || !info.exe || !fs.existsSync(info.exe)) {
-    throw new Error(editionSlug ? "That edition is not installed" : "Not installed");
+    const message = editionSlug ? "That edition is not installed" : "Not installed";
+    void telemetry.launchFailed({
+      ...launchInfo(),
+      code: "NOT_INSTALLED",
+      message,
+      phase: "resolve-install",
+    });
+    throw new Error(message);
   }
 
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.
@@ -2683,7 +2698,26 @@ async function playGame(slug, join = null, editionSlug = null) {
     }
   }
 
-  await spawnTrackedExe(slug, launchPath, args);
+  try {
+    await spawnTrackedExe(slug, launchPath, args);
+  } catch (err) {
+    const message = err?.message || String(err);
+    let code = "UNKNOWN";
+    if (err?.code === "JAVA_MISSING" || /Java 17\+/i.test(message)) code = "JAVA_MISSING";
+    else if (/exited immediately/i.test(message)) code = "JAVA_EARLY_EXIT";
+    else if (/ENOENT|not runnable|file missing/i.test(message)) code = "SPAWN_ENOENT";
+    void telemetry.launchFailed({
+      ...editionInfoFor(slug, {
+        version: info.version,
+        editionSlug: info.editionSlug || edSlug,
+      }),
+      code,
+      message,
+      phase: "spawn",
+    });
+    throw err instanceof Error ? err : new Error(message);
+  }
+
   void telemetry.editionLaunched(
     editionInfoFor(slug, {
       version: info.version,

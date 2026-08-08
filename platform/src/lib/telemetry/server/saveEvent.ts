@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import { parseUserAgent } from "./parseUserAgent";
+import { maybeUpsertAutoBugFromTelemetry } from "@/lib/autoBugReport";
 
 export interface SaveTelemetryEventInput {
   event: string;
@@ -54,5 +55,12 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     os: ua.os,
     device: deviceFromProps || ua.device,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
+  });
+
+  void maybeUpsertAutoBugFromTelemetry({
+    event: input.event,
+    properties: props,
+    userId: input.userId ?? null,
+    userAgent: input.userAgent ?? null,
   });
 }

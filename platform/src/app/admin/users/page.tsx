@@ -4,6 +4,7 @@ import User from "@/lib/models/User";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { UserActions, type AdminUserRow } from "@/components/admin/UserActions";
+import { LocalTime } from "@/components/LocalTime";
 
 export const metadata: Metadata = { title: "Admin · Users" };
 
@@ -58,7 +59,10 @@ export default async function AdminUsersPage() {
                 <td className="px-4 py-2.5">{u.emailVerified ? "Yes" : "No"}</td>
                 <td className="px-4 py-2.5">{u.disabled ? "Disabled" : "Active"}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">
-                  {new Date(u.createdAt).toLocaleDateString()}
+                  <LocalTime
+                    mode="date"
+                    value={u.createdAt ? new Date(u.createdAt).toISOString() : null}
+                  />
                 </td>
                 <td className="px-4 py-2.5">
                   <UserActions user={u} currentUserId={session?.user?.id ?? ""} />

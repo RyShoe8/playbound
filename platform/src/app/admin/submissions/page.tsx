@@ -7,6 +7,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import GameSubmission from "@/lib/models/GameSubmission";
 import { SubmissionActions } from "@/components/SubmissionActions";
+import { LocalTime } from "@/components/LocalTime";
 
 export const metadata: Metadata = { title: "Game Submissions" };
 
@@ -79,7 +80,7 @@ export default async function AdminSubmissionsPage() {
                 {item.license ? ` · ${item.license}` : ""}
                 {item.githubRepo ? ` · ${item.githubRepo}` : ""}
                 {" · "}
-                {new Date(item.createdAt).toLocaleString()}
+                <LocalTime value={new Date(item.createdAt).toISOString()} />
               </p>
               <SubmissionActions
                 item={{

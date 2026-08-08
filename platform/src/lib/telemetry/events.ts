@@ -111,6 +111,22 @@ export type TelemetryEventMap = {
   search: { query?: string; resultsCount?: number } & Extra;
   filter_changed: { surface?: string; filters?: Record<string, unknown> } & Extra;
   error: { message?: string; code?: string; source?: string } & Extra;
+
+  /** User clicked Play / launcher started a launch attempt. */
+  launch_attempted: EditionProps & {
+    platform?: string;
+    launcherVersion?: string;
+    phase?: string;
+  } & Extra;
+
+  /** Launch did not reach a tracked play session (Java missing, spawn fail, etc.). */
+  launch_failed: EditionProps & {
+    code?: string;
+    message?: string;
+    platform?: string;
+    launcherVersion?: string;
+    phase?: string;
+  } & Extra;
 };
 
 export type TelemetryEventName = keyof TelemetryEventMap;
