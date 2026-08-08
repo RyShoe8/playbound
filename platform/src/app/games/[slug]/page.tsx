@@ -29,6 +29,7 @@ import { CompatibleMoreLikeThis } from "@/components/CompatibleGameCardGrid";
 import { CompatibleGearList } from "@/components/gear/CompatibleGearList";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { GameIncompatibilityBanner } from "@/components/GameIncompatibilityBanner";
+import { GameHardwareCompatibility } from "@/components/hardware/GameHardwareCompatibility";
 import { ContentForm } from "@/components/ContentForm";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
@@ -591,6 +592,10 @@ function OverviewTab({
               </div>
             ))}
           </div>
+        </section>
+
+        <section>
+          <GameHardwareCompatibility gameSlug={game.slug} />
         </section>
 
         <section>

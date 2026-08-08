@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { SignOutButton } from "@/components/SignOutButton";
+import { HardwareProfileCard } from "@/components/hardware/HardwareProfileCard";
 
 type Props = {
   initialUsername: string;
@@ -221,6 +222,8 @@ export function ProfileSettings({
         </button>
         {appearMsg ? <p className="mt-2 text-xs text-muted-foreground">{appearMsg}</p> : null}
       </section>
+
+      <HardwareProfileCard />
 
       {canDownloadUnsigned && unsignedLauncherUrl ? (
         <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">

@@ -36,6 +36,7 @@ import {
 } from "@/lib/mediaThin";
 import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { HlsVideo } from "@/components/HlsVideo";
+import { HardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
 import {
   DerivedContentEditor,
   EvidencePanel,
@@ -1437,6 +1438,11 @@ export function GameEditorForm({
             />
           </div>
         </div>
+
+        <HardwareRequirementsEditor
+          value={form.hardwareRequirements}
+          onChange={(hardwareRequirements) => patch("hardwareRequirements", hardwareRequirements)}
+        />
 
         <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
           <p className="text-sm font-bold">Dedicated servers</p>

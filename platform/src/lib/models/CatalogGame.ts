@@ -1,4 +1,5 @@
 import { Schema, model, models } from "mongoose";
+import { HardwareRequirementsBlockSchema } from "@/lib/models/hardwareRequirementsSchema";
 
 const GameArtSchema = new Schema(
   {
@@ -138,6 +139,8 @@ const CatalogGameSchema = new Schema(
     screenshots: { type: [String], default: [] },
     videos: { type: [String], default: [] },
     systemRequirements: { type: SystemRequirementsSchema, required: true },
+    /** Optional structured requirements for the compatibility engine (additive to free-text). */
+    hardwareRequirements: { type: HardwareRequirementsBlockSchema, default: null },
     launcherInstall: { type: LauncherInstallSchema, default: null },
     serverLobbyAuth: { type: ServerLobbyAuthSchema, default: null },
     installCount: { type: Number, default: 0 },

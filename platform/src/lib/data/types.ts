@@ -1,4 +1,5 @@
 import type { LauncherInstall } from "@/lib/launcherInstall";
+import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 
 export type LaunchMethod = "browser" | "install" | "server";
 
@@ -140,6 +141,8 @@ export interface Game {
   /** Video URLs (trailers, gameplay clips) for the Media tab */
   videos?: string[];
   systemRequirements: { min: string; recommended: string };
+  /** Optional structured requirements for compatibility (additive to free-text). */
+  hardwareRequirements?: HardwareRequirementsBlock | null;
   /** Desktop launcher install recipe (CMS / seed). */
   launcherInstall?: LauncherInstall;
 

@@ -13,6 +13,7 @@ import {
   ReadinessPanel,
   SourceMaterialPanel,
 } from "@/components/admin/EditorialFields";
+import { ModHardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
 
 type DevOption = { slug: string; name: string };
 type GameOption = { slug: string; title: string };
@@ -279,6 +280,11 @@ export function ModEditorForm({
               className={field}
             />
           </div>
+
+          <ModHardwareRequirementsEditor
+            value={form.hardwareRequirements}
+            onChange={(hardwareRequirements) => patch("hardwareRequirements", hardwareRequirements)}
+          />
 
           <DerivedContentEditor
             installSteps={form.installSteps ?? []}

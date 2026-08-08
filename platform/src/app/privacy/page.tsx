@@ -31,6 +31,15 @@ export default function PrivacyPage() {
         </p>
       </section>
       <section className="space-y-2">
+        <h2 className="text-lg font-bold">Hardware profile</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          When you use the PlayBound app while signed in, we may store a hardware profile (CPU, GPU,
+          memory, OS, and similar specs) on your account so we can estimate game compatibility. This
+          profile is not shown on public profiles. You can view or delete it from your account
+          settings.
+        </p>
+      </section>
+      <section className="space-y-2">
         <h2 className="text-lg font-bold">Email</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Transactional email (verification, account notices) and optional newsletter signup are sent

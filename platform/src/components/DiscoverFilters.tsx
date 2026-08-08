@@ -6,6 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import type { Game, Genre } from "@/lib/data/types";
+import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
 import { GamePlatformBadges } from "@/components/GamePlatformBadges";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -20,6 +22,7 @@ import {
 /* ── Types ─────────────────────────────────────────────────── */
 
 type SortOption = "name" | "size";
+type HwFilter = "" | "great" | "playable";
 
 interface SerializedGame {
   slug: string;
@@ -35,6 +38,7 @@ interface SerializedGame {
   browserPlayable: boolean;
   steamDeck: boolean;
   platforms: string[];
+  hardwareRequirements?: HardwareRequirementsBlock | null;
 }
 
 /* ── Helpers ────────────────────────────────────────────────── */
@@ -115,7 +119,38 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   const [installableOnly, setInstallableOnly] = useState(false);
+  const [hwFilter, setHwFilter] = useState<HwFilter>("");
+  const [userHw, setUserHw] = useState<{
+    cpuTier?: string;
+    gpuTier?: string;
+    ramMB?: number | null;
+    osFamily?: string;
+    arch?: string;
+    cpuDisplay?: string | null;
+    gpuDisplay?: string | null;
+  } | null>(null);
   const skipFirstFilter = useRef(true);
+
+  useEffect(() => {
+    void fetch("/api/hardware/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const p = data?.profile;
+        if (!p) return;
+        const idx = p.primaryGpuIndex ?? 0;
+        const gpu = p.gpus?.[idx] || p.gpus?.[0];
+        setUserHw({
+          cpuTier: p.cpu?.tier,
+          gpuTier: "unknown",
+          ramMB: p.memory?.totalMB,
+          osFamily: p.os?.family,
+          arch: p.os?.arch,
+          cpuDisplay: p.cpu?.displayName,
+          gpuDisplay: gpu?.displayName,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   /* Derive available genres from games list */
   const genres = useMemo(() => {
@@ -143,6 +178,7 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
         browserPlayable: g.browserPlayable,
         steamDeck: g.steamDeck,
         platforms: g.platforms,
+        hardwareRequirements: g.hardwareRequirements,
       })),
     [games]
   );
@@ -183,6 +219,25 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
       list = list.filter((g) => g.launchMethods.includes("install"));
     }
 
+    if (hwFilter && userHw) {
+      list = list.filter((g) => {
+        const r = evaluateCompatibility(
+          {
+            cpuTier: userHw.cpuTier as never,
+            gpuTier: userHw.gpuTier as never,
+            ramMB: userHw.ramMB ?? null,
+            osFamily: userHw.osFamily,
+            arch: userHw.arch,
+            cpuDisplay: userHw.cpuDisplay,
+            gpuDisplay: userHw.gpuDisplay,
+          },
+          g.hardwareRequirements
+        );
+        if (hwFilter === "great") return r.verdict === "excellent" || r.verdict === "good";
+        return r.verdict === "excellent" || r.verdict === "good" || r.verdict === "playable";
+      });
+    }
+
     list = filterGamesForPreference(list, mode, device.type);
 
     if (sort === "size") {
@@ -192,7 +247,18 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
     }
 
     return list;
-  }, [serialized, query, genre, sort, multiplayerOnly, installableOnly, mode, device.type]);
+  }, [
+    serialized,
+    query,
+    genre,
+    sort,
+    multiplayerOnly,
+    installableOnly,
+    hwFilter,
+    userHw,
+    mode,
+    device.type,
+  ]);
 
   useEffect(() => {
     if (skipFirstFilter.current) {
@@ -211,15 +277,29 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
           sort,
           multiplayerOnly,
           installableOnly,
+          hwFilter: hwFilter || undefined,
           query: q || undefined,
           compatibility: mode,
         },
       });
+      if (hwFilter) {
+        void track("runs_great_filter_used", { filter: hwFilter });
+      }
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [query, genre, sort, multiplayerOnly, installableOnly, filtered.length, track, mode]);
+  }, [
+    query,
+    genre,
+    sort,
+    multiplayerOnly,
+    installableOnly,
+    hwFilter,
+    filtered.length,
+    track,
+    mode,
+  ]);
 
-  const animKey = `${mode}|${filtered.map((g) => g.slug).join(",")}`;
+  const animKey = `${mode}|${hwFilter}|${filtered.map((g) => g.slug).join(",")}`;
 
   return (
     <>
@@ -280,6 +360,24 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
           />
           Installable
         </label>
+
+        <PremiumSelect
+          value={hwFilter}
+          onChange={(e) => {
+            const v = e.target.value as HwFilter;
+            if (!userHw && v) {
+              window.location.href = "/launcher";
+              return;
+            }
+            setHwFilter(v);
+          }}
+          className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
+          title={userHw ? "Filter by how well games run on your PC" : "Open the launcher to check your PC"}
+        >
+          <option value="">My PC: any</option>
+          <option value="great">{userHw ? "Runs great" : "Runs great (needs launcher)"}</option>
+          <option value="playable">{userHw ? "Playable+" : "Playable+ (needs launcher)"}</option>
+        </PremiumSelect>
       </div>
 
       {/* ── Count ────────────────────────────────────────────── */}

@@ -6,6 +6,7 @@ import {
   faqEntrySchema,
 } from "@/lib/gamePayload";
 import { CATALOG_STATUSES } from "@/lib/catalogStatus";
+import { modHardwareRequirementsSchema } from "@/lib/hardware/schema";
 export const DOWNLOAD_KINDS = ["github-zip", "direct-zip", "external"] as const;
 export const MANAGED_BY = ["admin", "developer"] as const;
 
@@ -84,6 +85,7 @@ export const modPayloadSchema = z.object({
     .union([z.string().trim().max(500), z.literal(""), z.null()])
     .optional()
     .transform((v) => (!v ? undefined : v)),
+  hardwareRequirements: modHardwareRequirementsSchema.optional().nullable(),
   installSteps: z.array(installStepSchema).max(30).default([]),
   faq: z.array(faqEntrySchema).max(30).default([]),
 });

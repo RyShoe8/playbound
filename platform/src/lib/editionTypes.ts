@@ -14,6 +14,8 @@
  * and src/lib/editionInstall.ts for how a method turns into a user action.
  */
 
+import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+
 /** What kind of experience this edition is. */
 export const EDITION_TYPES = [
   "official",
@@ -243,6 +245,8 @@ export interface Edition {
   installConfig: EditionInstallConfig;
 
   requirements?: EditionRequirements;
+  /** Optional structured HW requirements (overrides/raises game floors). */
+  hardwareRequirements?: HardwareRequirementsBlock | null;
   features: string[];
   tags: string[];
   /**
