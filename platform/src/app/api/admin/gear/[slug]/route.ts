@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
+import GearRecommendation from "@/lib/models/GearRecommendation";
+import Review from "@/lib/models/Review";
+import DiscussionTopic from "@/lib/models/DiscussionTopic";
+import { slugifyTitle } from "@/lib/gamePayload";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const session = await getServerSession(authOptions);
@@ -10,25 +14,50 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { slug } = await params;
+  const { slug: currentSlug } = await params;
 
   try {
     const data = await req.json();
     await dbConnect();
-    
-    // Prevent slug changes from breaking references unless we handle it properly.
-    // For V1, we'll allow it, or assume slug is mostly static. 
-    // In Mongoose, findOneAndUpdate is easy.
-    const gear = await Gear.findOneAndUpdate({ slug }, data, { new: true });
-    
-    if (!gear) {
+
+    const existing = await Gear.findOne({ slug: currentSlug });
+    if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    
-    return NextResponse.json(gear);
-  } catch (error: any) {
+
+    const rawNext =
+      typeof data.slug === "string" && data.slug.trim()
+        ? slugifyTitle(data.slug.trim())
+        : currentSlug;
+    const nextSlug = rawNext || currentSlug;
+
+    if (nextSlug !== currentSlug) {
+      const taken = await Gear.findOne({ slug: nextSlug }).select("_id").lean();
+      if (taken) {
+        return NextResponse.json({ error: "Slug already exists" }, { status: 400 });
+      }
+    }
+
+    const { slug: _ignore, ...rest } = data;
+    Object.assign(existing, rest, { slug: nextSlug });
+    await existing.save();
+
+    if (nextSlug !== currentSlug) {
+      await Promise.all([
+        Review.updateMany({ gearSlug: currentSlug }, { $set: { gearSlug: nextSlug } }),
+        DiscussionTopic.updateMany({ gearSlug: currentSlug }, { $set: { gearSlug: nextSlug } }),
+        GearRecommendation.updateMany({ gearSlug: currentSlug }, { $set: { gearSlug: nextSlug } }),
+      ]);
+    }
+
+    return NextResponse.json(existing);
+  } catch (error: unknown) {
     console.error("Update gear failed:", error);
-    if (error.code === 11000) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? (error as { code?: number }).code
+        : undefined;
+    if (code === 11000) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 400 });
     }
     return NextResponse.json({ error: "Save failed" }, { status: 500 });

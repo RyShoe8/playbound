@@ -198,22 +198,30 @@ export default async function GearProductPage({
 
             <div className="space-y-8">
               <div className="space-y-4">
-                {gear.platforms?.length > 0 && (
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="font-semibold text-muted-foreground">Platforms:</span>
-                    {gear.platforms.map((p: string) => (
-                      <span key={p} className="text-foreground">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-semibold text-muted-foreground">Platforms:</span>
+                  {gear.platforms?.length > 0 ? (
+                    gear.platforms.map((p: string) => (
+                      <span
+                        key={p}
+                        className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground"
+                      >
                         {p}
                       </span>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground">Not listed</span>
+                  )}
+                </div>
 
                 {gear.bestFor?.length > 0 && (
-                  <div className="flex flex-wrap gap-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="font-semibold text-muted-foreground">Best for:</span>
                     {gear.bestFor.map((b: string) => (
-                      <span key={b} className="text-foreground">
+                      <span
+                        key={b}
+                        className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground"
+                      >
                         {b}
                       </span>
                     ))}

@@ -4,12 +4,16 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, Plus, X } from "lucide-react";
+import { GENRES, GEAR_PLATFORMS, slugifyTitle } from "@/lib/gamePayload";
 
 const label = "block text-xs font-semibold text-muted-foreground";
 const field =
   "mt-1 h-9 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
 const area =
   "mt-1 w-full resize-y rounded-lg border border-input bg-secondary/50 px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
+
+const GENRE_SET = new Set<string>(GENRES);
+const GEAR_PLATFORM_SET = new Set<string>(GEAR_PLATFORMS);
 
 export type GearDraft = {
   slug: string;
@@ -53,11 +57,34 @@ type ImportPayload = {
   warnings?: string[];
 };
 
-function parseCommaList(val: string): string[] {
-  return val
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+function ChipToggle({
+  label: chipLabel,
+  on,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-xs font-bold ${
+        on ? "bg-primary text-primary-foreground" : "border border-border bg-secondary"
+      }`}
+    >
+      {chipLabel}
+    </button>
+  );
+}
+
+function toggleInList(list: string[], value: string): string[] {
+  return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+}
+
+function filterKnown(list: string[], allowed: Set<string>): string[] {
+  return list.filter((v) => allowed.has(v));
 }
 
 function upsertAffiliateLink(
@@ -83,7 +110,11 @@ function upsertAffiliateLink(
 
 export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; initial: GearDraft }) {
   const router = useRouter();
-  const [form, setForm] = useState<GearDraft>(initial);
+  const [form, setForm] = useState<GearDraft>({
+    ...initial,
+    platforms: filterKnown(initial.platforms, GEAR_PLATFORM_SET),
+    bestFor: filterKnown(initial.bestFor, GENRE_SET),
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [mediaNote, setMediaNote] = useState("");
@@ -91,8 +122,6 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
   const [importNote, setImportNote] = useState("");
   const [candidateImages, setCandidateImages] = useState<string[]>([]);
   const [videoDraft, setVideoDraft] = useState("");
-  const [platformsText, setPlatformsText] = useState(initial.platforms.join(", "));
-  const [bestForText, setBestForText] = useState(initial.bestFor.join(", "));
   const [categoryTouched, setCategoryTouched] = useState(mode === "edit");
   const [productFilled, setProductFilled] = useState(
     Boolean(initial.title.trim() || initial.coverImage || initial.description.trim())
@@ -106,16 +135,11 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     [productFilled, form.title, form.coverImage, form.description]
   );
 
+  const platformSet = useMemo(() => new Set(form.platforms), [form.platforms]);
+  const genreSet = useMemo(() => new Set(form.bestFor), [form.bestFor]);
+
   function patch<K extends keyof GearDraft>(key: K, value: GearDraft[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function syncListFieldsFromText() {
-    setForm((prev) => ({
-      ...prev,
-      platforms: parseCommaList(platformsText),
-      bestFor: parseCommaList(bestForText),
-    }));
   }
 
   function addAffiliateLink() {
@@ -164,9 +188,8 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
 
     const nextPlatforms =
       payload.draft.platforms && payload.draft.platforms.length > 0
-        ? payload.draft.platforms
+        ? filterKnown(payload.draft.platforms, GEAR_PLATFORM_SET)
         : null;
-    if (nextPlatforms) setPlatformsText(nextPlatforms.join(", "));
 
     setForm((prev) => {
       const canApplyCategory =
@@ -189,7 +212,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
           payload.draft.manufacturer !== undefined
             ? payload.draft.manufacturer
             : prev.manufacturer,
-        platforms: nextPlatforms ?? prev.platforms,
+        platforms: nextPlatforms && nextPlatforms.length > 0 ? nextPlatforms : prev.platforms,
         videos:
           payload.draft.videos && payload.draft.videos.length > 0
             ? payload.draft.videos
@@ -350,10 +373,12 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     setBusy(true);
     setError("");
     try {
+      const nextSlug = slugifyTitle(form.slug.trim() || form.title);
       const payload: GearDraft = {
         ...form,
-        platforms: parseCommaList(platformsText),
-        bestFor: parseCommaList(bestForText),
+        slug: nextSlug,
+        platforms: filterKnown(form.platforms, GEAR_PLATFORM_SET),
+        bestFor: filterKnown(form.bestFor, GENRE_SET),
       };
       const res = await fetch(mode === "create" ? "/api/admin/gear" : `/api/admin/gear/${initial.slug}`, {
         method: mode === "create" ? "POST" : "PATCH",
@@ -364,6 +389,13 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       if (!res.ok) {
         setError(data?.error ?? "Save failed");
         setBusy(false);
+        return;
+      }
+      const savedSlug =
+        typeof data?.slug === "string" && data.slug.trim() ? data.slug.trim() : nextSlug;
+      if (mode === "edit" && savedSlug !== initial.slug) {
+        router.replace(`/admin/gear/${savedSlug}`);
+        router.refresh();
         return;
       }
       router.push("/admin/gear");
@@ -481,8 +513,11 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             required
             value={form.slug}
             onChange={(e) => patch("slug", e.target.value)}
+            onBlur={() => {
+              const cleaned = slugifyTitle(form.slug.trim() || form.title);
+              if (cleaned) patch("slug", cleaned);
+            }}
             className={field}
-            disabled={mode === "edit"}
             placeholder="xbox-wireless-controller"
           />
         </div>
@@ -521,14 +556,17 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       </div>
 
       <div>
-        <label className={label}>Platforms (comma separated)</label>
-        <input
-          value={platformsText}
-          onChange={(e) => setPlatformsText(e.target.value)}
-          onBlur={syncListFieldsFromText}
-          className={field}
-          placeholder="Windows, macOS, Xbox"
-        />
+        <label className={label}>Platforms</label>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {GEAR_PLATFORMS.map((p) => (
+            <ChipToggle
+              key={p}
+              label={p}
+              on={platformSet.has(p)}
+              onClick={() => patch("platforms", toggleInList(form.platforms, p))}
+            />
+          ))}
+        </div>
       </div>
 
       <div>
@@ -543,14 +581,17 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
       </div>
 
       <div>
-        <label className={label}>Best For Genres (comma separated)</label>
-        <input
-          value={bestForText}
-          onChange={(e) => setBestForText(e.target.value)}
-          onBlur={syncListFieldsFromText}
-          className={field}
-          placeholder="FPS, Platformer"
-        />
+        <label className={label}>Best For Genres</label>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {GENRES.map((g) => (
+            <ChipToggle
+              key={g}
+              label={g}
+              on={genreSet.has(g)}
+              onClick={() => patch("bestFor", toggleInList(form.bestFor, g))}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="space-y-4 rounded-xl border border-border p-4">

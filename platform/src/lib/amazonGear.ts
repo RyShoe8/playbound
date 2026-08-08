@@ -3,6 +3,7 @@
  * Best-effort selectors — Amazon markup varies by locale and A/B tests.
  */
 
+import { GEAR_PLATFORMS } from "@/lib/gamePayload";
 import { stripHtml } from "@/lib/pageMeta";
 
 export const GEAR_CATEGORIES = [
@@ -18,16 +19,24 @@ export const GEAR_CATEGORIES = [
 
 export type GearCategory = (typeof GEAR_CATEGORIES)[number];
 
-const PLATFORM_KEYWORDS: { re: RegExp; label: string }[] = [
+const GEAR_PLATFORM_SET = new Set<string>(GEAR_PLATFORMS);
+
+const PLATFORM_KEYWORDS: { re: RegExp; label: (typeof GEAR_PLATFORMS)[number] }[] = [
   { re: /\bxbox\s*(series\s*[xs]|one|360)?\b/i, label: "Xbox" },
   { re: /\bplaystation\s*[45]?\b|\bps[45]\b/i, label: "PlayStation" },
   { re: /\bnintendo\s*switch\b|\bswitch\s*2?\b/i, label: "Nintendo" },
-  { re: /\bwindows\b|\bpc\b|\bsteam\s*deck\b/i, label: "Windows" },
+  { re: /\bsteam\s*deck\b/i, label: "Steam Deck" },
+  { re: /\bwindows\b|\bpc\b/i, label: "Windows" },
   { re: /\bmac\s*os\b|\bmacos\b|\bapple\s*silicon\b/i, label: "macOS" },
+  { re: /\blinux\b/i, label: "Linux" },
   { re: /\bandroid\b/i, label: "Android" },
   { re: /\bios\b|\bipad\b|\biphone\b/i, label: "iOS" },
-  { re: /\bsteam\s*deck\b/i, label: "Steam Deck" },
+  { re: /\bweb\b|\bbrowser\b/i, label: "Web" },
 ];
+
+function filterGearPlatforms(labels: string[]): string[] {
+  return [...new Set(labels.filter((p) => GEAR_PLATFORM_SET.has(p)))];
+}
 
 /** More specific categories first. */
 const CATEGORY_KEYWORDS: { re: RegExp; category: GearCategory }[] = [
@@ -566,7 +575,7 @@ export function parseAmazonProduct(html: string): AmazonProductParse {
   const videos = extractVideos(html);
   const structured = extractStructuredPlatforms(html);
   const inferred = inferPlatformsFromText(title, description, html.slice(0, 80_000));
-  const platforms = [...new Set([...structured, ...inferred])];
+  const platforms = filterGearPlatforms([...structured, ...inferred]);
 
   return {
     title,
