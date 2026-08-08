@@ -34,6 +34,8 @@ const DISALLOWED = [
   "/profile",
   "/login",
   "/signup",
+  "/forgot-password",
+  "/reset-password",
   "/verify-email",
   "/launcher/auth",
   "/*?tab=",

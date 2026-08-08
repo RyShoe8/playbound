@@ -44,7 +44,7 @@ body {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 20px 14px;
+  padding: 14px 12px;
   flex-shrink: 0;
   min-height: 0;
   overflow: hidden;
@@ -54,7 +54,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 8px 24px 8px;
+  padding: 0 8px 14px 8px;
   flex-shrink: 0;
 }
 
@@ -85,16 +85,16 @@ body {
 .sidebar-scroll {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -103,7 +103,7 @@ body {
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: transparent;
   border: 0;
   border-radius: 10px;
@@ -170,9 +170,9 @@ body {
 .sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
-  padding-top: 14px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 
@@ -1251,47 +1251,32 @@ textarea.input-text {
 /* Sidebar Discord + compatibility */
 .sidebar-discord {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
   border: 1px solid rgba(124, 92, 240, 0.35);
   background: rgba(124, 92, 240, 0.12);
   text-decoration: none;
-  color: inherit;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
 }
 .sidebar-discord:hover {
   border-color: rgba(124, 92, 240, 0.55);
   background: rgba(124, 92, 240, 0.18);
-}
-.sidebar-discord-title {
-  font-size: 13px;
-  font-weight: 700;
-}
-.sidebar-discord-blurb {
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--text-muted);
-}
-.sidebar-discord-cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 2px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+  color: var(--text-main);
 }
 .sidebar-compat {
-  padding: 8px 4px 2px;
+  padding: 4px 4px 0;
+  flex-shrink: 0;
 }
 .sidebar-compat-label {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
@@ -1301,7 +1286,7 @@ textarea.input-text {
 .sidebar-compat-options {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 .sidebar-compat-opt {
   display: flex;
@@ -1311,12 +1296,41 @@ textarea.input-text {
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
+  padding: 2px 0;
 }
 .sidebar-compat-opt input {
   accent-color: var(--accent);
 }
 .sidebar-compat-opt:has(input:checked) {
   color: var(--text);
+}
+
+@media (max-height: 700px) {
+  #sidebar {
+    padding: 10px 10px;
+  }
+  .sidebar-brand {
+    padding-bottom: 8px;
+  }
+  .sidebar-scroll {
+    gap: 6px;
+  }
+  .sidebar-nav {
+    gap: 2px;
+  }
+  .nav-btn {
+    padding: 6px 10px;
+  }
+  .sidebar-discord {
+    padding: 6px 10px;
+  }
+  .sidebar-footer {
+    padding-top: 8px;
+    gap: 4px;
+  }
+  .sidebar-compat-label {
+    margin-bottom: 2px;
+  }
 }
 
 /* Catalog / activity stats */

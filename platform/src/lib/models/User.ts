@@ -36,6 +36,8 @@ const UserSchema = new Schema({
   emailVerified: { type: Boolean, default: false },
   verificationTokenHash: { type: String, select: false },
   verificationTokenExpires: { type: Date, select: false },
+  passwordResetTokenHash: { type: String, select: false },
+  passwordResetTokenExpires: { type: Date, select: false },
   // Indexed: every launcher request looks a user up by this hash, and the
   // lookup runs before the caller is authenticated. Without the index an
   // unauthenticated request with any random Bearer token forces a full
