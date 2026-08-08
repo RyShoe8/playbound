@@ -152,10 +152,9 @@ export function GameEditorForm({
   developers: DevOption[];
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const coverFileRef = useRef<HTMLInputElement>(null);
+  const shotFileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
-  /** Sync intent for the shared image picker — setState alone races the file dialog. */
-  const pendingImageKindRef = useRef<"cover" | "shot">("shot");
   const [form, setForm] = useState<GamePayload>(initial);
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [busy, setBusy] = useState(false);
@@ -164,7 +163,6 @@ export function GameEditorForm({
   const [mediaNote, setMediaNote] = useState("");
   const [videoUrlDraft, setVideoUrlDraft] = useState("");
   const [forcePublishNext, setForcePublishNext] = useState(false);
-  const [uploadKind, setUploadKind] = useState<"cover" | "shot">("shot");
   const [launcherDiscoverNote, setLauncherDiscoverNote] = useState("");
   const [evidence, setEvidence] = useState<string[]>([]);
   const [sourceMaterial, setSourceMaterial] = useState<string | null>(null);
@@ -498,52 +496,98 @@ export function GameEditorForm({
     }
   }
 
-  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function uploadImageFile(file: File, kind: "cover" | "shot"): Promise<string> {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("slug", form.slug || "upload");
+    body.set("kind", kind);
+    const res = await fetch("/api/admin/games/upload", { method: "POST", body });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.error ?? "Upload failed");
+    }
+    if (!data?.url || typeof data.url !== "string") {
+      throw new Error("Upload succeeded but no image URL was returned.");
+    }
+    return data.url;
+  }
+
+  async function onCoverFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const kind = pendingImageKindRef.current;
     setBusy(true);
     setError("");
-    setMediaNote(kind === "cover" ? "Uploading cover…" : "Uploading screenshot…");
+    setMediaNote("Uploading cover…");
     try {
-      const body = new FormData();
-      body.set("file", file);
-      body.set("slug", form.slug || "upload");
-      body.set("kind", kind);
-      const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        const msg = data?.error ?? "Upload failed";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-      if (!data?.url || typeof data.url !== "string") {
-        const msg = "Upload succeeded but no image URL was returned.";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-      if (kind === "cover") {
-        patch("coverImage", data.url);
-        setMediaNote("Cover uploaded — save the game to persist.");
-      } else {
-        setForm((prev) => ({
-          ...prev,
-          screenshots: [...(prev.screenshots ?? []), data.url].slice(0, 20),
-        }));
-        setMediaNote("Screenshot uploaded — save the game to persist.");
-      }
-      setBusy(false);
-    } catch {
-      const msg = "Couldn't reach the server.";
+      const url = await uploadImageFile(file, "cover");
+      patch("coverImage", url);
+      setMediaNote("Cover uploaded — save the game to persist.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Couldn't reach the server.";
       setError(msg);
       setMediaNote(msg);
+    } finally {
       setBusy(false);
     }
+  }
+
+  async function onShotFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!picked.length) return;
+
+    const existing = form.screenshots ?? [];
+    const remaining = Math.max(0, 20 - existing.length);
+    if (remaining === 0) {
+      setMediaNote("Screenshot gallery is full (20). Remove some before uploading more.");
+      return;
+    }
+
+    const files = picked.slice(0, remaining);
+    const skipped = picked.length - files.length;
+    setBusy(true);
+    setError("");
+    const urls: string[] = [];
+    const failures: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      setMediaNote(`Uploading screenshots… ${i + 1}/${files.length}`);
+      try {
+        urls.push(await uploadImageFile(files[i], "shot"));
+      } catch (err) {
+        failures.push(
+          `${files[i].name}: ${err instanceof Error ? err.message : "upload failed"}`
+        );
+      }
+    }
+
+    if (urls.length) {
+      setForm((prev) => ({
+        ...prev,
+        screenshots: mergeUniqueMediaUrls(prev.screenshots ?? [], urls, 20),
+      }));
+    }
+
+    const parts = [
+      urls.length
+        ? `Added ${urls.length} screenshot${urls.length === 1 ? "" : "s"} — save the game to persist.`
+        : "No screenshots uploaded.",
+    ];
+    if (skipped > 0) {
+      parts.push(`Skipped ${skipped} (gallery cap 20).`);
+    }
+    if (failures.length) {
+      const summary = failures.slice(0, 2).join("; ");
+      parts.push(
+        `${failures.length} failed${summary ? `: ${summary}` : ""}${
+          failures.length > 2 ? "…" : ""
+        }.`
+      );
+      setError(parts.join(" "));
+    }
+    setMediaNote(parts.join(" "));
+    setBusy(false);
   }
 
   async function save(e?: React.FormEvent, opts?: { forcePublish?: boolean; status?: CatalogStatus }) {
@@ -660,12 +704,21 @@ export function GameEditorForm({
       <form onSubmit={save} className="space-y-4">
         {/* Keep pickers outside collapsible <details> so change events aren't dropped. */}
         <input
-          ref={fileRef}
+          ref={coverFileRef}
           type="file"
           accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
           className="sr-only"
           tabIndex={-1}
-          onChange={onFileSelected}
+          onChange={onCoverFileSelected}
+        />
+        <input
+          ref={shotFileRef}
+          type="file"
+          accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
+          multiple
+          className="sr-only"
+          tabIndex={-1}
+          onChange={onShotFilesSelected}
         />
         <input
           ref={videoFileRef}
@@ -867,10 +920,8 @@ export function GameEditorForm({
               type="button"
               disabled={busy}
               onClick={() => {
-                pendingImageKindRef.current = "cover";
-                setUploadKind("cover");
                 // Defer so the input stays stable if a surrounding <details> toggles.
-                window.setTimeout(() => fileRef.current?.click(), 0);
+                window.setTimeout(() => coverFileRef.current?.click(), 0);
               }}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
             >
@@ -880,13 +931,11 @@ export function GameEditorForm({
               type="button"
               disabled={busy}
               onClick={() => {
-                pendingImageKindRef.current = "shot";
-                setUploadKind("shot");
-                window.setTimeout(() => fileRef.current?.click(), 0);
+                window.setTimeout(() => shotFileRef.current?.click(), 0);
               }}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
             >
-              Upload screenshot
+              Upload screenshots
             </button>
             <button
               type="button"
