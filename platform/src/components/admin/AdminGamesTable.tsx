@@ -25,9 +25,11 @@ export function AdminGamesTable({
   editionCounts: Record<string, number>;
   modCounts?: Record<string, number>;
 }) {
+  const [rows, setRows] = useState(games);
   const [query, setQuery] = useState("");
   const [sortCol, setSortCol] = useState<string>("Updated");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
   function handleSort(col: string) {
     if (sortCol === col) {
@@ -38,12 +40,37 @@ export function AdminGamesTable({
     }
   }
 
+  async function toggleComplete(slug: string, next: boolean) {
+    const prev = rows.find((g) => g.slug === slug)?.complete;
+    setPendingSlug(slug);
+    setRows((list) => list.map((g) => (g.slug === slug ? { ...g, complete: next } : g)));
+    try {
+      const res = await fetch(`/api/admin/games/${encodeURIComponent(slug)}/complete`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ complete: next }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || `Failed (${res.status})`);
+      }
+    } catch (err) {
+      setRows((list) =>
+        list.map((g) => (g.slug === slug ? { ...g, complete: Boolean(prev) } : g))
+      );
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Could not update Complete");
+    } finally {
+      setPendingSlug(null);
+    }
+  }
+
   const filtered = useMemo(() => {
-    let result = games;
+    let result = rows;
     const q = query.trim().toLowerCase();
 
     if (q) {
-      result = games.filter((g) =>
+      result = rows.filter((g) =>
         [g.title, g.slug, g.developerSlug, ...(g.aliases ?? [])]
           .filter(Boolean)
           .some((field) => String(field).toLowerCase().includes(q))
@@ -79,6 +106,10 @@ export function AdminGamesTable({
           aVal = modCounts?.[a.slug] ?? 0;
           bVal = modCounts?.[b.slug] ?? 0;
           break;
+        case "Complete":
+          aVal = Number(Boolean(a.complete));
+          bVal = Number(Boolean(b.complete));
+          break;
         case "Published":
           aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -94,7 +125,7 @@ export function AdminGamesTable({
       if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-  }, [games, query, sortCol, sortDir, modCounts]);
+  }, [rows, query, sortCol, sortDir, modCounts]);
 
   const SortableHeader = ({ label }: { label: string }) => (
     <th
@@ -142,7 +173,7 @@ export function AdminGamesTable({
 
       {query && (
         <p className="text-xs text-muted-foreground">
-          {filtered.length} of {games.length} game{games.length === 1 ? "" : "s"}
+          {filtered.length} of {rows.length} game{rows.length === 1 ? "" : "s"}
         </p>
       )}
 
@@ -156,6 +187,7 @@ export function AdminGamesTable({
               <SortableHeader label="Installs" />
               <SortableHeader label="Version" />
               <SortableHeader label="Status" />
+              <SortableHeader label="Complete" />
               <SortableHeader label="Published" />
               <SortableHeader label="Updated" />
               <th className="px-4 py-3 font-semibold" />
@@ -164,7 +196,7 @@ export function AdminGamesTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                   No games match &ldquo;{query}&rdquo;.
                 </td>
               </tr>
@@ -172,6 +204,8 @@ export function AdminGamesTable({
               filtered.map((g) => {
                 const editions = editionCounts[g.slug] ?? 0;
                 const mods = modCounts?.[g.slug] ?? 0;
+                const isComplete = Boolean(g.complete);
+                const toggling = pendingSlug === g.slug;
                 return (
                   <tr key={g.slug} className="border-b border-border bg-card last:border-0 hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-2.5">
@@ -206,6 +240,21 @@ export function AdminGamesTable({
                             ? "Testing"
                             : "Draft"}
                       </span>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <button
+                        type="button"
+                        disabled={toggling}
+                        onClick={() => void toggleComplete(g.slug, !isComplete)}
+                        title="Mark whether catalog info for this title is fully entered"
+                        className={
+                          isComplete
+                            ? "rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary disabled:opacity-60"
+                            : "rounded-md border border-border bg-secondary/60 px-2 py-0.5 text-xs font-bold text-muted-foreground disabled:opacity-60"
+                        }
+                      >
+                        {isComplete ? "Yes" : "No"}
+                      </button>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {g.createdAt ? new Date(g.createdAt).toLocaleString() : "—"}

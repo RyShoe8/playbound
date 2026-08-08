@@ -339,6 +339,7 @@ export const gamePayloadSchema = z.object({
     .nullable(),
   gameOfWeek: z.boolean().default(false),
   hiddenGem: z.boolean().default(false),
+  complete: z.boolean().default(false),
   art: z
     .object({
       from: z.string().trim().min(1).max(40),
@@ -558,6 +559,7 @@ export const emptyGameDraft = (): GamePayload => ({
   communityLinks: null,
   gameOfWeek: false,
   hiddenGem: false,
+  complete: false,
   art: defaultArtFor([], ""),
   coverImage: null,
   screenshots: [],
