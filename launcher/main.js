@@ -1707,7 +1707,8 @@ function extractZip(zipPath, destDir) {
     // Fixed script body; paths only via -File parameters (never interpolated).
     const script =
       "param([Parameter(Mandatory=$true)][string]$Zip,[Parameter(Mandatory=$true)][string]$Dest)\r\n" +
-      "Expand-Archive -LiteralPath $Zip -DestinationPath $Dest -Force\r\n";
+      "Expand-Archive -LiteralPath $Zip -DestinationPath $Dest -Force\r\n" +
+      "Get-ChildItem -LiteralPath $Dest -Recurse -Force -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue\r\n";
     try {
       fs.writeFileSync(scriptPath, script, "utf8");
     } catch (err) {
@@ -3365,7 +3366,7 @@ function onSpawnedProcessGone(slug) {
  * Handles short bootstrap processes (e.g. OpenRA.exe → RedAlert.exe) by polling
  * catalog exeHint image names after the child exits.
  * Rejects on immediate spawn failure (ENOENT / missing Java) so Play Now is not a false success.
- * Jar launches wait briefly so a dead WindowsApps java stub cannot report success.
+ * All launches wait briefly so a process that dies instantly is not reported as success.
  */
 function spawnTrackedExe(slug, exePath, args = []) {
   clearLaunchTracking(slug);
@@ -3373,6 +3374,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
     throw new Error("Executable path is outside allowed install locations");
   }
   const isJar = /\.jar$/i.test(exePath);
+  const EARLY_WATCH_MS = 2000;
 
   let child;
   try {
@@ -3434,49 +3436,44 @@ function spawnTrackedExe(slug, exePath, args = []) {
       reject(err instanceof Error ? err : new Error(String(err)));
     };
 
+    const earlyExitMsg = isJar
+      ? GameLauncher.JAVA_EARLY_EXIT_MSG
+      : `The game exited immediately after launch (${path.basename(exePath)}). Open Folder and try running it manually, check GPU drivers, or reinstall.`;
+
+    const failEarly = () => fail(new Error(earlyExitMsg));
+
+    const processStillAlive = () => {
+      if (child.exitCode == null && child.signalCode == null && child.pid) return true;
+      return isAnyImageRunning(imageNames);
+    };
+
     child.once("error", fail);
 
-    if (isJar) {
-      const JAR_WATCH_MS = 2000;
-      const failEarly = () => fail(new Error(GameLauncher.JAVA_EARLY_EXIT_MSG));
-      const onEarlyExit = () => {
-        if (settled) {
-          onSpawnedProcessGone(slug);
-          return;
-        }
-        failEarly();
-      };
-      child.once("exit", onEarlyExit);
-      setTimeout(() => {
-        if (settled) return;
-        if (child.exitCode != null || child.signalCode != null) {
-          failEarly();
-          return;
-        }
-        if (!child.pid && !isAnyImageRunning(imageNames)) {
-          failEarly();
-          return;
-        }
-        child.removeListener("exit", onEarlyExit);
-        child.on("exit", () => onSpawnedProcessGone(slug));
-        succeed();
-      }, JAR_WATCH_MS);
-      return;
-    }
-
-    child.on("exit", () => onSpawnedProcessGone(slug));
-
-    // Spawn is async on Windows; wait briefly for error before treating as launched.
-    setImmediate(() => {
-      if (settled) return;
-      if (child.pid) {
+    const onEarlyExit = () => {
+      if (settled) {
+        onSpawnedProcessGone(slug);
+        return;
+      }
+      // Bootstrap exes (OpenRA → RedAlert) exit quickly while the real game keeps running.
+      if (isAnyImageRunning(imageNames)) {
+        onSpawnedProcessGone(slug);
         succeed();
         return;
       }
-      setTimeout(() => {
-        if (!settled) succeed();
-      }, 150);
-    });
+      failEarly();
+    };
+    child.once("exit", onEarlyExit);
+
+    setTimeout(() => {
+      if (settled) return;
+      if (!processStillAlive()) {
+        failEarly();
+        return;
+      }
+      child.removeListener("exit", onEarlyExit);
+      child.on("exit", () => onSpawnedProcessGone(slug));
+      succeed();
+    }, EARLY_WATCH_MS);
   });
 }
 
@@ -3640,9 +3637,106 @@ async function uninstallModFromDeepLink(slug) {
   return result;
 }
 
+/** Best-effort taskkill for recorded / hinted game image names (Windows). */
+function killGameImageNames(imageNames) {
+  if (process.platform !== "win32") return;
+  for (const image of [...new Set((imageNames || []).filter(Boolean))]) {
+    try {
+      execFileSync("taskkill", ["/F", "/IM", image], {
+        windowsHide: true,
+        timeout: 5000,
+        stdio: "ignore",
+      });
+    } catch {
+      /* not running */
+    }
+  }
+}
+
+/**
+ * Kill any Windows process whose executable lives under one of the install dirs.
+ * Covers Godot/OpenCiv3 cases where Task Manager shows a different display name
+ * but the binary is still under playbound/games/<slug>.
+ */
+function killProcessesUnderDirs(dirs) {
+  if (process.platform !== "win32") return;
+  const roots = [...new Set((dirs || []).filter(Boolean).map((d) => path.resolve(d)))]
+    .filter((d) => fs.existsSync(d))
+    .map((d) => d.replace(/\//g, "\\").replace(/\\+$/, ""));
+  if (!roots.length) return;
+
+  const rootsLiteral = roots.map((r) => r.replace(/'/g, "''")).join("','");
+  const ps = `
+$ErrorActionPreference = 'SilentlyContinue'
+$roots = @('${rootsLiteral}')
+Get-CimInstance Win32_Process | ForEach-Object {
+  $exe = [string]$_.ExecutablePath
+  if (-not $exe) { return }
+  $norm = $exe.Replace('/', '\\')
+  foreach ($root in $roots) {
+    if ($norm.StartsWith($root + '\\', [StringComparison]::OrdinalIgnoreCase) -or
+        $norm.Equals($root, [StringComparison]::OrdinalIgnoreCase)) {
+      Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+      break
+    }
+  }
+}
+`;
+  try {
+    execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], {
+      windowsHide: true,
+      timeout: 15000,
+      stdio: "ignore",
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+function collectUninstallImageNames(slug, infos) {
+  const entry = catalog.find((e) => e.slug === slug);
+  const names = [...hintProcessNames(entry?.exeHint)];
+  for (const info of infos) {
+    if (info?.exe) names.push(normalizeProcessImageName(info.exe));
+  }
+  return [...new Set(names.filter(Boolean))];
+}
+
+function prepareDirRemoval(slug, infos) {
+  const list = (infos || []).filter(Boolean);
+  killGameImageNames(collectUninstallImageNames(slug, list));
+  killProcessesUnderDirs(list.map((i) => i.dir).filter(Boolean));
+}
+
+async function removeDirWithRetries(dir) {
+  if (!dir || !fs.existsSync(dir)) return;
+  const waits = [0, 350, 500, 500, 700];
+  let lastErr = null;
+  for (let i = 0; i < waits.length; i++) {
+    const wait = waits[i];
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    // Re-kill path-based processes mid-retry (Godot can respawn briefly).
+    if (i > 0) killProcessesUnderDirs([dir]);
+    try {
+      await fsp.rm(dir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      lastErr = err;
+      const code = err?.code;
+      if (!["EBUSY", "EPERM", "ENOTEMPTY", "EACCES"].includes(code)) throw err;
+    }
+  }
+  throw new Error(
+    `Could not remove folder (still in use). Quit the game (check Task Manager for OpenCiv3/Godot) and close Explorer windows on "${dir}", then try again.${
+      lastErr?.message ? ` (${lastErr.message})` : ""
+    }`
+  );
+}
+
 async function uninstallGame(slug, editionSlug = null) {
   stopExeScan(slug);
   stopInstallerPoll();
+  clearLaunchTracking(slug);
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   if (!state[slug]) return { status: "not-installed" };
@@ -3656,8 +3750,9 @@ async function uninstallGame(slug, editionSlug = null) {
       delete game.editions[editionSlug];
     } else {
       if (info.dir) {
+        prepareDirRemoval(slug, [info]);
         // Never delete a sibling edition directory — only this edition's folder.
-        await fsp.rm(info.dir, { recursive: true, force: true });
+        await removeDirWithRetries(info.dir);
       }
       delete game.editions[editionSlug];
     }
@@ -3674,13 +3769,22 @@ async function uninstallGame(slug, editionSlug = null) {
     return { status: "uninstalled", dir: info?.dir || null, editionSlug };
   }
 
+  const editions = listEditionEntries(game);
+  prepareDirRemoval(
+    slug,
+    [
+      ...editions,
+      game.exe || game.dir ? { exe: game.exe, dir: game.dir } : null,
+    ].filter(Boolean)
+  );
+
   // Uninstall all editions for the game when no editionSlug is passed.
-  for (const info of listEditionEntries(game)) {
-    if (info.dir) await fsp.rm(info.dir, { recursive: true, force: true });
+  for (const info of editions) {
+    if (info.dir) await removeDirWithRetries(info.dir);
   }
   // Legacy flat dir if any remain outside editions/
   if (game.dir && !Object.values(game.editions || {}).some((e) => e.dir === game.dir)) {
-    await fsp.rm(game.dir, { recursive: true, force: true });
+    await removeDirWithRetries(game.dir);
   }
   delete state[slug];
   saveState(state);
