@@ -318,9 +318,24 @@ body {
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 4px;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.card-title-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-testing-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
 }
 
 .card-blurb {
@@ -901,8 +916,26 @@ body {
 
 .library-card-actions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
+}
+
+.library-card-actions > .btn-sm,
+.library-card-actions > button {
+  flex: 0 0 auto;
+}
+
+.library-play-hint {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.library-play-hint .view-sub {
+  margin: 0 !important;
+  max-width: none !important;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .library-edition-actions {

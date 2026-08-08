@@ -126,7 +126,8 @@ class GameLauncher {
       cwd: path.dirname(launchPath),
       detached: true,
       stdio: "ignore",
-      windowsHide: true,
+      // false so GUI games (Godot/OpenCiv3) can show a window; jars keep console hidden above.
+      windowsHide: false,
       shell: false,
     });
   }

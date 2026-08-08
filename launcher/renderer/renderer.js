@@ -1397,7 +1397,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           <button class="btn-danger btn-sm btn-lib-uninstall-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Remove</button>
         </div>`
         )
-        .join("") + gamePlayHintHtml(game.slug);
+        .join("");
       actions.querySelectorAll(".btn-lib-play-ed").forEach((btn) => {
         btn.addEventListener("click", async (e) => {
           e.stopPropagation();
@@ -1439,7 +1439,6 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
       ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
       <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
-      ${gamePlayHintHtml(game.slug)}
     `;
       actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -1470,6 +1469,13 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       });
     }
     block.appendChild(actions);
+    const hintHtml = gamePlayHintHtml(game.slug);
+    if (hintHtml) {
+      const hint = document.createElement("div");
+      hint.className = "library-play-hint";
+      hint.innerHTML = hintHtml;
+      block.appendChild(hint);
+    }
   }
 
   if (gameMods.length) {
@@ -3269,8 +3275,13 @@ async function renderGameDetailView(slug) {
     document.getElementById("act-uninstall").addEventListener("click", async () => {
       if (!confirm(`Uninstall ${detail.title}?`)) return;
       setStatus("Uninstalling...");
-      await window.playbound.uninstall(slug);
-      renderGameDetailView(slug);
+      try {
+        await window.playbound.uninstall(slug);
+        setStatus(`Uninstalled ${detail.title || slug}`);
+        renderGameDetailView(slug);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
     });
   } else if (detail.pendingInstaller) {
     const locateLabel = detail.scanning ? "Select .exe" : "Select .exe";
@@ -4279,9 +4290,9 @@ function createGameCard(game) {
   const body = document.createElement("div");
   body.className = "card-body";
   body.innerHTML = `
-      <div class="card-title">${escapeHtml(game.title)}${
+      <div class="card-title"><span class="card-title-text">${escapeHtml(game.title)}</span>${
         game.testing || game.status === "testing"
-          ? ` <span class="badge" style="font-size:10px;background:rgba(245,158,11,.2);color:#f59e0b">Testing</span>`
+          ? `<span class="badge card-testing-badge">Testing</span>`
           : ""
       }</div>
       <div class="card-blurb">${escapeHtml(game.blurb || "")}</div>
