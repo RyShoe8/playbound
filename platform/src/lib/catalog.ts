@@ -1,6 +1,8 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import type { Game, Genre, LaunchMethod } from "@/lib/data/types";
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import { games as seedGames } from "@/lib/data/games";
@@ -347,6 +349,84 @@ export async function gameOfTheWeek(): Promise<Game | undefined> {
 
 export async function hiddenGems(): Promise<Game[]> {
   return (await listGames()).filter((g) => g.hiddenGem);
+}
+
+/**
+ * Published games ranked by all-time playtime (`game_finished.durationMs`).
+ * Cached briefly so the homepage does not re-aggregate telemetry every request.
+ * Falls back to installCount when playtime data is thin.
+ */
+export async function mostPopularGames(limit = 12): Promise<Game[]> {
+  return unstable_cache(
+    () => computeMostPopularGames(limit),
+    ["catalog-most-popular-playtime", String(limit)],
+    { revalidate: 900, tags: ["catalog", "live-activity"] }
+  )();
+}
+
+async function computeMostPopularGames(limit: number): Promise<Game[]> {
+  const published = await listGames();
+  if (!published.length) return [];
+  const bySlug = new Map(published.map((g) => [g.slug, g]));
+  const seen = new Set<string>();
+  const ordered: Game[] = [];
+
+  const pushSlug = (slug: string) => {
+    if (seen.has(slug)) return;
+    const game = bySlug.get(slug);
+    if (!game) return;
+    seen.add(slug);
+    ordered.push(game);
+  };
+
+  try {
+    await dbConnect();
+    const rows = await TelemetryEvent.aggregate<{ _id: string; totalMs: number }>([
+      {
+        $match: {
+          event: "game_finished",
+          "properties.durationMs": { $exists: true, $gt: 0 },
+          "properties.gameSlug": { $type: "string", $ne: "" },
+        },
+      },
+      {
+        $group: {
+          _id: "$properties.gameSlug",
+          totalMs: { $sum: "$properties.durationMs" },
+        },
+      },
+      { $sort: { totalMs: -1 } },
+      { $limit: Math.max(limit * 3, 24) },
+    ]);
+
+    for (const row of rows) {
+      pushSlug(String(row._id));
+      if (ordered.length >= limit) return ordered.slice(0, limit);
+    }
+
+    // Fill remaining slots from catalog install counts when playtime is sparse.
+    const installDocs = await CatalogGame.find(mongoVisibleFilter({ includeTesting: false }))
+      .select("slug installCount")
+      .sort({ installCount: -1, title: 1 })
+      .lean();
+
+    for (const doc of installDocs) {
+      pushSlug(String((doc as { slug?: string }).slug || ""));
+      if (ordered.length >= limit) break;
+    }
+  } catch (err) {
+    console.error("[catalog] mostPopularGames failed:", err);
+    return published.slice(0, limit);
+  }
+
+  if (ordered.length < limit) {
+    for (const game of published) {
+      pushSlug(game.slug);
+      if (ordered.length >= limit) break;
+    }
+  }
+
+  return ordered.slice(0, limit);
 }
 
 export async function browserGames(): Promise<Game[]> {

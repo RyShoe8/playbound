@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Gem, Newspaper, Server } from "lucide-react";
 import { collections } from "@/lib/data";
-import { listGamesNewestFirst, listGames, hiddenGems, getGame } from "@/lib/catalog";
+import { listGamesNewestFirst, listGames, mostPopularGames, getGame } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
 import { CardRow } from "@/components/GameCard";
@@ -119,10 +119,10 @@ function HomeLiveServersFallback() {
 }
 
 export default async function HomePage() {
-  const [gamesNewestFirst, games, gems, mods] = await Promise.all([
+  const [gamesNewestFirst, games, popular, mods] = await Promise.all([
     listGamesNewestFirst(),
     listGames(),
-    hiddenGems(),
+    mostPopularGames(12),
     listMods(),
   ]);
   if (!gamesNewestFirst.length) return null;
@@ -182,8 +182,8 @@ export default async function HomePage() {
         <RecaptchaNotice className="mt-3" />
       </section>
 
-      {/* ── Games + Hidden gems (client-filtered from full catalog) */}
-      <HomeGamesSections games={games} gems={gems} />
+      {/* ── Latest + Most popular (client-filtered for compatibility) */}
+      <HomeGamesSections latest={gamesNewestFirst} popular={popular} />
 
       {/* ── Live servers (streamed — do not block Home chrome) ─── */}
       <Suspense fallback={<HomeLiveServersFallback />}>
