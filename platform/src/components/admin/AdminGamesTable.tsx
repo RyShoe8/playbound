@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { Search, X, ArrowUp, ArrowDown } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 
@@ -13,34 +13,108 @@ export type AdminGameRow = Game & {
 };
 
 /**
- * The admin games table, with search.
- *
- * Filtering happens in memory rather than through the URL: the page already
- * loads every game server-side, so a round trip per keystroke would be slower
- * for no benefit. That also keeps the table instant as the catalog grows.
+ * The admin games table, with search and sorting.
  */
 export function AdminGamesTable({
   games,
   editionCounts,
+  modCounts,
 }: {
   games: AdminGameRow[];
   /** Plain object rather than a Map — this crosses the server/client boundary. */
   editionCounts: Record<string, number>;
+  modCounts?: Record<string, number>;
 }) {
   const [query, setQuery] = useState("");
+  const [sortCol, setSortCol] = useState<string>("Updated");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function handleSort(col: string) {
+    if (sortCol === col) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortCol(col);
+      setSortDir("desc");
+    }
+  }
 
   const filtered = useMemo(() => {
+    let result = games;
     const q = query.trim().toLowerCase();
-    if (!q) return games;
-    // Slug and developer are searched alongside the title because an admin
-    // looking for a game often knows its URL or who made it, not its exact
-    // display name.
-    return games.filter((g) =>
-      [g.title, g.slug, g.developerSlug, ...(g.aliases ?? [])]
-        .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(q))
-    );
-  }, [games, query]);
+
+    if (q) {
+      result = games.filter((g) =>
+        [g.title, g.slug, g.developerSlug, ...(g.aliases ?? [])]
+          .filter(Boolean)
+          .some((field) => String(field).toLowerCase().includes(q))
+      );
+    }
+
+    return result.slice().sort((a, b) => {
+      let aVal: any = 0;
+      let bVal: any = 0;
+
+      switch (sortCol) {
+        case "Game":
+          aVal = (a.title || "").toLowerCase();
+          bVal = (b.title || "").toLowerCase();
+          break;
+        case "Slug":
+          aVal = (a.slug || "").toLowerCase();
+          bVal = (b.slug || "").toLowerCase();
+          break;
+        case "Installs":
+          aVal = a.installCount ?? 0;
+          bVal = b.installCount ?? 0;
+          break;
+        case "Version":
+          aVal = (a.launcherInstall?.detectedVersion || a.launcherInstall?.versionLabel || "").toLowerCase();
+          bVal = (b.launcherInstall?.detectedVersion || b.launcherInstall?.versionLabel || "").toLowerCase();
+          break;
+        case "Status":
+          aVal = (a.status || "").toLowerCase();
+          bVal = (b.status || "").toLowerCase();
+          break;
+        case "Mods":
+          aVal = modCounts?.[a.slug] ?? 0;
+          bVal = modCounts?.[b.slug] ?? 0;
+          break;
+        case "Published":
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        case "Updated":
+        default:
+          aVal = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          bVal = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          break;
+      }
+
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [games, query, sortCol, sortDir, modCounts]);
+
+  const SortableHeader = ({ label }: { label: string }) => (
+    <th
+      className="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-secondary/80 transition-colors"
+      onClick={() => handleSort(label)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {sortCol === label ? (
+          sortDir === "asc" ? (
+            <ArrowUp className="size-3 text-primary" />
+          ) : (
+            <ArrowDown className="size-3 text-primary" />
+          )
+        ) : (
+          <ArrowDown className="size-3 opacity-0" />
+        )}
+      </div>
+    </th>
+  );
 
   return (
     <div className="space-y-3">
@@ -76,27 +150,30 @@ export function AdminGamesTable({
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-border bg-secondary/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-              <th className="px-4 py-3 font-semibold">Game</th>
-              <th className="px-4 py-3 font-semibold">Slug</th>
-              <th className="px-4 py-3 font-semibold">Installs</th>
-              <th className="px-4 py-3 font-semibold">Version</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Updated</th>
+              <SortableHeader label="Game" />
+              <SortableHeader label="Slug" />
+              <SortableHeader label="Mods" />
+              <SortableHeader label="Installs" />
+              <SortableHeader label="Version" />
+              <SortableHeader label="Status" />
+              <SortableHeader label="Published" />
+              <SortableHeader label="Updated" />
               <th className="px-4 py-3 font-semibold" />
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                   No games match &ldquo;{query}&rdquo;.
                 </td>
               </tr>
             ) : (
               filtered.map((g) => {
                 const editions = editionCounts[g.slug] ?? 0;
+                const mods = modCounts?.[g.slug] ?? 0;
                 return (
-                  <tr key={g.slug} className="border-b border-border bg-card last:border-0">
+                  <tr key={g.slug} className="border-b border-border bg-card last:border-0 hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2.5">
                         <GameArt game={g} showTitle={false} iconSize="sm" className="size-8 rounded-md" />
@@ -104,6 +181,9 @@ export function AdminGamesTable({
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{g.slug}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
+                      {mods}
+                    </td>
                     <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
                       {g.installCount ?? 0}
                     </td>
@@ -126,6 +206,9 @@ export function AdminGamesTable({
                             ? "Testing"
                             : "Draft"}
                       </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {g.createdAt ? new Date(g.createdAt).toLocaleString() : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {g.updatedAt ? new Date(g.updatedAt).toLocaleString() : "—"}
