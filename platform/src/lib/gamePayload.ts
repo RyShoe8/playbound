@@ -73,6 +73,15 @@ function dropUnknown(allowed: readonly string[]) {
 
 export const PLATFORMS = ["Windows", "macOS", "Linux", "Android", "iOS", "Web"] as const;
 
+/** Platforms gear may claim (games OS list + common consoles / handhelds). */
+export const GEAR_PLATFORMS = [
+  ...PLATFORMS,
+  "Xbox",
+  "PlayStation",
+  "Nintendo",
+  "Steam Deck",
+] as const;
+
 export const FEATURES = [
   "Multiplayer",
   "Singleplayer",
