@@ -55,9 +55,15 @@ async function loadGameplayAnalytics(filters: {
   const d7 = daysAgo(7);
   const d14 = daysAgo(14);
 
-  // Build the recent filter for the sessions table
+  // Sessions + mobile store launches (not counted toward avg duration).
   const recentFilter: Record<string, unknown> = {
-    event: { $in: ["game_started", "game_finished"] },
+    $or: [
+      { event: { $in: ["game_started", "game_finished"] } },
+      {
+        event: "launch_attempted",
+        "properties.phase": "mobile-store-launch",
+      },
+    ],
   };
   if (filters.game) {
     recentFilter["properties.gameSlug"] = filters.game;
@@ -81,6 +87,8 @@ async function loadGameplayAnalytics(filters: {
     topGamesBySessions,
     dailySessions,
     recentEvents,
+    mobileLaunches7d,
+    sessionsByPlatformRaw,
   ] = await Promise.all([
     // Total game_started events in last 7 days
     TelemetryEvent.countDocuments({
@@ -220,16 +228,55 @@ async function loadGameplayAnalytics(filters: {
       { $sort: { _id: 1 } },
     ]),
 
-    // Recent events (game_started + game_finished)
+    // Recent events (sessions + mobile store launches)
     TelemetryEvent.find(recentFilter)
       .sort({ createdAt: -1 })
       .limit(40)
       .select("event userId sessionId country browser os device createdAt properties")
       .lean(),
+
+    TelemetryEvent.countDocuments({
+      event: "launch_attempted",
+      "properties.phase": "mobile-store-launch",
+      createdAt: { $gte: d7 },
+    }),
+
+    TelemetryEvent.aggregate<{ _id: string; count: number }>([
+      {
+        $match: {
+          event: "game_started",
+          createdAt: { $gte: d7 },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $let: {
+              vars: {
+                p: { $ifNull: ["$properties.platform", ""] },
+              },
+              in: {
+                $cond: [
+                  { $or: [{ $eq: ["$$p", ""] }, { $eq: ["$$p", null] }] },
+                  "unknown",
+                  "$$p",
+                ],
+              },
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]),
   ]);
 
   const playTimeData = totalPlayTimeAgg[0] || { totalMs: 0, count: 0, avgMs: 0 };
   const uniquePlayersCount = uniquePlayers7d[0]?.count || 0;
+  const sessionsByPlatform = sessionsByPlatformRaw.map((row) => ({
+    platform: String(row._id || "unknown"),
+    count: row.count,
+  }));
 
   /**
    * Resolve the ids on the recent events to usernames.
@@ -257,6 +304,8 @@ async function loadGameplayAnalytics(filters: {
 
   return {
     totalSessions7d,
+    mobileLaunches7d,
+    sessionsByPlatform,
     totalPlayTimeMs: playTimeData.totalMs,
     avgSessionMs: playTimeData.avgMs,
     uniquePlayers7d: uniquePlayersCount,
@@ -343,8 +392,10 @@ export default async function GameplayAnalyticsPage({
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Gameplay</h1>
         <p className="mt-1 text-muted-foreground">
-          Play sessions tracked via <code className="text-xs">game_started</code> /{" "}
-          <code className="text-xs">game_finished</code> telemetry events.
+          Play sessions use <code className="text-xs">game_started</code> /{" "}
+          <code className="text-xs">game_finished</code> (duration averages exclude mobile store
+          opens). Mobile Library Play is counted as{" "}
+          <code className="text-xs">launch_attempted</code> launches, not timed sessions.
         </p>
       </div>
 
@@ -355,10 +406,26 @@ export default async function GameplayAnalyticsPage({
       ) : (
         <>
           {/* ── Summary tiles ─────────────────────────────────────────── */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="space-y-1.5">
+              <StatTile
+                label="Play sessions (7d)"
+                value={String(data.totalSessions7d)}
+              />
+              {data.sessionsByPlatform.length > 0 ? (
+                <p className="px-1 text-[11px] leading-snug text-muted-foreground">
+                  {data.sessionsByPlatform
+                    .map((row) => `${row.platform} ${row.count}`)
+                    .join(" · ")}
+                </p>
+              ) : (
+                <p className="px-1 text-[11px] text-muted-foreground">No platform split yet</p>
+              )}
+            </div>
             <StatTile
-              label="Play sessions (7d)"
-              value={String(data.totalSessions7d)}
+              label="Mobile launches (7d)"
+              value={String(data.mobileLaunches7d)}
+              hint="Store Play opens"
             />
             <StatTile
               label="Total play time (7d)"
@@ -367,6 +434,7 @@ export default async function GameplayAnalyticsPage({
             <StatTile
               label="Avg session"
               value={formatDuration(data.avgSessionMs)}
+              hint="Finished sessions only"
             />
             <StatTile
               label="Unique players (7d)"
@@ -659,10 +727,16 @@ export default async function GameplayAnalyticsPage({
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                 doc.event === "game_started"
                                   ? "bg-play/15 text-play"
-                                  : "bg-primary/15 text-primary"
+                                  : doc.event === "launch_attempted"
+                                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                                    : "bg-primary/15 text-primary"
                               }`}
                             >
-                              {doc.event === "game_started" ? "Started" : "Finished"}
+                              {doc.event === "game_started"
+                                ? "Started"
+                                : doc.event === "launch_attempted"
+                                  ? "Launch"
+                                  : "Finished"}
                             </span>
                           </td>
                           <td className="px-4 py-2.5 font-semibold">
