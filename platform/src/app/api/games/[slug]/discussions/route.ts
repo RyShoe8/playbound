@@ -149,6 +149,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       gameSlug: slug,
       modSlug: null,
       editionSlug,
+      gearSlug: null,
       authorId: session.user.id,
       authorUsername: session.user.username,
       title: clean.title,

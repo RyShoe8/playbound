@@ -13,12 +13,16 @@ type Related = { slug: string; title: string; replyCount: number };
 export function TopicComposer({
   gameSlug,
   modSlug,
+  gearSlug,
+  gearCategory,
   editionSlug,
   categories,
   isSignedIn,
 }: {
   gameSlug?: string;
   modSlug?: string;
+  gearSlug?: string;
+  gearCategory?: string;
   editionSlug?: string;
   categories: CategoryMeta[];
   isSignedIn: boolean;
@@ -35,14 +39,25 @@ export function TopicComposer({
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
 
-  const pageBase = modSlug
-    ? `/mods/${modSlug}`
-    : editionSlug && gameSlug
-      ? `/games/${gameSlug}/editions/${editionSlug}`
-      : `/games/${gameSlug}`;
-  const apiBase = modSlug ? `/api/mods/${modSlug}/discussions` : `/api/games/${gameSlug}/discussions`;
+  const categoryPath = (gearCategory || "gear").toLowerCase();
+  const pageBase = gearSlug
+    ? `/gear/${categoryPath}/${gearSlug}`
+    : modSlug
+      ? `/mods/${modSlug}`
+      : editionSlug && gameSlug
+        ? `/games/${gameSlug}/editions/${editionSlug}`
+        : `/games/${gameSlug}`;
+  const apiBase = gearSlug
+    ? `/api/gear/${gearSlug}/discussions`
+    : modSlug
+      ? `/api/mods/${modSlug}/discussions`
+      : `/api/games/${gameSlug}/discussions`;
   const topicHref = (topicSlug: string) =>
-    modSlug ? `/mods/${modSlug}/discussion/${topicSlug}` : `/games/${gameSlug}/discussion/${topicSlug}`;
+    gearSlug
+      ? `/gear/${categoryPath}/${gearSlug}/discussion/${topicSlug}`
+      : modSlug
+        ? `/mods/${modSlug}/discussion/${topicSlug}`
+        : `/games/${gameSlug}/discussion/${topicSlug}`;
 
   useEffect(() => {
     if (title.trim().length < 8) {
@@ -55,7 +70,7 @@ export function TopicComposer({
           q: title.trim(),
           limit: "5",
         });
-        if (editionSlug) params.set("edition", editionSlug);
+        if (editionSlug && !modSlug && !gearSlug) params.set("edition", editionSlug);
         const res = await fetch(`${apiBase}?${params.toString()}`);
         const data = await res.json();
         setRelated(
@@ -70,7 +85,7 @@ export function TopicComposer({
       }
     }, 400);
     return () => clearTimeout(handle);
-  }, [title, apiBase, editionSlug]);
+  }, [title, apiBase, editionSlug, modSlug, gearSlug]);
 
   if (!isSignedIn) {
     return (
@@ -116,7 +131,7 @@ export function TopicComposer({
             .map((t) => t.trim())
             .filter(Boolean),
           hasSpoilers,
-          ...(editionSlug && !modSlug ? { editionSlug } : {}),
+          ...(editionSlug && !modSlug && !gearSlug ? { editionSlug } : {}),
           recaptchaToken: recaptchaToken ?? undefined,
         }),
       });
@@ -125,6 +140,7 @@ export function TopicComposer({
         void track("discussion_created", {
           gameId: gameSlug || undefined,
           modSlug: modSlug || undefined,
+          gearSlug: gearSlug || undefined,
           topicId: data.topic.id || data.topic.slug || undefined,
         });
         router.push(data.topic.href);

@@ -138,6 +138,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     const topic = await DiscussionTopic.create({
       gameSlug: mod.baseGameSlug,
       modSlug: slug,
+      gearSlug: null,
       authorId: session.user.id,
       authorUsername: session.user.username,
       title: clean.title,

@@ -22,8 +22,10 @@ function hueFromName(name: string): number {
 
 export type TopicView = {
   _id: string;
-  gameSlug: string;
+  gameSlug?: string | null;
   modSlug?: string | null;
+  gearSlug?: string | null;
+  gearCategory?: string | null;
   slug: string;
   title: string;
   body: string;
@@ -72,7 +74,11 @@ export function TopicThread({
 }) {
   const [quoteId, setQuoteId] = useState<string | null>(null);
   const cat = CATEGORY_META[topic.category];
-  const root = topic.modSlug ? `/mods/${topic.modSlug}` : `/games/${topic.gameSlug}`;
+  const root = topic.gearSlug
+    ? `/gear/${(topic.gearCategory || "gear").toLowerCase()}/${topic.gearSlug}`
+    : topic.modSlug
+      ? `/mods/${topic.modSlug}`
+      : `/games/${topic.gameSlug}`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -197,6 +203,7 @@ export function TopicThread({
         <ReplyComposer
           topicId={String(topic._id)}
           gameSlug={topic.gameSlug}
+          loginCallbackUrl={`${root}?tab=discussion`}
           isSignedIn={isSignedIn}
           locked={topic.status === "locked"}
           quotedReplyId={quoteId}

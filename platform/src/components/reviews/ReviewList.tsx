@@ -48,6 +48,8 @@ export function RatingStars({ value, size = "size-4" }: { value: number; size?: 
 export function ReviewList({
   gameSlug,
   modSlug,
+  gearSlug,
+  gearCategory,
   isSignedIn,
   items,
   editionSlug,
@@ -58,6 +60,8 @@ export function ReviewList({
 }: {
   gameSlug?: string;
   modSlug?: string;
+  gearSlug?: string;
+  gearCategory?: string;
   isSignedIn: boolean;
   items: ReviewItem[];
   editionSlug?: string;
@@ -66,7 +70,13 @@ export function ReviewList({
   editionNamesBySlug?: Map<string, string>;
 }) {
   const avg = averageRating(items);
-  const subject = editionName ? `the ${editionName} edition` : modSlug ? "this mod" : "it";
+  const subject = editionName
+    ? `the ${editionName} edition`
+    : gearSlug
+      ? "this product"
+      : modSlug
+        ? "this mod"
+        : "it";
 
   return (
     <div className="space-y-6">
@@ -79,7 +89,8 @@ export function ReviewList({
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            {items.length} player review{items.length === 1 ? "" : "s"}
+            {items.length} {gearSlug ? "review" : "player review"}
+            {items.length === 1 ? "" : "s"}
             {editionName ? ` of ${editionName}` : ""}
           </p>
         </div>
@@ -87,12 +98,20 @@ export function ReviewList({
 
       <div>
         <h3 className="mb-3 text-sm font-bold">
-          {editionName ? `Review ${editionName}` : modSlug ? "Review this mod" : "Write a review"}
+          {editionName
+            ? `Review ${editionName}`
+            : gearSlug
+              ? "Review this product"
+              : modSlug
+                ? "Review this mod"
+                : "Write a review"}
         </h3>
         <ContentForm
           kind="review"
           gameSlug={gameSlug}
           modSlug={modSlug}
+          gearSlug={gearSlug}
+          gearCategory={gearCategory}
           isSignedIn={isSignedIn}
           editionSlug={editionSlug}
           editionName={editionName}

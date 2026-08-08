@@ -51,6 +51,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       gameSlug: slug,
       editionSlug,
       modSlug: null,
+      gearSlug: null,
       userId: session.user.id,
     });
     if (existing) {
@@ -68,6 +69,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       gameSlug: slug,
       editionSlug,
       modSlug: null,
+      gearSlug: null,
       userId: session.user.id,
       username: session.user.username,
       ...body,

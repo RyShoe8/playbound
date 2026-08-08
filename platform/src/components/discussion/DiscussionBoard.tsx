@@ -28,6 +28,8 @@ export type TopicListItem = {
 export function DiscussionBoard({
   gameSlug,
   modSlug,
+  gearSlug,
+  gearCategory,
   editionSlug,
   gameTitle,
   isSignedIn,
@@ -40,6 +42,8 @@ export function DiscussionBoard({
 }: {
   gameSlug?: string;
   modSlug?: string;
+  gearSlug?: string;
+  gearCategory?: string;
   /** When set, board is edition-scoped (filters/composer root under the edition URL). */
   editionSlug?: string;
   gameTitle: string;
@@ -56,17 +60,21 @@ export function DiscussionBoard({
   };
   presence?: { online?: number; members?: number } | null;
 }) {
-  const root = modSlug
-    ? `/mods/${modSlug}`
-    : editionSlug && gameSlug
-      ? `/games/${gameSlug}/editions/${editionSlug}`
-      : `/games/${gameSlug}`;
+  const categoryPath = (gearCategory || "gear").toLowerCase();
+  const root = gearSlug
+    ? `/gear/${categoryPath}/${gearSlug}`
+    : modSlug
+      ? `/mods/${modSlug}`
+      : editionSlug && gameSlug
+        ? `/games/${gameSlug}/editions/${editionSlug}`
+        : `/games/${gameSlug}`;
   const base = `${root}?tab=discussion`;
-  // Topic detail pages stay on the game discussion URL (no edition discussion route yet).
   const topicPath = (topicSlug: string) =>
-    modSlug
-      ? `/mods/${modSlug}/discussion/${topicSlug}`
-      : `/games/${gameSlug}/discussion/${topicSlug}`;
+    gearSlug
+      ? `/gear/${categoryPath}/${gearSlug}/discussion/${topicSlug}`
+      : modSlug
+        ? `/mods/${modSlug}/discussion/${topicSlug}`
+        : `/games/${gameSlug}/discussion/${topicSlug}`;
   const withParams = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     p.set("tab", "discussion");
@@ -88,18 +96,20 @@ export function DiscussionBoard({
           <div>
             <h2 className="text-lg font-bold">Discussion</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Ask questions, share fixes, and talk about {gameTitle}.
+              Ask questions, share tips, and talk about {gameTitle}.
             </p>
           </div>
           <TopicComposer
             gameSlug={gameSlug}
             modSlug={modSlug}
+            gearSlug={gearSlug}
+            gearCategory={gearCategory}
             editionSlug={editionSlug}
             categories={categories}
             isSignedIn={isSignedIn}
           />
         </div>
-        {!modSlug && gameSlug ? (
+        {!modSlug && !gearSlug && gameSlug ? (
           <CommunityCard
             gameSlug={gameSlug}
             gameTitle={gameTitle}
