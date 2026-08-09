@@ -28,8 +28,7 @@ if (process.platform === "win32") {
 } else if (process.platform === "darwin") {
   platformImpl = require("./macos");
 } else {
-  // Fallback / Linux future
-  platformImpl = require("./windows"); 
+  platformImpl = require("./linux");
 }
 
 /** @type {PlatformService} */

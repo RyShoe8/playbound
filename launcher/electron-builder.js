@@ -85,7 +85,9 @@ module.exports = {
   // Hard-fail the build if electron-builder cannot sign after we have committed
   // to signing. Without this, electron-builder logs a warning and happily emits
   // an unsigned installer.
-  forceCodeSigning: signingActive,
+  // Only force signing for Windows production builds. Mac notarization is separate
+  // (CSC_LINK / APPLE_ID) and must not fail Mac DMGs when only WINDOWS_CERT_* is set.
+  forceCodeSigning: signingActive && process.platform === "win32",
 
   publish: [
     {
@@ -117,7 +119,7 @@ module.exports = {
   mac: {
     target: {
       target: "dmg",
-      arch: ["universal"]
+      arch: ["universal"],
     },
     artifactName: "PlayBound-macOS-${version}.${ext}",
     category: "public.app-category.games",

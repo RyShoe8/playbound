@@ -17,13 +17,11 @@ module.exports = {
     return ".app";
   },
   getInstallDirectory(slug) {
-    // macOS apps are typically installed to /Applications or ~/Applications
-    // For sandboxed user apps without admin, ~/Applications is safer.
-    // However, if we maintain PlayBound/Games, that's fine too.
-    return path.join(app.getPath("home"), "Applications", "PlayBound", slug);
+    // Match Windows layout so settings / docs / users share one mental model.
+    return path.join(app.getPath("home"), "PlayBound", "Games", slug || "");
   },
   getDownloadsDirectory() {
-    return path.join(app.getPath("downloads"), "PlayBound");
+    return path.join(app.getPath("home"), "PlayBound", "Downloads");
   },
   getTempDirectory() {
     return path.join(app.getPath("temp"), "PlayBound");
@@ -37,10 +35,10 @@ module.exports = {
   fileExists(filePath) {
     return fs.existsSync(filePath);
   },
-  async createShortcut({ title, targetPath, args = "", icon = "", description = "" }) {
-    throw new Error("Shortcuts are not typically used on macOS in this way.");
+  async createShortcut() {
+    throw new Error("Desktop shortcuts are not used on macOS — pin PlayBound to the Dock instead.");
   },
-  async removeShortcut(title) {
+  async removeShortcut() {
     // No-op for mac
   },
   supportsDesktopShortcuts() {
@@ -56,13 +54,13 @@ module.exports = {
     process.kill(pid);
   },
   getGameLaunchCommand(exePath) {
-    // On macOS, launching an .app bundle is done via `open`
-    if (exePath.endsWith(".app")) {
-      return ["open", "-a", exePath];
+    // Prefer `open App.app` for bundles (more reliable than `open -a` with a path).
+    if (String(exePath).endsWith(".app")) {
+      return ["open", exePath];
     }
-    if (exePath.toLowerCase().endsWith(".jar")) {
+    if (String(exePath).toLowerCase().endsWith(".jar")) {
       return ["java", "-jar", exePath];
     }
     return [exePath];
-  }
+  },
 };
