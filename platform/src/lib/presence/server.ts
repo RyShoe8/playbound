@@ -245,6 +245,23 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
     );
   }
 
+  if (!preserve) {
+    const nextStatus = (set.status as string | undefined) ?? existing?.status ?? null;
+    const nextGame =
+      set.currentGameId !== undefined
+        ? (set.currentGameId as string | null)
+        : existing?.currentGameId ?? null;
+    void import("@/lib/playTogether/activityNotify").then(({ maybeNotifyFriendsStartedPlaying }) =>
+      maybeNotifyFriendsStartedPlaying({
+        userId: ctx.userId,
+        previousStatus: existing?.status,
+        previousGameId: existing?.currentGameId,
+        nextStatus,
+        nextGameId: nextGame,
+      })
+    );
+  }
+
   return presence;
 }
 
@@ -313,8 +330,15 @@ export async function sweepStalePresence(now = new Date()) {
         currentGameId: null,
         currentEditionId: null,
         currentPage: null,
+        lookingForPlayersUntil: null,
+        lookingForPlayersGameId: null,
       },
     }
+  );
+
+  const lfgCleared = await Presence.updateMany(
+    { lookingForPlayersUntil: { $ne: null, $lte: now } },
+    { $set: { lookingForPlayersUntil: null, lookingForPlayersGameId: null } }
   );
 
   const sessions = await PlatformSession.updateMany(
@@ -325,6 +349,7 @@ export async function sweepStalePresence(now = new Date()) {
 
   return {
     presenceMarkedOffline: presence.modifiedCount ?? 0,
+    lfgCleared: lfgCleared.modifiedCount ?? 0,
     sessionsEnded: sessions.modifiedCount ?? 0,
     cutoff: cutoff.toISOString(),
   };

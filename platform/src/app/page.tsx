@@ -11,6 +11,7 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { HomeHero } from "@/components/HomeHero";
+import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import {
   HomeServerPreviews,
   type HomeServerPreview,
@@ -184,6 +185,10 @@ export default async function HomePage() {
 
       {/* ── Latest + Most popular (client-filtered for compatibility) */}
       <HomeGamesSections latest={gamesNewestFirst} popular={popular} />
+
+      <section>
+        <PlayWithFriends surface="homepage" compact />
+      </section>
 
       {/* ── Live servers (streamed — do not block Home chrome) ─── */}
       <Suspense fallback={<HomeLiveServersFallback />}>

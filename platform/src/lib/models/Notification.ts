@@ -8,6 +8,11 @@ export const NOTIFICATION_TYPES = [
   "event_starting",
   "tournament_match_reminder",
   "tournament_advanced",
+  "play_invite",
+  "play_invite_accepted",
+  "play_invite_declined",
+  "friend_started_playing",
+  "friend_looking_for_players",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

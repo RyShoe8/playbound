@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sweepStalePresence } from "@/lib/presence/server";
+import { expireStalePlayInvites } from "@/lib/playTogether/invites";
 import { cronAuthorized } from "@/lib/cronAuth";
 
 export const maxDuration = 60;
@@ -8,12 +9,7 @@ export const maxDuration = 60;
  * GET|POST /api/cron/presence-sweep
  *
  * Marks users offline and closes platform sessions whose heartbeat has aged
- * out. Necessary because most departures produce no `end` call: a closed
- * laptop, a lost connection or a killed tab all just stop beating.
- *
- * Scheduled every minute in vercel.json. The work is two indexed updateMany
- * calls, so running often is cheap and keeps "online" honest — a slower
- * schedule would leave people showing as online long after they left.
+ * out. Also expires stale play invites and LFG flags.
  */
 async function run(req: Request) {
   if (!cronAuthorized(req)) {
@@ -21,13 +17,21 @@ async function run(req: Request) {
   }
 
   try {
-    const result = await sweepStalePresence();
-    if (result.presenceMarkedOffline > 0 || result.sessionsEnded > 0) {
+    const [result, invites] = await Promise.all([
+      sweepStalePresence(),
+      expireStalePlayInvites(),
+    ]);
+    if (
+      result.presenceMarkedOffline > 0 ||
+      result.sessionsEnded > 0 ||
+      (result as { lfgCleared?: number }).lfgCleared ||
+      invites.expired
+    ) {
       console.log(
-        `[presence-sweep] offline=${result.presenceMarkedOffline} sessionsEnded=${result.sessionsEnded}`
+        `[presence-sweep] offline=${result.presenceMarkedOffline} sessionsEnded=${result.sessionsEnded} lfgCleared=${(result as { lfgCleared?: number }).lfgCleared || 0} invitesExpired=${invites.expired}`
       );
     }
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, ...result, invitesExpired: invites.expired });
   } catch (err) {
     console.error("[presence-sweep] failed:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

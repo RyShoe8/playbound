@@ -66,6 +66,12 @@ const UserSchema = new Schema({
     },
     /** When true, friends/public see this user as offline. */
     appearOffline: { type: Boolean, default: false },
+    /** When true, friends see online/away but not current game activity. */
+    hideActivityFromFriends: { type: Boolean, default: false },
+    /** When false, friends cannot send play invites. */
+    allowPlayInvites: { type: Boolean, default: true },
+    /** When false, skip friend-started-playing / LFG notifications. */
+    notifyFriendActivity: { type: Boolean, default: true },
   },
   createdAt: { type: Date, default: Date.now },
 });

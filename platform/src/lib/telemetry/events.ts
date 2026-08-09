@@ -128,6 +128,25 @@ export type TelemetryEventMap = {
   friend_discord_clicked: { source?: string } & Extra;
   appear_offline_toggled: { enabled?: boolean } & Extra;
 
+  friends_playing_viewed: { count?: number; surface?: string } & Extra;
+  friend_activity_clicked: { friendId?: string; gameSlug?: string; surface?: string } & Extra;
+  join_game_clicked: {
+    friendId?: string;
+    gameSlug?: string;
+    capability?: string;
+    surface?: string;
+  } & Extra;
+  play_together_viewed: { count?: number; surface?: string } & Extra;
+  shared_game_clicked: { gameSlug?: string; surface?: string } & Extra;
+  invite_friends_clicked: { gameSlug?: string; surface?: string } & Extra;
+  play_invite_sent: { recipientId?: string; gameSlug?: string } & Extra;
+  play_invite_accepted: { inviteId?: string; gameSlug?: string } & Extra;
+  play_invite_declined: { inviteId?: string; gameSlug?: string } & Extra;
+  lfg_enabled: { gameSlug?: string } & Extra;
+  lfg_disabled: Extra;
+  lfg_join_clicked: { friendId?: string; gameSlug?: string } & Extra;
+  play_notification_clicked: { type?: string; gameSlug?: string } & Extra;
+
   hardware_profile_created: {
     os?: string;
     arch?: string;
