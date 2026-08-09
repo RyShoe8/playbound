@@ -5,7 +5,10 @@ import Link from "next/link";
 import { Download, ExternalLink, Play, Terminal } from "lucide-react";
 import { telemetry } from "@/lib/telemetry";
 import type { InstallAction } from "@/lib/editionInstall";
-import { LAUNCHER_DOWNLOAD_URL, MAC_LAUNCHER_DOWNLOAD_URL } from "@/lib/launcherDownload";
+import {
+  launcherDownloadUrlForOs,
+  type LauncherOs,
+} from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
   openPlayboundDeepLink,
@@ -34,7 +37,7 @@ export function EditionInstallButton({
   variant?: "primary" | "secondary";
 }) {
   const device = useDevice();
-  const [os, setOs] = useState<"windows" | "macos">("windows");
+  const [os, setOs] = useState<LauncherOs>("windows");
   const [handoffNote, setHandoffNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,13 +85,12 @@ export function EditionInstallButton({
     if (!shouldOfferLauncher(device.type)) {
       return (
         <p className="max-w-xs text-sm text-muted-foreground">
-          Install this edition with the PlayBound Launcher on a Windows or Mac computer.
+          Install this edition with the PlayBound Launcher on a Windows, Mac, or Linux computer.
         </p>
       );
     }
 
-    const downloadUrl =
-      os === "macos" ? MAC_LAUNCHER_DOWNLOAD_URL || LAUNCHER_DOWNLOAD_URL : LAUNCHER_DOWNLOAD_URL;
+    const downloadUrl = launcherDownloadUrlForOs(os);
 
     return (
       <div className="flex flex-col items-start gap-1.5">
