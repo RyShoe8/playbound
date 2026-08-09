@@ -1,53 +1,34 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Gamepad2, Newspaper, Play, Star, Trophy, Wrench } from "lucide-react";
+import { Gamepad2, Newspaper, Play, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
-import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { fetchGithubReleases } from "@/lib/github";
-import {
-  collectionsFeaturing,
-  listGames,
-  getGame,
-  canonicalSlugFor,
-} from "@/lib/catalog";
+import { getGame, canonicalSlugFor } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
-import { platformFromUserAgent, visiblePlatformsFor } from "@/lib/libraryPlatform";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
-import { LaunchBadge, PlayCta } from "@/components/GameCard";
-import { CompatibleMoreLikeThis } from "@/components/CompatibleGameCardGrid";
+import { LaunchBadge } from "@/components/GameCard";
 import { CompatibleGearList } from "@/components/gear/CompatibleGearList";
-import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
-import { GameIncompatibilityBanner } from "@/components/GameIncompatibilityBanner";
 import { GameHardwareCompatibility } from "@/components/hardware/GameHardwareCompatibility";
 import { ContentForm } from "@/components/ContentForm";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
-import { CommunityCard } from "@/components/discussion/CommunityCard";
 import { GameUpcomingEvents } from "@/components/events/GameUpcomingEvents";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { visibleCategories } from "@/lib/discussion/categories";
 import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import { withOutboundUtm } from "@/lib/utm";
-import {
-  getGameLiveStats,
-  getGameTopPlayers,
-  getEditionLiveStats,
-  type EntityLiveStats,
-} from "@/lib/liveActivity";
-import { PlayingNowBadge } from "@/components/ActivityStats";
-import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 import { GameFriendsWidget } from "@/components/friends/GameFriendsWidget";
 import { Avatar, Badge, EmptyHint } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
@@ -68,13 +49,28 @@ import {
 } from "@/components/JsonLd";
 import { TelemetryOnce } from "@/components/TelemetryOnce";
 import { pageMetadata, privateMetadata, gameDescription, gameTitle } from "@/lib/seo";
-import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
+import { canAccessTesting, viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { comparisonsFeaturing } from "@/lib/data/comparisons";
 import { alternativePages } from "@/lib/data/alternatives";
-import { issueForGame, type WeeklyIssue } from "@/lib/weekly";
 import { classifyMediaUrl } from "@/lib/mediaEmbed";
 import { HlsVideo } from "@/components/HlsVideo";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
+import {
+  GameActivityAside,
+  GameActivityAsideFallback,
+  GameCommunityAside,
+  GameEditionsBlock,
+  GameFeaturingAside,
+  GameHeroActions,
+  GameHeroActionsFallback,
+  GameHeroPlayingNow,
+  GameHeroPlayingNowFallback,
+  GameIncompatibilityBannerAsync,
+  GameSimilarBlock,
+  GameSimilarFallback,
+  GameTabCount,
+  GameWhyIssueLink,
+} from "./GamePageIslands";
 
 const tabs = [
   "overview",
@@ -143,7 +139,10 @@ export default async function GamePage({
   const { slug } = await params;
   const sp = await searchParams;
   const { tab: rawTab } = sp;
-  const includeTesting = await viewerCanSeeTesting();
+
+  // One session read for testing-catalog access + signed-in UI.
+  const session = await getServerSession(authOptions);
+  const includeTesting = canAccessTesting(session?.user);
   const game = await getGame(slug, { includeTesting });
   if (!game) {
     // The game may have been renamed; send its old URL to the current one so
@@ -159,91 +158,13 @@ export default async function GamePage({
   }
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
-  const session = await getServerSession(authOptions);
-  const developer = await getDeveloper(game.developerSlug);
-  const allGames = await listGames({ includeTesting });
-  const similar = allGames
-    .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
-    .slice(0, 20);
-
-  const discussionCount = await safeQuery(
-    () =>
-      DiscussionTopic.countDocuments({
-        gameSlug: game.slug,
-        ...gameScopedUgcFilter(),
-        status: { $ne: "removed" },
-      }),
-    0
-  );
-  const reviewCount = await safeQuery(
-    () => Review.countDocuments({ gameSlug: game.slug, ...gameScopedUgcFilter() }),
-    0
-  );
-  const discordPresence = await getDiscordPresence(
-    game.communityLinks?.playboundDiscord?.guildId
-  );
-  const liveStats = await getGameLiveStats(game.slug);
-  const topPlayers = await getGameTopPlayers(game.slug);
-
-  let initiallyInLibrary = false;
-  if (session?.user) {
-    try {
-      await dbConnect();
-      // Scoped to this device: a phone install must not show as "in library"
-      // on desktop, where the game is not actually installed.
-      const viewerPlatform = platformFromUserAgent((await headers()).get("user-agent"));
-      const visible = visiblePlatformsFor(viewerPlatform);
-      const entry = await LibraryEntry.findOne({
-        userId: session.user.id,
-        gameSlug: game.slug,
-        installed: true,
-        $or: [
-          { platform: { $in: visible } },
-          // Legacy entries have no platform and are desktop by definition.
-          ...(viewerPlatform === "desktop"
-            ? [{ platform: { $exists: false } }, { platform: null }]
-            : []),
-        ],
-      }).lean();
-      initiallyInLibrary = Boolean(entry);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  // Real review data only — aggregateRating is never synthesised.
-  const reviewDocs = await safeQuery(
-    () => Review.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).select("rating").lean(),
-    [] as { rating?: number }[]
-  );
-  const rated = reviewDocs.filter((r) => typeof r.rating === "number");
-  const aggregateRating = rated.length
-    ? {
-        ratingValue:
-          Math.round((rated.reduce((sum, r) => sum + (r.rating ?? 0), 0) / rated.length) * 10) / 10,
-        reviewCount: rated.length,
-      }
-    : undefined;
-
-  const weeklyIssue = await issueForGame(game.slug);
-  // Always non-empty: a game with none stored yields its virtual Official
-  // edition, so nothing downstream needs a "no editions" branch.
-  const editions = await listPublicEditionsForGame(game);
+  // Critical path only: developer + editions for hero chooser and static schema.
+  const [developer, editions] = await Promise.all([
+    getDeveloper(game.developerSlug),
+    listPublicEditionsForGame(game),
+  ]);
   const choosable = hasChoosableEditions(editions);
-
-  let playingNowBySlug: Record<string, number> | undefined;
-  if (choosable) {
-    const settled = await Promise.allSettled(
-      editions.map((e) => getEditionLiveStats(game.slug, e.slug))
-    );
-    playingNowBySlug = {};
-    editions.forEach((e, i) => {
-      const r = settled[i];
-      if (r?.status === "fulfilled") {
-        playingNowBySlug![e.slug] = r.value.playingNow;
-      }
-    });
-  }
+  const signedIn = Boolean(session?.user);
 
   return (
     <div>
@@ -253,7 +174,7 @@ export default async function GamePage({
       />
       <JsonLd
         data={graph(
-          videoGameSchema(game, developer, { aggregateRating }),
+          videoGameSchema(game, developer),
           qualityReviewSchema(game),
           faqSchema(game.faq ?? []),
           breadcrumbSchema([
@@ -288,37 +209,23 @@ export default async function GamePage({
               <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{game.title}</h1>
               <p className="mt-2 text-muted-foreground sm:text-lg">{game.tagline}</p>
               <div className="mt-3">
-                <PlayingNowBadge count={liveStats.playingNow} className="border-white/15 bg-black/40 text-white" />
+                <Suspense fallback={<GameHeroPlayingNowFallback />}>
+                  <GameHeroPlayingNow slug={game.slug} />
+                </Suspense>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {choosable ? (
-                <Link
-                  href="#editions"
-                  className="inline-flex h-12 items-center gap-2 rounded-full bg-play px-7 text-base font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px"
-                >
-                  <Play className="size-5" />
-                  Choose an edition
-                </Link>
-              ) : (
-                <PlayCta game={game} size="lg" />
-              )}
-              <AdaptiveAddToLibraryButton
-                game={game}
-                initiallyInLibrary={initiallyInLibrary}
-                signedIn={Boolean(session?.user)}
-                size="lg"
-              />
+              <Suspense fallback={<GameHeroActionsFallback game={game} choosable={choosable} />}>
+                <GameHeroActions game={game} choosable={choosable} />
+              </Suspense>
             </div>
           </div>
         </div>
       </section>
 
-      <GameIncompatibilityBanner
-        game={game}
-        initiallyInLibrary={initiallyInLibrary}
-        signedIn={Boolean(session?.user)}
-      />
+      <Suspense fallback={null}>
+        <GameIncompatibilityBannerAsync game={game} />
+      </Suspense>
 
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <nav className="no-scrollbar sticky top-0 z-20 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
@@ -361,48 +268,31 @@ export default async function GamePage({
           </Link>
         ))}
 
-        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install").map((t) => {
-          const count =
-            t === "discussion"
-              ? discussionCount
-              : t === "reviews"
-                ? reviewCount
-                : null;
-          return (
-            <Link
-              key={t}
-              href={`/games/${game.slug}?tab=${t}`}
-              data-tab={t}
-              className={cn(
-                "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
-                tab === t
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t}
-              {count != null && count > 0 ? (
-                <span className="ml-1 text-xs font-normal text-muted-foreground">{count}</span>
-              ) : null}
-            </Link>
-          );
-        })}
+        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install").map((t) => (
+          <Link
+            key={t}
+            href={`/games/${game.slug}?tab=${t}`}
+            data-tab={t}
+            className={cn(
+              "border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap capitalize transition-colors",
+              tab === t
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t}
+            {(t === "discussion" || t === "reviews") && (
+              <Suspense fallback={null}>
+                <GameTabCount gameSlug={game.slug} kind={t} />
+              </Suspense>
+            )}
+          </Link>
+        ))}
       </nav>
 
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         {tab === "overview" && (
-          <OverviewTab
-            game={game}
-            developer={developer}
-            featuring={await collectionsFeaturing(game.slug)}
-            similar={similar}
-            weeklyIssue={weeklyIssue}
-            discordPresence={discordPresence}
-            editions={editions}
-            playingNowBySlug={playingNowBySlug}
-            liveStats={liveStats}
-            topPlayers={topPlayers}
-          />
+          <OverviewTab game={game} developer={developer} editions={editions} />
         )}
         {tab === "install" && (
           <>
@@ -418,43 +308,40 @@ export default async function GamePage({
             <GameInstallContent game={game} />
           </>
         )}
-        {tab === "mods" && <ModsTab game={game} />}
+        {tab === "mods" && (
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+            <ModsTab game={game} />
+          </Suspense>
+        )}
         {tab === "guides" && (
-          <GuidesTab
-            gameSlug={game.slug}
-            isSignedIn={Boolean(session?.user)}
-            items={await safeQuery(() => GuidePost.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).sort({ createdAt: -1 }).limit(30).lean(), [])}
-          />
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+            <GuidesTabAsync gameSlug={game.slug} isSignedIn={signedIn} />
+          </Suspense>
         )}
         {tab === "achievements" && <AchievementsTab />}
         {tab === "news" && (
-          <NewsTab
-            game={game}
-            releases={game.githubRepo ? await fetchGithubReleases(game.githubRepo) : []}
-          />
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+            <NewsTabAsync game={game} />
+          </Suspense>
         )}
         {tab === "discussion" && (
-          <DiscussionTabSection
-            game={game}
-            isSignedIn={Boolean(session?.user)}
-            query={{
-              category: sp.category,
-              sort: sp.sort,
-              filter: sp.filter,
-              q: sp.q,
-            }}
-            presence={discordPresence}
-          />
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+            <DiscussionTabSection
+              game={game}
+              isSignedIn={signedIn}
+              query={{
+                category: sp.category,
+                sort: sp.sort,
+                filter: sp.filter,
+                q: sp.q,
+              }}
+            />
+          </Suspense>
         )}
         {tab === "reviews" && (
-          <ReviewList
-            gameSlug={game.slug}
-            isSignedIn={Boolean(session?.user)}
-            items={await safeQuery(() => Review.find({ gameSlug: game.slug, ...gameScopedUgcFilter() }).sort({ createdAt: -1 }).limit(30).lean(), [])}
-            // Game-scoped only (editionSlug null). Edition-specific reviews live on edition pages.
-            showEditionLabels
-            editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
-          />
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+            <ReviewsTabAsync gameSlug={game.slug} isSignedIn={signedIn} editions={editions} />
+          </Suspense>
         )}
         {tab === "media" && <MediaTab game={game} />}
       </div>
@@ -467,35 +354,18 @@ export default async function GamePage({
 function OverviewTab({
   game,
   developer,
-  featuring,
-  similar,
-  weeklyIssue,
-  discordPresence,
   editions,
-  playingNowBySlug,
-  liveStats,
-  topPlayers,
 }: {
   game: Game;
   developer: Developer | undefined;
-  featuring: Awaited<ReturnType<typeof collectionsFeaturing>>;
-  similar: Game[];
-  weeklyIssue?: WeeklyIssue;
-  discordPresence?: { online?: number; members?: number } | null;
   editions: Edition[];
-  playingNowBySlug?: Record<string, number>;
-  liveStats: EntityLiveStats;
-  topPlayers: Awaited<ReturnType<typeof getGameTopPlayers>>;
 }) {
   if (!game) return null;
 
-  const issue = weeklyIssue;
   const relatedComparisons = comparisonsFeaturing(game.slug);
   const relatedAlternatives = alternativePages.filter((p) =>
     p.picks.some((pick) => pick.slug === game.slug)
   );
-
-  const installTotal = liveStats.installsAllTime ?? 0;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
@@ -509,11 +379,9 @@ function OverviewTab({
         {/* Editions sit high on the page: when a game has several, which one
             to install is the reader's first decision, ahead of the blurb.
             Renders nothing for games with only the generated Official one. */}
-        <EditionsSection
-          game={game}
-          editions={editions}
-          playingNowBySlug={playingNowBySlug}
-        />
+        <Suspense fallback={<EditionsSectionFallback game={game} editions={editions} />}>
+          <GameEditionsBlock game={game} editions={editions} />
+        </Suspense>
 
         <section>
           <h2 className="text-lg font-bold">About {game.title}</h2>
@@ -532,16 +400,9 @@ function OverviewTab({
           <section className="rounded-xl border-l-4 border-primary bg-card p-5">
             <h2 className="text-lg font-bold">Why we picked it</h2>
             <p className="mt-2 leading-relaxed text-muted-foreground">{game.whyWePickedIt}</p>
-            {issue && (
-              <p className="mt-3 text-sm">
-                <Link
-                  href={`/weekly/${issue.slug}`}
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Featured in PlayBound Weekly, week {issue.week} of {issue.year} →
-                </Link>
-              </p>
-            )}
+            <Suspense fallback={null}>
+              <GameWhyIssueLink gameSlug={game.slug} />
+            </Suspense>
           </section>
         )}
 
@@ -597,7 +458,9 @@ function OverviewTab({
         </section>
 
         <section>
-          <GameHardwareCompatibility gameSlug={game.slug} />
+          <Suspense fallback={<div className="h-24 animate-pulse rounded-xl bg-muted/30" />}>
+            <GameHardwareCompatibility gameSlug={game.slug} />
+          </Suspense>
         </section>
 
         <section>
@@ -663,39 +526,26 @@ function OverviewTab({
         )}
 
         <section>
-          <CompatibleGearList gameSlug={game.slug} gameTitle={game.title} />
+          <Suspense fallback={<div className="h-24 animate-pulse rounded-xl bg-muted/30" />}>
+            <CompatibleGearList gameSlug={game.slug} gameTitle={game.title} />
+          </Suspense>
         </section>
 
-        {similar.length > 0 && (
-          <section>
-            <h2 className="mb-4 text-lg font-bold">More Like This</h2>
-            <CompatibleMoreLikeThis games={similar} />
-          </section>
-        )}
+        <Suspense fallback={<GameSimilarFallback />}>
+          <GameSimilarBlock game={game} />
+        </Suspense>
       </div>
 
       <aside className="min-w-0 space-y-4">
-        <ActivityStatsCard
-          playingNow={liveStats.playingNow}
-          topPlayers={topPlayers}
-          rows={[
-            { label: "Players this month", value: liveStats.playersThisMonth },
-            ...(liveStats.multiplayerPlayers > 0
-              ? [{ label: "On multiplayer servers", value: liveStats.multiplayerPlayers }]
-              : []),
-            ...(liveStats.serverCount > 0
-              ? [{ label: "Live servers", value: liveStats.serverCount }]
-              : []),
-            ...(installTotal > 0 ? [{ label: "Installs", value: installTotal }] : []),
-            ...(liveStats.installsThisMonth > 0
-              ? [{ label: "Installs this month", value: liveStats.installsThisMonth }]
-              : []),
-          ]}
-        />
+        <Suspense fallback={<GameActivityAsideFallback />}>
+          <GameActivityAside gameSlug={game.slug} />
+        </Suspense>
         <div className="hidden lg:block">
           <GameFriendsWidget gameSlug={game.slug} />
         </div>
-        <GameUpcomingEvents gameSlug={game.slug} />
+        <Suspense fallback={null}>
+          <GameUpcomingEvents gameSlug={game.slug} />
+        </Suspense>
         {developer && (
           <Link
             href={`/developers/${developer.slug}`}
@@ -731,12 +581,9 @@ function OverviewTab({
             Official website →
           </a>
         </div>
-        <CommunityCard
-          gameSlug={game.slug}
-          gameTitle={game.title}
-          communityLinks={game.communityLinks}
-          presence={discordPresence}
-        />
+        <Suspense fallback={<div className="h-32 animate-pulse rounded-xl bg-muted/40" />}>
+          <GameCommunityAside game={game} />
+        </Suspense>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tags</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -747,21 +594,17 @@ function OverviewTab({
             ))}
           </div>
         </div>
-        {featuring.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Featured in</p>
-            <div className="mt-2 space-y-1.5">
-              {featuring.map((c) => (
-                <Link key={c.slug} href={`/collections/${c.slug}`} className="block text-sm font-medium hover:text-primary hover:underline">
-                  {c.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <GameFeaturingAside gameSlug={game.slug} />
+        </Suspense>
       </aside>
     </div>
   );
+}
+
+function EditionsSectionFallback({ game, editions }: { game: Game; editions: Edition[] }) {
+  // Show editions immediately without waiting on live player counts.
+  return <EditionsSection game={game} editions={editions} />;
 }
 
 async function ModsTab({ game }: { game: Game }) {
@@ -861,6 +704,57 @@ async function ModsTab({ game }: { game: Game }) {
   );
 }
 
+async function GuidesTabAsync({
+  gameSlug,
+  isSignedIn,
+}: {
+  gameSlug: string;
+  isSignedIn: boolean;
+}) {
+  const items = await safeQuery(
+    () =>
+      GuidePost.find({ gameSlug, ...gameScopedUgcFilter() })
+        .sort({ createdAt: -1 })
+        .limit(30)
+        .lean(),
+    []
+  );
+  return <GuidesTab gameSlug={gameSlug} isSignedIn={isSignedIn} items={items} />;
+}
+
+async function NewsTabAsync({ game }: { game: Game }) {
+  const releases = game.githubRepo ? await fetchGithubReleases(game.githubRepo) : [];
+  return <NewsTab game={game} releases={releases} />;
+}
+
+async function ReviewsTabAsync({
+  gameSlug,
+  isSignedIn,
+  editions,
+}: {
+  gameSlug: string;
+  isSignedIn: boolean;
+  editions: Edition[];
+}) {
+  const items = await safeQuery(
+    () =>
+      Review.find({ gameSlug, ...gameScopedUgcFilter() })
+        .sort({ createdAt: -1 })
+        .limit(30)
+        .lean(),
+    []
+  );
+  return (
+    <ReviewList
+      gameSlug={gameSlug}
+      isSignedIn={isSignedIn}
+      items={items}
+      showEditionLabels
+      editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
+    />
+  );
+}
+
 function AchievementsTab() {
   return (
     <div>
@@ -931,13 +825,12 @@ async function DiscussionTabSection({
   game,
   isSignedIn,
   query,
-  presence,
 }: {
   game: Game;
   isSignedIn: boolean;
   query: { category?: string; sort?: string; filter?: string; q?: string };
-  presence?: { online?: number; members?: number } | null;
 }) {
+  const presence = await getDiscordPresence(game.communityLinks?.playboundDiscord?.guildId);
   const categories = visibleCategories(game);
   const filter = query.filter ?? "all";
   const sort = query.sort ?? "activity";

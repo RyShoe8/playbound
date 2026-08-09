@@ -25,6 +25,8 @@ interface ControllerState {
   starting: boolean;
   timer: Timer | null;
   retry: ReturnType<typeof setTimeout> | null;
+  /** Coalesces rapid soft-nav route reports so they don't contend with RSC. */
+  routeDebounce: ReturnType<typeof setTimeout> | null;
   sessionId: string | null;
   /** Last payload sent, so unchanged fields can be omitted. */
   last: { status?: string; page?: string | null; gameId?: string | null; editionId?: string | null };
@@ -35,9 +37,13 @@ const state: ControllerState = {
   starting: false,
   timer: null,
   retry: null,
+  routeDebounce: null,
   sessionId: null,
   last: {},
 };
+
+/** Wait for the RSC flight to settle before POSTing presence on route change. */
+const ROUTE_REPORT_DEBOUNCE_MS = 750;
 
 /** Consecutive-failure backoff, capped. Never gives up entirely. */
 const RETRY_SCHEDULE_MS = [5_000, 15_000, 30_000, 60_000];
@@ -78,8 +84,10 @@ export function describeRoute(pathname: string): {
 function clearTimers() {
   if (state.timer) clearInterval(state.timer);
   if (state.retry) clearTimeout(state.retry);
+  if (state.routeDebounce) clearTimeout(state.routeDebounce);
   state.timer = null;
   state.retry = null;
+  state.routeDebounce = null;
 }
 
 /** Only send what changed — this fires every minute for every open tab. */
@@ -210,7 +218,8 @@ export async function startPresence(initial: HeartbeatPayload) {
 }
 
 /**
- * Push a route change immediately rather than waiting for the next beat.
+ * Push a route change. Updates local store immediately; the network heartbeat
+ * is debounced so rapid soft navigations don't compete with the RSC response.
  *
  * Skips the request when nothing actually changed. PresenceProvider already
  * dedupes by path, but relying on the caller to do that would mean any future
@@ -231,7 +240,13 @@ export function reportRoute(page: string) {
   if (store.status !== "away") store.setStatus(status);
 
   if (unchanged) return;
-  if (state.running) void sendHeartbeat();
+  if (!state.running) return;
+
+  if (state.routeDebounce) clearTimeout(state.routeDebounce);
+  state.routeDebounce = setTimeout(() => {
+    state.routeDebounce = null;
+    if (state.running) void sendHeartbeat();
+  }, ROUTE_REPORT_DEBOUNCE_MS);
 }
 
 /** Tab hidden/visible. Away rather than offline — the user has not left. */
