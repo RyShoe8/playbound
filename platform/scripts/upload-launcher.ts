@@ -41,6 +41,8 @@ async function main() {
 
   const args = process.argv.slice(2);
   const isMac = args.includes("--mac");
+  /** Also overwrite production site/auto-update aliases even for unsigned admin-channel builds. */
+  const promoteProd = args.includes("--promote-prod");
   const argPath = args.find(a => !a.startsWith("--"));
   const distDir = resolve(process.cwd(), "../launcher/dist");
   let setupPath = argPath ? resolve(argPath) : "";
@@ -113,18 +115,34 @@ async function main() {
     "application/octet-stream"
   );
 
-  const feedBase = aliasUrl.replace(/\/[^/]+$/, "/");
+  // Unsigned Mac CI builds land on admin-* ; still promote to the public site download + latest-mac.yml
+  // so users aren't stuck on an older production DMG after a successful CI build.
+  let prodAliasUrl: string | null = null;
+  let prodYmlUrl: string | null = null;
+  if (promoteProd && isAdmin) {
+    const prodYmlName = isMac ? "latest-mac.yml" : "latest.yml";
+    const prodAliasName = isMac ? "PlayBound-Launcher-Setup.dmg" : "PlayBound-Launcher-Setup.exe";
+    if (existsSync(ymlPath)) {
+      prodYmlUrl = await uploadBlob(`launcher/${prodYmlName}`, ymlPath, "text/yaml; charset=utf-8");
+    }
+    prodAliasUrl = await uploadBlob(`launcher/${prodAliasName}`, setupPath, "application/octet-stream");
+    console.log(`  also promoted admin build → ${prodAliasName} / ${prodYmlName}`);
+  }
+
+  const feedBase = (prodAliasUrl || aliasUrl).replace(/\/[^/]+$/, "/");
 
   console.log("");
   console.log("Uploaded.");
   console.log(`  Versioned: ${setupUrl}`);
-  console.log(`  Site alias: ${aliasUrl}`);
+  console.log(`  Site alias: ${prodAliasUrl || aliasUrl}`);
+  if (isAdmin) console.log(`  Admin alias: ${aliasUrl}`);
   if (ymlUrl) console.log(`  Update feed: ${ymlUrl}`);
+  if (prodYmlUrl) console.log(`  Prod update feed: ${prodYmlUrl}`);
   console.log(`  electron-updater url: ${feedBase}`);
   console.log("");
   console.log("Set on Vercel (Production + Preview) if changed:");
   const envVar = isMac ? "NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL" : "NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL";
-  console.log(`  ${envVar}=${aliasUrl}`);
+  console.log(`  ${envVar}=${prodAliasUrl || aliasUrl}`);
 }
 
 main().catch((err) => {
