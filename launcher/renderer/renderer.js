@@ -1438,9 +1438,11 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       });
     } else {
       const onlyEd = editions[0]?.editionSlug || game.editionSlug || null;
+      const showDisplay = game.slug === "openciv3";
       actions.innerHTML = `
       <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
       ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
+      ${showDisplay ? `<button class="btn-secondary btn-sm btn-lib-display" type="button">Display</button>` : ""}
       <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
     `;
       actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
@@ -1458,6 +1460,10 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         e.stopPropagation();
         const dir = game.dir || editions[0]?.dir;
         if (dir) window.playbound.openFolder(dir);
+      });
+      actions.querySelector(".btn-lib-display")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void toggleOpenCiv3DisplayPanel(block, game);
       });
       actions.querySelector(".btn-lib-uninstall")?.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -1478,6 +1484,101 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     block.appendChild(buildModsDisclosure(gameMods, modTitles));
   }
   return block;
+}
+
+async function toggleOpenCiv3DisplayPanel(block, game) {
+  const existing = block.querySelector(".openciv3-display-panel");
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "openciv3-display-panel";
+  panel.innerHTML = `<p class="view-sub" style="margin:0">Loading display settings…</p>`;
+  block.appendChild(panel);
+
+  let settings;
+  try {
+    settings = await window.playbound.getOpenCiv3Display();
+  } catch (err) {
+    panel.innerHTML = `<p class="view-sub" style="margin:0;color:var(--danger,#f87171)">${escapeHtml(err.message || String(err))}</p>`;
+    return;
+  }
+
+  const presets = Array.isArray(settings?.presets) ? settings.presets : [];
+  const width = Number(settings?.width) || 1920;
+  const height = Number(settings?.height) || 1080;
+  const presetMatch = presets.find((p) => p.width === width && p.height === height);
+  const presetOptions = [
+    ...presets.map(
+      (p) =>
+        `<option value="${p.width}x${p.height}" ${
+          presetMatch && p.width === width && p.height === height ? "selected" : ""
+        }>${escapeHtml(p.label)}</option>`
+    ),
+    `<option value="custom" ${presetMatch ? "" : "selected"}>Custom…</option>`,
+  ].join("");
+
+  panel.innerHTML = `
+    <div class="openciv3-display-title">Window resolution</div>
+    <p class="view-sub openciv3-display-hint">OpenCiv3 starts small by default. Pick a size — applied on next launch.</p>
+    <label class="openciv3-display-label">Preset
+      <select id="openciv3-preset" class="openciv3-display-select">${presetOptions}</select>
+    </label>
+    <div class="openciv3-display-custom">
+      <label class="openciv3-display-label">Width
+        <input type="number" id="openciv3-width" class="openciv3-display-input" min="640" max="7680" step="1" value="${width}" />
+      </label>
+      <label class="openciv3-display-label">Height
+        <input type="number" id="openciv3-height" class="openciv3-display-input" min="640" max="7680" step="1" value="${height}" />
+      </label>
+    </div>
+    <div class="openciv3-display-actions">
+      <button type="button" class="btn-primary btn-sm" id="openciv3-apply">Apply</button>
+      <button type="button" class="btn-secondary btn-sm" id="openciv3-close">Close</button>
+    </div>
+  `;
+
+  const presetEl = panel.querySelector("#openciv3-preset");
+  const widthEl = panel.querySelector("#openciv3-width");
+  const heightEl = panel.querySelector("#openciv3-height");
+
+  function syncCustomFromPreset() {
+    const v = presetEl?.value || "";
+    if (v === "custom") return;
+    const [w, h] = v.split("x").map(Number);
+    if (widthEl && Number.isFinite(w)) widthEl.value = String(w);
+    if (heightEl && Number.isFinite(h)) heightEl.value = String(h);
+  }
+
+  presetEl?.addEventListener("change", () => {
+    syncCustomFromPreset();
+  });
+  widthEl?.addEventListener("input", () => {
+    if (presetEl) presetEl.value = "custom";
+  });
+  heightEl?.addEventListener("input", () => {
+    if (presetEl) presetEl.value = "custom";
+  });
+
+  panel.querySelector("#openciv3-close")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    panel.remove();
+  });
+
+  panel.querySelector("#openciv3-apply")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const w = Number(widthEl?.value);
+    const h = Number(heightEl?.value);
+    try {
+      await window.playbound.setOpenCiv3Display({ width: w, height: h });
+      setStatus(`OpenCiv3 display set to ${w}×${h} — restart the game if it’s running.`);
+      panel.remove();
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
 }
 
 function buildModsDisclosure(gameMods, modTitles) {

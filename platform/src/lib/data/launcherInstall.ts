@@ -187,7 +187,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "C7-Game/OpenCiv3",
     assetPattern: "OpenCiv3_.*-Windows\\.zip$",
     exeHint: "OpenCiv3",
-    note: "Runs standalone with placeholder art. Optional: install Civilization III Complete (Steam/GOG) for original graphics — OpenCiv3 auto-detects it.",
+    note: "Runs standalone with placeholder art. PlayBound sets windowed 1920×1080 (Library → Display to change). Optional: install Civilization III Complete (Steam/GOG) for original graphics — OpenCiv3 auto-detects it.",
   },
   freeciv: {
     enabled: true,

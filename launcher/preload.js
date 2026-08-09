@@ -83,6 +83,8 @@ contextBridge.exposeInMainWorld("playbound", {
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   installUpdate: () => ipcRenderer.invoke("install-update"),
+  getOpenCiv3Display: () => ipcRenderer.invoke("get-openciv3-display"),
+  setOpenCiv3Display: (payload) => ipcRenderer.invoke("set-openciv3-display", payload || {}),
 
   // Events
   onContext: (cb) => ipcRenderer.on("context", (_event, data) => cb(data)),
