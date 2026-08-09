@@ -60,10 +60,26 @@ function PageViewTracker() {
     if (lastSent.current === path) return;
     lastSent.current = path;
 
-    void telemetry.page(path, {
-      path,
-      title: typeof document !== "undefined" ? document.title : undefined,
-    });
+    // Idle so page_view POSTs don't contend with App Router RSC on soft nav.
+    const send = () => {
+      void telemetry.page(path, {
+        path,
+        title: typeof document !== "undefined" ? document.title : undefined,
+      });
+    };
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(send, { timeout: 2000 });
+    } else {
+      timeoutId = setTimeout(send, 200);
+    }
+    return () => {
+      if (idleId != null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [pathname, searchParams]);
 
   return null;
