@@ -4,27 +4,29 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'launcher/**'
+      - "launcher/**"
+      - ".github/workflows/build-macos.yml"
+      - "platform/scripts/upload-launcher.ts"
     branches:
       - main
 
 jobs:
   build:
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          
+
       - name: Install Platform Dependencies
         run: npm install
         working-directory: platform
-          
+
       - name: Install Launcher Dependencies
         run: npm install
         working-directory: launcher
@@ -32,9 +34,9 @@ jobs:
       - name: Build macOS Launcher
         run: npm run dist:mac
         working-directory: launcher
-          
+
       - name: Upload to Vercel Blob
-        run: npm run upload:launcher -- --mac
+        run: npm run upload:launcher -- --mac --promote-prod
         working-directory: platform
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN || vars.BLOB_READ_WRITE_TOKEN }}
