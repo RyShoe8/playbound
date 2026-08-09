@@ -44,6 +44,13 @@ const PresenceSchema = new Schema(
     /** Path only — no query string. See normalizePage(). */
     currentPage: { type: String, default: null },
 
+    /**
+     * Looking for players (Phase 3). Cleared when expired by sweep or user toggle.
+     * `lookingForPlayersGameId` optional — null means "any / current game".
+     */
+    lookingForPlayersUntil: { type: Date, default: null, index: true },
+    lookingForPlayersGameId: { type: String, default: null },
+
     /** When this run of presence began (not when the account was created). */
     startedAt: { type: Date, default: Date.now },
     /**
@@ -75,6 +82,8 @@ export type PresenceDoc = {
   currentGameId?: string | null;
   currentEditionId?: string | null;
   currentPage?: string | null;
+  lookingForPlayersUntil?: Date | null;
+  lookingForPlayersGameId?: string | null;
   startedAt: Date;
   lastHeartbeat: Date;
   updatedAt: Date;

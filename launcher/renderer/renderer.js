@@ -852,11 +852,15 @@ async function refreshFriendsData() {
     const outgoingRequests = Array.isArray(requestsData?.outgoing) ? requestsData.outgoing : [];
 
     const playing = friends.filter(f => f.presence?.status === "playing");
+    const looking = friends.filter(
+      (f) => f.presence?.lookingForPlayers && f.presence?.status !== "playing"
+    );
     const online = friends.filter(f =>
-      ["online", "browsing", "away", "viewing_game", "installing", "launching"].includes(f.presence?.status)
+      ["online", "browsing", "away", "viewing_game", "installing", "launching"].includes(f.presence?.status) &&
+      !looking.includes(f)
     );
     const offline = friends.filter(f =>
-      !playing.includes(f) && !online.includes(f)
+      !playing.includes(f) && !online.includes(f) && !looking.includes(f)
     );
 
     let html = "";
@@ -911,7 +915,10 @@ async function refreshFriendsData() {
     }
 
     if (playing.length > 0) {
-      html += buildFriendsSectionHtml("Playing", playing, "playing");
+      html += buildFriendsSectionHtml("Playing Now", playing, "playing");
+    }
+    if (looking.length > 0) {
+      html += buildFriendsSectionHtml("Looking for Players", looking, "looking");
     }
     if (online.length > 0) {
       html += buildFriendsSectionHtml("Online", online, "online");
@@ -1000,10 +1007,24 @@ function buildFriendsSectionHtml(title, list, type) {
     let statusDot = "";
     const gameLabel = f.presence?.currentGameTitle || f.presence?.currentGameId || "a game";
     const gameSlug = f.presence?.currentGameId || "";
+    const joinSlug =
+      type === "looking"
+        ? f.presence?.lookingForPlayersGameId || gameSlug
+        : gameSlug;
     
     if (type === "playing") {
       statusText = `<span style="color: var(--primary)">Playing ${escapeHtml(gameLabel)}</span>`;
       statusDot = `<span class="status-dot dot-playing"></span>`;
+    } else if (type === "looking") {
+      const lfgLabel =
+        f.presence?.lookingForPlayersGameId ||
+        f.presence?.currentGameTitle ||
+        f.presence?.currentGameId ||
+        "";
+      statusText = `<span style="color: var(--primary)">Looking for players${
+        lfgLabel ? ` · ${escapeHtml(lfgLabel)}` : ""
+      }</span>`;
+      statusDot = `<span class="status-dot dot-online"></span>`;
     } else if (type === "online") {
       statusText = "Online on PlayBound";
       statusDot = `<span class="status-dot dot-online"></span>`;
@@ -1023,8 +1044,8 @@ function buildFriendsSectionHtml(title, list, type) {
         </div>
         <div class="friend-actions">
           ${
-            type === "playing" && gameSlug
-              ? `<button class="btn-primary btn-sm btn-view-game" data-slug="${escapeHtml(gameSlug)}">View Game</button>`
+            (type === "playing" || type === "looking") && joinSlug
+              ? `<button class="btn-success btn-sm btn-view-game" data-slug="${escapeHtml(joinSlug)}">Join Game</button>`
               : ""
           }
           <button class="btn-secondary btn-sm btn-remove-friend" data-id="${escapeHtml(f.id)}" title="Remove Friend">

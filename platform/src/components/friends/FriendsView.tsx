@@ -6,25 +6,64 @@ import { useFriendsStore, type FriendUser } from "@/stores/friendsStore";
 import { AddFriends } from "@/components/friends/AddFriends";
 import { FriendInviteClaim } from "@/components/friends/FriendInviteClaim";
 import { FriendsUpcomingEvents } from "@/components/events/FriendsUpcomingEvents";
+import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import { Avatar } from "@/components/ui/bits";
 import { Gamepad2, LogIn, UserMinus } from "lucide-react";
 import Link from "next/link";
 import { telemetry } from "@/lib/telemetry";
 
+function PrivacyToggle({
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg px-1 py-1.5 hover:bg-secondary/40">
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{label}</span>
+        <span className="block text-xs text-muted-foreground">{description}</span>
+      </span>
+      <input
+        type="checkbox"
+        className="mt-1 size-4 accent-primary"
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    </label>
+  );
+}
+
 function FriendCard({
   friend,
   subtitle,
   playing,
+  away,
   offline,
   onRemove,
 }: {
   friend: FriendUser;
   subtitle: ReactNode;
   playing?: boolean;
+  away?: boolean;
   offline?: boolean;
   onRemove: (id: string) => void;
 }) {
   const gameSlug = friend.presence.currentGameId;
+  const join = friend.join;
+  const showJoin =
+    playing &&
+    gameSlug &&
+    join?.href &&
+    (join.capability === "supported" || join.capability === "requiresManualJoin");
 
   return (
     <div
@@ -35,10 +74,12 @@ function FriendCard({
       <div className="flex min-w-0 items-center gap-3">
         <div className="relative shrink-0">
           <Avatar name={friend.username} hue={265} size="md" />
-          {playing || !offline ? (
+          {playing || away || !offline ? (
             <span className="absolute -right-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full bg-card">
               <span
-                className={`size-2.5 rounded-full ${playing ? "bg-violet-500" : "bg-emerald-500"}`}
+                className={`size-2.5 rounded-full ${
+                  playing ? "bg-violet-500" : away ? "bg-amber-400" : "bg-emerald-500"
+                }`}
               />
             </span>
           ) : null}
@@ -62,7 +103,22 @@ function FriendCard({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {playing && gameSlug ? (
+        {showJoin ? (
+          <Link
+            href={join.href!}
+            className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
+            onClick={() =>
+              telemetry.track("join_game_clicked", {
+                gameSlug: gameSlug || undefined,
+                friendId: friend.id,
+                capability: join.capability,
+                surface: "friends_page",
+              })
+            }
+          >
+            {join.label || "Join Game"}
+          </Link>
+        ) : playing && gameSlug ? (
           <Link
             href={`/games/${encodeURIComponent(gameSlug)}`}
             className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-bold text-primary-foreground hover:brightness-110"
@@ -72,6 +128,17 @@ function FriendCard({
           >
             View Game
           </Link>
+        ) : null}
+        {friend.discordLinked && playing ? (
+          <a
+            href="https://discord.com/app"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md border border-border bg-secondary px-2 py-1 text-[11px] font-bold hover:bg-secondary/80"
+            onClick={() => telemetry.track("friend_discord_clicked", { source: "friends_playing" })}
+          >
+            Discord
+          </a>
         ) : null}
         <button
           type="button"
@@ -117,11 +184,19 @@ export function FriendsView({
   const { status } = useSession();
   const [addOpen, setAddOpen] = useState(false);
   const [appearOffline, setAppearOffline] = useState(false);
+  const [hideActivity, setHideActivity] = useState(false);
+  const [allowPlayInvites, setAllowPlayInvites] = useState(true);
+  const [notifyFriendActivity, setNotifyFriendActivity] = useState(true);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [appearBusy, setAppearBusy] = useState(false);
+  const [lfgBusy, setLfgBusy] = useState(false);
+  const [lfgActive, setLfgActive] = useState(false);
   const {
     playingFriends,
+    awayFriends,
     onlineFriends,
     offlineFriends,
+    lookingFriends,
     incomingRequests,
     outgoingRequests,
     startPolling,
@@ -139,25 +214,71 @@ export function FriendsView({
       void fetch("/api/presence/visibility")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (data) setAppearOffline(Boolean(data.appearOffline));
+          if (!data) return;
+          setAppearOffline(Boolean(data.appearOffline));
+          setHideActivity(Boolean(data.hideActivityFromFriends));
+          setAllowPlayInvites(data.allowPlayInvites !== false);
+          setNotifyFriendActivity(data.notifyFriendActivity !== false);
+        })
+        .catch(() => {});
+      void fetch("/api/play-together")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.myLfg) setLfgActive(Boolean(data.myLfg.active));
         })
         .catch(() => {});
     }
     return () => stopPolling();
   }, [status, startPolling, stopPolling]);
 
-  async function toggleAppearOffline() {
-    const next = !appearOffline;
+  async function patchVisibility(patch: Record<string, boolean>) {
     setAppearBusy(true);
     try {
       const res = await fetch("/api/presence/visibility", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ appearOffline: next }),
+        body: JSON.stringify(patch),
       });
-      if (res.ok) setAppearOffline(next);
+      if (!res.ok) return false;
+      if (patch.appearOffline !== undefined) {
+        setAppearOffline(patch.appearOffline);
+        telemetry.track("appear_offline_toggled", { enabled: patch.appearOffline });
+      }
+      if (patch.hideActivityFromFriends !== undefined) {
+        setHideActivity(patch.hideActivityFromFriends);
+      }
+      if (patch.allowPlayInvites !== undefined) {
+        setAllowPlayInvites(patch.allowPlayInvites);
+      }
+      if (patch.notifyFriendActivity !== undefined) {
+        setNotifyFriendActivity(patch.notifyFriendActivity);
+      }
+      return true;
     } finally {
       setAppearBusy(false);
+    }
+  }
+
+  async function toggleAppearOffline() {
+    await patchVisibility({ appearOffline: !appearOffline });
+  }
+
+  async function toggleLfg() {
+    const next = !lfgActive;
+    setLfgBusy(true);
+    try {
+      const gameSlug = playingFriends[0]?.presence.currentGameId || undefined;
+      const res = await fetch("/api/presence/lfg", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: next, gameSlug: next ? gameSlug : null }),
+      });
+      if (res.ok) {
+        setLfgActive(next);
+        telemetry.track(next ? "lfg_enabled" : "lfg_disabled", next ? { gameSlug } : {});
+      }
+    } finally {
+      setLfgBusy(false);
     }
   }
 
@@ -182,7 +303,12 @@ export function FriendsView({
 
   const hasPending = incomingRequests.length > 0 || outgoingRequests.length > 0;
   const hasFriends =
-    playingFriends.length + onlineFriends.length + offlineFriends.length > 0;
+    playingFriends.length +
+      awayFriends.length +
+      onlineFriends.length +
+      offlineFriends.length >
+    0;
+  const lookingOnly = lookingFriends.filter((f) => f.presence.status !== "playing");
 
   return (
     <div className="space-y-5">
@@ -192,10 +318,19 @@ export function FriendsView({
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            See who&apos;s playing and manage friend requests.
+            See who&apos;s playing and jump in together.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={lfgBusy}
+            onClick={() => void toggleLfg()}
+            className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80 disabled:opacity-60"
+            title="Let friends know you want people to play with (expires in 60 minutes)"
+          >
+            {lfgBusy ? "Saving…" : lfgActive ? "Stop looking" : "Looking for players"}
+          </button>
           <button
             type="button"
             disabled={appearBusy}
@@ -215,9 +350,54 @@ export function FriendsView({
         </div>
       </div>
 
-      {addOpen ? (
-        <AddFriends games={games} genres={genres} />
-      ) : null}
+      {addOpen ? <AddFriends games={games} genres={genres} /> : null}
+
+      <div className="rounded-xl border border-border bg-card/40 px-3 py-2">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-2 text-left text-sm font-semibold"
+          onClick={() => setPrivacyOpen((v) => !v)}
+        >
+          <span>Activity privacy</span>
+          <span className="text-xs text-muted-foreground">{privacyOpen ? "Hide" : "Show"}</span>
+        </button>
+        {privacyOpen ? (
+          <div className="mt-3 space-y-2 border-t border-border pt-3">
+            <PrivacyToggle
+              label="Appear offline"
+              description="Friends see you as offline"
+              checked={appearOffline}
+              disabled={appearBusy}
+              onChange={() => void toggleAppearOffline()}
+            />
+            <PrivacyToggle
+              label="Hide what I'm playing"
+              description="Stay online without sharing game activity"
+              checked={hideActivity}
+              disabled={appearBusy}
+              onChange={() => void patchVisibility({ hideActivityFromFriends: !hideActivity })}
+            />
+            <PrivacyToggle
+              label="Allow play invites"
+              description="Friends can invite you to play"
+              checked={allowPlayInvites}
+              disabled={appearBusy}
+              onChange={() => void patchVisibility({ allowPlayInvites: !allowPlayInvites })}
+            />
+            <PrivacyToggle
+              label="Friend activity notifications"
+              description="Get notified when friends start playing or LFG"
+              checked={notifyFriendActivity}
+              disabled={appearBusy}
+              onChange={() =>
+                void patchVisibility({ notifyFriendActivity: !notifyFriendActivity })
+              }
+            />
+          </div>
+        ) : null}
+      </div>
+
+      <PlayWithFriends surface="friends_page" />
 
       <FriendsUpcomingEvents />
 
@@ -310,7 +490,7 @@ export function FriendsView({
         ) : null}
 
         {playingFriends.length > 0 ? (
-          <FriendsSection title="Playing" count={playingFriends.length}>
+          <FriendsSection title="Playing Now" count={playingFriends.length}>
             {playingFriends.map((f) => (
               <FriendCard
                 key={f.id}
@@ -321,6 +501,27 @@ export function FriendsView({
                   <span className="flex items-center gap-1 text-primary">
                     <Gamepad2 className="size-3" />
                     Playing {f.presence.currentGameTitle || f.presence.currentGameId}
+                    {f.presence.lookingForPlayers ? " · Looking for players" : ""}
+                  </span>
+                }
+              />
+            ))}
+          </FriendsSection>
+        ) : null}
+
+        {lookingOnly.length > 0 ? (
+          <FriendsSection title="Looking for Players" count={lookingOnly.length}>
+            {lookingOnly.map((f) => (
+              <FriendCard
+                key={f.id}
+                friend={f}
+                onRemove={removeFriend}
+                subtitle={
+                  <span>
+                    Looking for players
+                    {f.presence.lookingForPlayersGameId
+                      ? ` · ${f.presence.lookingForPlayersGameId}`
+                      : ""}
                   </span>
                 }
               />
@@ -337,6 +538,14 @@ export function FriendsView({
                 onRemove={removeFriend}
                 subtitle="Online on PlayBound"
               />
+            ))}
+          </FriendsSection>
+        ) : null}
+
+        {awayFriends.length > 0 ? (
+          <FriendsSection title="Away" count={awayFriends.length}>
+            {awayFriends.map((f) => (
+              <FriendCard key={f.id} friend={f} away onRemove={removeFriend} subtitle="Away" />
             ))}
           </FriendsSection>
         ) : null}

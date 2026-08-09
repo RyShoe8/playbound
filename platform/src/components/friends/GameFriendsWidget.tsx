@@ -1,34 +1,116 @@
 "use client";
 
+import { Suspense, useEffect } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { Avatar } from "@/components/ui/bits";
+import { InviteFriendsPanel } from "@/components/friends/InviteFriendsPanel";
+import { AcceptPlayInviteEffect } from "@/components/friends/AcceptPlayInviteEffect";
+import { telemetry } from "@/lib/telemetry";
 
 export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
   const { status } = useSession();
-  const { friends } = useFriendsStore();
+  const { friends, fetchFriends, startPolling, stopPolling } = useFriendsStore();
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    void fetchFriends();
+    startPolling(45000);
+    return () => stopPolling();
+  }, [status, fetchFriends, startPolling, stopPolling]);
 
   if (status !== "authenticated") return null;
 
-  const friendsPlaying = friends.filter((f) => f.presence.currentGameId === gameSlug && f.presence.status === "playing");
-  const friendsViewing = friends.filter((f) => f.presence.currentGameId === gameSlug && ["online", "browsing", "away"].includes(f.presence.status));
+  const friendsPlaying = friends.filter(
+    (f) => f.presence.currentGameId === gameSlug && f.presence.status === "playing"
+  );
+  const friendsViewing = friends.filter(
+    (f) =>
+      f.presence.currentGameId === gameSlug &&
+      ["online", "browsing", "away", "viewing_game"].includes(f.presence.status)
+  );
+  const friendsLooking = friends.filter(
+    (f) =>
+      f.presence.lookingForPlayers &&
+      (f.presence.lookingForPlayersGameId === gameSlug || f.presence.currentGameId === gameSlug)
+  );
 
-  if (friendsPlaying.length === 0 && friendsViewing.length === 0) {
-    return null;
+  const inviteEffect = (
+    <Suspense fallback={null}>
+      <AcceptPlayInviteEffect gameSlug={gameSlug} />
+    </Suspense>
+  );
+
+  if (
+    friendsPlaying.length === 0 &&
+    friendsViewing.length === 0 &&
+    friendsLooking.length === 0
+  ) {
+    return (
+      <div className="mt-6 space-y-3 rounded-xl border border-border bg-card p-4">
+        {inviteEffect}
+        <h3 className="text-sm font-bold">Your Friends</h3>
+        <p className="text-sm text-muted-foreground">
+          None of your friends are playing this right now.
+        </p>
+        <InviteFriendsPanel gameSlug={gameSlug} />
+      </div>
+    );
   }
 
   return (
     <div className="mt-6 space-y-4 rounded-xl border border-border bg-card p-4">
-      <h3 className="text-sm font-bold">Friends</h3>
-      
+      {inviteEffect}
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-bold">Your Friends</h3>
+        <InviteFriendsPanel gameSlug={gameSlug} />
+      </div>
+
       {friendsPlaying.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Playing Now</p>
+          <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            Playing Now
+          </p>
           <div className="flex flex-col gap-2">
             {friendsPlaying.map((f) => (
+              <div key={f.id} className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Avatar name={f.username} hue={265} size="sm" />
+                  <span className="truncate text-sm font-semibold">{f.username}</span>
+                </div>
+                {f.join?.href && f.join.capability !== "unsupported" ? (
+                  <Link
+                    href={f.join.href}
+                    className="shrink-0 rounded-full bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground"
+                    onClick={() =>
+                      telemetry.track("join_game_clicked", {
+                        friendId: f.id,
+                        gameSlug,
+                        capability: f.join?.capability,
+                        surface: "game_page",
+                      })
+                    }
+                  >
+                    {f.join.label || "Join"}
+                  </Link>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {friendsLooking.length > 0 && (
+        <div>
+          <p className="mb-2 mt-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            Looking for Players
+          </p>
+          <div className="flex flex-col gap-2">
+            {friendsLooking.map((f) => (
               <div key={f.id} className="flex items-center gap-2">
                 <Avatar name={f.username} hue={265} size="sm" />
-                <span className="text-sm font-semibold truncate">{f.username}</span>
+                <span className="truncate text-sm font-semibold">{f.username}</span>
               </div>
             ))}
           </div>
@@ -37,12 +119,14 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
 
       {friendsViewing.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">Viewing</p>
+          <p className="mb-2 mt-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            Viewing
+          </p>
           <div className="flex flex-col gap-2">
             {friendsViewing.map((f) => (
               <div key={f.id} className="flex items-center gap-2 opacity-80">
                 <Avatar name={f.username} hue={265} size="sm" />
-                <span className="text-sm font-semibold truncate">{f.username}</span>
+                <span className="truncate text-sm font-semibold">{f.username}</span>
               </div>
             ))}
           </div>

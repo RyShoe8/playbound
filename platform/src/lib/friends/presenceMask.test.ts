@@ -14,6 +14,17 @@ describe("maskPresenceForOthers", () => {
     expect(maskPresenceForOthers(presence, false)).toEqual(presence);
   });
 
+  it("hides activity without forcing offline", () => {
+    const presence = {
+      status: "playing",
+      currentGameId: "openra",
+      currentGameTitle: "OpenRA",
+    };
+    const masked = maskPresenceForOthers(presence, false, true);
+    expect(masked.status).toBe("online");
+    expect(masked.currentGameId).toBeNull();
+  });
+
   it("forces offline and clears game fields when appearOffline is true", () => {
     const presence = {
       status: "playing",

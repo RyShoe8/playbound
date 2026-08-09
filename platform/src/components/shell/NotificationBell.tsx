@@ -15,6 +15,12 @@ type NotifItem = {
   href: string;
   readAt: string | null;
   createdAt: string;
+  meta?: {
+    inviteId?: string;
+    gameSlug?: string;
+    actions?: string[];
+    fromUserId?: string;
+  };
 };
 
 /**
@@ -48,9 +54,10 @@ export function NotificationBell() {
       return;
     }
     startPolling(30000);
-    void refresh();
+    const kickoff = window.setTimeout(() => void refresh(), 0);
     const t = setInterval(() => void refresh(), 45000);
     return () => {
+      clearTimeout(kickoff);
       clearInterval(t);
       stopPolling();
     };
@@ -130,20 +137,105 @@ export function NotificationBell() {
             ) : (
               items.map((n) => (
                 <li key={n.id} className={!n.readAt ? "bg-primary/5" : undefined}>
-                  <Link
-                    href={n.href || "/friends"}
-                    className="block px-3 py-2.5 hover:bg-secondary/60"
-                    onClick={() => {
-                      if (!n.readAt) void markRead(n.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <p className="text-sm font-semibold">{n.title}</p>
-                    {n.body ? <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p> : null}
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      <LocalTime value={n.createdAt} />
-                    </p>
-                  </Link>
+                  <div className="px-3 py-2.5">
+                    <Link
+                      href={n.href || "/friends"}
+                      className="block hover:opacity-90"
+                      onClick={() => {
+                        if (!n.readAt) void markRead(n.id);
+                        setOpen(false);
+                        void import("@/lib/telemetry").then(({ telemetry }) =>
+                          telemetry.track("play_notification_clicked", {
+                            type: n.type,
+                            gameSlug: n.meta?.gameSlug,
+                          })
+                        );
+                      }}
+                    >
+                      <p className="text-sm font-semibold">{n.title}</p>
+                      {n.body ? <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p> : null}
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        <LocalTime value={n.createdAt} />
+                      </p>
+                    </Link>
+                    {n.type === "play_invite" && n.meta?.inviteId ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(
+                                `/api/play-invites/${encodeURIComponent(n.meta!.inviteId!)}`,
+                                {
+                                  method: "POST",
+                                  headers: { "content-type": "application/json" },
+                                  body: JSON.stringify({ action: "accept" }),
+                                }
+                              );
+                              if (res.ok) {
+                                void import("@/lib/telemetry").then(({ telemetry }) =>
+                                  telemetry.track("play_invite_accepted", {
+                                    inviteId: n.meta?.inviteId,
+                                    gameSlug: n.meta?.gameSlug,
+                                  })
+                                );
+                              }
+                              if (!n.readAt) void markRead(n.id);
+                              setOpen(false);
+                              window.location.href =
+                                n.href ||
+                                (n.meta?.gameSlug
+                                  ? `/games/${encodeURIComponent(n.meta.gameSlug)}`
+                                  : "/friends");
+                            } catch {
+                              /* ignore */
+                            }
+                          }}
+                        >
+                          Play
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border border-border bg-secondary px-2.5 py-1 text-[11px] font-bold"
+                          onClick={async () => {
+                            try {
+                              await fetch(`/api/play-invites/${encodeURIComponent(n.meta!.inviteId!)}`, {
+                                method: "POST",
+                                headers: { "content-type": "application/json" },
+                                body: JSON.stringify({ action: "decline" }),
+                              });
+                              void import("@/lib/telemetry").then(({ telemetry }) =>
+                                telemetry.track("play_invite_declined", {
+                                  inviteId: n.meta?.inviteId,
+                                  gameSlug: n.meta?.gameSlug,
+                                })
+                              );
+                              if (!n.readAt) void markRead(n.id);
+                              void refresh();
+                            } catch {
+                              /* ignore */
+                            }
+                          }}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    ) : n.meta?.actions?.includes("join") && n.meta?.gameSlug ? (
+                      <div className="mt-2">
+                        <Link
+                          href={`/games/${encodeURIComponent(n.meta.gameSlug)}`}
+                          className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground"
+                          onClick={() => {
+                            if (!n.readAt) void markRead(n.id);
+                            setOpen(false);
+                          }}
+                        >
+                          Join
+                        </Link>
+                      </div>
+                    ) : null}
+                  </div>
                 </li>
               ))
             )}

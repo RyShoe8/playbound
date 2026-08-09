@@ -6,6 +6,24 @@ import DiscordConnection from "@/lib/models/DiscordConnection";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listGames } from "@/lib/catalog";
 import { maskPresenceForOthers } from "@/lib/friends/presenceMask";
+import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
+
+type PopulatedFriendUser = {
+  _id: { toString(): string };
+  username?: string;
+  image?: string | null;
+  preferences?: {
+    appearOffline?: boolean;
+    hideActivityFromFriends?: boolean;
+  };
+};
+
+type FriendshipLean = {
+  _id: unknown;
+  acceptedAt?: Date | null;
+  requesterId: PopulatedFriendUser;
+  recipientId: PopulatedFriendUser;
+};
 
 export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -16,15 +34,15 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
 
-    const friendships = await Friend.find({
+    const friendships = (await Friend.find({
       $or: [{ requesterId: userId }, { recipientId: userId }],
       status: "accepted",
     })
       .populate({ path: "requesterId", select: "username image preferences" })
       .populate({ path: "recipientId", select: "username image preferences" })
-      .lean();
+      .lean()) as unknown as FriendshipLean[];
 
-    const friendUsers = friendships.map((doc: any) => {
+    const friendUsers = friendships.map((doc) => {
       const isRequester = doc.requesterId._id.toString() === userId;
       const friendUser = isRequester ? doc.recipientId : doc.requesterId;
       return {
@@ -34,6 +52,7 @@ export async function GET(req: Request) {
         friendshipId: doc._id,
         acceptedAt: doc.acceptedAt,
         appearOffline: Boolean(friendUser.preferences?.appearOffline),
+        hideActivity: Boolean(friendUser.preferences?.hideActivityFromFriends),
       };
     });
 
@@ -45,11 +64,17 @@ export async function GET(req: Request) {
     ]);
 
     const titleBySlug = new Map(games.map((g) => [g.slug, g.title]));
+    const gameBySlug = new Map(games.map((g) => [g.slug, g]));
     const discordLinkedSet = new Set(discordConnections.map((dc) => dc.userId.toString()));
+    const now = Date.now();
 
     const presenceMap = new Map();
     for (const p of presences) {
       const slug = p.currentGameId || null;
+      const lfgUntil = p.lookingForPlayersUntil
+        ? new Date(p.lookingForPlayersUntil).getTime()
+        : 0;
+      const lookingForPlayers = Boolean(lfgUntil && lfgUntil > now);
       presenceMap.set(p.userId.toString(), {
         status: p.status,
         platform: p.platform,
@@ -59,17 +84,36 @@ export async function GET(req: Request) {
         currentPage: p.currentPage,
         lastHeartbeat: p.lastHeartbeat,
         lastSeen: p.lastHeartbeat,
+        lookingForPlayers,
+        lookingForPlayersGameId: lookingForPlayers ? p.lookingForPlayersGameId || slug : null,
+        lookingForPlayersUntil: lookingForPlayers ? p.lookingForPlayersUntil : null,
       });
     }
 
     const friends = friendUsers.map((user) => {
-      const raw = presenceMap.get(user.id.toString()) || { status: "offline" };
-      const presence = maskPresenceForOthers(raw, user.appearOffline);
-      const { appearOffline: _hidden, ...publicUser } = user;
+      const raw = presenceMap.get(user.id.toString()) || {
+        status: "offline",
+        lookingForPlayers: false,
+      };
+      const presence = maskPresenceForOthers(raw, user.appearOffline, user.hideActivity);
+      const game = presence.currentGameId
+        ? gameBySlug.get(String(presence.currentGameId))
+        : null;
+      const join = resolveJoinCapability({
+        game: game || null,
+        friendStatus: presence.status,
+        friendGameId: presence.currentGameId,
+        editionId: presence.currentEditionId,
+      });
       return {
-        ...publicUser,
+        id: user.id,
+        username: user.username,
+        image: user.image,
+        friendshipId: user.friendshipId,
+        acceptedAt: user.acceptedAt,
         discordLinked: discordLinkedSet.has(user.id.toString()),
         presence,
+        join,
       };
     });
 

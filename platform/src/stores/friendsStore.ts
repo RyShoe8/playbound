@@ -15,6 +15,14 @@ export type FriendUser = {
     currentGameTitle?: string | null;
     lastHeartbeat?: Date;
     lastSeen?: Date;
+    lookingForPlayers?: boolean;
+    lookingForPlayersGameId?: string | null;
+  };
+  join?: {
+    capability: string;
+    label: string;
+    href: string | null;
+    reason?: string;
   };
 };
 
@@ -34,8 +42,10 @@ export type FriendRequest = {
 type FriendsState = {
   friends: FriendUser[];
   playingFriends: FriendUser[];
+  awayFriends: FriendUser[];
   onlineFriends: FriendUser[];
   offlineFriends: FriendUser[];
+  lookingFriends: FriendUser[];
   incomingRequests: FriendRequest[];
   outgoingRequests: FriendRequest[];
   blockedUsers: FriendUser[]; // If we decide to fetch blocks
@@ -62,8 +72,10 @@ let pollSubscribers = 0;
 export const useFriendsStore = create<FriendsState>((set, get) => ({
   friends: [],
   playingFriends: [],
+  awayFriends: [],
   onlineFriends: [],
   offlineFriends: [],
+  lookingFriends: [],
   incomingRequests: [],
   outgoingRequests: [],
   blockedUsers: [],
@@ -76,24 +88,36 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         const friends: FriendUser[] = data.friends || [];
-        
+
         const playing = friends.filter((f) => f.presence.status === "playing");
+        const away = friends.filter((f) => f.presence.status === "away");
         const online = friends.filter((f) =>
-          ["online", "browsing", "away", "viewing_game", "installing", "launching"].includes(f.presence.status)
+          ["online", "browsing", "viewing_game", "installing", "launching"].includes(
+            f.presence.status
+          )
         );
+        const looking = friends.filter((f) => Boolean(f.presence.lookingForPlayers));
         const offline = friends.filter(
           (f) =>
             f.presence.status === "offline" ||
-            !["playing", "online", "browsing", "away", "viewing_game", "installing", "launching"].includes(
-              f.presence.status
-            )
+            ![
+              "playing",
+              "online",
+              "browsing",
+              "away",
+              "viewing_game",
+              "installing",
+              "launching",
+            ].includes(f.presence.status)
         );
 
         set({
           friends,
           playingFriends: playing,
+          awayFriends: away,
           onlineFriends: online,
           offlineFriends: offline,
+          lookingFriends: looking,
         });
       }
     } catch (err) {
