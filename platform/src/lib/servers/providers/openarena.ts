@@ -10,14 +10,23 @@ import { MAX_SERVERS } from "../types";
 const DEATHMASK_XML =
   "http://dpmaster.deathmask.net/?game=openarena&xml=1&showplayers=1";
 
+/** Decode entities then strip HTML + Quake colors (deathmask encodes <font> as &lt;font&gt;). */
 function stripQuakeColors(text: string): string {
   return String(text || "")
-    .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
+    .replace(/&#(\d+);/g, (_, n) => {
+      const code = Number(n);
+      return Number.isFinite(code) ? String.fromCharCode(code) : "";
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => {
+      const code = parseInt(h, 16);
+      return Number.isFinite(code) ? String.fromCharCode(code) : "";
+    })
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/<[^>]+>/g, "")
     .replace(/\^(\d|x[0-9a-fA-F]{6})/g, "")
     .replace(/\s+/g, " ")
     .trim();

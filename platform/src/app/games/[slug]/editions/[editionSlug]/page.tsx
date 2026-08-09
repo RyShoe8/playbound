@@ -37,6 +37,7 @@ import type { Edition } from "@/lib/editionTypes";
 import type { Game } from "@/lib/data/types";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata, privateMetadata } from "@/lib/seo";
+import { withOutboundUtm } from "@/lib/utm";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader } from "@/components/ui/bits";
 import { Badge, EmptyHint } from "@/components/ui/bits";
@@ -549,7 +550,10 @@ function OverviewTab({
               {communityLinks.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={`${label}-${href}`}
-                  href={href}
+                  href={withOutboundUtm(href, {
+                    campaign: "edition_page",
+                    content: edition.slug,
+                  })}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-secondary px-4 text-sm font-bold hover:bg-secondary/80"
@@ -819,7 +823,10 @@ function NewsTab({ edition }: { edition: Edition }) {
               )}
               {note.url && (
                 <Link
-                  href={note.url}
+                  href={withOutboundUtm(note.url, {
+                    campaign: "edition_page",
+                    content: edition.slug,
+                  })}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"

@@ -58,7 +58,7 @@ const links: NavItem[] = [
   { href: "/admin/bugs", label: "Bugs", icon: Bug },
   { href: "/admin/version-issues", label: "Versions", icon: AlertTriangle },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/events/new", label: "Events", icon: CalendarDays },
+  { href: "/admin/events", label: "Events", icon: CalendarDays },
 ];
 
 function linkActive(pathname: string, href: string, exact?: boolean) {

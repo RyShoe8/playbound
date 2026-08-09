@@ -15,6 +15,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import User from "@/lib/models/User";
 import { canAccessTesting } from "@/lib/requestIncludesTesting";
 import { getAdminLauncherDownloadUrl } from "@/lib/launcherDownload";
+import { ProfileUpcomingEvents } from "@/components/events/ProfileUpcomingEvents";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -118,6 +119,8 @@ export default async function ProfilePage() {
         googleConnected={googleConnected}
         discordConfigured={Boolean(process.env.DISCORD_CLIENT_ID)}
       />
+
+      <ProfileUpcomingEvents userId={session.user.id} />
 
       <section>
         <SectionHeader title="Your Contributions" />

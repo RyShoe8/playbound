@@ -7,6 +7,7 @@ import type { Game } from "@/lib/data/types";
 import { telemetry } from "@/lib/telemetry";
 import { useGameSession } from "@/hooks/useGameSession";
 import { parseMobileOs, type MobileOutbound } from "@/lib/mobilePlay";
+import { withOutboundUtm } from "@/lib/utm";
 
 /**
  * The mobile "get it / play it" button.
@@ -55,13 +56,17 @@ export function MobileOutboundCta({
 
   const isPlay = outbound.label === "Play Free";
   const Icon = isPlay ? MonitorPlay : outbound.label === "Open official site" ? ExternalLink : Download;
+  const href = withOutboundUtm(outbound.href, {
+    campaign: surface || "mobile_store",
+    content: game.slug,
+  });
 
   function handleClick() {
     // Always record the click itself, unchanged from before.
     void telemetry.track("official_download_clicked", {
       gameSlug: game.slug,
       gameTitle: game.title,
-      url: outbound.href,
+      url: href,
       surface,
     });
 
@@ -124,7 +129,7 @@ export function MobileOutboundCta({
 
   return (
     <a
-      href={outbound.href}
+      href={href}
       target="_blank"
       rel="noreferrer"
       onClick={handleClick}

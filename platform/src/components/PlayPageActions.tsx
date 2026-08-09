@@ -11,6 +11,7 @@ import {
   resolveMobileOutbound,
   shouldOfferLauncher,
 } from "@/lib/mobilePlay";
+import { withOutboundUtm } from "@/lib/utm";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
@@ -27,6 +28,14 @@ export function PlayPageActions({
   const oneClick = isLauncherInstallable(game);
   const browser = isBrowserGame(game);
   const offerLauncher = shouldOfferLauncher(device.type);
+  const officialTracked = withOutboundUtm(officialHref, {
+    campaign: "game_play",
+    content: game.slug,
+  });
+  const websiteTracked = withOutboundUtm(game.website, {
+    campaign: "game_play",
+    content: game.slug,
+  });
 
   if (!offerLauncher) {
     const os =
@@ -39,6 +48,10 @@ export function PlayPageActions({
         return outbound.href;
       }
     })();
+    const secondaryOfficial = withOutboundUtm(officialHref, {
+      campaign: "play_page_mobile_secondary",
+      content: game.slug,
+    });
 
     return (
       <>
@@ -54,11 +67,15 @@ export function PlayPageActions({
         </MobileOutboundCta>
         {outbound.href !== officialHref ? (
           <TelemetryAnchor
-            href={officialHref}
+            href={secondaryOfficial}
             target="_blank"
             rel="noreferrer"
             event="official_download_clicked"
-            properties={{ gameSlug: game.slug, url: officialHref, surface: "play_page_mobile_secondary" }}
+            properties={{
+              gameSlug: game.slug,
+              url: secondaryOfficial,
+              surface: "play_page_mobile_secondary",
+            }}
             className="flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
             <ExternalLink className="size-4" /> Official site
@@ -71,11 +88,11 @@ export function PlayPageActions({
   if (browser) {
     return (
       <TelemetryAnchor
-        href={game.website}
+        href={websiteTracked}
         target="_blank"
         rel="noreferrer"
         event="official_download_clicked"
-        properties={{ gameSlug: game.slug, url: game.website }}
+        properties={{ gameSlug: game.slug, url: websiteTracked }}
         className="mt-2 flex items-center gap-2 rounded-full bg-play px-6 py-2.5 text-sm font-bold text-play-foreground transition-all hover:brightness-110"
         onClick={() => startSession(game.slug, game.title)}
       >
@@ -93,11 +110,11 @@ export function PlayPageActions({
         />
       ) : null}
       <TelemetryAnchor
-        href={officialHref}
+        href={officialTracked}
         target="_blank"
         rel="noreferrer"
         event="official_download_clicked"
-        properties={{ gameSlug: game.slug, url: officialHref }}
+        properties={{ gameSlug: game.slug, url: officialTracked }}
         className={
           oneClick
             ? "flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"

@@ -423,7 +423,7 @@ updateGamesFamilyNav();
 
 document.getElementById("sidebar-discord")?.addEventListener("click", (e) => {
   e.preventDefault();
-  window.playbound.openExternal(DISCORD_INVITE);
+  window.playbound.openExternal(DISCORD_INVITE, { campaign: "discord" });
 });
 
 document.querySelectorAll('input[name="compat-filter"]').forEach((input) => {
@@ -1145,7 +1145,10 @@ async function renderGearView() {
     dir.querySelectorAll("[data-url]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const url = btn.getAttribute("data-url");
-        if (url) window.playbound.openExternal(url);
+        if (!url) return;
+        // Affiliate buy links must not get PlayBound UTMs.
+        const skipUtm = btn.classList.contains("gear-buy");
+        window.playbound.openExternal(url, skipUtm ? { skipUtm: true } : undefined);
       });
     });
     dir.querySelectorAll(".gear-view-all").forEach((btn) => {
@@ -1784,10 +1787,11 @@ async function renderEventsView() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Events</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Tournaments and community nights on PlayBound.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Game Nights and tournaments — join and play.</p>
       </div>
       <button class="btn-secondary btn-sm" id="btn-open-events-web">Open playbound.club/events</button>
     </div>
+    <div id="events-banner" class="events-banner" style="margin-top: 16px"></div>
     <div id="events-list" class="events-list" style="margin-top: 20px"></div>
   `;
 
@@ -1798,26 +1802,74 @@ async function renderEventsView() {
   const res = (await window.playbound.getEvents?.()) || { events: [] };
   const events = res.events || [];
   const list = document.getElementById("events-list");
+  const banner = document.getElementById("events-banner");
   if (!events.length) {
     list.innerHTML = `<p class="view-sub">No upcoming events. Check playbound.club/events for updates.</p>`;
     return;
   }
+
+  const live = events.find((ev) => ev.status === "live");
+  const soon = events.find((ev) => {
+    if (!ev.startsAt) return false;
+    const ms = new Date(ev.startsAt).getTime() - Date.now();
+    return ms > 0 && ms < 60 * 60 * 1000;
+  });
+  if (banner && (live || soon)) {
+    const ev = live || soon;
+    const href = ev.id
+      ? `https://playbound.club/events/${encodeURIComponent(ev.id)}`
+      : "https://playbound.club/events";
+    banner.innerHTML = `
+      <div class="event-row" style="border-color: var(--primary)">
+        <div>
+          <p class="event-when">${live ? "🔴 LIVE NOW" : "Starts within an hour"}</p>
+          <p class="event-title">${escapeHtml(ev.title)}</p>
+          <p class="event-desc">${escapeHtml(ev.gameSlug || "")}${
+      ev.counts?.going != null ? ` · ${ev.counts.going} going` : ""
+    }</p>
+        </div>
+        <button class="btn-primary btn-sm" type="button" id="btn-event-banner">${
+          live ? "Join" : "View Event"
+        }</button>
+      </div>
+    `;
+    document.getElementById("btn-event-banner")?.addEventListener("click", () => {
+      window.playbound.openExternal(href);
+    });
+  }
+
   list.replaceChildren();
   for (const ev of events) {
     const row = document.createElement("div");
     row.className = "event-row";
-    const when = ev.startsAt ? new Date(ev.startsAt).toLocaleString() : "";
+    const when =
+      ev.when?.dateLine && ev.when?.timeLine
+        ? `${ev.when.dateLine} · ${ev.when.timeLine}`
+        : ev.startsAt
+          ? new Date(ev.startsAt).toLocaleString()
+          : "";
+    const href = ev.id
+      ? `https://playbound.club/events/${encodeURIComponent(ev.id)}`
+      : "https://playbound.club/events";
     row.innerHTML = `
       <div>
-        <p class="event-when">${escapeHtml(when)}</p>
+        <p class="event-when">${escapeHtml(when)}${
+      ev.status === "live" ? " · LIVE" : ""
+    }</p>
         <p class="event-title">${escapeHtml(ev.title)}</p>
         <p class="event-desc">${escapeHtml(ev.description || "")}</p>
-        ${ev.gameSlug ? `<p class="event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
+        ${
+          ev.gameSlug
+            ? `<p class="event-game">${escapeHtml(ev.gameSlug)}${
+                ev.counts?.going != null ? ` · ${ev.counts.going} going` : ""
+              }</p>`
+            : ""
+        }
       </div>
-      <button class="btn-secondary btn-sm" type="button">View on site</button>
+      <button class="btn-secondary btn-sm" type="button">View Event</button>
     `;
     row.querySelector("button")?.addEventListener("click", () => {
-      window.playbound.openExternal("https://playbound.club/events");
+      window.playbound.openExternal(href);
     });
     list.appendChild(row);
   }
@@ -3024,7 +3076,12 @@ async function renderGameDetailView(slug) {
     void runInstall(selectedEditionSlug());
   });
   document.getElementById("install-tab-website")?.addEventListener("click", () => {
-    if (detail.website) window.playbound.openExternal(detail.website);
+    if (detail.website) {
+      window.playbound.openExternal(detail.website, {
+        campaign: "launcher_game_website",
+        content: slug,
+      });
+    }
   });
   document.getElementById("achievements-open-site")?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -3084,7 +3141,10 @@ async function renderGameDetailView(slug) {
         }</p>`;
         document.getElementById("news-website")?.addEventListener("click", (e) => {
           e.preventDefault();
-          window.playbound.openExternal(detail.website);
+          window.playbound.openExternal(detail.website, {
+            campaign: "launcher_game_website",
+            content: slug,
+          });
         });
       } else {
         newsSec.innerHTML = `<div class="release-list">${releases
@@ -3102,7 +3162,10 @@ async function renderGameDetailView(slug) {
         newsSec.querySelectorAll("[data-ext]").forEach((a) => {
           a.addEventListener("click", (e) => {
             e.preventDefault();
-            window.playbound.openExternal(a.dataset.ext);
+            window.playbound.openExternal(a.dataset.ext, {
+              campaign: "launcher_github",
+              content: slug,
+            });
           });
         });
       }
@@ -4077,7 +4140,12 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
     }
   });
   container.querySelectorAll("[data-ext]").forEach((btn) => {
-    btn.addEventListener("click", () => window.playbound.openExternal(btn.dataset.ext));
+    btn.addEventListener("click", () =>
+      window.playbound.openExternal(btn.dataset.ext, {
+        campaign: "launcher_edition_link",
+        content: `${gameSlug}:${editionSlug}`,
+      })
+    );
   });
 }
 

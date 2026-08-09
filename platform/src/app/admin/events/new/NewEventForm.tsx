@@ -4,12 +4,25 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function NewEventForm({ gameOptions }: { gameOptions: { slug: string; title: string }[] }) {
+export function NewEventForm({
+  gameOptions,
+}: {
+  gameOptions: { slug: string; title: string }[];
+}) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [eventType, setEventType] = useState("game_night");
   const [gameSlug, setGameSlug] = useState("");
+  const [editionSlug, setEditionSlug] = useState("");
   const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [timezone, setTimezone] = useState("America/New_York");
+  const [maxParticipants, setMaxParticipants] = useState("");
+  const [featured, setFeatured] = useState(false);
+  const [discordInviteUrl, setDiscordInviteUrl] = useState("");
+  const [tournamentFormat, setTournamentFormat] = useState("single_elim");
+  const [teamSize, setTeamSize] = useState("1");
   const [state, setState] = useState<"idle" | "busy" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -20,11 +33,31 @@ export function NewEventForm({ gameOptions }: { gameOptions: { slug: string; tit
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, description, gameSlug: gameSlug || null, startsAt }),
+        body: JSON.stringify({
+          title,
+          description,
+          eventType,
+          gameSlug: gameSlug || null,
+          editionSlug: editionSlug || null,
+          startsAt: new Date(startsAt).toISOString(),
+          endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+          timezone,
+          maxParticipants: maxParticipants ? Number(maxParticipants) : null,
+          featured,
+          discordInviteUrl: discordInviteUrl || null,
+          status: "registration_open",
+          ...(eventType === "tournament"
+            ? {
+                tournamentFormat,
+                teamSize: Number(teamSize) || 1,
+                checkInRequired: true,
+              }
+            : {}),
+        }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok) {
-        router.push("/events");
+        router.push(data?.event?.id ? `/events/${data.event.id}` : "/events");
         router.refresh();
       } else {
         setState("error");
@@ -37,58 +70,154 @@ export function NewEventForm({ gameOptions }: { gameOptions: { slug: string; tit
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground">Title</label>
+    <form onSubmit={submit} className="mx-auto max-w-xl space-y-3">
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Type</span>
+        <PremiumSelect
+          value={eventType}
+          onChange={(e) => setEventType(e.target.value)}
+          className="w-full"
+        >
+          <option value="game_night">Game Night</option>
+          <option value="tournament">Tournament</option>
+        </PremiumSelect>
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Title</span>
         <input
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
         />
-      </div>
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground">Description</label>
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Description</span>
         <textarea
           required
           rows={4}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 w-full resize-y rounded-lg border border-input bg-secondary/50 px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
         />
-      </div>
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground">Related game (optional)</label>
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Game</span>
         <PremiumSelect
           value={gameSlug}
           onChange={(e) => setGameSlug(e.target.value)}
-          className="mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+          className="w-full"
         >
-          <option value="">None</option>
+          <option value="">No game linked</option>
           {gameOptions.map((g) => (
             <option key={g.slug} value={g.slug}>
               {g.title}
             </option>
           ))}
         </PremiumSelect>
-      </div>
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground">Starts at</label>
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Edition slug (optional)</span>
         <input
-          required
-          type="datetime-local"
-          value={startsAt}
-          onChange={(e) => setStartsAt(e.target.value)}
-          className="mt-1 h-10 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
+          value={editionSlug}
+          onChange={(e) => setEditionSlug(e.target.value)}
+          placeholder="official"
+          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
         />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block space-y-1 text-sm">
+          <span className="font-semibold">Starts</span>
+          <input
+            required
+            type="datetime-local"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+          />
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="font-semibold">Ends (optional)</span>
+          <input
+            type="datetime-local"
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+            className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+          />
+        </label>
       </div>
-      {state === "error" && <p className="text-xs text-destructive">{message}</p>}
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Timezone</span>
+        <input
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+        />
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Capacity (optional)</span>
+        <input
+          type="number"
+          min={1}
+          value={maxParticipants}
+          onChange={(e) => setMaxParticipants(e.target.value)}
+          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+        />
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-semibold">Discord invite override (optional)</span>
+        <input
+          value={discordInviteUrl}
+          onChange={(e) => setDiscordInviteUrl(e.target.value)}
+          placeholder="https://discord.gg/…"
+          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+        />
+      </label>
+      {eventType === "tournament" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block space-y-1 text-sm">
+            <span className="font-semibold">Format</span>
+            <PremiumSelect
+              value={tournamentFormat}
+              onChange={(e) => setTournamentFormat(e.target.value)}
+              className="w-full"
+            >
+              <option value="single_elim">Single elimination</option>
+              <option value="double_elim">Double elimination</option>
+              <option value="round_robin">Round robin</option>
+              <option value="ffa">Free-for-all</option>
+            </PremiumSelect>
+          </label>
+          <label className="block space-y-1 text-sm">
+            <span className="font-semibold">Team size</span>
+            <input
+              type="number"
+              min={1}
+              max={16}
+              value={teamSize}
+              onChange={(e) => setTeamSize(e.target.value)}
+              className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+            />
+          </label>
+        </div>
+      ) : null}
+      <label className="inline-flex items-center gap-2 text-sm font-semibold">
+        <input
+          type="checkbox"
+          checked={featured}
+          onChange={(e) => setFeatured(e.target.checked)}
+        />
+        Featured
+      </label>
+      {state === "error" ? (
+        <p className="text-sm text-destructive">{message}</p>
+      ) : null}
       <button
         type="submit"
         disabled={state === "busy"}
-        className="h-10 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground transition-all hover:brightness-110 disabled:opacity-60"
+        className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
       >
-        {state === "busy" ? "Creating…" : "Create Event"}
+        {state === "busy" ? "Publishing…" : "Publish event"}
       </button>
     </form>
   );

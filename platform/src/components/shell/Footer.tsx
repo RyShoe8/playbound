@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { withOutboundUtm } from "@/lib/utm";
 
 const year = new Date().getFullYear();
+const mediaShopHref = withOutboundUtm("https://themediashop.co", { campaign: "footer" });
 
 const links = [
   { href: "/discover", label: "Games" },
@@ -55,7 +57,7 @@ export function Footer() {
       <p className="mx-auto mt-6 max-w-5xl text-xs text-muted-foreground">
         © {year}{" "}
         <a
-          href="https://themediashop.co"
+          href={mediaShopHref}
           target="_blank"
           rel="noreferrer"
           className="font-semibold text-foreground/80 transition-colors hover:text-primary"

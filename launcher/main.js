@@ -11,6 +11,7 @@ const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
+const { withOutboundUtm } = require("./utm");
 
 function loadHardwareModule() {
   try {
@@ -73,8 +74,19 @@ function assertOpenExternalUrl(raw) {
   throw new Error(`Blocked external URL scheme: ${proto}`);
 }
 
-async function safeOpenExternal(raw) {
-  const url = assertOpenExternalUrl(raw);
+/**
+ * @param {string} raw
+ * @param {{ campaign?: string, content?: string, skipUtm?: boolean } | undefined} opts
+ */
+async function safeOpenExternal(raw, opts) {
+  let url = assertOpenExternalUrl(raw);
+  if (!opts?.skipUtm) {
+    url = withOutboundUtm(url, {
+      medium: "launcher",
+      campaign: opts?.campaign || "launcher",
+      content: opts?.content,
+    });
+  }
   await shell.openExternal(url);
   return true;
 }
@@ -2641,20 +2653,26 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
         editionMeta.links?.website ||
         editionMeta.installAction?.href;
       if (url) {
-        await safeOpenExternal(url);
+        await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
         return { status: "external", editionSlug: editionMeta.editionSlug };
       }
     } else if (editionMeta.installMethod === "external_installer") {
       const url = editionMeta.installConfig?.external_installer?.url || editionMeta.installAction?.href;
       if (url) {
-        await safeOpenExternal(url);
+        await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
         return { status: "external", editionSlug: editionMeta.editionSlug };
       }
     } else if (editionMeta.installAction?.kind === "link" && editionMeta.installAction.href) {
-      await safeOpenExternal(editionMeta.installAction.href);
+      await safeOpenExternal(editionMeta.installAction.href, {
+        campaign: "launcher_install_external",
+        content: slug,
+      });
       return { status: "external", editionSlug: editionMeta.editionSlug };
     } else if (editionMeta.installAction?.kind === "browser" && editionMeta.installAction.href) {
-      await safeOpenExternal(editionMeta.installAction.href);
+      await safeOpenExternal(editionMeta.installAction.href, {
+        campaign: "launcher_install_external",
+        content: slug,
+      });
       return { status: "external", editionSlug: editionMeta.editionSlug };
     }
   }
@@ -2662,7 +2680,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   if (entry.kind === "external") {
-    await safeOpenExternal(entry.url);
+    await safeOpenExternal(entry.url, { campaign: "launcher_install_external", content: slug });
     return { status: "external" };
   }
 
@@ -2823,7 +2841,7 @@ async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
       : null);
   if (!discord) return null;
   try {
-    await safeOpenExternal(discord);
+    await safeOpenExternal(discord, { campaign: "launcher_post_install_discord" });
   } catch {
     /* ignore */
   }
@@ -3052,7 +3070,10 @@ async function installModInner(slug, baseDirOverride) {
   const install = await fetchModInstall(slug);
 
   if (install.downloadKind === "external") {
-    await safeOpenExternal(install.url || `${getApiBase()}/mods/${slug}`);
+    await safeOpenExternal(install.url || `${getApiBase()}/mods/${slug}`, {
+      campaign: "launcher_mod_website",
+      content: slug,
+    });
     return { status: "external", url: install.url || null };
   }
 
@@ -4073,9 +4094,17 @@ ipcMain.handle("open-folder", async (_event, dir) => {
   return true;
 });
 ipcMain.handle("clear-context", () => clearContext());
-ipcMain.handle("open-external", async (_event, url) => {
+ipcMain.handle("open-external", async (_event, url, opts) => {
   try {
-    return await safeOpenExternal(url);
+    const options =
+      opts && typeof opts === "object"
+        ? {
+            campaign: opts.campaign ? String(opts.campaign) : undefined,
+            content: opts.content ? String(opts.content) : undefined,
+            skipUtm: Boolean(opts.skipUtm),
+          }
+        : undefined;
+    return await safeOpenExternal(url, options);
   } catch (err) {
     console.warn("open-external blocked:", err?.message || err);
     return false;

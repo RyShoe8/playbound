@@ -185,6 +185,24 @@ export type TelemetryEventMap = {
   java_runtime_install_started: { version?: string; surface?: string } & Extra;
   java_runtime_install_succeeded: { version?: string; surface?: string } & Extra;
   java_runtime_install_failed: { message?: string; surface?: string } & Extra;
+
+  events_page_viewed: Extra;
+  event_viewed: { eventId?: string; eventType?: string; gameSlug?: string } & Extra;
+  event_clicked_from_game: { eventId?: string; gameSlug?: string } & Extra;
+  event_clicked_from_friends: { eventId?: string } & Extra;
+  event_rsvp_going: { eventId?: string; gameSlug?: string } & Extra;
+  event_rsvp_maybe: { eventId?: string; gameSlug?: string } & Extra;
+  event_rsvp_cancelled: { eventId?: string; gameSlug?: string } & Extra;
+  event_discord_clicked: { eventId?: string; gameSlug?: string } & Extra;
+  event_play_clicked: { eventId?: string; gameSlug?: string } & Extra;
+  event_checked_in: { eventId?: string } & Extra;
+  tournament_registered: { eventId?: string; tournamentId?: string } & Extra;
+  tournament_checked_in: { eventId?: string; tournamentId?: string } & Extra;
+  tournament_match_completed: {
+    eventId?: string;
+    tournamentId?: string;
+    matchId?: string;
+  } & Extra;
 };
 
 export type TelemetryEventName = keyof TelemetryEventMap;

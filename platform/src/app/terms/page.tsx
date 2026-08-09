@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
+import { withOutboundUtm } from "@/lib/utm";
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms of Use",
   description: "Terms governing use of PlayBound.",
   path: "/terms",
 });
+
+const mediaShopHref = withOutboundUtm("https://themediashop.co", { campaign: "terms" });
 
 export default function TermsPage() {
   return (
@@ -15,7 +18,7 @@ export default function TermsPage() {
       <p className="text-sm text-muted-foreground">Last updated: July 25, 2026</p>
       <p className="text-sm leading-relaxed text-muted-foreground">
         By using PlayBound (operated by{" "}
-        <a href="https://themediashop.co" className="font-semibold text-primary hover:underline" target="_blank" rel="noreferrer">
+        <a href={mediaShopHref} className="font-semibold text-primary hover:underline" target="_blank" rel="noreferrer">
           The Media Shop
         </a>
         ), you agree to these terms.

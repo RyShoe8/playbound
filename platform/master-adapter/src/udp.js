@@ -164,12 +164,30 @@ export function parseInfoKeys(infoBody) {
   return keys;
 }
 
-/** Strip Quake / DarkPlaces color codes from server names. */
+/**
+ * Decode HTML entities, strip tags, then Quake / DarkPlaces color codes.
+ * Deathmask XML encodes colored OA names as &lt;font&gt;…&lt;/font&gt;.
+ */
 export function stripQuakeColors(text) {
   return String(text || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(\d+);/g, (_, n) => {
+      const code = Number(n);
+      return Number.isFinite(code) ? String.fromCharCode(code) : "";
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => {
+      const code = parseInt(h, 16);
+      return Number.isFinite(code) ? String.fromCharCode(code) : "";
+    })
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/<[^>]+>/g, "")
     .replace(/\^x[0-9a-fA-F]{6}/g, "")
     .replace(/\^[0-9a-v]/g, "")
     .replace(/\^./g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 

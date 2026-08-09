@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useFriendsStore, type FriendUser } from "@/stores/friendsStore";
 import { AddFriends } from "@/components/friends/AddFriends";
 import { FriendInviteClaim } from "@/components/friends/FriendInviteClaim";
+import { FriendsUpcomingEvents } from "@/components/events/FriendsUpcomingEvents";
 import { Avatar } from "@/components/ui/bits";
 import { Gamepad2, LogIn, UserMinus } from "lucide-react";
 import Link from "next/link";
@@ -217,6 +218,8 @@ export function FriendsView({
       {addOpen ? (
         <AddFriends games={games} genres={genres} />
       ) : null}
+
+      <FriendsUpcomingEvents />
 
       <div className="space-y-6">
         {incomingRequests.length > 0 ? (

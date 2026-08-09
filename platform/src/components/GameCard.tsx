@@ -17,6 +17,7 @@ import {
   resolveMobileOutbound,
   shouldOfferLauncher,
 } from "@/lib/mobilePlay";
+import { withOutboundUtm } from "@/lib/utm";
 
 function sizeLabel(sizeMB: number) {
   return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
@@ -54,14 +55,18 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
   }
 
   if (isBrowserGame(game)) {
+    const href = withOutboundUtm(game.website, {
+      campaign: "game_card",
+      content: game.slug,
+    });
     return (
       <TelemetryAnchor
-        href={game.website}
+        href={href}
         target="_blank"
         rel="noreferrer"
         className={className}
         event="official_download_clicked"
-        properties={{ gameSlug: game.slug, url: game.website }}
+        properties={{ gameSlug: game.slug, url: href }}
       >
         <MonitorPlay className={iconClass} />
         Play Free

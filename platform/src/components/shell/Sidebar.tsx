@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
+import { withOutboundUtm } from "@/lib/utm";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -89,7 +90,7 @@ export function Sidebar() {
 
       <div className="border-t border-sidebar-border p-3">
         <a
-          href={SITE_DISCORD_INVITE}
+          href={withOutboundUtm(SITE_DISCORD_INVITE, { campaign: "discord_sidebar" })}
           target="_blank"
           rel="noopener noreferrer"
           className="mb-3 flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/10 p-3 transition-colors hover:border-primary/50 hover:bg-primary/15"

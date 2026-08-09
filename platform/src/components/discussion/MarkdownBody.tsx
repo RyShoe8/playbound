@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
 import { cn } from "@/lib/utils";
+import { withOutboundUtm } from "@/lib/utm";
 
 export function MarkdownBody({
   content,
@@ -45,7 +46,11 @@ function MarkdownInner({ content }: { content: string }) {
       rehypePlugins={[rehypeSanitize]}
       components={{
         a: ({ href, children }) => (
-          <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+          <a
+            href={href ? withOutboundUtm(href, { campaign: "discussion" }) : href}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+          >
             {children}
           </a>
         ),

@@ -341,47 +341,54 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
           <option value="size">Sort: Size</option>
         </PremiumSelect>
 
-        {/* Checkboxes */}
-        <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">
-          <input
-            type="checkbox"
-            checked={multiplayerOnly}
-            onChange={(e) => setMultiplayerOnly(e.target.checked)}
-            className="accent-primary"
-          />
-          Multiplayer
-        </label>
-        <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">
-          <input
-            type="checkbox"
-            checked={installableOnly}
-            onChange={(e) => setInstallableOnly(e.target.checked)}
-            className="accent-primary"
-          />
-          Installable
-        </label>
-
-        <PremiumSelect
-          value={hwFilter}
-          onChange={(e) => {
-            const v = e.target.value as HwFilter;
-            if (!userHw && v) {
-              // Soft prompt — stay on discover; users open launcher via sync/cta elsewhere.
-              setHwFilter("");
-              window.alert(
-                "Open PlayBound while signed in to sync your PC, then use this filter."
-              );
-              return;
+        {/* Hardware performance + checkboxes (compact cluster) */}
+        <div className="inline-flex shrink-0 flex-wrap items-center gap-2.5">
+          <PremiumSelect
+            value={hwFilter}
+            onChange={(e) => {
+              const v = e.target.value as HwFilter;
+              if (!userHw && v) {
+                // Soft prompt — stay on discover; users open launcher via sync/cta elsewhere.
+                setHwFilter("");
+                window.alert(
+                  "Open PlayBound while signed in to sync your PC, then use this filter."
+                );
+                return;
+              }
+              setHwFilter(v);
+            }}
+            className="!w-auto h-9 max-w-[15rem] rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
+            title={
+              userHw
+                ? "Filter by performance on your synced PC"
+                : "Filter by performance on your synced PC (open the launcher while signed in)"
             }
-            setHwFilter(v);
-          }}
-          className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
-          title={userHw ? "Filter by how well games run on your PC" : "Open the launcher to check your PC"}
-        >
-          <option value="">My PC: any</option>
-          <option value="great">{userHw ? "Runs great" : "Runs great (needs launcher)"}</option>
-          <option value="playable">{userHw ? "Playable+" : "Playable+ (needs launcher)"}</option>
-        </PremiumSelect>
+          >
+            <option value="">How well on my PC: any</option>
+            <option value="great">{userHw ? "Great" : "Great (needs launcher)"}</option>
+            <option value="playable">
+              {userHw ? "Playable or better" : "Playable or better (needs launcher)"}
+            </option>
+          </PremiumSelect>
+          <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">
+            <input
+              type="checkbox"
+              checked={multiplayerOnly}
+              onChange={(e) => setMultiplayerOnly(e.target.checked)}
+              className="accent-primary"
+            />
+            Multiplayer
+          </label>
+          <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">
+            <input
+              type="checkbox"
+              checked={installableOnly}
+              onChange={(e) => setInstallableOnly(e.target.checked)}
+              className="accent-primary"
+            />
+            Installable
+          </label>
+        </div>
       </div>
 
       {/* ── Count ────────────────────────────────────────────── */}

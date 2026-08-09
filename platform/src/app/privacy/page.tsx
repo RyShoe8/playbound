@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
+import { withOutboundUtm } from "@/lib/utm";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
   description: "How PlayBound handles your data.",
   path: "/privacy",
 });
+
+const mediaShopHref = withOutboundUtm("https://themediashop.co", { campaign: "privacy" });
 
 export default function PrivacyPage() {
   return (
@@ -15,7 +18,7 @@ export default function PrivacyPage() {
       <p className="text-sm text-muted-foreground">Last updated: July 25, 2026</p>
       <p className="text-sm leading-relaxed text-muted-foreground">
         PlayBound is operated by{" "}
-        <a href="https://themediashop.co" className="font-semibold text-primary hover:underline" target="_blank" rel="noreferrer">
+        <a href={mediaShopHref} className="font-semibold text-primary hover:underline" target="_blank" rel="noreferrer">
           The Media Shop
         </a>
         . This policy explains what we collect and how we use it.
@@ -65,7 +68,7 @@ export default function PrivacyPage() {
         <h2 className="text-lg font-bold">Contact</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Privacy questions: reach The Media Shop via{" "}
-          <a href="https://themediashop.co" className="font-semibold text-primary hover:underline" target="_blank" rel="noreferrer">
+          <a href={mediaShopHref} className="font-semibold text-primary hover:underline" target="_blank" rel="noreferrer">
             themediashop.co
           </a>
           .
