@@ -69,6 +69,8 @@ module.exports = {
     "catalog.js",
     "telemetry.js",
     "hardware.js",
+    "utm.js",
+    "openciv3Display.js",
     "platform/**/*",
     "services/**/*",
     "renderer/**/*",
