@@ -49,6 +49,30 @@ function normalizePlatform(value) {
   return t;
 }
 
+function selectExecutableLabel() {
+  try {
+    return window.playbound.platform.selectExecutableLabel?.() || "Select .exe";
+  } catch {
+    return "Select .exe";
+  }
+}
+
+function executableNoun() {
+  try {
+    return window.playbound.platform.executableLabel?.() || ".exe";
+  } catch {
+    return ".exe";
+  }
+}
+
+function isMacOS() {
+  try {
+    return window.playbound.platform.getOS() === "macos";
+  } catch {
+    return false;
+  }
+}
+
 function isGameDesktopCompatible(game) {
   if (game?.browserPlayable) return true;
   
@@ -699,7 +723,7 @@ async function renderLibraryView() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Library</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Games and mods on this PC — install or add an existing .exe.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Games and mods on this ${isMacOS() ? "Mac" : "PC"} — install or add an existing ${executableNoun()}.</p>
       </div>
       <button class="btn-primary btn-sm" type="button" id="btn-library-add">Add game</button>
     </div>
@@ -1286,7 +1310,7 @@ async function toggleLibraryAddPanel(forceOpen = false) {
       <input type="search" id="library-add-search" class="library-add-search" placeholder="Search games…" autocomplete="off" />
       <button type="button" class="btn-secondary btn-sm" id="library-add-close">Close</button>
     </div>
-    <p class="view-sub" style="margin:8px 0">Pick a catalog game, then select its .exe on disk.</p>
+    <p class="view-sub" style="margin:8px 0">Pick a catalog game, then select its ${executableNoun()} on disk.</p>
     <div id="library-add-list" class="library-add-list"></div>
   `;
 
@@ -1312,7 +1336,7 @@ async function toggleLibraryAddPanel(forceOpen = false) {
       row.type = "button";
       row.className = "library-add-row";
       row.innerHTML = `<span class="library-add-row-title">${escapeHtml(game.title)}</span>
-        <span class="library-add-row-hint">Select .exe</span>`;
+        <span class="library-add-row-hint">${selectExecutableLabel()}</span>`;
       row.addEventListener("click", async () => {
         try {
           setStatus(`Locate ${game.title}…`);
@@ -1367,7 +1391,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       <div class="card-body">
         <div class="card-title">${escapeHtml(game.title)}</div>
         <div class="card-blurb">${
-          game.scanning ? "Scanning drives for install…" : "Install not found yet — select the .exe"
+          game.scanning ? "Scanning for install…" : `Install not found yet — ${selectExecutableLabel().toLowerCase()}`
         }</div>
       </div>
     `;
@@ -1381,7 +1405,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
   actions.className = "library-card-actions";
   if (game.pending) {
     actions.innerHTML = `
-      <button class="btn-primary btn-sm btn-lib-locate" type="button">Select .exe</button>
+      <button class="btn-primary btn-sm btn-lib-locate" type="button">${selectExecutableLabel()}</button>
       <button class="btn-secondary btn-sm btn-lib-dismiss" type="button">Dismiss</button>
     `;
     actions.querySelector(".btn-lib-locate")?.addEventListener("click", async (e) => {
@@ -3462,7 +3486,7 @@ async function renderGameDetailView(slug) {
       }
     });
   } else if (detail.pendingInstaller) {
-    const locateLabel = detail.scanning ? "Select .exe" : "Select .exe";
+    const locateLabel = selectExecutableLabel();
     actions.innerHTML = `
       <button class="btn-primary" id="act-locate">${locateLabel}</button>
       <button class="btn-secondary" id="act-dismiss-pending">Dismiss</button>
@@ -3470,8 +3494,8 @@ async function renderGameDetailView(slug) {
     `;
     setStatus(
       detail.scanning
-        ? `Scanning drives for ${detail.title}…`
-        : `${detail.title} is in Library — select the .exe if the scan missed it.`
+        ? `Looking for ${detail.title}…`
+        : `${detail.title} is in Library — ${selectExecutableLabel().toLowerCase()} if the scan missed it.`
     );
     document.getElementById("act-locate").addEventListener("click", async () => {
       setStatus("Looking for install…");
@@ -4551,8 +4575,8 @@ window.playbound.onInstallScan?.((data) => {
   } else if (phase === "needs-locate") {
     setStatus(
       data.slug
-        ? `Couldn't find ${data.slug} automatically — select the .exe in Library.`
-        : "Couldn't find the install — select the .exe in Library.",
+        ? `Couldn't find ${data.slug} automatically — ${selectExecutableLabel().toLowerCase()} in Library.`
+        : `Couldn't find the install — ${selectExecutableLabel().toLowerCase()} in Library.`,
       true
     );
   } else if (phase === "dismissed") {
@@ -4569,7 +4593,7 @@ window.playbound.onInstallScan?.((data) => {
 window.playbound.onInstallDetectFailed?.((data) => {
   const name = data?.slug || "the game";
   setStatus(
-    `Couldn't auto-detect ${name}. Open Library and click Select .exe to locate it.`,
+    `Couldn't auto-detect ${name}. Open Library and click ${selectExecutableLabel()} to locate it.`,
     true
   );
   if (currentView === "library") renderLibraryView();

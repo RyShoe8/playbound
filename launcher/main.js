@@ -169,8 +169,19 @@ function allowedExecutableRoots() {
   } catch {
     roots.push(DEFAULT_GAMES_DIR);
   }
-  for (const key of ["LOCALAPPDATA", "APPDATA", "PROGRAMFILES", "ProgramFiles(x86)", "USERPROFILE"]) {
-    if (process.env[key]) roots.push(process.env[key]);
+  if (process.platform === "win32") {
+    for (const key of ["LOCALAPPDATA", "APPDATA", "PROGRAMFILES", "ProgramFiles(x86)", "USERPROFILE"]) {
+      if (process.env[key]) roots.push(process.env[key]);
+    }
+  } else {
+    const home = app.getPath("home");
+    roots.push(home);
+    roots.push(path.join(home, "Applications"));
+    roots.push(path.join(home, "PlayBound"));
+    roots.push("/Applications");
+    if (process.platform === "darwin") {
+      roots.push(path.join(home, "Library", "Application Support"));
+    }
   }
   try {
     roots.push(app.getPath("userData"));
@@ -1462,9 +1473,11 @@ function hostArchAssetScore(assetName) {
     !isX64 &&
     !isArm &&
     /(?:^|[^a-z0-9])(win32|ia32|x86)(?:[^a-z0-9]|$)/.test(n);
+  const isUniversal = /(?:^|[^a-z0-9])(universal|fat)(?:[^a-z0-9]|$)/.test(n);
   const arch = process.arch;
 
   if (arch === "arm64") {
+    if (isUniversal) return 110;
     if (isArm) return 100;
     if (isX64) return 40;
     if (isX86) return 20;
@@ -1477,10 +1490,54 @@ function hostArchAssetScore(assetName) {
     return 10;
   }
   // x64 and anything else
+  if (isUniversal) return 110;
   if (isArm) return 0;
   if (isX64) return 100;
   if (isX86) return 50;
   return 10;
+}
+
+/** Prefer OS-matching assets; strongly downrank clearly foreign packages. */
+function hostOsAssetScore(assetName) {
+  const n = String(assetName || "").toLowerCase();
+  const isJar = /\.jar$/i.test(n);
+  const isWin =
+    /\.exe$/i.test(n) ||
+    /(?:^|[^a-z0-9])(windows|win64|win32|winportable|win-x64|win_x64|-win-)(?:[^a-z0-9]|$)/.test(n);
+  const isMac =
+    /\.dmg$/i.test(n) ||
+    /(?:^|[^a-z0-9])(macos|osx|darwin|mac)(?:[^a-z0-9]|$)/.test(n);
+  const isLinux =
+    /\.appimage$/i.test(n) ||
+    /(?:^|[^a-z0-9])(linux|ubuntu)(?:[^a-z0-9]|$)/.test(n);
+
+  if (process.platform === "darwin") {
+    if (isMac) return 300;
+    if (isJar) return 200;
+    if (isWin) return -200;
+    if (isLinux) return -100;
+    return 0;
+  }
+  if (process.platform === "win32") {
+    if (isWin) return 300;
+    if (isJar) return 200;
+    if (isMac) return -200;
+    if (isLinux) return -100;
+    return 0;
+  }
+  if (isLinux) return 300;
+  if (isJar) return 200;
+  if (isWin || isMac) return -100;
+  return 0;
+}
+
+function sortAssetsForHost(assets) {
+  return [...(assets || [])].sort(
+    (a, b) =>
+      hostOsAssetScore(b.name) - hostOsAssetScore(a.name) ||
+      hostArchAssetScore(b.name) - hostArchAssetScore(a.name) ||
+      String(a.name).localeCompare(String(b.name))
+  );
 }
 
 /** Pick the best asset matching assetPattern for this machine. */
@@ -1488,21 +1545,47 @@ function pickGithubAsset(assets, assetPattern) {
   const pattern = new RegExp(assetPattern || ".*", "i");
   const matched = (assets || []).filter((a) => a?.name && pattern.test(a.name));
   if (!matched.length) return null;
-  matched.sort(
-    (a, b) =>
-      hostArchAssetScore(b.name) - hostArchAssetScore(a.name) ||
-      String(a.name).localeCompare(String(b.name))
-  );
-  return matched[0];
+  return sortAssetsForHost(matched)[0];
+}
+
+/** Ordered patterns to try when resolving a GitHub release for this OS. */
+function assetPatternsForEntry(entry) {
+  const patterns = [];
+  const macPat = entry?.assetPatternMac || entry?.macAssetPattern;
+  const winPat = entry?.assetPattern;
+  if (process.platform === "darwin") {
+    if (macPat) patterns.push(macPat);
+    // Catalog recipes are often Windows-shaped; try portable Mac fallouts before failing.
+    if (winPat && !/(win|windows|\.exe)/i.test(winPat)) patterns.push(winPat);
+    patterns.push(
+      "(macos|osx|darwin|mac).*\\.(zip|dmg)$",
+      "\\.(dmg)$",
+      "\\.jar$"
+    );
+    if (winPat) patterns.push(winPat);
+  } else {
+    if (winPat) patterns.push(winPat);
+    if (macPat) patterns.push(macPat);
+  }
+  return [...new Set(patterns.filter(Boolean))];
 }
 
 async function resolveDownload(entry) {
   if (entry.kind === "direct-zip" || entry.kind === "direct-installer" || entry.kind === "direct-exe") {
+    if (
+      process.platform === "darwin" &&
+      (entry.kind === "direct-installer" || entry.kind === "direct-exe") &&
+      /\.(exe|msi)$/i.test(String(entry.url || entry.fileName || ""))
+    ) {
+      throw new Error(
+        "This game only ships a Windows installer in the catalog. On Mac, use Locate to select the .app if you already installed it."
+      );
+    }
     let name = entry.fileName || path.basename(new URL(entry.url).pathname) || `${entry.slug}.bin`;
     if (name === "download" || !name.includes(".")) {
       const parts = new URL(entry.url).pathname.split("/").filter(Boolean);
-      const fromPath = parts.find((p) => /\.(exe|zip|msi)$/i.test(p));
-      name = entry.fileName || fromPath || `${entry.slug}.exe`;
+      const fromPath = parts.find((p) => /\.(exe|zip|msi|dmg|jar)$/i.test(p));
+      name = entry.fileName || fromPath || `${entry.slug}.bin`;
     }
     return { url: entry.url, name, version: entry.versionLabel || "fixed" };
   }
@@ -1524,7 +1607,14 @@ async function resolveDownload(entry) {
       }
     }
     if (!version) throw new Error("Could not parse OpenTTD stable version from latest.yaml");
-    const name = `openttd-${version}-windows-win64.zip`;
+    let name;
+    if (process.platform === "darwin") {
+      name = `openttd-${version}-macos-universal.zip`;
+    } else if (process.platform === "linux") {
+      name = `openttd-${version}-linux-generic-amd64.tar.xz`;
+    } else {
+      name = `openttd-${version}-windows-win64.zip`;
+    }
     return {
       url: `https://cdn.openttd.org/openttd-releases/${version}/${name}`,
       name,
@@ -1537,8 +1627,22 @@ async function resolveDownload(entry) {
   });
   if (!res.ok) throw new Error(`GitHub API ${res.status} for ${entry.repo}`);
   const release = await res.json();
-  const asset = pickGithubAsset(release.assets, entry.assetPattern);
-  if (!asset) throw new Error(`No asset matching /${entry.assetPattern}/ in ${entry.repo} ${release.tag_name}`);
+  let asset = null;
+  for (const pattern of assetPatternsForEntry(entry)) {
+    asset = pickGithubAsset(release.assets, pattern);
+    if (asset && hostOsAssetScore(asset.name) >= 0) break;
+    if (asset && process.platform !== "darwin") break;
+    asset = null;
+  }
+  if (!asset && process.platform === "darwin") {
+    const candidates = sortAssetsForHost(release.assets).filter((a) => hostOsAssetScore(a.name) >= 0);
+    asset = candidates[0] || null;
+  }
+  if (!asset) {
+    throw new Error(
+      `No ${process.platform === "darwin" ? "macOS" : "matching"} asset for ${entry.repo} ${release.tag_name}`
+    );
+  }
   return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
 }
 
@@ -1740,82 +1844,257 @@ async function reportInstall(slug) {
 
 function extractZip(zipPath, destDir) {
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(
-      app.getPath("temp"),
-      `playbound-extract-${process.pid}-${Date.now()}.ps1`
-    );
-    // Fixed script body; paths only via -File parameters (never interpolated).
-    const script =
-      "param([Parameter(Mandatory=$true)][string]$Zip,[Parameter(Mandatory=$true)][string]$Dest)\r\n" +
-      "Expand-Archive -LiteralPath $Zip -DestinationPath $Dest -Force\r\n" +
-      "Get-ChildItem -LiteralPath $Dest -Recurse -Force -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue\r\n";
-    try {
-      fs.writeFileSync(scriptPath, script, "utf8");
-    } catch (err) {
-      reject(err);
-      return;
-    }
-    const ps = spawn(
-      "powershell.exe",
-      [
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        scriptPath,
-        "-Zip",
-        String(zipPath),
-        "-Dest",
-        String(destDir),
-      ],
-      { windowsHide: true }
-    );
-    let err = "";
-    ps.stderr.on("data", (d) => (err += d));
-    ps.on("close", (code) => {
+    /** @type {import("child_process").ChildProcessWithoutNullStreams} */
+    let child;
+    let cleanup = () => {};
+
+    if (process.platform === "win32") {
+      const scriptPath = path.join(
+        app.getPath("temp"),
+        `playbound-extract-${process.pid}-${Date.now()}.ps1`
+      );
+      // Fixed script body; paths only via -File parameters (never interpolated).
+      const script =
+        "param([Parameter(Mandatory=$true)][string]$Zip,[Parameter(Mandatory=$true)][string]$Dest)\r\n" +
+        "Expand-Archive -LiteralPath $Zip -DestinationPath $Dest -Force\r\n" +
+        "Get-ChildItem -LiteralPath $Dest -Recurse -Force -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue\r\n";
       try {
-        fs.unlinkSync(scriptPath);
-      } catch {
-        /* ignore */
+        fs.writeFileSync(scriptPath, script, "utf8");
+      } catch (err) {
+        reject(err);
+        return;
       }
+      cleanup = () => {
+        try {
+          fs.unlinkSync(scriptPath);
+        } catch {
+          /* ignore */
+        }
+      };
+      child = spawn(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          scriptPath,
+          "-Zip",
+          String(zipPath),
+          "-Dest",
+          String(destDir),
+        ],
+        { windowsHide: true }
+      );
+    } else if (process.platform === "darwin") {
+      // ditto handles .zip (and preserves macOS metadata) without PowerShell.
+      child = spawn("ditto", ["-x", "-k", String(zipPath), String(destDir)], {
+        windowsHide: true,
+      });
+    } else {
+      child = spawn("unzip", ["-o", "-q", String(zipPath), "-d", String(destDir)], {
+        windowsHide: true,
+      });
+    }
+
+    let err = "";
+    child.stderr?.on("data", (d) => (err += d));
+    child.on("error", (spawnErr) => {
+      cleanup();
+      reject(
+        new Error(
+          `Extract failed to start (${spawnErr.code || spawnErr.message}). ` +
+            (process.platform === "win32"
+              ? "PowerShell is required to unpack game archives."
+              : "Install unzip/ditto tools or reinstall the game.")
+        )
+      );
+    });
+    child.on("close", (code) => {
+      cleanup();
       code === 0 ? resolve() : reject(new Error(`Extract failed: ${err || code}`));
     });
   });
 }
 
+/** Mount a .dmg, copy .app / game files into destDir, then detach. macOS only. */
+function extractDmg(dmgPath, destDir) {
+  return new Promise((resolve, reject) => {
+    if (process.platform !== "darwin") {
+      reject(new Error("DMG installs are only supported on macOS"));
+      return;
+    }
+    const mountPoint = path.join(
+      app.getPath("temp"),
+      `playbound-dmg-${process.pid}-${Date.now()}`
+    );
+    try {
+      fs.mkdirSync(mountPoint, { recursive: true });
+    } catch (err) {
+      reject(err);
+      return;
+    }
+
+    const detach = () => {
+      try {
+        execFileSync("hdiutil", ["detach", mountPoint, "-quiet", "-force"], {
+          timeout: 60_000,
+          stdio: "ignore",
+        });
+      } catch {
+        /* ignore */
+      }
+      try {
+        fs.rmSync(mountPoint, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    };
+
+    try {
+      execFileSync(
+        "hdiutil",
+        ["attach", String(dmgPath), "-nobrowse", "-readonly", "-mountpoint", mountPoint],
+        { timeout: 120_000, stdio: ["ignore", "pipe", "pipe"] }
+      );
+      const entries = fs.readdirSync(mountPoint);
+      const prefer = entries.filter((n) => n.endsWith(".app") && !n.startsWith("."));
+      const copyNames = prefer.length ? prefer : entries.filter((n) => !n.startsWith("."));
+      if (!copyNames.length) {
+        detach();
+        reject(new Error("DMG had no installable app contents"));
+        return;
+      }
+      fs.mkdirSync(destDir, { recursive: true });
+      for (const name of copyNames) {
+        const from = path.join(mountPoint, name);
+        const to = path.join(destDir, name);
+        fs.cpSync(from, to, { recursive: true });
+      }
+      detach();
+      resolve();
+    } catch (err) {
+      detach();
+      reject(new Error(`DMG extract failed: ${err?.message || err}`));
+    }
+  });
+}
+
+async function extractArchive(archivePath, destDir) {
+  const lower = String(archivePath || "").toLowerCase();
+  await fsp.mkdir(destDir, { recursive: true });
+  if (lower.endsWith(".dmg")) {
+    await extractDmg(archivePath, destDir);
+    return;
+  }
+  if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
+    if (process.platform === "win32") {
+      throw new Error("tar archives are not supported on Windows installs");
+    }
+    await new Promise((resolve, reject) => {
+      const child = spawn("tar", ["-xaf", String(archivePath), "-C", String(destDir)], {
+        windowsHide: true,
+      });
+      let err = "";
+      child.stderr?.on("data", (d) => (err += d));
+      child.on("error", reject);
+      child.on("close", (code) =>
+        code === 0 ? resolve() : reject(new Error(`tar extract failed: ${err || code}`))
+      );
+    });
+    return;
+  }
+  await extractZip(archivePath, destDir);
+}
+
 /* ── executable discovery ──────────────────────────────────── */
 
 function findExecutable(dir, exeHint) {
-  const exes = [];
+  const candidates = [];
   const skip = /unins|setup|install|crash|report|vcredist|dxsetup|server/i;
-  const walk = (d) => {
-    for (const name of fs.readdirSync(d)) {
+  const walk = (d, depth = 0) => {
+    if (depth > 10) return;
+    let names;
+    try {
+      names = fs.readdirSync(d);
+    } catch {
+      return;
+    }
+    for (const name of names) {
       const full = path.join(d, name);
-      const stat = fs.statSync(full);
-      if (stat.isDirectory()) walk(full);
-      else if (name.toLowerCase().endsWith(".exe") && !skip.test(name)) {
-        exes.push({ full, name, size: stat.size });
+      let stat;
+      try {
+        stat = fs.lstatSync(full);
+      } catch {
+        continue;
+      }
+      if (stat.isSymbolicLink()) continue;
+      if (stat.isDirectory()) {
+        if (process.platform === "darwin" && name.endsWith(".app") && !skip.test(name)) {
+          candidates.push({ full, name, size: stat.size, rank: 300 });
+          continue;
+        }
+        walk(full, depth + 1);
+        continue;
+      }
+      const lower = name.toLowerCase();
+      if (lower.endsWith(".jar") && !skip.test(name)) {
+        candidates.push({ full, name, size: stat.size, rank: 200 });
+        continue;
+      }
+      if (process.platform === "win32") {
+        if (lower.endsWith(".exe") && !skip.test(name)) {
+          candidates.push({ full, name, size: stat.size, rank: 100 });
+        }
+        continue;
+      }
+      // Unix: prefer files without archive extensions (launch binaries often have no extension).
+      if (/\.(zip|dmg|txt|md|html|json|xml|png|jpg|jpeg|gif|ico|pak|dat|cfg|ini)$/i.test(lower)) {
+        continue;
+      }
+      if (!skip.test(name)) {
+        const mode = stat.mode || 0;
+        const executableBit = Boolean(mode & 0o111);
+        candidates.push({
+          full,
+          name,
+          size: stat.size,
+          rank: executableBit ? 120 : 40,
+        });
       }
     }
   };
   walk(dir);
-  if (exes.length === 0) return null;
+  if (candidates.length === 0) return null;
   if (exeHint) {
     const hint = new RegExp(exeHint, "i");
-    const hinted = exes.filter((e) => hint.test(e.name));
-    if (hinted.length > 0) return hinted.sort((a, b) => b.size - a.size)[0].full;
+    const hinted = candidates.filter((e) => hint.test(e.name));
+    if (hinted.length > 0) {
+      return hinted.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
+    }
   }
-  return exes.sort((a, b) => b.size - a.size)[0].full;
+  return candidates.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
 }
 
 function expandWinPath(p) {
-  return String(p || "")
+  let out = String(p || "")
     .replace(/%LOCALAPPDATA%/gi, process.env.LOCALAPPDATA || "")
     .replace(/%APPDATA%/gi, process.env.APPDATA || "")
     .replace(/%PROGRAMFILES%/gi, process.env.PROGRAMFILES || "")
     .replace(/%PROGRAMFILES\(X86\)%/gi, process.env["ProgramFiles(x86)"] || "")
-    .replace(/%USERPROFILE%/gi, process.env.USERPROFILE || "");
+    .replace(/%USERPROFILE%/gi, process.env.USERPROFILE || process.env.HOME || "");
+  if (process.platform === "darwin") {
+    const home = app.getPath("home");
+    const support = path.join(home, "Library", "Application Support");
+    out = out
+      .replace(/^~(?=$|[\\/])/g, home)
+      .replace(/%HOME%/gi, home)
+      .replace(/%APPLICATIONS%/gi, "/Applications")
+      .replace(/%HOME_APPLICATIONS%/gi, path.join(home, "Applications"))
+      .replace(/%APPLICATION_SUPPORT%/gi, support);
+  }
+  return out;
 }
 
 function stripRegQuotes(value) {
@@ -2170,8 +2449,16 @@ function scanKnownInstalls() {
 }
 
 function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride) {
-  const appData = process.env.APPDATA || "";
-  const home = process.env.USERPROFILE || app.getPath("home");
+  const home = app.getPath("home");
+  const appData =
+    process.env.APPDATA ||
+    (process.platform === "darwin"
+      ? path.join(home, "Library", "Application Support")
+      : path.join(home, ".config"));
+  const documents =
+    process.platform === "darwin"
+      ? path.join(home, "Documents")
+      : path.join(process.env.USERPROFILE || home, "Documents");
   const rel = String(installRelativePath || "mods").replace(/^[/\\]+|[/\\]+$/g, "") || "mods";
   const under = (root) => path.join(root, ...rel.split(/[/\\]+/));
 
@@ -2179,7 +2466,10 @@ function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride)
     return under(path.join(appData, "Mindustry"));
   }
   if (baseGameSlug === "0ad") {
-    return under(path.join(home, "Documents", "My Games", "0ad"));
+    if (process.platform === "darwin") {
+      return under(path.join(appData, "0ad", "mods"));
+    }
+    return under(path.join(documents, "My Games", "0ad"));
   }
   if (baseGameSlug === "openttd") {
     return under(path.join(appData, "OpenTTD"));
@@ -2587,20 +2877,32 @@ function notifyInstallDetectFailed(slug) {
 }
 
 async function writeJarLauncher(gameDir, jarName) {
-  const cmdPath = path.join(gameDir, "play.cmd");
+  if (process.platform === "win32") {
+    const cmdPath = path.join(gameDir, "play.cmd");
+    const body = [
+      "@echo off",
+      `javaw -jar "%~dp0${jarName}" %*`,
+      "if errorlevel 1 (",
+      "  echo.",
+      "  echo Java is required to run this game.",
+      "  echo Install JDK 17+ from https://adoptium.net/ then try again.",
+      "  pause",
+      ")",
+      "",
+    ].join("\r\n");
+    await fsp.writeFile(cmdPath, body, "utf8");
+    return cmdPath;
+  }
+
+  const shPath = path.join(gameDir, "play.sh");
   const body = [
-    "@echo off",
-    `javaw -jar "%~dp0${jarName}" %*`,
-    "if errorlevel 1 (",
-    "  echo.",
-    "  echo Java is required to run this game.",
-    "  echo Install JDK 17+ from https://adoptium.net/ then try again.",
-    "  pause",
-    ")",
+    "#!/bin/sh",
+    `DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"`,
+    `exec java -jar "$DIR/${jarName}" "$@"`,
     "",
-  ].join("\r\n");
-  await fsp.writeFile(cmdPath, body, "utf8");
-  return cmdPath;
+  ].join("\n");
+  await fsp.writeFile(shPath, body, { encoding: "utf8", mode: 0o755 });
+  return shPath;
 }
 
 /* ── core actions ──────────────────────────────────────────── */
@@ -2775,7 +3077,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   sendProgress({ phase: "extracting" });
   // Only wipe the edition-specific folder — never the parent game folder.
   await fsp.rm(gameDir, { recursive: true, force: true });
-  await extractZip(downloadPath, gameDir);
+  await extractArchive(downloadPath, gameDir);
   await fsp.rm(downloadPath, { force: true });
 
   const exe = findExecutable(gameDir, entry.exeHint);
@@ -2931,7 +3233,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   await downloadTo(overlayUrl, downloadPath);
   sendProgress({ phase: "extracting" });
   // Merge overlay into the copied Titanium tree (do not delete gameDir).
-  await extractZip(downloadPath, gameDir);
+  await extractArchive(downloadPath, gameDir);
   await fsp.rm(downloadPath, { force: true });
 
   const exe = findExecutable(gameDir, entry.exeHint || "eqgame");
@@ -2966,13 +3268,34 @@ async function locateGameExecutable(slug) {
   }
 
   const result = await dialog.showOpenDialog(win, {
-    title: `Locate ${entry.title} executable`,
-    filters: [{ name: "Executables", extensions: ["exe", "cmd", "bat"] }],
-    properties: ["openFile"],
+    title:
+      process.platform === "darwin"
+        ? `Locate ${entry.title}`
+        : `Locate ${entry.title} executable`,
+    filters:
+      process.platform === "darwin"
+        ? [
+            { name: "Applications", extensions: ["app"] },
+            { name: "Java / binaries", extensions: ["jar", "*"] },
+            { name: "All Files", extensions: ["*"] },
+          ]
+        : [{ name: "Executables", extensions: ["exe", "cmd", "bat", "jar"] }],
+    properties:
+      process.platform === "darwin"
+        ? ["openFile", "treatPackageAsDirectory"]
+        : ["openFile"],
   });
   if (result.canceled || result.filePaths.length === 0) return { status: "cancelled" };
 
-  const exe = result.filePaths[0];
+  let exe = result.filePaths[0];
+  // If the user opened an .app package as a directory and picked Contents/..., climb to .app.
+  if (process.platform === "darwin" && !exe.endsWith(".app")) {
+    const parts = exe.split(path.sep);
+    const appIdx = parts.findIndex((p) => p.endsWith(".app"));
+    if (appIdx >= 0) {
+      exe = parts.slice(0, appIdx + 1).join(path.sep);
+    }
+  }
   return markInstalledFromExe(slug, entry, exe, "located");
 }
 
@@ -3016,10 +3339,10 @@ async function placeModFiles(slug, install, baseDirOverride) {
    * non-archive and failed. Existing mods still route to extraction because
    * their assets really are .zip files; anything else is now copied into place.
    */
-  const isZip = /\.zip$/i.test(dl.name);
-  if (isZip && !/\.jar$/i.test(dl.name)) {
+  const isArchive = /\.(zip|dmg|tar\.gz|tgz|tar\.xz)$/i.test(dl.name);
+  if (isArchive && !/\.jar$/i.test(dl.name)) {
     sendProgress({ phase: "extracting" });
-    await extractZip(downloadPath, targetDir);
+    await extractArchive(downloadPath, targetDir);
   } else {
     sendProgress({ phase: "extracting" });
     const dest = path.join(targetDir, path.basename(dl.name));

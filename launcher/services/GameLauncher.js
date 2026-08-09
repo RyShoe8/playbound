@@ -75,7 +75,7 @@ class GameLauncher {
    * @returns {string}
    */
   static preferJarBesideLauncher(exePath) {
-    if (!exePath || !/\.(cmd|bat)$/i.test(exePath)) return exePath;
+    if (!exePath || !/\.(cmd|bat|sh)$/i.test(exePath)) return exePath;
     const dir = path.dirname(exePath);
     const mindustry = path.join(dir, "Mindustry.jar");
     if (fs.existsSync(mindustry)) return mindustry;
@@ -112,18 +112,31 @@ class GameLauncher {
 
     if (/\.(cmd|bat)$/i.test(launchPath)) {
       const err = new Error(
-        "This install points at a .bat/.cmd launcher. Use Locate to pick the game .exe or .jar instead."
+        process.platform === "darwin"
+          ? "This install points at a Windows script. Use Locate to pick the .app or .jar instead."
+          : "This install points at a .bat/.cmd launcher. Use Locate to pick the game .exe or .jar instead."
       );
       err.code = "SHELL_LAUNCH_BLOCKED";
       throw err;
+    }
+
+    // macOS play.sh is a helper for Terminal; Play launches the jar/binary directly.
+    if (/\.sh$/i.test(launchPath)) {
+      const preferred = this.preferJarBesideLauncher(launchPath);
+      if (preferred !== launchPath) return this.spawnGame(preferred, args);
     }
 
     const launchCommand = Platform.getGameLaunchCommand(launchPath);
     const cmd = launchCommand[0];
     const finalArgs = [...launchCommand.slice(1), ...args];
 
+    // For .app bundles, cwd should be the parent of the bundle, not Contents/.
+    const cwd = String(launchPath).endsWith(".app")
+      ? path.dirname(launchPath)
+      : path.dirname(launchPath);
+
     return spawn(cmd, finalArgs, {
-      cwd: path.dirname(launchPath),
+      cwd,
       detached: true,
       stdio: "ignore",
       // false so GUI games (Godot/OpenCiv3) can show a window; jars keep console hidden above.

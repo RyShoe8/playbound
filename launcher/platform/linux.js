@@ -3,9 +3,10 @@ const path = require("path");
 const fs = require("fs");
 const { app, shell } = require("electron");
 
+/** Minimal Linux platform adapter — keeps non-Windows builds off the Windows impl. */
 module.exports = {
   getOS() {
-    return "macos";
+    return "linux";
   },
   getOSVersion() {
     return os.release();
@@ -14,10 +15,9 @@ module.exports = {
     return os.arch();
   },
   getExecutableExtension() {
-    return ".app";
+    return "";
   },
   getInstallDirectory(slug) {
-    // Match Windows layout so settings / docs / users share one mental model.
     return path.join(app.getPath("home"), "PlayBound", "Games", slug || "");
   },
   getDownloadsDirectory() {
@@ -36,11 +36,9 @@ module.exports = {
     return fs.existsSync(filePath);
   },
   async createShortcut() {
-    throw new Error("Desktop shortcuts are not used on macOS — pin PlayBound to the Dock instead.");
+    throw new Error("Desktop shortcuts are not implemented on Linux yet.");
   },
-  async removeShortcut() {
-    // No-op for mac
-  },
+  async removeShortcut() {},
   supportsDesktopShortcuts() {
     return false;
   },
@@ -48,16 +46,12 @@ module.exports = {
     return false;
   },
   supportsDock() {
-    return true;
+    return false;
   },
   killProcess(pid) {
     process.kill(pid);
   },
   getGameLaunchCommand(exePath) {
-    // Prefer `open App.app` for bundles (more reliable than `open -a` with a path).
-    if (String(exePath).endsWith(".app")) {
-      return ["open", exePath];
-    }
     if (String(exePath).toLowerCase().endsWith(".jar")) {
       return ["java", "-jar", exePath];
     }

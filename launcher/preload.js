@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld("playbound", {
     getArchitecture: () => process.arch,
     supportsDesktopShortcuts: () => process.platform === "win32",
     supportsDock: () => process.platform === "darwin",
+    /** Short UI noun for the thing users pick when locating an install. */
+    executableLabel: () =>
+      process.platform === "darwin" ? "app" : process.platform === "win32" ? ".exe" : "binary",
+    selectExecutableLabel: () =>
+      process.platform === "darwin" ? "Select App" : "Select .exe",
   },
   // Existing
   getContext: () => ipcRenderer.invoke("get-context"),
