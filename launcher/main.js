@@ -12,6 +12,13 @@ const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { withOutboundUtm } = require("./utm");
+const {
+  OPENCIV3_SLUG,
+  ensureDefaultDisplaySettings,
+  readDisplaySettings,
+  writeDisplaySettings,
+  resolveGameDir,
+} = require("./openciv3Display");
 
 function loadHardwareModule() {
   try {
@@ -2776,6 +2783,14 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
 
   await processAddons(entry, gameDir, selectedAddons);
   await maybeApplyEditionPostInstall(entry, gameDir);
+  if (slug === OPENCIV3_SLUG) {
+    try {
+      // Fresh wipe — write default windowed 1080p beside the exe.
+      await ensureDefaultDisplaySettings(exe || gameDir);
+    } catch (err) {
+      console.warn("[openciv3] display override skipped:", err?.message || err);
+    }
+  }
   markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
   sendProgress({ phase: "done" });
   void reportInstall(slug);
@@ -3139,6 +3154,14 @@ async function playGame(slug, join = null, editionSlug = null) {
       phase: "resolve-install",
     });
     throw new Error(message);
+  }
+
+  if (slug === OPENCIV3_SLUG) {
+    try {
+      await ensureDefaultDisplaySettings(info.exe || info.dir);
+    } catch (err) {
+      console.warn("[openciv3] display ensure skipped:", err?.message || err);
+    }
   }
 
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.
@@ -3941,6 +3964,20 @@ function listInstalledMods() {
   return out;
 }
 
+/** Prefer exe folder for Godot override.cfg; fall back to install dir. */
+function resolveOpenCiv3InstallDir() {
+  const state = loadState();
+  const game = ensureGameInstallRecord(state[OPENCIV3_SLUG]);
+  if (!game) return null;
+  const edSlug = game.editionSlug || DEFAULT_EDITION_SLUG;
+  const info = game.editions?.[edSlug] || null;
+  const exe = (info?.exe && fs.existsSync(info.exe) && info.exe) || (game.exe && fs.existsSync(game.exe) && game.exe) || null;
+  if (exe) return resolveGameDir(exe);
+  const dir = info?.dir || game.dir;
+  if (dir && fs.existsSync(dir)) return resolveGameDir(dir);
+  return null;
+}
+
 async function uninstallMod(slug) {
   const state = loadState();
   if (!state.__mods__ || !state.__mods__[slug]) return { status: "not-installed" };
@@ -4087,6 +4124,19 @@ ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
 ipcMain.handle("uninstall-mod", (_event, slug) => uninstallMod(slug));
 ipcMain.handle("create-shortcut", (_event, slug) => createGameShortcut(slug));
+ipcMain.handle("get-openciv3-display", async () => {
+  const target = resolveOpenCiv3InstallDir();
+  if (!target) throw new Error("OpenCiv3 is not installed");
+  return readDisplaySettings(target);
+});
+ipcMain.handle("set-openciv3-display", async (_event, payload = {}) => {
+  const target = resolveOpenCiv3InstallDir();
+  if (!target) throw new Error("OpenCiv3 is not installed");
+  return writeDisplaySettings(target, {
+    width: payload?.width,
+    height: payload?.height,
+  });
+});
 ipcMain.handle("open-folder", async (_event, dir) => {
   const target = String(dir || "");
   if (!target || !fs.existsSync(target)) throw new Error("Folder not found");

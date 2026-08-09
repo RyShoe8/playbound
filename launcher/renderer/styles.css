@@ -948,6 +948,60 @@ body {
   color: var(--text-muted);
 }
 
+.openciv3-display-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated, var(--card, rgba(255, 255, 255, 0.03)));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.openciv3-display-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.openciv3-display-hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+.openciv3-display-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.openciv3-display-select,
+.openciv3-display-input {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg, #111);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.openciv3-display-custom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.openciv3-display-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .edition-play-steps {
   margin: 0;
   padding: 0;
