@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Download, MonitorPlay } from "lucide-react";
 import { launcherInstallUrl, launcherInstallModUrl } from "@/lib/launcher";
-import { LAUNCHER_DOWNLOAD_URL, MAC_LAUNCHER_DOWNLOAD_URL } from "@/lib/launcherDownload";
+import {
+  launcherDownloadUrlForOs,
+  launcherOsLabel,
+  type LauncherOs,
+} from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
   openPlayboundDeepLink,
@@ -30,7 +34,7 @@ export function LauncherInstallButton({
 }: Props) {
   const device = useDevice();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded" | "miss">("idle");
-  const [os, setOs] = useState<"windows" | "macos">("windows");
+  const [os, setOs] = useState<LauncherOs>("windows");
   const { track } = useTelemetry();
   const deepLink = kind === "install-mod" ? launcherInstallModUrl(slug) : launcherInstallUrl(slug);
 
@@ -42,7 +46,8 @@ export function LauncherInstallButton({
     return null;
   }
 
-  const downloadUrl = os === "macos" ? MAC_LAUNCHER_DOWNLOAD_URL || LAUNCHER_DOWNLOAD_URL : LAUNCHER_DOWNLOAD_URL;
+  const downloadUrl = launcherDownloadUrlForOs(os);
+  const osLabel = launcherOsLabel(os);
   const showFallback = status === "downloaded" || status === "miss";
 
   function openLauncher() {
@@ -96,8 +101,8 @@ export function LauncherInstallButton({
           </p>
           <p className="mt-1">
             {status === "downloaded"
-              ? `Install and run PlayBound once so ${os === "macos" ? "macOS" : "Windows"} registers playbound://, then click Install again.`
-              : `Install the PlayBound Launcher and run it once so ${os === "macos" ? "macOS" : "Windows"} registers playbound://, then try again.`}
+              ? `Install and run PlayBound once so ${osLabel} registers playbound://, then click Install again.`
+              : `Install the PlayBound Launcher and run it once so ${osLabel} registers playbound://, then try again.`}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
             {downloadUrl ? (
@@ -105,7 +110,7 @@ export function LauncherInstallButton({
                 href={downloadUrl}
                 className="inline-flex items-center gap-1 font-bold text-primary hover:underline"
               >
-                <Download className="size-3" /> Download for {os === "macos" ? "macOS" : "Windows"}
+                <Download className="size-3" /> Download for {osLabel}
               </a>
             ) : (
               <Link href="/launcher" className="font-bold text-primary hover:underline">

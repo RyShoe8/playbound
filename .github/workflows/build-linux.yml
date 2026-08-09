@@ -1,0 +1,47 @@
+name: Build Linux Launcher
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "launcher/**"
+      - ".github/workflows/build-linux.yml"
+      - "platform/scripts/upload-launcher.ts"
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg libopenjp2-tools
+
+      - name: Install Platform Dependencies
+        run: npm install
+        working-directory: platform
+
+      - name: Install Launcher Dependencies
+        run: npm install
+        working-directory: launcher
+
+      - name: Build Linux Launcher (AppImage)
+        run: npm run dist:linux
+        working-directory: launcher
+
+      - name: Upload to Vercel Blob
+        run: npm run upload:launcher -- --linux --promote-prod
+        working-directory: platform
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN || vars.BLOB_READ_WRITE_TOKEN }}

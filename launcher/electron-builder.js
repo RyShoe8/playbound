@@ -129,4 +129,14 @@ module.exports = {
     title: "PlayBound",
     artifactName: "PlayBound-macOS-${version}.${ext}",
   },
+
+  linux: {
+    target: ["AppImage"],
+    category: "Game",
+    artifactName: "PlayBound-Linux-${version}.${ext}",
+    synopsis: "Discover, install, update, and launch free PC games",
+    desktop: {
+      StartupWMClass: "PlayBound",
+    },
+  },
 };

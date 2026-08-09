@@ -10,9 +10,15 @@ export const PLAYBOUND_HANDOFF_MS = 1500;
 
 export type PlayboundHandoffResult = "launched" | "download" | "miss";
 
-export function detectLauncherOs(): "windows" | "macos" {
+export type LauncherOs = "windows" | "macos" | "linux";
+
+export function detectLauncherOs(): LauncherOs {
   if (typeof navigator === "undefined") return "windows";
-  return /Mac OS X|Macintosh/i.test(navigator.userAgent) ? "macos" : "windows";
+  const ua = navigator.userAgent;
+  if (/Mac OS X|Macintosh/i.test(ua)) return "macos";
+  // Android UA also contains "Linux" — never treat phones as desktop Linux.
+  if (/Linux/i.test(ua) && !/Android/i.test(ua)) return "linux";
+  return "windows";
 }
 
 /** Fire a custom-protocol navigation without leaving the current page. */
