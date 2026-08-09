@@ -34,10 +34,12 @@ import { ContentForm } from "@/components/ContentForm";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { CommunityCard } from "@/components/discussion/CommunityCard";
+import { GameUpcomingEvents } from "@/components/events/GameUpcomingEvents";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { visibleCategories } from "@/lib/discussion/categories";
 import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { getDiscordPresence } from "@/lib/discordPresence";
+import { withOutboundUtm } from "@/lib/utm";
 import {
   getGameLiveStats,
   getGameTopPlayers,
@@ -693,6 +695,7 @@ function OverviewTab({
         <div className="hidden lg:block">
           <GameFriendsWidget gameSlug={game.slug} />
         </div>
+        <GameUpcomingEvents gameSlug={game.slug} />
         {developer && (
           <Link
             href={`/developers/${developer.slug}`}
@@ -719,7 +722,12 @@ function OverviewTab({
               <span className="text-right font-medium">{v}</span>
             </div>
           ))}
-          <a href={game.website} target="_blank" rel="noreferrer" className="block pt-1 text-sm font-semibold text-primary hover:underline">
+          <a
+            href={withOutboundUtm(game.website, { campaign: "game_page", content: game.slug })}
+            target="_blank"
+            rel="noreferrer"
+            className="block pt-1 text-sm font-semibold text-primary hover:underline"
+          >
             Official website →
           </a>
         </div>
@@ -876,7 +884,7 @@ function NewsTab({
           {releases.map((r) => (
             <a
               key={r.tagName}
-              href={r.url}
+              href={withOutboundUtm(r.url, { campaign: "game_page", content: game.slug })}
               target="_blank"
               rel="noreferrer"
               className="block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
@@ -895,7 +903,12 @@ function NewsTab({
       ) : (
         <EmptyHint icon={Newspaper}>
           No release notes available from GitHub for {game.title}.{" "}
-          <a href={game.website} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
+          <a
+            href={withOutboundUtm(game.website, { campaign: "game_page", content: game.slug })}
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-primary hover:underline"
+          >
             Check the official site
           </a>{" "}
           for updates.
@@ -1099,7 +1112,12 @@ function MediaTab({ game }: { game: Game }) {
       )}
       <p className="text-xs text-muted-foreground">
         More screenshots and trailers live on{" "}
-        <a href={game.website} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
+        <a
+          href={withOutboundUtm(game.website, { campaign: "game_page", content: game.slug })}
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-primary hover:underline"
+        >
           the official {game.title} site
         </a>
         .

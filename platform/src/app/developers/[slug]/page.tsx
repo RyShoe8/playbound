@@ -5,6 +5,7 @@ import { gamesByDeveloper } from "@/lib/catalog";
 import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
+import { withOutboundUtm } from "@/lib/utm";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -37,7 +38,15 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
                 <MapPin className="size-3" /> {dev.location}
               </span>
               <span>Founded {dev.founded}</span>
-              <a href={dev.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-foreground hover:underline">
+              <a
+                href={withOutboundUtm(dev.website, {
+                  campaign: "developer",
+                  content: dev.slug,
+                })}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-foreground hover:underline"
+              >
                 <Globe className="size-3" /> Website
               </a>
             </div>
@@ -68,7 +77,10 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
             {releases.map((r) => (
               <a
                 key={r.tagName}
-                href={r.url}
+                href={withOutboundUtm(r.url, {
+                  campaign: "developer",
+                  content: dev.slug,
+                })}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"

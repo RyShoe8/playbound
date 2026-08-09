@@ -1,3 +1,5 @@
+import { withOutboundUtm } from "@/lib/utm";
+
 /**
  * Required reCAPTCHA branding.
  *
@@ -20,7 +22,9 @@ export function RecaptchaNotice({ className = "" }: { className?: string }) {
     <p className={`text-[11px] leading-relaxed text-muted-foreground ${className}`}>
       Protected by reCAPTCHA. The Google{" "}
       <a
-        href="https://policies.google.com/privacy"
+        href={withOutboundUtm("https://policies.google.com/privacy", {
+          campaign: "recaptcha_notice",
+        })}
         target="_blank"
         rel="noreferrer"
         className="underline hover:text-foreground"
@@ -29,7 +33,9 @@ export function RecaptchaNotice({ className = "" }: { className?: string }) {
       </a>{" "}
       and{" "}
       <a
-        href="https://policies.google.com/terms"
+        href={withOutboundUtm("https://policies.google.com/terms", {
+          campaign: "recaptcha_notice",
+        })}
         target="_blank"
         rel="noreferrer"
         className="underline hover:text-foreground"

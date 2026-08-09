@@ -7,6 +7,7 @@ import { sizeLabel } from "@/lib/seo";
 import { DeviceAwareInstallCta } from "@/components/DeviceAwareInstallCta";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { deriveInstallSteps, deriveFaq } from "@/lib/enrich";
+import { withOutboundUtm } from "@/lib/utm";
 
 const PLATFORM_LABELS: Record<string, string> = {
   all: "All platforms",
@@ -21,6 +22,16 @@ export async function GameInstallContent({ game }: { game: Game }) {
   const steps = game.installSteps?.length ? game.installSteps : deriveInstallSteps(game);
   const oneClick = isLauncherInstallable(game);
   const installFaq = game.faq?.length ? game.faq : deriveFaq(game);
+  const websiteHref = withOutboundUtm(game.website, {
+    campaign: "game_install",
+    content: game.slug,
+  });
+  const releasesHref = game.githubRepo
+    ? withOutboundUtm(`https://github.com/${game.githubRepo}/releases`, {
+        campaign: "game_install",
+        content: game.slug,
+      })
+    : null;
 
   return (
     <div className="space-y-10">
@@ -108,24 +119,24 @@ export async function GameInstallContent({ game }: { game: Game }) {
 
       <div className="flex flex-wrap gap-3 border-t border-border pt-6 text-sm">
         <TelemetryAnchor
-          href={game.website}
+          href={websiteHref}
           target="_blank"
           rel="noreferrer"
           event="official_download_clicked"
-          properties={{ gameSlug: game.slug, url: game.website }}
+          properties={{ gameSlug: game.slug, url: websiteHref }}
           className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
         >
           Official {game.title} site <ExternalLink className="size-3.5" />
         </TelemetryAnchor>
-        {game.githubRepo && (
+        {releasesHref && (
           <TelemetryAnchor
-            href={`https://github.com/${game.githubRepo}/releases`}
+            href={releasesHref}
             target="_blank"
             rel="noreferrer"
             event="official_download_clicked"
             properties={{
               gameSlug: game.slug,
-              url: `https://github.com/${game.githubRepo}/releases`,
+              url: releasesHref,
             }}
             className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
           >

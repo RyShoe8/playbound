@@ -22,6 +22,7 @@ import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { CATEGORY_META, visibleCategories } from "@/lib/discussion/categories";
 import { pageMetadata, privateMetadata, sizeLabel } from "@/lib/seo";
 import { resolveModVisual } from "@/lib/modMedia";
+import { withOutboundUtm } from "@/lib/utm";
 import {
   JsonLd,
   graph,
@@ -307,7 +308,10 @@ export default async function ModPage({
                   ) : null}
                   {mod.downloadKind === "external" ? (
                     <a
-                      href={mod.website}
+                      href={withOutboundUtm(mod.website, {
+                        campaign: "mod_page",
+                        content: mod.slug,
+                      })}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-full bg-play px-4 py-2 text-sm font-bold text-play-foreground"

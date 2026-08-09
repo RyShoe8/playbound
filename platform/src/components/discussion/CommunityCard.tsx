@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { GameCommunityLinks } from "@/lib/data/types";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
+import { withOutboundUtm } from "@/lib/utm";
 
 export function CommunityCard({
   gameSlug,
@@ -18,6 +19,18 @@ export function CommunityCard({
   const official = communityLinks?.officialDiscord;
   const playbound = communityLinks?.playboundDiscord;
   const showOfficial = official?.verified && official.inviteUrl;
+  const officialHref = showOfficial
+    ? withOutboundUtm(official!.inviteUrl, {
+        campaign: "discord_official",
+        content: gameSlug,
+      })
+    : null;
+  const playboundHref = playbound?.inviteUrl
+    ? withOutboundUtm(playbound.inviteUrl, {
+        campaign: "discord_playbound",
+        content: gameSlug,
+      })
+    : null;
 
   return (
     <div
@@ -33,9 +46,9 @@ export function CommunityCard({
         </p>
       )}
 
-      {showOfficial ? (
+      {officialHref ? (
         <TelemetryAnchor
-          href={official!.inviteUrl}
+          href={officialHref}
           target="_blank"
           rel="noopener noreferrer"
           event="discord_clicked"
@@ -70,9 +83,9 @@ export function CommunityCard({
         </div>
       ) : null}
 
-      {playbound?.inviteUrl ? (
+      {playboundHref ? (
         <TelemetryAnchor
-          href={playbound.inviteUrl}
+          href={playboundHref}
           target="_blank"
           rel="noopener noreferrer"
           event="discord_clicked"
@@ -84,12 +97,12 @@ export function CommunityCard({
           }
         >
           {compact ? (
-            `Join #${playbound.channelName || gameSlug} ↗`
+            `Join #${playbound?.channelName || gameSlug} ↗`
           ) : (
             <>
               <p className="font-semibold">PlayBound Discord</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Chat with PlayBound players in #{playbound.channelName || gameSlug}.
+                Chat with PlayBound players in #{playbound?.channelName || gameSlug}.
               </p>
               {(presence?.members != null || presence?.online != null) && (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -99,7 +112,7 @@ export function CommunityCard({
                 </p>
               )}
               <p className="mt-2 text-sm font-semibold text-primary">
-                Join #{playbound.channelName || gameSlug} ↗
+                Join #{playbound?.channelName || gameSlug} ↗
               </p>
             </>
           )}

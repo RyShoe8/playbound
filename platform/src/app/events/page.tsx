@@ -1,55 +1,86 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { CalendarDays, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { authOptions } from "@/lib/auth";
-import dbConnect from "@/lib/db";
-import PlatformEvent from "@/lib/models/PlatformEvent";
 import { getGame } from "@/lib/catalog";
+import { listPublicEvents } from "@/lib/events/service";
 import { EmptyHint } from "@/components/ui/bits";
+import { EventCard } from "@/components/events/EventCard";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Free Game Events & Tournaments",
+  title: "Game Nights & Tournaments",
   description:
-    "Upcoming tournaments, LAN nights and community events for free open-source games.",
+    "Find PlayBound Game Nights and tournaments — see who's going, join Discord, and play together.",
   path: "/events",
 });
 
-interface EventDoc {
-  _id: string;
-  title: string;
-  description: string;
-  gameSlug: string | null;
-  startsAt: string | Date;
-}
-
-async function getUpcomingEvents(): Promise<EventDoc[]> {
-  try {
-    await dbConnect();
-    return await PlatformEvent.find({ startsAt: { $gte: new Date() } }).sort({ startsAt: 1 }).limit(50).lean();
-  } catch (err) {
-    console.error("Failed to load events:", err);
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
-  const [events, session] = await Promise.all([getUpcomingEvents(), getServerSession(authOptions)]);
+  const [events, session, past] = await Promise.all([
+    listPublicEvents({ limit: 80 }),
+    getServerSession(authOptions),
+    listPublicEvents({ includePast: true, limit: 20 }),
+  ]);
   const isAdmin = session?.user?.role === "admin";
-  const rows = await Promise.all(
-    events.map(async (e) => ({
-      e,
-      game: e.gameSlug ? await getGame(e.gameSlug) : undefined,
-    }))
+
+  const now = Date.now();
+  const soon = events.filter((e) => {
+    const t = new Date(e.startsAt).getTime();
+    return e.status === "live" || (t >= now && t - now < 48 * 3600_000);
+  });
+  const gameNights = events.filter((e) => e.eventType === "game_night");
+  const tournaments = events.filter((e) => e.eventType === "tournament");
+  const featured = events.filter((e) => e.featured);
+  const pastOnly = past.filter(
+    (e) => e.status === "completed" || new Date(e.endsAt).getTime() < now
   );
 
+  const titles = new Map<string, string>();
+  await Promise.all(
+    [...new Set(events.map((e) => e.gameSlug).filter(Boolean) as string[])].map(
+      async (slug) => {
+        const g = await getGame(slug);
+        if (g) titles.set(slug, g.title);
+      }
+    )
+  );
+
+  function Section({
+    title,
+    items,
+  }: {
+    title: string;
+    items: typeof events;
+  }) {
+    if (!items.length) return null;
+    return (
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">{title}</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((e) => (
+            <EventCard
+              key={e.id}
+              event={e}
+              gameTitle={e.gameSlug ? titles.get(e.gameSlug) : null}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Events</h1>
-          <p className="mt-1 text-muted-foreground">Tournaments, community nights, and livestreams scheduled on PlayBound.</p>
+          <p className="mt-1 max-w-xl text-muted-foreground">
+            Game Nights and tournaments so you can actually play together — not a
+            calendar of lectures.
+          </p>
         </div>
         {isAdmin && (
           <Link
@@ -61,27 +92,17 @@ export default async function EventsPage() {
         )}
       </div>
 
-      {rows.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map(({ e, game }) => (
-            <div key={String(e._id)} className="flex flex-col rounded-xl border border-border bg-card p-5">
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <CalendarDays className="size-3" /> {new Date(e.startsAt).toLocaleString()}
-              </p>
-              <p className="mt-2 font-bold">{e.title}</p>
-              <p className="mt-1 line-clamp-3 flex-1 text-sm text-muted-foreground">{e.description}</p>
-              {game && (
-                <Link href={`/games/${game.slug}`} className="mt-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline">
-                  {game.title}
-                </Link>
-              )}
-            </div>
-          ))}
-        </div>
+      {events.length === 0 ? (
+        <EmptyHint>No upcoming events yet. Check back soon.</EmptyHint>
       ) : (
-        <EmptyHint icon={CalendarDays}>
-          No events scheduled yet. {isAdmin ? "Create the first one." : "Check back soon."}
-        </EmptyHint>
+        <>
+          <Section title="Featured" items={featured} />
+          <Section title="Happening soon" items={soon} />
+          <Section title="Game Nights" items={gameNights} />
+          <Section title="Tournaments" items={tournaments} />
+          <Section title="Upcoming" items={events} />
+          <Section title="Past events" items={pastOnly.slice(0, 6)} />
+        </>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ import {
   EditionTypeBadge,
   VerificationBadge,
 } from "./EditionBadges";
+import { withOutboundUtm } from "@/lib/utm";
 
 /**
  * One edition in the game page's Editions list.
@@ -91,7 +92,10 @@ export function EditionCard({
           <EditionInstallButton action={action} telemetryProps={telemetryProps} size="md" />
           {discord && (
             <Link
-              href={discord}
+              href={withOutboundUtm(discord, {
+                campaign: "edition_page",
+                content: edition.slug,
+              })}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-secondary px-5 text-sm font-bold hover:bg-secondary/80"

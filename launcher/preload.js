@@ -27,7 +27,7 @@ contextBridge.exposeInMainWorld("playbound", {
   createShortcut: (slug) => ipcRenderer.invoke("create-shortcut", slug),
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   clearContext: () => ipcRenderer.invoke("clear-context"),
-  openExternal: (url) => ipcRenderer.invoke("open-external", url),
+  openExternal: (url, opts) => ipcRenderer.invoke("open-external", url, opts || null),
   openDeepLink: (url) => ipcRenderer.invoke("open-deep-link", url),
   closeWindow: () => ipcRenderer.invoke("close-window"),
   clipboardWrite: (text) => ipcRenderer.invoke("clipboard-write", text),

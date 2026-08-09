@@ -40,13 +40,13 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
   const wrapperClass = (className || "")
     .split(/\s+/)
     .filter((c) => {
-      const base = c.split(':').pop() || '';
+      const base = (c.split(":").pop() || "").replace(/^!/, "");
       return /^(m[trblxy]?-|w-|min-w-|max-w-|flex-|col-|row-|flex$)/.test(base);
     })
     .join(" ");
 
   return (
-    <div className={`relative w-full min-w-[120px] ${wrapperClass}`} ref={containerRef}>
+    <div className={`relative min-w-[120px] w-full ${wrapperClass}`} ref={containerRef}>
       <select
         value={value}
         onChange={onChange}

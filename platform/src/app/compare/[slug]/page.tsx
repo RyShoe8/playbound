@@ -14,6 +14,7 @@ import {
   ORGANIZATION_ID,
 } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+import { withOutboundUtm } from "@/lib/utm";
 
 export function generateStaticParams() {
   return comparisons.map((c) => ({ slug: c.slug }));
@@ -181,7 +182,10 @@ export default async function ComparePage({
                 {cmp.bExternal!.note}
               </p>
               <a
-                href={cmp.bExternal!.website}
+                href={withOutboundUtm(cmp.bExternal!.website, {
+                  campaign: "compare",
+                  content: cmp.slug,
+                })}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"

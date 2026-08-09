@@ -558,6 +558,88 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Temporary event voice (+ optional text) for Game Nights / tournaments.
+  if (req.method === "POST" && req.url === "/events/voice") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { eventId, title } = JSON.parse(body || "{}");
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const safeName = String(title || "PlayBound Event")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 80);
+      const category = await guild.channels.create({
+        name: `Event — ${(title || "PlayBound").slice(0, 80)}`,
+        type: ChannelType.GuildCategory,
+        reason: `PlayBound event ${eventId || ""}`,
+      });
+      const voice = await guild.channels.create({
+        name: `voice-${safeName || "event"}`.slice(0, 90),
+        type: ChannelType.GuildVoice,
+        parent: category.id,
+        reason: `PlayBound event voice ${eventId || ""}`,
+      });
+      const text = await guild.channels.create({
+        name: `event-${safeName || "chat"}`.slice(0, 90),
+        type: ChannelType.GuildText,
+        parent: category.id,
+        reason: `PlayBound event text ${eventId || ""}`,
+      });
+      const invite = await voice.createInvite({
+        maxAge: 0,
+        maxUses: 0,
+        reason: "PlayBound event invite",
+      });
+      await text.send({
+        content: `**${title || "PlayBound Event"}** is gathering here.\nJoin voice: ${invite.url}\nEvent page: ${SITE_URL}/events/${eventId || ""}`,
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          success: true,
+          inviteUrl: invite.url,
+          voiceChannelId: voice.id,
+          textChannelId: text.id,
+          categoryId: category.id,
+        })
+      );
+    } catch (err) {
+      console.error("events/voice", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/events/voice/cleanup") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { voiceChannelId, textChannelId, categoryId } = JSON.parse(body || "{}");
+      const guild = await client.guilds.fetch(GUILD_ID);
+      for (const id of [voiceChannelId, textChannelId, categoryId]) {
+        if (!id) continue;
+        try {
+          const ch = await guild.channels.fetch(id);
+          if (ch) await ch.delete("PlayBound event cleanup");
+        } catch (err) {
+          console.warn("cleanup channel", id, err?.message || err);
+        }
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      console.error("events/voice/cleanup", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
   res.writeHead(404);
   res.end("Not found");
 });
