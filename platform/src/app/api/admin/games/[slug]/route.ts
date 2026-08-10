@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
@@ -113,6 +114,7 @@ export async function PATCH(
       void requestDiscordProvision(doc.slug);
     }
 
+    revalidateTag("catalog", { expire: 0 });
     return NextResponse.json({
       success: true,
       slug: doc.slug,
@@ -141,6 +143,7 @@ export async function DELETE(
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    revalidateTag("catalog", { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Admin delete game error:", err);

@@ -18,7 +18,7 @@ export async function GET(
     }
 
     const baseCover = absoluteMediaUrl(game.coverImage, origin);
-    const mods = (await listMods({ baseGameSlug: slug, includeTesting })).map((m) => ({
+    const mods = (await listMods({ baseGameSlug: slug, includeTesting, view: "card" })).map((m) => ({
       slug: m.slug,
       title: m.title,
       tagline: m.tagline,

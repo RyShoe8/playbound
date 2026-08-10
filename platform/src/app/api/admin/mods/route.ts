@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       managedBy: body.managedBy || "admin",
     });
 
+    revalidateTag("mods", { expire: 0 });
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {

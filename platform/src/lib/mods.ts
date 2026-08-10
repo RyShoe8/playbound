@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
 import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
@@ -48,6 +49,32 @@ export type CatalogModPublic = {
   faq?: GameFaq[];
   updatedAt?: string;
 };
+
+/**
+ * The only fields a mod card actually renders.
+ *
+ * Declared as a Pick so a full CatalogModPublic still satisfies it structurally
+ * — every existing caller keeps working — while list pages can build genuinely
+ * slim objects and keep the rest out of the RSC payload sent to the browser.
+ */
+export type ModCardMod = Pick<
+  CatalogModPublic,
+  "slug" | "title" | "tagline" | "baseGameSlug" | "sizeMB" | "license" | "coverImage" | "art"
+>;
+
+/** Narrow a mod down to just the card fields, for passing to client components. */
+export function toModCard(mod: ModCardMod): ModCardMod {
+  return {
+    slug: mod.slug,
+    title: mod.title,
+    tagline: mod.tagline,
+    baseGameSlug: mod.baseGameSlug,
+    sizeMB: mod.sizeMB,
+    license: mod.license,
+    coverImage: mod.coverImage,
+    art: mod.art,
+  };
+}
 
 export type ModInstallMeta = {
   slug: string;
@@ -129,13 +156,80 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
   };
 }
 
-export async function listMods(opts?: {
+/**
+ * Editorial fields a list/grid view never renders.
+ *
+ * These are the bulk of a mod document — `longDescription` alone is 80+ words
+ * by editorial policy, and `faq`/`installSteps`/`screenshots` are unbounded
+ * arrays. Fetching them for a card grid cost twice over: once pulling them out
+ * of Atlas, then again serializing them into the RSC payload for the client
+ * component that renders the grid. /mods was shipping ~1.2 MB of HTML for a
+ * view that reads seven fields per mod.
+ *
+ * Every field here is optional on CatalogModPublic, so a projected document is
+ * still a valid CatalogModPublic — callers that ask for the card view simply
+ * see them as undefined rather than getting a different type.
+ */
+const CARD_EXCLUDED_FIELDS = [
+  "longDescription",
+  "whatItChanges",
+  "compatibility",
+  "hardwareRequirements",
+  "installSteps",
+  "faq",
+  "screenshots",
+] as const;
+
+const CARD_PROJECTION = CARD_EXCLUDED_FIELDS.map((f) => `-${f}`).join(" ");
+
+export type ListModsOptions = {
   baseGameSlug?: string;
   /** null = base-wide only; string = that edition; omit = any edition. */
   editionSlug?: string | null;
   includeUnpublished?: boolean;
   includeTesting?: boolean;
-}): Promise<CatalogModPublic[]> {
+  /**
+   * "card" omits the heavy editorial fields above. Use it for any grid,
+   * listing or count — anything that is not a detail page.
+   */
+  view?: "full" | "card";
+};
+
+/**
+ * Cached wrapper around the uncached query below.
+ *
+ * Reading every visible mod is by far the most expensive query the site makes
+ * — measured at ~22s against production for the full list, versus ~2s for a
+ * single-game filter, so the cost scales with how many documents come back.
+ * Pages that show the whole catalog are also the ones every visitor lands on,
+ * and because they call getServerSession they are dynamic and never CDN-cached,
+ * so without this each visitor paid that cost from scratch.
+ *
+ * `includeTesting` is part of the cache key rather than read inside the cached
+ * function: cookies are not readable from a cache scope, and testers must not
+ * be served the public list (or vice versa) from a shared entry.
+ *
+ * Invalidated by revalidateTag("mods") wherever a mod is written, so admin
+ * edits still show up immediately rather than waiting out the window.
+ */
+export async function listMods(opts?: ListModsOptions): Promise<CatalogModPublic[]> {
+  // Unpublished reads are admin-only and must never serve a cached list.
+  if (opts?.includeUnpublished) return listModsUncached(opts);
+
+  const key = JSON.stringify({
+    baseGameSlug: opts?.baseGameSlug ?? null,
+    editionSlug: opts && "editionSlug" in opts ? opts.editionSlug ?? null : "any",
+    includeTesting: Boolean(opts?.includeTesting),
+    view: opts?.view ?? "full",
+  });
+
+  return unstable_cache(() => listModsUncached(opts), ["mods-list", key], {
+    revalidate: 300,
+    tags: ["mods", "catalog"],
+  })();
+}
+
+async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPublic[]> {
   try {
     await dbConnect();
     const parts: Record<string, unknown>[] = [];
@@ -149,7 +243,9 @@ export async function listMods(opts?: {
     }
     const filter =
       parts.length === 0 ? {} : parts.length === 1 ? parts[0]! : { $and: parts };
-    const docs = await CatalogMod.find(filter).sort({ title: 1 }).lean();
+    const query = CatalogMod.find(filter).sort({ title: 1 });
+    if (opts?.view === "card") query.select(CARD_PROJECTION);
+    const docs = await query.lean();
     return docs.map((d) => toMod(d as LeanMod));
   } catch (err) {
     console.error("[mods] listMods failed:", err);

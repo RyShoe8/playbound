@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { CatalogModPublic } from "@/lib/mods";
+import type { ModCardMod } from "@/lib/mods";
 import { cn } from "@/lib/utils";
 import { ModArt } from "@/components/ModArt";
 
@@ -10,7 +10,7 @@ type BaseGameInfo = {
 } | null;
 
 type Props = {
-  mod: CatalogModPublic;
+  mod: ModCardMod;
   baseGame?: BaseGameInfo;
   className?: string;
   /** Extra footer line (e.g. license · size) — defaults to base game + size. */

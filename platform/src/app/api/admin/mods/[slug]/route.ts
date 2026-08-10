@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
@@ -75,6 +76,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    revalidateTag("mods", { expire: 0 });
     return NextResponse.json({ success: true, slug: doc.slug });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -99,6 +101,7 @@ export async function DELETE(
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    revalidateTag("mods", { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Admin delete mod error:", err);

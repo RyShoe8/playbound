@@ -372,7 +372,7 @@ async function countModInstalls(modSlug: string): Promise<{ month: number; allTi
 }
 
 async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
-  const [games, mods] = await Promise.all([listGames(), listMods()]);
+  const [games, mods] = await Promise.all([listGames(), listMods({ view: "card" })]);
   const multiplayer = games.filter(
     (g) => g.launchMethods.includes("server") || hasServerProvider(g.slug)
   );

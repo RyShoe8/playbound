@@ -14,6 +14,7 @@ export async function GET(req: Request) {
       listMods({
         ...(baseGameSlug ? { baseGameSlug } : {}),
         includeTesting,
+        view: "card",
       }),
       listGames({ includeTesting }),
     ]);
