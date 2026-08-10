@@ -17,7 +17,7 @@ import { SITE_URL } from "@/lib/site";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [games, mods, weekly, editions] = await Promise.all([
     listGames(),
-    listMods(),
+    listMods({ view: "card" }),
     listWeeklyIssues(),
     listAllPublicEditions(),
   ]);

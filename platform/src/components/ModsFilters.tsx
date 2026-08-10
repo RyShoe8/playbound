@@ -3,7 +3,7 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import type { CatalogModPublic } from "@/lib/mods";
+import type { ModCardMod } from "@/lib/mods";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { ModCard } from "@/components/ModCard";
@@ -22,7 +22,7 @@ export function ModsFilters({
   mods,
   gamesBySlug,
 }: {
-  mods: CatalogModPublic[];
+  mods: ModCardMod[];
   gamesBySlug: Record<string, ModBaseGameInfo | undefined>;
 }) {
   const { mode, device } = useCompatibilityFilter();

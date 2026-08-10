@@ -198,17 +198,35 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
  * decide whether the collection was empty — an empty result says the same
  * thing for free.
  */
-const loadPublishedGames = cache(async (): Promise<Game[]> => {
-  const fromDb = await fromMongo(mongoVisibleFilter({ includeTesting: false }));
-  if (fromDb.length > 0) return fromDb;
-  return seedGames.map(seedGameWithInstall);
-});
-
-async function loadPublishedAndTestingGames(): Promise<Game[]> {
-  const fromDb = await fromMongo(mongoVisibleFilter({ includeTesting: true }));
+async function readVisibleGames(includeTesting: boolean): Promise<Game[]> {
+  const fromDb = await fromMongo(mongoVisibleFilter({ includeTesting }));
   if (fromDb.length > 0) return fromDb;
   return seedGames.map(seedGameWithInstall);
 }
+
+/**
+ * Two layers on purpose, because they solve different problems.
+ *
+ * `cache()` dedupes within a single request — the reason it was here already.
+ * `unstable_cache` persists across requests, which is what the pages actually
+ * needed: every page calls getServerSession (see requestIncludesTesting), which
+ * makes it dynamic and therefore never CDN-cached, so each visitor was paying
+ * this query from scratch. Tagged so admin writes can drop it immediately
+ * rather than serving a stale catalog for the full window.
+ */
+const loadPublishedGames = cache(async (): Promise<Game[]> =>
+  unstable_cache(() => readVisibleGames(false), ["catalog-games", "published"], {
+    revalidate: 300,
+    tags: ["catalog"],
+  })()
+);
+
+const loadPublishedAndTestingGames = cache(async (): Promise<Game[]> =>
+  unstable_cache(() => readVisibleGames(true), ["catalog-games", "published+testing"], {
+    revalidate: 300,
+    tags: ["catalog"],
+  })()
+);
 
 /** Visible catalog. Pass `includeTesting` for admin viewers (published + testing). */
 export async function listGames(opts?: { includeTesting?: boolean }): Promise<Game[]> {

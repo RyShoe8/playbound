@@ -124,7 +124,7 @@ export default async function HomePage() {
     listGamesNewestFirst(),
     listGames(),
     mostPopularGames(12),
-    listMods(),
+    listMods({ view: "card" }),
   ]);
   if (!gamesNewestFirst.length) return null;
 

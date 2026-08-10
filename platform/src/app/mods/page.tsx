@@ -1,6 +1,6 @@
 import { Puzzle } from "lucide-react";
 import { listGames } from "@/lib/catalog";
-import { listMods } from "@/lib/mods";
+import { listMods, toModCard } from "@/lib/mods";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
@@ -18,7 +18,7 @@ export const metadata = pageMetadata({
 export default async function ModsIndexPage() {
   const includeTesting = await viewerCanSeeTesting();
   const [mods, games] = await Promise.all([
-    listMods({ includeTesting }),
+    listMods({ includeTesting, view: "card" }),
     listGames({ includeTesting }),
   ]);
   // Mods are no longer grouped into per-game sections here — the list is flat
@@ -54,7 +54,12 @@ export default async function ModsIndexPage() {
    * a selectable option (and its mod as a dead link to a page that doesn't
    * exist yet for a regular visitor).
    */
-  const liveMods = mods.filter((m) => Boolean(gamesBySlug[m.baseGameSlug]));
+  // Narrowed to card fields before crossing into ModsFilters (a client
+  // component): anything left on these objects gets serialized into the RSC
+  // payload and shipped to every visitor, whether the grid renders it or not.
+  const liveMods = mods
+    .filter((m) => Boolean(gamesBySlug[m.baseGameSlug]))
+    .map(toModCard);
 
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
