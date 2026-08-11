@@ -357,4 +357,136 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     url: "https://store.steampowered.com/app/611500/Quake_Champions/",
     note: "Steam or Bethesda.net.",
   },
+
+  /*
+   * ── MMOs that ship their own installer ────────────────────────────
+   *
+   * These were seeded pointing at Steam, which meant "install" opened a store
+   * page. Each one publishes a real installer that downloads without a login,
+   * so the launcher can fetch and run it directly instead. Every URL below was
+   * checked with a ranged GET and returned a real binary.
+   *
+   * What the user gets is the game's own installer/updater — the multi-GB
+   * client download still happens inside that, which is unavoidable for
+   * patch-based MMOs and is exactly how these games install normally.
+   *
+   * On detection: registryTitles is the load-bearing part, because the launcher
+   * matches the Windows uninstall DisplayName by prefix and then resolves the
+   * exe from DisplayIcon/InstallLocation. knownExePaths are accelerators for
+   * default install locations — they let detection succeed without shelling out
+   * to PowerShell, but a miss just falls through to the registry. Anyone who
+   * installs to a custom directory is covered by the registry path.
+   */
+
+  "albion-online": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://live.albiononline.com/clients/latest/albion-online-setup.exe",
+    fileName: "albion-online-setup.exe",
+    exeHint: "Albion.?Online",
+    registryTitles: ["Albion Online"],
+    knownExePaths: [
+      "%PROGRAMFILES%\\AlbionOnline\\launcher\\Albion-Online.exe",
+      "%PROGRAMFILES%\\Albion Online\\launcher\\Albion-Online.exe",
+      "%LOCALAPPDATA%\\Programs\\AlbionOnline\\launcher\\Albion-Online.exe",
+      "%LOCALAPPDATA%\\AlbionOnline\\launcher\\Albion-Online.exe",
+    ],
+    note: "Installs the Albion Online launcher, which then downloads the game.",
+  },
+
+  "guild-wars-2": {
+    enabled: true,
+    kind: "direct-installer",
+    // account.arena.net/content/download/gw2/win/64 302s here; using the CDN
+    // target directly avoids a redirect hop that rejects HEAD requests.
+    url: "https://cloudfront.guildwars2.com/client/branches/Gw2Setup-64.exe",
+    fileName: "Gw2Setup-64.exe",
+    exeHint: "Gw2-64",
+    registryTitles: ["Guild Wars 2"],
+    knownExePaths: [
+      "%PROGRAMFILES%\\Guild Wars 2\\Gw2-64.exe",
+      "%PROGRAMFILES(X86)%\\Guild Wars 2\\Gw2-64.exe",
+    ],
+    note: "Gw2Setup is installer, updater and client in one — it downloads the game on first run.",
+  },
+
+  "lord-of-the-rings-online": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://akamai.lotro.com/lotro/lotrolive.exe",
+    fileName: "lotrolive.exe",
+    exeHint: "lotroclient|LotroLauncher",
+    registryTitles: ["The Lord of the Rings Online", "Lord of the Rings Online"],
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\StandingStoneGames\\The Lord of the Rings Online\\LotroLauncher.exe",
+      "%PROGRAMFILES%\\StandingStoneGames\\The Lord of the Rings Online\\LotroLauncher.exe",
+      // Pre-Standing-Stone installs still live under the Turbine folder.
+      "%PROGRAMFILES(X86)%\\Turbine\\The Lord of the Rings Online\\LotroLauncher.exe",
+    ],
+    note: "Installs the LOTRO launcher, which then patches the full client.",
+  },
+
+  "dc-universe-online": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://launch.daybreakgames.com/installer/DCUO_setup.exe?v=23",
+    fileName: "DCUO_setup.exe",
+    exeHint: "LaunchPad|DCGAME",
+    registryTitles: ["DC Universe Online", "DCUO"],
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Daybreak Game Company\\Installed Games\\DC Universe Online Live\\LaunchPad.exe",
+      "%PROGRAMFILES(X86)%\\Sony Online Entertainment\\Installed Games\\DC Universe Online Live\\LaunchPad.exe",
+      "%PUBLIC%\\Daybreak Game Company\\Installed Games\\DC Universe Online Live\\LaunchPad.exe",
+      "%PUBLIC%\\Sony Online Entertainment\\Installed Games\\DC Universe Online Live\\LaunchPad.exe",
+    ],
+    note: "Installs the Daybreak launchpad, which then downloads the game.",
+  },
+
+  "star-wars-the-old-republic": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://cdn-d6patch.swtor.com/swtor/setup/SWTOR_setup.exe",
+    fileName: "SWTOR_setup.exe",
+    exeHint: "launcher|swtor",
+    registryTitles: ["Star Wars", "Star Wars™: The Old Republic", "Star Wars: The Old Republic"],
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\EA\\BioWare\\Star Wars-The Old Republic\\launcher.exe",
+      "%PROGRAMFILES(X86)%\\Electronic Arts\\BioWare\\Star Wars-The Old Republic\\launcher.exe",
+      "%PROGRAMFILES%\\EA\\BioWare\\Star Wars-The Old Republic\\launcher.exe",
+    ],
+    note: "Installs the SWTOR launcher, which then downloads the game.",
+  },
+
+  "old-school-runescape": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://www.runescape.com/downloads/oldschool.msi",
+    fileName: "OldSchool.msi",
+    exeHint: "OldSchool|JagexLauncher",
+    registryTitles: ["Old School RuneScape", "Jagex Launcher"],
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Jagex\\Old School RuneScape\\OldSchool.exe",
+      "%PROGRAMFILES%\\Jagex\\Old School RuneScape\\OldSchool.exe",
+      "%PROGRAMFILES(X86)%\\Jagex Launcher\\JagexLauncher.exe",
+      "%LOCALAPPDATA%\\Jagex Launcher\\JagexLauncher.exe",
+    ],
+    note: "Small client — the game itself streams, so there is no large download.",
+  },
+
+  "world-of-sea-battle": {
+    enabled: true,
+    kind: "direct-installer",
+    // Xsolla-hosted launcher build; the GUID is the game's launcher project id,
+    // not a per-session token, so the URL is stable across builds.
+    url: "https://installer.launcher.xsolla.com/xlauncher-builds/xsolla-launcher-update/786ad960-bdf8-464a-94ff-1c326c963292/bin/installer.exe",
+    fileName: "WorldOfSeaBattle-Setup.exe",
+    exeHint: "World.?of.?Sea.?Battle|xlauncher",
+    registryTitles: ["World of Sea Battle", "Xsolla Launcher"],
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\World of Sea Battle\\World of Sea Battle.exe",
+      "%LOCALAPPDATA%\\XsollaLauncher\\xlauncher.exe",
+      "%PROGRAMFILES%\\World of Sea Battle\\World of Sea Battle.exe",
+    ],
+    note: "Installs the Xsolla launcher used by World of Sea Battle.",
+  },
 };

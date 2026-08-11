@@ -98,6 +98,65 @@ async function safeOpenExternal(raw, opts) {
   return true;
 }
 
+/**
+ * Whether Steam is installed on this machine.
+ *
+ * Checked so a steam:// deep link is only ever handed to an OS that can
+ * actually resolve it — without Steam, the protocol is unregistered and the
+ * user gets a "no app associated" dialog instead of a page they can read.
+ * Cached because the answer cannot change while the app is running.
+ */
+let _steamInstalled = null;
+function isSteamInstalled() {
+  if (_steamInstalled !== null) return _steamInstalled;
+  _steamInstalled = false;
+  try {
+    if (process.platform === "win32") {
+      const candidates = [
+        path.join(process.env["ProgramFiles(x86)"] || "", "Steam", "steam.exe"),
+        path.join(process.env.PROGRAMFILES || "", "Steam", "steam.exe"),
+      ];
+      _steamInstalled = candidates.some((p) => p && fs.existsSync(p));
+    } else if (process.platform === "darwin") {
+      _steamInstalled = fs.existsSync("/Applications/Steam.app");
+    } else {
+      const home = process.env.HOME || "";
+      _steamInstalled = [
+        path.join(home, ".steam"),
+        path.join(home, ".local", "share", "Steam"),
+      ].some((p) => p && fs.existsSync(p));
+    }
+  } catch {
+    _steamInstalled = false;
+  }
+  return _steamInstalled;
+}
+
+/**
+ * Turn a Steam *store page* URL into an install deep link.
+ *
+ * Steam depots can only be fetched by the Steam client, so these titles can
+ * never be a true PlayBound one-click install. The next best thing is to skip
+ * the web store page entirely and open Steam's own install dialog — one click
+ * from the launcher to an install prompt, rather than launcher → browser →
+ * store page → find the install button.
+ *
+ * Returns null when Steam is absent or the URL is not a Steam store link, in
+ * which case the caller falls back to opening the page normally.
+ */
+function steamDeepLinkFor(rawUrl) {
+  if (!isSteamInstalled()) return null;
+  try {
+    const u = new URL(String(rawUrl || ""));
+    if (!/(^|\.)steampowered\.com$/i.test(u.hostname)) return null;
+    const m = u.pathname.match(/\/app\/(\d+)/);
+    if (!m) return null;
+    return `steam://install/${m[1]}`;
+  } catch {
+    return null;
+  }
+}
+
 function hostAllowedForDownload(hostname) {
   const host = String(hostname || "").toLowerCase();
   if (!host) return false;
@@ -123,6 +182,17 @@ function hostAllowedForDownload(hostname) {
   if (host === "openarena.ws" || host.endsWith(".openarena.ws")) return true;
   if (host === "villagersandheroes.com" || host.endsWith(".villagersandheroes.com")) return true;
   if (host === "download.flightgear.org" || host.endsWith(".flightgear.org")) return true;
+  // MMOs that ship their own installer — see launcherInstallBySlug in
+  // platform/src/lib/data/launcherInstall.ts. Each pairs an exact host with a
+  // dotted-suffix match, so a lookalike like "evilguildwars2.com" cannot pass.
+  if (host === "albiononline.com" || host.endsWith(".albiononline.com")) return true;
+  if (host === "guildwars2.com" || host.endsWith(".guildwars2.com")) return true;
+  if (host === "arena.net" || host.endsWith(".arena.net")) return true;
+  if (host === "lotro.com" || host.endsWith(".lotro.com")) return true;
+  if (host === "daybreakgames.com" || host.endsWith(".daybreakgames.com")) return true;
+  if (host === "swtor.com" || host.endsWith(".swtor.com")) return true;
+  if (host === "runescape.com" || host.endsWith(".runescape.com")) return true;
+  if (host === "xsolla.com" || host.endsWith(".xsolla.com")) return true;
   try {
     const apiHost = new URL(getApiBase()).hostname.toLowerCase();
     if (host === apiHost) return true;
@@ -2083,6 +2153,9 @@ function expandWinPath(p) {
     .replace(/%APPDATA%/gi, process.env.APPDATA || "")
     .replace(/%PROGRAMFILES%/gi, process.env.PROGRAMFILES || "")
     .replace(/%PROGRAMFILES\(X86\)%/gi, process.env["ProgramFiles(x86)"] || "")
+    // Daybreak titles (DCUO) install under C:\Users\Public by default, so an
+    // unexpanded %PUBLIC% would leave a path that can never match.
+    .replace(/%PUBLIC%/gi, process.env.PUBLIC || "C:\\Users\\Public")
     .replace(/%USERPROFILE%/gi, process.env.USERPROFILE || process.env.HOME || "");
   if (process.platform === "darwin") {
     const home = app.getPath("home");
@@ -2989,7 +3062,10 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
   if (entry.kind === "external") {
-    await safeOpenExternal(entry.url, { campaign: "launcher_install_external", content: slug });
+    await safeOpenExternal(steamDeepLinkFor(entry.url) || entry.url, {
+      campaign: "launcher_install_external",
+      content: slug,
+    });
     return { status: "external" };
   }
 
