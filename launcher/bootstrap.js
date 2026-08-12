@@ -7,6 +7,24 @@
  */
 "use strict";
 
+/*
+ * Suppress EPIPE on stdout/stderr.
+ *
+ * On Linux the launcher often outlives the terminal / shell that started it.
+ * Once that parent exits the stdio pipes break and any console.log / .error
+ * throws an uncaught EPIPE — harmless for a GUI app but reported as a crash.
+ * Swallowing the error on the stream itself prevents it from ever reaching
+ * the uncaughtException handler.
+ */
+for (const stream of [process.stdout, process.stderr]) {
+  if (stream && typeof stream.on === "function") {
+    stream.on("error", (err) => {
+      if (err && err.code === "EPIPE") return; // harmless — parent pipe gone
+      throw err; // re-throw anything else
+    });
+  }
+}
+
 const fs = require("fs");
 const path = require("path");
 const { app, dialog } = require("electron");

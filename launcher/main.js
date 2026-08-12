@@ -180,6 +180,7 @@ function hostAllowedForDownload(hostname) {
   if (host === "zero-k.info" || host.endsWith(".zero-k.info")) return true;
   if (host === "hedgewars.org" || host.endsWith(".hedgewars.org")) return true;
   if (host === "openarena.ws" || host.endsWith(".openarena.ws")) return true;
+  if (host === "megaphilx.com" || host.endsWith(".megaphilx.com")) return true;
   if (host === "villagersandheroes.com" || host.endsWith(".villagersandheroes.com")) return true;
   if (host === "download.flightgear.org" || host.endsWith(".flightgear.org")) return true;
   // MMOs that ship their own installer — see launcherInstallBySlug in
