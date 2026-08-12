@@ -26,7 +26,7 @@ jobs:
       - name: Install Linux packaging dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot dpkg libopenjp2-tools
+          sudo apt-get install -y fakeroot dpkg libopenjp2-tools libfuse2
 
       - name: Install Platform Dependencies
         run: npm install
