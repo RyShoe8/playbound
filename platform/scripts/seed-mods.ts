@@ -77,6 +77,15 @@ async function main() {
     console.log(`Removed ${removedMistaken.deletedCount} mistaken OpenArena-under-TES mod seed(s).`);
   }
 
+  // Entries that were never mods — wikis, FAQs, forums, Discord invites,
+  // storefront pages and repo meta-pages. Dropping them from the seed files is
+  // not enough on its own because this script only ever upserts.
+  const { retiredModSlugs } = await import("../src/lib/data/retiredMods");
+  const removedRetired = await CatalogMod.deleteMany({ slug: { $in: retiredModSlugs } });
+  if (removedRetired.deletedCount) {
+    console.log(`Removed ${removedRetired.deletedCount} retired non-mod entr(ies).`);
+  }
+
   for (const seed of mods) {
     const m = ensureDerivedModFields(seed, baseTitles.get(seed.baseGameSlug));
     const developerName = developersBySlug.get(m.developerSlug)?.name ?? null;
