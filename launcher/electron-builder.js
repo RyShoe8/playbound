@@ -74,6 +74,7 @@ module.exports = {
     "platform/**/*",
     "services/**/*",
     "renderer/**/*",
+    "assets/**/*",
   ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
   asarUnpack: ["**/node_modules/systeminformation/**"],

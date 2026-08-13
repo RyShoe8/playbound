@@ -5766,26 +5766,25 @@ function showMainWindow() {
 
 function ensureTray() {
   if (tray) return;
-  void (async () => {
-    if (tray) return;
-    let icon = nativeImage.createEmpty();
-    try {
-      icon = await app.getFileIcon(process.execPath, { size: "small" });
-    } catch {
-      /* empty fallback */
-    }
-    if (tray) return;
-    tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
-    tray.setToolTip("PlayBound");
-    tray.setContextMenu(
-      Menu.buildFromTemplate([
-        { label: "Open PlayBound", click: () => showMainWindow() },
-        { type: "separator" },
-        { label: "Quit", click: () => app.quit() },
-      ])
-    );
-    tray.on("click", () => showMainWindow());
-  })();
+  // app.getFileIcon(process.execPath) previously sourced this icon. On Linux
+  // that reads whatever icon the OS has associated with the raw executable
+  // file (rarely the app's own icon), so it fell back to a generic system
+  // icon — a gear/settings glyph in most icon themes. Load our own icon
+  // instead so the tray always shows the PlayBound mark.
+  let icon = nativeImage.createFromPath(path.join(__dirname, "assets", "tray-icon.png"));
+  if (!icon.isEmpty()) {
+    icon = icon.resize({ width: 32, height: 32 });
+  }
+  tray = new Tray(icon);
+  tray.setToolTip("PlayBound");
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: "Open PlayBound", click: () => showMainWindow() },
+      { type: "separator" },
+      { label: "Quit", click: () => app.quit() },
+    ])
+  );
+  tray.on("click", () => showMainWindow());
 }
 
 function createWindow() {
