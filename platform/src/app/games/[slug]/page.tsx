@@ -160,9 +160,15 @@ export default async function GamePage({
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   // Critical path only: developer + editions for hero chooser and static schema.
-  const [developer, editions] = await Promise.all([
+  const [developer, editions, gameMods] = await Promise.all([
     getDeveloper(game.developerSlug),
     listPublicEditionsForGame(game),
+    // Awaited here so the Mods tab can be hidden when a game has none. The tab
+    // filter below used to call modsForGame() without awaiting and read .length
+    // off the Promise, which is undefined — so the comparison never matched and
+    // the tab showed on every game regardless. listMods is cached per request,
+    // so ModsTab re-reading this costs nothing.
+    modsForGame(game.slug, { includeTesting }),
   ]);
   const choosable = hasChoosableEditions(editions);
   const signedIn = Boolean(session?.user);
@@ -274,7 +280,7 @@ export default async function GamePage({
 
         {PARAM_TABS.filter((t) => t !== "overview" && t !== "install")
           .filter((t) => {
-            if (t === "mods" && modsForGame(game.slug).length === 0) return false;
+            if (t === "mods" && gameMods.length === 0) return false;
             return true;
           })
           .map((t) => (
