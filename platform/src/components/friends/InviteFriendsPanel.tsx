@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { telemetry } from "@/lib/telemetry";
+import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 
 export function InviteFriendsPanel({ gameSlug }: { gameSlug: string }) {
   const { status } = useSession();
@@ -12,6 +13,7 @@ export function InviteFriendsPanel({ gameSlug }: { gameSlug: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [mode, setMode] = useState<"invite" | "party" | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") void fetchFriends();
@@ -54,18 +56,36 @@ export function InviteFriendsPanel({ gameSlug }: { gameSlug: string }) {
 
   return (
     <div className="space-y-2">
-      <button
-        type="button"
-        className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
-        onClick={() => {
-          setOpen((v) => !v);
-          telemetry.track("invite_friends_clicked", { gameSlug, surface: "game_page" });
-        }}
-      >
-        Invite Friends
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={`rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors ${
+            mode === "invite" ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/80"
+          }`}
+          onClick={() => {
+            setMode(mode === "invite" ? null : "invite");
+            if (mode !== "invite") telemetry.track("invite_friends_clicked", { gameSlug, surface: "game_page" });
+          }}
+        >
+          Invite Friends
+        </button>
+        <button
+          type="button"
+          className={`rounded-full border border-border px-4 py-2 text-sm font-bold transition-colors ${
+            mode === "party" ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/80"
+          }`}
+          onClick={() => {
+            setMode(mode === "party" ? null : "party");
+          }}
+        >
+          Create Party
+        </button>
+      </div>
       {message ? <p className="text-xs text-muted-foreground">{message}</p> : null}
-      {open ? (
+      
+      {mode === "party" ? (
+        <CreatePartyPanel gameSlug={gameSlug} onCreated={() => setMode(null)} />
+      ) : mode === "invite" ? (
         <div className="rounded-xl border border-border bg-card p-3 space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Select friends

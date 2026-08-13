@@ -82,3 +82,13 @@ export async function fetchSteamConcurrentPlayers(
 export function fetchVillagersAndHeroesPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(263540, { label: "Villagers and Heroes" });
 }
+
+/** Asphalt Legends Unite — Steam app 922250. */
+export function fetchAsphaltLegendsUnitePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(922250, { label: "Asphalt Legends Unite" });
+}
+
+/** OpenCiv3 (using Civ 3 Complete Steam app 3910 as proxy for activity). */
+export function fetchOpenCiv3Players(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(3910, { label: "OpenCiv3" });
+}

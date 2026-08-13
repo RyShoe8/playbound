@@ -9,7 +9,11 @@ import { fetchOpenRaServers } from "./providers/openra";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
-import { fetchVillagersAndHeroesPlayers } from "./providers/steam-concurrent";
+import {
+  fetchVillagersAndHeroesPlayers,
+  fetchAsphaltLegendsUnitePlayers,
+  fetchOpenCiv3Players,
+} from "./providers/steam-concurrent";
 import { fetchWarzone2100Servers } from "./providers/warzone-2100";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -62,6 +66,14 @@ const providers: Record<string, ServerProvider> = {
   "villagers-and-heroes": {
     slug: "villagers-and-heroes",
     fetchServers: fetchVillagersAndHeroesPlayers,
+  },
+  "asphalt-legends-unite": {
+    slug: "asphalt-legends-unite",
+    fetchServers: fetchAsphaltLegendsUnitePlayers,
+  },
+  openciv3: {
+    slug: "openciv3",
+    fetchServers: fetchOpenCiv3Players,
   },
 };
 

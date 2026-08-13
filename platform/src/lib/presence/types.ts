@@ -119,6 +119,7 @@ export interface PresenceState {
   os: PresenceOs;
   currentGameId?: string | null;
   currentEditionId?: string | null;
+  currentPartyId?: string | null;
   currentPage?: string | null;
   startedAt: string;
   lastHeartbeat: string;
@@ -131,6 +132,7 @@ export interface HeartbeatPayload {
   page?: string | null;
   gameId?: string | null;
   editionId?: string | null;
+  partyId?: string | null;
   sessionId?: string | null;
 }
 

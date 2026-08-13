@@ -95,6 +95,7 @@ export interface PresenceUpdate {
   page?: string | null;
   gameId?: string | null;
   editionId?: string | null;
+  partyId?: string | null;
   sessionId?: string | null;
 }
 
@@ -159,6 +160,7 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
     set.os = os;
     set.currentGameId = update.gameId ?? null;
     set.currentEditionId = update.editionId ?? null;
+    if (update.partyId !== undefined) set.currentPartyId = update.partyId || null;
   }
 
   await Presence.findOneAndUpdate(
@@ -221,6 +223,7 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
     if (update.status) set.status = update.status;
     if (update.gameId !== undefined) set.currentGameId = update.gameId || null;
     if (update.editionId !== undefined) set.currentEditionId = update.editionId || null;
+    if (update.partyId !== undefined) set.currentPartyId = update.partyId || null;
   }
   // `page` is only written when the client sends the key at all, so a
   // heartbeat that omits it leaves the last known page intact rather than
@@ -297,6 +300,7 @@ export async function endPresence(ctx: PresenceContext, sessionId?: string | nul
         status: "offline",
         currentGameId: null,
         currentEditionId: null,
+        currentPartyId: null,
         currentPage: null,
         lastHeartbeat: now,
       },
@@ -329,6 +333,7 @@ export async function sweepStalePresence(now = new Date()) {
         status: "offline",
         currentGameId: null,
         currentEditionId: null,
+        currentPartyId: null,
         currentPage: null,
         lookingForPlayersUntil: null,
         lookingForPlayersGameId: null,

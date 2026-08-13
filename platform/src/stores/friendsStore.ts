@@ -11,6 +11,7 @@ export type FriendUser = {
     platform?: string;
     currentGameId?: string | null;
     currentEditionId?: string | null;
+    currentPartyId?: string | null;
     currentPage?: string | null;
     currentGameTitle?: string | null;
     lastHeartbeat?: Date;
