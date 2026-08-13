@@ -9,6 +9,7 @@ import {
   nextInviteStatus,
 } from "@/lib/playTogether/inviteRules";
 import { getPartyCapability } from "@/lib/playTogether/party";
+import { canJoinParty, nextLeader, derivePartyStatus, type RuleParty, type RuleMember } from "@/lib/playTogether/partyRules";
 import { LFG_TTL_MS } from "@/lib/playTogether/types";
 
 describe("isMultiplayerGame", () => {
@@ -126,7 +127,64 @@ describe("LFG TTL + party extension", () => {
     expect(LFG_TTL_MS).toBe(60 * 60 * 1000);
   });
 
-  it("leaves party creation as future/unsupported", () => {
-    expect(getPartyCapability().supported).toBe(false);
+  it("now returns party creation as supported", () => {
+    expect(getPartyCapability().supported).toBe(true);
+  });
+});
+
+describe("party rules", () => {
+  const mockParty = (overrides: Partial<RuleParty> = {}): RuleParty => ({
+    leaderId: "user1",
+    members: [{ userId: "user1", role: "leader", ready: false, joinedAt: new Date() }],
+    status: "forming",
+    visibility: "friends",
+    maxSize: 8,
+    ...overrides,
+  });
+
+  describe("canJoinParty", () => {
+    it("prevents joining full parties", () => {
+      const p = mockParty({ maxSize: 1 });
+      expect(canJoinParty(p, "user2", true).ok).toBe(false);
+    });
+
+    it("prevents non-friends from joining friends-only parties", () => {
+      const p = mockParty();
+      expect(canJoinParty(p, "user2", false).ok).toBe(false);
+    });
+
+    it("allows friends to join friends-only parties", () => {
+      const p = mockParty();
+      expect(canJoinParty(p, "user2", true).ok).toBe(true);
+    });
+  });
+
+  describe("nextLeader", () => {
+    it("chooses the earliest joined remaining member", () => {
+      const members: RuleMember[] = [
+        { userId: "user1", role: "leader", ready: false, joinedAt: new Date("2026-01-01") },
+        { userId: "user3", role: "member", ready: false, joinedAt: new Date("2026-01-03") },
+        { userId: "user2", role: "member", ready: false, joinedAt: new Date("2026-01-02") },
+      ];
+      expect(nextLeader(members, "user1")).toBe("user2");
+    });
+  });
+
+  describe("derivePartyStatus", () => {
+    it("transitions from forming to ready when all ready (>=2 members)", () => {
+      const members: RuleMember[] = [
+        { userId: "user1", role: "leader", ready: true, joinedAt: new Date() },
+        { userId: "user2", role: "member", ready: true, joinedAt: new Date() },
+      ];
+      expect(derivePartyStatus("forming", members)).toBe("ready");
+    });
+
+    it("stays forming if not everyone is ready", () => {
+      const members: RuleMember[] = [
+        { userId: "user1", role: "leader", ready: true, joinedAt: new Date() },
+        { userId: "user2", role: "member", ready: false, joinedAt: new Date() },
+      ];
+      expect(derivePartyStatus("forming", members)).toBe("forming");
+    });
   });
 });

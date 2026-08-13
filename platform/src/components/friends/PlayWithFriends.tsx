@@ -23,6 +23,9 @@ type SharedGame = {
   join: { capability: string; label: string; href: string | null };
 };
 
+import type { PartyPayload } from "@/lib/playTogether/types";
+import { PartyCard } from "./PartyCard";
+
 /**
  * Reusable Play With Friends surface for homepage, friends page, etc.
  */
@@ -36,6 +39,8 @@ export function PlayWithFriends({
   const { status } = useSession();
   const [playing, setPlaying] = useState<PlayingFriend[]>([]);
   const [shared, setShared] = useState<SharedGame[]>([]);
+  const [activeParties, setActiveParties] = useState<PartyPayload[]>([]);
+  const [discoverableParties, setDiscoverableParties] = useState<PartyPayload[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -49,6 +54,8 @@ export function PlayWithFriends({
         if (cancelled) return;
         setPlaying(data.friendsPlaying || []);
         setShared(data.sharedGames || []);
+        setActiveParties(data.activeParties || []);
+        setDiscoverableParties(data.discoverableParties || []);
         setLoaded(true);
         telemetry.track("play_together_viewed", {
           count: (data.sharedGames || []).length,
@@ -74,7 +81,7 @@ export function PlayWithFriends({
     );
   }
 
-  if (playing.length === 0 && shared.length === 0) {
+  if (playing.length === 0 && shared.length === 0 && activeParties.length === 0 && discoverableParties.length === 0) {
     return (
       <section className="rounded-xl border border-dashed border-border bg-card/40 p-4">
         <h2 className="text-lg font-bold">Play With Friends</h2>
@@ -109,6 +116,25 @@ export function PlayWithFriends({
           </Link>
         ) : null}
       </div>
+
+      {activeParties.length > 0 && (
+        <div className="space-y-2">
+          {activeParties.map((p) => (
+            <PartyCard key={p.id} party={p} />
+          ))}
+        </div>
+      )}
+
+      {discoverableParties.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
+            You Could Play Together
+          </h3>
+          {discoverableParties.map((p) => (
+            <PartyCard key={p.id} party={p} />
+          ))}
+        </div>
+      )}
 
       {playing.length > 0 && (
         <div className="space-y-2">

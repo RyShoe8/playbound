@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listSharedPlayGames } from "@/lib/playTogether/sharedGames";
+import { listPartiesForUser, listDiscoverableParties } from "@/lib/playTogether/party";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
@@ -51,11 +52,13 @@ export async function GET(req: Request) {
     });
 
     const ids = friendUsers.map((f) => f.id);
-    const [presences, games, sharedGames, mePresence] = await Promise.all([
+    const [presences, games, sharedGames, mePresence, activeParties, discoverableParties] = await Promise.all([
       Presence.find({ userId: { $in: ids } }).lean(),
       listGames({ includeTesting: true }),
       listSharedPlayGames(userId, 8),
       Presence.findOne({ userId }).lean(),
+      listPartiesForUser(userId),
+      listDiscoverableParties(userId),
     ]);
 
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
@@ -134,6 +137,8 @@ export async function GET(req: Request) {
       friendsLooking,
       sharedGames,
       myLfg,
+      activeParties,
+      discoverableParties,
     });
   } catch (err) {
     console.error("play-together GET failed:", err);

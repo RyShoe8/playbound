@@ -117,3 +117,135 @@ export async function createFriendLfgNotification(opts: {
     console.error("createFriendLfgNotification failed:", err);
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Phase 4 — Party notifications
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+export async function createPartyInviteNotification(opts: {
+  recipientId: string;
+  senderId: string;
+  senderUsername: string;
+  partyId: string;
+  gameSlug: string;
+  gameTitle: string;
+  memberCount: number;
+}) {
+  try {
+    await dbConnect();
+    await Notification.create({
+      userId: opts.recipientId,
+      type: "party_invite",
+      title: `${opts.senderUsername} invited you to a party`,
+      body: `${opts.gameTitle} · ${opts.memberCount} player${opts.memberCount === 1 ? "" : "s"} currently in party`,
+      href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+      meta: {
+        partyId: opts.partyId,
+        fromUserId: opts.senderId,
+        fromUsername: opts.senderUsername,
+        gameSlug: opts.gameSlug,
+        gameTitle: opts.gameTitle,
+        memberCount: opts.memberCount,
+        actions: ["join", "decline"],
+      },
+    });
+  } catch (err) {
+    console.error("createPartyInviteNotification failed:", err);
+  }
+}
+
+export async function createPartyJoinNotification(opts: {
+  partyMemberIds: string[];
+  joinedUserId: string;
+  joinedUsername: string;
+  partyId: string;
+  gameTitle: string;
+}) {
+  try {
+    await dbConnect();
+    const recipients = opts.partyMemberIds.filter(
+      (id) => id !== opts.joinedUserId
+    );
+    if (recipients.length === 0) return;
+    await Notification.insertMany(
+      recipients.map((recipientId) => ({
+        userId: recipientId,
+        type: "party_joined",
+        title: `${opts.joinedUsername} joined the party`,
+        body: opts.gameTitle,
+        href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+        meta: {
+          partyId: opts.partyId,
+          fromUserId: opts.joinedUserId,
+          fromUsername: opts.joinedUsername,
+        },
+      }))
+    );
+  } catch (err) {
+    console.error("createPartyJoinNotification failed:", err);
+  }
+}
+
+export async function createPartyLaunchedNotification(opts: {
+  partyMemberIds: string[];
+  leaderId: string;
+  leaderUsername: string;
+  partyId: string;
+  gameTitle: string;
+}) {
+  try {
+    await dbConnect();
+    const recipients = opts.partyMemberIds.filter(
+      (id) => id !== opts.leaderId
+    );
+    if (recipients.length === 0) return;
+    await Notification.insertMany(
+      recipients.map((recipientId) => ({
+        userId: recipientId,
+        type: "party_launched",
+        title: `Party launched — ${opts.gameTitle}`,
+        body: `${opts.leaderUsername} started the game`,
+        href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+        meta: {
+          partyId: opts.partyId,
+          fromUserId: opts.leaderId,
+          fromUsername: opts.leaderUsername,
+          gameTitle: opts.gameTitle,
+        },
+      }))
+    );
+  } catch (err) {
+    console.error("createPartyLaunchedNotification failed:", err);
+  }
+}
+
+export async function createPartyLeaderChangedNotification(opts: {
+  partyMemberIds: string[];
+  newLeaderId: string;
+  newLeaderUsername: string;
+  partyId: string;
+}) {
+  try {
+    await dbConnect();
+    const recipients = opts.partyMemberIds.filter(
+      (id) => id !== opts.newLeaderId
+    );
+    if (recipients.length === 0) return;
+    await Notification.insertMany(
+      recipients.map((recipientId) => ({
+        userId: recipientId,
+        type: "party_leader_changed",
+        title: `${opts.newLeaderUsername} is now party leader`,
+        body: null,
+        href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
+        meta: {
+          partyId: opts.partyId,
+          fromUserId: opts.newLeaderId,
+          fromUsername: opts.newLeaderUsername,
+        },
+      }))
+    );
+  } catch (err) {
+    console.error("createPartyLeaderChangedNotification failed:", err);
+  }
+}

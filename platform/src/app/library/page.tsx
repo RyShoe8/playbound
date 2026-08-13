@@ -20,6 +20,10 @@ import {
 } from "@/lib/libraryPlatform";
 import { buildLibraryUnionEntries } from "@/lib/libraryUnion";
 import { shouldOfferLauncherFromUa } from "@/lib/mobilePlay";
+import {
+  detectLauncherOsFromUa,
+  launcherDownloadUrlForOs,
+} from "@/lib/launcherDownload";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -64,16 +68,7 @@ export default async function LibraryPage() {
   const userAgent = (await headers()).get("user-agent") || "";
   const viewerPlatform = platformFromUserAgent(userAgent);
   const offerLauncherDownload = shouldOfferLauncherFromUa(userAgent);
-  const isMac = /Mac OS X|Macintosh/i.test(userAgent);
-  const isLinux = /Linux/i.test(userAgent) && !/Android/i.test(userAgent);
-  const downloadUrl = isMac
-    ? process.env.NEXT_PUBLIC_LAUNCHER_MAC_DOWNLOAD_URL ||
-      process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL ||
-      "/launcher"
-    : isLinux
-      ? process.env.NEXT_PUBLIC_LAUNCHER_LINUX_DOWNLOAD_URL ||
-        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/PlayBound-Launcher-Setup.AppImage"
-      : process.env.NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL || "/launcher";
+  const downloadUrl = launcherDownloadUrlForOs(detectLauncherOsFromUa(userAgent));
 
   try {
     await dbConnect();

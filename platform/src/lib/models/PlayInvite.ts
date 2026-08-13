@@ -22,6 +22,13 @@ const PlayInviteSchema = new Schema(
     gameSlug: { type: String, required: true, index: true },
     editionSlug: { type: String, default: null },
     modSlug: { type: String, default: null },
+    /** Phase 4: optional party association — turns a play invite into a party invite. */
+    partyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Party",
+      default: null,
+      index: true,
+    },
     status: {
       type: String,
       enum: PLAY_INVITE_STATUSES,
@@ -46,6 +53,7 @@ export type PlayInviteDoc = {
   gameSlug: string;
   editionSlug?: string | null;
   modSlug?: string | null;
+  partyId?: Types.ObjectId | null;
   status: string;
   expiresAt: Date;
   respondedAt?: Date | null;

@@ -13,6 +13,12 @@ export const NOTIFICATION_TYPES = [
   "play_invite_declined",
   "friend_started_playing",
   "friend_looking_for_players",
+  // Phase 4 — Parties
+  "party_invite",
+  "party_joined",
+  "party_ready",
+  "party_launched",
+  "party_leader_changed",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

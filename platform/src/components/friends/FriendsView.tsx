@@ -10,7 +10,12 @@ import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import { Avatar } from "@/components/ui/bits";
 import { Gamepad2, LogIn, UserMinus } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { telemetry } from "@/lib/telemetry";
+import { usePartyStore } from "@/stores/partyStore";
+import { PartyView } from "@/components/friends/PartyView";
+import { PartyDiscovery } from "@/components/friends/PartyDiscovery";
+import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 
 function PrivacyToggle({
   label,
@@ -228,6 +233,18 @@ export function FriendsView({
     cancelRequest,
     removeFriend,
   } = useFriendsStore();
+  
+  const searchParams = useSearchParams();
+  const partyParam = searchParams.get("party");
+  
+  const { 
+    activeParty, 
+    discoverableParties,
+    startPolling: startPartyPolling, 
+    stopPolling: stopPartyPolling,
+    joinParty,
+    fetchParties
+  } = usePartyStore();
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -249,9 +266,19 @@ export function FriendsView({
           if (data?.myLfg) setLfgActive(Boolean(data.myLfg.active));
         })
         .catch(() => {});
+        
+      startPartyPolling(15000);
+      if (partyParam) {
+        // If a party param was passed (e.g. from invite link), join it.
+        joinParty(partyParam).catch(console.error);
+        // We could replace URL to remove param but leaving it is fine.
+      }
     }
-    return () => stopPolling();
-  }, [status, startPolling, stopPolling]);
+    return () => {
+      stopPolling();
+      stopPartyPolling();
+    };
+  }, [status, startPolling, stopPolling, startPartyPolling, stopPartyPolling, partyParam, joinParty]);
 
   async function patchVisibility(patch: Record<string, boolean>) {
     setAppearBusy(true);
@@ -420,6 +447,17 @@ export function FriendsView({
       </div>
 
       <PlayWithFriends surface="friends_page" />
+
+      {activeParty && (
+        <div className="space-y-3">
+          <PartyView party={activeParty} />
+          {activeParty.status === "ready" && activeParty.leaderId === session?.user?.id && (
+            <PartyConfigSync partyId={activeParty.id} gameSlug={activeParty.gameSlug} />
+          )}
+        </div>
+      )}
+      
+      {!activeParty && <PartyDiscovery />}
 
       <FriendsUpcomingEvents />
 

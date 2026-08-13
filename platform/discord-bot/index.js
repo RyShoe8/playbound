@@ -640,6 +640,82 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── Phase 4: Temporary party voice channels ──────────────────────────
+  if (req.method === "POST" && req.url === "/parties/voice") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { partyId, gameSlug } = JSON.parse(body || "{}");
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const game = gameSlug
+        ? await games.findOne({ slug: gameSlug, published: true })
+        : null;
+      const title = game?.title || gameSlug || "Party";
+      const safeName = String(title)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 80);
+      const category = await guild.channels.create({
+        name: `PlayBound — ${title.slice(0, 80)}`,
+        type: ChannelType.GuildCategory,
+        reason: `PlayBound party ${partyId || ""}`,
+      });
+      const voice = await guild.channels.create({
+        name: `party-${safeName || "voice"}`.slice(0, 90),
+        type: ChannelType.GuildVoice,
+        parent: category.id,
+        reason: `PlayBound party voice ${partyId || ""}`,
+      });
+      const invite = await voice.createInvite({
+        maxAge: 0,
+        maxUses: 0,
+        reason: "PlayBound party invite",
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          success: true,
+          inviteUrl: invite.url,
+          voiceChannelId: voice.id,
+          categoryId: category.id,
+        })
+      );
+    } catch (err) {
+      console.error("parties/voice", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/parties/voice/cleanup") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { voiceChannelId, categoryId } = JSON.parse(body || "{}");
+      const guild = await client.guilds.fetch(GUILD_ID);
+      for (const id of [voiceChannelId, categoryId]) {
+        if (!id) continue;
+        try {
+          const ch = await guild.channels.fetch(id);
+          if (ch) await ch.delete("PlayBound party cleanup");
+        } catch (err) {
+          console.warn("party cleanup channel", id, err?.message || err);
+        }
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      console.error("parties/voice/cleanup", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
   res.writeHead(404);
   res.end("Not found");
 });

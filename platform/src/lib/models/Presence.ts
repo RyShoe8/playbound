@@ -51,6 +51,14 @@ const PresenceSchema = new Schema(
     lookingForPlayersUntil: { type: Date, default: null, index: true },
     lookingForPlayersGameId: { type: String, default: null },
 
+    /** Phase 4: current party the user is in. Cleared when party ends or user leaves. */
+    currentPartyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Party",
+      default: null,
+      index: true,
+    },
+
     /** When this run of presence began (not when the account was created). */
     startedAt: { type: Date, default: Date.now },
     /**
@@ -84,6 +92,7 @@ export type PresenceDoc = {
   currentPage?: string | null;
   lookingForPlayersUntil?: Date | null;
   lookingForPlayersGameId?: string | null;
+  currentPartyId?: string | null;
   startedAt: Date;
   lastHeartbeat: Date;
   updatedAt: Date;

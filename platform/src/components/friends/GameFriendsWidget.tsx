@@ -22,8 +22,19 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
 
   if (status !== "authenticated") return null;
 
+  const friendsInParty = friends.filter(
+    (f) => f.presence.currentPartyId && f.presence.currentGameId === gameSlug
+  );
+  
+  const partyGroups = friendsInParty.reduce((acc, f) => {
+    const pid = f.presence.currentPartyId!;
+    if (!acc[pid]) acc[pid] = [];
+    acc[pid].push(f);
+    return acc;
+  }, {} as Record<string, typeof friends>);
+
   const friendsPlaying = friends.filter(
-    (f) => f.presence.currentGameId === gameSlug && f.presence.status === "playing"
+    (f) => f.presence.currentGameId === gameSlug && f.presence.status === "playing" && !f.presence.currentPartyId
   );
   const friendsViewing = friends.filter(
     (f) =>
@@ -45,7 +56,8 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
   if (
     friendsPlaying.length === 0 &&
     friendsViewing.length === 0 &&
-    friendsLooking.length === 0
+    friendsLooking.length === 0 &&
+    friendsInParty.length === 0
   ) {
     return (
       <div className="mt-6 space-y-3 rounded-xl border border-border bg-card p-4">
@@ -66,6 +78,25 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
         <h3 className="text-sm font-bold">Your Friends</h3>
         <InviteFriendsPanel gameSlug={gameSlug} />
       </div>
+
+      {Object.entries(partyGroups).map(([partyId, partyFriends]) => (
+        <div key={partyId} className="mb-4">
+          <p className="mb-2 text-xs font-semibold tracking-wider text-primary uppercase">
+            In a Party
+          </p>
+          <div className="rounded-lg border border-border bg-secondary/20 p-3">
+            <p className="text-sm font-medium mb-3">
+              {partyFriends.map((f) => f.username).join(", ")}
+            </p>
+            <Link
+              href={`/friends?party=${partyId}`}
+              className="inline-block rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:brightness-110"
+            >
+              Join Party
+            </Link>
+          </div>
+        </div>
+      ))}
 
       {friendsPlaying.length > 0 && (
         <div>

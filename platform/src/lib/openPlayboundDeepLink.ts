@@ -6,19 +6,20 @@
  * standard heuristic that the desktop app took focus.
  */
 
+import {
+  detectLauncherOsFromUa,
+  type LauncherOs,
+} from "@/lib/launcherDownload";
+
 export const PLAYBOUND_HANDOFF_MS = 1500;
 
 export type PlayboundHandoffResult = "launched" | "download" | "miss";
 
-export type LauncherOs = "windows" | "macos" | "linux";
+export type { LauncherOs };
 
 export function detectLauncherOs(): LauncherOs {
   if (typeof navigator === "undefined") return "windows";
-  const ua = navigator.userAgent;
-  if (/Mac OS X|Macintosh/i.test(ua)) return "macos";
-  // Android UA also contains "Linux" — never treat phones as desktop Linux.
-  if (/Linux/i.test(ua) && !/Android/i.test(ua)) return "linux";
-  return "windows";
+  return detectLauncherOsFromUa(navigator.userAgent);
 }
 
 /** Fire a custom-protocol navigation without leaving the current page. */
