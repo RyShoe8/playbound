@@ -3523,7 +3523,35 @@ async function installModInner(slug, baseDirOverride) {
   return placeModFiles(slug, install, baseDirOverride);
 }
 
+/**
+ * Outer safety net so every launch failure is reported, not just the ones
+ * playGameInner already knows how to classify. Anything thrown before
+ * reaching (or outside) its try/catch — a corrupted settings read, a future
+ * code path that forgets to call telemetry itself — still gets a
+ * launch_failed event instead of silently rejecting the IPC call.
+ * playGameInner tags errors it already reported so this doesn't double them.
+ */
 async function playGame(slug, join = null, editionSlug = null) {
+  try {
+    return await playGameInner(slug, join, editionSlug);
+  } catch (err) {
+    if (!err || !err.__launchFailedReported) {
+      try {
+        void telemetry.launchFailed({
+          ...editionInfoFor(slug, { editionSlug: editionSlug || DEFAULT_EDITION_SLUG }),
+          code: err?.code || "UNKNOWN",
+          message: String(err?.message || err || "Launch failed").slice(0, 1000),
+          phase: "play",
+        });
+      } catch {
+        /* never block launch failure surfacing on telemetry */
+      }
+    }
+    throw err;
+  }
+}
+
+async function playGameInner(slug, join = null, editionSlug = null) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   const edSlug = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
@@ -3553,7 +3581,9 @@ async function playGame(slug, join = null, editionSlug = null) {
       message,
       phase: "resolve-install",
     });
-    throw new Error(message);
+    const notInstalledErr = new Error(message);
+    notInstalledErr.__launchFailedReported = true;
+    throw notInstalledErr;
   }
 
   if (slug === OPENCIV3_SLUG) {
@@ -3686,7 +3716,9 @@ async function playGame(slug, join = null, editionSlug = null) {
             message: retryMessage,
             phase: "spawn-after-java-install",
           });
-          throw retryErr instanceof Error ? retryErr : new Error(retryMessage);
+          const reportedRetryErr = retryErr instanceof Error ? retryErr : new Error(retryMessage);
+          reportedRetryErr.__launchFailedReported = true;
+          throw reportedRetryErr;
         }
       }
       if (offered.cancelled) {
@@ -3699,9 +3731,11 @@ async function playGame(slug, join = null, editionSlug = null) {
           message: "User declined managed Java install",
           phase: "spawn",
         });
-        throw new Error(
+        const declinedErr = new Error(
           "Java 17+ is required. Install it from Settings → Java runtime, then try again."
         );
+        declinedErr.__launchFailedReported = true;
+        throw declinedErr;
       }
       if (offered.error) {
         void telemetry.launchFailed({
@@ -3713,9 +3747,11 @@ async function playGame(slug, join = null, editionSlug = null) {
           message: offered.error,
           phase: "java-install",
         });
-        throw new Error(
+        const javaInstallErr = new Error(
           `Couldn’t install Java automatically (${offered.error}). Install JDK 17+ from https://adoptium.net/ or retry from Settings.`
         );
+        javaInstallErr.__launchFailedReported = true;
+        throw javaInstallErr;
       }
     }
 
@@ -3730,6 +3766,7 @@ async function playGame(slug, join = null, editionSlug = null) {
     });
     const out = new Error(message);
     out.code = code;
+    out.__launchFailedReported = true;
     throw out;
   }
 
