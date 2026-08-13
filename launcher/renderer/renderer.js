@@ -34,7 +34,7 @@ const OPENCIV3_DATA_HINT =
 
 function gamePlayHintHtml(slug) {
   if (slug === "openciv3") {
-    return `<p class="view-sub" style="margin:8px 0 0;max-width:36rem">${escapeHtml(OPENCIV3_DATA_HINT)}</p>`;
+    return `<p class="view-sub" style="margin:8px 0 0;max-width:36rem;flex-basis:100%">${escapeHtml(OPENCIV3_DATA_HINT)}</p>`;
   }
   return "";
 }
@@ -3058,8 +3058,8 @@ async function renderGameDetailView(slug) {
     <nav class="detail-tabs" id="detail-tabs">
       <button type="button" class="detail-tab ${detailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
       <button type="button" class="detail-tab ${detailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
-      <button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>
-      <button type="button" class="detail-tab ${detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>
+      ${detail.multiplayer ? `<button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
+      ${detail.mods && detail.mods.length > 0 ? `<button type="button" class="detail-tab ${detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>` : ""}
       <button type="button" class="detail-tab ${detailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
       <button type="button" class="detail-tab ${detailActiveTab === "achievements" ? "active" : ""}" data-tab="achievements">Achievements</button>
       <button type="button" class="detail-tab ${detailActiveTab === "news" ? "active" : ""}" data-tab="news">News</button>

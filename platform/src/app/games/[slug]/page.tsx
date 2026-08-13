@@ -14,6 +14,7 @@ import { getGame, canonicalSlugFor } from "@/lib/catalog";
 import { getDeveloper } from "@/lib/developers";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
+import { hasServerProvider } from "@/lib/servers/registry";
 import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
@@ -257,7 +258,10 @@ export default async function GamePage({
         </Link>
 
         {/* Real URLs — these can rank. */}
-        {PROMOTED_ROUTES.map((r) => (
+        {PROMOTED_ROUTES.filter((r) => {
+          if (r.key === "servers" && !hasServerProvider(game.slug)) return false;
+          return true;
+        }).map((r) => (
           <Link
             key={r.key}
             href={r.href(game.slug)}
@@ -268,7 +272,12 @@ export default async function GamePage({
           </Link>
         ))}
 
-        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install").map((t) => (
+        {PARAM_TABS.filter((t) => t !== "overview" && t !== "install")
+          .filter((t) => {
+            if (t === "mods" && modsForGame(game.slug).length === 0) return false;
+            return true;
+          })
+          .map((t) => (
           <Link
             key={t}
             href={`/games/${game.slug}?tab=${t}`}

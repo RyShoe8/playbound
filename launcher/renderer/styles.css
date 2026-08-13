@@ -659,6 +659,7 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
   margin-top: 16px;
 }
 
