@@ -208,7 +208,7 @@ export function FriendsView({
   games: { slug: string; title: string }[];
   genres: string[];
 }) {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [addOpen, setAddOpen] = useState(false);
   const [appearOffline, setAppearOffline] = useState(false);
   const [hideActivity, setHideActivity] = useState(false);
@@ -451,7 +451,7 @@ export function FriendsView({
       {activeParty && (
         <div className="space-y-3">
           <PartyView party={activeParty} />
-          {activeParty.status === "ready" && activeParty.leaderId === session?.user?.id && (
+          {activeParty.status === "ready" && session?.user && activeParty.leaderId === session.user.id && (
             <PartyConfigSync partyId={activeParty.id} gameSlug={activeParty.gameSlug} />
           )}
         </div>
