@@ -25,6 +25,27 @@ describe("maskPresenceForOthers", () => {
     expect(masked.currentGameId).toBeNull();
   });
 
+  // The mask spreads presence and then nulls named fields, so any new field
+  // is exposed by default rather than hidden. lookingForPlayersGameTitle was
+  // added alongside the existing id and has to be cleared in both branches.
+  it("clears the looking-for-players game title under both privacy modes", () => {
+    const presence = {
+      status: "online",
+      lookingForPlayers: true,
+      lookingForPlayersGameId: "villagers-and-heroes",
+      lookingForPlayersGameTitle: "Villagers & Heroes",
+    };
+
+    const hidden = maskPresenceForOthers(presence, false, true);
+    expect(hidden.lookingForPlayers).toBe(false);
+    expect(hidden.lookingForPlayersGameId).toBeNull();
+    expect(hidden.lookingForPlayersGameTitle).toBeNull();
+
+    const offline = maskPresenceForOthers(presence, true, false);
+    expect(offline.status).toBe("offline");
+    expect(offline.lookingForPlayersGameTitle).toBeNull();
+  });
+
   it("forces offline and clears game fields when appearOffline is true", () => {
     const presence = {
       status: "playing",

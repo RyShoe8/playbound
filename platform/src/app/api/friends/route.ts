@@ -86,6 +86,15 @@ export async function GET(req: Request) {
         lastSeen: p.lastHeartbeat,
         lookingForPlayers,
         lookingForPlayersGameId: lookingForPlayers ? p.lookingForPlayersGameId || slug : null,
+        // Resolved here for the same reason currentGameTitle is: the stored
+        // value is a slug, and the Looking for Players list was rendering it
+        // straight out as "Looking for players · villagers-and-heroes".
+        lookingForPlayersGameTitle: lookingForPlayers
+          ? (() => {
+              const lfgSlug = p.lookingForPlayersGameId || slug;
+              return lfgSlug ? titleBySlug.get(lfgSlug) || lfgSlug : null;
+            })()
+          : null,
         lookingForPlayersUntil: lookingForPlayers ? p.lookingForPlayersUntil : null,
       });
     }

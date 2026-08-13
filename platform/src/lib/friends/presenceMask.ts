@@ -11,6 +11,7 @@ export function maskPresenceForOthers<
     lastSeen?: unknown;
     lookingForPlayers?: boolean;
     lookingForPlayersGameId?: string | null;
+    lookingForPlayersGameTitle?: string | null;
     lookingForPlayersUntil?: unknown;
   },
 >(presence: T, appearOffline: boolean, hideActivity = false): T {
@@ -25,6 +26,7 @@ export function maskPresenceForOthers<
       currentPage: null,
       lookingForPlayers: false,
       lookingForPlayersGameId: null,
+      lookingForPlayersGameTitle: null,
       lookingForPlayersUntil: null,
     };
   }
@@ -37,6 +39,7 @@ export function maskPresenceForOthers<
     currentPage: null,
     lookingForPlayers: false,
     lookingForPlayersGameId: null,
+    lookingForPlayersGameTitle: null,
     lookingForPlayersUntil: null,
     // Keep online/away/playing → soften playing to online without game details
     status: presence.status === "playing" ? "online" : presence.status,

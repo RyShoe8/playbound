@@ -49,6 +49,7 @@ function FriendCard({
   away,
   offline,
   onRemove,
+  lfgJoinSlug,
 }: {
   friend: FriendUser;
   subtitle: ReactNode;
@@ -56,6 +57,13 @@ function FriendCard({
   away?: boolean;
   offline?: boolean;
   onRemove: (id: string) => void;
+  /**
+   * Set only by the Looking for Players section. Someone who is looking is not
+   * necessarily in-game yet, so `friend.join` — which is derived from what they
+   * are currently playing — is empty and the card would otherwise offer no way
+   * to act on the signal at all.
+   */
+  lfgJoinSlug?: string | null;
 }) {
   const gameSlug = friend.presence.currentGameId;
   const join = friend.join;
@@ -127,6 +135,20 @@ function FriendCard({
             }
           >
             View Game
+          </Link>
+        ) : lfgJoinSlug ? (
+          <Link
+            href={`/games/${encodeURIComponent(lfgJoinSlug)}`}
+            className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
+            onClick={() =>
+              telemetry.track("lfg_join_clicked", {
+                gameSlug: lfgJoinSlug,
+                friendId: friend.id,
+                surface: "friends_page",
+              })
+            }
+          >
+            Join
           </Link>
         ) : null}
         {friend.discordLinked && playing ? (
@@ -516,11 +538,12 @@ export function FriendsView({
                 key={f.id}
                 friend={f}
                 onRemove={removeFriend}
+                lfgJoinSlug={f.presence.lookingForPlayersGameId ?? null}
                 subtitle={
                   <span>
                     Looking for players
-                    {f.presence.lookingForPlayersGameId
-                      ? ` · ${f.presence.lookingForPlayersGameId}`
+                    {f.presence.lookingForPlayersGameTitle
+                      ? ` · ${f.presence.lookingForPlayersGameTitle}`
                       : ""}
                   </span>
                 }
