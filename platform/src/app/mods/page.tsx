@@ -105,7 +105,19 @@ export default async function ModsIndexPage() {
       {liveMods.length === 0 ? (
         <p className="mt-10 text-muted-foreground">No mods published yet.</p>
       ) : (
-        <ModsFilters mods={liveMods} gamesBySlug={gamesBySlug} />
+        <>
+          <ModsFilters mods={liveMods} gamesBySlug={gamesBySlug} />
+          {/* SEO fallback: ensure crawlers see links to all mods even without JS */}
+          <noscript>
+            <ul style={{ display: "none" }}>
+              {liveMods.map((m) => (
+                <li key={m.slug}>
+                  <a href={`/mods/${m.slug}`}>{m.title}</a>
+                </li>
+              ))}
+            </ul>
+          </noscript>
+        </>
       )}
     </div>
   );

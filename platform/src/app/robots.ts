@@ -39,6 +39,9 @@ const DISALLOWED = [
   "/verify-email",
   "/launcher/auth",
   "/*?tab=",
+  "/*?sort=",
+  "/*?category=",
+  "/*?filter=",
   "/*?callbackUrl=",
 ];
 
