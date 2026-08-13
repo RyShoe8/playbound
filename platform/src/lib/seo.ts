@@ -116,7 +116,10 @@ export function gameDescription(game: Game): string {
   const free = game.qualityBar?.genuinelyFree
     ? "Free forever, no pay-to-win"
     : "Free to play";
-  return `${game.title} is a free ${genre} game for ${game.platforms.join(", ")} — ${sizeLabel(game.sizeMB)}, ${game.license}. ${free}. ${game.tagline}`;
+    
+  const core = `${game.title} is a free ${genre} game for ${game.platforms.join(", ")} — ${sizeLabel(game.sizeMB)}, ${game.license}. ${free}.`;
+  
+  return buildDescription([core, game.tagline, game.longDescription || game.description]);
 }
 
 /**

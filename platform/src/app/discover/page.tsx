@@ -29,6 +29,17 @@ export default async function DiscoverPage() {
 
       {/* Client-side filters + grid */}
       <DiscoverFilters games={games} />
+
+      {/* SEO fallback: ensure crawlers see links to all games even without JS */}
+      <noscript>
+        <ul style={{ display: "none" }}>
+          {games.map((game) => (
+            <li key={game.slug}>
+              <a href={`/games/${game.slug}`}>{game.title}</a>
+            </li>
+          ))}
+        </ul>
+      </noscript>
     </div>
   );
 }

@@ -190,7 +190,11 @@ export function qualityReviewSchema(game: Game): Json | null {
 
   return {
     "@type": "Review",
-    itemReviewed: { "@id": gameId(game.slug) },
+    itemReviewed: {
+      "@type": "VideoGame",
+      "@id": gameId(game.slug),
+      name: game.title,
+    },
     author: { "@id": ORGANIZATION_ID },
     ...(bar.lastVerified ? { datePublished: bar.lastVerified } : {}),
     reviewBody: bar.verdict,
