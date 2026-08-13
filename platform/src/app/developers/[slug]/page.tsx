@@ -6,11 +6,32 @@ import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
 import { withOutboundUtm } from "@/lib/utm";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const dev = await getDeveloper(slug);
-  return { title: dev ? dev.name : "Developer Not Found" };
+  if (!dev) return { title: "Developer Not Found", robots: { index: false, follow: false } };
+
+  /*
+   * Built through pageMetadata rather than returned bare.
+   *
+   * A metadata object without `alternates` inherits the root layout's
+   * canonical, which is "/" — so every developer page was telling crawlers the
+   * homepage was its canonical version, and the whole section was eligible to
+   * be dropped from the index. It also inherited the generic site description.
+   */
+  const games = await gamesByDeveloper(dev.slug);
+  const titles = games.slice(0, 3).map((g) => g.title);
+  const madeBy = titles.length
+    ? ` Free games from ${dev.name} in the PlayBound catalog: ${titles.join(", ")}.`
+    : "";
+
+  return pageMetadata({
+    title: `${dev.name} — Free Games & Downloads`,
+    description: `${dev.tagline || dev.about || `${dev.name} builds free games.`}${madeBy}`,
+    path: `/developers/${dev.slug}`,
+  });
 }
 
 export default async function DeveloperPage({ params }: { params: Promise<{ slug: string }> }) {

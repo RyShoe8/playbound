@@ -20,7 +20,7 @@ import { ReviewList } from "@/components/reviews/ReviewList";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
 import { ScrollActiveTab } from "@/components/discussion/ScrollActiveTab";
 import { CATEGORY_META, visibleCategories } from "@/lib/discussion/categories";
-import { pageMetadata, privateMetadata, sizeLabel } from "@/lib/seo";
+import { pageMetadata, privateMetadata, sizeLabel, buildDescription } from "@/lib/seo";
 import { resolveModVisual } from "@/lib/modMedia";
 import { withOutboundUtm } from "@/lib/utm";
 import {
@@ -71,7 +71,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return pageMetadata({
     title: `${mod.title} — Free ${base} Mod`,
-    description: `${mod.whatItChanges || mod.tagline} Free add-on for ${base}${mod.sizeMB ? `, roughly ${sizeLabel(mod.sizeMB)}` : ""}. One-click install through PlayBound.`,
+    description: buildDescription([
+      mod.whatItChanges || mod.tagline,
+      `Free add-on for ${base}${mod.sizeMB ? `, roughly ${sizeLabel(mod.sizeMB)}` : ""}.`,
+      mod.compatibility && `Works with ${mod.compatibility}.`,
+      mod.license && `Released under ${mod.license}.`,
+      "Install it in one click with the PlayBound launcher.",
+      "Free to download, no account and no paid tier.",
+    ]),
     path: `/mods/${mod.slug}`,
     images: (() => {
       const visual = resolveModVisual(mod, baseGame);

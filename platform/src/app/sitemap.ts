@@ -97,12 +97,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
       lastModified: now,
     })),
-    ...mods.map((m) => ({
-      url: `${SITE_URL}/mods/${m.slug}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-      lastModified: now,
-    })),
+    /*
+     * Same knownGameSlugs gate the editions above use, and for the same
+     * reason. A mod's own status is independent of its base game's, so a
+     * published mod can hang off a game that is not publicly visible. /mods
+     * already drops those from the grid, which left them listed here with no
+     * internal link pointing at them anywhere on the site — 441 URLs that
+     * crawlers reach only through this file and report as orphans.
+     */
+    ...mods
+      .filter((m) => knownGameSlugs.has(m.baseGameSlug))
+      .map((m) => ({
+        url: `${SITE_URL}/mods/${m.slug}`,
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+        lastModified: now,
+      })),
     ...(await listDevelopers()).map((d) => ({
       url: `${SITE_URL}/developers/${d.slug}`,
       changeFrequency: "monthly" as const,
