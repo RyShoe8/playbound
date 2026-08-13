@@ -23,6 +23,55 @@ type NotifItem = {
   };
 };
 
+/** Notification types that count as play activity for conversion measurement. */
+const PLAY_NOTIFICATION_TYPES = new Set([
+  "play_invite",
+  "play_invite_accepted",
+  "play_invite_declined",
+  "friend_started_playing",
+  "friend_looking_for_players",
+]);
+
+/**
+ * Fires play_notification_shown once per notification that the user actually
+ * sees, pairing with the existing play_notification_clicked so the two can be
+ * compared.
+ *
+ * Rendered only while the panel is open, and de-duplicated by notification id
+ * through a ref owned by the bell — the list re-renders on every poll, so
+ * tracking on render alone would emit the same impression repeatedly and make
+ * any click-through rate meaningless.
+ */
+function NotificationsShownTracker({
+  open,
+  items,
+  shownRef,
+}: {
+  open: boolean;
+  items: NotifItem[];
+  shownRef: React.RefObject<Set<string>>;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const fresh = items.filter(
+      (n) => PLAY_NOTIFICATION_TYPES.has(n.type) && !shownRef.current.has(n.id)
+    );
+    if (fresh.length === 0) return;
+    for (const n of fresh) shownRef.current.add(n.id);
+    void import("@/lib/telemetry").then(({ telemetry }) => {
+      for (const n of fresh) {
+        telemetry.track("play_notification_shown", {
+          notificationType: n.type,
+          gameSlug: n.meta?.gameSlug,
+          unread: !n.readAt,
+        });
+      }
+    });
+  }, [open, items, shownRef]);
+
+  return null;
+}
+
 /**
  * In-app notification bell. Also starts friends-request polling so Incoming
  * badges update without visiting /friends.
@@ -35,6 +84,7 @@ export function NotificationBell() {
   const [items, setItems] = useState<NotifItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const shownRef = useRef<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     try {
@@ -119,6 +169,7 @@ export function NotificationBell() {
 
       {open ? (
         <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          <NotificationsShownTracker open={open} items={items} shownRef={shownRef} />
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <p className="text-sm font-bold">Notifications</p>
             {unreadCount > 0 ? (

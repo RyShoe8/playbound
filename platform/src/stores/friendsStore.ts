@@ -17,6 +17,8 @@ export type FriendUser = {
     lastSeen?: Date;
     lookingForPlayers?: boolean;
     lookingForPlayersGameId?: string | null;
+    /** Resolved server-side; the id alone is a slug and reads as one in the UI. */
+    lookingForPlayersGameTitle?: string | null;
   };
   join?: {
     capability: string;
