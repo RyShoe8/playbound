@@ -71,7 +71,7 @@ function CatalogCard({
         {game.coverImage ? (
           <Image
             src={game.coverImage}
-            alt=""
+            alt={`${game.title} cover art`}
             fill
             unoptimized={/^https?:\/\//i.test(game.coverImage)}
             className="object-cover"

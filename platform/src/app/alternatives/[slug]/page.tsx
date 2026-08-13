@@ -31,7 +31,20 @@ export async function generateMetadata({
   if (!page) return { title: "Not Found" };
 
   return pageMetadata({
-    title: `${page.title} (Free & Open Source)`,
+    /*
+     * page.title already opens with "Free Alternatives to …", so the old
+     * "(Free & Open Source)" suffix repeated the word Free and spent 21 of the
+     * ~48 characters available before the layout's " · PlayBound" suffix.
+     *
+     * Two of these name a second game ("… Supreme Commander & Total
+     * Annihilation") and still overflow on their own. Those drop the trailing
+     * "& …" for the search result only — the full title stays as the h1 and in
+     * the article schema, so nothing visible on the page changes.
+     */
+    title:
+      page.title.length + " · PlayBound".length > 60
+        ? page.title.split(" & ")[0]!
+        : page.title,
     description: page.verdict,
     path: `/alternatives/${page.slug}`,
   });

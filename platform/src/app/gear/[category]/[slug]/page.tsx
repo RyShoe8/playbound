@@ -188,7 +188,7 @@ export default async function GearProductPage({
                     <img
                       key={i}
                       src={url}
-                      alt=""
+                      alt={`${gear.name} photo ${i + 1}`}
                       className="h-20 w-auto rounded-md border border-border object-cover"
                     />
                   ))}
@@ -316,7 +316,7 @@ export default async function GearProductPage({
                   >
                     {game.coverImage ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={game.coverImage} alt="" className="h-16 w-16 rounded object-cover" />
+                      <img src={game.coverImage} alt={`${game.title} cover art`} className="h-16 w-16 rounded object-cover" />
                     ) : (
                       <div className="h-16 w-16 rounded bg-secondary/50" />
                     )}
