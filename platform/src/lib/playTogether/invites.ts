@@ -30,6 +30,7 @@ export async function sendPlayInvite(opts: {
   gameSlug: string;
   editionSlug?: string | null;
   modSlug?: string | null;
+  partyId?: string | null;
 }) {
   await dbConnect();
   if (opts.senderId === opts.recipientId) {
@@ -67,6 +68,7 @@ export async function sendPlayInvite(opts: {
     gameSlug: opts.gameSlug,
     editionSlug: opts.editionSlug || null,
     modSlug: opts.modSlug || null,
+    partyId: opts.partyId || null,
     status: "pending",
     expiresAt: new Date(now.getTime() + PLAY_INVITE_TTL_MS),
   });
@@ -196,6 +198,7 @@ function serializeInvite(inv: {
   gameSlug: string;
   editionSlug?: string | null;
   modSlug?: string | null;
+  partyId?: unknown | null;
   status: string;
   expiresAt: Date;
   respondedAt?: Date | null;
@@ -208,6 +211,7 @@ function serializeInvite(inv: {
     gameSlug: inv.gameSlug,
     editionSlug: inv.editionSlug || null,
     modSlug: inv.modSlug || null,
+    partyId: inv.partyId ? String(inv.partyId) : null,
     status: inv.status,
     expiresAt: inv.expiresAt,
     respondedAt: inv.respondedAt || null,

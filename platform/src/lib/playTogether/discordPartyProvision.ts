@@ -61,7 +61,7 @@ export async function provisionPartyDiscordVoice(
     };
 
     if (!party.discord) {
-      (party as Record<string, unknown>).discord = {};
+      (party as any).discord = {};
     }
     const discord = party.discord!;
     if (data.inviteUrl) discord.inviteUrl = data.inviteUrl;
