@@ -62,6 +62,12 @@ const windowsSigningOptions = signingActive
 module.exports = {
   appId: "gg.playbound.launcher",
   productName: "PlayBound",
+  // Single 1024x1024 source; electron-builder derives .ico (win) and .icns
+  // (mac) from it automatically, and uses it as-is for the Linux AppImage.
+  // Without this, electron-builder falls back to its own default Electron
+  // icon for every platform. Lives in assets/, not the conventional build/,
+  // because the repo's root .gitignore excludes any "build" directory.
+  icon: "assets/icon.png",
   files: [
     "main.js",
     "bootstrap.js",
