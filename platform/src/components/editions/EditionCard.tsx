@@ -44,7 +44,7 @@ export function EditionCard({
         {heroSrc ? (
           <Image
             src={heroSrc}
-            alt=""
+            alt={`${game.title} — ${edition.name} edition`}
             fill
             unoptimized={remote}
             className="object-cover"

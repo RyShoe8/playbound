@@ -119,7 +119,20 @@ export function gameDescription(game: Game): string {
   return `${game.title} is a free ${genre} game for ${game.platforms.join(", ")} — ${sizeLabel(game.sizeMB)}, ${game.license}. ${free}. ${game.tagline}`;
 }
 
+/**
+ * Game page title.
+ *
+ * The root layout appends " · PlayBound" (12 characters), so anything past
+ * roughly 48 here is truncated in results. The old form ended in
+ * ", Download & Play" — 17 characters of boilerplate that pushed most titles
+ * over the limit and pushed the game's own name toward the cut.
+ *
+ * The fallback genre also needed guarding: a game whose first genre is
+ * literally "Game" produced "Free Game Game".
+ */
 export function gameTitle(game: Game): string {
-  const genre = game.genres[0] ?? "Game";
-  return `${game.title} — Free ${genre} Game, Download & Play`;
+  // genres[0] is a Genre and can never itself be "Game"; the duplicated
+  // "Free Game Game" came from an empty genres array hitting the fallback.
+  const label = game.genres[0] ?? "Game";
+  return `${game.title} — Free ${label}`;
 }
