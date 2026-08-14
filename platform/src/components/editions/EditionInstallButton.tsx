@@ -38,7 +38,7 @@ export function EditionInstallButton({
 }) {
   const device = useDevice();
   const [os, setOs] = useState<LauncherOs>("windows");
-  const [handoffNote, setHandoffNote] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
 
   useEffect(() => {
     setOs(detectLauncherOs());
@@ -93,30 +93,34 @@ export function EditionInstallButton({
     const downloadUrl = launcherDownloadUrlForOs(os);
 
     return (
-      <div className="flex flex-col items-start gap-1.5">
-        <button
-          type="button"
-          className={cn(className)}
-          onClick={() => {
-            record();
-            setHandoffNote(null);
-            openPlayboundDeepLink(action.href ?? "", {
-              downloadUrl,
-              onResult: (result) => {
-                if (result === "download") {
-                  setHandoffNote("Downloading PlayBound Launcher… Install it, then click again.");
-                } else if (result === "miss") {
-                  setHandoffNote("Launcher didn't open. Download PlayBound, then try again.");
-                }
-              },
-            });
-          }}
-        >
-          <Icon className="size-4" />
-          {action.label}
-        </button>
-        {handoffNote && <p className="max-w-xs text-xs text-muted-foreground">{handoffNote}</p>}
-      </div>
+      <button
+        type="button"
+        disabled={status === "trying"}
+        className={cn(className, status === "downloaded" && "border-primary/50 bg-primary/10 text-primary")}
+        onClick={() => {
+          record();
+          setStatus("trying");
+          openPlayboundDeepLink(action.href ?? "", {
+            downloadUrl,
+            autoDownload: true,
+            onResult: (result) => {
+              if (result === "download") {
+                setStatus("downloaded");
+                setTimeout(() => setStatus("idle"), 6000);
+              } else {
+                setTimeout(() => setStatus("idle"), 2500);
+              }
+            },
+          });
+        }}
+      >
+        <Icon className="size-4" />
+        {status === "trying"
+          ? "Opening PlayBound…"
+          : status === "downloaded"
+          ? "Downloading Launcher…"
+          : action.label}
+      </button>
     );
   }
 

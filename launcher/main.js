@@ -782,12 +782,14 @@ async function syncLibraryNow({ quiet = false } = {}) {
 
 async function startupLibrarySync() {
   await syncLibraryNow({ quiet: false });
+  void syncHardwareProfile({ quiet: true });
 }
 
 function scheduleLibrarySync() {
   if (librarySyncTimer) return;
   librarySyncTimer = setInterval(() => {
     void syncLibraryNow({ quiet: true });
+    void syncHardwareProfile({ quiet: true });
   }, LIBRARY_SYNC_INTERVAL_MS);
 }
 
