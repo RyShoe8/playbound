@@ -4389,11 +4389,12 @@ function renderDeepLinkView(ctx) {
   const actions = document.getElementById("dl-actions");
   if (ctx.action === "install") {
     actions.innerHTML = `
-      <button class="btn-primary" id="dl-act-run">Install Now</button>
+      <button class="btn-primary" id="dl-act-run" disabled>Installing…</button>
       <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
     `;
-    document.getElementById("dl-act-run").addEventListener("click", async () => {
-      setStatus("Installing...");
+
+    const startInstall = async () => {
+      setStatus(`Installing ${title}…`);
       try {
         const checkboxes = document.querySelectorAll(".addon-checkbox");
         const addons = Array.from(checkboxes).filter((cb) => cb.checked).map((cb) => cb.value);
@@ -4412,8 +4413,20 @@ function renderDeepLinkView(ctx) {
       } catch (err) {
         setStatus(err.message || String(err), true);
         setProgress(null);
+        const btn = document.getElementById("dl-act-run");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Retry Install";
+        }
       }
+    };
+
+    document.getElementById("dl-act-run")?.addEventListener("click", () => {
+      void startInstall();
     });
+
+    // Auto-start install immediately
+    void startInstall();
   } else if (ctx.action === "play") {
     actions.innerHTML = `
       <button class="btn-success" id="dl-act-run">Launch Game</button>
@@ -4457,23 +4470,41 @@ function renderDeepLinkView(ctx) {
       `;
     } else {
       actions.innerHTML = `
-        <button class="btn-primary" id="dl-act-run">Install Mod</button>
+        <button class="btn-primary" id="dl-act-run" disabled>Installing Mod…</button>
         <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
       `;
-      document.getElementById("dl-act-run")?.addEventListener("click", async () => {
+
+      const startModInstall = async () => {
         try {
-          setStatus("Installing mod…");
+          setStatus(`Installing mod ${title}…`);
           const res = await window.playbound.installMod(ctx.slug);
           if (res?.status === "needs-base-game") {
             setStatus(`Install ${res.baseGameSlug || "the base game"} first, then retry the mod.`, true);
+            const btn = document.getElementById("dl-act-run");
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = "Retry Mod Install";
+            }
             return;
           }
           setStatus("Mod installed.");
           navigateTo("library");
         } catch (err) {
           setStatus(err.message || String(err), true);
+          const btn = document.getElementById("dl-act-run");
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Retry Mod Install";
+          }
         }
+      };
+
+      document.getElementById("dl-act-run")?.addEventListener("click", () => {
+        void startModInstall();
       });
+
+      // Auto-start mod install immediately
+      void startModInstall();
     }
   } else if (ctx.action === "uninstall" || ctx.action === "uninstall-mod") {
     const isMod = ctx.action === "uninstall-mod";
