@@ -580,6 +580,14 @@ export const editions: EditionSeed[] = [
     ],
     aliases: ["HoloCure PlayBound", "HoloCure Multiplayer", "HoloCure Enhanced"],
     verificationLevel: "playbound_verified",
+    branding: {
+      heroImage: "/games/holocure/editions/playbound.jpg",
+      screenshots: [
+        "/games/holocure/editions/playbound.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_b8a34241e737cbe11311b1fe911e3b5e40e6c5ee.1920x1080.jpg",
+      ],
+    },
     faq: [
       {
         q: "What is included in the HoloCure PlayBound Edition?",
@@ -614,6 +622,14 @@ export const editions: EditionSeed[] = [
     links: {
       website: "https://kay-yu.itch.io/holocure",
       wiki: "https://holocure.wiki.gg/",
+    },
+    branding: {
+      heroImage:
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
+      screenshots: [
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_b8a34241e737cbe11311b1fe911e3b5e40e6c5ee.1920x1080.jpg",
+      ],
     },
     installMethod: "official_download",
     installConfig: {
