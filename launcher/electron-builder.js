@@ -83,7 +83,8 @@ module.exports = {
     "assets/**/*",
   ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
-  asarUnpack: ["**/node_modules/systeminformation/**"],
+  // assets is unpacked so Linux D-Bus/AppIndicator can read tray icons from real disk files.
+  asarUnpack: ["**/node_modules/systeminformation/**", "assets/**/*"],
   protocols: {
     name: "PlayBound Deep Link",
     schemes: ["playbound"],

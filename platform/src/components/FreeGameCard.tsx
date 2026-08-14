@@ -12,6 +12,8 @@ import {
 } from "@/lib/freeOffers/labels";
 import { Badge } from "@/components/ui/bits";
 import { cn } from "@/lib/utils";
+import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
+import { offerToGameLike } from "@/lib/freeOffers/compatibility";
 
 // ── Store icons (inline SVG paths for zero-dependency rendering) ─────────
 
@@ -63,6 +65,7 @@ export function FreeGameCard({
   const expiry = expirationLabel(offer.endDate);
   const typeLabel = offerTypeLabel(offer.offerType, offer.store);
   const ctaLabel = claimCtaLabel(offer.store);
+  const incompLabel = useIncompatibilityLabel(offerToGameLike(offer));
 
   return (
     <div
@@ -107,6 +110,15 @@ export function FreeGameCard({
             {typeLabel}
           </span>
         </div>
+
+        {/* Incompatibility badge when viewing All Games on another platform */}
+        {incompLabel && (
+          <div className="absolute bottom-2 left-2">
+            <span className="rounded-md border border-border/80 bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+              {incompLabel}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Card body ───────────────────────────────────────────── */}

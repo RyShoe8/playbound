@@ -124,6 +124,24 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-14",
     note: "Official UQM releases and content packages are maintained at urquanmasters.com and SourceForge.",
   },
+  airforce: {
+    kind: "manual",
+    url: "https://www.allegro.cc/depot/AirForce",
+    checkedAt: "2026-08-14",
+    note: "Finished freeware arcade shooter; check that allegro.cc still hosts the executable package.",
+  },
+  bzflag: {
+    kind: "manual",
+    url: "https://www.bzflag.org",
+    checkedAt: "2026-08-14",
+    note: "Actively maintained 30+ year open-source project; latest releases on GitHub and bzflag.org.",
+  },
+  "beneath-a-steel-sky": {
+    kind: "manual",
+    url: "https://www.scummvm.org/games/",
+    checkedAt: "2026-08-14",
+    note: "Official freeware release by Revolution Software; hosted permanently on ScummVM and GOG.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -338,6 +356,147 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Does it work well on Steam Deck and modern controllers?",
         a: "Yes. UQM runs natively through modern SDL2 with full controller support, customizable button layouts, and perfect scaling for widescreen and 16:10 handheld displays.",
+      },
+    ],
+  },
+
+  airforce: {
+    qualityBar: clearsAll(
+      "AirForce clears all five: 100% freeware with no microtransactions, a complete fast-paced retro vertical shoot 'em up with naval and aerial boss fights, built with the Allegro game engine, and running standalone on modern Windows."
+    ),
+    longDescription:
+      "Inspired by the golden age of arcade shoot 'em ups like Capcom's 1942 and 1943: The Battle of Midway, AirForce delivers a classic vertical-scrolling aerial combat experience built with the venerable Allegro C game programming library.\n\nTaking to the skies in a classic Allied fighter, you must fight your way through swarms of enemy interceptors, escort bombers, and anti-aircraft gunboats stationed across tropical island straits. The game emphasizes twitch reflexes, positioning, and target prioritization.\n\nPower-ups appear throughout each mission to upgrade your fighter's capabilities, including engine speed boosts, shot velocity enhancements, and a triple-spread cannon for wiping out dense enemy waves. Featuring retro pixel art from Ari Feldman's iconic SpriteLib asset library and support for both keyboard and gamepad controllers, AirForce is a fun, nostalgic arcade shooter.",
+    whyWePickedIt:
+      "AirForce is a charming, pure homage to classic WWII vertical arcade shooters. It delivers instant, no-nonsense pick-up-and-play shmup action with responsive controls, fun power-up progression, and nostalgic pixel art.",
+    bestFor: [
+      "Fans of classic 80s and 90s vertical arcade shmups like 1942, 1943, and Raiden",
+      "Players wanting quick, focused arcade gaming sessions",
+      "Anyone who enjoys retro pixel-art aviation aesthetics",
+      "Low-spec laptops, handhelds, and legacy PCs",
+    ],
+    notFor: [
+      "Players looking for ultra-dense modern bullet hell danmaku games like Touhou",
+      "Those who prefer 3D flight simulators with realistic aerodynamics",
+      "Gamers seeking multi-hour RPG narratives or voice-acted cutscenes",
+    ],
+    comparableTo: [
+      "1942",
+      "1943: The Battle of Midway",
+      "Strikers 1945",
+      "Raiden",
+      "TwinBee",
+      "Sky Force",
+    ],
+    faq: [
+      {
+        q: "What game is AirForce inspired by?",
+        a: "AirForce was inspired by Capcom's 1984 arcade classic 1942, featuring vertical-scrolling WWII airplane dogfights, island military outposts, and power-up upgrades.",
+      },
+      {
+        q: "How do power-ups work?",
+        a: "Defeating specific enemy waves releases power-up icons that enhance your fighter. Upgrades include Speed Boosts, Shot Power, Shot Rate increases, and a 3-way Spread Shot level.",
+      },
+      {
+        q: "Does AirForce support controllers and gamepads?",
+        a: "Yes. AirForce includes built-in support for both keyboard arrow controls and standard USB/DirectInput gamepads and joysticks.",
+      },
+      {
+        q: "What technology powers AirForce?",
+        a: "AirForce was programmed in C using the open-source Allegro game programming library and utilizes classic pixel art from Ari Feldman's SpriteLib.",
+      },
+    ],
+  },
+
+  bzflag: {
+    qualityBar: clearsAll(
+      "BZFlag clears all five: 100% free and open-source under the LGPL with no microtransactions, three decades of continuous development, instant online multiplayer tank warfare, over 40 super-flags, and cross-platform native support."
+    ),
+    longDescription:
+      "First created in 1992 by Chris Schoeneman and continuously developed by an open-source community for over thirty years, BZFlag (Battle Zone capture the Flag) is one of the most enduring and beloved multiplayer indie games ever made.\n\nIn BZFlag, players control nimble 3D hover tanks in fast-paced arena combat. While the core objective is classic team Capture the Flag (infiltrate enemy territory, seize their team flag, and return it safely to your base), BZFlag elevates the formula with its physics and flag powers.\n\nTanks can jump over obstacles and deflect shots off walls with precision ricochet geometry. Across the map, players can capture over 40 different super-flags granting unique active abilities — such as Guided Missiles, Penetrating Lasers, Cloaking, Shockwaves, Steamrollers, Super Speed, and even Wings for aerial dogfighting. Alongside CTF, servers run Free-for-All, Rabbit Chase (one rabbit tank hunted by the entire server), and open capture-the-flag modes with community maps and custom physics settings.",
+    whyWePickedIt:
+      "BZFlag is an open-source multiplayer monument. It combines lightning-fast arcade tank controls, creative superpower flags, and thirty years of passionate community server hosting into an infinitely replayable free classic.",
+    bestFor: [
+      "Anyone who loves fast-paced multiplayer arena combat and Capture the Flag",
+      "Fans of arcade vehicular combat, ricochet physics, and tank battles",
+      "Gamers looking for lightweight games that run at hundreds of FPS on literally any PC",
+      "Communities wanting to host their own dedicated servers with custom rules and maps",
+    ],
+    notFor: [
+      "Players wanting slow, ultra-realistic modern military tank sims (e.g. War Thunder)",
+      "Gamers seeking singleplayer cinematic story campaigns",
+      "Those who dislike fast-paced twitch reflexes and jumping tanks",
+    ],
+    comparableTo: [
+      "Battlezone",
+      "Scorched 3D",
+      "Armagetron Advanced",
+      "Tanki Online",
+      "Tremulous",
+      "Xonotic",
+    ],
+    faq: [
+      {
+        q: "What is BZFlag?",
+        a: "BZFlag (Battle Zone capture the Flag) is a free, open-source 3D first-person tank battle game originally created in 1992. It is known for its fast-paced capture-the-flag matches, jumping tanks, and superpower flags.",
+      },
+      {
+        q: "How do super-flags work?",
+        a: "Throughout the battlefield, super-flags grant your tank game-changing powers. Good flags include Guided Missiles, Lasers, Cloaking, Wings, and Shields. Watch out for 'bad flags' like Blindness or Momentum that add hilarious risk/reward mechanics.",
+      },
+      {
+        q: "Can I play online with other players?",
+        a: "Yes. BZFlag features a built-in global server browser that lists active community servers worldwide. You can join games instantly without creating an account.",
+      },
+      {
+        q: "Can I host my own server or create maps?",
+        a: "Yes. The BZFlag package includes `bzfs` (the BZFlag dedicated server) and support for custom map scripting with custom obstacles, teleporters, and physics zones.",
+      },
+    ],
+  },
+
+  "beneath-a-steel-sky": {
+    qualityBar: clearsAll(
+      "Beneath a Steel Sky clears all five: released as 100% official freeware by Revolution Software with full CD talkie voice acting, a timeless cyberpunk story with art by Dave Gibbons, and flawless native cross-platform support via ScummVM."
+    ),
+    longDescription:
+      "Created by Revolution Software under the direction of Charles Cecil and comic book legend Dave Gibbons (Watchmen), Beneath a Steel Sky is widely celebrated as one of the finest graphic adventure games in history.\n\nSet in a gritty, dystopian future Australia where rival megacities compete for technological dominance, you play as Robert Foster — an innocent raised by tribal nomads in the desolate outback wasteland known as The Gap. Following a brutal military raid that destroys your village, Foster is abducted and brought to the towering, class-stratified metropolis of Union City.\n\nEscaping from a burning helicopter crash in the city's upper levels, Foster must navigate a web of industrial corruption, sinister cybernetic surveillance, and the enigmatic AI ruler LINC. At your side is Joey, a customizable robot companion whose personality motherboard you can swap into different machine chassis to solve ingenious environmental puzzles. Featuring full CD talkie voice acting, Gibbons' hand-drawn aesthetic, and Revolution's pioneering Virtual Theatre engine (where NPCs walk autonomous schedules), Beneath a Steel Sky is an unforgettable cyberpunk adventure.",
+    whyWePickedIt:
+      "Beneath a Steel Sky is a monumental point-and-click classic that Revolution Software generously gifted to the world as official freeware. Its atmosphere, biting humor, and puzzle design remain unmatched.",
+    bestFor: [
+      "Fans of classic point-and-click graphic adventures like Monkey Island and Broken Sword",
+      "Anyone who loves dystopian cyberpunk aesthetics, dark humor, and deep worldbuilding",
+      "Comic book enthusiasts wanting to experience Dave Gibbons' visual storytelling",
+      "Steam Deck and PC players wanting a self-contained story experience with full voice acting",
+    ],
+    notFor: [
+      "Players who demand high-speed action combat over puzzle-solving and inventory deduction",
+      "Those who dislike 90s pixel-art interfaces and dialogue-driven investigation",
+      "Gamers seeking 3D ray-traced graphics",
+    ],
+    comparableTo: [
+      "Broken Sword: The Shadow of the Templars",
+      "The Secret of Monkey Island",
+      "Full Throttle",
+      "Gemini Rue",
+      "Snatcher",
+      "Beyond a Steel Sky",
+    ],
+    faq: [
+      {
+        q: "Why is Beneath a Steel Sky free?",
+        a: "In 2003, Revolution Software made the extraordinary decision to release the complete Beneath a Steel Sky (including full CD talkie voice acting) as official freeware in partnership with the ScummVM project.",
+      },
+      {
+        q: "Who is Dave Gibbons?",
+        a: "Dave Gibbons is the legendary British comic artist who co-created Watchmen with Alan Moore. He served as the art director for Beneath a Steel Sky, creating the game's character designs, backgrounds, cutscenes, and introductory comic book.",
+      },
+      {
+        q: "What is the Virtual Theatre engine?",
+        a: "Virtual Theatre was Revolution Software's groundbreaking adventure game engine where non-player characters followed independent daily routines and wandered through the city instead of waiting statically in one room.",
+      },
+      {
+        q: "Does it work well on modern PCs and Steam Deck?",
+        a: "Yes! Running natively through ScummVM, Beneath a Steel Sky supports modern screen resolutions, save state management, trackpad/mouse controls, and gamepad bindings seamlessly.",
       },
     ],
   },

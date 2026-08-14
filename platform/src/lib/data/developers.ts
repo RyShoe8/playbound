@@ -465,6 +465,36 @@ export const developers: Developer[] = [
     website: "https://urquanmasters.com",
     artHue: 155,
   },
+  {
+    slug: "laamaker",
+    name: "Laamaker",
+    tagline: "Indie game programmer and creator of retro arcade homages.",
+    about: "Leandro A. Dos Anjos (Laamaker) is an independent game developer who created AirForce, a vertical-scrolling arcade shoot 'em up built with the C Allegro game programming library as a tribute to Capcom's 1942.",
+    founded: 2008,
+    location: "Brazil",
+    website: "https://www.allegro.cc/depot/AirForce",
+    artHue: 20,
+  },
+  {
+    slug: "bzflag-community",
+    name: "BZFlag Community",
+    tagline: "Thirty years of open-source multiplayer 3D tank combat.",
+    about: "Originally created in 1992 by Chris Schoeneman and maintained by Tim Riker and an international team of open-source contributors, the BZFlag Community maintains one of the longest-running free online multiplayer games in history.",
+    founded: 1992,
+    location: "Worldwide",
+    website: "https://www.bzflag.org",
+    artHue: 120,
+  },
+  {
+    slug: "revolution-software",
+    name: "Revolution Software",
+    tagline: "Master craftsmen of narrative adventure games.",
+    about: "Founded in 1990 by Charles Cecil, Tony Warriner, David Sykes, and Noirin Carmody, Revolution Software created iconic adventures including Beneath a Steel Sky and the Broken Sword series. In 2003, they released Beneath a Steel Sky as official freeware to the public.",
+    founded: 1990,
+    location: "York, United Kingdom",
+    website: "https://revolution.co.uk",
+    artHue: 200,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

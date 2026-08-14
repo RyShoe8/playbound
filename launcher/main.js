@@ -272,6 +272,9 @@ function hostAllowedForDownload(hostname) {
   if (host === "archive.org" || host.endsWith(".archive.org")) return true;
   if (host === "codeberg.org" || host.endsWith(".codeberg.org")) return true;
   if (host === "myabandonware.com" || host.endsWith(".myabandonware.com")) return true;
+  if (host === "allegro.cc" || host.endsWith(".allegro.cc")) return true;
+  if (host === "bzflag.org" || host.endsWith(".bzflag.org")) return true;
+  if (host === "scummvm.org" || host.endsWith(".scummvm.org")) return true;
   if (host.includes("itchio-mirror") || host.endsWith(".r2.cloudflarestorage.com")) return true;
   if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
   if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
@@ -6208,17 +6211,72 @@ function showMainWindow() {
   void syncLibraryNow({ quiet: true });
 }
 
+function resolveAssetPath(filename) {
+  const candidates = [
+    path.join(__dirname, "assets", filename),
+    path.join(__dirname.replace("app.asar", "app.asar.unpacked"), "assets", filename),
+    path.join(process.resourcesPath || "", "assets", filename),
+    path.join(process.resourcesPath || "", "app.asar.unpacked", "assets", filename),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return path.join(__dirname, "assets", filename);
+}
+
+function getTrayIcon() {
+  const assetPath = resolveAssetPath("tray-icon.png");
+
+  // On Linux (GNOME Shell, KDE Plasma, XFCE via AppIndicator/StatusNotifierItem),
+  // tray icons are read by the system desktop shell via D-Bus file path.
+  // When packaged in an app.asar, external system processes cannot read inside
+  // Electron's virtual archive and fall back to the system theme's generic gear/settings
+  // icon. We ensure a physical copy exists on disk in userData.
+  if (process.platform === "linux") {
+    try {
+      const iconDir = app.getPath("userData");
+      const diskIconPath = path.join(iconDir, "tray-icon.png");
+      if (!fs.existsSync(diskIconPath)) {
+        if (fs.existsSync(assetPath)) {
+          const buf = fs.readFileSync(assetPath);
+          fs.writeFileSync(diskIconPath, buf);
+        }
+      }
+      if (fs.existsSync(diskIconPath)) {
+        return diskIconPath;
+      }
+    } catch (err) {
+      console.warn("Could not cache tray icon on disk for Linux:", err);
+    }
+  }
+
+  // Windows & macOS: Load from buffer to ensure valid decoding across packaged builds
+  try {
+    if (fs.existsSync(assetPath)) {
+      const buf = fs.readFileSync(assetPath);
+      let icon = nativeImage.createFromBuffer(buf);
+      if (!icon.isEmpty()) {
+        // Windows notification area standard size is 16x16. macOS menu bar is 18x18.
+        const targetSize = process.platform === "win32" ? 16 : process.platform === "darwin" ? 18 : 24;
+        icon = icon.resize({ width: targetSize, height: targetSize });
+        return icon;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not create tray icon from buffer:", err);
+  }
+
+  let icon = nativeImage.createFromPath(assetPath);
+  if (!icon.isEmpty()) {
+    const targetSize = process.platform === "win32" ? 16 : process.platform === "darwin" ? 18 : 24;
+    return icon.resize({ width: targetSize, height: targetSize });
+  }
+  return assetPath;
+}
+
 function ensureTray() {
   if (tray) return;
-  // app.getFileIcon(process.execPath) previously sourced this icon. On Linux
-  // that reads whatever icon the OS has associated with the raw executable
-  // file (rarely the app's own icon), so it fell back to a generic system
-  // icon — a gear/settings glyph in most icon themes. Load our own icon
-  // instead so the tray always shows the PlayBound mark.
-  let icon = nativeImage.createFromPath(path.join(__dirname, "assets", "tray-icon.png"));
-  if (!icon.isEmpty()) {
-    icon = icon.resize({ width: 32, height: 32 });
-  }
+  const icon = getTrayIcon();
   tray = new Tray(icon);
   tray.setToolTip("PlayBound");
   tray.setContextMenu(
@@ -6238,6 +6296,20 @@ function createWindow() {
   const minWidth = Math.min(900, workWidth);
   const minHeight = Math.min(600, workHeight);
 
+  const appIconPath = resolveAssetPath("icon.png");
+  let appIcon = null;
+  try {
+    if (fs.existsSync(appIconPath)) {
+      const buf = fs.readFileSync(appIconPath);
+      appIcon = nativeImage.createFromBuffer(buf);
+    }
+  } catch {
+    /* ignore */
+  }
+  if (!appIcon || appIcon.isEmpty()) {
+    appIcon = nativeImage.createFromPath(appIconPath);
+  }
+
   win = new BrowserWindow({
     width,
     height,
@@ -6246,6 +6318,7 @@ function createWindow() {
     resizable: true,
     backgroundColor: "#0c0a12",
     title: "PlayBound",
+    icon: !appIcon.isEmpty() ? appIcon : appIconPath,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
