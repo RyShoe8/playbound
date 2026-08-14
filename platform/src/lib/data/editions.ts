@@ -536,20 +536,42 @@ export const editions: EditionSeed[] = [
     description:
       "The definitive PlayBound edition of HoloCure — Save the Fans! Curated and pre-configured with the verified co-op Multiplayer mod, full Sandbox testing suite, community Character Expansion pack, Discord Rich Presence, and QoL utilities—all with automatic updates, save-data protection, and native PlayBound presence tracking in one click.",
     type: "community",
-    status: "active",
-    visibility: "public",
+    // Held back deliberately: this is the default edition, and its install
+    // recipe is not wired yet (see TODO(holocure-mp) below). Publishing it as
+    // active/public would make the default way to get HoloCure a button that
+    // installs nothing. Restore to active/public once the recipe works.
+    status: "coming_soon",
+    visibility: "unlisted",
     isDefault: true,
     sortOrder: 1,
     links: {
       website: "https://kay-yu.itch.io/holocure",
       wiki: "https://holocure.wiki.gg/",
-      github: "https://github.com/Kay-Yu-Mods/HoloCure-Multiplayer",
+      // Was https://github.com/Kay-Yu-Mods/HoloCure-Multiplayer, which does not
+      // exist (404). The real multiplayer mod is PippleCultist's, below.
+      github: "https://github.com/PippleCultist/HoloCureMultiplayerMod",
     },
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        url: "https://kay-yu.itch.io/holocure",
-        fileName: "HoloCure.zip",
+        // TODO(holocure-mp): this recipe does not install anything yet and the
+        // edition must not be published until it does. Two problems:
+        //
+        //  1. No `kind`, and `url` is an itch.io *page* rather than a download,
+        //     so the launcher cannot resolve a base install from it. HoloCure
+        //     is free on Steam (appid 2420510) — that is the workable route.
+        //  2. The multiplayer/sandbox mods this edition advertises need files
+        //     from three separate upstream projects landing in three different
+        //     subfolders, plus a silent binary patch:
+        //       AurieCore.dll                    -> mods/Native/
+        //       YYToolkit.dll (YYTK v5)          -> mods/Aurie/
+        //       Holocure{Multiplayer,Menu}Mod +
+        //         CallbackManagerMod .dll        -> mods/Aurie/
+        //       Emotes.zip (extracted)           -> MultiplayerMod/Emotes/
+        //       AuriePatcher.exe <game> <AurieCore.dll> install
+        //     processAddons() today only downloads flat files into the game
+        //     root and cannot extract or run a patcher, so this needs launcher
+        //     work before the copy above is true.
         exeHint: "HoloCure|holocure",
         knownExePaths: [
           "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
