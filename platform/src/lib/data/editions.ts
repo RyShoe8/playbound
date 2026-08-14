@@ -531,19 +531,19 @@ export const editions: EditionSeed[] = [
   {
     gameSlug: "holocure",
     slug: "playbound",
-    name: "HoloCure: PlayBound Edition",
-    shortDescription: "HoloCure with PlayBound multiplayer, sandbox mode, expanded characters, and verified mods.",
+    name: "HoloCure: Multiplayer (Experimental)",
+    shortDescription:
+      "Community co-op multiplayer for HoloCure, installed in one click. Experimental — expect occasional crashes.",
     description:
-      "The definitive PlayBound edition of HoloCure — Save the Fans! Curated and pre-configured with the verified co-op Multiplayer mod, full Sandbox testing suite, community Character Expansion pack, Discord Rich Presence, and QoL utilities—all with automatic updates, save-data protection, and native PlayBound presence tracking in one click.",
+      "Adds PippleCultist's community multiplayer mod to your Steam copy of HoloCure — Save the Fans!, so you can play co-op over LAN or with Steam friends. PlayBound installs the Aurie mod loader and the mod itself for you, and re-applies them automatically whenever Steam updates HoloCure and reverts the change.\n\nThis is experimental community software, not an official HoloCure feature. The mod's own author notes it \"will probably be buggy and have random crashes since a lot has been modified in the game to get it working\". Your saves are untouched and you can return to unmodded HoloCure at any time by uninstalling this edition, or through Steam's Verify integrity of game files.\n\nWant the plain game instead? Install the Official Vanilla Edition.",
     type: "community",
-    // Held back deliberately: this is the default edition, and its install
-    // recipe is not wired yet (see TODO(holocure-mp) below). Publishing it as
-    // active/public would make the default way to get HoloCure a button that
-    // installs nothing. Restore to active/public once the recipe works.
-    status: "coming_soon",
-    visibility: "unlisted",
-    isDefault: true,
-    sortOrder: 1,
+    // Deliberately NOT the default. The mod is self-described as crash-prone,
+    // so the vanilla edition stays the one-click path for anyone who just
+    // wants to play HoloCure, and this is strictly opt-in.
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
     links: {
       website: "https://kay-yu.itch.io/holocure",
       wiki: "https://holocure.wiki.gg/",
@@ -554,31 +554,65 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        // TODO(holocure-mp): this recipe does not install anything yet and the
-        // edition must not be published until it does. Two problems:
-        //
-        //  1. No `kind`, and `url` is an itch.io *page* rather than a download,
-        //     so the launcher cannot resolve a base install from it. HoloCure
-        //     is free on Steam (appid 2420510) — that is the workable route.
-        //  2. The multiplayer/sandbox mods this edition advertises need files
-        //     from three separate upstream projects landing in three different
-        //     subfolders, plus a silent binary patch:
-        //       AurieCore.dll                    -> mods/Native/
-        //       YYToolkit.dll (YYTK v5)          -> mods/Aurie/
-        //       Holocure{Multiplayer,Menu}Mod +
-        //         CallbackManagerMod .dll        -> mods/Aurie/
-        //       Emotes.zip (extracted)           -> MultiplayerMod/Emotes/
-        //       AuriePatcher.exe <game> <AurieCore.dll> install
-        //     processAddons() today only downloads flat files into the game
-        //     root and cannot extract or run a patcher, so this needs launcher
-        //     work before the copy above is true.
+        // HoloCure itself is free on Steam and is not redistributable, so this
+        // edition never ships the game — it opens Steam's install for appid
+        // 2420510, waits for the executable to appear (knownExePaths first,
+        // then the launcher's drive scan, which is what finds libraries on a
+        // second drive), and then applies the mod loader below.
+        kind: "external",
+        url: "https://store.steampowered.com/app/2420510/HoloCure__Save_the_Fans/",
         exeHint: "HoloCure|holocure",
         knownExePaths: [
-          "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
-          "%PROGRAMFILES%\\HoloCure\\HoloCure.exe",
           "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+          "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
         ],
-        note: "PlayBound Edition with verified multiplayer, sandbox mode, character expansions, and community mods pre-configured.",
+        note: "Installs HoloCure through Steam, then adds the community multiplayer mod automatically.",
+        // Layout is upstream's and is not negotiable — Aurie only loads DLLs
+        // from mods/Aurie, and the mod only finds emotes at
+        // MultiplayerMod/Emotes with no folder in between.
+        modLoader: {
+          kind: "aurie",
+          testedGameVersion: "0.7.1746645739",
+          files: [
+            {
+              url: "https://github.com/AurieFramework/Aurie/releases/download/v2.0.2/AurieCore.dll",
+              fileName: "AurieCore.dll",
+              dest: "mods/Native",
+            },
+            {
+              url: "https://github.com/AurieFramework/Aurie/releases/download/v2.0.2/AuriePatcher.exe",
+              fileName: "AuriePatcher.exe",
+              dest: "mods",
+            },
+            {
+              url: "https://github.com/PippleCultist/HoloCureMultiplayerMod/releases/download/v1.4.1/HolocureMultiplayerMod.dll",
+              fileName: "HolocureMultiplayerMod.dll",
+              dest: "mods/Aurie",
+            },
+            {
+              url: "https://github.com/PippleCultist/HoloCureMultiplayerMod/releases/download/v1.4.1/HoloCureMenuMod.dll",
+              fileName: "HoloCureMenuMod.dll",
+              dest: "mods/Aurie",
+            },
+            {
+              url: "https://github.com/PippleCultist/HoloCureMultiplayerMod/releases/download/v1.4.1/CallbackManagerMod.dll",
+              fileName: "CallbackManagerMod.dll",
+              dest: "mods/Aurie",
+            },
+            {
+              url: "https://github.com/PippleCultist/HoloCureMultiplayerMod/releases/download/v1.4.1/Emotes.zip",
+              fileName: "Emotes.zip",
+              dest: "MultiplayerMod",
+              extract: true,
+              extractedMarker: "Emotes",
+            },
+          ],
+          patcherFileName: "AuriePatcher.exe",
+          patcherDest: "mods",
+          nativeDllFileName: "AurieCore.dll",
+          nativeDllDest: "mods/Native",
+        },
       },
     },
     features: [
@@ -633,13 +667,16 @@ export const editions: EditionSeed[] = [
     gameSlug: "holocure",
     slug: "official",
     name: "Official Vanilla Edition",
-    shortDescription: "Standard unmodded HoloCure standalone build.",
+    shortDescription: "Standard unmodded HoloCure, straight from the official release.",
     description:
       "The original, pure single-player HoloCure experience directly from official distributions without modifications.",
     type: "official",
     status: "active",
     visibility: "public",
-    isDefault: false,
+    // The default on purpose: the multiplayer edition is experimental
+    // community software, so anyone who just wants to play HoloCure lands on
+    // the unmodified game.
+    isDefault: true,
     sortOrder: 10,
     links: {
       website: "https://kay-yu.itch.io/holocure",

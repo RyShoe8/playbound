@@ -205,6 +205,80 @@ function isSteamInstalled() {
   return _steamInstalled;
 }
 
+/** Steam's own install directory, or null. */
+function steamBaseDir() {
+  try {
+    if (process.platform === "win32") {
+      const candidates = [
+        path.join(process.env["ProgramFiles(x86)"] || "", "Steam"),
+        path.join(process.env.PROGRAMFILES || "", "Steam"),
+      ];
+      return candidates.find((p) => p && fs.existsSync(path.join(p, "steam.exe"))) || null;
+    }
+    const home = process.env.HOME || "";
+    if (process.platform === "darwin") {
+      const mac = path.join(home, "Library", "Application Support", "Steam");
+      return fs.existsSync(mac) ? mac : null;
+    }
+    return (
+      [path.join(home, ".local", "share", "Steam"), path.join(home, ".steam", "steam")].find((p) =>
+        fs.existsSync(p)
+      ) || null
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every Steam library folder on this machine.
+ *
+ * Steam lets users put libraries on any drive, and the majority of gaming PCs
+ * do exactly that. Without this, a game installed to D:\SteamLibrary sits
+ * outside allowedExecutableRoots() and Play fails with "Executable path is
+ * outside allowed install locations" even though the install is perfectly
+ * valid — so this is read rather than assuming the default Program Files path.
+ *
+ * libraryfolders.vdf is Valve's own format; only the "path" entries are
+ * needed, so this scrapes those rather than pulling in a VDF parser.
+ * Cached — libraries do not change while the launcher is running.
+ */
+let _steamLibraryDirs = null;
+function steamLibraryDirs() {
+  if (_steamLibraryDirs) return _steamLibraryDirs;
+  const dirs = [];
+  const base = steamBaseDir();
+  if (base) {
+    dirs.push(base);
+    // Current Steam writes steamapps/libraryfolders.vdf; older builds used
+    // config/libraryfolders.vdf. Read whichever exists.
+    for (const rel of [
+      ["steamapps", "libraryfolders.vdf"],
+      ["config", "libraryfolders.vdf"],
+    ]) {
+      const vdf = path.join(base, ...rel);
+      try {
+        if (!fs.existsSync(vdf)) continue;
+        const text = fs.readFileSync(vdf, "utf8");
+        for (const m of text.matchAll(/"path"\s*"([^"]+)"/gi)) {
+          // VDF escapes backslashes.
+          const p = m[1].replace(/\\\\/g, "\\");
+          if (p && fs.existsSync(p)) dirs.push(p);
+        }
+      } catch {
+        /* unreadable library index — fall back to what we have */
+      }
+    }
+  }
+  _steamLibraryDirs = [...new Set(dirs.map((d) => normalizeFsPath(d)))];
+  return _steamLibraryDirs;
+}
+
+/** `<library>/steamapps/common` for every library, where games actually land. */
+function steamCommonDirs() {
+  return steamLibraryDirs().map((d) => path.join(d, "steamapps", "common"));
+}
+
 /**
  * Turn a Steam *store page* URL into an install deep link.
  *
@@ -340,6 +414,14 @@ function allowedExecutableRoots() {
     if (process.platform === "darwin") {
       roots.push(path.join(home, "Library", "Application Support"));
     }
+  }
+  // Steam libraries are frequently on a second drive, which is under none of
+  // the roots above. Without these, Play on any Steam-installed catalog game
+  // fails with "outside allowed install locations" despite a valid install.
+  try {
+    roots.push(...steamCommonDirs());
+  } catch {
+    /* no Steam / unreadable library index */
   }
   try {
     roots.push(app.getPath("userData"));
@@ -1435,6 +1517,12 @@ function catalogEntryFromEdition(edition) {
   if (cfg?.kind) {
     registerDownloadHostFromUrl(cfg.url);
     registerDownloadHostFromUrl(cfg.overlayUrl);
+    // Mod-loader payloads are downloaded later (at install and again as a
+    // launch-time repair), long after the catalog fetch that would normally
+    // authorize their hosts, so register them up front.
+    for (const file of cfg.modLoader?.files || []) {
+      registerDownloadHostFromUrl(file?.url);
+    }
     return {
       slug: edition.gameSlug,
       title: edition.gameTitle || edition.editionName || edition.gameSlug,
@@ -1456,6 +1544,7 @@ function catalogEntryFromEdition(edition) {
       overlayFileName: cfg.overlayFileName || undefined,
       requiresBaseDir: Boolean(cfg.requiresBaseDir),
       checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
+      modLoader: cfg.modLoader || undefined,
       art: Array.isArray(edition.art) ? edition.art : ["#312e81", "#a78bfa"],
       coverImage: edition.coverImage || null,
       approxSize: edition.sizeMB ? `~${edition.sizeMB} MB` : "",
@@ -2566,6 +2655,26 @@ function markInstalledFromExe(slug, entry, exe, version) {
     connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
   });
   notifyInstallDetected(slug);
+  // Modded editions finish setting themselves up here — this is the one point
+  // every detection path (known path, registry, drive scan) converges on.
+  // Failures are reported but not fatal: the same routine runs again before
+  // launch, so a transient download error self-corrects rather than leaving
+  // the install permanently broken.
+  if (entry?.modLoader) {
+    void ensureEditionMods(slug, entry, dir, exe)
+      .catch((err) => {
+        reportInstallFailed(slug, entry?.editionSlug || null, err, "mod-setup");
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("install-scan", {
+            slug,
+            phase: "error",
+            message: `Installed, but the mods aren't active yet: ${err?.message || err}`,
+          });
+        }
+      })
+      .finally(() => sendProgress({ phase: "done" }));
+    return { status: "installed", version, exe, dir };
+  }
   sendProgress({ phase: "done" });
   return { status: "installed", version, exe, dir };
 }
@@ -3307,6 +3416,26 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       campaign: "launcher_install_external",
       content: slug,
     });
+    // A plain external entry is a hand-off and we are done. One that also
+    // carries a mod loader is not: PlayBound still has to place the mod files
+    // once the store finishes installing, so watch for the executable the same
+    // way a downloaded installer is watched. Without this the store opens and
+    // the mods are never applied.
+    if (entry.modLoader) {
+      const externalEntry = {
+        ...entry,
+        editionSlug: entry.editionSlug || editionMeta?.editionSlug || DEFAULT_EDITION_SLUG,
+        editionName: entry.editionName || editionMeta?.editionName || "Official",
+        editionType: entry.editionType || editionMeta?.editionType || "official",
+      };
+      const known = findKnownExecutable(externalEntry);
+      if (known) {
+        // Already installed — apply the mods now rather than waiting.
+        return markInstalledFromExe(slug, externalEntry, known, "external");
+      }
+      startInstallerPoll(slug, externalEntry, "external");
+      return { status: "installer-opened", editionSlug: externalEntry.editionSlug };
+    }
     return { status: "external" };
   }
 
@@ -3458,15 +3587,206 @@ async function flattenWadFiles(gameDir) {
   }
 }
 
+/**
+ * Resolve a recipe-supplied relative path inside the game folder.
+ *
+ * Recipes come from the server, so a crafted `dest` like "../../Windows" must
+ * not be able to write outside the install. Returns null when the path would
+ * escape, and callers treat that as a failed step rather than falling back to
+ * the game root.
+ */
+function resolveInsideGameDir(gameDir, relative) {
+  const rel = String(relative || "").replace(/^[/\\]+/, "");
+  if (!rel) return normalizeFsPath(gameDir);
+  if (rel.includes("\0")) return null;
+  const full = normalizeFsPath(path.resolve(gameDir, rel));
+  return pathUnderRoot(full, gameDir) ? full : null;
+}
+
 async function processAddons(entry, gameDir, selectedAddons) {
   if (!entry.addons || !Array.isArray(selectedAddons) || selectedAddons.length === 0) return;
   for (const addonId of selectedAddons) {
     const addon = entry.addons.find((a) => a.id === addonId);
     if (!addon) continue;
     sendProgress({ phase: "downloading", addon: addon.name });
-    const dest = path.join(gameDir, addon.fileName);
+    // `dest` places a file in a subfolder (mod loaders expect exact layouts);
+    // omitted keeps the historical behaviour of dropping it in the game root.
+    const targetDir = resolveInsideGameDir(gameDir, addon.dest || "");
+    if (!targetDir) {
+      throw new Error(`Addon "${addon.name || addonId}" has an unsafe destination path`);
+    }
+    await fsp.mkdir(targetDir, { recursive: true });
+    const dest = path.join(targetDir, addon.fileName);
     await downloadTo(addon.url, dest);
+    if (addon.extract) {
+      await extractArchive(dest, targetDir);
+      await fsp.rm(dest, { force: true });
+    }
   }
+}
+
+/* ── mod-loader patching (Aurie) ───────────────────────────────────────── */
+
+/**
+ * Whether a PE already carries a named section.
+ *
+ * Aurie installs itself by appending a ".aurie" section to the game exe, so
+ * the section table is the authoritative answer to "are the mods active?" —
+ * more reliable than a flag we store, because Steam silently restores the
+ * original exe whenever the game updates or is verified, which would leave any
+ * stored flag lying.
+ */
+function peHasSection(exePath, sectionName) {
+  let fd = null;
+  try {
+    fd = fs.openSync(exePath, "r");
+    const dos = Buffer.alloc(0x40);
+    if (fs.readSync(fd, dos, 0, 0x40, 0) < 0x40) return false;
+    if (dos.readUInt16LE(0) !== 0x5a4d) return false; // "MZ"
+    const peOffset = dos.readUInt32LE(0x3c);
+    const head = Buffer.alloc(0x18);
+    if (fs.readSync(fd, head, 0, 0x18, peOffset) < 0x18) return false;
+    if (head.readUInt32LE(0) !== 0x00004550) return false; // "PE\0\0"
+    const numberOfSections = head.readUInt16LE(6);
+    const sizeOfOptionalHeader = head.readUInt16LE(20);
+    const sectionTable = peOffset + 0x18 + sizeOfOptionalHeader;
+    const want = sectionName.toLowerCase();
+    for (let i = 0; i < numberOfSections; i++) {
+      const entry = Buffer.alloc(40);
+      if (fs.readSync(fd, entry, 0, 40, sectionTable + i * 40) < 40) break;
+      const name = entry.subarray(0, 8).toString("latin1").replace(/\0+$/, "").toLowerCase();
+      if (name === want) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  } finally {
+    if (fd !== null) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
+function isAuriePatched(exePath) {
+  return peHasSection(exePath, ".aurie");
+}
+
+/**
+ * Bring a modded edition's files and exe patch up to date, idempotently.
+ *
+ * Called both after install and again before every launch. The second call is
+ * not redundant: these editions mod a Steam game in place, and Steam restores
+ * the original executable on any update or file verification. Re-checking at
+ * launch means the mods quietly repair themselves instead of the player
+ * finding the multiplayer menu gone with no explanation.
+ *
+ * Every step is skipped when already satisfied, so the common case costs a few
+ * fs.existsSync calls and one section-table read.
+ *
+ * @returns {Promise<{ changed: boolean, steps: string[] }>}
+ */
+async function ensureEditionMods(slug, entry, gameDir, exePath) {
+  const spec = entry?.modLoader;
+  if (!spec || spec.kind !== "aurie") return { changed: false, steps: [] };
+  if (!gameDir || !exePath || !fs.existsSync(exePath)) {
+    throw new Error("Game folder not found — reinstall the game.");
+  }
+
+  const steps = [];
+  const files = Array.isArray(spec.files) ? spec.files : [];
+
+  for (const file of files) {
+    const targetDir = resolveInsideGameDir(gameDir, file.dest || "");
+    if (!targetDir) {
+      throw new Error(`Mod file "${file.fileName}" has an unsafe destination path`);
+    }
+    // For archives the marker is what the archive unpacks to, so a completed
+    // extraction is not repeated on every launch.
+    const marker = path.join(targetDir, file.extract ? file.extractedMarker || file.fileName : file.fileName);
+    if (fs.existsSync(marker)) continue;
+
+    sendProgress({ phase: "downloading", addon: file.fileName });
+    await fsp.mkdir(targetDir, { recursive: true });
+    const dl = path.join(targetDir, file.fileName);
+    await downloadTo(file.url, dl);
+    if (file.extract) {
+      sendProgress({ phase: "extracting", addon: file.fileName });
+      await extractArchive(dl, targetDir);
+      await fsp.rm(dl, { force: true });
+    }
+    steps.push(`placed ${file.fileName}`);
+  }
+
+  if (!isAuriePatched(exePath)) {
+    const patcherDir = resolveInsideGameDir(gameDir, spec.patcherDest || "");
+    const nativeDir = resolveInsideGameDir(gameDir, spec.nativeDllDest || "");
+    if (!patcherDir || !nativeDir) {
+      throw new Error("Mod loader has an unsafe destination path");
+    }
+    const patcher = path.join(patcherDir, spec.patcherFileName);
+    const nativeDll = path.join(nativeDir, spec.nativeDllFileName);
+    if (!fs.existsSync(patcher) || !fs.existsSync(nativeDll)) {
+      throw new Error("Mod loader files are missing — reinstall the edition.");
+    }
+    sendProgress({ phase: "installer-ready", addon: "Enabling mods" });
+    await runAuriePatcher(patcher, exePath, nativeDll, "install");
+    // Trust the executable, not the patcher's exit code.
+    if (!isAuriePatched(exePath)) {
+      throw new Error("Mod loader ran but the game executable is not patched.");
+    }
+    steps.push("patched executable");
+  }
+
+  return { changed: steps.length > 0, steps };
+}
+
+/** Undo the exe patch so the game is left exactly as Steam shipped it. */
+async function removeEditionModPatch(entry, gameDir, exePath) {
+  const spec = entry?.modLoader;
+  if (!spec || spec.kind !== "aurie") return;
+  if (!gameDir || !exePath || !fs.existsSync(exePath)) return;
+  if (!isAuriePatched(exePath)) return;
+  const patcherDir = resolveInsideGameDir(gameDir, spec.patcherDest || "");
+  const nativeDir = resolveInsideGameDir(gameDir, spec.nativeDllDest || "");
+  if (!patcherDir || !nativeDir) return;
+  const patcher = path.join(patcherDir, spec.patcherFileName);
+  const nativeDll = path.join(nativeDir, spec.nativeDllFileName);
+  if (!fs.existsSync(patcher)) return;
+  try {
+    await runAuriePatcher(patcher, exePath, nativeDll, "remove");
+  } catch (err) {
+    // Non-fatal: Steam's "Verify integrity of game files" also restores the
+    // original executable, so a failed unpatch is recoverable by the user.
+    console.warn("Aurie unpatch failed:", err?.message || err);
+  }
+}
+
+/**
+ * Run AuriePatcher headlessly.
+ *
+ * With four argv entries the patcher takes the non-interactive path and every
+ * MessageBox is suppressed (see g_InteractiveInstall in AuriePatcher's
+ * main.cpp), so this completes without any dialog for the user to dismiss.
+ */
+function runAuriePatcher(patcherPath, exePath, nativeDllPath, action) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(patcherPath, [exePath, nativeDllPath, action], {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let out = "";
+    child.stdout?.on("data", (d) => (out += d));
+    child.stderr?.on("data", (d) => (out += d));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) resolve(out);
+      else reject(new Error(`AuriePatcher ${action} failed (exit ${code}): ${out.trim().slice(0, 300)}`));
+    });
+  });
 }
 
 /**
@@ -4001,6 +4321,34 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       }
     } catch {
       /* ignore heal persist */
+    }
+  }
+
+  // Repair modded editions before launching. Steam restores the original
+  // executable on update or file verification, which silently strips the mod
+  // loader; without this the player would just find the modded menus gone.
+  if (entry?.modLoader) {
+    try {
+      const result = await ensureEditionMods(slug, entry, info.dir, info.exe);
+      if (result.changed) {
+        void telemetry.track("edition_mods_repaired", {
+          gameSlug: slug,
+          editionSlug: info.editionSlug || edSlug,
+          steps: result.steps.join(", "),
+        });
+      }
+    } catch (err) {
+      const message = `Couldn't enable this edition's mods: ${err?.message || err}`;
+      void telemetry.launchFailed({
+        ...editionInfoFor(slug, { version: info.version, editionSlug: info.editionSlug || edSlug }),
+        code: "MOD_LOADER_FAILED",
+        message,
+        phase: "mod-repair",
+      });
+      const out = new Error(message);
+      out.code = "MOD_LOADER_FAILED";
+      out.__launchFailedReported = true;
+      throw out;
     }
   }
 
@@ -4661,6 +5009,19 @@ async function uninstallGame(slug, editionSlug = null) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   if (!state[slug]) return { status: "not-installed" };
+
+  // A modded edition patches an executable PlayBound does not own — the game
+  // belongs to Steam. Restore it before dropping our records, so uninstalling
+  // the edition never leaves a modified binary behind.
+  try {
+    const modEntry = catalog.find((e) => e.slug === slug);
+    if (modEntry?.modLoader) {
+      const info = editionSlug ? game.editions?.[editionSlug] : game;
+      if (info?.exe) await removeEditionModPatch(modEntry, info.dir, info.exe);
+    }
+  } catch (err) {
+    console.warn("edition unpatch skipped:", err?.message || err);
+  }
 
   // For custom non-catalog games, remove the record from launcher library without deleting external game files.
   if (state[slug]?.custom || game?.custom || slug.startsWith("custom-")) {
