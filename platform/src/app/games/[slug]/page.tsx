@@ -776,7 +776,7 @@ async function ReviewsTabAsync({
       gameSlug={gameSlug}
       isSignedIn={isSignedIn}
       items={items}
-      showEditionLabels
+      showEditionLabels={hasChoosableEditions(editions)}
       editionNamesBySlug={new Map(editions.map((e) => [e.slug, e.name]))}
     />
   );
