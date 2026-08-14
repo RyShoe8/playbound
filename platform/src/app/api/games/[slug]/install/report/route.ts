@@ -42,7 +42,7 @@ export async function POST(
     const updated = await CatalogGame.findOneAndUpdate(
       { slug: clean },
       { $inc: { installCount: 1 } },
-      { new: true, projection: { installCount: 1 } }
+      { returnDocument: "after", projection: { installCount: 1 } }
     ).lean();
 
     if (!updated) {

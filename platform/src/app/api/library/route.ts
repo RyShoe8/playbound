@@ -172,7 +172,7 @@ export async function POST(req: Request) {
           ...(saving ? { installed: false } : {}),
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     ).lean();
 
     // First install on this platform only. Store / browser claims also emit

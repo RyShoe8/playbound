@@ -68,7 +68,7 @@ export async function POST(req: Request) {
             addedAt: now,
           },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       );
       synced += 1;
     }
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         modsSkipped.push(item.slug);
         continue;
       }
-      // new:false returns prior doc (null on insert) so we only telemetry first installs
+      // returnDocument: 'before' returns prior doc (null on insert) so we only telemetry first installs
       const prev = await LibraryModEntry.findOneAndUpdate(
         { userId: user._id, modSlug: item.slug },
         {
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
             modSlug: item.slug,
           },
         },
-        { upsert: true, new: false }
+        { upsert: true, returnDocument: "before" }
       );
       if (!prev || !prev.installed) {
         void saveEvent({

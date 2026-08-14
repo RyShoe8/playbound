@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       }
 
       if (body.action === "install") {
-        // new:false returns prior doc (null on insert) so we only telemetry first installs
+        // returnDocument: 'before' returns prior doc (null on insert) so we only telemetry first installs
         const prev = await LibraryModEntry.findOneAndUpdate(
           { userId: user._id, modSlug: body.slug },
           {
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
               modSlug: body.slug,
             },
           },
-          { upsert: true, new: false }
+          { upsert: true, returnDocument: "before" }
         );
         if (!prev || !prev.installed) {
           void saveEvent({
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
             addedAt: now,
           },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       );
       void saveEvent({
         event: "game_installed",

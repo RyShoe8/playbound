@@ -142,7 +142,7 @@ export async function PUT(req: Request) {
           rawPayload: payload,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     void saveEvent({

@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         status: "blocked",
         acceptedAt: null,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     void saveEvent({

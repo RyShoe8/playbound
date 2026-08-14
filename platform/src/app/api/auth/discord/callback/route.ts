@@ -82,7 +82,7 @@ export async function GET(req: Request) {
         linkedAt: new Date(),
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   const res = NextResponse.redirect(back("discord=linked"));

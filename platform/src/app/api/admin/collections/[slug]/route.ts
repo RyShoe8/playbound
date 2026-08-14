@@ -38,7 +38,7 @@ export async function PATCH(
     const doc = await CatalogCollection.findOneAndUpdate(
       { slug },
       { $set: body },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });

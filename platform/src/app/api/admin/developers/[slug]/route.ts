@@ -37,7 +37,7 @@ export async function PATCH(
       }
     }
 
-    const doc = await Developer.findOneAndUpdate({ slug }, { $set: body }, { new: true });
+    const doc = await Developer.findOneAndUpdate({ slug }, { $set: body }, { returnDocument: "after" });
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
