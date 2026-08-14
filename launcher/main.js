@@ -29,16 +29,89 @@ function loadHardwareModule() {
   }
 }
 
-/** Mutable catalog: bundled fallback, overwritten/merged from the site API. */
-let catalog = bundledCatalog.map((e) => ({ ...e }));
-
 const PROTOCOL = "playbound";
 const DEFAULT_GAMES_DIR = Platform.getInstallDirectory("");
 const STATE_FILE = path.join(app.getPath("userData"), "installed.json");
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
+const CATALOG_CACHE_FILE = path.join(app.getPath("userData"), "catalog-cache.json");
 const DEFAULT_API_BASE = "https://playbound.club";
 /** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
+
+/** Dynamically registered download hosts from official site API catalog & edition payloads. */
+const dynamicAllowedDownloadHosts = new Set();
+
+function registerDownloadHostFromUrl(rawUrl) {
+  try {
+    if (!rawUrl) return;
+    const u = new URL(String(rawUrl));
+    if (u.hostname) {
+      dynamicAllowedDownloadHosts.add(u.hostname.toLowerCase());
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function registerCatalogEntryHosts(entry) {
+  if (!entry || typeof entry !== "object") return;
+  registerDownloadHostFromUrl(entry.url);
+  registerDownloadHostFromUrl(entry.downloadUrl);
+  registerDownloadHostFromUrl(entry.coverImage);
+  if (Array.isArray(entry.addons)) {
+    for (const addon of entry.addons) {
+      registerDownloadHostFromUrl(addon?.url);
+    }
+  }
+  if (entry.installConfig && typeof entry.installConfig === "object") {
+    for (const val of Object.values(entry.installConfig)) {
+      if (val && typeof val === "object" && val.url) {
+        registerDownloadHostFromUrl(val.url);
+      }
+    }
+  }
+}
+
+function loadCachedCatalog() {
+  try {
+    if (fs.existsSync(CATALOG_CACHE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(CATALOG_CACHE_FILE, "utf-8"));
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    console.warn("[catalog-cache] Failed to read cached catalog:", err?.message || err);
+  }
+  return null;
+}
+
+function saveCatalogCache(entries) {
+  try {
+    if (Array.isArray(entries) && entries.length > 0) {
+      fs.writeFileSync(CATALOG_CACHE_FILE, JSON.stringify(entries, null, 2), "utf-8");
+    }
+  } catch (err) {
+    console.warn("[catalog-cache] Failed to write cached catalog:", err?.message || err);
+  }
+}
+
+/** Mutable catalog: bundled fallback, overlaid with cached/remote entries from the site API. */
+let catalog = (() => {
+  const cached = loadCachedCatalog();
+  const bySlug = new Map(bundledCatalog.map((e) => [e.slug, { ...e }]));
+  if (cached) {
+    for (const entry of cached) {
+      if (!entry?.slug) continue;
+      bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
+    }
+  }
+  const merged = [...bySlug.values()];
+  for (const entry of merged) {
+    registerCatalogEntryHosts(entry);
+  }
+  return merged;
+})();
 
 /** Origins the settings UI may retarget as API base. */
 const ALLOWED_API_BASE_HOSTS = new Set([
@@ -160,6 +233,7 @@ function steamDeepLinkFor(rawUrl) {
 function hostAllowedForDownload(hostname) {
   const host = String(hostname || "").toLowerCase();
   if (!host) return false;
+  if (dynamicAllowedDownloadHosts.has(host)) return true;
   if (host === "github.com" || host === "www.github.com") return true;
   if (host.endsWith(".githubusercontent.com")) return true;
   if (host === "cdn.openttd.org" || host.endsWith(".openttd.org")) return true;
@@ -171,7 +245,7 @@ function hostAllowedForDownload(hostname) {
   if (host.endsWith(".vercel-storage.com")) return true;
   // One-click catalog hosts (direct-installer / zip / exe recipes).
   if (host === "files.freeciv.org" || host.endsWith(".freeciv.org")) return true;
-  if (host === "sourceforge.net" || host.endsWith(".sourceforge.net")) return true;
+  if (host === "sourceforge.net" || host.endsWith(".sourceforge.net") || host.includes("sourceforge.net")) return true;
   if (host === "dl.xonotic.org" || host.endsWith(".xonotic.org")) return true;
   if (host === "releases.wildfiregames.com" || host.endsWith(".wildfiregames.com")) return true;
   if (host === "gitlab.com" || host.endsWith(".gitlab.com") || host.endsWith(".gitlab-static.net")) {
@@ -197,6 +271,8 @@ function hostAllowedForDownload(hostname) {
   if (host === "itch.io" || host.endsWith(".itch.io") || host.endsWith(".itch.zone")) return true;
   if (host.includes("itchio-mirror") || host.endsWith(".r2.cloudflarestorage.com")) return true;
   if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
+  if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
+  if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net")) return true;
   try {
     const apiHost = new URL(getApiBase()).hostname.toLowerCase();
     if (host === apiHost) return true;
@@ -1342,6 +1418,8 @@ function catalogEntryFromEdition(edition) {
   if (!edition?.gameSlug) return null;
   const cfg = edition.installConfig?.playbound_installer;
   if (cfg?.kind) {
+    registerDownloadHostFromUrl(cfg.url);
+    registerDownloadHostFromUrl(cfg.overlayUrl);
     return {
       slug: edition.gameSlug,
       title: edition.gameTitle || edition.editionName || edition.gameSlug,
@@ -1409,7 +1487,13 @@ function launcherApiHeaders(extra = {}) {
   return headers;
 }
 
-async function refreshRemoteCatalog() {
+let lastCatalogRefreshTime = 0;
+const CATALOG_TTL_MS = 5 * 60 * 1000;
+
+async function refreshRemoteCatalog(force = false) {
+  if (!force && Date.now() - lastCatalogRefreshTime < 15_000) {
+    return;
+  }
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
       headers: launcherApiHeaders(),
@@ -1419,11 +1503,21 @@ async function refreshRemoteCatalog() {
     const remote = Array.isArray(data.games) ? data.games : [];
     if (remote.length === 0) return;
     const bySlug = new Map(bundledCatalog.map((e) => [e.slug, { ...e }]));
+    const cached = loadCachedCatalog();
+    if (cached) {
+      for (const entry of cached) {
+        if (!entry?.slug) continue;
+        bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
+      }
+    }
     for (const entry of remote) {
       if (!entry?.slug) continue;
       bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
+      registerCatalogEntryHosts(entry);
     }
     catalog = [...bySlug.values()];
+    lastCatalogRefreshTime = Date.now();
+    saveCatalogCache(catalog);
     console.log(`Remote catalog: ${remote.length} game(s) merged (${catalog.length} total).`);
   } catch (err) {
     console.warn("Remote catalog refresh failed:", err.message || err);
@@ -1432,19 +1526,24 @@ async function refreshRemoteCatalog() {
 
 async function ensureCatalogEntry(slug) {
   const existing = catalog.find((e) => e.slug === slug);
-  if (existing) return existing;
+  if (existing && existing.kind && existing.kind !== "external") {
+    registerCatalogEntryHosts(existing);
+    return existing;
+  }
   try {
     const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/install`, {
       headers: launcherApiHeaders(),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return existing || null;
     const entry = await res.json();
-    if (!entry?.slug) return null;
+    if (!entry?.slug) return existing || null;
+    registerCatalogEntryHosts(entry);
     catalog = [...catalog.filter((e) => e.slug !== entry.slug), entry];
+    saveCatalogCache(catalog);
     return entry;
   } catch (err) {
     console.warn(`ensureCatalogEntry(${slug}) failed:`, err.message || err);
-    return null;
+    return existing || null;
   }
 }
 
@@ -4950,7 +5049,11 @@ ipcMain.handle("report-bug", async (_event, payload = {}) => {
     return { ok: false, error: err?.message || "Couldn't reach playbound.club" };
   }
 });
-ipcMain.handle("get-catalog", () => {
+ipcMain.handle("get-catalog", async (_event, opts = {}) => {
+  const forceRefresh = Boolean(opts && opts.refresh);
+  if (forceRefresh || Date.now() - lastCatalogRefreshTime > CATALOG_TTL_MS) {
+    await refreshRemoteCatalog(forceRefresh);
+  }
   return catalog.map((e) => ({
     slug: e.slug,
     title: e.title,
