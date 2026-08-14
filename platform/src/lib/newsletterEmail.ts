@@ -236,18 +236,18 @@ function renderMiniRow(game: NewsletterMiniGame, siteUrl: string, isLast: boolea
   const img = absoluteMediaUrl(game.imageUrl, siteUrl);
   const href = game.url.trim() || siteOrigin(siteUrl);
   return `
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161F32; border-radius: 12px; border: 1px solid #243049; overflow: hidden; ${isLast ? "" : "margin-bottom: 12px;"}">
+            <table width="100%" align="center" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 100%; margin: 0 auto; background-color: #161F32; border-radius: 12px; border: 1px solid #243049; overflow: hidden; ${isLast ? "" : "margin-bottom: 12px;"}">
               <tr>
-                <td>
+                <td align="center">
                   ${
                     img
-                      ? `<img class="new-game-cover" src="${attr(img)}" alt="${attr(game.title)}" width="568" height="140" style="width: 100%; height: 140px; object-fit: cover; object-position: center; display: block; border: 0;">`
-                      : `<div style="width:100%;height:140px;background:#1e293b;"></div>`
+                      ? `<img class="new-game-cover" src="${attr(img)}" alt="${attr(game.title)}" width="600" height="140" style="width: 100%; max-width: 100%; height: 140px; object-fit: cover; object-position: center; display: block; border: 0; margin: 0 auto;">`
+                      : `<div style="width:100%;max-width:100%;height:140px;background:#1e293b;"></div>`
                   }
                 </td>
               </tr>
               <tr>
-                <td style="padding: 14px 16px 16px 16px;">
+                <td align="left" style="padding: 14px 16px 16px 16px;">
                   <h3 style="font-size: 15px; font-weight: 600; color: #FFFFFF; margin: 0 0 6px 0;">${text(game.title)}</h3>
                   <p style="font-size: 12px; color: #94A3B8; margin: 0 0 12px 0; line-height: 1.4;">${text(game.description)}</p>
                   <a href="${attr(href)}" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;">View Game</a>
@@ -262,8 +262,8 @@ function renderEpicRow(game: NewsletterEpicGame, siteUrl: string, isLast: boolea
   const badge = game.badge.trim() || "FREE";
   return `
         <tr>
-          <td style="padding: 0 20px ${isLast ? "20px" : "12px"} 20px;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161F32; border-radius: 8px;">
+          <td align="center" style="padding: 0 20px ${isLast ? "20px" : "12px"} 20px;">
+            <table width="100%" align="center" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 100%; margin: 0 auto; background-color: #161F32; border-radius: 8px;">
               <tr>
                 <td width="70" style="vertical-align: middle; padding: 12px 0 12px 12px;">
                   ${
@@ -321,16 +321,18 @@ export function buildNewsletterHtml(
     .btn { background-color: #8B5CF6; color: #FFFFFF !important; font-weight: 600; padding: 12px 24px; border-radius: 8px; display: inline-block; text-decoration: none; text-align: center; }
     .btn-secondary { background-color: #1E293B; color: #F8FAFC !important; border: 1px solid #334155; font-weight: 600; padding: 10px 20px; border-radius: 8px; display: inline-block; text-decoration: none; }
     @media only screen and (max-width: 600px) {
-      .container { width: 100% !important; padding: 12px !important; }
+      .container { width: 100% !important; }
     }
   </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0B0F19;">
   <center style="width: 100%; table-layout: fixed; background-color: #0B0F19; padding-bottom: 40px;">
-    <div style="max-width: 600px; margin: 0 auto;" class="container">
+    <table width="600" align="center" cellpadding="0" cellspacing="0" class="container" style="width: 100%; max-width: 600px; margin: 0 auto;">
+      <tr>
+        <td align="center">
 
       <!-- HEADER -->
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+      <table width="100%" align="center" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 100%; margin: 24px 0;">
         <tr>
           <td align="center">
             <table cellpadding="0" cellspacing="0">
@@ -348,12 +350,12 @@ export function buildNewsletterHtml(
       </table>
 
       <!-- FEATURED GAME -->
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161F32; border-radius: 16px; border: 1px solid #243049; overflow: hidden; margin-bottom: 24px;">
+      <table width="100%" align="center" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 100%; margin: 0 auto; background-color: #161F32; border-radius: 16px; border: 1px solid #243049; overflow: hidden; margin-bottom: 24px;">
         <tr>
           <td>
             ${
               featuredImg
-                ? `<img src="${attr(featuredImg)}" alt="${attr(draft.featured.title || "Featured Game")}" style="width: 100%; max-height: 280px; object-fit: cover;">`
+                ? `<img src="${attr(featuredImg)}" alt="${attr(draft.featured.title || "Featured Game")}" width="600" style="width: 100%; max-width: 100%; max-height: 280px; object-fit: cover; display: block; margin: 0 auto;">`
                 : `<div style="width:100%;height:160px;background:#1e1b4b;"></div>`
             }
           </td>
@@ -377,21 +379,21 @@ export function buildNewsletterHtml(
       </table>
 
       <!-- NEW ON PLAYBOUND -->
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 28px;">
+      <table width="100%" align="center" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 100%; margin: 0 auto 28px auto;">
         <tr>
-          <td style="padding-bottom: 12px;">
+          <td align="left" style="padding-bottom: 12px;">
             <h2 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: -0.3px;">${text(draft.newSectionTitle)}</h2>
           </td>
         </tr>
         <tr>
-          <td>
+          <td align="center">
             ${newRows.join("\n            ") || `<p style="color:#64748B;font-size:13px;margin:0;">Add games in the builder.</p>`}
           </td>
         </tr>
       </table>
 
       <!-- EPIC GAMES FREE THIS WEEK -->
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0F172A; border-radius: 16px; border: 1px solid #1E293B; margin-bottom: 28px;">
+      <table width="100%" align="center" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 100%; margin: 0 auto 28px auto; background-color: #0F172A; border-radius: 16px; border: 1px solid #1E293B;">
         <tr>
           <td style="padding: 20px 20px 16px 20px;">
             <table width="100%" cellpadding="0" cellspacing="0">
@@ -425,14 +427,15 @@ export function buildNewsletterHtml(
           <td>
             <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0;">
               © ${text(String(draft.footer.copyrightYear))} playbound.club. All rights reserved.<br>
-              You are receiving this because you subscribed to updates at playbound.club.<br>
-              <a href="${attr(draft.footer.unsubscribeUrl)}" style="color: #64748B; text-decoration: underline;">Unsubscribe</a>
+              You are receiving this because you subscribed to updates at playbound.club.
             </p>
           </td>
         </tr>
       </table>
 
-    </div>
+        </td>
+      </tr>
+    </table>
   </center>
 </body>
 </html>`;
