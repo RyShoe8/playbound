@@ -39,21 +39,21 @@ export function EditionCard({
   const remote = heroSrc ? /^https?:\/\//i.test(heroSrc) : false;
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <div className="relative aspect-[21/9] w-full overflow-hidden bg-secondary sm:h-40 sm:aspect-auto">
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.5)]">
+      <div className="relative aspect-video w-full overflow-hidden bg-secondary sm:h-48 sm:aspect-auto">
         {heroSrc ? (
           <Image
             src={heroSrc}
             alt={`${game.title} — ${edition.name} edition`}
             fill
             unoptimized={remote}
-            className="object-cover"
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 1024px) 100vw, 50vw"
           />
         ) : (
           <GameArt game={game} showTitle={false} className="absolute inset-0" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
