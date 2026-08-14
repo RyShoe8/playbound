@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run check:auth-urls && npm run migrate:review-index:apply && npm run migrate:library-platform:apply && npm run migrate:add-singleplayer-feature:apply && npm run fix:game-media && npm run seed:launcher-install && npm run seed:games-upsert && npm run seed:mods && npm run fix:mod-media && npm run seed:editions && npm run seed:developers && npm run seed:collections && npm run seed:weekly && npm run seed:hardware",
+    "build": "next build && npm run check:auth-urls",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",

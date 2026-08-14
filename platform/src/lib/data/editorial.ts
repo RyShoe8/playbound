@@ -1530,6 +1530,71 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  holocure: {
+    qualityBar: clearsAll(
+      "HoloCure clears all quality criteria: completely free with zero microtransactions, exceptionally high polish, deep mechanical and buildcrafting complexity, actively updated, and runs flawlessly on low-spec hardware and Steam Deck."
+    ),
+    longDescription:
+      "HoloCure — Save the Fans! is one of the most mechanically inventive and content-rich bullet-heaven roguelites on PC. Created independently by lead animator and developer Kay Yu, the game began as a passionate tribute to Hololive talent and quickly exploded into a genre landmark with tens of thousands of Overwhelmingly Positive community reviews.\n\nBeneath its vibrant, hand-crafted pixel art lies an enormous amount of mechanical depth. Unlike conventional auto-shooters where characters are largely cosmetic stat skins, HoloCure boasts 47 completely distinct playable idols across Hololive English, Japan, and Indonesia branches. Every single character arrives with their own signature starting weapon, three unique passive skills that fundamentally reshape your survival strategy, and a dedicated Special Attack featuring bespoke animations and screen-clearing effects.\n\nBuildcrafting is where HoloCure truly shines. As swarms of mind-controlled fans close in across sprawling stages, players level up a vast arsenal of offensive weapons and passive utility items. Maxing out complementary weapons allows you to forge devastating Collab weapons at the Golden Anvil. Late in a run, Collabs can be elevated further into Super Collabs—such as Blood Lust, Black Plague, and True Infinite BL Works—transforming a modest attack pattern into an unstoppable, room-sweeping fireworks display.\n\nCustomization expands even deeper through the Stamp system. Up to three of the 22 collectible Stamps can be socketed directly onto your character's primary weapon, altering projectile trajectories, attack speed, critical burst damage, knockback force, or area spread. Combined with support items and stat prisms, no two runs ever feel identical.\n\nCrucially, HoloCure is built with a strictly zero-monetization philosophy. There are no microtransactions, premium currencies, battle passes, or paid shortcuts. The in-game character gacha and permanent stat shop are funded entirely through HoloCoins earned by playing—clearing waves, smashing Holozon crates, and defeating stage bosses. Every character, upgrade, and cosmetic unlock is 100% gameplay-funded.\n\nWhen you need a breather from intense combat runs, HoloCure provides an entire secondary simulation mode called Holo House. Here, players can customize and decorate their home, cultivate crops, fish in serene ponds, cook stat-boosting recipes, recruit and interact with characters, scale the challenging Tower of Suffering, or test their luck with minigames in the Usada Casino.\n\nWhether chasing competitive leaderboards in the standardized Time Attack mode (racing to rescue 4,000 fans), surviving deep into Endless Mode, or exploring hundreds of weapon combinations on handheld PCs and Steam Deck, HoloCure delivers a premier, endlessly replayable action experience that costs absolutely nothing.",
+    bestFor: [
+      "Fans of Vampire Survivors looking for much deeper character buildcrafting, weapon synergies, and super collabs",
+      "Players who love permanent progression and minigames (farming, fishing, housing, casino) alongside compact 20-minute action runs",
+      "Handheld PC and controller players wanting a lightweight, highly responsive pixel-art bullet heaven with zero microtransactions",
+      "Gamers seeking massive replayability across 47 uniquely designed characters with distinct playstyles",
+    ],
+    notFor: [
+      "Players looking for official built-in online multiplayer out of the box (the vanilla game is strictly single-player)",
+      "Anyone expecting native mobile (Android/iOS) support—HoloCure is strictly a Windows PC game",
+      "Those seeking realistic 3D AAA graphics rather than polished, vibrant 2D pixel art",
+    ],
+    comparableTo: [
+      "Vampire Survivors",
+      "Magic Survival",
+      "Brotato",
+      "Death Must Die",
+      "20 Minutes Till Dawn",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Click 'Install with PlayBound Launcher' or download the standalone archive directly from the official itch.io / Steam distribution.",
+      },
+      {
+        platform: "windows",
+        text: "Extract or install the game to your preferred PC directory. The game runs natively on 64-bit Windows without third-party runtimes.",
+      },
+      {
+        platform: "all",
+        text: "Launch the game and configure your preferred input method. While full keyboard controls are supported, playing with an Xbox, PlayStation, or 8BitDo controller is strongly recommended.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is HoloCure completely free or does it have microtransactions?",
+        a: "HoloCure is 100% free with absolutely zero monetization or microtransactions. The in-game character gacha and shop upgrades use HoloCoins earned strictly through regular gameplay.",
+      },
+      {
+        q: "Can I play HoloCure with a controller or on Steam Deck?",
+        a: "Yes. The developers officially recommend playing with a controller (Xbox, PlayStation, 8BitDo, etc.). The game is also marked as Playable on Steam Deck and runs exceptionally well on handheld PCs.",
+      },
+      {
+        q: "Does HoloCure have multiplayer?",
+        a: "The official vanilla game is strictly single-player. While community members have developed unofficial multiplayer and sandbox mods using tools like YYToolkit, the base game contains no official online co-op.",
+      },
+      {
+        q: "What is Holo House?",
+        a: "Holo House is a massive secondary life-sim mode within HoloCure where you can decorate your home, cultivate crops, fish, cook recipes, interact with characters, and play minigames at the Usada Casino.",
+      },
+      {
+        q: "How do Collabs and Super Collabs work?",
+        a: "By maxing out two compatible base weapons, you can combine them using a Golden Anvil to create a powerful Collab weapon. Fusing a Collab with a specific maxed item creates a screen-clearing Super Collab.",
+      },
+      {
+        q: "Is HoloCure an official Hololive product?",
+        a: "No. HoloCure is an unofficial fan game created by Kay Yu under Cover Corp's Hololive Derivative Works Guidelines, featuring original artwork and custom soundtrack remixes by Eufrik.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */
