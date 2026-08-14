@@ -316,10 +316,6 @@ export function WeeklyNewsletterBuilder({
                 <label className={label}>Discord URL</label>
                 <input className={field} value={draft.footer.discordUrl} onChange={(e) => updateFooter({ discordUrl: e.target.value })} />
               </div>
-              <div>
-                <label className={label}>Unsubscribe URL</label>
-                <input className={field} value={draft.footer.unsubscribeUrl} onChange={(e) => updateFooter({ unsubscribeUrl: e.target.value })} />
-              </div>
             </div>
             <div>
               <label className={label}>Copyright year</label>
