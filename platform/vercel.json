@@ -5,6 +5,10 @@
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/free-offers",
+      "schedule": "0 */6 * * *"
+    },
+    {
       "path": "/api/cron/presence-sweep",
       "schedule": "* * * * *"
     },

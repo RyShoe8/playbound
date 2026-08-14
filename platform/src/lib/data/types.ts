@@ -172,6 +172,18 @@ export interface Game {
   createdAt?: string;
   /** Official + PlayBound Discord destinations for the Community card. */
   communityLinks?: GameCommunityLinks;
+  /**
+   * Whether PlayBound actively supports this game through its launcher,
+   * editions, mods, compatibility profiles, etc. Games discovered solely
+   * through free promotions enter the catalog as `false`.
+   */
+  playboundSupported?: boolean;
+  /** Epic Games Store product page URL (for matching). */
+  epicStoreUrl?: string;
+  /** GOG product page URL (for matching). */
+  gogStoreUrl?: string;
+  /** Store-specific IDs for cross-platform matching. */
+  externalIds?: { epic?: string; steam?: string; gog?: string };
 }
 
 export interface GameCommunityLinks {

@@ -36,6 +36,8 @@ import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
+import { FreeOfferBanner } from "@/components/FreeOfferBanner";
+import { offersForGame } from "@/lib/freeOffers/service";
 import { GameInstallContent } from "@/components/GameInstallContent";
 import { ModCard } from "@/components/ModCard";
 import { launcherPlayModUrl } from "@/lib/launcher";
@@ -160,7 +162,7 @@ export default async function GamePage({
 
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   // Critical path only: developer + editions for hero chooser and static schema.
-  const [developer, editions, gameMods] = await Promise.all([
+  const [developer, editions, gameMods, gameOffers] = await Promise.all([
     getDeveloper(game.developerSlug),
     listPublicEditionsForGame(game),
     // Awaited here so the Mods tab can be hidden when a game has none. The tab
@@ -169,9 +171,13 @@ export default async function GamePage({
     // the tab showed on every game regardless. listMods is cached per request,
     // so ModsTab re-reading this costs nothing.
     modsForGame(game.slug, { includeTesting }),
+    offersForGame(game.slug),
   ]);
   const choosable = hasChoosableEditions(editions);
   const signedIn = Boolean(session?.user);
+
+  const activeOffer = gameOffers.find((o) => o.isActive) || null;
+  const historicalOffers = gameOffers.filter((o) => !o.isActive);
 
   return (
     <div>
@@ -227,6 +233,12 @@ export default async function GamePage({
               </Suspense>
             </div>
           </div>
+
+          {(activeOffer || historicalOffers.length > 0) && (
+            <div className="mt-6">
+              <FreeOfferBanner activeOffer={activeOffer} historicalOffers={historicalOffers} />
+            </div>
+          )}
         </div>
       </section>
 

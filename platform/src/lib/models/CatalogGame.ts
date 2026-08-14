@@ -163,6 +163,23 @@ const CatalogGameSchema = new Schema(
       default: "published",
       index: true,
     },
+    /**
+     * Whether PlayBound actively supports this game (launcher, editions, mods,
+     * compatibility profiles, etc.). Games discovered solely through free
+     * promotions enter the catalog with `false` — they appear in free-game
+     * views but not in the main curated catalog or discover page.
+     */
+    playboundSupported: { type: Boolean, default: true, index: true },
+    /** Epic Games Store product page URL (for matching). */
+    epicStoreUrl: { type: String, default: null },
+    /** GOG product page URL (for matching). */
+    gogStoreUrl: { type: String, default: null },
+    /** Store-specific IDs for cross-platform matching. */
+    externalIds: {
+      epic: { type: String, default: null },
+      steam: { type: String, default: null },
+      gog: { type: String, default: null },
+    },
     submissionId: { type: Schema.Types.ObjectId, ref: "GameSubmission", default: null },
     managedBy: { type: String, enum: ["admin", "developer"], default: "admin" },
     ownerUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },

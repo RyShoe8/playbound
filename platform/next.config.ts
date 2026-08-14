@@ -81,6 +81,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
       { protocol: "https", hostname: "repository-images.githubusercontent.com" },
       { protocol: "https", hostname: "cdn.microlink.io" },
+      // Free-game offer imagery from store CDNs.
+      { protocol: "https", hostname: "cdn1.epicgames.com" },
+      { protocol: "https", hostname: "cdn2.unrealengine.com" },
+      { protocol: "https", hostname: "**.unrealengine.com" },
+      { protocol: "https", hostname: "images.gog-statics.com" },
     ],
   },
   async rewrites() {

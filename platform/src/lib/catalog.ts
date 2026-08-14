@@ -116,6 +116,10 @@ function toGame(doc: LeanGame): Game {
       ? new Date((doc as { createdAt: Date }).createdAt).toISOString()
       : undefined,
     communityLinks: mapCommunityLinks(doc.communityLinks),
+    playboundSupported: doc.playboundSupported !== false,
+    epicStoreUrl: (doc.epicStoreUrl as string) || undefined,
+    gogStoreUrl: (doc.gogStoreUrl as string) || undefined,
+    externalIds: doc.externalIds as Game["externalIds"] || undefined,
   };
   return attachLauncherInstall(base, doc);
 }
@@ -199,7 +203,11 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
  * thing for free.
  */
 async function readVisibleGames(includeTesting: boolean): Promise<Game[]> {
-  const fromDb = await fromMongo(mongoVisibleFilter({ includeTesting }));
+  const filter = {
+    ...mongoVisibleFilter({ includeTesting }),
+    playboundSupported: { $ne: false },
+  };
+  const fromDb = await fromMongo(filter);
   if (fromDb.length > 0) return fromDb;
   return seedGames.map(seedGameWithInstall);
 }
@@ -625,3 +633,65 @@ export async function searchGames(
 }
 
 export { seedGames };
+
+/**
+ * Find a catalog game by store-specific external ID.
+ * Used during ingestion to match free-offer games against the catalog.
+ */
+export async function findGameByExternalId(
+  store: "epic" | "steam" | "gog",
+  externalId: string
+): Promise<Game | undefined> {
+  try {
+    await dbConnect();
+    const filter: Record<string, unknown> =
+      store === "steam"
+        ? { $or: [{ [`externalIds.${store}`]: externalId }, { steamAppId: externalId }] }
+        : { [`externalIds.${store}`]: externalId };
+    const doc = await CatalogGame.findOne(filter).lean();
+    return doc ? toGame(doc as LeanGame) : undefined;
+  } catch (err) {
+    console.error("[catalog] findGameByExternalId failed:", err);
+    return undefined;
+  }
+}
+
+/**
+ * Find a catalog game by store URL (exact match on epicStoreUrl / gogStoreUrl / website).
+ */
+export async function findGameByStoreUrl(
+  store: "epic" | "steam" | "gog",
+  url: string
+): Promise<Game | undefined> {
+  try {
+    await dbConnect();
+    const filter: Record<string, unknown> =
+      store === "epic"
+        ? { epicStoreUrl: url }
+        : store === "gog"
+          ? { gogStoreUrl: url }
+          : { website: url };
+    const doc = await CatalogGame.findOne(filter).lean();
+    return doc ? toGame(doc as LeanGame) : undefined;
+  } catch (err) {
+    console.error("[catalog] findGameByStoreUrl failed:", err);
+    return undefined;
+  }
+}
+
+/**
+ * Find catalog games by normalized title for matching.
+ * Returns all title matches — the caller decides on confidence.
+ */
+export async function findGamesByTitle(title: string): Promise<Game[]> {
+  if (!title.trim()) return [];
+  try {
+    await dbConnect();
+    const regex = new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const docs = await CatalogGame.find({ title: regex }).lean();
+    return docs.map((d) => toGame(d as LeanGame));
+  } catch (err) {
+    console.error("[catalog] findGamesByTitle failed:", err);
+    return [];
+  }
+}
