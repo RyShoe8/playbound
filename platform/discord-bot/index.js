@@ -25,6 +25,7 @@ import {
   REST,
   Routes,
   SlashCommandBuilder,
+  EmbedBuilder,
 } from "discord.js";
 import { MongoClient } from "mongodb";
 
@@ -430,6 +431,58 @@ async function postGameOfTheWeek() {
   );
 }
 
+function isGameOrEventCategoryName(name) {
+  const n = String(name || "");
+  return (
+    n.startsWith("GAME CHANNELS") ||
+    n.startsWith("Event —") ||
+    n.startsWith("PlayBound —")
+  );
+}
+
+/** Server #general — not franchise #general under a game category. */
+async function findServerGeneral(guild) {
+  const configured = process.env.DISCORD_GENERAL_CHANNEL_ID;
+  if (configured) {
+    const ch = await guild.channels.fetch(configured).catch(() => null);
+    if (ch?.isTextBased()) return ch;
+  }
+  await guild.channels.fetch();
+  const generals = [...guild.channels.cache.values()].filter(
+    (c) => c.type === ChannelType.GuildText && c.name === "general"
+  );
+  const preferred = generals.find((c) => !isGameOrEventCategoryName(c.parent?.name));
+  return preferred || generals[0] || null;
+}
+
+async function announceNewCatalogGame(payload) {
+  const title = String(payload.title || "New game").slice(0, 256);
+  const url = String(payload.url || `${SITE_URL}/games/${payload.slug || ""}`);
+  const description = String(payload.description || "A new game is on PlayBound.").slice(0, 4000);
+  const imageUrl = typeof payload.imageUrl === "string" && /^https?:\/\//i.test(payload.imageUrl)
+    ? payload.imageUrl
+    : null;
+
+  const guild = await client.guilds.fetch(GUILD_ID);
+  const channel = await findServerGeneral(guild);
+  if (!channel?.isTextBased()) {
+    throw new Error("Could not find server #general");
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(0x8b5cf6)
+    .setTitle(title)
+    .setURL(url)
+    .setDescription(description)
+    .setFooter({ text: "New on PlayBound" });
+  if (imageUrl) embed.setImage(imageUrl);
+
+  await channel.send({
+    content: `**${title}** was just added to the catalog.`,
+    embeds: [embed],
+  });
+}
+
 const commands = [
   new SlashCommandBuilder()
     .setName("game")
@@ -552,6 +605,28 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ success: true, ...result }));
     } catch (err) {
       console.error(err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/announce-game") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const payload = JSON.parse(body || "{}");
+      if (!payload.title && !payload.slug) {
+        res.writeHead(400);
+        res.end("title or slug required");
+        return;
+      }
+      await announceNewCatalogGame(payload);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      console.error("announce-game", err);
       res.writeHead(500);
       res.end(String(err?.message || err));
     }

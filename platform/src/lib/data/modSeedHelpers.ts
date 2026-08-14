@@ -25,6 +25,8 @@ export type ModSeed = {
   longDescription?: string;
   whatItChanges?: string;
   compatibility?: string;
+  /** Empty/omit = all OSes. Windows / macOS / Linux only. */
+  platforms?: ("Windows" | "macOS" | "Linux")[];
   installSteps?: InstallStep[];
   faq?: GameFaq[];
 };

@@ -39,6 +39,7 @@ export async function GET(req: Request) {
           downloadKind: m.downloadKind,
           approxSize: sizeLabelFromMB(m.sizeMB) || null,
           art: [m.art.from, m.art.to] as [string, string],
+          platforms: Array.isArray(m.platforms) ? m.platforms : [],
           status: m.status || "published",
           testing: m.status === "testing",
           baseHasServers:

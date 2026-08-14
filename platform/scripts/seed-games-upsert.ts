@@ -133,6 +133,14 @@ async function main() {
       platforms?: string[];
       features?: string[];
       sizeMB?: number;
+      whyWePickedIt?: string | null;
+      qualityBar?: unknown;
+      faq?: unknown[] | null;
+      bestFor?: string[] | null;
+      notFor?: string[] | null;
+      comparableTo?: string[] | null;
+      installSteps?: unknown[] | null;
+      complete?: boolean;
     };
     const prevStatus = normalizeStatus(prev);
 
@@ -174,6 +182,7 @@ async function main() {
             notFor: g.notFor ?? [],
             comparableTo: g.comparableTo ?? [],
             qualityBar: g.qualityBar ?? null,
+            complete: g.complete === true,
             ...(launcher && !prev.launcherInstall ? { launcherInstall: launcher } : {}),
             ...(launcher && prevStatus === "draft" ? { launcherInstall: launcher } : {}),
             status: seedStatus,
@@ -188,7 +197,7 @@ async function main() {
       continue;
     }
 
-    // Published: only fill empty media gaps — never demote or replace CMS arrays.
+    // Published: fill empty media/editorial gaps — never demote or replace CMS text.
     const patch: Record<string, unknown> = {};
     if (!prev.coverImage && g.coverImage) patch.coverImage = g.coverImage;
     if (!(prev.screenshots?.length) && g.screenshots?.length) {
@@ -202,6 +211,39 @@ async function main() {
     }
     if (!prev.hardwareRequirements && g.hardwareRequirements) {
       patch.hardwareRequirements = g.hardwareRequirements;
+    }
+    if (!pickText(prev.longDescription, null) && g.longDescription) {
+      patch.longDescription = g.longDescription;
+    }
+    if (!pickText(prev.whyWePickedIt, null) && g.whyWePickedIt) {
+      patch.whyWePickedIt = g.whyWePickedIt;
+    }
+    if (
+      !(typeof prev.qualityBar === "object" &&
+        prev.qualityBar &&
+        "verdict" in prev.qualityBar &&
+        String((prev.qualityBar as { verdict?: string }).verdict || "").trim()) &&
+      g.qualityBar
+    ) {
+      patch.qualityBar = g.qualityBar;
+    }
+    if (!(prev.faq?.length) && g.faq?.length) {
+      patch.faq = g.faq;
+    }
+    if (!(prev.bestFor?.length) && g.bestFor?.length) {
+      patch.bestFor = g.bestFor;
+    }
+    if (!(prev.notFor?.length) && g.notFor?.length) {
+      patch.notFor = g.notFor;
+    }
+    if (!(prev.comparableTo?.length) && g.comparableTo?.length) {
+      patch.comparableTo = g.comparableTo;
+    }
+    if (!(prev.installSteps?.length) && g.installSteps?.length) {
+      patch.installSteps = g.installSteps;
+    }
+    if (prev.complete !== true && g.complete === true) {
+      patch.complete = true;
     }
     if (Object.keys(patch).length) {
       await CatalogGame.updateOne({ slug: g.slug }, { $set: patch });

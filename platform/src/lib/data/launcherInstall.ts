@@ -489,4 +489,35 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Installs the Xsolla launcher used by World of Sea Battle.",
   },
+
+  warframe: {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://content.warframe.com/dl/Warframe.msi",
+    fileName: "Warframe.msi",
+    exeHint: "Warframe",
+    registryTitles: ["Warframe"],
+    note: "Official Warframe.msi from Digital Extremes. Steam app 230410 is an alternative.",
+  },
+
+  "asphalt-legends": {
+    enabled: true,
+    kind: "external",
+    url: "https://store.steampowered.com/app/1815780/Asphalt_Legends/",
+    note: "Free on Steam (and Epic). Live-service client — always-online.",
+  },
+
+  "tinywind-pixel-pirate-sailing-game": {
+    enabled: true,
+    kind: "external",
+    url: "https://tinywind.io",
+    note: "Plays in the browser. No PlayBound desktop installer yet.",
+  },
+
+  "mega-man-unlimited": {
+    enabled: true,
+    kind: "external",
+    url: "https://megaphilx.com/index.php/home/games/mega-man-unlimited/",
+    note: "Unofficial fangame. Download only from the creator’s site — PlayBound does not host the zip.",
+  },
 };

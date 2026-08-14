@@ -1207,12 +1207,13 @@ const telemetry = createTelemetry({
   loadSettings,
   saveSettings,
   getAppVersion: () => app.getVersion(),
-  getUserId: () => {
-    try {
-      return loadSettings().userId || null;
-    } catch {
-      return null;
+  getAuthHeaders: (extra = {}) => {
+    const settings = loadSettings();
+    const headers = { ...extra };
+    if (settings.launcherToken) {
+      headers.authorization = `Bearer ${settings.launcherToken}`;
     }
+    return headers;
   },
 });
 
@@ -2522,7 +2523,61 @@ function scanKnownInstalls() {
   return found;
 }
 
-function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride) {
+function isFlightGearAircraftMod(installRelativePath) {
+  const rel = String(installRelativePath || "")
+    .replace(/^[/\\]+/, "")
+    .replace(/\\/g, "/");
+  return /^aircraft(\/|$)/i.test(rel);
+}
+
+/** FG_HOME Addons root — not the fgfs bin/ tree. */
+function flightGearHomeAddons() {
+  const home = app.getPath("home");
+  if (process.platform === "win32") {
+    const roaming = process.env.APPDATA || path.join(home, "AppData", "Roaming");
+    return path.join(roaming, "flightgear.org", "Addons");
+  }
+  if (process.platform === "darwin") {
+    return path.join(home, "Library", "Application Support", "FlightGear", "Addons");
+  }
+  return path.join(home, ".fgfs", "Addons");
+}
+
+function findDirContainingFile(root, fileName, maxDepth = 5) {
+  if (!root || !fs.existsSync(root)) return null;
+  const queue = [{ dir: root, depth: 0 }];
+  while (queue.length) {
+    const { dir, depth } = queue.shift();
+    if (fs.existsSync(path.join(dir, fileName))) return dir;
+    if (depth >= maxDepth) continue;
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const ent of entries) {
+      if (!ent.isDirectory() || ent.name.startsWith(".")) continue;
+      queue.push({ dir: path.join(dir, ent.name), depth: depth + 1 });
+    }
+  }
+  return null;
+}
+
+function flightGearAddonLaunchArgs(state) {
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const args = [];
+  for (const info of Object.values(mods)) {
+    if (!info || info.baseGameSlug !== "flightgear") continue;
+    const dir = info.dir;
+    if (!dir || !fs.existsSync(dir)) continue;
+    if (!fs.existsSync(path.join(dir, "addon-main.nas"))) continue;
+    args.push(`--addon=${dir}`);
+  }
+  return args;
+}
+
+function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride, modSlug) {
   const home = app.getPath("home");
   const appData =
     process.env.APPDATA ||
@@ -2535,6 +2590,11 @@ function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride)
       : path.join(process.env.USERPROFILE || home, "Documents");
   const rel = String(installRelativePath || "mods").replace(/^[/\\]+|[/\\]+$/g, "") || "mods";
   const under = (root) => path.join(root, ...rel.split(/[/\\]+/));
+
+  if (baseGameSlug === "flightgear" && !isFlightGearAircraftMod(installRelativePath)) {
+    const folder = String(modSlug || "addon").replace(/[<>:"|?*]/g, "_");
+    return path.join(flightGearHomeAddons(), folder);
+  }
 
   if (baseGameSlug === "mindustry") {
     return under(path.join(appData, "Mindustry"));
@@ -2571,7 +2631,10 @@ function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride)
   return under(baseDir);
 }
 
-function modUsesUserDataFolder(baseGameSlug) {
+function modUsesUserDataFolder(baseGameSlug, installRelativePath) {
+  if (baseGameSlug === "flightgear") {
+    return !isFlightGearAircraftMod(installRelativePath);
+  }
   return ["mindustry", "0ad", "openttd", "endless-sky", "luanti", "minetest", "naev"].includes(
     baseGameSlug
   );
@@ -2590,7 +2653,10 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
   try {
     const install = await fetchModInstall(pending);
     if (justInstalledBaseSlug && install.baseGameSlug !== justInstalledBaseSlug) return;
-    if (!isBaseGameReady(install.baseGameSlug) && !modUsesUserDataFolder(install.baseGameSlug)) {
+    if (
+      !isBaseGameReady(install.baseGameSlug) &&
+      !modUsesUserDataFolder(install.baseGameSlug, install.installRelativePath)
+    ) {
       return;
     }
     delete settings.pendingModSlug;
@@ -3378,7 +3444,12 @@ async function locateGameExecutable(slug) {
 
 async function placeModFiles(slug, install, baseDirOverride) {
   const dl = await resolveModDownload(install);
-  let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
+  let targetDir = resolveModTargetDir(
+    install.baseGameSlug,
+    install.installRelativePath,
+    baseDirOverride,
+    slug
+  );
   // Full portable clients (OpenRA-style) install beside other PlayBound games.
   const portable = /winportable/i.test(dl.name || "");
   if (portable) {
@@ -3442,12 +3513,18 @@ async function placeModFiles(slug, install, baseDirOverride) {
 
   const exe = findExecutable(targetDir, null);
 
+  let installedDir = targetDir;
+  if (install.baseGameSlug === "flightgear" && !isFlightGearAircraftMod(install.installRelativePath)) {
+    const addonDir = findDirContainingFile(targetDir, "addon-main.nas");
+    if (addonDir) installedDir = addonDir;
+  }
+
   const state = loadState();
   if (!state.__mods__ || typeof state.__mods__ !== "object") state.__mods__ = {};
   state.__mods__[slug] = {
     title: install.title || slug,
     version: dl.version,
-    dir: targetDir,
+    dir: installedDir,
     baseGameSlug: install.baseGameSlug,
     installedAt: new Date().toISOString(),
     ...(exe ? { exe } : {}),
@@ -3464,7 +3541,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
   return {
     status: "installed",
     version: dl.version,
-    dir: targetDir,
+    dir: installedDir,
     baseGameSlug: install.baseGameSlug,
     exe: exe || null,
     portable,
@@ -3498,8 +3575,13 @@ async function installModInner(slug, baseDirOverride) {
     return placeModFiles(slug, install, null);
   }
 
-  const userDataMod = modUsesUserDataFolder(install.baseGameSlug);
-  let targetDir = resolveModTargetDir(install.baseGameSlug, install.installRelativePath, baseDirOverride);
+  const userDataMod = modUsesUserDataFolder(install.baseGameSlug, install.installRelativePath);
+  let targetDir = resolveModTargetDir(
+    install.baseGameSlug,
+    install.installRelativePath,
+    baseDirOverride,
+    slug
+  );
   const baseReady = isBaseGameReady(install.baseGameSlug) || Boolean(baseDirOverride && fs.existsSync(baseDirOverride));
 
   if (!targetDir || (!baseReady && !userDataMod && !baseDirOverride)) {
@@ -3624,6 +3706,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     // Static args like "patchme" (P99) — apply when not templated for server join.
     const staticArgs = connectArgs.filter((t) => !String(t).includes("{host}"));
     args.push(...staticArgs.map(String));
+  }
+
+  if (slug === "flightgear") {
+    args.push(...flightGearAddonLaunchArgs(state));
   }
 
   // Legacy github-jar installs pointed at play.cmd — prefer the sidecar .jar.
@@ -4530,10 +4616,6 @@ ipcMain.handle("post-telemetry", async (_event, payload) => {
             timestamp: String(payload.timestamp || new Date().toISOString()),
             sessionId: String(payload.sessionId || ""),
             anonymousId: String(payload.anonymousId || ""),
-            userId:
-              payload.userId === null || payload.userId === undefined
-                ? null
-                : String(payload.userId),
           }
         : null;
     if (!body?.event || body.sessionId.length < 8 || body.anonymousId.length < 8) {
@@ -4541,11 +4623,11 @@ ipcMain.handle("post-telemetry", async (_event, payload) => {
     }
     const res = await fetch(`${getApiBase()}/api/telemetry`, {
       method: "POST",
-      headers: {
+      headers: launcherApiHeaders({
         "Content-Type": "application/json",
         accept: "application/json",
         "user-agent": `playbound-launcher/${app.getVersion()} (${process.platform})`,
-      },
+      }),
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15_000),
     });

@@ -27,6 +27,7 @@ export async function GET(
       approxSize: sizeLabelFromMB(m.sizeMB) || null,
       art: [m.art.from, m.art.to] as [string, string],
       downloadKind: m.downloadKind,
+      platforms: Array.isArray(m.platforms) ? m.platforms : [],
       status: m.status || "published",
       testing: m.status === "testing",
     }));

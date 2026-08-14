@@ -1,6 +1,12 @@
 "use client";
 
-import { PERFORMANCE_TIERS, REQUIREMENT_SOURCES, GRAPHICS_APIS } from "@/lib/hardware/types";
+import {
+  PERFORMANCE_TIERS,
+  REQUIREMENT_SOURCES,
+  GRAPHICS_APIS,
+  RAM_AMOUNT_PRESETS_GB,
+  ramPresetMB,
+} from "@/lib/hardware/types";
 import type { HardwareRequirementsBlock, RequirementSpec } from "@/lib/hardware/types";
 
 const field =
@@ -99,6 +105,22 @@ function SpecEditor({
               patch({ ramMB: e.target.value ? Number(e.target.value) : undefined })
             }
           />
+          <div className="mt-1 flex flex-wrap gap-1">
+            {RAM_AMOUNT_PRESETS_GB.map((gb) => (
+              <button
+                key={gb}
+                type="button"
+                className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                  v.ramMB === ramPresetMB(gb)
+                    ? "border-ring bg-secondary font-semibold"
+                    : "border-border text-muted-foreground hover:border-ring"
+                }`}
+                onClick={() => patch({ ramMB: ramPresetMB(gb) })}
+              >
+                {gb} GB
+              </button>
+            ))}
+          </div>
         </div>
         <div>
           <label className={label}>VRAM (MB)</label>

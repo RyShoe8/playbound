@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { normalizeCpuName, normalizeGpuName } from "./normalize";
-import { evaluateCompatibility } from "./compatibility";
+import { evaluateCompatibility, visibleCompatibilityReasons } from "./compatibility";
 import { effectiveHardwareRequirements, hasStructuredRequirements, mergeRequirementSpecs } from "./mergeRequirements";
-import { tierMeets } from "./tiers";
+import { inferCpuTierFromName, inferGpuTierFromName, tierMeets } from "./tiers";
 import {
   parseFreeTextRequirementsBlock,
   parseRequirementLine,
@@ -36,6 +36,28 @@ describe("tierMeets", () => {
     expect(tierMeets("high", "mid")).toBe(true);
     expect(tierMeets("low", "mid")).toBe(false);
     expect(tierMeets("unknown", "mid")).toBe(null);
+  });
+});
+
+describe("inferGpuTierFromName", () => {
+  it("maps RTX 50 and RX 9000 families", () => {
+    expect(inferGpuTierFromName("NVIDIA GeForce RTX 5090")).toBe("enthusiast");
+    expect(inferGpuTierFromName("RTX 5070")).toBe("high");
+    expect(inferGpuTierFromName("GeForce RTX 5060")).toBe("mid");
+    expect(inferGpuTierFromName("Radeon RX 9070 XTX")).toBe("enthusiast");
+    expect(inferGpuTierFromName("RX 9070 XT")).toBe("high");
+    expect(inferGpuTierFromName("Intel Arc B580")).toBe("high");
+  });
+});
+
+describe("inferCpuTierFromName", () => {
+  it("maps Ultra, Ryzen 9, and Apple M4", () => {
+    expect(inferCpuTierFromName("Intel Core Ultra 9 285K")).toBe("enthusiast");
+    expect(inferCpuTierFromName("AMD Ryzen 9 9950X")).toBe("enthusiast");
+    expect(inferCpuTierFromName("Intel Core Ultra 7 155H")).toBe("high");
+    expect(inferCpuTierFromName("Apple M4 Pro")).toBe("high");
+    expect(inferCpuTierFromName("Apple M4")).toBe("mid");
+    expect(inferCpuTierFromName("Intel Core Ultra 5 125H")).toBe("mid");
   });
 });
 
@@ -115,6 +137,46 @@ describe("evaluateCompatibility", () => {
       }
     );
     expect(r.verdict).toBe("playable");
+  });
+
+  it("uses a generic playable summary when only recommended RAM is missed", () => {
+    const r = evaluateCompatibility(
+      {
+        cpuTier: "mid",
+        gpuTier: "mid",
+        ramMB: 16322,
+        osFamily: "windows",
+      },
+      {
+        min: { ramMB: 8192 },
+        recommended: { ramMB: 16384 },
+      }
+    );
+    expect(r.verdict).toBe("playable");
+    expect(r.summary).toBe(
+      "Your PC meets the minimum requirements. You may need reduced settings."
+    );
+    expect(r.reasons.filter((x) => x.code === "ram_below")).toHaveLength(1);
+    expect(r.reasons.some((x) => x.code === "ram_ok")).toBe(true);
+    const visible = visibleCompatibilityReasons(r);
+    expect(visible.some((x) => x.message === r.summary)).toBe(false);
+    expect(visible.filter((x) => x.code === "ram_below")).toHaveLength(1);
+    expect(r.reasons.find((x) => x.code === "ram_below")?.message).toMatch(/16 GB/);
+  });
+
+  it("fails min when install storage is below the spec", () => {
+    const r = evaluateCompatibility(
+      {
+        cpuTier: "high",
+        gpuTier: "high",
+        ramMB: 16000,
+        storageMB: 2000,
+        osFamily: "windows",
+      },
+      { min: { cpuTier: "low", gpuTier: "low", ramMB: 8000, storageMB: 50000 } }
+    );
+    expect(r.verdict).toBe("limited");
+    expect(r.reasons.some((x) => x.code === "storage_below")).toBe(true);
   });
 });
 

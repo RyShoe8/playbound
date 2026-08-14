@@ -36,6 +36,9 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
     assetPattern: doc.assetPattern ? String(doc.assetPattern) : null,
     directUrl: doc.directUrl ? String(doc.directUrl) : null,
     installRelativePath: String(doc.installRelativePath ?? "mods"),
+    platforms: Array.isArray(doc.platforms)
+      ? (doc.platforms as ModPayload["platforms"])
+      : [],
     autoUpdatePinned: doc.autoUpdatePinned !== false,
     art: doc.art as ModPayload["art"],
     coverImage: doc.coverImage ? String(doc.coverImage) : null,

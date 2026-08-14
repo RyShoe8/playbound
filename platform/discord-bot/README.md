@@ -49,3 +49,11 @@ Manual triggers:
 ## Provision from admin
 
 `POST /api/admin/games/[slug]/provision-discord` on the Next app forwards to this worker when `DISCORD_BOT_WEBHOOK_URL` + `BOT_WEBHOOK_SECRET` are set on Vercel.
+
+## New catalog game in #general
+
+When a game is **created already published** or **first published** on production (`VERCEL_ENV=production`), the Next app POSTs `/announce-game` to this worker. The bot posts in the server’s `#general` (not franchise `#general` channels under game categories).
+
+Optional env: `DISCORD_GENERAL_CHANNEL_ID` to pin the exact channel.
+
+The post includes title, description, game page URL, and a screenshot (or cover) embed image.

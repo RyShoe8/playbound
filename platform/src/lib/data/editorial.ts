@@ -76,6 +76,42 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: VERIFIED,
     note: "Hedgewars uses Mercurial on its own infrastructure. Check the official download page and changelog for the latest release date.",
   },
+  everquest: {
+    kind: "manual",
+    url: "https://www.everquest.com",
+    checkedAt: "2026-08-13",
+    note: "Official Live patches through Daybreak LaunchPad. Community editions (Quarm, P99) are maintained on their own sites.",
+  },
+  flightgear: {
+    kind: "manual",
+    url: "https://www.flightgear.org",
+    checkedAt: "2026-08-13",
+    note: "FlightGear publishes numbered releases on flightgear.org rather than a single GitHub repo in the catalog.",
+  },
+  warframe: {
+    kind: "manual",
+    url: "https://www.warframe.com",
+    checkedAt: "2026-08-13",
+    note: "Commercial live-service; check patch notes on warframe.com / Steam, not GitHub.",
+  },
+  "asphalt-legends": {
+    kind: "manual",
+    url: "https://store.steampowered.com/app/1815780/Asphalt_Legends/",
+    checkedAt: "2026-08-13",
+    note: "Gameloft live-service racer; verify the Steam/Epic client is still listed as free to play.",
+  },
+  "tinywind-pixel-pirate-sailing-game": {
+    kind: "manual",
+    url: "https://tinywind.io",
+    checkedAt: "2026-08-13",
+    note: "Browser game with a planned Steam Early Access; confirm tinywind.io still hosts the client.",
+  },
+  "mega-man-unlimited": {
+    kind: "manual",
+    url: "https://megaphilx.com/index.php/home/games/mega-man-unlimited/",
+    checkedAt: "2026-08-13",
+    note: "Finished fangame; confirm the author still hosts the 1.3.1 download.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -981,6 +1017,516 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "How is Shattered Pixel Dungeon different from Pixel Dungeon?",
         a: "Shattered Pixel Dungeon is a long-running, heavily expanded fork of the original Pixel Dungeon, with substantially more content, more classes and far more refined balance. It is the actively developed version.",
+      },
+    ],
+  },
+
+  everquest: {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "EverQuest still earns a place as the foundational fantasy MMO, but Live is free-to-play with a cash shop and All Access — not a no-monetisation title. Community editions are separate worlds with their own rules.",
+      lastVerified: "2026-08-13",
+    },
+    longDescription:
+      "EverQuest is the game that taught a generation what an MMO could feel like: a hostile world, a social contract, and the sense that the dungeon down the road might actually kill you. PlayBound lists it as a franchise with three playable editions rather than a single installer, because “EverQuest” now means official Live, Project Quarm, and Project 1999, and those are not interchangeable clients.\n\nEverQuest Live is Daybreak’s current game. You create a Daybreak account, run LaunchPad, and enter a world that has been patched for more than two decades. It is free to download and play, with optional All Access if you want fewer F2P limits. Live is the legal, supported way to play the franchise as it exists in 2026, with modern convenience and a very different pacing from 1999.\n\nProject Quarm is a community era that uses the TAKP classic client. PlayBound can fetch the public base client, but you still need TAKP accounts and the latest Quarm Discord patch. Project 1999 recreates late-classic / early-Velious on community servers and requires a legal Titanium install that PlayBound will copy and overlay — it never redistributes Titanium.\n\nNone of the community editions are affiliated with Daybreak. Install only from the edition pages and the channels those communities publish. If you want official support, pick Live. If you want a specific classic feeling, read the Quarm and P99 guides before you download anything.",
+    whyWePickedIt:
+      "PlayBound is a catalog of things you can actually launch. EverQuest still has three living ways to do that — official Live plus two community eras with real populations — and pretending they are one download would send people to the wrong login screen.",
+    bestFor: [
+      "Players who want the original fantasy MMO, not a theme-park sequel",
+      "People willing to read an edition guide before installing",
+      "Classic-era fans who already own legal Titanium (for Project 1999)",
+      "Anyone curious about official Live without paying up front",
+    ],
+    notFor: [
+      "You want a single one-click client that covers every EverQuest server",
+      "You expect a modern action combat MMO with a short onboarding",
+      "You want a game with no cash shop or subscription options on Live",
+      "You are looking for a Daybreak-supported private server",
+    ],
+    comparableTo: ["World of Warcraft Classic", "Ultima Online", "Dark Age of Camelot", "EverQuest II"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "EverQuest on PlayBound is three editions. Choose EverQuest Live for official Daybreak, Project Quarm for TAKP-era community progression, or Project 1999 if you own a legal Titanium client.",
+      },
+      {
+        platform: "all",
+        text: "Open that edition’s page and follow its install guide. Live uses Daybreak LaunchPad; Quarm installs a community client plus a Discord patch; P99 copies your Titanium folder and overlays public P99Files.",
+      },
+      {
+        platform: "windows",
+        text: "Create the matching account before you click Play: a Daybreak account for Live, a TAKP forum plus login-server account for Quarm, or a Project 1999 forum plus login-server account for P99.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is EverQuest free?",
+        a: "EverQuest Live is free to download and play with a Daybreak account. An optional All Access subscription removes more free-to-play limits. Community editions have their own rules and are not Daybreak products.",
+      },
+      {
+        q: "Which EverQuest edition should I install?",
+        a: "Live if you want the official game. Project Quarm if you want a curated classic-style community era and are willing to patch from Discord. Project 1999 if you already own legal Titanium and want that specific recreation.",
+      },
+      {
+        q: "Does PlayBound host EverQuest game files?",
+        a: "No. Live downloads Daybreak’s LaunchPad. Quarm uses a public community zip plus patches from Quarm’s own Discord. P99 only copies a Titanium folder you already own and merges public P99Files.",
+      },
+      {
+        q: "Can I play EverQuest solo?",
+        a: "Yes. It is still an MMO, so towns and dungeons are shared, but many classes can progress alone at their own pace. Group content remains the historic heart of the game.",
+      },
+      {
+        q: "Are Quarm and Project 1999 official?",
+        a: "No. They are community projects and are not affiliated with Daybreak. Use only the websites, forums, and Discord servers linked on each edition page.",
+      },
+    ],
+  },
+
+  flightgear: {
+    qualityBar: clearsAll(
+      "FlightGear clears all five: genuinely free, complete enough to fly worldwide, still maintained, serious enough to recommend against paid sims, and high quality for anyone who wants simulation rather than an arcade flyer."
+    ),
+    longDescription:
+      "FlightGear is what you get when a flight simulator is treated as a public research project instead of a storefront. It models aircraft, weather, and a planet-sized scenery set, and it does that without a subscription or a scenery marketplace. The first hour is not a tutorial in the Microsoft Flight Simulator sense — it is closer to sitting down in a real cockpit binder and figuring out which switches matter.\n\nThe payoff is scope. You can fly a Cessna around a local field, line up an airliner on a Canvas glass cockpit, or join multiplayer traffic over published frequencies. Aircraft quality varies because the fleet is a community: some planes are museum pieces, others are the reason people stay. Worldwide scenery via TerraSync is large; plan disk space the way you would for any serious sim, not a casual download.\n\nIt is heavier than a browser flyer and more fiddly than a console racing game with wings. Joysticks help. Reading the wiki helps. If you wanted arcade dogfights, this is the wrong catalog page. If you wanted an open-source sim that still takes the physics seriously in 2026, it is one of the few that does.",
+    whyWePickedIt:
+      "Most free ‘flight games’ are toys. FlightGear is a simulator with worldwide scenery and a living aircraft library, and it remains the open-source answer when someone asks whether they have to pay for that kind of depth.",
+    bestFor: [
+      "People who want a real flight sim rather than an arcade flyer",
+      "Joystick and yoke users who will read a checklist",
+      "Multiplayer flying and exploring real-world airports",
+      "Anyone willing to trade polish for an open aircraft and scenery pipeline",
+    ],
+    notFor: [
+      "You want a ten-minute pick-up-and-play flying game",
+      "You have a small SSD and no room for scenery",
+      "You need a hand-holding career mode like a commercial consumer sim",
+      "You expected console-style presentation out of the box",
+    ],
+    comparableTo: ["Microsoft Flight Simulator", "X-Plane", "Prepar3D", "DCS World"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install FlightGear with the PlayBound launcher, or download the official Windows/macOS/Linux build from flightgear.org. Avoid third-party mirrors.",
+      },
+      {
+        platform: "windows",
+        text: "Finish the official setup wizard, then launch FlightGear. The first run may fetch extra aircraft or scenery — let it finish before judging performance.",
+      },
+      {
+        platform: "all",
+        text: "Start with a simple piston aircraft at a familiar airport. Open settings for view, frame rate, and TerraSync before loading a heavy airliner.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is FlightGear free?",
+        a: "Yes. FlightGear is open-source under the GPL. There is no purchase, subscription, or scenery shop required to fly.",
+      },
+      {
+        q: "How much disk space does FlightGear need?",
+        a: "The base simulator is a few gigabytes. Worldwide scenery via TerraSync can grow into tens of gigabytes depending on where you fly. Treat recommended storage as a scenery budget, not just the installer size.",
+      },
+      {
+        q: "Does FlightGear work with a joystick?",
+        a: "Yes, and it is strongly recommended. Keyboard flying is possible for a first takeoff; a joystick or yoke makes the sim much more usable.",
+      },
+      {
+        q: "Can I fly online in FlightGear?",
+        a: "Yes. FlightGear has a multiplayer network. Use published procedures and frequencies, and read the multiplayer guide before joining busy airspace.",
+      },
+      {
+        q: "Is FlightGear as pretty as Microsoft Flight Simulator?",
+        a: "Not in the photogrammetry sense. FlightGear’s strength is an open aircraft and scenery pipeline you can inspect and extend, not competing with a paid streaming globe.",
+      },
+    ],
+  },
+
+  freeciv: {
+    qualityBar: clearsAll(
+      "Freeciv clears all five: no monetisation, a complete empire-builder, still maintained after decades, good enough to recommend beside paid 4X games, and distinctive because the rulesets are the point."
+    ),
+    longDescription:
+      "Freeciv is the long game of free strategy: a Civilization-inspired empire builder that has been rewritten, re-themed, and re-argued about since the mid-1990s. You settle cities, research a tech tree, wrangle governments, and try not to lose a veteran army to a spearmen joke you walked into. The classic loop is intact. What makes Freeciv itself is that almost none of that loop is frozen.\n\nRulesets are first-class. Classic, Civ2Civ3, experimental, alien, and community packs change what a ‘civ’ even is. Longturn games stretch a match across real-world days. Hotseat still exists for people who share a machine. The GTK and Qt clients are utilitarian in the way serious hobby software is utilitarian — they are there to host a ruleset, not to sell you a season pass.\n\nIt will not look like Civilization VI. It will not hold your hand through a cinematic advisor. It will let you play a 4X on a laptop from 2012, host a server for friends, and still be talking about the same design arguments the project had twenty years ago. That continuity is the feature.",
+    whyWePickedIt:
+      "If you want Civilization without a storefront, Freeciv is the honest answer: not a clone with a new coat of paint, but a thirty-year ruleset laboratory that is still played online.",
+    bestFor: [
+      "Civilization fans who want a free, moddable 4X",
+      "Longturn and multiplayer diplomacy games",
+      "Players who enjoy tinkering with rulesets and tilesets",
+      "Low-spec machines that still want a full empire-builder",
+    ],
+    notFor: [
+      "You want AAA 3D presentation and cinematic leaders",
+      "You refuse to read a manual or a ruleset description",
+      "You need a single ‘official’ balance forever",
+      "You only want a two-hour campaign with a scripted story",
+    ],
+    comparableTo: ["Sid Meier's Civilization", "Civilization II", "Civilization III", "C-evo"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install Freeciv with the PlayBound launcher, which opens the official Windows GTK4 setup, or download a package from freeciv.org for your OS.",
+      },
+      {
+        platform: "windows",
+        text: "Finish the official installer, then launch the GTK4 client. Start a local game against AI before joining a public server so you learn the UI.",
+      },
+      {
+        platform: "all",
+        text: "Pick a ruleset you recognise (classic or civ2civ3) for the first match. Custom tilesets and Longturn games can wait until the basics click.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Freeciv free?",
+        a: "Yes. Freeciv is open-source (GPL) with no purchase or in-game shop. Optional donations support the project; they are not required to play.",
+      },
+      {
+        q: "Is Freeciv the same as Civilization?",
+        a: "No. It is inspired by the Civilization series and implements similar empire-building, but it is an independent project with its own rulesets, clients, and multiplayer culture.",
+      },
+      {
+        q: "Can I play Freeciv online?",
+        a: "Yes. There are public servers, Longturn games, and you can host your own. PlayBound lists Freeciv server activity where a provider is wired up.",
+      },
+      {
+        q: "Does Freeciv have single-player?",
+        a: "Yes. You can play against AI, including hotseat. Multiplayer is a big part of the community, but you never have to go online.",
+      },
+      {
+        q: "Which Freeciv client should I use?",
+        a: "The Windows package PlayBound installs is the GTK4 client. Qt is also common. Use whichever your package provides; the ruleset matters more than the toolkit.",
+      },
+    ],
+  },
+
+  openciv3: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: false,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: false,
+      verdict:
+        "OpenCiv3 is a genuine open-source Civ III remake in progress: playable standalone with placeholder art, better with a legal Civilization III Complete install, and not a finished commercial-quality 4X yet.",
+      lastVerified: "2026-08-13",
+    },
+    longDescription:
+      "OpenCiv3 (the project formerly called C7) is an attempt to rebuild Civilization III in Godot so the game can live on modern machines and, eventually, under a licence that is not locked to 2001 installers. It already runs without owning Civ III: you get placeholder art and a rules sandbox. If you do own Civilization III Complete on Steam or GOG, OpenCiv3 can pick up the original graphics from common install paths.\n\nThat split is the honest product. This is not a polished Definitive Edition. It is a remake with a public GitHub, a roadmap, and the kind of missing edges you expect from an early Godot port of a deep 4X. Combat, civilopedia coverage, and UI will feel unfinished next to Firaxis’s later games — and next to Civ III itself on a good day.\n\nWe list it anyway because the alternative for Civ III on a modern PC is often compatibility theatre. OpenCiv3 is the project that is trying to make the design portable. If you want a finished free 4X tonight, play Freeciv. If you want to follow a Civ III remake and maybe feed it original art you already paid for, this is the page.",
+    whyWePickedIt:
+      "Civilization III still has a design worth preserving, and OpenCiv3 is the open remake actually shipping builds. We would rather catalog an honest work-in-progress than pretend shareware clones are the same game.",
+    bestFor: [
+      "Civilization III fans who want a modern, open client",
+      "People who already own Civ III Complete and want original art",
+      "Modders watching a Godot 4X remake take shape",
+      "Players who accept placeholder art in a standalone build",
+    ],
+    notFor: [
+      "You want a finished, campaign-complete 4X this weekend",
+      "You expected Firaxis-level UI and civilopedia depth today",
+      "You refuse to install a separate game for original graphics",
+      "You wanted Freeciv’s thirty-year ruleset stability under another name",
+    ],
+    comparableTo: ["Civilization III", "Freeciv", "Civilization II", "Call to Power"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install OpenCiv3 with the PlayBound launcher. The Windows zip from the C7-Game/OpenCiv3 GitHub releases runs standalone with placeholder art.",
+      },
+      {
+        platform: "windows",
+        text: "Launch OpenCiv3 and confirm it windowed. If you own Civilization III Complete, keep that install in a normal Steam or GOG folder so OpenCiv3 can detect original graphics.",
+      },
+      {
+        platform: "all",
+        text: "This is an early remake. Read the GitHub readme for known gaps before judging it as a finished Civ III replacement.",
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need Civilization III to play OpenCiv3?",
+        a: "No. OpenCiv3 runs standalone with placeholder art. A legal Civilization III Complete install is optional and unlocks original graphics when the remake finds it.",
+      },
+      {
+        q: "Is OpenCiv3 finished?",
+        a: "No. It is an actively developed remake. Core loops exist; presentation, completeness, and polish are still behind Civilization III itself.",
+      },
+      {
+        q: "Is OpenCiv3 legal?",
+        a: "The engine is an open-source remake. Original Civ III art is still Firaxis/2K property — only use it if you own a legal copy. Placeholder art needs no extra purchase.",
+      },
+      {
+        q: "How is OpenCiv3 different from Freeciv?",
+        a: "Freeciv is a mature Civilization-inspired 4X with its own rulesets. OpenCiv3 specifically targets Civilization III’s design and assets. They scratch adjacent itches, not the same one.",
+      },
+      {
+        q: "Where do OpenCiv3 builds come from?",
+        a: "Official Windows zips are published on the C7-Game/OpenCiv3 GitHub releases page. PlayBound installs that project, not a third-party fork.",
+      },
+    ],
+  },
+
+  "asphalt-legends": {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Asphalt Legends is a finished, actively updated arcade racer you can play without paying up front, but it is a free-to-play live-service with a prominent shop — not a no-monetisation catalog pick.",
+      lastVerified: "2026-08-13",
+    },
+    longDescription:
+      "Asphalt Legends (the PC continuation of Gameloft’s Asphalt arcade line, including the Unite branding) is a licensed-car racer built for short races, nitro, and a garage that never really stops expanding. On PC it is a free Steam/Epic download with controller support and the same live-service loop the mobile games taught a huge audience: race, upgrade, chase events, bump into the shop.\n\nIt is not sim racing. Steering is arcade, tracks are showpieces, and the fantasy is driving cars you will not own. That fantasy is funded by optional spending. You can play without paying; you cannot pretend the economy is a museum piece. If PlayBound’s five-point bar is a filter against pay-to-win treadmills, this title fails the ‘genuinely free’ criterion on purpose — we still list it because people search for a free arcade racer on PC and deserve an honest page rather than a silent omission.\n\nInstall through Steam when you can. The client wants DirectX 12, a 64-bit Windows 10 machine, and a network connection. Solo events and versus-AI exist; the live calendar is the real structure of the game.",
+    whyWePickedIt:
+      "It is the mainstream free arcade racer on PC. Cataloguing it with an honest quality bar is more useful than pretending the only free racers are open-source kart games.",
+    bestFor: [
+      "Arcade racers who want licensed cars and short events",
+      "Controller play on a mid-range PC or Steam Deck-class handheld",
+      "Players who already know Asphalt from mobile",
+      "People who will ignore the shop and just race",
+    ],
+    notFor: [
+      "You want a sim with tyre models and no nitro",
+      "You want a game with no live-service shop or seasonal grind",
+      "You are offline for long stretches",
+      "You expected an open-source racing project",
+    ],
+    comparableTo: ["Need for Speed", "Asphalt 8", "Asphalt 9", "Mario Kart"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "The straightforward PC install is Steam: add Asphalt Legends (free) and let Steam keep it updated. Epic also lists the game.",
+      },
+      {
+        platform: "windows",
+        text: "Launch from Steam, sign in with a Gameloft account if prompted, and complete the download. A controller is optional but better than keyboard for arcade racing.",
+      },
+      {
+        platform: "all",
+        text: "This is a live-service racer. Expect a shop and events. You can race without paying; skip the store if that is why you are here.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Asphalt Legends free?",
+        a: "It is free to download and race. Optional real-money purchases exist for cars, packs, and battle passes. You do not have to spend, but the shop is part of the design.",
+      },
+      {
+        q: "Is Asphalt Legends the same as Asphalt Legends Unite?",
+        a: "Unite was the live-service name on PC and consoles. Store pages now often say Asphalt Legends. PlayBound keeps the catalog slug asphalt-legends and treats Unite as an alias.",
+      },
+      {
+        q: "Does Asphalt Legends work offline?",
+        a: "It expects a broadband connection. Treat it as an online live-service, not a LAN kart racer.",
+      },
+      {
+        q: "Can I play Asphalt Legends with a controller?",
+        a: "Yes. Controllers are supported and are the better way to play on PC.",
+      },
+      {
+        q: "Is there a single-player mode?",
+        a: "Yes. Career-style and versus-AI events exist alongside multiplayer. The calendar of limited events is still the live-service spine.",
+      },
+    ],
+  },
+
+  "tinywind-pixel-pirate-sailing-game": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: false,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "TinyWind is a genuinely free-to-play-in-browser pirate sailing roguelite with real wind physics and an active solo developer — early, not finished, and not a live-service cash shop.",
+      lastVerified: "2026-08-13",
+    },
+    longDescription:
+      "TinyWind looks like a cute pixel boat and then asks you to sail it properly. Wind is not a decoration: points of sail, apparent wind, and the difference between reaching and running show up in a tiny sprite. Voyages are short roguelite runs — British waters, Spanish waters, treasures with encyclopaedia links, the occasional mythic pet — rather than an open-world pirate MMO.\n\nToday the honest way to play is in the browser at tinywind.io (also listed on itch). A Steam Early Access build is planned; until that ships, PlayBound treats this as a browser game, not a desktop installer. Progress may ask you to register. That is friction, not a gacha window.\n\nIt is early. Modes are still landing. Art is modest. The reason it is in the catalog is that the sailing model is more interesting than ninety percent of ‘click to pirate’ games, and you can try it without paying. If you wanted Sea of Thieves with a crew of five, this is not that. If you wanted ten-minute voyages that actually care about the wind, it is.",
+    whyWePickedIt:
+      "Free pirate games usually fake the water. TinyWind models the wind well enough that a short browser run feels like sailing, and that is rare enough to list while it is still early.",
+    bestFor: [
+      "Short pirate voyages in a browser",
+      "People who like wind, trim, and points of sail even in pixel art",
+      "Roguelite runs rather than a persistent MMO sandbox",
+      "Players who will give an early solo-dev game some slack",
+    ],
+    notFor: [
+      "You want a finished 1.0 Steam product today",
+      "You want a large-crew social pirate MMO",
+      "You refuse to create an account to save progress",
+      "You expected a downloaded Windows installer from PlayBound",
+    ],
+    comparableTo: ["Windward", "Sea of Thieves", "Pixel Piracy", "Sid Meier's Pirates!"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "TinyWind plays in your browser. Open https://tinywind.io (or the itch.io page) and start a voyage — there is no PlayBound desktop installer yet.",
+      },
+      {
+        platform: "all",
+        text: "Create an account if you want progress saved. Keyboard and touch both work; a Steam build with extra platform support is planned, not required to try the game.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is TinyWind free?",
+        a: "The current browser game is free to play. A paid Steam Early Access build is planned. There is no mobile-style gacha attached to the browser client we are describing.",
+      },
+      {
+        q: "Can I install TinyWind on Windows?",
+        a: "Not as a PlayBound launcher title yet. Play it in the browser. Wishlist Steam app 4827130 if you want a future desktop build.",
+      },
+      {
+        q: "Is TinyWind finished?",
+        a: "No. It is early and still adding modes. The sailing model is already the reason to try it.",
+      },
+      {
+        q: "Does TinyWind have multiplayer?",
+        a: "There is a live world with other captains and ranked/ladder features in development. You can still treat a voyage as a short solo run.",
+      },
+      {
+        q: "Why is this in a catalog of installable games?",
+        a: "Because people already look for it on PlayBound, it is free to try, and the honest install path today is the official site — not a third-party zip.",
+      },
+    ],
+  },
+
+  warframe: {
+    qualityBar: {
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Warframe is a huge, well-made co-op shooter you can play without paying, but Platinum, a cosmetic treadmill, and a dense living economy mean it fails a strict ‘genuinely free’ test.",
+      lastVerified: "2026-08-13",
+    },
+    longDescription:
+      "Warframe is Digital Extremes’ long-running free-to-play looter shooter: space ninja frames, parkour, guns that turn into melee, and a solar map that has been added to for more than a decade. You can play the whole way as a solo player — the game even has an official Solo matchmaking setting — or run squads of four through the same nodes.\n\nIt is generous for a live-service shooter and it is still a live-service shooter. Platinum buys cosmetics and convenience. Founders and deluxe skins exist. The foundry, mods, and Prime vaults are a second game about logistics. None of that makes the shooting bad. It does mean PlayBound will not stamp genuinelyFree on it.\n\nThe Windows client is a substantial download. Official installers come from Warframe.com (MSI) or Steam. PlayBound will not send you to a random ‘free Warframe’ zip. New players should expect a busy UI and a wiki tab. The payoff is one of the few F2P action games that still feels like a crafted co-op shooter rather than a battle-pass template.",
+    whyWePickedIt:
+      "If someone asks for a free co-op shooter that is actually large, Warframe is the honest answer — with the cash shop named in the assessment instead of hidden behind a slogan.",
+    bestFor: [
+      "Co-op looter-shooter players who like movement tech",
+      "People willing to learn a dense UI and a long quest list",
+      "Solo players who will use the official Solo setting",
+      "Anyone who wants a huge free download rather than a 200 MB indie",
+    ],
+    notFor: [
+      "You want a campaign with no live-service economy",
+      "You refuse any cosmetic shop on principle",
+      "You wanted a tiny install and a ten-minute tutorial",
+      "You expected an open-source game",
+    ],
+    comparableTo: ["Destiny 2", "The Division", "Anthem", "Monster Hunter"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install Warframe from the official site (Warframe.msi) or add the free Steam app. Do not download ‘cracked’ or third-party clients.",
+      },
+      {
+        platform: "windows",
+        text: "Run the installer or Steam, let the launcher finish the large content download, then create a Digital Extremes account if you do not have one.",
+      },
+      {
+        platform: "all",
+        text: "On first launch, complete the opening quests before shopping. Use Solo matchmaking if you want to play the star chart without a squad.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Warframe free?",
+        a: "It is free to download and play. Platinum and a large cosmetic/convenience shop exist. You can progress without paying; you will see the shop.",
+      },
+      {
+        q: "Can I play Warframe solo?",
+        a: "Yes. Digital Extremes ships an official Solo matchmaking option. Some content is easier in a squad, but the game is not raid-gated at the start.",
+      },
+      {
+        q: "How big is Warframe?",
+        a: "Plan on tens of gigabytes. The launcher download is much larger than a typical open-source catalog title.",
+      },
+      {
+        q: "Should I use Steam or the standalone installer?",
+        a: "Either official path is fine. Steam is simpler if you already live there. The standalone MSI from warframe.com is the other supported client.",
+      },
+      {
+        q: "Is Warframe on PlayBound an open-source game?",
+        a: "No. It is a commercial live-service title listed so free-to-play PC games have accurate pages, not because it matches the FOSS quality bar.",
+      },
+    ],
+  },
+
+  "mega-man-unlimited": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Mega Man Unlimited is a complete, free NES-style fangame with no shop — unofficial Capcom fan work, last shipped as a finished 2013 build rather than an actively patched live service.",
+      lastVerified: "2026-08-13",
+    },
+    longDescription:
+      "Mega Man Unlimited is MegaPhilX’s 2013 tribute to classic Mega Man: eight Robot Masters, original weapons, extra stages, and challenge modes that go well past a weekend ROM hack. It plays like the NES games on purpose — run, jump, learn a pattern, swap a weapon you earned fairly. There is no battle pass. There is no ‘energy tank microtransaction’.\n\nIt is also a fangame. Capcom did not publish it. PlayBound will not pretend it is Mega Man 11, and we will not host the zip. You download it from the creator’s site (megaphilx.com) and you should understand you are playing unofficial fan work that uses the feel of a commercial series.\n\nDevelopment on Unlimited itself is historical at this point; the 1.3.1 build is the one people mean. If you want an officially licensed Mega Man, buy one from Capcom. If you want a free, complete, brutally fair NES-style campaign that the fan community still points at, this is that game — downloaded from the author, not from a random aggregator.",
+    whyWePickedIt:
+      "It is one of the few Mega Man fangames that feels like a full numbered entry, it costs nothing, and the honest download is still the creator’s own site.",
+    bestFor: [
+      "Classic Mega Man fans who want another full eight-robot campaign",
+      "Players who like NES difficulty with modern quality-of-life options",
+      "People willing to download unofficial fan games from the author",
+      "Challenge-mode completionists",
+    ],
+    notFor: [
+      "You only play officially licensed Capcom releases",
+      "You want a 2026 live-service with patches every season",
+      "You need Steam achievements and cloud saves",
+      "You wanted Mega Man X movement rather than classic NES physics",
+    ],
+    comparableTo: ["Mega Man 9", "Mega Man 10", "Mega Man 11", "Mighty No. 9"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Download Mega Man Unlimited only from the creator’s site at megaphilx.com (the Unlimited game page). Do not use random ‘mega man unlimited free’ file hosts.",
+      },
+      {
+        platform: "windows",
+        text: "Unzip the 1.3.1 build and run the game executable. If you use an Xbox controller, the author provides an options file to drop in the game folder.",
+      },
+      {
+        platform: "all",
+        text: "This is unofficial fan software, not a Capcom product. Start on Easy if you are rusty; Original is the NES-style default.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Mega Man Unlimited official?",
+        a: "No. It is a fan game by MegaPhilX. Capcom did not publish it. Buy official Mega Man titles if you want a licensed product.",
+      },
+      {
+        q: "Is Mega Man Unlimited free?",
+        a: "Yes. The author distributes it without a store. Download it from megaphilx.com rather than a third-party mirror.",
+      },
+      {
+        q: "Does PlayBound install Mega Man Unlimited for me?",
+        a: "No. The launcher recipe is an external link to the official fan page. We do not redistribute the zip.",
+      },
+      {
+        q: "Is it still updated?",
+        a: "The widely played build is 1.3.1 from the 2010s. Treat it as a finished fangame, not a live-service with weekly patches.",
+      },
+      {
+        q: "Can I play as anyone besides Mega Man?",
+        a: "There is a second playable character unlocked by finishing Original mode, plus extra challenge modes after the main campaign.",
       },
     ],
   },

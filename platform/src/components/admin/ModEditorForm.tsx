@@ -3,7 +3,13 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DOWNLOAD_KINDS, MANAGED_BY, slugifyTitle, type ModPayload } from "@/lib/modPayload";
+import {
+  DOWNLOAD_KINDS,
+  MANAGED_BY,
+  MOD_PLATFORMS,
+  slugifyTitle,
+  type ModPayload,
+} from "@/lib/modPayload";
 import { ensureDerivedModFields, modEditorialReadiness } from "@/lib/enrich";
 import { CATALOG_STATUSES, normalizeStatus } from "@/lib/catalogStatus";
 import {
@@ -655,6 +661,36 @@ export function ModEditorForm({
           <p className="mt-1 text-[11px] text-muted-foreground">
             Relative to the base game folder (e.g. <code className="text-play">mods</code>). Leave empty for game root.
           </p>
+        </div>
+      </div>
+
+      <div>
+        <label className={label}>Desktop platforms</label>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Leave all unchecked for every OS. Check only the host OS when the add-on is Windows- or Linux-specific.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-4">
+          {MOD_PLATFORMS.map((p) => {
+            const on = (form.platforms || []).includes(p);
+            return (
+              <label key={p} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => {
+                    const next = new Set(form.platforms || []);
+                    if (on) next.delete(p);
+                    else next.add(p);
+                    patch(
+                      "platforms",
+                      MOD_PLATFORMS.filter((x) => next.has(x))
+                    );
+                  }}
+                />
+                {p}
+              </label>
+            );
+          })}
         </div>
       </div>
 
