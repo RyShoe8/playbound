@@ -584,8 +584,8 @@ export const editions: EditionSeed[] = [
       heroImage: "/games/holocure/editions/playbound.jpg",
       screenshots: [
         "/games/holocure/editions/playbound.jpg",
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_b8a34241e737cbe11311b1fe911e3b5e40e6c5ee.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_0b4a50d12f737a522960ba3b3229546f536ff57f.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_a393d743965dc088d53d97c493ee6728d74b384d.1920x1080.jpg",
       ],
     },
     faq: [
@@ -623,12 +623,18 @@ export const editions: EditionSeed[] = [
       website: "https://kay-yu.itch.io/holocure",
       wiki: "https://holocure.wiki.gg/",
     },
+    // Asset hashes verified live against the Steam appdetails API for appid
+    // 2420510. The previous two URLs both 404'd, which left this edition's
+    // card with no cover at all — EditionCard falls back heroImage → logo →
+    // game.coverImage, and a dead URL satisfies the first branch without
+    // rendering. Re-check these if the card ever goes blank again.
     branding: {
       heroImage:
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_0b4a50d12f737a522960ba3b3229546f536ff57f.1920x1080.jpg",
       screenshots: [
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
-        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_b8a34241e737cbe11311b1fe911e3b5e40e6c5ee.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_0b4a50d12f737a522960ba3b3229546f536ff57f.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_a393d743965dc088d53d97c493ee6728d74b384d.1920x1080.jpg",
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_f678c4dd81fd2c42b0682cba66317e6914bde75b.1920x1080.jpg",
       ],
     },
     installMethod: "official_download",
@@ -661,14 +667,11 @@ export const editions: EditionSeed[] = [
       github: "https://codeberg.org/TheStarport/FLUF",
       wiki: "https://freelancer.fandom.com",
     },
-    branding: {
-      heroImage: "https://raw.githubusercontent.com/FLHDE/freelancer-hd-edition-installer/master/Resources/Screenshots/1.png",
-      screenshots: [
-        "https://raw.githubusercontent.com/FLHDE/freelancer-hd-edition-installer/master/Resources/Screenshots/1.png",
-        "https://raw.githubusercontent.com/FLHDE/freelancer-hd-edition-installer/master/Resources/Screenshots/2.png",
-        "https://raw.githubusercontent.com/FLHDE/freelancer-hd-edition-installer/master/Resources/Screenshots/3.png",
-      ],
-    },
+    // No branding art: these pointed at a Resources/Screenshots folder on a
+    // "master" branch of FLHDE/freelancer-hd-edition-installer. That repo's
+    // default branch is "main" and it has no such folder, so all three 404'd
+    // and left an empty card. EditionCard degrades to game.coverImage /
+    // GameArt when branding is absent.
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
@@ -741,14 +744,10 @@ export const editions: EditionSeed[] = [
       wiki: "https://wiki.uqm.stack.nl",
       github: "https://github.com/uqm-fork/uqm",
     },
-    branding: {
-      heroImage: "https://sc2.sourceforge.net/screenshots/sc2_hi_01.png",
-      screenshots: [
-        "https://sc2.sourceforge.net/screenshots/sc2_hi_01.png",
-        "https://sc2.sourceforge.net/screenshots/sc2_hi_02.png",
-        "https://sc2.sourceforge.net/screenshots/sc2_hi_03.png",
-      ],
-    },
+    // No branding art: the sc2.sourceforge.net screenshot URLs previously here
+    // all 404'd, which renders an empty card rather than falling through.
+    // EditionCard degrades to game.coverImage / GameArt when branding is
+    // absent, so leaving this off looks correct until real art is supplied.
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
