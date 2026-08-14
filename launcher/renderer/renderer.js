@@ -203,7 +203,7 @@ function buildCatalogStatsSkeletonHtml() {
         ${cell("Games")}
         ${cell("Mods")}
         ${cell("Editions")}
-        ${cell("Active Players")}
+        ${cell("Gamers Playing")}
       </dl>
       <div class="catalog-stats-popular">
         <h3>Most Popular Right Now</h3>
@@ -242,7 +242,7 @@ function buildCatalogStatsCardHtml(live) {
         <div><dt>Games</dt><dd>${formatStatNumber(live.gameCount)}</dd></div>
         <div><dt>Mods</dt><dd>${formatStatNumber(live.modCount)}</dd></div>
         <div><dt>Editions</dt><dd>${formatStatNumber(live.editionCount)}</dd></div>
-        <div><dt>Active Players</dt><dd>${formatStatNumber(live.playingNow)}</dd></div>
+        <div><dt>Gamers Playing</dt><dd>${formatStatNumber(live.playingNow)}</dd></div>
       </dl>
       ${popularHtml}
       <p class="catalog-stats-footer">Across supported games • Updated every 15 min</p>

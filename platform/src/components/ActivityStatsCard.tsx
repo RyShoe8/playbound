@@ -138,7 +138,7 @@ export function CatalogStatsCard({
     { label: "Games", value: gameCount },
     { label: "Mods", value: modCount },
     { label: "Editions", value: editionCount },
-    { label: "Active Players", value: playingNow },
+    { label: "Gamers Playing", value: playingNow },
   ];
 
   return (
