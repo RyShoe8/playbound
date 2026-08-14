@@ -7,6 +7,7 @@ export const LAUNCHER_INSTALL_KINDS = [
   "direct-installer",
   "direct-exe",
   "openttd-zip",
+  "itch-zip",
   "external",
 ] as const;
 
