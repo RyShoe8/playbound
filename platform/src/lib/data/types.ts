@@ -109,7 +109,7 @@ export interface Game {
    * Catalog visibility. Omitted/undefined on seed rows treated as published.
    * `testing` is only returned when the caller loaded with includeTesting.
    */
-  status?: "draft" | "testing" | "published";
+  status?: "draft" | "watchlist" | "testing" | "published";
   platforms: string[];
   features: string[];
   launchMethods: LaunchMethod[];

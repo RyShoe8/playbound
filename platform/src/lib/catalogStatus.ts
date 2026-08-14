@@ -1,9 +1,9 @@
 /**
- * Catalog visibility: draft (CMS only), testing (admins), published (everyone).
+ * Catalog visibility: draft / watchlist (CMS only), testing (admins), published (everyone).
  * Boolean `published` remains synced as status === "published" for legacy filters.
  */
 
-export const CATALOG_STATUSES = ["draft", "testing", "published"] as const;
+export const CATALOG_STATUSES = ["draft", "watchlist", "testing", "published"] as const;
 export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
 
 export function isCatalogStatus(value: unknown): value is CatalogStatus {

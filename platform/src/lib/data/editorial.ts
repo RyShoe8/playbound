@@ -182,6 +182,50 @@ export const editorial: Record<string, GameEditorial> = {
     ],
   },
 
+  freedoom: {
+    qualityBar: clearsAll(
+      "Freedoom clears all five: completely free-software content under the BSD-3-Clause license, two massive standalone campaigns plus deathmatch, powered by the industry-standard GZDoom engine with modern rendering and controls, and fully playable out of the box."
+    ),
+    longDescription:
+      "When id Software open-sourced the classic Doom source code in 1997, they left behind a puzzle: the code was free, but the game data (IWADs containing levels, sounds, music, and sprites) remained proprietary. Freedoom was created to solve that puzzle completely.\n\nFreedoom provides a complete, 100% free-software replacement for Doom's data assets. It includes three distinct games in one package: Freedoom: Phase 1 (four distinct 9-level episodes inspired by classic episodic FPS design), Freedoom: Phase 2 (a massive continuous 32-level campaign), and FreeDM (a dedicated 32-level fast-paced arena deathmatch suite).\n\nOn PlayBound, Freedoom is paired directly with GZDoom, the premier modern source port. This means you don't just get raw 90s pixels — you get uncapped frame rates, widescreen and ultrawide support, true mouselook, dynamic lighting, hardware-accelerated OpenGL/Vulkan rendering, and native controller support without needing any configuration files or command-line setup.\n\nBecause Freedoom matches standard Doom IWAD specifications, it is also a gateway to thirty years of custom community WADs, total conversions, and mods like Brutal Doom, Project Brutality, and thousands of custom level sets.",
+    whyWePickedIt:
+      "Freedoom proves that legendary fast-paced boomer-shooter gameplay doesn't require commercial game files or grey-market ROM downloads. With GZDoom as the engine, it delivers dozens of hours of relentless demon-slaying and map exploration in a single, perfectly packaged one-click install.",
+    bestFor: [
+      "Fans of classic 90s shooters like Doom, Quake, Duke Nukem 3D, and Blood",
+      "Anyone who wants immediate, blistering 120+ FPS combat with modern mouselook",
+      "Players wanting an open platform for playing thousands of free community WADs and mods",
+      "Low-spec PCs, modern gaming rigs, and handhelds like the Steam Deck alike",
+    ],
+    notFor: [
+      "Players looking for modern narrative-heavy, cutscene-driven FPS campaigns",
+      "Those who dislike mazes, secret rooms, and keycard-hunting progression",
+      "Pure id Software purists who exclusively want the original 1993 copyrighted textures",
+    ],
+    comparableTo: ["Doom", "Doom II", "Quake", "Duke Nukem 3D", "Blood", "Heretic", "Hexen", "DUSK", "Amid Evil"],
+    faq: [
+      {
+        q: "Is Freedoom free and legal?",
+        a: "Yes, 100%. All graphics, sound effects, music, and levels in Freedoom were created from scratch by volunteer contributors and released under the permissive BSD 3-Clause license. No proprietary Doom assets are used.",
+      },
+      {
+        q: "What engine does PlayBound use for Freedoom?",
+        a: "PlayBound bundles GZDoom, the most advanced and widely supported modern Doom source port. It includes hardware acceleration (OpenGL / Vulkan), true mouselook, dynamic lighting, high resolution support, and controller integration.",
+      },
+      {
+        q: "What is the difference between Phase 1, Phase 2, and FreeDM?",
+        a: "Phase 1 contains four 9-level episodes with distinct bosses (similar in structure to The Ultimate Doom). Phase 2 is a single sprawling 32-level campaign with continuous weapon progression (similar to Doom II). FreeDM is a dedicated 32-level multiplayer deathmatch set.",
+      },
+      {
+        q: "Can I play custom community WADs with this install?",
+        a: "Yes! Because Freedoom acts as a full replacement IWAD and GZDoom is the host engine, you can drag and drop custom PWADs or mods onto gzdoom.exe to play community maps.",
+      },
+      {
+        q: "Does Freedoom support gamepads and controllers?",
+        a: "Yes. GZDoom features native plug-and-play support for Xbox, PlayStation, and generic PC controllers with customizable deadzones and sensitivity in the options menu.",
+      },
+    ],
+  },
+
   "0ad": {
     qualityBar: {
       genuinelyFree: true,
