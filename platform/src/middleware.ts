@@ -14,6 +14,7 @@ import { getToken } from "next-auth/jwt";
 const ALLOWED_PREFIXES = [
   "/welcome",
   "/api/auth", // NextAuth endpoints + the username claim route
+  "/about",
   "/privacy",
   "/terms",
 ];

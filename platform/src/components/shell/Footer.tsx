@@ -18,6 +18,7 @@ const links = [
   { href: "/launcher", label: "Launcher" },
   { href: "/submit-game", label: "Submit a game" },
   { href: "/report-bug", label: "Report a bug" },
+  { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
