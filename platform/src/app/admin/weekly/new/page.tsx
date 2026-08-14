@@ -1,20 +1,16 @@
 import type { Metadata } from "next";
 import { listAllGames } from "@/lib/catalog";
 import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
-import dbConnect from "@/lib/db";
-import WeeklyIssue from "@/lib/models/WeeklyIssue";
+import { getNewsletterFooterTemplate } from "@/lib/weekly";
 
 export const metadata: Metadata = { title: "Admin · New weekly issue" };
 
 export default async function AdminNewWeeklyPage() {
   const games = await listAllGames();
   const today = new Date().toISOString().slice(0, 10);
-
-  await dbConnect();
-  const lastIssue = await WeeklyIssue.findOne({}).sort({ createdAt: -1 }).lean();
-  const emailDraft = lastIssue?.emailDraft && typeof lastIssue.emailDraft === "object"
-    ? { footer: (lastIssue.emailDraft as any).footer }
-    : undefined;
+  const year = Number(today.slice(0, 4)) || new Date().getUTCFullYear();
+  const footer = await getNewsletterFooterTemplate({ year });
+  const emailDraft = footer ? { footer } : undefined;
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">

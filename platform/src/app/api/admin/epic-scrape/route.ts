@@ -2,48 +2,18 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { assertPublicHttpUrl } from "@/lib/pageMeta";
+import {
+  extractEpicProduct,
+  fetchEpicFreeGameByPageSlug,
+  fetchEpicProductWithFallback,
+  parseEpicProductSlug,
+} from "@/lib/epicStore";
 
 const EPIC_HOSTS = new Set(["store.epicgames.com", "www.epicgames.com", "epicgames.com"]);
 
 function isAllowedEpicUrl(url: URL): boolean {
   const host = url.hostname.toLowerCase().replace(/^www\./, "");
   return EPIC_HOSTS.has(host) || EPIC_HOSTS.has(url.hostname.toLowerCase()) || host.endsWith(".epicgames.com");
-}
-
-async function fetchEpicHtml(start: URL): Promise<Response> {
-  let current = start;
-  for (let hop = 0; hop < 5; hop++) {
-    const res = await fetch(current.toString(), {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      redirect: "manual",
-      next: { revalidate: 0 },
-    });
-
-    if (res.status >= 300 && res.status < 400) {
-      const location = res.headers.get("location");
-      if (!location) {
-        throw new Error("Redirect without location");
-      }
-      let nextUrl: URL;
-      try {
-        nextUrl = assertPublicHttpUrl(new URL(location, current).toString());
-      } catch {
-        throw new Error("Redirect target not allowed");
-      }
-      if (!isAllowedEpicUrl(nextUrl)) {
-        throw new Error("Redirect host not allowed");
-      }
-      current = nextUrl;
-      continue;
-    }
-
-    return res;
-  }
-  throw new Error("Too many redirects");
 }
 
 export async function POST(req: Request) {
@@ -71,27 +41,54 @@ export async function POST(req: Request) {
       );
     }
 
-    const res = await fetchEpicHtml(safe);
-
-    if (!res.ok) {
-      return NextResponse.json({ error: `Failed to fetch URL: ${res.status}` }, { status: 400 });
+    const slug = parseEpicProductSlug(safe.toString());
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Could not find a product slug in that Epic Store URL" },
+        { status: 400 }
+      );
     }
 
-    const html = await res.text();
+    try {
+      const product = await fetchEpicProductWithFallback(slug);
+      const extracted = extractEpicProduct(product, slug);
+      const description = (extracted.shortDescription || extracted.description || "").slice(0, 280);
+      return NextResponse.json({
+        title: extracted.title,
+        description,
+        imageUrl: extracted.coverImage || "",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const isNotFound = /not found/i.test(message) || /\(404\)/.test(message);
+      if (!isNotFound) {
+        console.error("Epic product fetch failed:", err);
+        return NextResponse.json(
+          { error: message || "Epic store lookup failed" },
+          { status: 400 }
+        );
+      }
+    }
 
-    const titleMatch =
-      html.match(/<meta\s+property=["']og:title["']\s+content=["'](.*?)["']/i) ||
-      html.match(/<title>(.*?)<\/title>/i);
-    const descMatch =
-      html.match(/<meta\s+property=["']og:description["']\s+content=["'](.*?)["']/i) ||
-      html.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i);
-    const imgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["'](.*?)["']/i);
+    try {
+      const free = await fetchEpicFreeGameByPageSlug(slug);
+      if (free) {
+        return NextResponse.json({
+          title: free.title,
+          description: free.description.slice(0, 280),
+          imageUrl: free.imageUrl,
+        });
+      }
+    } catch (err) {
+      console.error("Epic free-games catalog lookup failed:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      return NextResponse.json(
+        { error: message || "Epic store lookup failed" },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({
-      title: titleMatch ? titleMatch[1].replace(/ \| Epic Games Store/gi, "").trim() : "",
-      description: descMatch ? descMatch[1].trim() : "",
-      imageUrl: imgMatch ? imgMatch[1].trim() : "",
-    });
+    return NextResponse.json({ error: "Epic product not found" }, { status: 404 });
   } catch (error) {
     console.error("Epic Scrape Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

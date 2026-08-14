@@ -52,6 +52,7 @@ export const newsletterEmailDraftSchema = z.object({
       blueskyUrl: z.string().max(2000).default(""),
       redditUrl: z.string().max(2000).default(""),
       discordUrl: z.string().max(2000).default(""),
+      facebookUrl: z.string().max(2000).default(""),
       unsubscribeUrl: z.string().max(2000).default(""),
       copyrightYear: z.number().int().min(2020).max(2100).default(new Date().getUTCFullYear()),
     })
@@ -60,6 +61,7 @@ export const newsletterEmailDraftSchema = z.object({
       blueskyUrl: "",
       redditUrl: "",
       discordUrl: "",
+      facebookUrl: "",
       unsubscribeUrl: "",
       copyrightYear: new Date().getUTCFullYear(),
     }),

@@ -1,11 +1,15 @@
 import dbConnect from "@/lib/db";
 import WeeklyIssueModel from "@/lib/models/WeeklyIssue";
+import NewsletterEmailTemplate from "@/lib/models/NewsletterEmailTemplate";
+import type { NewsletterEmailDraft } from "@/lib/newsletterEmail";
 import {
   issueSlug,
   isoWeek,
   weeklyIssuesSeed,
   type WeeklyIssueSeed,
 } from "@/lib/data/weekly";
+
+const NEWSLETTER_FOOTER_TEMPLATE_ID = "footer";
 
 export type WeeklyIssue = WeeklyIssueSeed & {
   slug: string;
@@ -132,6 +136,48 @@ export async function getWeeklyIssueAdmin(
 export async function issueForGame(gameSlug: string): Promise<WeeklyIssue | undefined> {
   const all = await listWeeklyIssues();
   return all.find((i) => i.gameSlug === gameSlug);
+}
+
+export async function saveNewsletterFooterTemplate(
+  footer: NewsletterEmailDraft["footer"]
+): Promise<void> {
+  await dbConnect();
+  await NewsletterEmailTemplate.findOneAndUpdate(
+    { _id: NEWSLETTER_FOOTER_TEMPLATE_ID },
+    { $set: { footer } },
+    { upsert: true }
+  );
+}
+
+function footerFromUnknown(raw: unknown): NewsletterEmailDraft["footer"] | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const footer = (raw as { footer?: unknown }).footer;
+  if (!footer || typeof footer !== "object") return undefined;
+  return footer as NewsletterEmailDraft["footer"];
+}
+
+/** Latest saved newsletter footer, used as the default for new issues. */
+export async function getNewsletterFooterTemplate(opts?: {
+  year?: number;
+}): Promise<NewsletterEmailDraft["footer"] | undefined> {
+  try {
+    await dbConnect();
+    const doc = await NewsletterEmailTemplate.findById(NEWSLETTER_FOOTER_TEMPLATE_ID).lean();
+    const stored = footerFromUnknown(doc);
+    if (stored) {
+      return opts?.year ? { ...stored, copyrightYear: opts.year } : stored;
+    }
+
+    const last = await WeeklyIssueModel.findOne({ "emailDraft.footer": { $exists: true } })
+      .sort({ updatedAt: -1 })
+      .lean();
+    const fromIssue = footerFromUnknown(last?.emailDraft);
+    if (!fromIssue) return undefined;
+    return opts?.year ? { ...fromIssue, copyrightYear: opts.year } : fromIssue;
+  } catch (err) {
+    console.error("[weekly] getNewsletterFooterTemplate failed:", err);
+    return undefined;
+  }
 }
 
 export function buildIssueFromDate(publishedAt: string, gameSlug: string): Omit<WeeklyIssue, "published" | "id"> & {

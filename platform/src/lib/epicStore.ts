@@ -73,6 +73,99 @@ export async function fetchEpicProduct(slug: string): Promise<EpicProduct> {
   return (await res.json()) as EpicProduct;
 }
 
+/** Strip a trailing offer id like `-05ff58` if the full /p/ slug 404s. */
+export function slugWithoutOfferSuffix(slug: string): string | null {
+  const m = slug.match(/^(.*)-[0-9a-f]{4,8}$/i);
+  if (!m?.[1] || m[1] === slug) return null;
+  return m[1];
+}
+
+export async function fetchEpicProductWithFallback(slug: string): Promise<EpicProduct> {
+  try {
+    return await fetchEpicProduct(slug);
+  } catch (err) {
+    const alt = slugWithoutOfferSuffix(slug);
+    if (!alt) throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    if (!/not found/i.test(message) && !/\(404\)/.test(message)) throw err;
+    return await fetchEpicProduct(alt);
+  }
+}
+
+export type EpicCatalogSnippet = {
+  title: string;
+  description: string;
+  imageUrl: string;
+};
+
+function normalizeEpicPageSlug(value: string): string {
+  return value.trim().replace(/\/home$/i, "").toLowerCase();
+}
+
+function epicPageSlugEquals(candidate: unknown, slug: string): boolean {
+  if (typeof candidate !== "string" || !candidate.trim()) return false;
+  return normalizeEpicPageSlug(candidate) === normalizeEpicPageSlug(slug);
+}
+
+function pickEpicCatalogImage(keyImages: unknown): string {
+  if (!Array.isArray(keyImages)) return "";
+  const typed = keyImages.filter(
+    (img): img is { type?: string; url?: string } =>
+      Boolean(img) && typeof img === "object"
+  );
+  const order = ["OfferImageWide", "DieselStoreFrontWide", "Thumbnail", "OfferImageTall"];
+  for (const type of order) {
+    const hit = typed.find((img) => img.type === type && typeof img.url === "string" && img.url);
+    if (hit?.url) return hit.url;
+  }
+  const any = typed.find((img) => typeof img.url === "string" && img.url);
+  return any?.url ?? "";
+}
+
+function catalogElementMatchesSlug(el: Record<string, unknown>, slug: string): boolean {
+  if (epicPageSlugEquals(el.productSlug, slug) || epicPageSlugEquals(el.urlSlug, slug)) return true;
+  const mappings = [
+    ...(((el.catalogNs as { mappings?: { pageSlug?: string }[] } | undefined)?.mappings) ?? []),
+    ...(((el.offerMappings as { pageSlug?: string }[] | undefined) ?? [])),
+  ];
+  return mappings.some((m) => epicPageSlugEquals(m.pageSlug, slug));
+}
+
+function snippetFromCatalogElement(el: Record<string, unknown>): EpicCatalogSnippet | null {
+  const title = typeof el.title === "string" ? el.title.trim() : "";
+  if (!title) return null;
+  const description = typeof el.description === "string" ? el.description.trim() : "";
+  return {
+    title,
+    description,
+    imageUrl: pickEpicCatalogImage(el.keyImages),
+  };
+}
+
+/**
+ * SPT /p/ slugs often 404 on store-content. The free-games catalog JSON is public
+ * and includes pageSlug mappings (e.g. caravan-sandwitch-05ff58).
+ */
+export async function fetchEpicFreeGameByPageSlug(slug: string): Promise<EpicCatalogSnippet | null> {
+  const candidates = [slug, slugWithoutOfferSuffix(slug)].filter(
+    (s, i, arr): s is string => Boolean(s) && arr.indexOf(s) === i
+  );
+  const res = await fetch(
+    "https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US",
+    { headers: { "user-agent": "PlayBoundAdmin/1.0" }, next: { revalidate: 0 } }
+  );
+  if (!res.ok) throw new Error(`Epic free-games catalog request failed (${res.status})`);
+  const json = (await res.json()) as {
+    data?: { Catalog?: { searchStore?: { elements?: Record<string, unknown>[] } } };
+  };
+  const elements = json.data?.Catalog?.searchStore?.elements ?? [];
+  for (const want of candidates) {
+    const hit = elements.find((el) => catalogElementMatchesSlug(el, want));
+    if (hit) return snippetFromCatalogElement(hit);
+  }
+  return null;
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map(String).map((s) => s.trim()).filter(Boolean);
