@@ -13,6 +13,7 @@ import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
   fetchOpenCiv3Players,
+  fetchHoloCurePlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -73,6 +74,10 @@ const providers: Record<string, ServerProvider> = {
   openciv3: {
     slug: "openciv3",
     fetchServers: fetchOpenCiv3Players,
+  },
+  holocure: {
+    slug: "holocure",
+    fetchServers: fetchHoloCurePlayers,
   },
 };
 

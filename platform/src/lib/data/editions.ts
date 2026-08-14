@@ -528,4 +528,91 @@ export const editions: EditionSeed[] = [
     aliases: ["Restoration", "SWGEmu"],
     verificationLevel: "untested",
   },
+  {
+    gameSlug: "holocure",
+    slug: "playbound",
+    name: "HoloCure: PlayBound Edition",
+    shortDescription: "HoloCure with PlayBound multiplayer and verified community modifications.",
+    description:
+      "The definitive PlayBound edition of HoloCure — Save the Fans! featuring pre-configured co-op multiplayer, verified quality-of-life enhancements, save-data protection, and integrated PlayBound presence tracking.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 1,
+    links: {
+      website: "https://kay-yu.itch.io/holocure",
+      wiki: "https://holocure.wiki.gg/",
+      github: "https://github.com/Kay-Yu-Mods/HoloCure-Multiplayer",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        url: "https://kay-yu.itch.io/holocure",
+        fileName: "HoloCure.zip",
+        exeHint: "HoloCure|holocure",
+        knownExePaths: [
+          "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES%\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+        ],
+        note: "PlayBound Edition with verified multiplayer co-op and community mods pre-configured.",
+      },
+    },
+    features: [
+      "Multiplayer",
+      "Verified Mod Pack",
+      "Automatic Updates",
+      "PlayBound Integration",
+      "Controller Support",
+      "Steam Deck Playable",
+    ],
+    tags: ["Multiplayer", "Co-op", "Verified Mods", "PlayBound Edition"],
+    aliases: ["HoloCure PlayBound", "HoloCure Multiplayer"],
+    verificationLevel: "playbound_verified",
+    faq: [
+      {
+        q: "What is included in the HoloCure PlayBound Edition?",
+        a: "The PlayBound Edition packages the verified HoloCure Multiplayer co-op mod alongside recommended quality-of-life enhancements and native PlayBound presence tracking into a single one-click install.",
+      },
+      {
+        q: "Will this affect my existing HoloCure save files?",
+        a: "No. HoloCure saves are stored separately in %LOCALAPPDATA%\\HoloCure (save_n.dat) and are never overwritten or deleted by PlayBound.",
+      },
+      {
+        q: "Can I still play the vanilla single-player edition?",
+        a: "Yes. The standard unmodded Official Edition remains available and can be selected at any time.",
+      },
+    ],
+  },
+  {
+    gameSlug: "holocure",
+    slug: "official",
+    name: "Official Vanilla Edition",
+    shortDescription: "Standard unmodded HoloCure standalone build.",
+    description:
+      "The original, pure single-player HoloCure experience directly from official distributions without modifications.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 10,
+    links: {
+      website: "https://kay-yu.itch.io/holocure",
+      wiki: "https://holocure.wiki.gg/",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://kay-yu.itch.io/holocure",
+        fileName: "HoloCure.zip",
+        sizeMB: 250,
+      },
+    },
+    features: ["Singleplayer", "Controller Support", "Steam Deck Playable"],
+    tags: ["Vanilla", "Official", "Singleplayer"],
+    aliases: ["Vanilla", "Standard"],
+    verificationLevel: "official",
+  },
 ];
+

@@ -4401,8 +4401,22 @@ function prepareDirRemoval(slug, infos) {
   killProcessesUnderDirs(list.map((i) => i.dir).filter(Boolean));
 }
 
+function isProtectedSaveDirectory(dir) {
+  if (!dir) return false;
+  const norm = path.normalize(dir).toLowerCase();
+  const localAppData = (process.env.LOCALAPPDATA || "").toLowerCase();
+  if (localAppData && norm === path.join(localAppData, "holocure").toLowerCase()) {
+    return true;
+  }
+  return false;
+}
+
 async function removeDirWithRetries(dir) {
   if (!dir || !fs.existsSync(dir)) return;
+  if (isProtectedSaveDirectory(dir)) {
+    console.warn(`[uninstall] Refusing to delete protected user save directory: ${dir}`);
+    return;
+  }
   const waits = [0, 350, 500, 500, 700];
   let lastErr = null;
   for (let i = 0; i < waits.length; i++) {

@@ -92,3 +92,9 @@ export function fetchAsphaltLegendsUnitePlayers(): Promise<GameServer[]> {
 export function fetchOpenCiv3Players(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(3910, { label: "OpenCiv3" });
 }
+
+/** HoloCure — Save the Fans! — Steam app 2420510. */
+export function fetchHoloCurePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2420510, { label: "HoloCure" });
+}
+
