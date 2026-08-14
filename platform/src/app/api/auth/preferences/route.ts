@@ -58,7 +58,7 @@ export async function PATCH(req: Request) {
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: { "preferences.compatibilityFilter": compatibilityFilter } },
-      { new: true }
+      { returnDocument: "after" }
     ).select("preferences");
 
     if (!user) {

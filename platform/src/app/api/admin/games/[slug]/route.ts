@@ -96,7 +96,7 @@ export async function PATCH(
         // Retain the old slug so its indexed URLs keep resolving.
         ...(isRename ? { $addToSet: { previousSlugs: slug } } : {}),
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!doc) {

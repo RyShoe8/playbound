@@ -28,7 +28,7 @@ export async function PATCH(
     const doc = await CatalogGame.findOneAndUpdate(
       { slug },
       { $set: { complete: body.complete } },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!doc) {

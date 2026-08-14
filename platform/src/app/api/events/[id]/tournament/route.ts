@@ -66,7 +66,7 @@ export async function POST(req: Request, ctx: Ctx) {
       {
         $set: { state: "checked_in", checkedInAt: new Date() },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (!p) {
       return NextResponse.json(

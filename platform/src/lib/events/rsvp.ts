@@ -76,7 +76,7 @@ export async function setEventRsvp(opts: {
       $set: { status: opts.status },
       $setOnInsert: { eventId: event._id, userId: opts.userId },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   // Tournament: keep participant row in sync with going RSVP.

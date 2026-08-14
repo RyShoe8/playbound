@@ -31,7 +31,7 @@ export async function PATCH(
         adminNotes: body.adminNotes || null,
         decidedAt: new Date(),
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!item) {

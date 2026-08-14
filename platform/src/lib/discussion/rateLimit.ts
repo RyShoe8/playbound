@@ -26,7 +26,7 @@ export async function checkRateLimit(
   const opened = await RateLimitBucket.findOneAndUpdate(
     { key, expiresAt: { $lte: now } },
     { $set: { count: 1, windowStart: now, expiresAt } },
-    { new: true }
+    { returnDocument: "after" }
   );
   if (opened) return { ok: true };
 
@@ -39,7 +39,7 @@ export async function checkRateLimit(
   const bumped = await RateLimitBucket.findOneAndUpdate(
     { key, count: { $lt: limit.max } },
     { $inc: { count: 1 }, $setOnInsert: { windowStart: now, expiresAt } },
-    { new: true, upsert: true }
+    { returnDocument: "after", upsert: true }
   ).catch(() => null);
 
   if (bumped) return { ok: true };

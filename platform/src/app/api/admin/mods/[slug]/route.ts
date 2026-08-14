@@ -69,7 +69,7 @@ export async function PATCH(
           managedBy: body.managedBy || "admin",
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!doc) {
