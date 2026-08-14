@@ -167,6 +167,33 @@ export interface EditionInstallConfig {
     requiresBaseDir?: boolean;
     /** Numbered get-to-playing steps shown on the edition page + launcher. */
     steps?: { platform?: string; text: string; command?: string | null }[];
+    /**
+     * Community mod loader applied on top of an install PlayBound does not own
+     * (e.g. a Steam copy). The launcher applies this after install and re-checks
+     * it before every launch, because the store can restore the original
+     * executable at any time and silently disable the mods.
+     */
+    modLoader?: {
+      /** Only "aurie" today — GameMaker games via the Aurie framework. */
+      kind: "aurie";
+      /** Files fetched and placed relative to the game folder. */
+      files: {
+        url: string;
+        fileName: string;
+        /** Folder under the game dir. Must not escape it. */
+        dest: string;
+        extract?: boolean;
+        /** Path (under dest) proving extraction finished, so it isn't redone. */
+        extractedMarker?: string;
+      }[];
+      /** Where the patcher and loader core were placed by `files` above. */
+      patcherFileName: string;
+      patcherDest: string;
+      nativeDllFileName: string;
+      nativeDllDest: string;
+      /** Upstream build this combination was last verified against. */
+      testedGameVersion?: string;
+    };
   };
   external_installer?: { url?: string; instructions?: string };
   manual?: {
