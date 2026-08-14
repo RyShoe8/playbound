@@ -132,72 +132,8 @@ async function ingestProvider(store: StoreSlug): Promise<IngestionResult> {
         if (gameDoc) {
           gameId = String((gameDoc as { _id: unknown })._id);
         }
-      } else if (matchResult.confidence === "unmatched" && offer.isBaseGame) {
-        // Create a new catalog-only game entry.
-        try {
-          const newSlug = slugify(offer.title);
-          const existingSlug = await CatalogGame.findOne({ slug: newSlug })
-            .select("_id")
-            .lean();
-
-          if (!existingSlug) {
-            const newGame = await CatalogGame.create({
-              slug: newSlug,
-              title: offer.title,
-              tagline: offer.description?.slice(0, 200) || `Free on ${offer.store}`,
-              description: offer.description || `${offer.title} is available for free.`,
-              developerSlug: slugify(offer.developer || "unknown"),
-              developerName: offer.developer || null,
-              genres: [],
-              tags: [],
-              license: "proprietary",
-              releaseYear: new Date().getFullYear(),
-              sizeMB: 0,
-              platforms: offer.platforms,
-              features: [],
-              launchMethods: [],
-              browserPlayable: false,
-              steamDeck: false,
-              website: offer.storeUrl || offer.claimUrl,
-              coverImage: offer.coverImage || null,
-              videos: offer.videos || [],
-              art: { from: "#1a1a2e", to: "#16213e", icon: "Gamepad2" },
-              systemRequirements: {
-                min: `See ${offer.store === "steam" ? "Steam" : offer.store === "epic" ? "Epic Games Store" : "store page"}`,
-                recommended: `See ${offer.store === "steam" ? "Steam" : offer.store === "epic" ? "Epic Games Store" : "store page"}`,
-              },
-              playboundSupported: false,
-              status: "published",
-              published: true,
-              steamAppId:
-                offer.store === "steam" ? offer.externalId : null,
-              epicStoreUrl:
-                offer.store === "epic" ? offer.storeUrl : null,
-              gogStoreUrl:
-                offer.store === "gog" ? offer.storeUrl : null,
-              externalIds: {
-                epic: offer.store === "epic" ? offer.externalId : null,
-                steam: offer.store === "steam" ? offer.externalId : null,
-                gog: offer.store === "gog" ? offer.externalId : null,
-              },
-            });
-            gameSlug = newSlug;
-            gameId = String(newGame._id);
-            result.gamesCreated++;
-          } else {
-            // Slug collision — use existing game.
-            gameSlug = newSlug;
-            gameId = String((existingSlug as { _id: unknown })._id);
-            result.gamesMatched++;
-          }
-        } catch (createErr) {
-          console.error(
-            `[ingestion] Failed to create game for ${offer.title}:`,
-            createErr
-          );
-          result.gamesUnmatched++;
-        }
       } else {
+        // Unmatched store giveaway: keep offer standalone without creating stub catalog game records.
         result.gamesUnmatched++;
       }
 

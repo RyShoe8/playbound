@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld("playbound", {
     ipcRenderer.invoke("install", slug, targetDir, editionSlug || null, addons),
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
+  addCustomGame: (customTitle) => ipcRenderer.invoke("add-custom-game", customTitle || null),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
   play: (slug, join, editionSlug) =>
     ipcRenderer.invoke("play", slug, join || null, editionSlug || null),
