@@ -11,7 +11,7 @@ import {
   type LauncherOs,
 } from "@/lib/launcherDownload";
 
-export const PLAYBOUND_HANDOFF_MS = 1500;
+export const PLAYBOUND_HANDOFF_MS = 2000;
 
 export type PlayboundHandoffResult = "launched" | "download" | "miss";
 
@@ -45,12 +45,13 @@ export function startLauncherDownload(downloadUrl: string): void {
 
 /**
  * Attempt playbound:// then, if the tab never blurs/hides, treat as a miss.
- * When `downloadUrl` is set, auto-start the launcher installer on miss.
+ * Will only auto-start installer download if `autoDownload: true` is explicitly passed.
  */
 export function openPlayboundDeepLink(
   deepLink: string,
   opts?: {
     downloadUrl?: string | null;
+    autoDownload?: boolean;
     timeoutMs?: number;
     onResult?: (result: PlayboundHandoffResult) => void;
   }
@@ -63,7 +64,7 @@ export function openPlayboundDeepLink(
     if (settled) return;
     settled = true;
     cleanup();
-    if (result === "miss" && opts?.downloadUrl) {
+    if (result === "miss" && opts?.downloadUrl && opts?.autoDownload) {
       startLauncherDownload(opts.downloadUrl);
       opts.onResult?.("download");
       return;
