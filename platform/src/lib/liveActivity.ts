@@ -501,16 +501,19 @@ async function computeEditionLiveStats(
   gameSlug: string,
   editionSlug: string
 ): Promise<EntityLiveStats> {
-  const [platformPlayers, playersThisMonth, mp] = await Promise.all([
+  const extFn = EXTERNAL_CONCURRENT_PROVIDERS[gameSlug];
+  const [platformPlayers, playersThisMonth, mp, externalPlayers] = await Promise.all([
     countActivePlatformPlayers({ gameSlug, editionSlug }),
     countPlayersThisMonth({ gameSlug, editionSlug }),
     multiplayerForEdition(gameSlug, editionSlug),
+    extFn ? withTimeout(extFn(), MULTIPLAYER_FANOUT_MS, 0) : Promise.resolve(0),
   ]);
   const asOf = new Date().toISOString();
+  const totalLive = mp.players + platformPlayers + externalPlayers;
   return {
     multiplayerPlayers: mp.players,
-    platformPlayers,
-    playingNow: mp.players + platformPlayers,
+    platformPlayers: platformPlayers + externalPlayers,
+    playingNow: totalLive,
     playersThisMonth,
     serverCount: mp.servers,
     installsThisMonth: 0,
