@@ -257,6 +257,8 @@ function hostAllowedForDownload(hostname) {
   if (host === "megaphilx.com" || host.endsWith(".megaphilx.com")) return true;
   if (host === "villagersandheroes.com" || host.endsWith(".villagersandheroes.com")) return true;
   if (host === "download.flightgear.org" || host.endsWith(".flightgear.org")) return true;
+  // Brewall's EverQuest map packs — see verifiedModsWave.ts.
+  if (host === "eqmaps.info" || host.endsWith(".eqmaps.info")) return true;
   // MMOs that ship their own installer — see launcherInstallBySlug in
   // platform/src/lib/data/launcherInstall.ts. Each pairs an exact host with a
   // dotted-suffix match, so a lookalike like "evilguildwars2.com" cannot pass.
@@ -1114,6 +1116,13 @@ async function fetchModInstall(slug) {
   if (!res.ok) throw new Error(`Couldn't load mod (${res.status})`);
   const data = await res.json();
   if (!data?.install) throw new Error("Invalid mod response");
+  // Game catalog entries and edition install configs already authorize their
+  // own download hosts this way; mods did not, so every new mod host needed a
+  // hardcoded allowlist entry and therefore a fresh signed launcher release.
+  // The payload comes from our own API over an allowlisted API base, which is
+  // the same trust boundary the catalog and edition paths rely on.
+  registerDownloadHostFromUrl(data.install.url);
+  registerDownloadHostFromUrl(data.install.directUrl);
   return data.install;
 }
 

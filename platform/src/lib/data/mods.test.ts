@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mods } from "./mods";
 import { retiredModSlugs } from "./retiredMods";
+import { developersBySlug } from "./developers";
 
 type Seed = Record<string, string>;
 const all = mods as unknown as Seed[];
@@ -71,5 +72,61 @@ describe("mod seed hygiene", () => {
   it("has no duplicate retired slugs", () => {
     const dupes = retiredModSlugs.filter((s, i) => retiredModSlugs.indexOf(s) !== i);
     expect(dupes).toEqual([]);
+  });
+});
+
+/**
+ * Guards for the individually-verified wave. Each of these encodes a specific
+ * upstream fact that a well-meaning edit could silently undo — see the header
+ * and REJECTED list in verifiedModsWave.ts for why each one matters.
+ */
+describe("verified mods wave", () => {
+  const bySlug = (slug: string) => {
+    const found = all.find((m) => m.slug === slug);
+    if (!found) throw new Error(`missing seed mod: ${slug}`);
+    return found;
+  };
+
+  it("keeps Brewall's maps out of EverQuest's maps root", () => {
+    // EverQuest rewrites ~100 default zone maps in the maps root on startup,
+    // so anything installed there is silently lost. Upstream requires a named
+    // subfolder.
+    const brewall = bySlug("everquest-brewall-maps");
+    expect(brewall.installRelativePath).toBe("maps/Brewall");
+    expect(brewall.directUrl).toMatch(/^https:\/\/www\.eqmaps\.info\//);
+  });
+
+  it("keeps the eqmaps.info download unpublished until a launcher ships that host", () => {
+    // Installing this on a launcher without eqmaps.info allowlisted fails with
+    // DOWNLOAD_HOST_BLOCKED. Delete this test when the entry goes live.
+    expect(bySlug("everquest-brewall-maps").published).toBe(false);
+  });
+
+  it("leaves Wesnoth campaigns to the in-game add-on manager", () => {
+    // None of the three publish release assets, so a github-zip would fall
+    // back to a `<repo>-master/` source archive — the wrong folder name for
+    // Wesnoth's add-on id, and for two of them a source tree needing a build.
+    const wesnoth = [
+      "wesnoth-invasion-from-the-unknown",
+      "wesnoth-after-the-storm",
+      "wesnoth-legend-of-the-invincibles",
+    ].map(bySlug);
+
+    for (const m of wesnoth) {
+      expect(m.downloadKind).toBe("external");
+      expect(m.githubRepo).toBeTruthy();
+      expect(m.directUrl ?? null).toBeNull();
+    }
+  });
+
+  it("names a developer that actually exists", () => {
+    for (const slug of [
+      "everquest-brewall-maps",
+      "wesnoth-invasion-from-the-unknown",
+      "wesnoth-after-the-storm",
+      "wesnoth-legend-of-the-invincibles",
+    ]) {
+      expect(developersBySlug.has(bySlug(slug).developerSlug)).toBe(true);
+    }
   });
 });
