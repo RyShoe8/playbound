@@ -617,6 +617,14 @@ async function renderHomeView() {
       <div id="home-recent-grid" class="game-grid"></div>
     </div>
 
+    <div id="home-free-offers-section" class="hidden">
+      <div class="section-header">
+        <span>🎁 Free Games This Week</span>
+        <button class="btn-secondary btn-sm" id="home-browse-free-games">See All on Web</button>
+      </div>
+      <div id="home-free-offers-grid" class="free-offers-grid"></div>
+    </div>
+
     <div class="section-header">
       <span>Newest Games</span>
       <button class="btn-secondary btn-sm" id="home-browse-games">Browse Games</button>
@@ -628,6 +636,9 @@ async function renderHomeView() {
   `;
 
   document.getElementById("home-browse-games")?.addEventListener("click", () => navigateTo("games"));
+  document.getElementById("home-browse-free-games")?.addEventListener("click", () => {
+    window.playbound.openExternal("https://playbound.club/free-games");
+  });
 
   /**
    * Local data only. Recently-played and the catalog are both read from
@@ -710,6 +721,19 @@ async function renderHomeView() {
       } else {
         popularGrid.innerHTML = `<p class="view-sub">No popularity data yet.</p>`;
       }
+    }
+  void (async () => {
+    try {
+      const res = await window.playbound.getFreeOffers?.();
+      const offers = Array.isArray(res?.offers) ? res.offers : [];
+      const freeSec = document.getElementById("home-free-offers-section");
+      const freeGrid = document.getElementById("home-free-offers-grid");
+      if (freeSec && freeGrid && offers.length > 0) {
+        freeSec.classList.remove("hidden");
+        freeGrid.replaceChildren(...offers.map(createFreeOfferCard));
+      }
+    } catch {
+      /* ignore */
     }
   })();
 
@@ -4531,6 +4555,113 @@ function createGameCard(game) {
   card.appendChild(body);
 
   card.addEventListener("click", () => openGameDetail(game.slug, currentView));
+  return card;
+}
+
+function formatOfferExpiration(endDate) {
+  if (!endDate) return null;
+  const end = new Date(endDate);
+  const diffMs = end.getTime() - Date.now();
+  if (diffMs <= 0) return null;
+  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  if (diffHours < 24) {
+    const hours = Math.floor(diffHours);
+    return hours <= 1 ? "Ends today" : `${hours}h left`;
+  }
+  if (diffDays < 2) return "Ends tomorrow";
+  if (diffDays < 7) {
+    return `Ends ${end.toLocaleDateString("en-US", { weekday: "short" })}`;
+  }
+  return `${Math.floor(diffDays)}d left`;
+}
+
+function storeDisplayName(store) {
+  const names = {
+    epic: "Epic Games",
+    steam: "Steam",
+    gog: "GOG",
+    prime_gaming: "Prime Gaming",
+  };
+  return names[store] || store;
+}
+
+function offerTypeBadgeLabel(type, store) {
+  if (type === "free_to_keep") return "FREE TO KEEP";
+  if (type === "free_weekend") return "FREE WEEKEND";
+  if (type === "free_trial") return "FREE TRIAL";
+  if (type === "free_with_subscription") return store === "prime_gaming" ? "PRIME" : "SUBSCRIPTION";
+  return "FREE";
+}
+
+function createFreeOfferCard(offer) {
+  const card = document.createElement("div");
+  card.className = "free-offer-card";
+
+  const displayTitle = (offer.metadata && offer.metadata.title) || offer.unmatchedTitle || offer.externalId || "Free Game";
+  const storeName = storeDisplayName(offer.store);
+  const typeLabel = offerTypeBadgeLabel(offer.offerType, offer.store);
+  const expiry = formatOfferExpiration(offer.endDate);
+
+  const banner = document.createElement("div");
+  banner.className = "free-offer-banner";
+  if (offer.coverImage) {
+    const img = document.createElement("img");
+    img.className = "free-offer-cover";
+    img.src = offer.coverImage;
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("error", () => {
+      img.remove();
+      banner.textContent = displayTitle.charAt(0);
+    });
+    banner.appendChild(img);
+  } else {
+    banner.textContent = displayTitle.charAt(0);
+  }
+
+  const storeBadge = document.createElement("span");
+  storeBadge.className = `store-badge store-badge-${escapeHtml(offer.store)}`;
+  storeBadge.textContent = storeName;
+  banner.appendChild(storeBadge);
+
+  const typeBadge = document.createElement("span");
+  typeBadge.className = "offer-type-badge";
+  typeBadge.textContent = typeLabel;
+  banner.appendChild(typeBadge);
+
+  card.appendChild(banner);
+
+  const body = document.createElement("div");
+  body.className = "free-offer-body";
+  body.innerHTML = `
+    <div class="free-offer-title" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</div>
+    <div class="free-offer-meta">
+      ${offer.retailPrice ? `<span class="free-offer-price-old">${escapeHtml(offer.retailPrice)}</span>` : ""}
+      <span class="free-offer-free-label">FREE</span>
+      ${expiry ? `<span class="free-offer-expiry">⏱ ${escapeHtml(expiry)}</span>` : ""}
+    </div>
+    <div class="free-offer-actions">
+      <button class="btn-primary btn-sm btn-claim" type="button">Claim on ${escapeHtml(storeName)}</button>
+    </div>
+  `;
+
+  body.querySelector(".btn-claim")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (offer.claimUrl) {
+      window.playbound.openExternal(offer.claimUrl);
+    }
+  });
+
+  card.addEventListener("click", () => {
+    if (offer.gameSlug) {
+      openGameDetail(offer.gameSlug, currentView);
+    } else if (offer.claimUrl) {
+      window.playbound.openExternal(offer.claimUrl);
+    }
+  });
+
+  card.appendChild(body);
   return card;
 }
 

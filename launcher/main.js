@@ -4861,6 +4861,17 @@ ipcMain.handle("get-events", async () => {
     return { events: [] };
   }
 });
+ipcMain.handle("get-free-offers", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/free-offers`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) return { offers: [], count: 0 };
+    return await res.json();
+  } catch {
+    return { offers: [], count: 0 };
+  }
+});
 ipcMain.handle("get-all-servers", async () => {
   let providers = [];
   try {

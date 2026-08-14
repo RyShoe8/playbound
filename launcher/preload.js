@@ -72,6 +72,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getModsCatalog: () => ipcRenderer.invoke("get-mods-catalog"),
   getGearCatalog: () => ipcRenderer.invoke("get-gear-catalog"),
   getEvents: () => ipcRenderer.invoke("get-events"),
+  getFreeOffers: () => ipcRenderer.invoke("get-free-offers"),
   pingHosts: (hosts) => ipcRenderer.invoke("ping-hosts", hosts),
   getSettings: () => ipcRenderer.invoke("get-settings"),
   saveSettings: (patch) => ipcRenderer.invoke("save-settings", patch),

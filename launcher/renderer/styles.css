@@ -1843,3 +1843,151 @@ textarea.input-text {
   justify-content: center;
   color: #a78bfa;
 }
+
+/* Free Offers Grid & Cards */
+.free-offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.free-offer-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.free-offer-card:hover {
+  transform: translateY(-4px);
+  background: var(--bg-card-hover);
+  border-color: rgba(52, 210, 123, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.free-offer-banner {
+  height: 124px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+}
+
+.free-offer-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.free-offer-card:hover .free-offer-cover {
+  transform: scale(1.04);
+}
+
+.store-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+
+.store-badge-epic {
+  background: rgba(0, 120, 242, 0.85);
+}
+
+.store-badge-steam {
+  background: rgba(23, 26, 38, 0.9);
+  border: 1px solid rgba(102, 192, 244, 0.4);
+}
+
+.store-badge-gog {
+  background: rgba(134, 38, 142, 0.85);
+}
+
+.store-badge-prime_gaming {
+  background: rgba(0, 168, 225, 0.85);
+}
+
+.offer-type-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #0c0a12;
+  background: #34d27b;
+  box-shadow: 0 2px 8px rgba(52, 210, 123, 0.4);
+  z-index: 2;
+}
+
+.free-offer-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6px;
+}
+
+.free-offer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.free-offer-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.free-offer-price-old {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.free-offer-free-label {
+  font-weight: 800;
+  color: #34d27b;
+}
+
+.free-offer-expiry {
+  margin-left: auto;
+  font-size: 11px;
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.free-offer-actions {
+  margin-top: 6px;
+  display: flex;
+}
+
+.free-offer-actions button {
+  width: 100%;
+}
+
