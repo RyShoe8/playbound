@@ -526,4 +526,19 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     url: "https://megaphilx.com/index.php/home/games/mega-man-unlimited/",
     note: "Unofficial fangame. Download only from the creator’s site — PlayBound does not host the zip.",
   },
+
+  holocure: {
+    enabled: true,
+    kind: "itch-zip",
+    url: "https://kay-yu.itch.io/holocure",
+    fileName: "HoloCure.zip",
+    versionLabel: "latest",
+    exeHint: "HoloCure|holocure",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
+      "%PROGRAMFILES%\\HoloCure\\HoloCure.exe",
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+    ],
+    note: "Downloads and extracts the official standalone HoloCure build from itch.io.",
+  },
 };

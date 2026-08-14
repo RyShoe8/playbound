@@ -435,6 +435,16 @@ export const developers: Developer[] = [
     website: "https://megaphilx.com",
     artHue: 220,
   },
+  {
+    slug: "kay-yu",
+    name: "Kay Yu",
+    tagline: "Creator of HoloCure and animation veteran.",
+    about: "Kay Yu is an independent developer and professional animator who created HoloCure - Save the Fans!, delivering an immensely popular free roguelite survival game with frequent rich updates.",
+    founded: 2022,
+    location: "Worldwide",
+    website: "https://kay-yu.itch.io",
+    artHue: 205,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

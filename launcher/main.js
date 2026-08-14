@@ -194,6 +194,9 @@ function hostAllowedForDownload(hostname) {
   if (host === "swtor.com" || host.endsWith(".swtor.com")) return true;
   if (host === "runescape.com" || host.endsWith(".runescape.com")) return true;
   if (host === "xsolla.com" || host.endsWith(".xsolla.com")) return true;
+  if (host === "itch.io" || host.endsWith(".itch.io") || host.endsWith(".itch.zone")) return true;
+  if (host.includes("itchio-mirror") || host.endsWith(".r2.cloudflarestorage.com")) return true;
+  if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
   try {
     const apiHost = new URL(getApiBase()).hostname.toLowerCase();
     if (host === apiHost) return true;
@@ -1691,6 +1694,45 @@ async function resolveDownload(entry) {
       url: `https://cdn.openttd.org/openttd-releases/${version}/${name}`,
       name,
       version,
+    };
+  }
+
+  if (entry.kind === "itch-zip") {
+    const pageUrl = entry.url || entry.itchUrl || "https://kay-yu.itch.io/holocure";
+    const res = await fetch(pageUrl, {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (!res.ok) throw new Error(`itch.io returned ${res.status}`);
+    const html = await res.text();
+    const uploadMatches = [...html.matchAll(/data-upload_id=["'](\d+)["']/g)].map((m) => m[1]);
+    if (!uploadMatches.length) throw new Error("No download files found on itch.io page");
+    const uploadId = entry.uploadId || uploadMatches[0];
+    const csrfMatch =
+      html.match(/csrf_token["']?\s*[:=]\s*["']([^"']+)["']/i) ||
+      html.match(/name=["']csrf_token["']\s+value=["']([^"']+)["']/i);
+    const postRes = await fetch(
+      `${pageUrl.replace(/\/+$/, "")}/file/${uploadId}?source=game_download`,
+      {
+        method: "POST",
+        headers: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          cookie: res.headers.get("set-cookie") || "",
+          "x-requested-with": "XMLHttpRequest",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: csrfMatch ? `csrf_token=${encodeURIComponent(csrfMatch[1])}` : "",
+      }
+    );
+    if (!postRes.ok) throw new Error(`itch.io file download request returned ${postRes.status}`);
+    const json = await postRes.json();
+    if (!json.url) throw new Error("itch.io did not return a valid download URL");
+    return {
+      url: json.url,
+      name: entry.fileName || `${entry.slug || "game"}.zip`,
+      version: entry.versionLabel || "latest",
     };
   }
 

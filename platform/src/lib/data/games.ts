@@ -2293,6 +2293,55 @@ const facts: Game[] = [
       provenance: { source: "unverified", enteredBy: "manual" },
     },
   },
+  {
+    slug: "holocure",
+    title: "HoloCure - Save the Fans!",
+    tagline: "Fast-paced top-down roguelite survival shooter celebrating VTuber lore.",
+    description:
+      "HoloCure - Save the Fans! is a completely free, fan-made top-down action roguelite survival game created by Kay Yu. Battle endless hordes of fans, collect powerful synergistic weapons and items, customize your character builds, and survive intense stages with deep progression and mini-games.",
+    developerSlug: "kay-yu",
+    genres: ["Action", "Roguelike", "Survival"],
+    tags: ["Roguelite", "Bullet Hell", "Pixel Art", "Singleplayer", "Top-Down Shooter", "Anime"],
+    license: "Free / Fan Game",
+    releaseYear: 2022,
+    sizeMB: 320,
+    platforms: ["Windows"],
+    features: ["Singleplayer", "Controller Support", "Deep Progression", "Mini-Games", "Leaderboards"],
+    launchMethods: ["install"],
+    steamDeck: true,
+    website: "https://kay-yu.itch.io/holocure",
+    browserPlayable: false,
+    gameOfWeek: false,
+    hiddenGem: true,
+    art: { from: "#0284c7", to: "#38bdf8", icon: "Gamepad2" },
+    coverImage: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_2b4ad9db62c94318c474ae293b7df0896086f6d0.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_b8a34241e737cbe11311b1fe911e3b5e40e6c5ee.1920x1080.jpg",
+    ],
+    systemRequirements: {
+      min: "Windows 10 · 2 GHz Dual-Core · 2 GB RAM · DirectX 11 GPU · 500 MB storage",
+      recommended: "Windows 10/11 · Quad-Core CPU · 4 GB RAM · Dedicated GPU · 1 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        storageMB: 500,
+        cpuText: "2 GHz Dual-Core",
+        gpuText: "DirectX 11 compatible GPU",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 1024,
+        cpuText: "Quad-Core CPU",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "unverified",
+      },
+    },
+  },
 ];
 
 export const games: Game[] = facts.map(withEditorial);
