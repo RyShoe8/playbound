@@ -5,7 +5,7 @@ import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import { getGame } from "@/lib/catalog";
 import { newsletterEmailDraftSchema } from "@/lib/newsletterEmailSchema";
 import { requireAdminSession } from "@/lib/requireAdmin";
-import { buildIssueFromDate } from "@/lib/weekly";
+import { buildIssueFromDate, saveNewsletterFooterTemplate } from "@/lib/weekly";
 
 const updateSchema = z.object({
   gameSlug: z.string().trim().min(1).max(80),
@@ -61,6 +61,10 @@ export async function PATCH(
       existing.markModified("emailDraft");
     }
     await existing.save();
+
+    if (body.emailDraft?.footer) {
+      await saveNewsletterFooterTemplate(body.emailDraft.footer);
+    }
 
     return NextResponse.json({ success: true, slug: existing.slug, id: String(existing._id) });
   } catch (err) {

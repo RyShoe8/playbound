@@ -231,36 +231,27 @@ function nl2br(value: string): string {
   return text(value).replace(/\r\n|\n|\r/g, "<br>");
 }
 
-function renderMiniPair(
-  left: NewsletterMiniGame | undefined,
-  right: NewsletterMiniGame | undefined,
-  siteUrl: string
-): string {
-  const renderCell = (game: NewsletterMiniGame | undefined) => {
-    if (!game || (!game.title && !game.imageUrl)) {
-      return `<td width="48%" class="two-col-td" style="vertical-align: top;"></td>`;
-    }
-    const img = absoluteMediaUrl(game.imageUrl, siteUrl);
-    const href = game.url.trim() || siteOrigin(siteUrl);
-    return `
-                <td width="48%" class="two-col-td" style="background-color: #161F32; border-radius: 12px; border: 1px solid #243049; padding: 16px; vertical-align: top;">
+function renderMiniRow(game: NewsletterMiniGame, siteUrl: string, isLast: boolean): string {
+  if (!game.title.trim() && !game.imageUrl.trim()) return "";
+  const img = absoluteMediaUrl(game.imageUrl, siteUrl);
+  const href = game.url.trim() || siteOrigin(siteUrl);
+  return `
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161F32; border-radius: 12px; border: 1px solid #243049; overflow: hidden; ${isLast ? "" : "margin-bottom: 12px;"}">
+              <tr>
+                <td>
                   ${
                     img
-                      ? `<img src="${attr(img)}" alt="${attr(game.title)}" style="width: 100%; border-radius: 8px; margin-bottom: 12px;">`
-                      : ""
+                      ? `<img class="new-game-cover" src="${attr(img)}" alt="${attr(game.title)}" width="568" height="140" style="width: 100%; height: 140px; object-fit: cover; object-position: center; display: block; border: 0;">`
+                      : `<div style="width:100%;height:140px;background:#1e293b;"></div>`
                   }
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 14px 16px 16px 16px;">
                   <h3 style="font-size: 15px; font-weight: 600; color: #FFFFFF; margin: 0 0 6px 0;">${text(game.title)}</h3>
                   <p style="font-size: 12px; color: #94A3B8; margin: 0 0 12px 0; line-height: 1.4;">${text(game.description)}</p>
                   <a href="${attr(href)}" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;">View Game</a>
-                </td>`;
-  };
-
-  return `
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                ${renderCell(left)}
-                <td width="4%"></td>
-                ${renderCell(right)}
+                </td>
               </tr>
             </table>`;
 }
@@ -307,14 +298,7 @@ export function buildNewsletterHtml(
   const featuredHref = draft.featured.ctaUrl.trim() || siteOrigin(siteUrl);
 
   const activeNew = draft.newGames.filter((g) => g.title.trim() || g.imageUrl.trim());
-  const newRows: string[] = [];
-  for (let i = 0; i < Math.max(activeNew.length, 2); i += 2) {
-    if (!activeNew[i] && !activeNew[i + 1] && i > 0) break;
-    newRows.push(renderMiniPair(activeNew[i], activeNew[i + 1], siteUrl));
-  }
-  if (newRows.length === 0) {
-    newRows.push(renderMiniPair(undefined, undefined, siteUrl));
-  }
+  const newRows = activeNew.map((g, i) => renderMiniRow(g, siteUrl, i === activeNew.length - 1));
 
   const epicGames = draft.epic.games.filter((g) => g.title.trim() || g.imageUrl.trim());
   const epicRows = epicGames
@@ -332,12 +316,12 @@ export function buildNewsletterHtml(
     table { border-spacing: 0; border-collapse: collapse; }
     td { padding: 0; }
     img { border: 0; max-width: 100%; height: auto; display: block; }
+    img.new-game-cover { height: 140px !important; object-fit: cover; object-position: center; }
     a { color: #8B5CF6; text-decoration: none; }
     .btn { background-color: #8B5CF6; color: #FFFFFF !important; font-weight: 600; padding: 12px 24px; border-radius: 8px; display: inline-block; text-decoration: none; text-align: center; }
     .btn-secondary { background-color: #1E293B; color: #F8FAFC !important; border: 1px solid #334155; font-weight: 600; padding: 10px 20px; border-radius: 8px; display: inline-block; text-decoration: none; }
     @media only screen and (max-width: 600px) {
       .container { width: 100% !important; padding: 12px !important; }
-      .two-col-td { display: block !important; width: 100% !important; box-sizing: border-box; margin-bottom: 12px; }
     }
   </style>
 </head>
@@ -401,7 +385,7 @@ export function buildNewsletterHtml(
         </tr>
         <tr>
           <td>
-            ${newRows.join("\n            <div style=\"height:12px;\"></div>\n            ")}
+            ${newRows.join("\n            ") || `<p style="color:#64748B;font-size:13px;margin:0;">Add games in the builder.</p>`}
           </td>
         </tr>
       </table>

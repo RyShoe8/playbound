@@ -5,7 +5,7 @@ import WeeklyIssue from "@/lib/models/WeeklyIssue";
 import { getGame } from "@/lib/catalog";
 import { newsletterEmailDraftSchema } from "@/lib/newsletterEmailSchema";
 import { requireAdminSession } from "@/lib/requireAdmin";
-import { buildIssueFromDate, listWeeklyIssuesAdmin } from "@/lib/weekly";
+import { buildIssueFromDate, listWeeklyIssuesAdmin, saveNewsletterFooterTemplate } from "@/lib/weekly";
 
 const createSchema = z.object({
   gameSlug: z.string().trim().min(1).max(80),
@@ -50,6 +50,10 @@ export async function POST(req: Request) {
       published: body.published !== false,
       emailDraft: body.emailDraft ?? null,
     });
+
+    if (body.emailDraft?.footer) {
+      await saveNewsletterFooterTemplate(body.emailDraft.footer);
+    }
 
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {
