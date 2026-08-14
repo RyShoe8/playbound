@@ -445,6 +445,26 @@ export const developers: Developer[] = [
     website: "https://kay-yu.itch.io",
     artHue: 205,
   },
+  {
+    slug: "digital-anvil",
+    name: "Digital Anvil",
+    tagline: "Pioneers of cinematic space combat simulation.",
+    about: "Founded by Chris Roberts and Erin Roberts, Digital Anvil created the legendary space simulation Freelancer (2003). The game's vibrant community and active multiplayer servers continue to be preserved and enhanced worldwide through The Starport.",
+    founded: 1996,
+    location: "Austin, Texas",
+    website: "https://the-starport.net",
+    artHue: 215,
+  },
+  {
+    slug: "toys-for-bob",
+    name: "Toys for Bob & The UQM Team",
+    tagline: "Creators of Star Control II and keepers of The Ur-Quan Masters.",
+    about: "Founded by Paul Reiche III and Fred Ford, Toys for Bob created the 1992 space RPG masterpiece Star Control II. In 2002, they open-sourced the codebase and 3DO content under GPL, enabling the community to maintain The Ur-Quan Masters as a 100% free modern port.",
+    founded: 1989,
+    location: "Novato, California",
+    website: "https://urquanmasters.com",
+    artHue: 155,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
