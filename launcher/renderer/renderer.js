@@ -3115,10 +3115,14 @@ async function renderGameDetailView(slug) {
     <div class="detail-tab-panels">
       <div class="detail-tab-panel ${detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
         ${buildActivityPanelHtml(liveStats)}
-        <section class="detail-section" id="detail-editions-sec">
-          <h2 class="detail-section-title">Editions</h2>
-          <div class="editions-list" id="detail-editions-list"></div>
-        </section>
+        ${
+          editions.length > 1
+            ? `<section class="detail-section" id="detail-editions-sec">
+                 <h2 class="detail-section-title">Editions</h2>
+                 <div class="editions-list" id="detail-editions-list"></div>
+               </section>`
+            : ""
+        }
         <section class="detail-section">
           <h2 class="detail-section-title">About</h2>
           <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
@@ -3175,7 +3179,7 @@ async function renderGameDetailView(slug) {
               : ""
           }
           <div class="detail-hero-actions" style="margin-bottom:16px">
-            <button class="btn-primary" type="button" id="install-tab-install">Install selected edition</button>
+            <button class="btn-primary" type="button" id="install-tab-install">${editions.length > 1 ? "Install selected edition" : "Install Game"}</button>
             ${detail.website ? `<button class="btn-secondary" type="button" id="install-tab-website">Official website</button>` : ""}
           </div>
           ${gamePlayHintHtml(slug)}
@@ -3205,25 +3209,21 @@ async function renderGameDetailView(slug) {
   `;
 
   const editionsList = document.getElementById("detail-editions-list");
-  if (editionsList) {
-    if (!editions.length) {
-      editionsList.innerHTML = `<p class="view-sub">No editions listed — install uses the default recipe.</p>`;
-    } else {
-      for (const ed of editions) {
-        const row = document.createElement("div");
-        row.className = "edition-row";
-        row.innerHTML = `
-          <div class="edition-row-copy">
-            <strong>${escapeHtml(ed.editionName)}</strong>
-            <span>${escapeHtml(ed.editionType || "")}${ed.shortDescription ? ` · ${escapeHtml(ed.shortDescription)}` : ""}</span>
-          </div>
-          <button type="button" class="btn-secondary btn-sm">View</button>
-        `;
-        row.querySelector("button")?.addEventListener("click", () => {
-          openEditionDetail(slug, ed.editionSlug);
-        });
-        editionsList.appendChild(row);
-      }
+  if (editionsList && editions.length > 1) {
+    for (const ed of editions) {
+      const row = document.createElement("div");
+      row.className = "edition-row";
+      row.innerHTML = `
+        <div class="edition-row-copy">
+          <strong>${escapeHtml(ed.editionName)}</strong>
+          <span>${escapeHtml(ed.editionType || "")}${ed.shortDescription ? ` · ${escapeHtml(ed.shortDescription)}` : ""}</span>
+        </div>
+        <button type="button" class="btn-secondary btn-sm">View</button>
+      `;
+      row.querySelector("button")?.addEventListener("click", () => {
+        openEditionDetail(slug, ed.editionSlug);
+      });
+      editionsList.appendChild(row);
     }
   }
 
