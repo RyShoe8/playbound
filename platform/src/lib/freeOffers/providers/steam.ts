@@ -1,18 +1,24 @@
 /**
  * Steam free-game ingestion adapter.
  *
- * Uses the public Steam Store API to find temporarily free games.
+ * Uses both Steam's Store Search API (filtered by maxprice=free&specials=1)
+ * and Featured Categories API to discover temporarily free games.
+ *
  * Distinguishes between:
- *   - free_to_keep: 100% discount, permanently added to library
+ *   - free_to_keep: 100% discount or limited-time free promotional license
  *   - free_weekend: temporary access window
  *
- * Filters out permanently F2P games to avoid polluting the weekly section.
+ * Filters out permanently F2P games to avoid polluting the free deals section.
  */
 
 import type { StoreProviderAdapter, DiscoveredOffer } from "./types";
 import type { OfferType } from "../types";
 
-/** Steam featured items API — returns specials, free games, etc. */
+/** Steam search specials endpoint — finds games currently discounted to free. */
+const STEAM_SEARCH_SPECIALS_URL =
+  "https://store.steampowered.com/search/results/?query=&start=0&count=50&maxprice=free&specials=1&json=1";
+
+/** Steam featured items API — returns featured specials, promos, etc. */
 const STEAM_FEATURED_URL =
   "https://store.steampowered.com/api/featuredcategories?cc=us&l=english";
 
@@ -20,6 +26,12 @@ const STEAM_FEATURED_URL =
 function steamAppDetailsUrl(appId: string): string {
   return `https://store.steampowered.com/api/appdetails?appids=${appId}&cc=us&l=english`;
 }
+
+type SteamSearchItem = {
+  name?: string;
+  logo?: string;
+  link?: string;
+};
 
 type SteamFeaturedItem = {
   id?: number;
@@ -33,7 +45,6 @@ type SteamFeaturedItem = {
   small_capsule_image?: string;
   header_image?: string;
   discount_expiration?: number;
-  /** 0 = game, 1 = dlc, etc. */
   type?: number;
   windows_available?: boolean;
   mac_available?: boolean;
@@ -63,18 +74,17 @@ type SteamAppDetails = {
     };
     categories?: { id?: number; description?: string }[];
     package_groups?: {
-      subs?: { is_free_license?: boolean }[];
+      subs?: {
+        packageid?: number;
+        percent_savings_text?: string;
+        percent_savings?: number;
+        option_text?: string;
+        is_free_license?: boolean;
+        price_in_cents_with_discount?: number;
+      }[];
     }[];
   };
 };
-
-function steamPlatforms(item: SteamFeaturedItem): string[] {
-  const platforms: string[] = [];
-  if (item.windows_available) platforms.push("Windows");
-  if (item.mac_available) platforms.push("macOS");
-  if (item.linux_available) platforms.push("Linux");
-  return platforms.length ? platforms : ["Windows"];
-}
 
 function appDetailPlatforms(data: SteamAppDetails["data"]): string[] {
   if (!data?.platforms) return ["Windows"];
@@ -104,114 +114,134 @@ export class SteamProviderAdapter implements StoreProviderAdapter {
   readonly store = "steam" as const;
 
   async fetchCurrentOffers(): Promise<DiscoveredOffer[]> {
-    let featuredItems: SteamFeaturedItem[] = [];
+    const candidateAppIds = new Set<string>();
 
+    // 1. Check Steam Search Specials with maxprice=free
+    try {
+      const res = await fetch(STEAM_SEARCH_SPECIALS_URL, {
+        headers: { "user-agent": "PlayBoundIngestion/1.0" },
+        next: { revalidate: 0 },
+      });
+      if (res.ok) {
+        const json = (await res.json()) as { items?: SteamSearchItem[] };
+        for (const item of json.items ?? []) {
+          // Extract appId from logo URL (e.g. /apps/214340/capsule...) or link URL
+          const match = (item.logo || item.link || "").match(/\/apps\/(\d+)/i);
+          if (match?.[1]) {
+            candidateAppIds.add(match[1]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[steam-adapter] Failed to fetch search specials:", err);
+    }
+
+    // 2. Check Steam Featured Categories for 100% off deals
     try {
       const res = await fetch(STEAM_FEATURED_URL, {
         headers: { "user-agent": "PlayBoundIngestion/1.0" },
         next: { revalidate: 0 },
       });
-
-      if (!res.ok) {
-        console.error(`[steam-adapter] Featured API returned ${res.status}`);
-        return [];
+      if (res.ok) {
+        const json = (await res.json()) as Record<string, { items?: SteamFeaturedItem[] }>;
+        const specials = json.specials?.items ?? [];
+        for (const item of specials) {
+          if (item.id && item.discount_percent === 100) {
+            candidateAppIds.add(String(item.id));
+          }
+        }
       }
-
-      const json = (await res.json()) as Record<string, { items?: SteamFeaturedItem[] }>;
-
-      // Specials section contains discounted games including 100% off.
-      const specials = json.specials?.items ?? [];
-      // Sometimes free games also appear in top_sellers or coming_soon.
-      featuredItems = specials;
     } catch (err) {
       console.error("[steam-adapter] Failed to fetch featured categories:", err);
-      return [];
     }
 
     const offers: DiscoveredOffer[] = [];
 
-    for (const item of featuredItems) {
-      if (!item.id || !item.name) continue;
-      // Must be 100% discount (final_price === 0 and original_price > 0).
-      if (item.discount_percent !== 100) continue;
-      if (!item.original_price || item.original_price <= 0) continue;
-      // Skip DLC.
-      if (item.type === 1) continue;
-
-      const appId = String(item.id);
-      const endDate = item.discount_expiration
-        ? new Date(item.discount_expiration * 1000)
-        : null;
-
-      // Try to get detailed info for better metadata.
+    // 3. Inspect each candidate app in detail
+    for (const appId of candidateAppIds) {
       const details = await fetchAppDetails(appId);
+      if (!details) continue;
 
-      // Determine offer type: free weekend vs free to keep.
-      let offerType: OfferType = "free_to_keep";
-      if (details) {
-        // If the game is marked is_free, it's permanently free — skip.
-        if (details.is_free) continue;
-        // Check for weekend-style licensing.
-        const categories = details.categories ?? [];
-        const hasFreeWeekendCategory = categories.some(
-          (c) => /free.*weekend/i.test(c.description ?? "")
-        );
-        if (hasFreeWeekendCategory) offerType = "free_weekend";
-      }
+      // Skip non-game items if type is DLC/soundtrack etc.
+      if (details.type && details.type !== "game") continue;
 
-      // If end date is very close (< 3 days) and no "keep" indicator, likely weekend.
-      if (endDate && offerType === "free_to_keep") {
-        const hoursLeft = (endDate.getTime() - Date.now()) / (1000 * 60 * 60);
-        if (hoursLeft > 0 && hoursLeft < 72) {
-          // Short window — might be a free weekend. Conservative: keep as free_to_keep
-          // unless we have explicit weekend indicators.
+      const priceOverview = details.price_overview;
+      const initialPriceCents = priceOverview?.initial ?? 0;
+      const discountPercent = priceOverview?.discount_percent ?? 0;
+
+      // Check if any package has a free promotional license (e.g. "Limited Free Promotional Package")
+      let hasFreePromoPackage = false;
+      let promoPackageBaselineCents = initialPriceCents;
+
+      for (const pg of details.package_groups ?? []) {
+        for (const sub of pg.subs ?? []) {
+          if (sub.is_free_license && sub.price_in_cents_with_discount === 0) {
+            hasFreePromoPackage = true;
+          } else if (sub.price_in_cents_with_discount && sub.price_in_cents_with_discount > 0) {
+            if (!promoPackageBaselineCents) {
+              promoPackageBaselineCents = sub.price_in_cents_with_discount;
+            }
+          }
         }
       }
 
-      const coverImage =
-        item.large_capsule_image ||
-        item.header_image ||
-        details?.header_image ||
-        null;
+      // Check if this is a genuine 100% off discount or free promo package on a paid game
+      const is100Discount = discountPercent === 100 && initialPriceCents > 0;
+      const isPromotionalFree = hasFreePromoPackage && (initialPriceCents > 0 || promoPackageBaselineCents > 0);
 
+      if (!is100Discount && !isPromotionalFree) {
+        // Not a temporary free promotion — could be a permanently free F2P title, skip.
+        continue;
+      }
+
+      // Determine offer type: free_weekend vs free_to_keep
+      let offerType: OfferType = "free_to_keep";
+      const categories = details.categories ?? [];
+      const hasFreeWeekendCategory = categories.some((c) =>
+        /free.*weekend/i.test(c.description ?? "")
+      );
+      if (hasFreeWeekendCategory) {
+        offerType = "free_weekend";
+      }
+
+      const coverImage = details.header_image || null;
       const videos: string[] = [];
-      if (details?.movies) {
+      if (details.movies) {
         for (const movie of details.movies) {
           const url = movie.mp4?.max || movie.mp4?.["480"] || movie.webm?.max;
           if (url) videos.push(url);
         }
       }
 
-      // Original price formatting.
-      const originalPriceCents = item.original_price;
-      const retailPrice = originalPriceCents
-        ? `$${(originalPriceCents / 100).toFixed(2)}`
-        : details?.price_overview?.initial_formatted || null;
+      const retailPriceVal = initialPriceCents > 0 ? initialPriceCents : promoPackageBaselineCents;
+      const retailPriceFormatted =
+        priceOverview?.initial_formatted ||
+        (retailPriceVal > 0 ? `$${(retailPriceVal / 100).toFixed(2)}` : null);
 
       offers.push({
         externalId: appId,
-        title: details?.name || item.name.trim(),
+        title: (details.name || `Steam App ${appId}`).trim(),
         store: "steam",
         offerType,
-        startDate: null, // Steam doesn't expose start dates in this API.
-        endDate,
+        startDate: null,
+        endDate: null,
         claimUrl: `https://store.steampowered.com/app/${appId}`,
         storeUrl: `https://store.steampowered.com/app/${appId}`,
         coverImage,
-        description: details?.short_description || null,
-        developer: details?.developers?.[0] || null,
-        publisher: details?.publishers?.[0] || null,
-        platforms: details ? appDetailPlatforms(details) : steamPlatforms(item),
-        retailPrice,
-        retailPriceValue: originalPriceCents ?? null,
-        currency: item.currency || details?.price_overview?.currency || "USD",
-        isBaseGame: (details?.type ?? "game") === "game",
+        description: details.short_description || null,
+        developer: details.developers?.[0] || null,
+        publisher: details.publishers?.[0] || null,
+        platforms: appDetailPlatforms(details),
+        retailPrice: retailPriceFormatted,
+        retailPriceValue: retailPriceVal || null,
+        currency: priceOverview?.currency || "USD",
+        isBaseGame: (details.type ?? "game") === "game",
         videos,
         redemptionPlatform: null,
         metadata: {
           steamAppId: appId,
-          discountExpiration: item.discount_expiration,
-          steamType: details?.type,
+          steamType: details.type,
+          hasFreePromoPackage,
         },
       });
     }
