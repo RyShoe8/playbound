@@ -108,6 +108,27 @@ const pixrevealMods: ModSeed[] = [
 const gamebuddiesioMods: ModSeed[] = [
 ];
 
+const holocureMods: ModSeed[] = [
+  m({
+    slug: "holocure-multiplayer",
+    title: "HoloCure Multiplayer",
+    tagline: "Online co-op multiplayer mod for HoloCure.",
+    desc: "Community multiplayer modification that enables online co-op sessions, custom lobbies, and synchronized wave survival in HoloCure.",
+    base: "holocure",
+    baseTitle: "HoloCure - Save the Fans!",
+    path: "mods",
+    website: "https://github.com/Kay-Yu-Mods/HoloCure-Multiplayer",
+    repo: "Kay-Yu-Mods/HoloCure-Multiplayer",
+    kind: "github-zip",
+    pattern: ".*\\.zip$",
+    size: 25,
+    year: 2024,
+    changes: "Enables online multiplayer lobbies, peer-to-peer co-op combat, and shared wave progression.",
+    summary: "Brings co-op multiplayer to HoloCure with support for online lobbies and synchronized combat.",
+    hint: "Use PlayBound Launcher or PlayBound Edition to automatically configure the multiplayer mod into your HoloCure installation.",
+  }),
+];
+
 export const phase2ModsLive: ModSeed[] = [
   everquestMods,
   starwarsgalaxiesMods,
@@ -126,5 +147,7 @@ export const phase2ModsLive: ModSeed[] = [
   counterstrike2Mods,
   quakechampionsMods,
   pixrevealMods,
-  gamebuddiesioMods
+  gamebuddiesioMods,
+  holocureMods,
 ].flat();
+
