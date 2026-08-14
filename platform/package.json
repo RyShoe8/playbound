@@ -29,6 +29,7 @@
     "seed:collections": "tsx scripts/seed-collections.ts",
     "seed:weekly": "tsx scripts/seed-weekly.ts",
     "seed:hardware": "tsx scripts/seed-hardware.ts",
+    "seed:store-providers": "tsx scripts/seed-store-providers.ts",
     "apply:free-text-hardware": "tsx scripts/apply-free-text-hardware.ts",
     "migrate:discussions": "tsx scripts/migrate-discussion-posts.ts",
     "typecheck": "tsc --noEmit",

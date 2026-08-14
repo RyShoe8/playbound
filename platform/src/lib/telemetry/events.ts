@@ -222,6 +222,37 @@ export type TelemetryEventMap = {
     tournamentId?: string;
     matchId?: string;
   } & Extra;
+  free_game_impression: {
+    gameId?: string;
+    gameSlug?: string;
+    store?: string;
+    offerId?: string;
+    offerType?: string;
+    position?: number;
+  } & Extra;
+  free_game_click: {
+    gameId?: string;
+    gameSlug?: string;
+    store?: string;
+    offerId?: string;
+    offerType?: string;
+    position?: number;
+  } & Extra;
+  free_game_claim_click: {
+    gameId?: string;
+    gameSlug?: string;
+    store?: string;
+    offerId?: string;
+    offerType?: string;
+    position?: number;
+  } & Extra;
+  free_game_store_click: {
+    gameId?: string;
+    gameSlug?: string;
+    store?: string;
+    offerId?: string;
+    offerType?: string;
+  } & Extra;
 };
 
 export type TelemetryEventName = keyof TelemetryEventMap;

@@ -8,6 +8,7 @@ import { listServersForGame } from "@/lib/servers/registry";
 import { CardRow } from "@/components/GameCard";
 import { ModPreviewCard } from "@/components/ModPreviewCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import { FreeGamesSection, FreeGamesSectionFallback } from "@/components/FreeGamesSection";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
 import { HomeHero } from "@/components/HomeHero";
@@ -165,6 +166,11 @@ export default async function HomePage() {
       </header>
 
       <HomeHero gamesNewestFirst={gamesNewestFirst} />
+
+      {/* ── Free Games This Week ──────────────────────────────── */}
+      <Suspense fallback={<FreeGamesSectionFallback />}>
+        <FreeGamesSection />
+      </Suspense>
 
       {/* ── Newsletter ─────────────────────────────────────────── */}
       <section className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/20 via-card to-card p-6 sm:p-8">
