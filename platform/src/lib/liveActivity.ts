@@ -9,9 +9,21 @@ import { unstable_cache } from "next/cache";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
+import { fetchHoloCurePlayers } from "@/lib/servers/providers/steam-concurrent";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import EditionModel from "@/lib/models/Edition";
+
+const EXTERNAL_CONCURRENT_PROVIDERS: Record<string, () => Promise<number>> = {
+  holocure: async () => {
+    try {
+      const servers = await fetchHoloCurePlayers();
+      return servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0);
+    } catch {
+      return 0;
+    }
+  },
+};
 
 const CACHE_SECONDS = 900;
 const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
@@ -377,7 +389,7 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     (g) => g.launchMethods.includes("server") || hasServerProvider(g.slug)
   );
 
-  const [settled, platformPlayers, platformByGame, editionCountBySlug] = await Promise.all([
+  const [settled, platformPlayers, platformByGame, editionCountBySlug, externalEntries] = await Promise.all([
     Promise.allSettled(
       multiplayer.map((g) =>
         withTimeout(
@@ -393,7 +405,19 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     countActivePlatformPlayers(),
     countActivePlatformPlayersByGame(),
     publicEditionCountsByGame(),
+    Promise.all(
+      Object.entries(EXTERNAL_CONCURRENT_PROVIDERS).map(async ([slug, fn]) => {
+        const count = await withTimeout(fn(), MULTIPLAYER_FANOUT_MS, 0);
+        return [slug, count] as const;
+      })
+    ),
   ]);
+
+  const externalBySlug = new Map<string, number>(externalEntries);
+  let externalTotal = 0;
+  for (const count of externalBySlug.values()) {
+    externalTotal += count;
+  }
 
   const mpBySlug = new Map<string, number>();
   let multiplayerPlayers = 0;
@@ -414,7 +438,10 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     .map((g) => ({
       slug: g.slug,
       title: g.title,
-      playingNow: (mpBySlug.get(g.slug) ?? 0) + (platformByGame.get(g.slug) ?? 0),
+      playingNow:
+        (mpBySlug.get(g.slug) ?? 0) +
+        (platformByGame.get(g.slug) ?? 0) +
+        (externalBySlug.get(g.slug) ?? 0),
     }))
     .sort((a, b) => b.playingNow - a.playingNow || a.title.localeCompare(b.title));
 
@@ -427,8 +454,8 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     modCount: mods.length,
     editionCount,
     multiplayerPlayers,
-    platformPlayers,
-    playingNow: multiplayerPlayers + platformPlayers,
+    platformPlayers: platformPlayers + externalTotal,
+    playingNow: multiplayerPlayers + platformPlayers + externalTotal,
     mostPopular,
     byGame,
     editionCountBySlug,
@@ -448,17 +475,20 @@ async function countGameInstalls(gameSlug: string): Promise<{ month: number; all
 }
 
 async function computeGameLiveStats(slug: string): Promise<EntityLiveStats> {
-  const [mp, platformPlayers, playersThisMonth, installs] = await Promise.all([
+  const extFn = EXTERNAL_CONCURRENT_PROVIDERS[slug];
+  const [mp, platformPlayers, playersThisMonth, installs, externalPlayers] = await Promise.all([
     multiplayerForGame(slug),
     countActivePlatformPlayers({ gameSlug: slug }),
     countPlayersThisMonth({ gameSlug: slug }),
     countGameInstalls(slug),
+    extFn ? withTimeout(extFn(), MULTIPLAYER_FANOUT_MS, 0) : Promise.resolve(0),
   ]);
   const asOf = new Date().toISOString();
+  const totalLive = mp.players + platformPlayers + externalPlayers;
   return {
     multiplayerPlayers: mp.players,
-    platformPlayers,
-    playingNow: mp.players + platformPlayers,
+    platformPlayers: platformPlayers + externalPlayers,
+    playingNow: totalLive,
     playersThisMonth,
     serverCount: mp.servers,
     installsThisMonth: installs.month,
