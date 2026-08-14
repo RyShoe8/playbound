@@ -12,6 +12,7 @@ const epicGameSchema = z.object({
   description: z.string().max(2000).default(""),
   imageUrl: z.string().max(2000).default(""),
   badge: z.string().max(40).default("FREE"),
+  storeUrl: z.string().max(2000).default(""),
 });
 
 /** Loose validation for persisted newsletter builder drafts. */

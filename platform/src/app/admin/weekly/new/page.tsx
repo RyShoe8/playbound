@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { listAllGames } from "@/lib/catalog";
 import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
 import { getNewsletterFooterTemplate } from "@/lib/weekly";
+import { toCatalogGamePrefill } from "@/lib/newsletterEmail";
 
 export const metadata: Metadata = { title: "Admin · New weekly issue" };
 
@@ -23,14 +24,7 @@ export default async function AdminNewWeeklyPage() {
       <WeeklyIssueForm
         mode="create"
         initial={{ gameSlug: "", publishedAt: today, published: true, emailDraft }}
-        games={games.map((g) => ({
-          slug: g.slug,
-          title: g.title,
-          tagline: g.tagline,
-          description: g.description,
-          coverImage: g.coverImage,
-          whyWePickedIt: g.whyWePickedIt,
-        }))}
+        games={games.map(toCatalogGamePrefill)}
       />
     </div>
   );
