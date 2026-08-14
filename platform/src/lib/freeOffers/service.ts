@@ -11,6 +11,7 @@ import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import FreeOffer from "@/lib/models/FreeOffer";
 import StoreProviderModel from "@/lib/models/StoreProvider";
+import { seedFreeOffers, seedStoreProviders } from "@/lib/data/freeOffers";
 import type { FreeOfferRecord, StoreProviderRecord, StoreSlug } from "./types";
 
 // ── Mappers ──────────────────────────────────────────────────────────────
@@ -74,54 +75,87 @@ function toProviderRecord(doc: LeanDoc): StoreProviderRecord {
 // ── Raw queries (uncached, for ingestion) ────────────────────────────────
 
 async function queryActiveOffers(store?: StoreSlug): Promise<FreeOfferRecord[]> {
-  await dbConnect();
-  const filter: Record<string, unknown> = { isActive: true };
-  if (store) filter.store = store;
-  const docs = await FreeOffer.find(filter)
-    .sort({ endDate: 1, store: 1, createdAt: -1 })
-    .lean();
-  return docs.map((d) => toRecord(d as LeanDoc));
+  try {
+    await dbConnect();
+    const filter: Record<string, unknown> = { isActive: true };
+    if (store) filter.store = store;
+    const docs = await FreeOffer.find(filter)
+      .sort({ endDate: 1, store: 1, createdAt: -1 })
+      .lean();
+    if (docs.length > 0) {
+      return docs.map((d) => toRecord(d as LeanDoc));
+    }
+  } catch (err) {
+    console.error("[freeOffers] queryActiveOffers failed, using seed fallback:", err);
+  }
+  return seedFreeOffers.filter((o) => (store ? o.store === store : true) && o.isActive);
 }
 
 async function queryRecentlyExpired(days: number): Promise<FreeOfferRecord[]> {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  await dbConnect();
-  const docs = await FreeOffer.find({
-    isActive: false,
-    endDate: { $gte: since },
-  })
-    .sort({ endDate: -1 })
-    .lean();
-  return docs.map((d) => toRecord(d as LeanDoc));
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    await dbConnect();
+    const docs = await FreeOffer.find({
+      isActive: false,
+      endDate: { $gte: since },
+    })
+      .sort({ endDate: -1 })
+      .lean();
+    if (docs.length > 0) {
+      return docs.map((d) => toRecord(d as LeanDoc));
+    }
+  } catch (err) {
+    console.error("[freeOffers] queryRecentlyExpired failed:", err);
+  }
+  return [];
 }
 
 async function queryOffersForGame(gameSlug: string): Promise<FreeOfferRecord[]> {
-  await dbConnect();
-  const docs = await FreeOffer.find({ gameSlug })
-    .sort({ startDate: -1 })
-    .lean();
-  return docs.map((d) => toRecord(d as LeanDoc));
+  try {
+    await dbConnect();
+    const docs = await FreeOffer.find({ gameSlug })
+      .sort({ startDate: -1 })
+      .lean();
+    if (docs.length > 0) {
+      return docs.map((d) => toRecord(d as LeanDoc));
+    }
+  } catch (err) {
+    console.error("[freeOffers] queryOffersForGame failed:", err);
+  }
+  return seedFreeOffers.filter((o) => o.gameSlug === gameSlug);
 }
 
 async function queryUnmatched(): Promise<FreeOfferRecord[]> {
-  await dbConnect();
-  const docs = await FreeOffer.find({
-    $or: [
-      { matchConfidence: "unmatched" },
-      { matchConfidence: "low" },
-    ],
-    isActive: true,
-  })
-    .sort({ store: 1, unmatchedTitle: 1 })
-    .lean();
-  return docs.map((d) => toRecord(d as LeanDoc));
+  try {
+    await dbConnect();
+    const docs = await FreeOffer.find({
+      $or: [
+        { matchConfidence: "unmatched" },
+        { matchConfidence: "low" },
+      ],
+      isActive: true,
+    })
+      .sort({ store: 1, unmatchedTitle: 1 })
+      .lean();
+    return docs.map((d) => toRecord(d as LeanDoc));
+  } catch (err) {
+    console.error("[freeOffers] queryUnmatched failed:", err);
+    return [];
+  }
 }
 
 async function queryProviders(): Promise<StoreProviderRecord[]> {
-  await dbConnect();
-  const docs = await StoreProviderModel.find().sort({ slug: 1 }).lean();
-  return docs.map((d) => toProviderRecord(d as LeanDoc));
+  try {
+    await dbConnect();
+    const docs = await StoreProviderModel.find().sort({ slug: 1 }).lean();
+    if (docs.length > 0) {
+      return docs.map((d) => toProviderRecord(d as LeanDoc));
+    }
+  } catch (err) {
+    console.error("[freeOffers] queryProviders failed, using seed fallback:", err);
+  }
+  return seedStoreProviders;
 }
 
 // ── Cached public queries ────────────────────────────────────────────────
