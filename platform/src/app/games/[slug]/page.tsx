@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { Gamepad2, Newspaper, Play, Trophy, Wrench } from "lucide-react";
+import { ChevronDown, Film, Gamepad2, Image as ImageIcon, Newspaper, Play, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
@@ -958,11 +958,28 @@ function MediaTab({ game }: { game: Game }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-bold">Media</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">Media</h2>
+        <span className="text-xs text-muted-foreground">
+          {vids.length > 0 && `${vids.length} ${vids.length === 1 ? "video" : "videos"}`}
+          {vids.length > 0 && shots.length > 0 && " · "}
+          {shots.length > 0 && `${shots.length} ${shots.length === 1 ? "screenshot" : "screenshots"}`}
+        </span>
+      </div>
+
       {vids.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground">Videos</h3>
-          <div className="grid grid-cols-1 gap-3">
+        <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
+          <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-secondary/30 transition-colors hover:bg-secondary/50 font-semibold text-sm">
+            <span className="flex items-center gap-2">
+              <Film className="size-4 text-primary" />
+              <span>Videos</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground font-normal">
+                {vids.length}
+              </span>
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="p-4 grid grid-cols-1 gap-3">
             {vids.map((v) => (
               <div
                 key={v.src}
@@ -995,40 +1012,50 @@ function MediaTab({ game }: { game: Game }) {
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
+
       {shots.length > 0 ? (
-        <>
-          {vids.length > 0 && (
-            <h3 className="text-sm font-semibold text-muted-foreground">Screenshots</h3>
-          )}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
+          <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-secondary/30 transition-colors hover:bg-secondary/50 font-semibold text-sm">
+            <span className="flex items-center gap-2">
+              <ImageIcon className="size-4 text-primary" />
+              <span>Screenshots</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground font-normal">
+                {shots.length}
+              </span>
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="p-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {shots.map((src) => (
               <a
                 key={src}
                 href={src}
                 target="_blank"
                 rel="noreferrer"
-                className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary"
+                className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary transition-transform hover:scale-[1.01]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={src} alt={`${game.title} screenshot`} className="h-full w-full object-cover" />
               </a>
             ))}
           </div>
-        </>
+        </details>
       ) : (
-        <div className="space-y-3">
-          <EmptyHint icon={Gamepad2}>
-            No screenshots uploaded for {game.title} yet.
-            {game.coverImage ? " Showing cover art below." : ""}
-          </EmptyHint>
-          {game.coverImage ? (
-            <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
-              <GameArt game={game} showTitle={false} className="absolute inset-0" />
-            </div>
-          ) : null}
-        </div>
+        vids.length === 0 && (
+          <div className="space-y-3">
+            <EmptyHint icon={Gamepad2}>
+              No screenshots uploaded for {game.title} yet.
+              {game.coverImage ? " Showing cover art below." : ""}
+            </EmptyHint>
+            {game.coverImage ? (
+              <div className="relative aspect-video overflow-hidden rounded-lg border border-border">
+                <GameArt game={game} showTitle={false} className="absolute inset-0" />
+              </div>
+            ) : null}
+          </div>
+        )
       )}
       <p className="text-xs text-muted-foreground">
         More screenshots and trailers live on{" "}
