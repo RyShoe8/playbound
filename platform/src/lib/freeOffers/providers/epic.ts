@@ -151,9 +151,22 @@ export class EpicProviderAdapter implements StoreProviderAdapter {
         )
         .map((img) => img.url);
 
+      let title = el.title?.trim() || "";
+      if (!title || /^[0-9a-f]{16,}$/i.test(title)) {
+        const slug = pageSlugFromElement(el);
+        if (slug) {
+          title = slug
+            .replace(/[-_][a-f0-9]{5,}$/i, "")
+            .replace(/[-_]+/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+            .trim();
+        }
+      }
+      if (!title) continue;
+
       offers.push({
         externalId: el.id,
-        title: el.title.trim(),
+        title,
         store: "epic",
         offerType: "free_to_keep",
         startDate: promo.startDate ? new Date(promo.startDate) : null,
@@ -172,6 +185,7 @@ export class EpicProviderAdapter implements StoreProviderAdapter {
         videos: [], // Epic promotions API doesn't include videos; enriched later.
         redemptionPlatform: null,
         metadata: {
+          title,
           epicOfferId: el.id,
           pageSlug: pageSlugFromElement(el),
           offerType: el.offerType,
