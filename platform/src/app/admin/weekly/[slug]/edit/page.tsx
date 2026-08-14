@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { listAllGames } from "@/lib/catalog";
 import { getWeeklyIssueAdmin } from "@/lib/weekly";
+import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
 import { toCatalogGamePrefill } from "@/lib/newsletterEmail";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
