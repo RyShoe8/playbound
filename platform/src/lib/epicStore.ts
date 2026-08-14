@@ -142,14 +142,46 @@ function snippetFromCatalogElement(el: Record<string, unknown>): EpicCatalogSnip
   };
 }
 
-/**
- * SPT /p/ slugs often 404 on store-content. The free-games catalog JSON is public
- * and includes pageSlug mappings (e.g. caravan-sandwitch-05ff58).
- */
-export async function fetchEpicFreeGameByPageSlug(slug: string): Promise<EpicCatalogSnippet | null> {
-  const candidates = [slug, slugWithoutOfferSuffix(slug)].filter(
-    (s, i, arr): s is string => Boolean(s) && arr.indexOf(s) === i
-  );
+function allEpicCatalogImages(keyImages: unknown): string[] {
+  if (!Array.isArray(keyImages)) return [];
+  const urls: string[] = [];
+  for (const img of keyImages) {
+    if (!img || typeof img !== "object") continue;
+    const url = (img as { url?: string }).url;
+    if (typeof url === "string" && url.trim() && !urls.includes(url.trim())) {
+      urls.push(url.trim());
+    }
+  }
+  return urls;
+}
+
+function pageSlugFromCatalogElement(el: Record<string, unknown>): string | null {
+  const mappings = [
+    ...(((el.catalogNs as { mappings?: { pageSlug?: string; pageType?: string }[] } | undefined)?.mappings) ?? []),
+    ...(((el.offerMappings as { pageSlug?: string; pageType?: string }[] | undefined) ?? [])),
+  ];
+  const home = mappings.find((m) => m.pageType === "productHome" && m.pageSlug);
+  const any = mappings.find((m) => m.pageSlug);
+  const slug = home?.pageSlug || any?.pageSlug;
+  return typeof slug === "string" && slug.trim() ? slug.trim() : null;
+}
+
+function mediaFromPromotionsElement(el: Record<string, unknown>): {
+  coverImage: string | null;
+  screenshots: string[];
+  videos: string[];
+} {
+  const urls = allEpicCatalogImages(el.keyImages);
+  const cover = pickEpicCatalogImage(el.keyImages) || urls[0] || null;
+  const screenshots = urls.filter((u) => u !== cover);
+  return {
+    coverImage: cover,
+    screenshots: screenshots.length ? screenshots : urls.slice(cover ? 1 : 0),
+    videos: [],
+  };
+}
+
+async function fetchFreeGamePromotionElements(): Promise<Record<string, unknown>[]> {
   const res = await fetch(
     "https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions?locale=en-US&country=US&allowCountries=US",
     { headers: { "user-agent": "PlayBoundAdmin/1.0" }, next: { revalidate: 0 } }
@@ -158,12 +190,60 @@ export async function fetchEpicFreeGameByPageSlug(slug: string): Promise<EpicCat
   const json = (await res.json()) as {
     data?: { Catalog?: { searchStore?: { elements?: Record<string, unknown>[] } } };
   };
-  const elements = json.data?.Catalog?.searchStore?.elements ?? [];
+  return json.data?.Catalog?.searchStore?.elements ?? [];
+}
+
+/**
+ * SPT /p/ slugs often 404 on store-content. The free-games catalog JSON is public
+ * and includes pageSlug mappings (e.g. caravan-sandwitch-05ff58).
+ */
+export async function fetchEpicFreeGameByPageSlug(slug: string): Promise<EpicCatalogSnippet | null> {
+  const candidates = [slug, slugWithoutOfferSuffix(slug)].filter(
+    (s, i, arr): s is string => Boolean(s) && arr.indexOf(s) === i
+  );
+  const elements = await fetchFreeGamePromotionElements();
   for (const want of candidates) {
     const hit = elements.find((el) => catalogElementMatchesSlug(el, want));
     if (hit) return snippetFromCatalogElement(hit);
   }
   return null;
+}
+
+function titlesMatch(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/** Cover, screenshots, and trailers for newsletter media pack (catalog API, then free-games JSON). */
+export async function lookupEpicNewsletterMedia(opts: {
+  storeUrl?: string;
+  title?: string;
+}): Promise<{ coverImage: string | null; screenshots: string[]; videos: string[] } | null> {
+  const slug = opts.storeUrl ? parseEpicProductSlug(opts.storeUrl) : null;
+  if (slug) {
+    try {
+      return await fetchEpicStoreMedia(slug);
+    } catch {
+      /* SPT titles 404 on store-content; fall through to promotions */
+    }
+  }
+
+  const elements = await fetchFreeGamePromotionElements();
+  const hit = elements.find((el) => {
+    if (slug && catalogElementMatchesSlug(el, slug)) return true;
+    const title = typeof el.title === "string" ? el.title : "";
+    return Boolean(opts.title?.trim() && titlesMatch(title, opts.title));
+  });
+  if (!hit) return null;
+
+  const pageSlug = pageSlugFromCatalogElement(hit);
+  if (pageSlug) {
+    try {
+      return await fetchEpicStoreMedia(pageSlug);
+    } catch {
+      /* use promotions images */
+    }
+  }
+  return mediaFromPromotionsElement(hit);
 }
 
 function asStringArray(value: unknown): string[] {
@@ -355,7 +435,7 @@ export async function fetchEpicStoreMedia(slug: string): Promise<{
   screenshots: string[];
   videos: string[];
 }> {
-  const product = await fetchEpicProduct(slug);
+  const product = await fetchEpicProductWithFallback(slug);
   const extracted = extractEpicProduct(product, slug);
   return {
     coverImage: extracted.coverImage,

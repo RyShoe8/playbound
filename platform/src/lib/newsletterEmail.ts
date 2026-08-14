@@ -17,6 +17,7 @@ export type NewsletterEpicGame = {
   description: string;
   imageUrl: string;
   badge: string;
+  storeUrl: string;
 };
 
 export type NewsletterEmailDraft = {
@@ -52,7 +53,31 @@ export type CatalogGamePrefill = {
   description: string;
   coverImage?: string;
   whyWePickedIt?: string;
+  screenshots?: string[];
+  videos?: string[];
 };
+
+export function toCatalogGamePrefill(g: {
+  slug: string;
+  title: string;
+  tagline: string;
+  description: string;
+  coverImage?: string;
+  whyWePickedIt?: string;
+  screenshots?: string[];
+  videos?: string[];
+}): CatalogGamePrefill {
+  return {
+    slug: g.slug,
+    title: g.title,
+    tagline: g.tagline,
+    description: g.description,
+    coverImage: g.coverImage,
+    whyWePickedIt: g.whyWePickedIt,
+    screenshots: g.screenshots,
+    videos: g.videos,
+  };
+}
 
 function siteOrigin(siteUrl = SITE_URL): string {
   return siteUrl.replace(/\/$/, "");
@@ -124,6 +149,7 @@ export function emptyEpicGame(): NewsletterEpicGame {
     description: "",
     imageUrl: "",
     badge: "FREE",
+    storeUrl: "",
   };
 }
 

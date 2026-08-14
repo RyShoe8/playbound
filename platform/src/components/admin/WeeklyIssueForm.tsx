@@ -8,6 +8,7 @@ import {
   WeeklyNewsletterBuilder,
   initialNewsletterDraft,
 } from "@/components/admin/WeeklyNewsletterBuilder";
+import { NewsletterMediaPack } from "@/components/admin/NewsletterMediaPack";
 import type { CatalogGamePrefill } from "@/lib/newsletterEmail";
 
 type GameOption = CatalogGamePrefill;
@@ -129,6 +130,8 @@ export function WeeklyIssueForm({
         featuredSlug={gameSlug}
         publishedAt={publishedAt}
       />
+
+      <NewsletterMediaPack draft={emailDraft} featuredSlug={gameSlug} games={games} />
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-2 pt-2">

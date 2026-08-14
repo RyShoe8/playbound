@@ -274,7 +274,7 @@ export function WeeklyNewsletterBuilder({
                   try {
                     const res = await fetch("/api/admin/epic-scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
                     const data = await res.json();
-                    if (res.ok) setEpicGame(index, { ...game, title: data.title || game.title, description: data.description || game.description, imageUrl: data.imageUrl || game.imageUrl });
+                    if (res.ok) setEpicGame(index, { ...game, title: data.title || game.title, description: data.description || game.description, imageUrl: data.imageUrl || game.imageUrl, storeUrl: url });
                     else alert("Scrape failed: " + data.error);
                   } catch (e) { alert("Scrape failed"); }
                 }}

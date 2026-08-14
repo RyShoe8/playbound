@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { listAllGames } from "@/lib/catalog";
 import { getWeeklyIssueAdmin } from "@/lib/weekly";
-import { WeeklyIssueForm } from "@/components/admin/WeeklyIssueForm";
+import { toCatalogGamePrefill } from "@/lib/newsletterEmail";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -34,14 +34,7 @@ export default async function AdminEditWeeklyPage({
           published: issue.published,
           emailDraft: issue.emailDraft,
         }}
-        games={games.map((g) => ({
-          slug: g.slug,
-          title: g.title,
-          tagline: g.tagline,
-          description: g.description,
-          coverImage: g.coverImage,
-          whyWePickedIt: g.whyWePickedIt,
-        }))}
+        games={games.map(toCatalogGamePrefill)}
       />
     </div>
   );
