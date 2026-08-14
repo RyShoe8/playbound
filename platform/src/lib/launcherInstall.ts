@@ -44,6 +44,8 @@ export type LauncherInstall = {
   versionCheckNote?: string | null;
   autoUpdatePinned?: boolean;
   addons?: LauncherInstallAddon[];
+  overlayUrl?: string | null;
+  overlayFileName?: string | null;
 };
 
 /** Shape returned to the Electron launcher (catalog row). */
@@ -70,6 +72,8 @@ export type LauncherCatalogEntry = {
   tags?: string[];
   multiplayer?: boolean;
   addons?: LauncherInstallAddon[];
+  overlayUrl?: string;
+  overlayFileName?: string;
 };
 
 export function absoluteMediaUrl(pathOrUrl: string | null | undefined, origin: string): string | null {
@@ -211,5 +215,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.connectArgs?.length) entry.connectArgs = li.connectArgs;
   if (li.note) entry.note = li.note;
   if (li.addons?.length) entry.addons = li.addons;
+  if (li.overlayUrl) entry.overlayUrl = li.overlayUrl;
+  if (li.overlayFileName) entry.overlayFileName = li.overlayFileName;
   return entry;
 }

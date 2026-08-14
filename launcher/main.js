@@ -3382,6 +3382,17 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   await extractArchive(downloadPath, gameDir);
   await fsp.rm(downloadPath, { force: true });
 
+  if (entry.overlayUrl) {
+    sendProgress({ phase: "downloading", addon: "Game Assets" });
+    const overlayName = entry.overlayFileName || "overlay.zip";
+    const overlayPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
+    await downloadTo(entry.overlayUrl, overlayPath);
+    sendProgress({ phase: "extracting" });
+    await extractArchive(overlayPath, gameDir);
+    await fsp.rm(overlayPath, { force: true });
+    await flattenWadFiles(gameDir);
+  }
+
   const exe = findExecutable(gameDir, entry.exeHint);
   if (!exe) throw new Error("Extracted, but no executable found");
 
@@ -3408,6 +3419,28 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     editionSlug: editionExtra.editionSlug,
     note: postNote || null,
   };
+}
+
+async function flattenWadFiles(gameDir) {
+  try {
+    const walk = async (dir) => {
+      const entries = await fsp.readdir(dir, { withFileTypes: true });
+      for (const ent of entries) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+          await walk(full);
+        } else if (ent.isFile() && ent.name.toLowerCase().endsWith(".wad")) {
+          const dest = path.join(gameDir, ent.name);
+          if (full !== dest && !fs.existsSync(dest)) {
+            await fsp.copyFile(full, dest);
+          }
+        }
+      }
+    };
+    await walk(gameDir);
+  } catch (err) {
+    console.warn("[flattenWadFiles] Warning:", err?.message || err);
+  }
 }
 
 async function processAddons(entry, gameDir, selectedAddons) {

@@ -246,10 +246,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   freedoom: {
     enabled: true,
     kind: "github-zip",
-    repo: "freedoom/freedoom",
-    assetPattern: "freedoom-.*\\.zip$",
-    note: "IWADs only — install a Doom source port separately to play.",
-    exeHint: "freedoom",
+    repo: "ZDoom/gzdoom",
+    assetPattern: "Windows-64bit\\.zip$|win64.*\\.zip$",
+    exeHint: "gzdoom",
+    overlayUrl: "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip",
+    overlayFileName: "freedoom-0.13.0.zip",
+    note: "Bundles the GZDoom source port with Freedoom Phase 1 & 2 IWADs for one-click play.",
   },
   "lincity-ng": {
     enabled: true,
