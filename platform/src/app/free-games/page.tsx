@@ -1,6 +1,6 @@
 import { Gift, Sparkles, Clock, History } from "lucide-react";
 import { listActiveOffers, listRecentlyExpiredOffers } from "@/lib/freeOffers/service";
-import { FreeGameCard } from "@/components/FreeGameCard";
+import { ActiveOffersGrid } from "@/components/ActiveOffersGrid";
 import { Badge, EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { storeDisplayName, dateRangeLabel, offerTypeLabel } from "@/lib/freeOffers/labels";
 import type { StoreSlug } from "@/lib/freeOffers/types";
@@ -38,22 +38,7 @@ export default async function FreeGamesPage() {
           </p>
         </div>
 
-        {activeOffers.length === 0 ? (
-          <EmptyHint icon={Gift}>
-            <p className="font-semibold">No active promotions right now</p>
-            <p className="text-xs">Check back soon! New giveaways are added weekly.</p>
-          </EmptyHint>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {activeOffers.map((offer) => (
-              <FreeGameCard
-                key={`${offer.store}-${offer.externalId}`}
-                offer={offer}
-                className="w-full sm:w-full"
-              />
-            ))}
-          </div>
-        )}
+        <ActiveOffersGrid offers={activeOffers} />
       </section>
 
       {/* ── Recently Free Archive Section ─────────────────────── */}

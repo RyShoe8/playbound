@@ -39,6 +39,7 @@ export function normalizePlatform(value: string): string {
   if (t === "browser" || t === "web") return "web";
   if (t === "mac os" || t === "macos" || t === "osx" || t === "mac") return "macos";
   if (t === "iphone" || t === "ipad") return "ios";
+  if (t === "pc" || t === "win") return "windows";
   return t;
 }
 
