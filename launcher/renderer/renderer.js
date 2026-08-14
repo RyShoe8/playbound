@@ -722,6 +722,8 @@ async function renderHomeView() {
         popularGrid.innerHTML = `<p class="view-sub">No popularity data yet.</p>`;
       }
     }
+  })();
+
   void (async () => {
     try {
       const res = await window.playbound.getFreeOffers?.();
