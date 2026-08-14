@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Gift, ExternalLink, Clock, CheckCircle2 } from "lucide-react";
+import { Gift, ExternalLink, Clock } from "lucide-react";
 import type { FreeOfferRecord } from "@/lib/freeOffers/types";
 import {
   offerTypeLabel,
@@ -41,12 +41,9 @@ function humanizeGameSlug(slug: string): string {
 
 export function FreeGameCard({
   offer,
-  playboundSupported,
   className,
 }: {
   offer: FreeOfferRecord;
-  /** Whether PlayBound actively supports this game. */
-  playboundSupported?: boolean;
   className?: string;
 }) {
   const metaTitle = offer.metadata?.title as string | undefined;
@@ -133,14 +130,6 @@ export function FreeGameCard({
           <p className="flex items-center gap-1 text-[11px] text-amber-300/90">
             <Clock className="size-3" />
             {expiry}
-          </p>
-        )}
-
-        {/* PlayBound support indicator */}
-        {playboundSupported && (
-          <p className="flex items-center gap-1 text-[11px] text-play">
-            <CheckCircle2 className="size-3" />
-            Playable through PlayBound
           </p>
         )}
 

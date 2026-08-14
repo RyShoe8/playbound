@@ -49,9 +49,6 @@ export default async function FreeGamesPage() {
               <FreeGameCard
                 key={`${offer.store}-${offer.externalId}`}
                 offer={offer}
-                playboundSupported={
-                  offer.matchConfidence === "exact" || offer.matchConfidence === "high"
-                }
                 className="w-full sm:w-full"
               />
             ))}
