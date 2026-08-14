@@ -1,9 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Download, MonitorPlay } from "lucide-react";
+import { Download, Loader2, MonitorPlay } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { isBrowserGame } from "@/lib/gameLaunch";
+import { launcherInstallUrl } from "@/lib/launcher";
+import {
+  launcherDownloadUrlForOs,
+  launcherOsLabel,
+  type LauncherOs,
+} from "@/lib/launcherDownload";
+import {
+  detectLauncherOs,
+  openPlayboundDeepLink,
+} from "@/lib/openPlayboundDeepLink";
+import { useTelemetry } from "@/lib/telemetry";
 import { GameArt } from "./GameArt";
 import { Badge } from "./ui/bits";
 import { cn } from "@/lib/utils";
@@ -31,19 +43,25 @@ const ctaSizes = {
 
 export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" | "lg" }) {
   const { device } = useCompatibilityFilter();
+  const { track } = useTelemetry();
+  const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
+  const [os, setOs] = useState<LauncherOs>("windows");
+
+  useEffect(() => {
+    setOs(detectLauncherOs());
+  }, []);
+
   const className = cn(
-    "inline-flex items-center gap-2 rounded-full bg-play font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px",
+    "inline-flex items-center gap-2 rounded-full bg-play font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px cursor-pointer select-none",
     ctaSizes[size]
   );
   const iconClass = cn(size === "lg" ? "size-5" : "size-4");
 
-  // Phones/tablets: browser, store, or official site — never the desktop launcher /play path.
+  // Phones/tablets: browser, store, or official site — never the desktop launcher path.
   if (!shouldOfferLauncher(device.type)) {
-    const os =
+    const mobileOs =
       typeof navigator !== "undefined" ? parseMobileOs(navigator.userAgent) : "other";
-    const outbound = resolveMobileOutbound(game, os);
-    // Claims the game for this device's library on the way out, and opens a
-    // play session for browser games.
+    const outbound = resolveMobileOutbound(game, mobileOs);
     return (
       <MobileOutboundCta
         game={game}
@@ -74,11 +92,57 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
     );
   }
 
+  const downloadUrl = launcherDownloadUrlForOs(os);
+  const osLabel = launcherOsLabel(os);
+  const deepLink = launcherInstallUrl(game.slug);
+
+  function handleInstall(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    void track("install_clicked", {
+      gameSlug: game.slug,
+      source: "play_cta",
+    });
+    setStatus("trying");
+    openPlayboundDeepLink(deepLink, {
+      downloadUrl,
+      autoDownload: true,
+      onResult: (result) => {
+        if (result === "download") {
+          setStatus("downloaded");
+          setTimeout(() => setStatus("idle"), 6000);
+        } else {
+          setTimeout(() => setStatus("idle"), 2500);
+        }
+      },
+    });
+  }
+
   return (
-    <Link href={`/games/${game.slug}/play`} className={className}>
-      <Download className={iconClass} />
-      Get It Free
-    </Link>
+    <button
+      type="button"
+      onClick={handleInstall}
+      disabled={status === "trying"}
+      className={className}
+      title={`Install ${game.title} with PlayBound Launcher`}
+    >
+      {status === "trying" ? (
+        <>
+          <Loader2 className={cn(iconClass, "animate-spin")} />
+          Opening…
+        </>
+      ) : status === "downloaded" ? (
+        <>
+          <Download className={iconClass} />
+          Downloading {osLabel}…
+        </>
+      ) : (
+        <>
+          <Download className={iconClass} />
+          Get It Free
+        </>
+      )}
+    </button>
   );
 }
 

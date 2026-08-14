@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
   BookOpen,
+  ChevronDown,
   Download,
+  Film,
   Gamepad2,
   Globe,
+  Image as ImageIcon,
   Languages,
   MessagesSquare,
   Monitor,
@@ -985,26 +988,44 @@ function MediaTab({
 }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-bold">Media</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">Media</h2>
+        <span className="text-xs text-muted-foreground">
+          {screenshots.length > 0 && `${screenshots.length} ${screenshots.length === 1 ? "screenshot" : "screenshots"}`}
+        </span>
+      </div>
+
       {screenshots.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {screenshots.map((src) => (
-            <a
-              key={src}
-              href={src}
-              target="_blank"
-              rel="noreferrer"
-              className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt={`${edition.name} screenshot`}
-                className="h-full w-full object-cover"
-              />
-            </a>
-          ))}
-        </div>
+        <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
+          <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-secondary/30 transition-colors hover:bg-secondary/50 font-semibold text-sm">
+            <span className="flex items-center gap-2">
+              <ImageIcon className="size-4 text-primary" />
+              <span>Screenshots</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground font-normal">
+                {screenshots.length}
+              </span>
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="p-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {screenshots.map((src) => (
+              <a
+                key={src}
+                href={src}
+                target="_blank"
+                rel="noreferrer"
+                className="relative aspect-video overflow-hidden rounded-lg border border-border bg-secondary transition-transform hover:scale-[1.01]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`${edition.name} screenshot`}
+                  className="h-full w-full object-cover"
+                />
+              </a>
+            ))}
+          </div>
+        </details>
       ) : (
         <div className="space-y-3">
           <EmptyHint icon={Gamepad2}>

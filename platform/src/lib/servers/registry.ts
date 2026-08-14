@@ -75,10 +75,6 @@ const providers: Record<string, ServerProvider> = {
     slug: "openciv3",
     fetchServers: fetchOpenCiv3Players,
   },
-  holocure: {
-    slug: "holocure",
-    fetchServers: fetchHoloCurePlayers,
-  },
 };
 
 /**

@@ -38,7 +38,7 @@ export function EventActionBar({
         <PlayCta game={game} size="md" />
       ) : gameSlug ? (
         <Link
-          href={`/games/${gameSlug}${isLive ? "/play" : ""}`}
+          href={`/games/${gameSlug}`}
           className="inline-flex items-center rounded-full bg-play px-5 py-2.5 text-sm font-bold text-play-foreground hover:brightness-110"
         >
           {isLive ? "Play Now" : "View game"}
