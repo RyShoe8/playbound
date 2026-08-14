@@ -497,6 +497,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     fileName: "Warframe.msi",
     exeHint: "Warframe",
     registryTitles: ["Warframe"],
+    knownExePaths: [
+      "%PROGRAMFILES%\\Warframe\\Tools\\Launcher.exe",
+      "%PROGRAMFILES%\\Warframe\\Downloaded\\Public\\Warframe.x64.exe",
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Warframe\\Tools\\Launcher.exe",
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Warframe\\Warframe.x64.exe",
+    ],
     note: "Official Warframe.msi from Digital Extremes. Steam app 230410 is an alternative.",
   },
 
