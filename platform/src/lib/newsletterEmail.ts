@@ -262,21 +262,21 @@ function renderEpicRow(game: NewsletterEpicGame, siteUrl: string, isLast: boolea
   const badge = game.badge.trim() || "FREE";
   return `
         <tr>
-          <td style="${isLast ? "" : "padding-bottom: 12px;"}">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161F32; border-radius: 8px; padding: 12px;">
+          <td style="padding: 0 20px ${isLast ? "20px" : "12px"} 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #161F32; border-radius: 8px;">
               <tr>
-                <td width="70" style="vertical-align: middle;">
+                <td width="70" style="vertical-align: middle; padding: 12px 0 12px 12px;">
                   ${
                     img
                       ? `<img src="${attr(img)}" alt="${attr(game.title)}" width="70" height="70" style="border-radius: 6px; width: 70px; height: 70px; object-fit: cover;">`
                       : `<div style="width:70px;height:70px;border-radius:6px;background:#1e293b;"></div>`
                   }
                 </td>
-                <td style="padding-left: 12px; vertical-align: middle;">
+                <td style="padding: 12px 0 12px 12px; vertical-align: middle;">
                   <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">${text(game.title)}</h4>
                   <p style="margin: 2px 0 0 0; font-size: 12px; color: #94A3B8;">${text(game.description)}</p>
                 </td>
-                <td align="right" style="vertical-align: middle; padding-left: 8px;">
+                <td align="right" style="vertical-align: middle; padding: 12px 12px 12px 8px;">
                   <span style="color: #4ADE80; font-size: 12px; font-weight: 700; background-color: rgba(74, 222, 128, 0.1); padding: 4px 8px; border-radius: 4px;">${text(badge)}</span>
                 </td>
               </tr>
@@ -313,7 +313,7 @@ export function buildNewsletterHtml(
   <title>${text(pageTitle)}</title>
   <style>
     body { margin: 0; padding: 0; background-color: #0B0F19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC; -webkit-font-smoothing: antialiased; }
-    table { border-spacing: 0; border-collapse: collapse; }
+    table { border-spacing: 0; border-collapse: collapse; max-width: 100%; }
     td { padding: 0; }
     img { border: 0; max-width: 100%; height: auto; display: block; }
     img.new-game-cover { height: 140px !important; object-fit: cover; object-position: center; }
@@ -391,9 +391,9 @@ export function buildNewsletterHtml(
       </table>
 
       <!-- EPIC GAMES FREE THIS WEEK -->
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0F172A; border-radius: 16px; border: 1px solid #1E293B; padding: 20px; margin-bottom: 28px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0F172A; border-radius: 16px; border: 1px solid #1E293B; margin-bottom: 28px;">
         <tr>
-          <td style="padding-bottom: 16px;">
+          <td style="padding: 20px 20px 16px 20px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td>
@@ -404,7 +404,7 @@ export function buildNewsletterHtml(
             </table>
           </td>
         </tr>
-        ${epicRows || `<tr><td style="color:#64748B;font-size:13px;padding:8px 0;">Add free games in the builder.</td></tr>`}
+        ${epicRows || `<tr><td style="color:#64748B;font-size:13px;padding:8px 20px 20px 20px;">Add free games in the builder.</td></tr>`}
       </table>
 
       <!-- FOOTER & SOCIALS -->
