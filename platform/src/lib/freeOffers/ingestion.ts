@@ -205,7 +205,7 @@ async function ingestProvider(store: StoreSlug): Promise<IngestionResult> {
       const offerData = {
         gameId: gameId || null,
         gameSlug: gameSlug || null,
-        unmatchedTitle: matchResult.game ? null : offer.title,
+        unmatchedTitle: offer.title || (matchResult.game ? matchResult.game.title : null),
         store: offer.store,
         offerType: offer.offerType,
         startDate: offer.startDate,
@@ -228,7 +228,10 @@ async function ingestProvider(store: StoreSlug): Promise<IngestionResult> {
         videos: offer.videos,
         redemptionPlatform: offer.redemptionPlatform,
         matchConfidence: matchResult.confidence,
-        metadata: offer.metadata,
+        metadata: {
+          ...(offer.metadata || {}),
+          title: offer.title,
+        },
       };
 
       if (existing) {

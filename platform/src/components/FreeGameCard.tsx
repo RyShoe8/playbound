@@ -29,6 +29,14 @@ function StoreIcon({ store, className }: { store: string; className?: string }) 
   );
 }
 
+function humanizeGameSlug(slug: string): string {
+  return slug
+    .replace(/[-_][a-f0-9]{5,}$/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
 // ── FreeGameCard ─────────────────────────────────────────────────────────
 
 export function FreeGameCard({
@@ -41,10 +49,20 @@ export function FreeGameCard({
   playboundSupported?: boolean;
   className?: string;
 }) {
-  const title = offer.gameSlug
-    ? offer.unmatchedTitle || offer.externalId
-    : offer.unmatchedTitle || offer.externalId;
-  const displayTitle = offer.metadata?.title as string | undefined || offer.unmatchedTitle || title;
+  const metaTitle = offer.metadata?.title as string | undefined;
+  const displayTitle =
+    (metaTitle && !/^[0-9a-f]{16,}$/i.test(metaTitle) ? metaTitle : null) ||
+    (offer.unmatchedTitle && !/^[0-9a-f]{16,}$/i.test(offer.unmatchedTitle)
+      ? offer.unmatchedTitle
+      : null) ||
+    (offer.gameSlug && !/^[0-9a-f]{16,}$/i.test(offer.gameSlug)
+      ? humanizeGameSlug(offer.gameSlug)
+      : null) ||
+    (offer.store === "epic"
+      ? "Epic Free Game"
+      : offer.store === "steam"
+      ? "Steam Free Game"
+      : "Free Game Deal");
   const expiry = expirationLabel(offer.endDate);
   const typeLabel = offerTypeLabel(offer.offerType, offer.store);
   const ctaLabel = claimCtaLabel(offer.store);

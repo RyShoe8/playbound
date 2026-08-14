@@ -74,10 +74,20 @@ export default async function FreeGamesPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {recentlyExpired.map((offer) => {
+              const metaTitle = offer.metadata?.title as string | undefined;
               const displayTitle =
-                (offer.metadata?.title as string | undefined) ||
-                offer.unmatchedTitle ||
-                offer.externalId;
+                (metaTitle && !/^[0-9a-f]{16,}$/i.test(metaTitle) ? metaTitle : null) ||
+                (offer.unmatchedTitle && !/^[0-9a-f]{16,}$/i.test(offer.unmatchedTitle)
+                  ? offer.unmatchedTitle
+                  : null) ||
+                (offer.gameSlug && !/^[0-9a-f]{16,}$/i.test(offer.gameSlug)
+                  ? offer.gameSlug
+                      .replace(/[-_][a-f0-9]{5,}$/i, "")
+                      .replace(/[-_]+/g, " ")
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
+                      .trim()
+                  : null) ||
+                `${storeDisplayName(offer.store)} Offer`;
               const storeName = storeDisplayName(offer.store);
               const dates = dateRangeLabel(offer.startDate, offer.endDate);
               const typeLabel = offerTypeLabel(offer.offerType, offer.store);
