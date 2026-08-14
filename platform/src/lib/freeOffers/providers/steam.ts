@@ -110,11 +110,33 @@ async function fetchAppDetails(appId: string): Promise<SteamAppDetails["data"] |
   }
 }
 
+async function fetchPackageDetails(packageId: number): Promise<{ discount_expiration?: number } | null> {
+  try {
+    const res = await fetch(
+      `https://store.steampowered.com/api/packagedetails?packageids=${packageId}&cc=us&l=english`,
+      {
+        headers: { "user-agent": "PlayBoundIngestion/1.0" },
+        next: { revalidate: 0 },
+      }
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as Record<
+      string,
+      { success?: boolean; data?: { price?: { discount_expiration?: number } } }
+    >;
+    const entry = json[String(packageId)];
+    return entry?.success ? entry.data?.price ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
 export class SteamProviderAdapter implements StoreProviderAdapter {
   readonly store = "steam" as const;
 
   async fetchCurrentOffers(): Promise<DiscoveredOffer[]> {
     const candidateAppIds = new Set<string>();
+    const expirationByAppId = new Map<string, number>();
 
     // 1. Check Steam Search Specials with maxprice=free
     try {
@@ -144,10 +166,15 @@ export class SteamProviderAdapter implements StoreProviderAdapter {
       });
       if (res.ok) {
         const json = (await res.json()) as Record<string, { items?: SteamFeaturedItem[] }>;
-        const specials = json.specials?.items ?? [];
-        for (const item of specials) {
-          if (item.id && item.discount_percent === 100) {
-            candidateAppIds.add(String(item.id));
+        for (const cat of Object.values(json)) {
+          for (const item of cat.items ?? []) {
+            if (item.id && (item.discount_percent === 100 || item.final_price === 0)) {
+              const idStr = String(item.id);
+              candidateAppIds.add(idStr);
+              if (item.discount_expiration) {
+                expirationByAppId.set(idStr, item.discount_expiration);
+              }
+            }
           }
         }
       }
@@ -172,6 +199,7 @@ export class SteamProviderAdapter implements StoreProviderAdapter {
       // Check if any package has a free promotional license (e.g. "Limited Free Promotional Package")
       let hasFreePromoPackage = false;
       let promoPackageBaselineCents = initialPriceCents;
+      let discountExpiration: number | null = expirationByAppId.get(appId) ?? null;
 
       for (const pg of details.package_groups ?? []) {
         for (const sub of pg.subs ?? []) {
@@ -182,12 +210,20 @@ export class SteamProviderAdapter implements StoreProviderAdapter {
               promoPackageBaselineCents = sub.price_in_cents_with_discount;
             }
           }
+
+          if (!discountExpiration && sub.packageid) {
+            const pkgData = await fetchPackageDetails(sub.packageid);
+            if (pkgData?.discount_expiration) {
+              discountExpiration = pkgData.discount_expiration;
+            }
+          }
         }
       }
 
       // Check if this is a genuine 100% off discount or free promo package on a paid game
       const is100Discount = discountPercent === 100 && initialPriceCents > 0;
-      const isPromotionalFree = hasFreePromoPackage && (initialPriceCents > 0 || promoPackageBaselineCents > 0);
+      const isPromotionalFree =
+        hasFreePromoPackage && (initialPriceCents > 0 || promoPackageBaselineCents > 0);
 
       if (!is100Discount && !isPromotionalFree) {
         // Not a temporary free promotion — could be a permanently free F2P title, skip.
@@ -218,13 +254,26 @@ export class SteamProviderAdapter implements StoreProviderAdapter {
         priceOverview?.initial_formatted ||
         (retailPriceVal > 0 ? `$${(retailPriceVal / 100).toFixed(2)}` : null);
 
+      // Resolve endDate from explicit expiration or standard steam promotion cutoff
+      let endDate: Date | null = null;
+      if (discountExpiration && discountExpiration > 0) {
+        endDate = new Date(discountExpiration * 1000);
+      } else {
+        // Fallback to standard Steam promotional window (upcoming Thursday 10:00 AM PT / 17:00 UTC)
+        const cutoff = new Date();
+        const daysToThursday = (4 + 7 - cutoff.getUTCDay()) % 7 || 7;
+        cutoff.setUTCDate(cutoff.getUTCDate() + daysToThursday);
+        cutoff.setUTCHours(17, 0, 0, 0);
+        endDate = cutoff;
+      }
+
       offers.push({
         externalId: appId,
         title: (details.name || `Steam App ${appId}`).trim(),
         store: "steam",
         offerType,
-        startDate: null,
-        endDate: null,
+        startDate: new Date(),
+        endDate,
         claimUrl: `https://store.steampowered.com/app/${appId}`,
         storeUrl: `https://store.steampowered.com/app/${appId}`,
         coverImage,

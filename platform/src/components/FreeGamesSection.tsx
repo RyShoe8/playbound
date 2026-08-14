@@ -42,9 +42,6 @@ export async function FreeGamesSection() {
           <FreeGameCard
             key={`${offer.store}-${offer.externalId}`}
             offer={offer}
-            playboundSupported={
-              offer.matchConfidence === "exact" || offer.matchConfidence === "high"
-            }
           />
         ))}
       </FreeGameCardRow>
