@@ -91,6 +91,8 @@ export async function GET(req: Request) {
         gpuTier: "unknown",
         vramMB: primary?.vramMB ?? null,
         ramMB: profile.memory?.totalMB ?? null,
+        storageMB:
+          profile.storage?.installDrive?.freeMB ?? profile.storage?.totalAvailableMB ?? null,
       };
       if (primary?.hardwareGpuId) {
         const gpuDoc = await HardwareGpu.findById(primary.hardwareGpuId).lean();

@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/discussion/rateLimit";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 import { isTelemetryExcludedPath } from "@/lib/telemetry/types";
 import { SITE_URL } from "@/lib/site";
+import { userFromLauncherBearer } from "@/lib/library";
 
 export const runtime = "nodejs";
 
@@ -51,7 +52,7 @@ function withCors(req: Request, res: NextResponse): NextResponse {
     res.headers.set("Access-Control-Allow-Origin", allow);
     res.headers.set("Vary", "Origin");
     res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Accept");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization");
     res.headers.set("Access-Control-Max-Age", "86400");
   }
   return res;
@@ -152,13 +153,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Prefer authenticated session; never trust client-supplied userId.
+    // Prefer authenticated session or launcher Bearer; never trust client-supplied userId.
     let userId: string | null = null;
     try {
       const session = await getServerSession(authOptions);
       userId = session?.user?.id ?? null;
     } catch {
       userId = null;
+    }
+    if (!userId) {
+      try {
+        const launcherUser = await userFromLauncherBearer(req);
+        userId = launcherUser?._id ? String(launcherUser._id) : null;
+      } catch {
+        userId = null;
+      }
     }
 
     await saveEvent({

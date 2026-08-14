@@ -73,19 +73,31 @@ function isMacOS() {
   }
 }
 
+function desktopPlatformAllowedSet() {
+  const currentOS = window.playbound.platform.getOS();
+  return currentOS === "macos"
+    ? new Set(["macos", "web", "browser"])
+    : new Set(["windows", "macos", "linux", "web"]);
+}
+
 function isGameDesktopCompatible(game) {
   if (game?.browserPlayable) return true;
-  
+
   const currentOS = window.playbound.platform.getOS();
   if (currentOS !== "macos" && game?.steamDeck) return true;
-  
+
   const platforms = (game?.platforms || []).map(normalizePlatform).filter(Boolean);
   if (platforms.length === 0) return true;
-  
-  const allowed = currentOS === "macos" 
-    ? new Set(["macos", "web", "browser"]) 
-    : new Set(["windows", "macos", "linux", "web"]);
-    
+
+  const allowed = desktopPlatformAllowedSet();
+  return platforms.some((p) => allowed.has(p));
+}
+
+/** Empty platforms = all OSes (same rule as games). */
+function isModDesktopCompatible(mod) {
+  const platforms = (mod?.platforms || []).map(normalizePlatform).filter(Boolean);
+  if (platforms.length === 0) return true;
+  const allowed = desktopPlatformAllowedSet();
   return platforms.some((p) => allowed.has(p));
 }
 
@@ -1845,6 +1857,9 @@ async function renderModsView() {
     const q = (search.value || "").trim().toLowerCase();
     const gameSlug = gameSelect.value;
     let list = mods.slice();
+    if (compatibilityFilter === "compatible") {
+      list = list.filter(isModDesktopCompatible);
+    }
     if (gameSlug) {
       list = list.filter((m) => m.baseGameSlug === gameSlug);
     }
@@ -2077,7 +2092,10 @@ function fillModDropdown(baseSlug) {
   const modSelect = document.getElementById("servers-mod");
   if (!modSelect) return;
   let modsForGame = (_modsCatalog || []).filter(
-    (m) => m.baseGameSlug === baseSlug && (m.baseSupported || m.baseHasServers)
+    (m) =>
+      m.baseGameSlug === baseSlug &&
+      (m.baseSupported || m.baseHasServers) &&
+      (compatibilityFilter !== "compatible" || isModDesktopCompatible(m))
   );
   if (serversState.installedOnly) {
     const installedModSlugs = new Set(
@@ -3553,7 +3571,9 @@ async function renderGameDetailView(slug) {
   }
 
   const modsSec = document.getElementById("detail-mods-sec");
-  const mods = Array.isArray(detail.mods) ? detail.mods : [];
+  const mods = (Array.isArray(detail.mods) ? detail.mods : []).filter((m) =>
+    compatibilityFilter === "compatible" ? isModDesktopCompatible(m) : true
+  );
   if (mods.length) {
     modsSec.innerHTML = `<div class="mods-list"></div>`;
     const modsList = modsSec.querySelector(".mods-list");

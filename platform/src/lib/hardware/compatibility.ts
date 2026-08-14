@@ -18,6 +18,7 @@ export type UserHardwareForCompat = {
   gpuTier?: PerformanceTierOrUnknown | null;
   vramMB?: number | null;
   ramMB?: number | null;
+  storageMB?: number | null;
   apis?: string[] | null;
 };
 
@@ -33,6 +34,29 @@ function meetsNumber(user: number | null | undefined, required: number | null | 
   if (required == null) return null;
   if (user == null) return null;
   return user >= required;
+}
+
+function formatMem(mb: number | null | undefined): string {
+  if (mb == null) return "?";
+  if (mb >= 1024) return `${Math.round(mb / 1024)} GB`;
+  return `${mb} MB`;
+}
+
+const PLAYABLE_SUMMARY =
+  "Your PC meets the minimum requirements. You may need reduced settings.";
+
+/** Reasons shown under the verdict, excluding the summary sentence. */
+export function visibleCompatibilityReasons(result: CompatibilityResult): CompatibilityReason[] {
+  const summary = result.summary?.trim();
+  const seen = new Set<string>();
+  const out: CompatibilityReason[] = [];
+  for (const r of result.reasons || []) {
+    if (summary && r.message === summary) continue;
+    if (seen.has(r.message)) continue;
+    seen.add(r.message);
+    out.push(r);
+  }
+  return out.slice(0, 6);
 }
 
 function evaluateSpec(
@@ -150,12 +174,41 @@ function evaluateSpec(
         reason(
           "ram_below",
           "warn",
-          `Your system has ${user.ramMB ?? "?"} MB RAM; ${label} asks for ${spec.ramMB} MB.`
+          `Your system has ${formatMem(user.ramMB)} RAM; ${label} asks for ${formatMem(spec.ramMB)}.`
         )
       );
     } else {
       reasons.push(
-        reason("ram_ok", "info", `Your ${user.ramMB} MB RAM meets the ${label} ${spec.ramMB} MB requirement.`)
+        reason(
+          "ram_ok",
+          "info",
+          `Your ${formatMem(user.ramMB)} RAM meets the ${label} ${formatMem(spec.ramMB)} requirement.`
+        )
+      );
+    }
+  }
+
+  if (spec.storageMB) {
+    checks += 1;
+    const m = meetsNumber(user.storageMB, spec.storageMB);
+    if (m === null) {
+      unknown = true;
+    } else if (!m) {
+      failures += 1;
+      reasons.push(
+        reason(
+          "storage_below",
+          "warn",
+          `Your install drive has ${formatMem(user.storageMB)} free; ${label} asks for ${formatMem(spec.storageMB)}.`
+        )
+      );
+    } else {
+      reasons.push(
+        reason(
+          "storage_ok",
+          "info",
+          `Your ${formatMem(user.storageMB)} free storage meets the ${label} ${formatMem(spec.storageMB)} requirement.`
+        )
       );
     }
   }
@@ -171,7 +224,7 @@ function evaluateSpec(
         reason(
           "vram_below",
           "warn",
-          `Your GPU has ${user.vramMB ?? "?"} MB VRAM; ${label} asks for ${spec.vramMB} MB.`
+          `Your GPU has ${formatMem(user.vramMB)} VRAM; ${label} asks for ${formatMem(spec.vramMB)}.`
         )
       );
     }
@@ -317,7 +370,7 @@ export function evaluateCompatibility(
   if (min && minEval) {
     if (minEval.ok) {
       const verdict: CompatibilityVerdict = "playable";
-      return { verdict, reasons: allReasons, summary: pickSummary(verdict, allReasons), compared };
+      return { verdict, reasons: allReasons, summary: PLAYABLE_SUMMARY, compared };
     }
     // Failed min
     if (minEval.unknown && !minEval.reasons.some((r) => r.code.endsWith("_below"))) {

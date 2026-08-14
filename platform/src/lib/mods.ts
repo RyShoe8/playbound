@@ -43,6 +43,8 @@ export type CatalogModPublic = {
   whatItChanges?: string;
   /** Base game version compatibility, when it matters. */
   compatibility?: string;
+  /** Empty/omit = all desktop OSes. */
+  platforms?: ("Windows" | "macOS" | "Linux")[];
   /** Additive structured hardware requirements. */
   hardwareRequirements?: ModHardwareRequirements | null;
   installSteps?: InstallStep[];
@@ -85,6 +87,7 @@ export type ModInstallMeta = {
   assetPattern: string | null;
   url: string | null;
   installRelativePath: string;
+  platforms?: ("Windows" | "macOS" | "Linux")[];
   approxSize: string | null;
   art: [string, string];
 };
@@ -125,6 +128,9 @@ function toMod(doc: LeanMod): CatalogModPublic {
     longDescription: (doc.longDescription as string) || undefined,
     whatItChanges: (doc.whatItChanges as string) || undefined,
     compatibility: (doc.compatibility as string) || undefined,
+    platforms: Array.isArray(doc.platforms)
+      ? (doc.platforms as CatalogModPublic["platforms"])
+      : undefined,
     hardwareRequirements: (doc.hardwareRequirements as CatalogModPublic["hardwareRequirements"]) || null,
     installSteps: (doc.installSteps as InstallStep[])?.length
       ? (doc.installSteps as InstallStep[])
@@ -151,6 +157,7 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
     assetPattern: mod.assetPattern ?? null,
     url: mod.downloadKind === "direct-zip" || mod.downloadKind === "external" ? mod.directUrl ?? mod.website : null,
     installRelativePath: mod.installRelativePath || "",
+    platforms: mod.platforms?.length ? mod.platforms : undefined,
     approxSize: sizeLabel(mod.sizeMB),
     art: [mod.art.from, mod.art.to],
   };

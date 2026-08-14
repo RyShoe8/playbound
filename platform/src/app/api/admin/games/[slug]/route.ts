@@ -12,7 +12,7 @@ import {
   editorialReadiness,
   publishBlockedMessage,
 } from "@/lib/enrich";
-import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
+import { requestDiscordProvision, hasPlayboundDiscordChannel, requestNewGameDiscordAnnounce } from "@/lib/discordProvision";
 import {
   cascadeGameSlugRename,
   staticReferenceWarning,
@@ -75,6 +75,8 @@ export async function PATCH(
     const developerName =
       body.developerName || developersBySlug.get(body.developerSlug)?.name || null;
 
+    const previous = await CatalogGame.findOne({ slug }).select("published").lean();
+
     const doc = await CatalogGame.findOneAndUpdate(
       { slug },
       {
@@ -112,6 +114,16 @@ export async function PATCH(
 
     if (doc.published && !hasPlayboundDiscordChannel(doc)) {
       void requestDiscordProvision(doc.slug);
+    }
+    if (doc.published && !previous?.published) {
+      void requestNewGameDiscordAnnounce({
+        slug: doc.slug,
+        title: doc.title,
+        description: doc.description,
+        tagline: doc.tagline,
+        coverImage: doc.coverImage,
+        screenshots: doc.screenshots,
+      });
     }
 
     revalidateTag("catalog", { expire: 0 });

@@ -80,6 +80,8 @@ const CatalogModSchema = new Schema(
     longDescription: { type: String, default: null },
     whatItChanges: { type: String, default: null },
     compatibility: { type: String, default: null },
+    /** Empty = all desktop OSes. Used by the launcher to hide host-OS-specific addons. */
+    platforms: { type: [String], default: [] },
     hardwareRequirements: { type: ModHardwareRequirementsSchema, default: null },
     installSteps: { type: [InstallStepSchema], default: [] },
     faq: { type: [FaqSchema], default: [] },

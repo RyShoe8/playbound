@@ -4,6 +4,12 @@ export const PERFORMANCE_TIERS = ["entry", "low", "mid", "high", "enthusiast"] a
 export type PerformanceTier = (typeof PERFORMANCE_TIERS)[number];
 export type PerformanceTierOrUnknown = PerformanceTier | "unknown";
 
+export const RAM_AMOUNT_PRESETS_GB = [8, 12, 16, 24, 32, 64, 128] as const;
+
+export function ramPresetMB(gb: number): number {
+  return gb * 1024;
+}
+
 export const GRAPHICS_APIS = ["dx9", "dx10", "dx11", "dx12", "vulkan", "metal", "opengl"] as const;
 export type GraphicsApi = (typeof GRAPHICS_APIS)[number];
 

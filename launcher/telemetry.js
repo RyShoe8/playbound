@@ -46,14 +46,14 @@ function sessionKey(gameSlug, editionSlug) {
  * @param {() => object} deps.loadSettings
  * @param {(settings: object) => void} deps.saveSettings
  * @param {() => string} deps.getAppVersion
- * @param {() => string | null} [deps.getUserId]
+ * @param {() => Record<string, string>} [deps.getAuthHeaders]
  */
 function createTelemetry({
   getApiBase,
   loadSettings,
   saveSettings,
   getAppVersion,
-  getUserId = () => null,
+  getAuthHeaders = (extra = {}) => extra,
 }) {
   /**
    * A stable per-install id, persisted alongside the launcher's own settings.
@@ -81,11 +81,11 @@ function createTelemetry({
 
       const res = await fetch(`${getApiBase()}/api/telemetry`, {
         method: "POST",
-        headers: {
+        headers: getAuthHeaders({
           "Content-Type": "application/json",
           accept: "application/json",
           "user-agent": `playbound-launcher/${getAppVersion()} (${Platform.getOS()}; ${Platform.getArchitecture()})`,
-        },
+        }),
         body: JSON.stringify({
           event: String(event),
           properties: {
@@ -99,7 +99,6 @@ function createTelemetry({
           timestamp: new Date().toISOString(),
           sessionId: RUN_SESSION_ID,
           anonymousId,
-          userId: getUserId(),
         }),
         signal: AbortSignal.timeout(10_000),
       });

@@ -1,3 +1,5 @@
+import { IS_PRODUCTION, SITE_URL } from "@/lib/site";
+
 /**
  * Fire-and-forget Discord channel provisioning via the Render bot worker.
  * No-ops when webhook env is unset so local/preview deploys stay quiet.
@@ -70,4 +72,44 @@ export function hasPlayboundDiscordChannel(doc: {
   communityLinks?: { playboundDiscord?: { channelId?: string | null } | null } | null;
 }): boolean {
   return Boolean(doc.communityLinks?.playboundDiscord?.channelId);
+}
+
+function absoluteCatalogMedia(url?: string | null): string | null {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `${SITE_URL}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+}
+
+/**
+ * Tell the Discord bot to post in server #general. Production only —
+ * preview/local must not announce even if the bot webhook env is set.
+ */
+export async function requestNewGameDiscordAnnounce(game: {
+  slug: string;
+  title: string;
+  description?: string | null;
+  tagline?: string | null;
+  coverImage?: string | null;
+  screenshots?: string[] | null;
+}): Promise<void> {
+  if (!IS_PRODUCTION || !game.slug) return;
+  const description = (game.description || game.tagline || "").trim().slice(0, 2000);
+  const imageUrl =
+    absoluteCatalogMedia(game.screenshots?.find((u) => u?.trim()) || null) ||
+    absoluteCatalogMedia(game.coverImage);
+  try {
+    await postBot("/announce-game", {
+      slug: game.slug,
+      title: game.title,
+      description,
+      url: `${SITE_URL}/games/${encodeURIComponent(game.slug)}`,
+      imageUrl,
+    });
+  } catch (err) {
+    console.error(
+      `[discordAnnounce] ${game.slug}:`,
+      err instanceof Error ? err.message : err
+    );
+  }
 }

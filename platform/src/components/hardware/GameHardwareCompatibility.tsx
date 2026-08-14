@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTelemetry } from "@/lib/telemetry";
 import type { CompatibilityResult } from "@/lib/hardware/types";
+import { visibleCompatibilityReasons } from "@/lib/hardware/compatibility";
 import { CheckCompatibilityCta } from "@/components/hardware/CheckCompatibilityCta";
 
 const VERDICT_LABEL: Record<string, string> = {
@@ -176,7 +177,7 @@ export function GameHardwareCompatibility({
   const label = VERDICT_LABEL[result.verdict] || "Unknown";
   const color = VERDICT_COLOR[result.verdict] || "text-muted-foreground";
   const rec = result.compared.required.recommended || result.compared.required.min;
-  const reasons = result.reasons || [];
+  const reasons = visibleCompatibilityReasons(result);
 
   return (
     <section className="rounded-xl border border-border bg-card p-4">
@@ -186,7 +187,7 @@ export function GameHardwareCompatibility({
 
       {reasons.length > 0 ? (
         <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-          {reasons.slice(0, 6).map((r) => (
+          {reasons.map((r) => (
             <li key={`${r.code}-${r.message.slice(0, 40)}`}>{r.message}</li>
           ))}
         </ul>

@@ -13,7 +13,7 @@ import {
   editorialReadiness,
   publishBlockedMessage,
 } from "@/lib/enrich";
-import { requestDiscordProvision, hasPlayboundDiscordChannel } from "@/lib/discordProvision";
+import { requestDiscordProvision, hasPlayboundDiscordChannel, requestNewGameDiscordAnnounce } from "@/lib/discordProvision";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 export async function GET() {
@@ -78,6 +78,16 @@ export async function POST(req: Request) {
 
     if (doc.published && !hasPlayboundDiscordChannel(doc)) {
       void requestDiscordProvision(doc.slug);
+    }
+    if (doc.published) {
+      void requestNewGameDiscordAnnounce({
+        slug: doc.slug,
+        title: doc.title,
+        description: doc.description,
+        tagline: doc.tagline,
+        coverImage: doc.coverImage,
+        screenshots: doc.screenshots,
+      });
     }
 
     revalidateTag("catalog", { expire: 0 });
