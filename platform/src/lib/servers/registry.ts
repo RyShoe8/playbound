@@ -14,7 +14,6 @@ import {
   fetchAsphaltLegendsUnitePlayers,
   fetchOpenCiv3Players,
 } from "./providers/steam-concurrent";
-import { fetchWarzone2100Servers } from "./providers/warzone-2100";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
@@ -45,7 +44,7 @@ const providers: Record<string, ServerProvider> = {
   },
   "warzone-2100": {
     slug: "warzone-2100",
-    fetchServers: fetchWarzone2100Servers,
+    fetchServers: () => fetchRemoteMaster("warzone-2100"),
   },
   "zero-k": {
     slug: "zero-k",
