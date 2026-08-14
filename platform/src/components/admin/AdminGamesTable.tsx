@@ -105,7 +105,15 @@ export function AdminGamesTable({
 
     if (q) {
       result = rows.filter((g) =>
-        [g.title, g.slug, g.developerSlug, ...(g.aliases ?? [])]
+        [
+          g.title,
+          g.slug,
+          g.developerSlug,
+          ...(g.aliases ?? []),
+          ...(g.platforms ?? []),
+          ...(g.genres ?? []),
+          ...(g.tags ?? []),
+        ]
           .filter(Boolean)
           .some((field) => String(field).toLowerCase().includes(q))
       );
@@ -194,7 +202,7 @@ export function AdminGamesTable({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, slug or developer…"
+            placeholder="Search by name, slug, developer, platform…"
             aria-label="Search games"
             className="h-9 w-full rounded-lg border border-input bg-secondary/50 pr-9 pl-9 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
           />
