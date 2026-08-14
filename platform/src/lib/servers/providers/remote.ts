@@ -7,6 +7,20 @@ export type RemoteMasterAuth = {
   password: string;
 };
 
+const adapterErrorsLogged = new Set<string>();
+
+/** HTTP headers are Latin-1; prefix so the adapter can restore UTF-8 passwords. */
+function encodeLobbyHeader(value: string): string {
+  return `b64:${Buffer.from(value, "utf8").toString("base64")}`;
+}
+
+function logAdapterErrorOnce(slug: string, error: string) {
+  const key = `${slug}:${error}`;
+  if (adapterErrorsLogged.has(key)) return;
+  adapterErrorsLogged.add(key);
+  console.warn(`[servers] ${slug} adapter: ${error}`);
+}
+
 /**
  * Fetch a UDP-backed list from the always-on Master Adapter (Render).
  * Optional lobby auth is forwarded for Zero-K / 0 A.D. / Wesnoth battle lists.
@@ -33,8 +47,8 @@ export async function fetchRemoteMaster(
     headers["x-playbound-adapter-key"] = process.env.MASTER_ADAPTER_KEY;
   }
   if (auth?.username && auth?.password) {
-    headers["x-playbound-lobby-user"] = auth.username;
-    headers["x-playbound-lobby-pass"] = auth.password;
+    headers["x-playbound-lobby-user"] = encodeLobbyHeader(auth.username);
+    headers["x-playbound-lobby-pass"] = encodeLobbyHeader(auth.password);
   }
 
   const res = await fetch(`${base}/v1/${slug}/servers`, {
@@ -53,7 +67,8 @@ export async function fetchRemoteMaster(
   };
 
   if (data.error && (!data.servers || data.servers.length === 0)) {
-    throw new Error(data.error);
+    logAdapterErrorOnce(slug, data.error);
+    return [];
   }
 
   const servers = Array.isArray(data.servers) ? data.servers.slice(0, MAX_SERVERS) : [];

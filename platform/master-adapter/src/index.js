@@ -45,6 +45,81 @@ function isLobbyPointerList(servers) {
 }
 
 /**
+ * Decode lobby headers. Platform sends `b64:` + Base64 so passwords with
+ * non-Latin-1 characters survive HTTP header encoding.
+ * @param {string | string[] | undefined} value
+ */
+function decodeLobbyHeader(value) {
+  const raw = String(Array.isArray(value) ? value[0] : value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("b64:")) {
+    try {
+      return Buffer.from(raw.slice(4), "base64").toString("utf8");
+    } catch {
+      return "";
+    }
+  }
+  return raw;
+}
+
+/**
+ * Lobby placeholder when CMS headers are absent (no env poll on the request path).
+ * @param {{ kind?: string, slug: string }} game
+ * @returns {import('./types.js').GameServer[]}
+ */
+function lobbyPointerFor(game) {
+  if (game.kind === "zerod") {
+    return [
+      {
+        id: "0ad:lobby",
+        name: "0 A.D. Multiplayer Lobby",
+        host: "lobby.wildfiregames.com",
+        port: 5222,
+        players: 0,
+        maxPlayers: null,
+        map: null,
+        gameType: "0ad-lobby",
+        location: null,
+        protected: false,
+      },
+    ];
+  }
+  if (game.kind === "wesnoth") {
+    return [
+      {
+        id: "wesnoth:lobby",
+        name: "Battle for Wesnoth Multiplayer Lobby",
+        host: "server.wesnoth.org",
+        port: 15000,
+        players: 0,
+        maxPlayers: null,
+        map: null,
+        gameType: "wesnoth-lobby",
+        location: null,
+        protected: false,
+      },
+    ];
+  }
+  if (game.kind === "zerok") {
+    return [
+      {
+        id: "zero-k:lobby",
+        name: "Zero-K Lobby",
+        host: "zero-k.info",
+        port: 8200,
+        players: 0,
+        maxPlayers: null,
+        map: null,
+        gameType: "zero-k-lobby",
+        location: null,
+        protected: false,
+      },
+    ];
+  }
+  return [];
+}
+
+/**
  * Env fallbacks used by background refresh when CMS headers are absent.
  * @param {{ kind?: string }} game
  * @returns {{ username: string, password: string } | null}
@@ -278,8 +353,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const lobbyUser = String(req.headers["x-playbound-lobby-user"] || "").trim();
-    const lobbyPass = String(req.headers["x-playbound-lobby-pass"] || "").trim();
+    const lobbyUser = decodeLobbyHeader(req.headers["x-playbound-lobby-user"]);
+    const lobbyPass = decodeLobbyHeader(req.headers["x-playbound-lobby-pass"]);
     const liveCreds =
       lobbyUser && lobbyPass && acceptsLiveCreds(game.kind)
         ? { username: lobbyUser, password: lobbyPass }
@@ -289,17 +364,26 @@ const server = http.createServer(async (req, res) => {
     let entry;
     if (liveCreds) {
       entry = await pollLiveCached(game, liveCreds);
+    } else if (acceptsLiveCreds(game.kind)) {
+      // CMS headers missing: never poll Render env on the request path.
+      // A bad ZEROAD_LOBBY_* login must not become the JSON Vercel sees.
+      const hit = freshAuthenticatedEntry(slug);
+      entry = hit || {
+        servers: lobbyPointerFor(game),
+        updatedAt: new Date().toISOString(),
+        source: gameSource(game),
+        authenticated: false,
+      };
     } else {
       entry = cache.get(slug);
       if (!entry) {
         try {
-          const envCreds = acceptsLiveCreds(game.kind) ? envCredsFor(game) : null;
-          const servers = await pollGame(game, envCreds);
+          const servers = await pollGame(game, null);
           entry = {
             servers,
             updatedAt: new Date().toISOString(),
             source: gameSource(game),
-            authenticated: Boolean(envCreds) && !isLobbyPointerList(servers),
+            authenticated: false,
           };
           cache.set(slug, entry);
         } catch (err) {
