@@ -141,12 +141,15 @@ function gamesFromStanza(stanza) {
  * Clients must use a resource starting with "0ad" and join a versioned arena room;
  * XpartaMuPP then pushes jabber:iq:gamelist.
  *
+ * Credentials must be passed explicitly (CMS headers or background envCredsFor).
+ * This function does not read ZEROAD_LOBBY_* on its own.
+ *
  * @param {{ username?: string, password?: string } | null} [creds]
  * @returns {Promise<import('./types.js').GameServer[]>}
  */
 export async function pollZeroAd(creds = null) {
-  const jid = creds?.username || process.env.ZEROAD_LOBBY_JID;
-  const password = creds?.password || process.env.ZEROAD_LOBBY_PASSWORD;
+  const jid = creds?.username;
+  const password = creds?.password;
   if (!jid || !password) {
     return lobbyPointer();
   }
@@ -235,6 +238,9 @@ export async function pollZeroAd(creds = null) {
     }
     const message = err instanceof Error ? err.message : String(err);
     console.warn("[0ad] lobby auth/list failed:", message);
+    if (/not-authorized/i.test(message)) {
+      return lobbyPointer();
+    }
     throw new Error(`0 A.D. lobby failed: ${message}`);
   }
 
