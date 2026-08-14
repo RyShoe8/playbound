@@ -1697,7 +1697,7 @@ async function resolveDownload(entry) {
     };
   }
 
-  if (entry.kind === "itch-zip") {
+  if (entry.kind === "itch-zip" || (entry.url && /itch\.io/i.test(entry.url))) {
     const pageUrl = entry.url || entry.itchUrl || "https://kay-yu.itch.io/holocure";
     const res = await fetch(pageUrl, {
       headers: {
@@ -1734,6 +1734,10 @@ async function resolveDownload(entry) {
       name: entry.fileName || `${entry.slug || "game"}.zip`,
       version: entry.versionLabel || "latest",
     };
+  }
+
+  if (!entry.repo) {
+    throw new Error(`No download source configured for ${entry.title || entry.slug || "this game"}`);
   }
 
   const res = await fetch(`https://api.github.com/repos/${entry.repo}/releases/latest`, {
@@ -3125,7 +3129,10 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
 }
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
-  let entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
+  let entry =
+    (await ensureCatalogEntry(slug)) ||
+    catalog.find((e) => e.slug === slug) ||
+    bundledCatalog.find((e) => e.slug === slug);
 
   let editionMeta = null;
   try {
@@ -3138,34 +3145,44 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const fromEdition = catalogEntryFromEdition(editionMeta);
     if (fromEdition) {
       entry = { ...(entry || {}), ...fromEdition };
-    } else if (editionMeta.installMethod === "official_download") {
-      const url =
-        editionMeta.installConfig?.official_download?.url ||
-        editionMeta.links?.website ||
-        editionMeta.installAction?.href;
-      if (url) {
-        await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
+    } else {
+      const bundled = bundledCatalog.find((e) => e.slug === slug);
+      if (bundled && bundled.kind && bundled.kind !== "external") {
+        entry = { ...(entry || {}), ...bundled };
+      } else if (editionMeta.installMethod === "official_download") {
+        const url =
+          editionMeta.installConfig?.official_download?.url ||
+          editionMeta.links?.website ||
+          editionMeta.installAction?.href;
+        if (url) {
+          await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
+          return { status: "external", editionSlug: editionMeta.editionSlug };
+        }
+      } else if (editionMeta.installMethod === "external_installer") {
+        const url = editionMeta.installConfig?.external_installer?.url || editionMeta.installAction?.href;
+        if (url) {
+          await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
+          return { status: "external", editionSlug: editionMeta.editionSlug };
+        }
+      } else if (editionMeta.installAction?.kind === "link" && editionMeta.installAction.href) {
+        await safeOpenExternal(editionMeta.installAction.href, {
+          campaign: "launcher_install_external",
+          content: slug,
+        });
+        return { status: "external", editionSlug: editionMeta.editionSlug };
+      } else if (editionMeta.installAction?.kind === "browser" && editionMeta.installAction.href) {
+        await safeOpenExternal(editionMeta.installAction.href, {
+          campaign: "launcher_install_external",
+          content: slug,
+        });
         return { status: "external", editionSlug: editionMeta.editionSlug };
       }
-    } else if (editionMeta.installMethod === "external_installer") {
-      const url = editionMeta.installConfig?.external_installer?.url || editionMeta.installAction?.href;
-      if (url) {
-        await safeOpenExternal(url, { campaign: "launcher_install_external", content: slug });
-        return { status: "external", editionSlug: editionMeta.editionSlug };
-      }
-    } else if (editionMeta.installAction?.kind === "link" && editionMeta.installAction.href) {
-      await safeOpenExternal(editionMeta.installAction.href, {
-        campaign: "launcher_install_external",
-        content: slug,
-      });
-      return { status: "external", editionSlug: editionMeta.editionSlug };
-    } else if (editionMeta.installAction?.kind === "browser" && editionMeta.installAction.href) {
-      await safeOpenExternal(editionMeta.installAction.href, {
-        campaign: "launcher_install_external",
-        content: slug,
-      });
-      return { status: "external", editionSlug: editionMeta.editionSlug };
     }
+  }
+
+  if (!entry) {
+    const fallback = bundledCatalog.find((e) => e.slug === slug);
+    if (fallback) entry = fallback;
   }
 
   if (!entry) throw new Error(`Unknown game: ${slug}`);

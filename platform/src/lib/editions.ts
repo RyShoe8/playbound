@@ -2,6 +2,8 @@ import { cache } from "react";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
 import type { Game } from "@/lib/data/types";
+import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
+import type { LauncherInstall } from "@/lib/launcherInstall";
 import {
   compareEditions,
   isReachable,
@@ -110,15 +112,18 @@ function toEdition(doc: LeanEdition): Edition {
 }
 
 /**
- * Pick the install method that best represents how a game is played today,
- * used only when synthesizing the virtual default edition.
+ * Derive the InstallMethod + installConfig for an Official virtual edition
+ * from the parent Game's catalog fields.
  *
  * Ordered by how much PlayBound can do for the reader: a one-click launcher
  * install beats a browser tab, which beats sending them to a storefront, which
  * beats written instructions.
  */
 function deriveInstallMethod(game: Game): { method: InstallMethod; config: EditionInstallConfig } {
-  const recipe = game.launcherInstall;
+  const recipe =
+    (game.launcherInstall as LauncherInstall | undefined) ||
+    launcherInstallBySlug[game.slug] ||
+    null;
   if (recipe?.enabled && recipe.kind && recipe.kind !== "external") {
     return {
       method: "playbound_installer",
