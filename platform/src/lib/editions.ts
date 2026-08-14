@@ -4,6 +4,7 @@ import EditionModel from "@/lib/models/Edition";
 import type { Game } from "@/lib/data/types";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import type { LauncherInstall } from "@/lib/launcherInstall";
+import { editions as seedEditions, type EditionSeed } from "@/lib/data/editions";
 import {
   compareEditions,
   isReachable,
@@ -19,6 +20,52 @@ import {
 export type { Edition };
 
 type LeanEdition = Record<string, unknown>;
+
+function seedToEdition(seed: EditionSeed): Edition {
+  return {
+    id: `seed:${seed.gameSlug}:${seed.slug}`,
+    gameSlug: seed.gameSlug,
+    slug: seed.slug,
+    name: seed.name,
+    shortDescription: seed.shortDescription,
+    description: seed.description,
+    type: seed.type ?? "community",
+    status: seed.status ?? "active",
+    visibility: seed.visibility ?? "public",
+    sortOrder: seed.sortOrder ?? 10,
+    isDefault: Boolean(seed.isDefault),
+    branding: {
+      logo: seed.branding?.logo ?? undefined,
+      heroImage: seed.branding?.heroImage ?? undefined,
+      screenshots: seed.branding?.screenshots ?? [],
+      videos: seed.branding?.videos ?? [],
+    },
+    links: {
+      website: seed.links?.website ?? undefined,
+      discord: seed.links?.discord ?? undefined,
+      wiki: seed.links?.wiki ?? undefined,
+      github: seed.links?.github ?? undefined,
+      forum: seed.links?.forum ?? undefined,
+    },
+    installMethod: seed.installMethod,
+    installConfig: seed.installConfig ?? {},
+    requirements: seed.requirements,
+    hardwareRequirements: seed.hardwareRequirements,
+    features: seed.features ?? [],
+    tags: seed.tags ?? [],
+    aliases: seed.aliases ?? [],
+    serverName: seed.serverName ?? undefined,
+    languages: seed.languages ?? [],
+    version: seed.version ?? undefined,
+    faq: seed.faq ?? [],
+    patchNotes: [],
+    verified: seed.verificationLevel === "official" || seed.verificationLevel === "playbound_verified",
+    verificationLevel: seed.verificationLevel ?? "untested",
+    verificationNote: seed.verificationNote ?? undefined,
+    population: null,
+    virtual: false,
+  };
+}
 
 /**
  * This module deliberately never imports from "@/lib/catalog".
@@ -251,10 +298,14 @@ async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]
  */
 const loadStoredForGame = cache(async (gameSlug: string): Promise<Edition[]> => {
   try {
-    return await fetchEditions({ gameSlug });
+    const fromDb = await fetchEditions({ gameSlug });
+    if (fromDb.length > 0) return fromDb;
+    const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug);
+    return seeds.map(seedToEdition);
   } catch (err) {
     console.error("[editions] read failed:", err);
-    return [];
+    const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug);
+    return seeds.map(seedToEdition);
   }
 });
 
@@ -334,6 +385,13 @@ export async function getEditionBySlug(
 /** One edition by database id. Never resolves virtual ids — they do not exist. */
 export async function getEditionById(id: string): Promise<Edition | undefined> {
   if (!id || isVirtualId(id)) return undefined;
+  if (id.startsWith("seed:")) {
+    const parts = id.split(":");
+    const gSlug = parts[1];
+    const eSlug = parts[2];
+    const s = seedEditions.find((x) => x.gameSlug === gSlug && x.slug === eSlug);
+    return s ? seedToEdition(s) : undefined;
+  }
   try {
     await dbConnect();
     const doc = await EditionModel.findById(id).lean();
@@ -348,10 +406,13 @@ export async function getEditionById(id: string): Promise<Edition | undefined> {
 export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[]> {
   try {
     const stored = await fetchEditions({ gameSlug });
-    return [...stored].sort(compareEditions);
+    if (stored.length > 0) return [...stored].sort(compareEditions);
+    const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug).map(seedToEdition);
+    return [...seeds].sort(compareEditions);
   } catch (err) {
     console.error("[editions] listAll failed:", err);
-    return [];
+    const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug).map(seedToEdition);
+    return [...seeds].sort(compareEditions);
   }
 }
 
@@ -364,25 +425,43 @@ export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[
  */
 export async function listAllPublicEditions(): Promise<Edition[]> {
   try {
-    return await fetchEditions({ visibility: "public", status: { $ne: "archived" } });
+    const fromDb = await fetchEditions({ visibility: "public", status: { $ne: "archived" } });
+    const dbGameSlugs = new Set(fromDb.map((e) => e.gameSlug));
+    const seeds = seedEditions
+      .filter(
+        (s) =>
+          (s.visibility ?? "public") === "public" &&
+          s.status !== "archived" &&
+          !dbGameSlugs.has(s.gameSlug)
+      )
+      .map(seedToEdition);
+    return [...fromDb, ...seeds];
   } catch (err) {
     console.error("[editions] listAllPublic failed:", err);
-    return [];
+    return seedEditions
+      .filter((s) => (s.visibility ?? "public") === "public" && s.status !== "archived")
+      .map(seedToEdition);
   }
 }
 
 /** How many editions each of the given games has stored, for admin lists. */
 export async function editionCountsByGame(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  for (const s of seedEditions) {
+    counts.set(s.gameSlug, (counts.get(s.gameSlug) || 0) + 1);
+  }
   try {
     await dbConnect();
     const rows = await EditionModel.aggregate<{ _id: string; count: number }>([
       { $group: { _id: "$gameSlug", count: { $sum: 1 } } },
     ]);
-    return new Map(rows.map((r) => [r._id, r.count]));
+    for (const r of rows) {
+      counts.set(r._id, r.count);
+    }
   } catch (err) {
     console.error("[editions] counts failed:", err);
-    return new Map();
   }
+  return counts;
 }
 
 /**
