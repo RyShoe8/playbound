@@ -112,6 +112,18 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-13",
     note: "Finished fangame; confirm the author still hosts the 1.3.1 download.",
   },
+  freelancer: {
+    kind: "manual",
+    url: "https://the-starport.net",
+    checkedAt: "2026-08-14",
+    note: "Freelancer community patches, FLUF, and server master lists are maintained at The Starport and Codeberg.",
+  },
+  "ur-quan-masters": {
+    kind: "manual",
+    url: "https://urquanmasters.com",
+    checkedAt: "2026-08-14",
+    note: "Official UQM releases and content packages are maintained at urquanmasters.com and SourceForge.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -222,6 +234,110 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Does Freedoom support gamepads and controllers?",
         a: "Yes. GZDoom features native plug-and-play support for Xbox, PlayStation, and generic PC controllers with customizable deadzones and sensitivity in the options menu.",
+      },
+    ],
+  },
+
+  freelancer: {
+    qualityBar: clearsAll(
+      "Freelancer clears all five: completely preserved by the community with no microtransactions, a massive 40+ hour cinematic space campaign, modernized with widescreen HD visual upgrades and TheStarport's FLUF framework, and instantly playable on modern operating systems."
+    ),
+    longDescription:
+      "Released in 2003 by Digital Anvil and Chris Roberts, Freelancer remains one of the greatest space combat and trading games ever made.\n\nYou play as Edison Trent, a lone pilot stranded on Planet Manhattan with 500 credits and a beat-up Starflier after a catastrophic station explosion. What starts as odd jobs for the Liberty Security Force quickly spirals into a galactic conspiracy involving ancient alien artifacts, corrupt military leaders, and interstellar war across the Sirius Sector's four major houses (Liberty, Bretonia, Kusari, and Rheinland).\n\nWhat made Freelancer revolutionary — and why it still holds up today — is its intuitive mouse-flight control system, cinematic radio chatter, and living universe. Trade lanes pulse with cargo convoys, pirate factions ambush miners in dense asteroid fields, and every bar is filled with shady contacts offering rumors, faction reputation bribes, and lucrative bounty contracts.\n\nOn PlayBound, Freelancer is elevated with community-curated enhancements: the Freelancer: HD Edition visual overhaul (high-resolution textures, high-polygon ships, widescreen interface) and TheStarport's FLUF (Freelancer Universal Framework), providing crash prevention, modern 60+ FPS engine fixes, and seamless compatibility with modern Windows 10/11 systems without needing complex manual modding.",
+    whyWePickedIt:
+      "Freelancer is the gold standard for accessible, thrilling space combat RPGs. It captures the fantasy of being an independent pilot better than almost anything else — picking up cargo, dodging cruise disruptors in nebula clouds, and building your fortune across a vast galaxy — all running flawlessly on modern hardware.",
+    bestFor: [
+      "Anyone who loves space sims, dogfighting, and galaxy exploration",
+      "Players wanting intuitive mouse-aim flight controls rather than complex joystick setups",
+      "Fans of story-driven RPG campaigns with rich lore and memorable characters",
+      "Multiplayer space dogfights and roleplay on dedicated community servers",
+      "Low-spec laptops and modern gaming PCs alike",
+    ],
+    notFor: [
+      "Players looking for ultra-hardcore Newtonian flight physics (e.g. FlightGear or Orbiter)",
+      "Those who prefer procedural infinite universes over hand-crafted star systems",
+      "Gamers who demand modern ray-traced lighting over stylized early-2000s sci-fi aesthetics",
+    ],
+    comparableTo: [
+      "Star Citizen",
+      "Elite Dangerous",
+      "Everspace 2",
+      "Rebel Galaxy Outlaw",
+      "Wing Commander: Privateer",
+      "X4: Foundations",
+    ],
+    faq: [
+      {
+        q: "Is Freelancer free to play?",
+        a: "Yes. Freelancer is abandonware (originally published by Microsoft in 2003 and no longer sold on modern digital stores). The global fan community at The Starport maintains the game files, patches, and master servers for free preservation.",
+      },
+      {
+        q: "Does Freelancer run on Windows 10 and Windows 11?",
+        a: "Yes. The PlayBound install includes essential modern widescreen patches, no-CD fixes, and TheStarport's FLUF framework to ensure rock-solid stability and high-framerate support on modern Windows versions.",
+      },
+      {
+        q: "What is FLUF (Freelancer Universal Framework)?",
+        a: "FLUF is a modern open-source framework hosted on Codeberg by TheStarport. It provides enhanced memory management, crash prevention (CrashWalker), modern ImGui overlay support, and seamless module loading for the Freelancer engine.",
+      },
+      {
+        q: "How do controls work in Freelancer?",
+        a: "Freelancer pioneered fluid mouse-driven flight controls. Your ship steers towards your mouse cursor with weapon reticle tracking, while keyboard keys handle throttle, thrusters, cruise engines, and countermeasures. No flight stick is required.",
+      },
+      {
+        q: "Is multiplayer still active?",
+        a: "Yes! The Starport operates community master server lists that connect players to active dedicated servers running vanilla, roleplay, and custom total conversion mods.",
+      },
+    ],
+  },
+
+  "ur-quan-masters": {
+    qualityBar: clearsAll(
+      "The Ur-Quan Masters clears all five: 100% free under GPL with full original assets released by the creators, an epic 40+ hour space opera campaign with full 3DO voice acting and music, Super Melee combat, and active cross-platform maintenance."
+    ),
+    longDescription:
+      "Widely cited by game developers and critics as one of the greatest games ever made (ranking consistently alongside Chrono Trigger and Deus Ex), Star Control II: The Ur-Quan Masters is a tour-de-force of open-world space adventure, tactical ship combat, and narrative depth.\n\nIn 2002, original creators Paul Reiche III and Fred Ford (Toys for Bob) took an extraordinary step: they released the complete C source code and full 3DO multimedia assets to the fan community under the GNU GPL. The resulting open-source project, The Ur-Quan Masters (UQM), created a flawless modern port that remains 100% free of charge and completely self-contained.\n\nYou start with an ancient precursor flagship and a skeleton crew. Returning to Earth after decades in deep space, you find the human race encased under a red energy slave shield by the victorious Ur-Quan Hierarchy. To liberate Earth, you must explore a handcrafted galaxy of hundreds of stars, land planetary landers to gather exotic minerals, upgrade your flagship with advanced weapons and thrusters, and engage in diplomatic relations with over a dozen richly developed alien civilizations — from the hilariously cowardly Spathi to the ominous, dimension-shifting Orz.\n\nBeyond its sprawling story campaign, UQM includes Super Melee!, an acclaimed head-to-head combat mode where players assemble fleets of asymmetric starships (from lumbering dreadnoughts to hyper-agile interceptors) and duel in real-time gravity-warped orbital arenas.",
+    whyWePickedIt:
+      "The Ur-Quan Masters is the textbook example of PlayBound's mission: an all-time classic commercial masterpiece whose creators voluntarily gifted the entire game and its assets to the public as free open-source software. Its writing, humor, universe design, and space combat are as thrilling today as when it first stunned the industry.",
+    bestFor: [
+      "Anyone who loves deep narrative space RPGs like Mass Effect, Starfield, or Starflight",
+      "Fans of open-world exploration, planet scanning, and resource gathering",
+      "Gamers who appreciate witty, unforgettable alien dialogue and rich sci-fi lore",
+      "Players who enjoy head-to-head tactical 2D dogfighting in Super Melee!",
+      "Steam Deck and modern PC players wanting a complete self-contained classic",
+    ],
+    notFor: [
+      "Players wanting 3D first-person cockpits (try Freelancer or Elite Dangerous instead)",
+      "Those who dislike reading or dialogue-heavy branching diplomacy",
+      "Gamers expecting modern waypoint markers that hold your hand across the galaxy",
+    ],
+    comparableTo: [
+      "Mass Effect",
+      "Starfield",
+      "FTL: Faster Than Light",
+      "Starflight",
+      "Endless Sky",
+      "Freelancer",
+    ],
+    faq: [
+      {
+        q: "Is The Ur-Quan Masters the full Star Control II game?",
+        a: "Yes! The Ur-Quan Masters is the official open-source version of Star Control II. Original creators Paul Reiche III and Fred Ford released both the code and 3DO audio/visual assets to the community, making it 100% free and fully playable from start to finish without needing any original retail discs.",
+      },
+      {
+        q: "What makes the PlayBound Edition special?",
+        a: "The PlayBound Edition pre-configures the full UQM content package, the complete 3DO voice acting package, remastered 3DO music, official remix add-on packs (including Super Melee!), and modern gamepad controller bindings so you can jump right into hyperspace.",
+      },
+      {
+        q: "Does UQM include voice acting?",
+        a: "Yes. The legendary 3DO version introduced full voice acting for every alien race, and the UQM project includes these high-quality voice recordings alongside the game's classic and remastered soundtrack.",
+      },
+      {
+        q: "What is Super Melee! mode?",
+        a: "Super Melee! is a standalone arcade combat mode where you draft a fleet of starships and battle a friend (locally) or the AI in real-time tactical space combat with unique ship abilities, energy management, and orbital gravity wells.",
+      },
+      {
+        q: "Does it work well on Steam Deck and modern controllers?",
+        a: "Yes. UQM runs natively through modern SDL2 with full controller support, customizable button layouts, and perfect scaling for widescreen and 16:10 handheld displays.",
       },
     ],
   },

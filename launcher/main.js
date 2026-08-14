@@ -269,6 +269,9 @@ function hostAllowedForDownload(hostname) {
   if (host === "runescape.com" || host.endsWith(".runescape.com")) return true;
   if (host === "xsolla.com" || host.endsWith(".xsolla.com")) return true;
   if (host === "itch.io" || host.endsWith(".itch.io") || host.endsWith(".itch.zone")) return true;
+  if (host === "archive.org" || host.endsWith(".archive.org")) return true;
+  if (host === "codeberg.org" || host.endsWith(".codeberg.org")) return true;
+  if (host === "myabandonware.com" || host.endsWith(".myabandonware.com")) return true;
   if (host.includes("itchio-mirror") || host.endsWith(".r2.cloudflarestorage.com")) return true;
   if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
   if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
