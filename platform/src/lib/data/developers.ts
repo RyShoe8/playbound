@@ -495,6 +495,39 @@ export const developers: Developer[] = [
     website: "https://revolution.co.uk",
     artHue: 200,
   },
+  {
+    slug: "project-ethea",
+    name: "Project Ethea",
+    tagline: "Two decades of story-driven Wesnoth campaigns.",
+    about:
+      "Project Ethea is Iris Morelle's development umbrella for Invasion from the Unknown and its sequel After the Storm — two of the longest-running user-made campaigns for The Battle for Wesnoth, with bespoke unit art, custom soundtracks and their own shared engine library. Both are still updated against current Wesnoth releases.",
+    founded: 2006,
+    location: "Worldwide",
+    website: "https://github.com/project-ethea",
+    artHue: 285,
+  },
+  {
+    slug: "dugi",
+    name: "Dugi",
+    tagline: "Author of Wesnoth's largest single campaign.",
+    about:
+      "Dugi maintains Legend of the Invincibles, a 200-scenario campaign for The Battle for Wesnoth that layers item drops, equipment socketing and character skill trees over the base game's tactics. It remains in active development a decade after its first release.",
+    founded: 2016,
+    location: "Worldwide",
+    website: "https://github.com/Dugy/Legend_of_the_Invincibles",
+    artHue: 45,
+  },
+  {
+    slug: "brewall",
+    name: "Brewall",
+    tagline: "Hand-drawn EverQuest cartography, expansion after expansion.",
+    about:
+      "Brian \"Brewall\" Harris has maintained a complete set of hand-corrected EverQuest zone maps for well over a decade, colour-coding named NPCs, merchants, quest givers and tradeskill containers across every zone and updating them for each new expansion. The packs are a de facto standard for both live and emulated servers.",
+    founded: 2015,
+    location: "United States",
+    website: "https://www.eqmaps.info",
+    artHue: 150,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

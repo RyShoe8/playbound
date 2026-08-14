@@ -8,6 +8,7 @@ import type { ModSeed } from "./modSeedHelpers";
 import { fossModsWave } from "./fossModsWave";
 import { phase2ModsRemasters } from "./phase2ModsRemasters";
 import { phase2ModsLive } from "./phase2ModsLive";
+import { verifiedModsWave } from "./verifiedModsWave";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -18,7 +19,12 @@ const COVER_OVERRIDES: Record<string, string> = {
   "openra-combined-arms": "/mods/openra-combined-arms/cover.webp",
 };
 
-export const mods: ModSeed[] = [...fossModsWave, ...phase2ModsRemasters, ...phase2ModsLive].map((m) =>
+export const mods: ModSeed[] = [
+  ...fossModsWave,
+  ...phase2ModsRemasters,
+  ...phase2ModsLive,
+  ...verifiedModsWave,
+].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
 
