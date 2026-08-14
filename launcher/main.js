@@ -782,14 +782,13 @@ async function syncLibraryNow({ quiet = false } = {}) {
 
 async function startupLibrarySync() {
   await syncLibraryNow({ quiet: false });
-  void syncHardwareProfile({ quiet: true });
+  void syncHardwareProfile({ quiet: true, force: false });
 }
 
 function scheduleLibrarySync() {
   if (librarySyncTimer) return;
   librarySyncTimer = setInterval(() => {
     void syncLibraryNow({ quiet: true });
-    void syncHardwareProfile({ quiet: true });
   }, LIBRARY_SYNC_INTERVAL_MS);
 }
 
@@ -5515,10 +5514,23 @@ async function collectHardwareProfile() {
   }
 }
 
-async function syncHardwareProfile({ quiet = false } = {}) {
+function shouldSyncHardwareProfile(settings, force = false) {
+  if (force) return true;
+  if (!settings?.launcherToken) return false;
+  const lastSynced = settings.hardwareProfileSyncedAt;
+  if (!lastSynced) return true; // 1. First time user loads the launcher
+  const lastDate = new Date(lastSynced).toDateString();
+  const today = new Date().toDateString();
+  return lastDate !== today; // 2. First time user loads the launcher for the day
+}
+
+async function syncHardwareProfile({ quiet = false, force = false } = {}) {
   const settings = loadSettings();
   if (!settings.launcherToken) {
     return { error: "Not signed in" };
+  }
+  if (!shouldSyncHardwareProfile(settings, force)) {
+    return { success: true, skipped: true, profile: settings.hardwareProfile || null };
   }
   try {
     const profile = await collectHardwareProfile();
@@ -5563,7 +5575,7 @@ ipcMain.handle("get-hardware-profile", async () => {
   }
 });
 
-ipcMain.handle("sync-hardware-profile", async () => syncHardwareProfile({ quiet: false }));
+ipcMain.handle("sync-hardware-profile", async () => syncHardwareProfile({ quiet: false, force: true }));
 
 ipcMain.handle("get-hardware-compatibility", async (_event, gameSlug, opts = {}) => {
   try {
