@@ -3502,6 +3502,74 @@ async function locateGameExecutable(slug) {
   return markInstalledFromExe(slug, entry, exe, "located");
 }
 
+async function addCustomGameExecutable(customTitle = null) {
+  const result = await dialog.showOpenDialog(win, {
+    title:
+      process.platform === "darwin"
+        ? "Select Game Application"
+        : "Select Game Executable",
+    filters:
+      process.platform === "darwin"
+        ? [
+            { name: "Applications", extensions: ["app"] },
+            { name: "Java / binaries", extensions: ["jar", "*"] },
+            { name: "All Files", extensions: ["*"] },
+          ]
+        : [{ name: "Executables", extensions: ["exe", "cmd", "bat", "jar"] }],
+    properties:
+      process.platform === "darwin"
+        ? ["openFile", "treatPackageAsDirectory"]
+        : ["openFile"],
+  });
+  if (result.canceled || result.filePaths.length === 0) return { status: "cancelled" };
+
+  let exe = result.filePaths[0];
+  if (process.platform === "darwin" && !exe.endsWith(".app")) {
+    const parts = exe.split(path.sep);
+    const appIdx = parts.findIndex((p) => p.endsWith(".app"));
+    if (appIdx >= 0) {
+      exe = parts.slice(0, appIdx + 1).join(path.sep);
+    }
+  }
+
+  const baseName = path.basename(exe, path.extname(exe));
+  const rawTitle =
+    customTitle ||
+    baseName
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim() ||
+    "Custom Game";
+  const slug = `custom-${baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || Date.now()}`;
+  const dir = path.dirname(exe);
+
+  const state = loadState();
+  const game = {
+    slug,
+    title: rawTitle,
+    exe,
+    dir,
+    custom: true,
+    version: "local",
+    installedAt: new Date().toISOString(),
+    editionSlug: "default",
+    editionName: "Custom",
+    editions: {
+      default: {
+        exe,
+        dir,
+        editionSlug: "default",
+        editionName: "Custom",
+        installedAt: new Date().toISOString(),
+      },
+    },
+  };
+  state[slug] = game;
+  saveState(state);
+  notifyInstallDetected(slug);
+  return { status: "installed", slug, title: rawTitle, exe, dir };
+}
+
 async function placeModFiles(slug, install, baseDirOverride) {
   const dl = await resolveModDownload(install);
   let targetDir = resolveModTargetDir(
@@ -4447,6 +4515,17 @@ async function uninstallGame(slug, editionSlug = null) {
   const game = ensureGameInstallRecord(state[slug]);
   if (!state[slug]) return { status: "not-installed" };
 
+  // For custom non-catalog games, remove the record from launcher library without deleting external game files.
+  if (state[slug]?.custom || game?.custom || slug.startsWith("custom-")) {
+    delete state[slug];
+    saveState(state);
+    clearPendingInstaller(slug);
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("install-detected", { slug, uninstalled: true });
+    }
+    return { status: "uninstalled", dir: null };
+  }
+
   if (editionSlug) {
     if (!game.editions?.[editionSlug]) {
       return { status: "not-installed", editionSlug };
@@ -4513,17 +4592,22 @@ function listInstalledGames() {
     const pending = Boolean(game.pending) && !ready;
     if (!ready && !pending && editions.length === 0) continue;
     const entry = catalog.find((e) => e.slug === slug);
+    const isCustom = Boolean(raw.custom || slug.startsWith("custom-"));
+    const displayTitle =
+      raw.title ||
+      entry?.title ||
+      slug.replace(/^custom-/, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     games.push({
       slug,
-      title: entry?.title || slug,
-      blurb: entry?.blurb || "",
-      art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
-      coverImage: resolveMediaUrl(entry?.coverImage) || null,
+      title: displayTitle,
+      blurb: raw.blurb || entry?.blurb || (isCustom ? "Custom Game" : ""),
+      art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#1e1b4b", "#6366f1"],
+      coverImage: resolveMediaUrl(raw.coverImage || entry?.coverImage) || null,
       approxSize: entry?.approxSize || "",
-      genres: entry?.genres || [],
+      genres: entry?.genres || (isCustom ? ["Custom"] : []),
       tags: entry?.tags || [],
       multiplayer: Boolean(entry?.multiplayer),
-      platforms: Array.isArray(entry?.platforms) ? entry.platforms : [],
+      platforms: Array.isArray(entry?.platforms) ? entry.platforms : ["Windows"],
       browserPlayable: Boolean(entry?.browserPlayable),
       steamDeck: Boolean(entry?.steamDeck),
       version: game.version || null,
@@ -4534,6 +4618,7 @@ function listInstalledGames() {
       editionSlug: game.editionSlug || null,
       editionName: game.editionName || null,
       installedEditions: editions,
+      custom: isCustom,
     });
   }
   games.sort((a, b) => String(a.title).localeCompare(String(b.title)));
@@ -4672,6 +4757,9 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   );
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
+ipcMain.handle("add-custom-game", (_event, customTitle) =>
+  addCustomGameExecutable(customTitle || null)
+);
 ipcMain.handle("dismiss-pending-install", (_event, slug) => dismissPendingInstall(slug));
 ipcMain.handle("play", (_event, slug, join, editionSlug) =>
   playGame(slug, join || null, editionSlug || null)

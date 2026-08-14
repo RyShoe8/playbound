@@ -1345,12 +1345,35 @@ async function toggleLibraryAddPanel(forceOpen = false) {
 
   panel.innerHTML = `
     <div class="library-add-header">
-      <input type="search" id="library-add-search" class="library-add-search" placeholder="Search games…" autocomplete="off" />
+      <input type="search" id="library-add-search" class="library-add-search" placeholder="Search catalog games…" autocomplete="off" />
       <button type="button" class="btn-secondary btn-sm" id="library-add-close">Close</button>
     </div>
-    <p class="view-sub" style="margin:8px 0">Pick a catalog game, then select its ${executableNoun()} on disk.</p>
+    <div style="margin: 12px 0; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div>
+        <strong style="display: block; font-size: 13px; color: var(--text, #fff);">Add any game from this ${isMacOS() ? "Mac" : "PC"}</strong>
+        <span class="view-sub" style="font-size: 11px; margin: 0;">Add games installed via Steam, Epic Games, or anywhere on disk.</span>
+      </div>
+      <button type="button" class="btn-primary btn-sm" id="btn-add-custom-exe" style="white-space: nowrap;">Browse ${executableNoun()}</button>
+    </div>
+    <p class="view-sub" style="margin:8px 0">Or pick a catalog game to locate its installed ${executableNoun()}:</p>
     <div id="library-add-list" class="library-add-list"></div>
   `;
+
+  document.getElementById("btn-add-custom-exe")?.addEventListener("click", async () => {
+    try {
+      setStatus("Selecting game executable…");
+      const res = await window.playbound.addCustomGame();
+      if (res?.status === "cancelled") {
+        setStatus("Locate cancelled.");
+        return;
+      }
+      setStatus(`${res?.title || "Game"} added to library.`);
+      toggleLibraryAddPanel(false);
+      renderLibraryView();
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
 
   const listEl = document.getElementById("library-add-list");
   const searchEl = document.getElementById("library-add-search");
