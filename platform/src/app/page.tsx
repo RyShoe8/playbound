@@ -58,7 +58,7 @@ function CatalogStatsFallback() {
           { label: "Games" },
           { label: "Mods" },
           { label: "Editions" },
-          { label: "Active Players" },
+          { label: "Gamers Playing" },
         ].map((item) => (
           <div key={item.label}>
             <dt className="text-xs text-muted-foreground">{item.label}</dt>
