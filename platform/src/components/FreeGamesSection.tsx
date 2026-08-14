@@ -1,29 +1,18 @@
 import { Gift } from "lucide-react";
 import { listActiveOffers } from "@/lib/freeOffers/service";
 import { FreeGameCard, FreeGameCardRow } from "@/components/FreeGameCard";
-import { Badge, SectionHeader } from "@/components/ui/bits";
-import type { StoreSlug } from "@/lib/freeOffers/types";
+import { Badge } from "@/components/ui/bits";
 
 /**
  * Homepage "Free Games This Week" section.
  *
  * Server component — reads active offers from the cached service.
+ * Renders all active offers across all stores in a single unified row.
  * Hidden gracefully when no active offers exist.
  */
 export async function FreeGamesSection() {
   const offers = await listActiveOffers();
   if (offers.length === 0) return null;
-
-  // Determine unique stores for potential filtering.
-  const stores = [...new Set(offers.map((o) => o.store))] as StoreSlug[];
-
-  // Group by store for display.
-  const grouped = new Map<StoreSlug, typeof offers>();
-  for (const offer of offers) {
-    const list = grouped.get(offer.store) ?? [];
-    list.push(offer);
-    grouped.set(offer.store, list);
-  }
 
   return (
     <section id="free-games-this-week">
@@ -47,68 +36,20 @@ export async function FreeGamesSection() {
         </a>
       </div>
 
-      {/* If only one store, show a flat row. If multiple, group by store. */}
-      {stores.length <= 1 ? (
-        <FreeGameCardRow>
-          {offers.map((offer) => (
-            <FreeGameCard
-              key={`${offer.store}-${offer.externalId}`}
-              offer={offer}
-              playboundSupported={offer.matchConfidence === "exact" || offer.matchConfidence === "high"}
-            />
-          ))}
-        </FreeGameCardRow>
-      ) : (
-        <div className="space-y-6">
-          {/* Store filter tabs */}
-          <div className="flex gap-2 overflow-x-auto">
-            {stores.map((store) => (
-              <a
-                key={store}
-                href={`#free-games-${store}`}
-                className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80"
-              >
-                {storeLabel(store)} ({grouped.get(store)?.length ?? 0})
-              </a>
-            ))}
-          </div>
-
-          {/* Grouped cards */}
-          {stores.map((store) => {
-            const storeOffers = grouped.get(store) ?? [];
-            return (
-              <div key={store} id={`free-games-${store}`}>
-                <p className="mb-2 text-sm font-semibold text-muted-foreground">
-                  {storeLabel(store)}
-                </p>
-                <FreeGameCardRow>
-                  {storeOffers.map((offer) => (
-                    <FreeGameCard
-                      key={`${offer.store}-${offer.externalId}`}
-                      offer={offer}
-                      playboundSupported={
-                        offer.matchConfidence === "exact" || offer.matchConfidence === "high"
-                      }
-                    />
-                  ))}
-                </FreeGameCardRow>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Single unified row for all stores */}
+      <FreeGameCardRow>
+        {offers.map((offer) => (
+          <FreeGameCard
+            key={`${offer.store}-${offer.externalId}`}
+            offer={offer}
+            playboundSupported={
+              offer.matchConfidence === "exact" || offer.matchConfidence === "high"
+            }
+          />
+        ))}
+      </FreeGameCardRow>
     </section>
   );
-}
-
-function storeLabel(store: StoreSlug): string {
-  const labels: Record<StoreSlug, string> = {
-    epic: "Epic Games Store",
-    steam: "Steam",
-    gog: "GOG",
-    prime_gaming: "Amazon Prime Gaming",
-  };
-  return labels[store] ?? store;
 }
 
 /** Loading fallback for Suspense boundary. */
@@ -127,7 +68,7 @@ export function FreeGamesSectionFallback() {
         </p>
       </div>
       <div className="flex gap-4 overflow-hidden">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
             className="w-52 shrink-0 animate-pulse rounded-xl border border-border bg-card sm:w-56"
