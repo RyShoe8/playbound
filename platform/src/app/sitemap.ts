@@ -62,6 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // game page it was derived from. Unlisted and hidden editions are excluded
   // upstream by listAllPublicEditions().
   const knownGameSlugs = new Set(games.map((g) => g.slug));
+  const developerSlugsWithGames = new Set(games.map((g) => g.developerSlug));
   const editionRoutes: MetadataRoute.Sitemap = editions
     .filter((e) => knownGameSlugs.has(e.gameSlug))
     .map((e) => ({
@@ -115,11 +116,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.5,
         lastModified: now,
       })),
-    ...(await listDevelopers()).map((d) => ({
-      url: `${SITE_URL}/developers/${d.slug}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-      lastModified: now,
-    })),
+    /*
+     * Only developers who actually have a published game. The page renders a
+     * games list and nothing else, so the rest are empty pages — and they are
+     * the majority, since every mod author and every unpublished draft's
+     * developer has a record. Submitting them asks Google to crawl far more
+     * nothing than something; the pages stay reachable, just not advertised.
+     * Mirrors the noIndex condition in developers/[slug]/page.tsx.
+     */
+    ...(await listDevelopers())
+      .filter((d) => developerSlugsWithGames.has(d.slug))
+      .map((d) => ({
+        url: `${SITE_URL}/developers/${d.slug}`,
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+        lastModified: now,
+      })),
   ];
 }
