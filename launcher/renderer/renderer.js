@@ -3299,6 +3299,12 @@ async function renderSettingsView() {
     if (res.updateAvailable) {
       setStatus(`Update ${res.version} available — downloading…`);
       updateStatus = { phase: "available", version: res.version };
+    } else if (res.behindChannel) {
+      // Running ahead of the channel is not the same as being current, and
+      // saying "up to date" here hides the fact that no update can ever
+      // arrive — which is exactly how a tester ends up stranded.
+      setStatus(res.message || "This build is newer than its update channel.", true);
+      updateStatus = { phase: "none", version: res.version };
     } else {
       setStatus(
         res.channel === "admin"

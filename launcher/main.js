@@ -722,6 +722,29 @@ function getAutoUpdater() {
  * Signature verify is skipped only on the admin channel so a signed install can
  * still accept unsigned test builds while linked as an admin.
  */
+/**
+ * Order two dotted versions. Returns >0 when `a` is newer than `b`.
+ *
+ * Deliberately small: launcher versions are plain numeric triples, and the
+ * only question asked of this is "is the channel offering something newer",
+ * which string comparison gets wrong the moment a component reaches double
+ * digits ("0.1.9" > "0.1.10" as text).
+ */
+function compareVersions(a, b) {
+  const parse = (v) =>
+    String(v || "")
+      .split(/[.+-]/)
+      .map((n) => parseInt(n, 10))
+      .filter((n) => Number.isFinite(n));
+  const left = parse(a);
+  const right = parse(b);
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
 function getEffectiveUpdateChannel() {
   if (!linkedCanUseAdminChannel) return "latest";
   const pref = loadSettings().updateChannel;
@@ -6078,21 +6101,46 @@ ipcMain.handle("check-for-updates", async () => {
     const channel = getEffectiveUpdateChannel();
     const result = await autoUpdater.checkForUpdates();
     const info = result?.updateInfo || null;
-    if (info && info.version && info.version !== app.getVersion()) {
+    const current = app.getVersion();
+    const offered = info?.version || null;
+    const delta = offered ? compareVersions(offered, current) : 0;
+
+    /*
+     * A newer build, by version order rather than mere inequality.
+     *
+     * This used to be `info.version !== app.getVersion()`, which treats an
+     * older channel version as an update and offers a downgrade.
+     */
+    if (offered && delta > 0) {
       pendingUpdate = info;
+      return { ok: true, updateAvailable: true, version: offered, channel };
+    }
+
+    /*
+     * Running ahead of the channel is not "up to date" — it means this build
+     * came from somewhere the channel does not know about, and no update will
+     * ever arrive here. That strands testers: an unsigned admin build is
+     * newer than the signed latest channel, so anyone whose admin access stops
+     * resolving silently falls back to a channel that is behind them and is
+     * told everything is fine, forever.
+     */
+    if (offered && delta < 0) {
       return {
         ok: true,
-        updateAvailable: true,
-        version: info.version,
+        updateAvailable: false,
+        behindChannel: true,
+        version: current,
+        channelVersion: offered,
         channel,
+        message:
+          channel === "latest"
+            ? `You're on ${current}, which is newer than the public ${offered} release. ` +
+              `Link an admin or tester account to receive test builds, or reinstall from the site to return to the public channel.`
+            : `You're on ${current}, which is newer than ${offered} on the ${channel} channel.`,
       };
     }
-    return {
-      ok: true,
-      updateAvailable: false,
-      version: app.getVersion(),
-      channel,
-    };
+
+    return { ok: true, updateAvailable: false, version: current, channel };
   } catch (err) {
     return { ok: false, reason: "error", message: err?.message || String(err) };
   }
