@@ -188,6 +188,36 @@ describe("recipe health checks", () => {
     expect(r.status).toBe("ok");
   });
 
+  it("retries a dropped connection instead of believing the first blip", async () => {
+    // A live game (Freeciv) was reported broken by one run and fine by the
+    // next purely because of a transient connection failure.
+    let calls = 0;
+    const fetchImpl = (async () => {
+      calls++;
+      if (calls <= 2) throw new Error("fetch failed");
+      return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({}) } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    const r = await checkRecipe(
+      { id: "game:x", kind: "direct-zip", url: "https://flaky.example/g.zip" },
+      // Zero delay keeps the test fast; retry behaviour is what matters.
+      fetchImpl
+    );
+    expect(r.status).toBe("ok");
+    expect(calls).toBeGreaterThan(1);
+  });
+
+  it("still reports broken when a host refuses every attempt", async () => {
+    const fetchImpl = (async () => {
+      throw new Error("fetch failed");
+    }) as unknown as typeof fetch;
+    const r = await checkRecipe(
+      { id: "game:x", kind: "direct-zip", url: "https://dead.example/g.zip" },
+      fetchImpl
+    );
+    expect(r.status).toBe("broken");
+  });
+
   it("summarizes only failures, so a healthy catalog stores nothing", () => {
     const report = summarize([
       { id: "a", kind: "github-zip", status: "ok" },

@@ -12,7 +12,7 @@
  *   npx tsx scripts/check-recipe-health.ts --dry-run  # check and print only
  *   npx tsx scripts/check-recipe-health.ts --fail     # exit 1 if anything broke
  */
-import { writeFileSync } from "fs";
+import { writeFileSync, readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { loadEnvConfig } from "@next/env";
 
@@ -61,6 +61,35 @@ async function main() {
   });
 
   const report = summarize(checks);
+
+  /*
+   * Carry forward failures this run could not re-test.
+   *
+   * A rate-limited run records most of the catalog as "skipped", and skipped is
+   * not a pass — without this, one throttled night would quietly clear every
+   * known-broken recipe and put dead install buttons back in front of players.
+   * A failure is only dropped when the recipe was actually reached and worked.
+   */
+  const reachedThisRun = new Set(
+    checks.filter((c) => c.status !== "skipped").map((c) => c.id)
+  );
+  if (existsSync(OUT)) {
+    try {
+      const previous = JSON.parse(readFileSync(OUT, "utf8")) as typeof report;
+      const carried = (previous.failures ?? []).filter((f) => !reachedThisRun.has(f.id));
+      if (carried.length) {
+        console.log(
+          `\nCarrying forward ${carried.length} earlier failure(s) not re-tested this run:`
+        );
+        for (const f of carried) console.log(`  ${f.id} — ${f.detail}`);
+        report.failures = [...report.failures, ...carried];
+        report.broken = report.failures.length;
+      }
+    } catch {
+      // An unreadable previous report is not a reason to fail the run.
+    }
+  }
+
   console.log(
     `\n${report.ok} ok · ${report.broken} broken · ${report.skipped} skipped` +
       ` — checked ${report.checkedAt}`
