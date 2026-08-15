@@ -516,7 +516,7 @@ function parseDeepLink(url) {
   // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
   // playbound://auth
   // playbound://sync
-  // playbound://link?code=... (preferred) or legacy ?token=...
+  // playbound://link?code=...
   try {
     const normalized = String(url).replace(/^playbound:\/\//i, "https://");
     const u = new URL(normalized);
@@ -524,12 +524,15 @@ function parseDeepLink(url) {
     if (action === "auth") return { action: "auth" };
     if (action === "sync") return { action: "sync" };
     if (action === "link") {
-      return {
-        action: "link",
-        code: u.searchParams.get("code") || "",
-        // Legacy one-release dual support for in-flight browser tabs.
-        token: u.searchParams.get("token") || "",
-      };
+      /*
+       * Only the one-time code is accepted. A durable bearer used to be honoured
+       * here too, which meant any web page could navigate to
+       * playbound://link?token=<their own token> and silently rebind someone
+       * else's launcher to the attacker's account — handing over their library
+       * and every cloud save written afterwards. The site has only ever minted
+       * ?code= (see lib/launcher.ts), so nothing legitimate used that path.
+       */
+      return { action: "link", code: u.searchParams.get("code") || "" };
     }
     const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
     const slugActions = [
@@ -861,10 +864,6 @@ async function connectWithHandoff(parsed) {
     }
     return connectWithToken(exchanged.token);
   }
-  // Legacy: durable bearer embedded in URL (older site builds).
-  if (parsed?.token) {
-    return connectWithToken(parsed.token);
-  }
   return { connected: false, synced: 0, skipped: [], error: "missing_code" };
 }
 
@@ -1007,7 +1006,7 @@ function scheduleLibrarySync() {
 function extractLinkHandoff(url) {
   try {
     const parsed = parseDeepLink(url);
-    if (parsed?.action === "link" && (parsed.code || parsed.token)) return parsed;
+    if (parsed?.action === "link" && parsed.code) return parsed;
   } catch {
     /* ignore */
   }
@@ -1115,7 +1114,7 @@ function handleDeepLink(parsed) {
   }
   if (parsed.action === "link") {
     showMainWindow();
-    if (parsed.code || parsed.token) {
+    if (parsed.code) {
       void connectWithHandoff(parsed);
     }
     return;
@@ -7161,8 +7160,10 @@ function testDeepLink() {
     ],
     ["playbound://auth", { action: "auth" }],
     ["playbound://sync", { action: "sync" }],
-    ["playbound://link?code=abc", { action: "link", code: "abc", token: "" }],
-    ["playbound://link?token=abc", { action: "link", code: "", token: "abc" }],
+    ["playbound://link?code=abc", { action: "link", code: "abc" }],
+    // A durable bearer in the URL must not survive parsing: honouring it let any
+    // web page rebind someone else's launcher to the attacker's account.
+    ["playbound://link?token=abc", { action: "link", code: "" }],
     ["playbound://install-mod/cool-mod", { action: "install-mod", slug: "cool-mod" }],
     ["playbound://play-mod/openra-tiberian-dawn-hd", { action: "play-mod", slug: "openra-tiberian-dawn-hd" }],
     ["playbound://open-folder/openra", { action: "open-folder", slug: "openra" }],
