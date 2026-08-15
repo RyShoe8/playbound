@@ -212,12 +212,21 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "direct-zip",
-        url: "https://sahaquiel.us/quarm/TAKP2.2.zip",
-        fileName: "TAKP2.2.zip",
-        versionLabel: "takp-2.2",
+        /*
+         * BROKEN UPSTREAM — sahaquiel.us stopped resolving entirely (no DNS,
+         * not a 404), and it was a community mirror rather than an official
+         * source, so there is nothing to retarget it to. projectquarm.com and
+         * takproject.net are both still up and remain the real distribution
+         * route, which is what the steps below already walk players through.
+         *
+         * Kept as "external" rather than deleted: the edition's setup guide is
+         * genuinely useful and the server is alive, so PlayBound hands off to
+         * the project instead of pretending it can install the client. Restore
+         * a direct recipe only against a URL that upstream actually publishes.
+         */
+        kind: "external",
+        url: "https://www.projectquarm.com/",
         exeHint: "eqgame",
-        checksumMd5: "002741614acef667b9c70e55a5a766e0",
         postInstallDiscord: "https://discord.gg/projectquarm",
         postInstallEqw: true,
         note:
@@ -734,11 +743,14 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "direct-zip",
-        url: "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip",
+        // See the freelancer entry in launcherInstall.ts: this URL 404s and was
+        // serving a rip of the commercial 2003 retail CD. Pointed at the mod
+        // project instead until Freelancer is either owner-supplied or dropped.
+        kind: "external",
+        url: "https://the-starport.net",
         exeHint: "Freelancer|FL",
         versionLabel: "HD Edition + FLUF",
-        note: "Bundles Freelancer with HD graphics, widescreen support, and FLUF framework enhancements.",
+        note: "Requires your own copy of Freelancer. The HD Edition installer is published by The Starport.",
       },
     },
     features: [
@@ -773,11 +785,13 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "direct-zip",
-        url: "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip",
+        // Same as above — the archive.org rip is both dead and not ours to
+        // distribute. Vanilla Freelancer has to come from the player's own copy.
+        kind: "external",
+        url: "https://the-starport.net",
         exeHint: "Freelancer|FL",
         versionLabel: "1.1 Classic",
-        note: "Classic 2003 unmodded experience.",
+        note: "Classic 2003 unmodded experience. Requires your own copy of Freelancer.",
       },
     },
     features: ["Singleplayer Campaign", "Multiplayer Servers", "Classic Graphics"],
@@ -810,10 +824,13 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "direct-zip",
-        url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-win32.zip",
+        // Upstream ships a win32 installer in the 0.8 directory; there is no
+        // 0.8.0 zip and this URL 404'd. See launcherInstall.ts for the same fix.
+        kind: "direct-installer",
+        url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-win32.exe",
+        fileName: "uqm-0.8-win32.exe",
         exeHint: "uqm",
-        versionLabel: "0.8.0 Remaster",
+        versionLabel: "0.8 Remaster",
         note: "Includes full game content package, 3DO voice acting, and remastered music.",
       },
     },
@@ -848,10 +865,11 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "direct-zip",
-        url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-win32.zip",
+        kind: "direct-installer",
+        url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-win32.exe",
+        fileName: "uqm-0.8-win32.exe",
         exeHint: "uqm",
-        versionLabel: "0.8.0 Classic",
+        versionLabel: "0.8 Classic",
         note: "Classic 1992 Star Control II presentation.",
       },
     },

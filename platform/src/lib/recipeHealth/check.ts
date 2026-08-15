@@ -28,7 +28,16 @@ export interface RecipeCheck {
   detail?: string;
 }
 
-const UA = "playbound-recipe-health";
+/**
+ * The launcher's own user-agent, not a checker-specific one.
+ *
+ * The question this module answers is "would the launcher get this file?", so
+ * it has to look like the launcher. A distinct UA is a different question and
+ * gets different answers: GitLab served 406 to "playbound-recipe-health" while
+ * happily serving the same file to "playbound-launcher", which reported a
+ * perfectly working mod as broken.
+ */
+const UA = "playbound-launcher";
 
 type GhOutcome<T> =
   | { state: "found"; value: T }
