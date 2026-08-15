@@ -1303,5 +1303,87 @@ export const editions: EditionSeed[] = [
     tags: ["Competitive", "Client", "Esports", "Open Source"],
     verificationLevel: "community_verified",
   },
+  // --- Team Fortress 2 ---
+  {
+    gameSlug: "team-fortress-2",
+    slug: "official",
+    name: "Team Fortress 2 (Steam Free-to-Play)",
+    shortDescription: "The complete official release with casual & competitive matchmaking and MvM.",
+    description:
+      "The complete official release of Team Fortress 2 on Steam. Includes all 9 classes, official casual and competitive matchmaking, Mann vs. Machine co-op defense, and full Steam Workshop integration.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.teamfortress.com",
+      discord: "https://discord.gg/tf2",
+    },
+    installMethod: "external_installer",
+    installConfig: {
+      external_installer: {
+        url: "steam://run/440",
+        instructions: "Install and launch Team Fortress 2 for free on Steam.",
+      },
+    },
+    features: ["Casual Matchmaking", "Mann vs. Machine", "Steam Workshop", "Dedicated Servers", "Community Market"],
+    tags: ["Official", "Valve", "Free to Play", "Class Shooter"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "team-fortress-2",
+    slug: "tf2-classic",
+    name: "Team Fortress 2 Classic",
+    shortDescription: "The acclaimed community reimagining of 2008–2009 era TF2 with 4-team and VIP modes.",
+    description:
+      "Team Fortress 2 Classic (TF2C) is a standalone Source SDK mod that reimagines TF2's golden era with classic gameplay, restored beta weapons, 4-team battles (RED, BLU, GRN, YLW), and the Civilian VIP escort mode.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://tf2classic.com",
+      discord: "https://discord.gg/tf2c",
+    },
+    installMethod: "external_installer",
+    installConfig: {
+      external_installer: {
+        url: "https://tf2classic.com",
+        instructions: "Download the TF2 Classic launcher or standalone archive and extract to sourcemods/tf2classic.",
+      },
+    },
+    features: ["4-Team Mode", "Civilian VIP Mode", "Classic Weapons", "Community Dedicated Servers"],
+    tags: ["Source Mod", "Standalone", "Classic Era", "Community"],
+    verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "team-fortress-2",
+    slug: "open-fortress",
+    name: "Open Fortress",
+    shortDescription: "Fast-paced arena deathmatch mod with bunnyhopping and weapon pickups.",
+    description:
+      "Open Fortress brings classic 90s arena FPS gameplay (Quake/Unreal style) into the Source engine, featuring Deathmatch, weapon pickups, the Mercenary class, and lightning-fast bunnyhopping movement.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 30,
+    links: {
+      website: "https://openfortress.fun",
+      discord: "https://discord.gg/openfortress",
+    },
+    installMethod: "external_installer",
+    installConfig: {
+      external_installer: {
+        url: "https://openfortress.fun",
+        instructions: "Download the Open Fortress installer and launch via Steam / Source SDK 2013 Multiplayer.",
+      },
+    },
+    features: ["Arena Deathmatch", "Bunnyhopping", "Weapon Pickups", "Custom Maps", "Community Servers"],
+    tags: ["Arena FPS", "Fast Paced", "Source Mod", "Community"],
+    verificationLevel: "community_verified",
+  },
 ];
 

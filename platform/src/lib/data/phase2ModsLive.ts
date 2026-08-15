@@ -80,10 +80,7 @@ const hearthstoneMods: ModSeed[] = [
   m({ slug: 'hearthstone-firestone', title: 'Firestone', tagline: 'Overlay tracker (policy check).', desc: 'Overlay tracker (policy check).', base: 'hearthstone', baseTitle: 'Hearthstone', path: 'external', website: 'https://github.com/Zero-to-Heroes/firestone', repo: 'Zero-to-Heroes/firestone', changes: 'Overlay tracker (policy check).', summary: 'Overlay tracker (policy check).' }),
 ];
 
-const teamfortress2Mods: ModSeed[] = [
-  m({ slug: 'team-fortress-2-cfg', title: 'mastercoms cfg', tagline: 'Popular FPS configs.', desc: 'Popular FPS configs.', base: 'team-fortress-2', baseTitle: 'Team Fortress 2', path: 'external', website: 'https://github.com/mastercoms/mastercomfig', repo: 'mastercoms/mastercomfig', changes: 'Popular FPS configs.', summary: 'Popular FPS configs.' }),
-  m({ slug: 'team-fortress-2-mastercomfig', title: 'mastercomfig releases', tagline: 'Performance config packs.', desc: 'mastercomfig GitHub release zips for FPS configs.', base: 'team-fortress-2', baseTitle: 'Team Fortress 2', path: 'tf/cfg', website: 'https://github.com/mastercoms/mastercomfig', repo: 'mastercoms/mastercomfig', pattern: '\\.zip$', size: 15, changes: 'Drop-in cfg presets.', summary: 'mastercomfig release packages.' }),
-];
+const teamfortress2Mods: ModSeed[] = [];
 const genshinimpactMods: ModSeed[] = [
 ];
 
