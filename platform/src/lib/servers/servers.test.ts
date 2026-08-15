@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { mapSteamServerListRows } from "./providers/team-fortress-2";
+import { mapSteamServerListRows } from "./providers/steam-server-list";
 
-describe("team-fortress-2 mapSteamServerListRows", () => {
+describe("steam-server-list mapSteamServerListRows", () => {
   it("maps Steam GetServerList rows to GameServer", () => {
     const servers = mapSteamServerListRows([
       {
