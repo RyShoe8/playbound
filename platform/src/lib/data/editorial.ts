@@ -330,6 +330,74 @@ export const editorial: Record<string, GameEditorial> = {
     ],
   },
 
+  daggerfall: {
+    qualityBar: clearsAll(
+      "Daggerfall clears all five: Bethesda released the full game data as freeware, Daggerfall Unity provides a modern open-source engine with 60+ FPS and full controller support, and its world of 15,000 cities remains unmatched in sheer scale."
+    ),
+    maintenanceCheck: { kind: "github", repo: "Interkarma/daggerfall-unity" },
+    longDescription:
+      "The Elder Scrolls II: Daggerfall is Bethesda's monumental 1996 open-world RPG, set in the Iliac Bay regions of High Rock and Hammerfell. Sent on a personal mission by Emperor Uriel Septim VII to investigate the ghost of King Lysandus and locate a lost letter, you are thrust into a complex web of imperial espionage, court intrigue, and supernatural conspiracies.\n\nDaggerfall represents the pinnacle of open-world simulation scale in gaming history. Its landmass spans over 160,000 square kilometers with more than 15,000 towns, cities, dungeons, and temples populated by 750,000 NPCs. You can buy horses, carts, sailing ships, and private townhouses; borrow money from provincial banks; contract vampirism or lycanthropy; join knightly orders, temples, and thieves guilds; and craft custom spells and enchanted items.\n\nDaggerfall Unity modernizes this historic RPG in the Unity engine, replacing the archaic DOS interface with modern widescreen and 4K rendering, full first-person mouselook, gamepad controls, dynamic lighting, smooth terrain heightmaps, and a rich modding framework. Bethesda released the original game files completely free to the public, making Daggerfall Unity 100% free to play.",
+    whyWePickedIt:
+      "Daggerfall is the ultimate fantasy life simulation. While later Elder Scrolls games compressed their geography, Daggerfall chose absolute unconstrained scale. Daggerfall Unity rescues this masterpiece from DOSBox instability and turns it into one of the richest, most immersive modern retro RPG experiences available.",
+    bestFor: [
+      "Fans of deep open-world fantasy RPGs like Morrowind, Oblivion, and Skyrim",
+      "Players who love sandbox freedom, owning real estate, ships, and bank accounts",
+      "Gamers fascinated by massive procedural continents and endless dungeon delving",
+      "Modding enthusiasts wanting hundreds of visual, quest, and survival expansions",
+    ],
+    notFor: [
+      "Players who want tightly scripted, linear 10-hour cinematic storylines",
+      "Those who easily get lost in sprawling 3D procedural underground labyrinths",
+    ],
+    comparableTo: [
+      "The Elder Scrolls III: Morrowind",
+      "The Elder Scrolls: Arena",
+      "Ultima Underworld",
+      "Kingdom Come: Deliverance",
+      "Mount & Blade II: Bannerlord",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install Daggerfall Unity directly through PlayBound launcher or download the latest release from DF Workshop. The installer sets up the free game data automatically.",
+      },
+      {
+        platform: "linux",
+        text: "Download the native Linux Daggerfall Unity build or launch via Proton on Steam Deck with built-in gamepad controls.",
+      },
+      {
+        platform: "all",
+        text: "Enhance your playthrough with DREAM, Quest Pack 1, and Basic Roads by dropping mods into the StreamingAssets/Mods folder.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is The Elder Scrolls II: Daggerfall free?",
+        a: "Yes! Bethesda released the full Daggerfall game data as official freeware in 2009 for the 15th anniversary, and also published it free on Steam. Daggerfall Unity is free open-source software under the MIT license.",
+      },
+      {
+        q: "What is Daggerfall Unity (DFU)?",
+        a: "Daggerfall Unity is an open-source recreation of Daggerfall in the Unity engine by Gavin 'Interkarma' Clayton. It delivers native widescreen/4K rendering, modern mouselook, gamepad support, bug fixes, and an extensive modding API.",
+      },
+      {
+        q: "Can I play Daggerfall Unity on Steam Deck?",
+        a: "Yes! Daggerfall Unity features native full controller and gamepad mapping, making it run wonderfully on Steam Deck at 60 FPS with exceptional battery life.",
+      },
+      {
+        q: "How big is the map in Daggerfall?",
+        a: "Daggerfall's Iliac Bay map spans roughly 161,600 square kilometers — roughly the physical size of Great Britain — containing over 15,000 settlements, dungeons, and temples.",
+      },
+      {
+        q: "What mods should I install first?",
+        a: "We recommend starting with D.R.E.A.M. for updated visuals/audio, Basic Roads and Travel Options for wilderness exploration, and Quest Pack 1 for hundreds of new quests.",
+      },
+      {
+        q: "Does Daggerfall have multiple endings?",
+        a: "Yes! Daggerfall features six distinct major endings depending on which faction leader or supernatural entity you bestow the Totem of Tiber Septim upon, leading to the lore event known as the Warp in the West.",
+      },
+    ],
+  },
+
   alephone: {
     qualityBar: clearsAll(
       "Marathon 2 clears all five: Bungie released the game data free and the engine is GPL, the trilogy is complete and finished, Aleph One still ships releases thirty years on, and the writing holds up against shooters made this decade."
