@@ -75,6 +75,43 @@ async function pathExists(p) {
   }
 }
 
+/**
+ * Total size of a tree, in bytes, applying the same skip rules as the copy.
+ *
+ * Measured before copying rather than after: discovering a save is too large
+ * only once four gigabytes are already on disk defeats the point of a limit.
+ * Stops early once `limitBytes` is exceeded, so an enormous directory costs a
+ * partial walk rather than a full one.
+ */
+async function measureTree(dir, { skip = SKIP_ENTRIES, limitBytes = Infinity } = {}) {
+  let total = 0;
+  async function walk(current) {
+    if (total > limitBytes) return;
+    let entries;
+    try {
+      entries = await fsp.readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (total > limitBytes) return;
+      if (skip.has(entry.name.toLowerCase())) continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile()) {
+        try {
+          total += (await fsp.stat(full)).size;
+        } catch {
+          /* unreadable file: ignore rather than fail the measurement */
+        }
+      }
+    }
+  }
+  await walk(dir);
+  return total;
+}
+
 /** Recursively copy `from` into `to`, skipping caches. Returns files copied. */
 async function copyTree(from, to, { skip = SKIP_ENTRIES } = {}) {
   let count = 0;
@@ -117,13 +154,33 @@ function createSaveData({ snapshotRoot }) {
    * `reason` is recorded so history is readable later — a snapshot taken to
    * protect a restore reads differently from one the player asked for.
    */
-  async function snapshot(gameSlug, editionSlug, saveDir, { reason = "manual", now = new Date() } = {}) {
+  async function snapshot(
+    gameSlug,
+    editionSlug,
+    saveDir,
+    { reason = "manual", now = new Date(), maxSnapshotMb = null } = {}
+  ) {
     const source = normalize(saveDir);
     if (!(await pathExists(source))) {
       return { status: "no-saves", saveDir: source };
     }
     const stat = await fsp.stat(source);
     if (!stat.isDirectory()) return { status: "no-saves", saveDir: source };
+
+    if (maxSnapshotMb != null && Number.isFinite(maxSnapshotMb)) {
+      const limitBytes = maxSnapshotMb * 1024 * 1024;
+      const size = await measureTree(source, { limitBytes });
+      if (size > limitBytes) {
+        // Reported rather than thrown: an oversized save is a normal outcome
+        // for sandbox games, not an error the player did something to cause.
+        return {
+          status: "too-large",
+          saveDir: source,
+          bytes: size,
+          limitBytes,
+        };
+      }
+    }
 
     const id = newSnapshotId(now);
     const dest = path.join(gameRoot(gameSlug, editionSlug), id);
@@ -224,6 +281,7 @@ module.exports = {
   snapshotKey,
   newSnapshotId,
   isInside,
+  measureTree,
   SKIP_ENTRIES,
   DEFAULT_KEEP,
 };
