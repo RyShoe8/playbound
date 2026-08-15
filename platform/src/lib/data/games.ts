@@ -2996,6 +2996,22 @@ const facts: Game[] = [
        */
       note: "Installs the official SS14 launcher. Pick a server from its list and the matching game build downloads automatically on first join.",
     },
+    communityLinks: {
+      officialDiscord: {
+        inviteUrl: "https://discord.gg/ss14",
+        serverName: "Space Station 14",
+        verified: true,
+        verifiedSourceUrl: "https://spacestation14.com/",
+        verifiedAt: "2026-08-15",
+      },
+    },
+    /*
+     * Not marked complete: screenshots and video are still missing. Media has
+     * to be mirrored into our own blob first — next.config.ts restricts
+     * next/image to twelve remote hosts, and spacestation14.com is not one of
+     * them, so pasting their URLs in would store links that render as nothing.
+     */
+    complete: false,
   },
 ];
 
