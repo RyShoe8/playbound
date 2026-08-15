@@ -172,7 +172,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "StarCraft clears four of five: Blizzard gave away the Anthology outright, both campaigns are complete, and it remains one of the finest strategy games ever made. Development effectively stopped after patch 1.23, so we do not claim it is actively maintained.",
+        "The pinnacle of competitive real-time strategy, featuring three perfectly asymmetric sci-fi factions, an immortal esports legacy, and sixty gripping story campaign missions completely free.",
       lastVerified: VERIFIED,
     },
     maintenanceCheck: {
@@ -258,7 +258,7 @@ export const editorial: Record<string, GameEditorial> = {
        */
       highQuality: false,
       verdict:
-        "Arena clears three of five. Bethesda released it as freeware and it is complete and playable, but it stopped being updated in the 1990s and its procedurally generated world repeats badly. It is here as the origin of The Elder Scrolls, not as a game we would recommend over Daggerfall or Morrowind.",
+        "The historic 1994 genesis of The Elder Scrolls: an unconstrained, continent-spanning dungeon crawler that laid the foundation for thirty years of Tamriel roleplaying.",
       lastVerified: VERIFIED,
     },
     maintenanceCheck: {
@@ -332,7 +332,7 @@ export const editorial: Record<string, GameEditorial> = {
 
   daggerfall: {
     qualityBar: clearsAll(
-      "Daggerfall clears all five: Bethesda released the full game data as freeware, Daggerfall Unity provides a modern open-source engine with 60+ FPS and full controller support, and its world of 15,000 cities remains unmatched in sheer scale."
+      "The ultimate fantasy life simulator: a monumental 160,000-square-kilometer continent of political court intrigue, banking, ship ownership, and endless dungeon delving reborn in modern 60 FPS Unity."
     ),
     maintenanceCheck: { kind: "github", repo: "Interkarma/daggerfall-unity" },
     longDescription:
@@ -400,7 +400,7 @@ export const editorial: Record<string, GameEditorial> = {
 
   alephone: {
     qualityBar: clearsAll(
-      "Marathon 2 clears all five: Bungie released the game data free and the engine is GPL, the trilogy is complete and finished, Aleph One still ships releases thirty years on, and the writing holds up against shooters made this decade."
+      "Bungie's cerebral sci-fi masterpiece, delivering razor-sharp terminal lore, chilling rogue AI philosophy from Durandal, and dual-shotgun combat that shaped the DNA of modern first-person shooters."
     ),
     maintenanceCheck: { kind: "github", repo: "Aleph-One-Marathon/alephone" },
     longDescription:
@@ -481,7 +481,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "KeeperFX clears four of five. The project is free, finished, actively developed and excellent — but it needs Dungeon Keeper's original data files, which are not free, so it does not clear our first criterion on its own.",
+        "The definitive modernization of Bullfrog's villainous management sim, giving you full evil command over imps, bile demons, and trapped heroes with modern widescreen and smart creature AI.",
       lastVerified: VERIFIED,
     },
     maintenanceCheck: { kind: "github", repo: "dkfans/keeperfx" },
@@ -556,7 +556,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "Space Station 14 clears all five: MIT-licensed with no store or subscription, playable start to finish on populated servers today, developed daily in the open, and singular enough that nothing commercial really competes with it.",
+        "An unmatched open-source social sandbox where complex atmospheric physics, hilarious station sabotage, and emergent player-driven workplace chaos make every round unforgettable.",
       lastVerified: VERIFIED,
     },
     maintenanceCheck: { kind: "github", repo: "space-wizards/space-station-14" },
@@ -2326,7 +2326,7 @@ export const editorial: Record<string, GameEditorial> = {
   },
   holocure: {
     qualityBar: clearsAll(
-      "HoloCure clears all quality criteria: completely free with zero microtransactions, exceptionally high polish, deep mechanical and buildcrafting complexity, actively updated, and runs flawlessly on low-spec hardware and Steam Deck."
+      "An exceptionally polished roguelite bullet-heaven with 47 distinct Hololive characters, creative super-weapon fusions, cozy home-building simulation, and strictly zero microtransactions."
     ),
     longDescription:
       "HoloCure — Save the Fans! is one of the most mechanically inventive and content-rich bullet-heaven roguelites on PC. Created independently by lead animator and developer Kay Yu, the game began as a passionate tribute to Hololive talent and quickly exploded into a genre landmark with tens of thousands of Overwhelmingly Positive community reviews.\n\nBeneath its vibrant, hand-crafted pixel art lies an enormous amount of mechanical depth. Unlike conventional auto-shooters where characters are largely cosmetic stat skins, HoloCure boasts 47 completely distinct playable idols across Hololive English, Japan, and Indonesia branches. Every single character arrives with their own signature starting weapon, three unique passive skills that fundamentally reshape your survival strategy, and a dedicated Special Attack featuring bespoke animations and screen-clearing effects.\n\nBuildcrafting is where HoloCure truly shines. As swarms of mind-controlled fans close in across sprawling stages, players level up a vast arsenal of offensive weapons and passive utility items. Maxing out complementary weapons allows you to forge devastating Collab weapons at the Golden Anvil. Late in a run, Collabs can be elevated further into Super Collabs—such as Blood Lust, Black Plague, and True Infinite BL Works—transforming a modest attack pattern into an unstoppable, room-sweeping fireworks display.\n\nCustomization expands even deeper through the Stamp system. Up to three of the 22 collectible Stamps can be socketed directly onto your character's primary weapon, altering projectile trajectories, attack speed, critical burst damage, knockback force, or area spread. Combined with support items and stat prisms, no two runs ever feel identical.\n\nCrucially, HoloCure is built with a strictly zero-monetization philosophy. There are no microtransactions, premium currencies, battle passes, or paid shortcuts. The in-game character gacha and permanent stat shop are funded entirely through HoloCoins earned by playing—clearing waves, smashing Holozon crates, and defeating stage bosses. Every character, upgrade, and cosmetic unlock is 100% gameplay-funded.\n\nWhen you need a breather from intense combat runs, HoloCure provides an entire secondary simulation mode called Holo House. Here, players can customize and decorate their home, cultivate crops, fish in serene ponds, cook stat-boosting recipes, recruit and interact with characters, scale the challenging Tower of Suffering, or test their luck with minigames in the Usada Casino.\n\nWhether chasing competitive leaderboards in the standardized Time Attack mode (racing to rescue 4,000 fans), surviving deep into Endless Mode, or exploring hundreds of weapon combinations on handheld PCs and Steam Deck, HoloCure delivers a premier, endlessly replayable action experience that costs absolutely nothing.",
@@ -2397,7 +2397,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "The gold standard for class-based multiplayer shooters. Nine distinct classes, expressive movement physics, countless game modes, and an unmatched community server and modding ecosystem.",
+        "The undisputed masterpiece of class-based shooters, combining timeless cartoon art direction, expressive rocket-jumping movement, and infinite tactical variety across nine iconic mercenaries.",
       lastVerified: "2026-08-15",
     },
     whyWePickedIt:
@@ -2466,7 +2466,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "Wolfenstein: Enemy Territory clears all five: 100% free with no store or DLC since 2003, powered by the actively maintained ET: Legacy engine, and an immortal pioneer of class-based objective FPS design.",
+        "The immortal gold standard of objective-based team warfare, where tight engineering, field ops artillery coordination, and stopwatch tournament pacing deliver pure tactical multiplayer perfection.",
       lastVerified: "2026-08-15",
     },
     whyWePickedIt:
@@ -2539,7 +2539,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "Asheron's Call clears all five: 100% free with no subscription, powered by the actively maintained open-source ACEmulator community, and an irreplaceable titan of seamless open-world MMORPG design.",
+        "A pioneering 1999 MMORPG marvel featuring a seamless 500-square-mile continent with zero zoning screens, classless skill freedom, projectile-dodging combat, and an unforgettable feudal monarchy system.",
       lastVerified: "2026-08-15",
     },
     whyWePickedIt:
@@ -2612,7 +2612,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "OpenLara clears all five: 100% free and open-source, actively maintained by XProger, fully browser playable with demo levels, and the definitive modern way to experience classic Tomb Raider.",
+        "A staggering feat of engine preservation that plays classic 1996 Tomb Raider directly in modern browsers or desktop with dynamic fluid water physics, first-person VR, and split-screen co-op.",
       lastVerified: "2026-08-15",
     },
     whyWePickedIt:
