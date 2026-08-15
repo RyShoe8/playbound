@@ -1395,14 +1395,58 @@ export const editions: EditionSeed[] = [
   },
   {
     gameSlug: "microsoft-allegiance",
+    slug: "freeallegiance",
+    name: "FreeAllegiance Standalone Client (Default)",
+    shortDescription: "Official standalone community client maintained by FreeAllegiance with custom texture options.",
+    description:
+      "The definitive standalone release of Microsoft Allegiance maintained by the FreeAllegiance community. Includes modern wide-aspect cockpit resolutions, integrated server browser, squad tournament tools, and zero DRM.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.freeallegiance.org/",
+      discord: "https://discord.gg/freeallegiance",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-installer",
+        url: "https://www.freeallegiance.org/download/Allegiance_Setup.exe",
+        fileName: "Allegiance_Setup.exe",
+        exeHint: "Allegiance",
+        note: "Official FreeAllegiance standalone installer.",
+      },
+    },
+    requirements: {
+      min: "Dual-Core 2.0 GHz / 2 GB RAM / DirectX 9.0c GPU / 2 GB storage",
+      recommended: "Quad-Core CPU / 4 GB RAM / Dedicated GPU / Flight Joystick / HOTAS",
+    },
+    features: ["Multiplayer", "RTS Commander Mode", "Space Flight Sim", "Dedicated Servers", "Voice Chat", "Joystick Support"],
+    tags: ["Space Sim", "RTS", "Open Source", "Free to Play"],
+    aliases: ["FreeAllegiance Standalone", "Allegiance Direct"],
+    version: "v1.4",
+    verificationLevel: "playbound_verified",
+    faq: [
+      {
+        q: "Does this connect to the same multiplayer servers as Steam?",
+        a: "Yes! Both the standalone client and Steam edition connect to the same central FreeAllegiance server lobby and match servers.",
+      },
+    ],
+  },
+  {
+    gameSlug: "microsoft-allegiance",
     slug: "steam",
-    name: "Steam Edition (Default)",
-    shortDescription: "Official Steam release with automatic community server browser.",
+    name: "Microsoft Allegiance (Steam Edition)",
+    shortDescription: "Official Steam release with automatic updates and community server browser integration.",
     description:
       "Play Microsoft Allegiance via Steam with automatic updates, server browser integration, and full flight joystick/HOTAS support.",
     type: "official",
-    isDefault: true,
-    sortOrder: 10,
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
     links: {
       website: "https://www.freeallegiance.org/",
       discord: "https://discord.gg/freeallegiance",
@@ -1413,35 +1457,14 @@ export const editions: EditionSeed[] = [
         appId: "700480",
       },
     },
+    requirements: {
+      min: "Dual-Core 2.0 GHz / 2 GB RAM / DirectX 9.0c GPU / 2 GB storage",
+      recommended: "Quad-Core CPU / 4 GB RAM / Dedicated GPU / Flight Joystick / HOTAS",
+    },
     features: ["Multiplayer", "RTS Commander Mode", "Space Flight Sim", "Dedicated Servers", "Voice Chat"],
     tags: ["Space Sim", "RTS", "Steam", "Open Source"],
     aliases: ["Allegiance Steam", "FreeAllegiance Steam"],
-    verificationLevel: "playbound_verified",
-  },
-  {
-    gameSlug: "microsoft-allegiance",
-    slug: "freeallegiance",
-    name: "FreeAllegiance Standalone Client",
-    shortDescription: "Official community client maintained by FreeAllegiance.",
-    description:
-      "Direct standalone installer with custom high-res texture packs, community patch switcher, and squad tournament tools.",
-    type: "official",
-    isDefault: false,
-    sortOrder: 20,
-    links: {
-      website: "https://www.freeallegiance.org/",
-    },
-    installMethod: "official_download",
-    installConfig: {
-      official_download: {
-        url: "https://www.freeallegiance.org/",
-        fileName: "FreeAllegianceSetup.exe",
-        sizeMB: 1500,
-      },
-    },
-    features: ["Multiplayer", "High-Res Textures", "Tournament Tools"],
-    tags: ["Standalone", "Community", "Space Sim"],
-    aliases: ["FreeAllegiance Standalone"],
+    version: "Steam Release",
     verificationLevel: "playbound_verified",
   },
   {

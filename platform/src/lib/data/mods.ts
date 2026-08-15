@@ -27,6 +27,7 @@ import { genshinImpactMods } from "./genshinImpactMods";
 import { gradiusRemakeMods } from "./gradiusRemakeMods";
 import { mrboomMods } from "./mrboomMods";
 import { tripleaMods } from "./tripleaMods";
+import { allegianceMods } from "./allegianceMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -60,6 +61,7 @@ export const mods: ModSeed[] = [
   ...gradiusRemakeMods,
   ...mrboomMods,
   ...tripleaMods,
+  ...allegianceMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
