@@ -213,6 +213,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Actively maintained open-source turn-based strategy wargame engine with 400+ community maps and active online lobby.",
   },
+  "microsoft-allegiance": {
+    kind: "manual",
+    url: "https://www.freeallegiance.org/",
+    checkedAt: "2026-08-15",
+    note: "FreeAllegiance open-source community active with Steam and standalone multiplayer servers.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -4452,19 +4458,21 @@ export const editorial: Record<string, GameEditorial> = {
         "A legendary space combat simulation and real-time strategy hybrid, uniting first-person starfighter dogfights with top-down fleet command in massive online team warfare.",
       lastVerified: "2026-08-15",
     },
+    longDescription:
+      "Microsoft Allegiance (FreeAllegiance) is a groundbreaking multiplayer space combat simulation and team real-time strategy hybrid originally created by Microsoft Research and released as open source in 2004. Set in the 22nd century amidst the turbulent colonization of the solar system, multiple factions clash for dominance over asteroid-rich sectors connected by interstellar aleph warp gates.\n\nIn every battle, two or more teams compete in real-time coordination. One player on each team ascends to the Commander seat in a top-down RTS command view: managing team resources, constructing orbital space stations (Garrisons, Refineries, Tech Bases), deploying automated Helium-3 harvesting miners, conducting strategic research tech upgrades, and issuing tactical waypoint beacons to the fleet.\n\nSimultaneously, all other teammates fly in full first-person 3D space as active combat pilots. Choose from specialized starfighter classes—stealth scouts for probing enemy systems, agile interceptors for space dogfights, heavy tactical bombers with torpedo payloads, gunships for area denial, and multi-crew capital dreadnoughts.\n\nTeamwork and specialization dictate victory. Stealth scouts slip through enemy warp gates to plant target beacons on enemy refineries, heavy bomber wings coordinate timed torpedo runs while interceptors suppress defense turrets, and capital cruisers lead sector sieges with live gunner seats manned by fellow teammates.\n\nPreserved and actively played on Steam and standalone dedicated servers by the FreeAllegiance community, the game features full flight joystick/HOTAS support, active community squad leagues, rookie training academies, and zero microtransactions.",
     whyWePickedIt:
       "Microsoft Allegiance is one of the most innovative and forward-thinking multiplayer games ever created. Built by Microsoft Research in 2000 and open-sourced to the community in 2004, it seamlessly bridges the gap between first-person space flight simulators and real-time strategy commander mechanics.",
-    longDescription:
-      "Microsoft Allegiance (FreeAllegiance) is a groundbreaking multiplayer space combat simulation and team real-time strategy hybrid set during the 22nd-century colonization of the solar system.\n\nIn every match, two or more teams compete across interconnected space sectors. One player on each team takes the Commander seat in top-down RTS view: managing team funds, placing orbital stations, ordering automated helium-3 miners, researching tech trees, and issuing tactical waypoint orders. Simultaneously, all other teammates fly in first-person 3D space as pilots: flying stealth scout ships, interceptor dogfighters, heavy bombers, gunships, and massive capital ships.\n\nMatches require intricate coordination: scouts probe asteroid fields for enemy bases, stealth bombers coordinate warp-gate ambushes on enemy refineries, and capital ships lead fleet sieges with live gunner turrets operated by fellow players.\n\nPreserved and actively played on Steam and standalone servers by the FreeAllegiance community, Allegiance represents a unique multiplayer triumph.",
     bestFor: [
       "Flight simulation and space dogfight enthusiasts looking for high-skill Newtonian physics",
       "RTS fans who love commanding actual human pilots in coordinated fleet battles",
       "Team-oriented gamers who enjoy communication, tactical scouting, and role specialization",
       "Sci-Fi gamers who loved Freespace 2, Wing Commander, and Homeworld",
+      "Space combat pilots with flight sticks, HOTAS throttles, or precision mouse flight setups",
     ],
     notFor: [
       "Casual solo players looking for brainless run-and-gun action without team communication",
       "Players unwilling to learn Newtonian 6DOF flight physics and energy management",
+      "Those looking for offline single-player story campaigns",
     ],
     comparableTo: [
       "Natural Selection 2",
@@ -4480,6 +4488,10 @@ export const editorial: Record<string, GameEditorial> = {
         text: "Install FreeAllegiance for free via Steam or the official community installer through PlayBound.",
       },
       {
+        platform: "windows",
+        text: "Configure your flight controls (HOTAS, flight joystick, game controller, or mouse flight) in the Allegiance launcher settings.",
+      },
+      {
         platform: "all",
         text: "Complete the Cadet Flight Training academy missions to learn 6DOF flight, missile locking, and energy management.",
       },
@@ -4491,7 +4503,7 @@ export const editorial: Record<string, GameEditorial> = {
     faq: [
       {
         q: "Is Microsoft Allegiance completely free?",
-        a: "Yes! Microsoft Research released the entire source code and game assets under a free shared-source license in 2004. FreeAllegiance is 100% free.",
+        a: "Yes! Microsoft Research released the entire source code and game assets under a free shared-source license in 2004. FreeAllegiance is 100% free with zero microtransactions.",
       },
       {
         q: "How does the Commander / Pilot hybrid gameplay work?",

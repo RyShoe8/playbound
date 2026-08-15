@@ -4085,7 +4085,7 @@ const facts: Game[] = [
     license: "Open Source (MSR-SSLA / Free Software)",
     releaseYear: 2000,
     sizeMB: 1500,
-    status: "published",
+    status: "testing",
     platforms: ["Windows"],
     features: ["Multiplayer", "Team Combat", "RTS Commander Mode", "Space Flight Sim", "Dedicated Servers", "Voice Chat", "Joystick Support"],
     launchMethods: ["install", "server"],
@@ -4095,6 +4095,7 @@ const facts: Game[] = [
     browserPlayable: false,
     gameOfWeek: false,
     hiddenGem: true,
+    complete: true,
     art: { from: "#1e1b4b", to: "#38bdf8", icon: "Rocket" },
     coverImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/700480/header.jpg",
     screenshots: [
@@ -4110,27 +4111,31 @@ const facts: Game[] = [
       min: {
         ramMB: 2048,
         storageMB: 2048,
+        apis: ["dx9"],
         cpuText: "Dual-Core 2.0 GHz",
         gpuText: "DirectX 9.0c GPU with 256MB VRAM",
       },
       recommended: {
         ramMB: 4096,
         storageMB: 4096,
+        apis: ["dx9"],
         cpuText: "Quad-Core CPU",
         gpuText: "Dedicated GPU (NVIDIA / AMD)",
-        gpuTier: "entry",
-        notes: "Full flight joystick, throttle, and mouse flight support",
+        notes: "Full flight joystick, throttle, and mouse flight support.",
       },
       provenance: {
         source: "playbound_verified",
+        enteredBy: "admin",
       },
     },
     launcherInstall: {
       enabled: true,
-      kind: "external",
-      url: "steam://run/700480",
+      kind: "direct-installer",
+      url: "https://www.freeallegiance.org/download/Allegiance_Setup.exe",
+      fileName: "Allegiance_Setup.exe",
+      exeHint: "Allegiance",
       versionLabel: "latest",
-      note: "Installs FreeAllegiance via Steam with active community multiplayer servers.",
+      note: "Installs FreeAllegiance standalone client or via Steam with active community multiplayer servers.",
     },
     communityLinks: {
       officialDiscord: {
@@ -4141,7 +4146,6 @@ const facts: Game[] = [
         verifiedAt: "2026-08-15",
       },
     },
-    complete: true,
   },
   {
     slug: "gradius-remake",
