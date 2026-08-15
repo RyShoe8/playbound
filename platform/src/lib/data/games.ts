@@ -2766,6 +2766,135 @@ const facts: Game[] = [
     },
   },
   {
+    /*
+     * Slug is the engine name rather than the game's. marathon-2 would serve
+     * search better — nobody looks for "alephone" — but renaming is a CMS edit,
+     * not a seed edit, since seed matches on slug.
+     */
+    slug: "alephone",
+    title: "Marathon 2: Durandal",
+    tagline: "Bungie's 1995 shooter, given away free and still worth playing.",
+    description:
+      "The sequel that made Bungie's name before Halo: a story-heavy sci-fi shooter with swimming, terminals full of an AI losing its mind, and level design that expects you to think. Free and complete, engine and game data together, in one download.",
+    developerSlug: "aleph-one-team",
+    genres: ["FPS", "Shooter", "Action"],
+    tags: ["Classic", "Story Rich", "Open Source", "Retro", "Singleplayer"],
+    aliases: ["Marathon", "Marathon 2", "Durandal", "Aleph One", "Marathon Durandal"],
+    license: "Open Source (GPL-3.0) · game data free from Bungie",
+    releaseYear: 1995,
+    sizeMB: 180,
+    status: "testing",
+    platforms: ["Windows", "macOS", "Linux"],
+    features: ["Singleplayer", "Multiplayer", "Mod Support", "Open Source", "Cross-Platform"],
+    launchMethods: ["install"],
+    browserPlayable: false,
+    steamDeck: true,
+    website: "https://alephone.lhowon.org/",
+    githubRepo: "Aleph-One-Marathon/alephone",
+    gameOfWeek: false,
+    hiddenGem: true,
+    art: { from: "#431407", to: "#fb923c", icon: "Crosshair" },
+    systemRequirements: {
+      min: "Any 64-bit desktop · 1 GB RAM · OpenGL 2.1 · 250 MB storage",
+      recommended: "Any machine made this century",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        storageMB: 256,
+        cpuText: "Any modern CPU",
+        gpuText: "OpenGL 2.1 capable",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 512,
+        gpuText: "Any dedicated or integrated GPU",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "playbound_verified",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      kind: "github-zip",
+      repo: "Aleph-One-Marathon/alephone",
+      /*
+       * The Marathon2-*-Win.zip asset is engine and scenario together. The
+       * separate -Exe-Win and -Data assets exist for people updating one half,
+       * which is not what a first install wants.
+       */
+      assetPattern: "Marathon2-.*-Win\\.zip",
+      exeHint: "Marathon2.exe",
+      knownExePaths: ["Marathon2.exe"],
+      versionLabel: "release-20250829",
+      note: "Includes both the Aleph One engine and the complete Marathon 2 scenario. Bungie released the game data free — nothing else is needed.",
+    },
+  },
+  {
+    slug: "keeperfx",
+    title: "KeeperFX",
+    tagline: "Dungeon Keeper, rebuilt to run properly — bring your own copy.",
+    description:
+      "An open-source rebuild of Bullfrog's 1997 dungeon-management classic that runs natively on modern Windows at modern resolutions, with reworked AI, a campaign editor and dozens of fan campaigns. Requires the original game files, which you must already own.",
+    developerSlug: "keeperfx-team",
+    genres: ["Strategy", "Simulation"],
+    tags: ["Classic", "Dungeon Management", "Open Source", "Mods", "Singleplayer"],
+    aliases: ["Dungeon Keeper", "DK", "Dungeon Keeper Fan eXpansion", "Dungeon Keeper Reborn"],
+    license: "Open Source (GPL-2.0) · requires original Dungeon Keeper data",
+    releaseYear: 1997,
+    sizeMB: 700,
+    status: "testing",
+    platforms: ["Windows"],
+    features: ["Singleplayer", "Multiplayer", "Mod Support", "Open Source"],
+    launchMethods: ["install"],
+    browserPlayable: false,
+    steamDeck: true,
+    website: "https://keeperfx.net/",
+    githubRepo: "dkfans/keeperfx",
+    gameOfWeek: false,
+    hiddenGem: false,
+    art: { from: "#2e1065", to: "#a78bfa", icon: "Castle" },
+    systemRequirements: {
+      min: "Windows 7 or newer · Dual-core CPU · 2 GB RAM · 1 GB storage · original Dungeon Keeper files",
+      recommended: "Windows 10/11 · 4 GB RAM · any dedicated GPU",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 2048,
+        storageMB: 1024,
+        cpuText: "Dual-core CPU",
+        notes: "Original Dungeon Keeper game files required",
+      },
+      recommended: {
+        ramMB: 4096,
+        storageMB: 2048,
+        gpuText: "Any dedicated GPU",
+        gpuTier: "entry",
+      },
+      provenance: {
+        source: "playbound_verified",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      /*
+       * Owner-supplied, same shape as Freelancer and the EverQuest editions.
+       * KeeperFX is freely redistributable but the Dungeon Keeper data it needs
+       * is not ours to hand out, so the launcher asks the player to point at
+       * their own copy first and overlays KeeperFX on top of it.
+       */
+      kind: "locate-then-zip",
+      requiresBaseDir: true,
+      repo: "dkfans/keeperfx",
+      assetPattern: "keeperfx_.*_complete\\.7z",
+      exeHint: "keeperfx.exe",
+      knownExePaths: ["keeperfx.exe"],
+      versionLabel: "v1.4.0",
+      note: "You need your own copy of Dungeon Keeper (GOG or an original CD). PlayBound never distributes the game data — the launcher copies it from the install you point it at.",
+    },
+  },
+  {
     slug: "space-station-14",
     title: "Space Station 14",
     tagline: "A space station full of strangers, one traitor, and no script.",

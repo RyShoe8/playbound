@@ -551,6 +551,28 @@ export const developers: Developer[] = [
     artHue: 330,
   },
   {
+    slug: "aleph-one-team",
+    name: "Aleph One Project",
+    tagline: "Keeping Bungie's Marathon trilogy playable on modern machines.",
+    about:
+      "The Aleph One project maintains the open-source continuation of the Marathon 2 engine, which Bungie released as source in 2000. The team ships the engine and the complete Marathon, Marathon 2 and Marathon Infinity scenarios as free downloads with Bungie's blessing, adding modern resolutions, mouselook, OpenGL rendering and internet multiplayer to games first released in the mid-1990s.",
+    founded: 2000,
+    location: "Distributed",
+    website: "https://alephone.lhowon.org/",
+    artHue: 24,
+  },
+  {
+    slug: "keeperfx-team",
+    name: "KeeperFX Team",
+    tagline: "Two decades of unpicking Dungeon Keeper's binary.",
+    about:
+      "KeeperFX is a long-running open-source project that rebuilds Bullfrog's 1997 Dungeon Keeper piece by piece, replacing the original DOS binary with maintained C code. The result runs natively on modern Windows at modern resolutions with a rewritten AI, campaign editor and multiplayer, while still requiring the player's own copy of the original game data.",
+    founded: 2008,
+    location: "Distributed",
+    website: "https://keeperfx.net/",
+    artHue: 275,
+  },
+  {
     slug: "space-wizards",
     name: "Space Wizards Federation",
     tagline: "The volunteer collective rebuilding Space Station 13 from scratch.",
