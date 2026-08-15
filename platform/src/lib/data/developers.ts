@@ -1067,6 +1067,17 @@ export const developers: Developer[] = [
     website: "https://www.konami.com",
     artHue: 210,
   },
+  {
+    slug: "triplea-team",
+    name: "The TripleA Development Team",
+    tagline: "Open-source grand strategy and turn-based board gaming.",
+    about:
+      "The dedicated open-source development team and community behind TripleA, the definitive turn-based strategy wargame engine supporting hundreds of historical and fantasy community maps.",
+    founded: 2002,
+    location: "Worldwide",
+    website: "https://triplea-game.org/",
+    artHue: 15,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

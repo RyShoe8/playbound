@@ -32,6 +32,7 @@ import {
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
 import { fetchGenshinImpactServers } from "./providers/genshin-impact";
+import { fetchTripleAServers } from "./providers/triplea";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
@@ -190,6 +191,10 @@ const providers: Record<string, ServerProvider> = {
   "genshin-impact": {
     slug: "genshin-impact",
     fetchServers: fetchGenshinImpactServers,
+  },
+  triplea: {
+    slug: "triplea",
+    fetchServers: fetchTripleAServers,
   },
 };
 

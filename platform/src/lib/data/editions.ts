@@ -2755,6 +2755,78 @@ export const editions: EditionSeed[] = [
     tags: ["Arcade", "Retro", "Classic", "Konami", "Shmup"],
     verificationLevel: "community_verified",
   },
+  {
+    gameSlug: "triplea",
+    slug: "triplea-official",
+    name: "TripleA (Official Windows Edition)",
+    shortDescription: "The official 64-bit Windows release with bundled Java runtime and built-in map downloader.",
+    description:
+      "The complete official release of TripleA for Windows. Includes an integrated Java environment, online multiplayer lobby client, map downloader with 400+ scenarios, and save game support.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://triplea-game.org/",
+      github: "https://github.com/triplea-game/triplea",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "triplea-game/triplea",
+        assetPattern: "triplea_.*_windows-64bit\\.exe$|\\.zip$",
+        exeHint: "triplea",
+        note: "Official Windows 64-bit installer with bundled JRE.",
+      },
+    },
+    requirements: {
+      min: "1.0 GHz CPU / 1 GB RAM / OpenGL GPU / 200 MB storage",
+      recommended: "Dual-Core 2.0 GHz / 4 GB RAM / Dedicated GPU",
+    },
+    features: ["Singleplayer", "Multiplayer", "Online Lobby", "Map Downloader", "AI Bots", "PBEM Support"],
+    tags: ["Strategy", "Turn-Based", "Grand Strategy", "Wargame", "Open Source"],
+    aliases: ["TripleA Windows", "TripleA Official"],
+    version: "v2.6.14688",
+    verificationLevel: "playbound_verified",
+    faq: [
+      {
+        q: "Does this require installing Java separately?",
+        a: "No. The official Windows installer bundles its own Java runtime environment.",
+      },
+    ],
+  },
+  {
+    gameSlug: "triplea",
+    slug: "triplea-portable",
+    name: "TripleA (Multi-Platform Portable Edition)",
+    shortDescription: "Portable universal Java package for Windows, Linux, and macOS.",
+    description:
+      "Universal portable distribution of TripleA. Runs on any platform with Java 11 or higher with zero installation footprint.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://triplea-game.org/",
+      github: "https://github.com/triplea-game/triplea",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://triplea-game.org/download/",
+      },
+    },
+    requirements: {
+      min: "Java 11+ / 1 GB RAM / OpenGL GPU",
+      recommended: "Java 17+ / 4 GB RAM",
+    },
+    features: ["Multiplayer", "Cross-Platform", "Portable", "DRM-Free"],
+    tags: ["Portable", "Cross-Platform", "Java", "Open Source"],
+    verificationLevel: "playbound_verified",
+  },
 ];
 
 
