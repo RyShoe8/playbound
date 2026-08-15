@@ -31,6 +31,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${dev.name} — Free Games & Downloads`,
     description: `${dev.tagline || dev.about || `${dev.name} builds free games.`}${madeBy}`,
     path: `/developers/${dev.slug}`,
+    /*
+     * This page renders a games list and nothing else, so a developer with no
+     * published games is a name, a tagline and empty space. There are far more
+     * developer records than games — mod authors and the developers of
+     * unpublished drafts included — and indexing that many near-empty pages
+     * spends crawl budget and drags sitewide quality signals for no traffic.
+     * They stay reachable and followable; they just do not compete in search.
+     * If this page ever lists a developer's mods too, revisit the condition.
+     */
+    noIndex: games.length === 0,
   });
 }
 

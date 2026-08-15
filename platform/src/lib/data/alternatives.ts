@@ -390,6 +390,227 @@ export const alternativePages: AlternativePage[] = [
     verdict:
       "SuperTux is the best free alternative to Super Mario Bros.: a free, open-source 2D platformer with a full campaign, world map, power-ups and a built-in level editor, on Windows, macOS and Linux.",
   },
+
+  /* ── Second wave ───────────────────────────────────────────────────────
+   * Chosen where the catalog already holds a genuinely strong answer and the
+   * query has clear buying intent. Every pick below is a published game.
+   */
+  {
+    slug: "civilization",
+    commercialGame: "Civilization",
+    aliases: ["Civ 6", "Civilization VI", "Civ 7", "Sid Meier's Civilization"],
+    title: "Free Alternatives to Civilization",
+    intro:
+      "Civilization is the genre's namesake and every entry is full price, with the newest ones layering DLC on top. Turn-based 4X is unusually well served by free software, though — one of the options below has been in development longer than most commercial studios have existed.",
+    topPick: "freeciv",
+    picks: [
+      {
+        slug: "freeciv",
+        pitch:
+          "Freeciv is a mature, complete turn-based 4X built on Civilization's rules: settle cities, research a tech tree, manage happiness and win by conquest, science or diplomacy. It has been developed continuously since 1996 and supports both single-player against AI and long multiplayer games.",
+        differences:
+          "The interface is functional rather than polished, and presentation is nowhere near a modern Civ — no leader animations, no cinematic wonders. Rulesets are configurable to the point of being a hobby in themselves, which is a strength once you are in and a lot to absorb on day one.",
+      },
+      {
+        slug: "openciv3",
+        pitch:
+          "OpenCiv3 is an open-source re-implementation of Civilization III specifically, aimed at players who think Civ III hit the series' high point.",
+        differences:
+          "Pre-alpha. It is playable but incomplete, missing late-game systems, and support for loading original Civ III scenarios is unfinished. Treat it as something to watch rather than a full replacement today.",
+      },
+      {
+        slug: "0ad",
+        pitch:
+          "0 A.D. covers the same ancient-history fantasy at a far higher production standard, if what draws you to Civ is the setting rather than turn-based play.",
+        differences:
+          "Real-time strategy, not turn-based 4X. No tech victory, no diplomacy layer, no world map spanning millennia — a single battle-focused match instead.",
+      },
+    ],
+    verdict:
+      "Freeciv is the best free alternative to Civilization: a complete, actively maintained turn-based 4X with tech trees, multiple victory conditions, AI opponents and multiplayer, free with no purchases of any kind. OpenCiv3 is worth watching if you specifically want Civilization III, but it is still pre-alpha.",
+  },
+  {
+    slug: "microsoft-flight-simulator",
+    commercialGame: "Microsoft Flight Simulator",
+    aliases: ["MSFS", "MSFS 2024", "X-Plane", "flight sim"],
+    title: "Free Alternatives to Microsoft Flight Simulator",
+    intro:
+      "Serious flight simulation is expensive twice over: the simulator, then the aircraft and scenery add-ons. There is one free simulator with genuine depth, and it has been flying since before Microsoft's current series existed.",
+    topPick: "flightgear",
+    picks: [
+      {
+        slug: "flightgear",
+        pitch:
+          "FlightGear is a full civilian flight simulator with a real flight dynamics engine, worldwide scenery, weather, a large aircraft library and multiplayer. Aircraft systems are modelled deeply enough that checklists and procedures matter.",
+        differences:
+          "Scenery and cockpit art do not approach modern MSFS, which leans on satellite photogrammetry and streaming. FlightGear's quality varies by aircraft because they are community-contributed — some are studied to switch level, others are rough.",
+      },
+    ],
+    verdict:
+      "FlightGear is the best free alternative to Microsoft Flight Simulator: an open-source simulator with a genuine flight dynamics engine, global scenery, weather, multiplayer and a large free aircraft library, on Windows, macOS and Linux. Visual fidelity is well behind MSFS; system depth is not.",
+  },
+  {
+    slug: "world-of-warcraft",
+    commercialGame: "World of Warcraft",
+    aliases: ["WoW", "MMORPG", "Final Fantasy XIV", "subscription MMO"],
+    title: "Free MMO Alternatives to World of Warcraft",
+    intro:
+      "World of Warcraft still expects a subscription, and its competitors mostly gate the good parts behind one too. These are MMOs you can play properly without paying — not trials, and not free-to-start with a wall at level 20.",
+    topPick: "everquest",
+    picks: [
+      {
+        slug: "everquest",
+        pitch:
+          "EverQuest is the game WoW was reacting to, and it is free to play. Twenty-five years of content, a genuinely social levelling curve, and a choice of official live servers or community-run era servers that recreate specific points in its history.",
+        differences:
+          "Deliberately slower and harsher than WoW — grouping is expected rather than optional, travel takes real time, and dying costs you. The interface shows its age. Optional All Access unlocks some races and content.",
+      },
+      {
+        slug: "villagers-and-heroes",
+        pitch:
+          "Villagers & Heroes is a free fantasy MMO with a gentler tone, deep crafting and gathering, and one account shared across PC and mobile.",
+        differences:
+          "Much smaller world and population than WoW. Leans casual and cosy rather than raid-focused.",
+      },
+      {
+        slug: "veloren",
+        pitch:
+          "Veloren is an open-source multiplayer voxel RPG — open world, exploration and combat, with no monetisation of any kind because there is no company behind it.",
+        differences:
+          "Not an MMO in the traditional sense: worlds are community-run servers rather than one persistent shard, and it is still in active development, so expect changes between releases.",
+      },
+    ],
+    verdict:
+      "EverQuest is the best free alternative to World of Warcraft: a complete, still-updated MMORPG with decades of content, free to play with no subscription required, and a choice of official or community era servers. Villagers & Heroes suits players wanting something lighter, and Veloren suits anyone who wants an open-source world with no monetisation at all.",
+  },
+  {
+    slug: "destiny-2",
+    commercialGame: "Destiny 2",
+    aliases: ["looter shooter", "Warframe", "The Division"],
+    title: "Free Alternatives to Destiny 2",
+    intro:
+      "Destiny 2 is free to start but sells its expansions, and the story content behind them is most of the game. The obvious alternative is free the whole way through — including everything the community considers essential.",
+    topPick: "warframe",
+    picks: [
+      {
+        slug: "warframe",
+        pitch:
+          "Warframe is a third-person co-op looter shooter with over a decade of content, all of it earnable in game. Movement is faster and more acrobatic than Destiny's, and every frame and weapon can be built with materials rather than money.",
+        differences:
+          "The onboarding is famously bewildering — a great deal of systems arrive at once and the story is told out of order. Grind replaces the paywall: what Destiny sells, Warframe asks you to farm.",
+      },
+      {
+        slug: "xonotic",
+        pitch:
+          "If what you want is the gunplay rather than the loot, Xonotic is a fast arena shooter with no progression systems and no monetisation whatsoever.",
+        differences:
+          "No loot, no campaign, no persistent character — pure competitive multiplayer.",
+      },
+    ],
+    verdict:
+      "Warframe is the best free alternative to Destiny 2: a co-op looter shooter with a decade of content where every weapon and character is earnable in game and no expansion is sold separately. Expect a steep introduction and a lot of farming in place of purchases.",
+  },
+  {
+    slug: "transport-tycoon",
+    commercialGame: "Transport Tycoon",
+    aliases: ["Transport Tycoon Deluxe", "Railroad Tycoon", "Transport Fever"],
+    title: "Free Alternatives to Transport Tycoon",
+    intro:
+      "Transport Tycoon Deluxe is a 1995 game that people still play daily, largely because of what the community built on top of it. The free option is not an imitation — it is the original game's engine rebuilt and then extended for three decades.",
+    topPick: "openttd",
+    picks: [
+      {
+        slug: "openttd",
+        pitch:
+          "OpenTTD is an open-source rebuild of Transport Tycoon Deluxe with vastly larger maps, better pathfinding, multiplayer, and an in-game content service offering thousands of free vehicle sets, industries and scenarios. It ships with free base graphics, so no original game files are required.",
+        differences:
+          "Presentation stays deliberately faithful to a 1995 game. The depth is in systems and community content rather than visuals, and the modern Transport Fever games look nothing like it.",
+      },
+      {
+        slug: "mindustry",
+        pitch:
+          "Mindustry scratches the same logistics itch — routing resources through conveyor networks under pressure — with tower-defence combat layered on.",
+        differences:
+          "Factory and defence rather than passenger and freight transport. Much faster paced, with enemies attacking your network.",
+      },
+    ],
+    verdict:
+      "OpenTTD is the best free alternative to Transport Tycoon: an open-source rebuild of Transport Tycoon Deluxe with bigger maps, multiplayer, an enormous free add-on library and no need for the original game's files.",
+  },
+  {
+    slug: "fire-emblem",
+    commercialGame: "Fire Emblem",
+    aliases: ["Advance Wars", "tactical RPG", "Fire Emblem Three Houses"],
+    title: "Free Alternatives to Fire Emblem",
+    intro:
+      "Turn-based tactics with a story campaign, units you grow attached to and terrain that decides battles is a Nintendo staple locked to Nintendo hardware. The free alternative has more campaigns than any Fire Emblem game — most of them made by players.",
+    topPick: "battle-for-wesnoth",
+    picks: [
+      {
+        slug: "battle-for-wesnoth",
+        pitch:
+          "The Battle for Wesnoth is a turn-based tactical RPG on hex terrain, with unit promotion, terrain-driven combat, day/night cycles and campaigns that carry veteran units between battles. Beyond its own campaigns, its add-on server hosts hundreds of community campaigns, including several longer than any commercial entry in the genre.",
+        differences:
+          "Combat is openly probabilistic — every attack shows its hit chance and misses happen — where Fire Emblem softens the maths. Presentation is 2D sprites and portraits rather than animated cutscenes, and there is no social or relationship layer.",
+      },
+    ],
+    verdict:
+      "The Battle for Wesnoth is the best free alternative to Fire Emblem: a mature turn-based tactical RPG with unit progression, terrain-driven combat, multiple official campaigns and hundreds of free community campaigns, on Windows, macOS and Linux.",
+  },
+  {
+    slug: "need-for-speed",
+    commercialGame: "Need for Speed",
+    aliases: ["Forza Horizon", "arcade racing", "The Crew"],
+    title: "Free Alternatives to Need for Speed",
+    intro:
+      "Arcade racing has drifted towards live-service pricing, with cars and passes sold on top of the box price. These two are free — one licensed and slick, one open-source and endlessly customisable.",
+    topPick: "asphalt-legends",
+    picks: [
+      {
+        slug: "asphalt-legends",
+        pitch:
+          "Asphalt Legends is a licensed arcade racer with real manufacturers, spectacular drift-and-boost handling and regular events, free to download and play across PC and mobile.",
+        differences:
+          "Live-service: progression is built around events and card-based car unlocks, with optional purchases to speed things up. Handling is deliberately arcade — nothing like a simulator.",
+      },
+      {
+        slug: "supertuxkart",
+        pitch:
+          "SuperTuxKart is a full kart racer with a story mode, split-screen, online multiplayer and a large library of free community tracks and karts.",
+        differences:
+          "Kart racing with items rather than street racing with licensed cars. Family-friendly rather than a night-time street scene.",
+      },
+    ],
+    verdict:
+      "Asphalt Legends is the closest free alternative to Need for Speed: a licensed arcade racer with real cars and no purchase required, though it is structured as a live-service game. SuperTuxKart is the better pick if you would rather have a completely free, open-source racer with no monetisation at all.",
+  },
+  {
+    slug: "mega-man",
+    commercialGame: "Mega Man",
+    aliases: ["Mega Man 11", "Mega Man Legacy Collection", "Rockman"],
+    title: "Free Alternatives to Mega Man",
+    intro:
+      "Capcom sells Mega Man as collections and one-off modern entries. The free option is a complete original game built in the classic style by someone who clearly knows the series inside out.",
+    topPick: "mega-man-unlimited",
+    picks: [
+      {
+        slug: "mega-man-unlimited",
+        pitch:
+          "Mega Man Unlimited is a full-length fangame in the NES-era mould: eight Robot Masters with original weapons and stages, a fortress run, and pixel art and music produced to a standard that stands beside the official games.",
+        differences:
+          "Notably harder than most official entries — it is aimed at players who already finished the classic series. Being a fangame, it is unaffiliated with Capcom and receives no official support.",
+      },
+      {
+        slug: "supertux",
+        pitch:
+          "If you want precise 2D platforming without the run-and-gun, SuperTux is a complete open-source platformer with a full world map and level editor.",
+        differences:
+          "Jump-and-stomp platforming rather than shooting, and no boss weapon system.",
+      },
+    ],
+    verdict:
+      "Mega Man Unlimited is the best free alternative to Mega Man: a complete, free fangame with eight original Robot Masters, their weapons, a full fortress finale and production values close to the official series — though it is markedly harder than Capcom's own entries.",
+  },
 ];
 
 export const alternativesBySlug = new Map(alternativePages.map((p) => [p.slug, p]));

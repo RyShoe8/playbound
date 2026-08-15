@@ -78,7 +78,13 @@ export function pageMetadata(opts: {
     title: opts.title,
     description,
     alternates: { canonical: opts.path },
-    ...(opts.noIndex ? { robots: { index: false, follow: false } } : {}),
+    /*
+     * follow stays true on purpose. This flag is for pages too thin to deserve
+     * their own search result, not for pages we want crawlers to avoid — they
+     * still link to games we very much want crawled, and nofollow would strip
+     * those internal paths for no benefit.
+     */
+    ...(opts.noIndex ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       type: opts.type ?? "website",
       url: opts.path,
