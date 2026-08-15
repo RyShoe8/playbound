@@ -165,4 +165,10 @@ export function fetchQuakeChampionsPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(611500, { label: "Quake Champions" });
 }
 
+/** Dota 2 — Steam app 570. */
+export function fetchDota2Players(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(570, { label: "Dota 2" });
+}
+
+
 

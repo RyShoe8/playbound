@@ -2533,6 +2533,72 @@ export const editions: EditionSeed[] = [
     tags: ["macOS", "Apple Silicon", "MOBA", "Free to Play"],
     verificationLevel: "official",
   },
+  {
+    gameSlug: "dota-2",
+    slug: "dota-2-steam",
+    name: "Dota 2 (Steam Edition)",
+    shortDescription: "The official Source 2 client with all 124+ heroes unlocked and full ranked matchmaking.",
+    description:
+      "The definitive release of Dota 2 on Steam. Provides instant, unconditional access to all 124+ heroes, ranked matchmaking, casual Turbo and All Pick queues, and built-in spectator tournament hub.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.dota2.com",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://store.steampowered.com/app/570/Dota_2/",
+      },
+    },
+    requirements: {
+      min: "Dual core 2.8 GHz / 4 GB RAM / Nvidia 8600/9600GT / 60 GB storage",
+      recommended: "Quad core Intel/AMD / 8 GB RAM / GTX 960 / SSD",
+    },
+    features: ["Multiplayer", "Competitive", "Crossplay", "Ranked", "All Heroes Free", "Vulkan Support"],
+    tags: ["MOBA", "Esports", "Free to Play", "Strategy", "Vulkan"],
+    aliases: ["Dota 2 Steam", "Dota Free"],
+    version: "Crownfall Update",
+    verificationLevel: "official",
+    faq: [
+      {
+        q: "Are all heroes included in this edition?",
+        a: "Yes. All 124+ heroes are 100% free and unlocked from your very first match with zero grinding.",
+      },
+    ],
+  },
+  {
+    gameSlug: "dota-2",
+    slug: "dota-2-workshop",
+    name: "Dota 2 (Arcade & Custom Games)",
+    shortDescription: "Community custom games, Auto Chess, Overthrow, and user-generated scripting mods via Steam Workshop.",
+    description:
+      "Access to thousands of community-crafted custom games, standalone mini-games, and alternative game modes powered by the Dota 2 Source 2 Workshop tools.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://steamcommunity.com/app/570/workshop/",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://steamcommunity.com/app/570/workshop/",
+      },
+    },
+    requirements: {
+      min: "Dual core 2.8 GHz / 4 GB RAM / DX11 GPU / 60 GB storage",
+      recommended: "Quad core / 8 GB RAM / GTX 960 / SSD",
+    },
+    features: ["Custom Games", "Mod Support", "Workshop Integration", "Arcade Hub", "Multiplayer"],
+    tags: ["Workshop", "Custom Games", "Auto Chess", "Arcade"],
+    verificationLevel: "community_verified",
+  },
 ];
 
 

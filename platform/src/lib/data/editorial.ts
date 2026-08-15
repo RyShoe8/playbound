@@ -183,6 +183,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Actively maintained global live-service MOBA; bi-weekly patch cadence, new champion releases, and seasonal esports circuits.",
   },
+  "dota-2": {
+    kind: "manual",
+    url: "https://store.steampowered.com/app/570/Dota_2/",
+    checkedAt: "2026-08-15",
+    note: "Valve's flagship live MOBA; regular gameplay updates, seasonal acts (Crownfall), and active global matchmaking with 600k+ concurrent Steam players.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -2767,6 +2773,86 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "How does movement in Quake Champions work?",
         a: "Movement relies on classic Quake physics: hold forward and jump, then alternate strafe keys and smooth mouse turns to build momentum (strafe jumping). Different Champions also feature unique movement traits such as Slash's crouch slide, Visor's uncapped speed, and Anarki's air control.",
+      },
+    ],
+  },
+  "dota-2": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The pinnacle of hardcore competitive MOBA design, featuring complete roster freedom from day one, unparalleled strategic depth, and a rich community Workshop arcade.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "Dota 2 is Valve's definitive competitive multiplayer online battle arena, originating from the foundational Defense of the Ancients community mod in Warcraft III. Two factions of five players—the Radiant and the Dire—battle across three lanes and a massive dynamic map to breach enemy defenses and shatter the opposing team's Ancient. With over a decade of continuous iteration on the Source 2 engine, Dota 2 stands as one of the most mechanically complex and strategically rewarding competitive games in existence.\n\nUnlike almost every other free-to-play competitive title, Dota 2 provides every single hero—all 124+ and counting—unconditionally unlocked and completely free to play from your very first match. Heroes are organized into Core and Support positions across Strength, Agility, Intelligence, and Universal attributes, with capabilities ranging from global map presence (Invoker, Nature's Prophet) and game-warping ultimates (Enigma's Black Hole, Faceless Void's Chronosphere) to intricate illusion micro-management (Phantom Lancer, Meepo).\n\nGameplay depth is driven by uncompromising mechanics rarely found in other MOBAs. Players can 'deny' their own allied creeps, towers, and even teammates to starve opponents of gold and experience. Elevated terrain imposes high-ground miss chances and vision blockages, trees can be cut or eaten for tactical juking paths, and day/night cycles alter hero vision radii. An extensive item shop includes game-changing active tools like Blink Dagger, Black King Bar (magic immunity), and Aghanim's Scepter which fundamentally alters or grants new hero abilities.\n\nControlling the massive expanded map requires mastery of neutral camp stacking, Lotus Pools, Tormentors for team-wide shard upgrades, Twin Gates for instant cross-map teleports, and the contested Roshan pit for the game-swinging Aegis of the Immortal and Cheese. This tactical sandbox produces endless strategic diversity in both ranked matchmaking and premier esports tournaments like The International.\n\nComplementing the core 5v5 competitive experience is the Steam Workshop Arcade—a thriving community mod ecosystem hosting hit custom game modes like Dota Auto Chess, Ability Draft, Overthrow, and custom RPGs. Dota 2 is fully cross-platform across Windows, Linux, and macOS, with native Steam Deck support and zero pay-to-win mechanics.",
+    whyWePickedIt:
+      "Dota 2 is the most generous and strategically profound competitive game on PC. By offering every single hero completely free from day one without grinding or paywalls, it sets the standard for consumer-friendly esports while maintaining an unmatched competitive skill ceiling.",
+    bestFor: [
+      "Competitive players wanting the deepest mechanical and strategic complexity in the MOBA genre",
+      "Gamers who appreciate 100% free character rosters with zero grinding or pay-to-unlock heroes",
+      "Fans of micro-management, active items, positioning, and tactical creep denying",
+      "Players wanting community custom games (Auto Chess, Overthrow, Custom Hero Chaos) via Steam Workshop",
+      "Linux and Steam Deck gamers seeking native cross-platform support with Vulkan",
+    ],
+    notFor: [
+      "Players wanting casual, low-complexity drop-in matches with short learning curves",
+      "Those frustrated by turn rates, complex active item inventories, or punishing mistake windows",
+      "Single-player gamers looking for an offline story campaign",
+    ],
+    comparableTo: [
+      "League of Legends",
+      "Heroes of the Storm",
+      "Smite",
+      "Deadlock",
+      "Predecessor",
+      "Heroes of Newerth",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install and launch Dota 2 for free on Steam (App ID 570). PlayBound connects directly with Steam to launch the client.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux and Steam Deck, Dota 2 runs natively with full Vulkan graphics acceleration and native gamepad/controller configurations.",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, Dota 2 runs through Steam with native Metal graphics support.",
+      },
+      {
+        platform: "all",
+        text: "Complete the in-game 'Learn' tab and initial bot matches to familiarize yourself with the courier, neutral items, and basic shop navigation.",
+      },
+    ],
+    faq: [
+      {
+        q: "Are all heroes in Dota 2 really free?",
+        a: "Yes. Every single one of Dota 2's 124+ heroes is 100% free and unlocked from your very first match. There is zero champion grinding, currency unlocking, or paywalling. Microtransactions are strictly cosmetic.",
+      },
+      {
+        q: "What is the deny mechanic in Dota 2?",
+        a: "By right-clicking low-health allied creeps (below 50% health), you can deal the killing blow yourself ('deny'). This prevents the enemy hero from receiving gold and cuts the experience they earn from that creep in half. You can also deny low-health allied towers.",
+      },
+      {
+        q: "Can I play custom games and mods in Dota 2?",
+        a: "Yes. Dota 2 features a built-in Arcade tab powered by the Steam Workshop. Popular custom games like Dota Auto Chess, Overthrow, Custom Hero Chaos, and Ability Draft can be launched with one click directly inside the client.",
+      },
+      {
+        q: "Does Dota 2 run natively on Steam Deck and Linux?",
+        a: "Yes. Valve maintains a native Linux client for Dota 2 with full Vulkan graphics support, native 64-bit binaries, and verified Steam Deck controller support.",
+      },
+      {
+        q: "What is The International (TI)?",
+        a: "The International is Dota 2's premier annual world championship tournament, renowned for featuring the largest crowdfunded prize pools in esports history and crowning the world's best Dota 2 team.",
+      },
+      {
+        q: "What is the difference between Core and Support positions in Dota 2?",
+        a: "Dota 2 uses a 1-through-5 priority system: Position 1 (Safe Lane Carry) and Position 2 (Mid Laner) receive the highest farm priority; Position 3 (Offlaner) initiates teamfights and creates space; Position 4 (Soft Support) roams and secures objectives; Position 5 (Hard Support) buys team utility items, wards, and protects the carry.",
       },
     ],
   },
