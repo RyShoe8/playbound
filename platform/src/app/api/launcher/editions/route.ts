@@ -3,6 +3,7 @@ import { getGame, listGames } from "@/lib/catalog";
 import { listEditionsForGame } from "@/lib/editions";
 import { resolveInstallAction } from "@/lib/editionInstall";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
+import { absoluteMediaUrl } from "@/lib/launcherInstall";
 import type { Edition } from "@/lib/editionTypes";
 
 /**
@@ -32,6 +33,7 @@ function isLauncherInstallable(edition: Edition): boolean {
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
+    const origin = url.origin || "https://playbound.club";
     const gameSlug = url.searchParams.get("game");
     const includeTesting = await requestIncludesTesting(req);
 
@@ -69,7 +71,18 @@ export async function GET(req: Request) {
           verified: edition.verified,
 
           art: game.art,
-          coverImage: edition.branding.heroImage ?? game.coverImage ?? null,
+          /*
+           * Absolute, always. Editions may store a site-relative path like
+           * "/games/holocure/editions/playbound.jpg", which the website
+           * resolves fine — but the launcher renders from a file:// page, so a
+           * leading slash points at the local filesystem and the image is
+           * simply broken. The launcher catalog endpoint already absolutises
+           * game covers this way; editions were missed.
+           */
+          coverImage: absoluteMediaUrl(
+            edition.branding.heroImage ?? game.coverImage ?? null,
+            origin
+          ),
           sizeMB: edition.installConfig.official_download?.sizeMB ?? game.sizeMB,
 
           installMethod: edition.installMethod,
