@@ -3,9 +3,13 @@
  *
  * Used for closed MMOs without a public master list (e.g. Villagers and Heroes).
  * Returns one synthetic "server" row so existing liveActivity / PlayingNowBadge
- * sums work unchanged. Undercounts mobile and non-Steam clients — label accordingly.
+ * sums work unchanged.
  *
- * Requires STEAM_WEB_API_KEY (same as TF2 GetServerList).
+ * The key is optional — this endpoint is public. See fetchSteamConcurrentPlayers.
+ *
+ * Every figure here counts Steam clients only, so it is a floor rather than a
+ * total for anything also sold or launched elsewhere. Keep labels plain: the
+ * row already appends "(Steam players only)".
  */
 
 import type { GameServer } from "../types";
@@ -68,11 +72,18 @@ export async function fetchSteamConcurrentPlayers(
   const players = Number(data.response.player_count ?? 0);
   if (!Number.isFinite(players) || players < 0) return [];
 
+  /*
+   * "Steam players only" rather than "excludes mobile". Several games here are
+   * played mostly somewhere else — War Thunder and SWTOR through their own
+   * launchers, Old School RuneScape through Jagex's client and on phones — so
+   * naming mobile as the single omission understated the gap by a lot. The
+   * count is accurate for what it measures; the caption now says what that is.
+   */
   const label = opts?.label ?? `Steam · app ${appId}`;
   return [
     {
       id: `steam-concurrent:${appId}`,
-      name: `${label} (Steam clients; excludes mobile)`,
+      name: `${label} (Steam players only)`,
       host: "steam",
       port: 0,
       players,
@@ -122,31 +133,31 @@ export function fetchOpenLaraPlayers(): Promise<GameServer[]> {
 
 /** War Thunder — Steam app 236390. */
 export function fetchWarThunderPlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(236390, { label: "War Thunder (Steam)" });
+  return fetchSteamConcurrentPlayers(236390, { label: "War Thunder" });
 }
 
 /** World of Sea Battle — Steam app 2579170. */
 export function fetchWorldOfSeaBattlePlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(2579170, { label: "World of Sea Battle (Steam)" });
+  return fetchSteamConcurrentPlayers(2579170, { label: "World of Sea Battle" });
 }
 
 /** Old School RuneScape — Steam app 1343370. */
 export function fetchOldSchoolRuneScapePlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(1343370, { label: "Old School RuneScape (Steam)" });
+  return fetchSteamConcurrentPlayers(1343370, { label: "Old School RuneScape" });
 }
 
 /** Star Wars: The Old Republic — Steam app 1286830. */
 export function fetchSwtorPlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(1286830, { label: "Star Wars: The Old Republic (Steam)" });
+  return fetchSteamConcurrentPlayers(1286830, { label: "Star Wars: The Old Republic" });
 }
 
 /** Mr. Boom — Steam app 1351050. */
 export function fetchMrBoomPlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(1351050, { label: "Mr. Boom (Steam)" });
+  return fetchSteamConcurrentPlayers(1351050, { label: "Mr. Boom" });
 }
 
 /** Microsoft Allegiance — Steam app 700480. */
 export function fetchAllegiancePlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(700480, { label: "Microsoft Allegiance (Steam)" });
+  return fetchSteamConcurrentPlayers(700480, { label: "Microsoft Allegiance" });
 }
 
