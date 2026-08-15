@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage } = require("electron");
 const { spawn, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -1388,12 +1388,52 @@ function installedEditionsPayload(slug) {
     }));
 }
 
-function loadSettings() {
+/**
+ * Whether the OS can back an encrypted secret (DPAPI, Keychain, libsecret).
+ *
+ * Guarded because this is unavailable before the app is ready and on Linux
+ * boxes with no keyring at all, and it throws rather than returning false.
+ */
+function encryptionAvailable() {
   try {
-    return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+    return safeStorage.isEncryptionAvailable();
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * settings.json holds the launcher token, which is a durable bearer for the
+ * user's whole account, in a predictable path — precisely what credential
+ * stealers scrape. It is encrypted at rest against the OS account instead.
+ *
+ * The encoding lives at the file boundary so the ~40 places that read
+ * settings.launcherToken keep seeing an ordinary string, and so an existing
+ * plaintext token migrates itself on the next write. Where the OS offers no
+ * backing store we keep writing plaintext rather than lock someone out of
+ * their own account.
+ */
+function loadSettings() {
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
   } catch {
     return {};
   }
+  if (!raw || typeof raw !== "object") return {};
+  const enc = typeof raw.launcherTokenEnc === "string" ? raw.launcherTokenEnc : "";
+  if (enc) {
+    // Callers never see ciphertext, so a stray save cannot round-trip it.
+    delete raw.launcherTokenEnc;
+    try {
+      if (encryptionAvailable()) {
+        raw.launcherToken = safeStorage.decryptString(Buffer.from(enc, "base64"));
+      }
+    } catch {
+      /* Written by another OS account, or the keyring was reset: signed out. */
+    }
+  }
+  return raw;
 }
 
 /** Settings → games directory, falling back to the platform default. */
@@ -1403,8 +1443,21 @@ function gamesRoot() {
 }
 
 function saveSettings(settings) {
+  const out = { ...settings };
+  delete out.launcherTokenEnc;
+  const token = typeof out.launcherToken === "string" ? out.launcherToken.trim() : "";
+  if (token && encryptionAvailable()) {
+    try {
+      out.launcherTokenEnc = safeStorage.encryptString(token).toString("base64");
+      delete out.launcherToken;
+    } catch {
+      /* Keep the plaintext field rather than losing the session. */
+    }
+  }
   fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  // 0600 so other accounts on a shared machine cannot read it (no-op on Windows,
+  // where the userData directory already carries the ACL).
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(out, null, 2), { mode: 0o600 });
 }
 
 function getApiBase() {
