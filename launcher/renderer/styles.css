@@ -814,37 +814,125 @@ body {
   object-fit: cover;
 }
 
+/*
+ * Library entries are wide rows, not narrow tiles.
+ *
+ * They were 192px columns holding a vertical cover card, a strip of buttons
+ * and a mods panel as three separate boxes — at that width a row of controls
+ * cannot fit, so everything stacked and nothing looked related. Full-width
+ * rows give the controls somewhere to go and let editions and mods sit inside
+ * the same bordered card as the game they belong to.
+ */
 .library-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+/* Two across once there is genuinely room for two full rows. */
+@media (min-width: 1180px) {
+  .library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .library-game-block {
-  width: 192px;
-  flex-shrink: 0;
+  width: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.library-game-block .game-card {
-  max-width: none;
+.library-game-block:hover {
+  border-color: var(--border-focus);
+  background: var(--bg-card-hover);
+}
+
+/* Art, title and the game's own actions, all on one line. */
+.library-card-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.library-thumb {
+  width: 76px;
+  height: 50px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.library-thumb img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.library-orphan-card {
-  cursor: default;
+.library-card-copy {
+  min-width: 0;
 }
 
-.library-pending-card {
+.library-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-card-title.linkish {
   cursor: pointer;
+}
+
+.library-card-title.linkish:hover {
+  color: var(--accent-light);
+}
+
+.library-card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Editions and mods live below a divider inside the same card, indented, so
+ * they read as contents of the game rather than as siblings of it.
+ */
+.library-card-extra {
+  border-top: 1px solid var(--border);
+  padding: 8px 12px 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* A game whose install we have not located yet reads as provisional. */
+.library-game-block.is-pending {
   opacity: 0.92;
 }
 
-.library-pending-card .card-blurb {
-  color: var(--accent, #a78bfa);
+.library-game-block.is-pending .library-card-sub {
+  color: var(--accent-light, #9b7bff);
+}
+
+/* Mods-only rows have no game to open, so nothing here invites a click. */
+.library-game-block.is-orphan .library-card-title {
+  cursor: default;
 }
 
 .library-add-panel {
@@ -915,11 +1003,16 @@ body {
   flex-shrink: 0;
 }
 
+/*
+ * Sits in the third column of the head row. No wrapping: the whole point of
+ * the wide layout is that Play and the overflow menu stay on the title's line.
+ */
 .library-card-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 8px;
   align-items: center;
+  justify-self: end;
 }
 
 .library-card-actions > .btn-sm,
@@ -1132,13 +1225,16 @@ body {
   transform: rotate(180deg);
 }
 
+/*
+ * Mod rows are already inside the card's own inset section, so they drop the
+ * extra border and background they used to carry — nesting a bordered box
+ * inside a bordered box is what made this look like separate widgets.
+ */
 .library-mods-panel {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   margin-top: 4px;
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
 }
 
 .library-mods-panel.hidden {
@@ -1153,16 +1249,23 @@ body {
 }
 
 .mod-row,
-/* Name on the left, actions on the right — same shape as the game row above. */
+/*
+ * Name on the left, actions on the right — the same shape as the game row
+ * above it, one indent deeper. No border or card background: it is already
+ * inside the game's card, and boxing it again is what made mods look like a
+ * separate panel bolted on underneath.
+ */
 .library-mod-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px 10px;
-  padding: 8px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 8px;
+}
+
+.library-mod-row:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .mod-row-title,
