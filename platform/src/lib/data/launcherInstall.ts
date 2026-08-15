@@ -20,6 +20,20 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     assetPattern: "^EndlessSky-win64-.*\\.zip$",
     exeHint: "EndlessSky",
   },
+  /*
+   * What installs here is the SS14 launcher, not the game. Content is fetched
+   * per server on first join and cached, because the server decides which build
+   * you run — so there is no game version for us to pin or to auto-update
+   * against, and the first connection is slower than later ones.
+   */
+  "space-station-14": {
+    enabled: true,
+    kind: "github-zip",
+    repo: "space-wizards/SS14.Launcher",
+    assetPattern: "^SS14\\.Launcher_Windows\\.zip$",
+    exeHint: "SS14.Launcher",
+    knownExePaths: ["SS14.Launcher.exe"],
+  },
   "warzone-2100": {
     enabled: true,
     kind: "github-zip",
