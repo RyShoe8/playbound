@@ -30,6 +30,16 @@ function ghHeaders(): HeadersInit {
   return headers;
 }
 
+/**
+ * Thrown when GitHub declined to answer rather than answering "no".
+ *
+ * Anonymous GitHub allows 60 requests an hour and this cron walks the whole
+ * catalog, so being throttled is routine. Without separating it from a real
+ * 404 the cron would mark most of the catalog broken every time it ran out of
+ * quota, and admin/version-issues would fill with games that install fine.
+ */
+class ProbeUnknown extends Error {}
+
 async function githubLatestRelease(repo: string): Promise<{
   tag: string;
   assets: { name: string; browser_download_url: string }[];
@@ -39,6 +49,15 @@ async function githubLatestRelease(repo: string): Promise<{
     next: { revalidate: 0 },
   });
   if (res.status === 404) return null;
+  if (res.status === 403 || res.status === 429) {
+    const remaining = res.headers.get("x-ratelimit-remaining");
+    throw new ProbeUnknown(
+      remaining === "0" ? "GitHub rate limit reached" : `GitHub ${res.status}`
+    );
+  }
+  if (res.status === 401) {
+    throw new ProbeUnknown("GitHub rejected the configured token");
+  }
   if (!res.ok) throw new Error(`GitHub releases ${res.status} for ${repo}`);
   const data = (await res.json()) as {
     tag_name?: string;
@@ -114,6 +133,10 @@ export async function probeGithubZip(opts: {
       },
     };
   } catch (err) {
+    // Being throttled is not evidence of breakage.
+    if (err instanceof ProbeUnknown) {
+      return { status: "skipped", detectedVersion: currentVersion || null, note: err.message };
+    }
     return {
       status: "broken",
       detectedVersion: null,
@@ -122,29 +145,68 @@ export async function probeGithubZip(opts: {
   }
 }
 
-export async function probeDirectUrl(url: string, currentVersion?: string | null): Promise<ProbeResult> {
+/**
+ * Identify as the launcher, because that is whose experience is being tested.
+ *
+ * A probe-specific agent answers a different question: GitLab serves 406 to
+ * unfamiliar clients while serving the same file to "playbound-launcher", which
+ * would report a perfectly good download as broken.
+ */
+const PROBE_UA = "playbound-launcher";
+
+/** Attempts before a connection failure is believed. */
+const PROBE_ATTEMPTS = 3;
+
+async function reachOnce(url: string): Promise<{ ok: boolean; status?: number; threw?: boolean; detail?: string }> {
   try {
     const res = await fetch(url, {
       method: "HEAD",
       redirect: "follow",
-      headers: { "user-agent": "playbound-catalog-probe" },
+      headers: { "user-agent": PROBE_UA },
     });
-    if (!res.ok) {
-      // Some CDNs reject HEAD — try GET range
-      const get = await fetch(url, {
-        method: "GET",
-        headers: { "user-agent": "playbound-catalog-probe", Range: "bytes=0-0" },
-        redirect: "follow",
-      });
-      if (!get.ok && get.status !== 206) {
-        return { status: "broken", detectedVersion: currentVersion || null, note: `HTTP ${res.status}` };
-      }
+    if (res.ok) return { ok: true };
+    // Some CDNs reject HEAD — try a one-byte GET.
+    const get = await fetch(url, {
+      method: "GET",
+      headers: { "user-agent": PROBE_UA, Range: "bytes=0-0" },
+      redirect: "follow",
+    });
+    if (get.ok || get.status === 206) return { ok: true };
+    return { ok: false, status: get.status, detail: `HTTP ${get.status}` };
+  } catch (err) {
+    return { ok: false, threw: true, detail: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function probeDirectUrl(url: string, currentVersion?: string | null): Promise<ProbeResult> {
+  try {
+    let last = await reachOnce(url);
+    /*
+     * Retry dropped connections rather than believing the first one. A single
+     * blip is far more often our network or a host briefly throttling a
+     * scripted client than a dead download — Freeciv, a published game, was
+     * reported broken by one run and fine by the next for exactly this reason.
+     */
+    for (let i = 1; i < PROBE_ATTEMPTS && !last.ok && last.threw; i++) {
+      await new Promise((r) => setTimeout(r, 400 * i));
+      last = await reachOnce(url);
     }
-    return {
-      status: "ok",
-      detectedVersion: currentVersion || "fixed",
-      note: "URL reachable",
-    };
+
+    if (last.ok) {
+      return {
+        status: "ok",
+        detectedVersion: currentVersion || "fixed",
+        note: "URL reachable",
+      };
+    }
+
+    // 429 and 5xx mean "ask again later". Marking them broken would pull a
+    // working game's install button over someone else's bad afternoon.
+    if (last.status === 429 || (last.status ?? 0) >= 500) {
+      return { status: "skipped", detectedVersion: currentVersion || null, note: last.detail };
+    }
+
+    return { status: "broken", detectedVersion: currentVersion || null, note: last.detail };
   } catch (err) {
     return {
       status: "broken",

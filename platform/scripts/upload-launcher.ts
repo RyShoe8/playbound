@@ -150,6 +150,28 @@ async function main() {
   const aliasName = isAdmin ? cfg.adminAlias : cfg.prodAlias;
   const aliasUrl = await uploadBlob(`launcher/${aliasName}`, setupPath, "application/octet-stream");
 
+  /*
+   * Promoting an unsigned Windows build would overwrite the public installer
+   * and latest.yml, so every regular user — and every existing install's
+   * auto-updater — would receive a binary Windows SmartScreen warns about.
+   * The admin channel exists precisely so unsigned builds stay away from them,
+   * and one absent-minded flag should not undo that.
+   *
+   * Only Windows is gated: Mac and Linux artifacts are not signed through this
+   * path, so promoting them is the normal way they ship.
+   */
+  if (promoteProd && isAdmin && platform === "windows" && !args.includes("--i-know-its-unsigned")) {
+    console.error("");
+    console.error("Refusing to promote an UNSIGNED Windows build to the public channel.");
+    console.error(`  ${setupName} produced ${cfg.adminYml}, meaning it was built unsigned.`);
+    console.error("  Promoting it would hand every user a SmartScreen warning and push it");
+    console.error("  to existing installs through latest.yml.");
+    console.error("");
+    console.error("  Build signed instead:  cd launcher && npm run dist:prod");
+    console.error("  Or, if you truly mean it, re-run with --i-know-its-unsigned");
+    process.exit(1);
+  }
+
   // Unsigned CI builds land on admin-* ; optionally also promote to public site aliases.
   let prodAliasUrl: string | null = null;
   let prodYmlUrl: string | null = null;

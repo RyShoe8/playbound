@@ -336,7 +336,7 @@ export default async function GamePage({
             {/* Above the instructions on purpose: if the download is currently
                 dead, that is the first thing a reader needs, not the last. */}
             <div className="mb-4">
-              <InstallHealthNotice slug={game.slug} />
+              <InstallHealthNotice game={game} />
             </div>
             <GameInstallContent game={game} />
           </>
