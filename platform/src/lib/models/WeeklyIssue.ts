@@ -2,7 +2,7 @@ import { Schema, model, models } from "mongoose";
 
 const WeeklyIssueSchema = new Schema(
   {
-    slug: { type: String, required: true, unique: true, index: true },
+    slug: { type: String, required: true, unique: true },
     year: { type: Number, required: true },
     week: { type: Number, required: true },
     gameSlug: { type: String, required: true, index: true },
