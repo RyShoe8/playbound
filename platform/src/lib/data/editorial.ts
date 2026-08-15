@@ -756,9 +756,16 @@ export const editorial: Record<string, GameEditorial> = {
   },
 
   freedoom: {
-    qualityBar: clearsAll(
-      "Freedoom clears all five: completely free-software content under the BSD-3-Clause license, two massive standalone campaigns plus deathmatch, powered by the industry-standard GZDoom engine with modern rendering and controls, and fully playable out of the box."
-    ),
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The premier open-source boomer shooter package, combining two full-length retro FPS campaigns, blistering deathmatch arenas, and total compatibility with thirty years of community Doom WADs.",
+      lastVerified: "2026-08-15",
+    },
     longDescription:
       "When id Software open-sourced the classic Doom source code in 1997, they left behind a puzzle: the code was free, but the game data (IWADs containing levels, sounds, music, and sprites) remained proprietary. Freedoom was created to solve that puzzle completely.\n\nFreedoom provides a complete, 100% free-software replacement for Doom's data assets. It includes three distinct games in one package: Freedoom: Phase 1 (four distinct 9-level episodes inspired by classic episodic FPS design), Freedoom: Phase 2 (a massive continuous 32-level campaign), and FreeDM (a dedicated 32-level fast-paced arena deathmatch suite).\n\nOn PlayBound, Freedoom is paired directly with GZDoom, the premier modern source port. This means you don't just get raw 90s pixels — you get uncapped frame rates, widescreen and ultrawide support, true mouselook, dynamic lighting, hardware-accelerated OpenGL/Vulkan rendering, and native controller support without needing any configuration files or command-line setup.\n\nBecause Freedoom matches standard Doom IWAD specifications, it is also a gateway to thirty years of custom community WADs, total conversions, and mods like Brutal Doom, Project Brutality, and thousands of custom level sets.",
     whyWePickedIt:
@@ -2960,6 +2967,444 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Does War Thunder support cross-play?",
         a: "Yes! PC, PlayStation, and Xbox players all share the same matchmaking queues, squads, and multiplayer servers.",
+      },
+    ],
+  },
+  "star-wars-galaxies": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The greatest sandbox MMORPG ever conceived, delivering player-built planetary cities, deep non-combat crafting economies, and total galactic roleplaying freedom.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Star Wars Galaxies represents the pinnacle of virtual world sandbox design: an unconstrained universe where players construct planetary cities, survey resource veins, run player-driven galactic trade, and engage in multi-crew space dogfights without linear quest rails.",
+    longDescription:
+      "Star Wars Galaxies (SWG) is Sony Online Entertainment and LucasArts' legendary 2003 sandbox MMORPG, celebrated as one of the most ambitious virtual worlds ever engineered. Set during the Galactic Civil War between A New Hope and The Empire Strikes Back, SWG rejected modern theme-park MMO tropes in favor of complete player agency.\n\nRather than locking players into rigid character classes, SWG featured a 250-skill-point matrix across 32 diverse professions. Players could become dedicated Weaponsmiths, Creature Handlers, Droid Engineers, Entertainers, Bounty Hunters, Combat Medics, or elusive Jedi. The crafting system remains unmatched in gaming history: every raw resource (metals, chemicals, ores) possessed fluctuating quality attributes, meaning an Artisan's survey skill and experimentation directly dictated the damage, speed, and durability of their forged blasters and armor.\n\nPlayers shaped the galaxy itself by founding full player-run planetary cities with elected Mayors, civic zoning, shuttleports, hospitals, cantinas, and custom decorated houses. Through the Jump to Lightspeed expansion, players could take to the stars in multi-crew Gunships, X-Wings, and TIE Fighters, walking around ship interiors in real-time space flight.\n\nPreserved today through dedicated community server projects like SWGEmu (Pre-CU classic 14.1), SWG Legends, and SWG Restoration, Star Wars Galaxies remains a vibrant, living virtual galaxy.",
+    bestFor: [
+      "MMO players craving deep player-driven economies, resource gathering, and artisanal crafting",
+      "Star Wars fans wanting an authentic, living galaxy to explore at their own pace",
+      "Roleplayers who love building houses, decorating cantinas, and establishing player cities",
+      "Space combat enthusiasts looking for multi-crew starships and space dogfights (Jump to Lightspeed)",
+    ],
+    notFor: [
+      "Players who prefer modern linear quest-hub leveling with yellow exclamation points",
+      "Gamers looking for modern action-combat with dodge rolls and telegraph indicators",
+    ],
+    comparableTo: [
+      "Eve Online",
+      "Ultima Online",
+      "Star Wars: The Old Republic",
+      "ArcheAge",
+      "Mortal Online 2",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Acquire original Star Wars Galaxies 14.1 client files (from original install media or archive).",
+      },
+      {
+        platform: "windows",
+        text: "Launch your preferred community edition via PlayBound (SWGEmu Launchpad, SWG Legends, or SWG Restoration).",
+      },
+      {
+        platform: "all",
+        text: "Point the launcher to your base game directory to download community server patch files and create your free game account.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Star Wars Galaxies free to play today?",
+        a: "Yes! Community server emulators (SWGEmu, SWG Legends, SWG Restoration) are 100% free non-profit community projects. You only need the original base game client files to patch and play.",
+      },
+      {
+        q: "What are the differences between SWG Editions (Pre-CU vs NGE)?",
+        a: "SWGEmu (Finalizer) preserves the original 2003 Pre-Combat Upgrade 14.1 skill tree system. SWG Legends runs the Post-NGE era with high-level heroic instances and space content. SWG Restoration offers a hybrid custom ruleset.",
+      },
+      {
+        q: "How does player housing and city building work?",
+        a: "Players can drop harvesters, build custom houses, and place factories anywhere in the open world. Groups of players can establish official player cities that gain rank, elect a Mayor, and build shuttleports and hospitals.",
+      },
+      {
+        q: "Does Star Wars Galaxies include space combat?",
+        a: "Yes! The Jump to Lightspeed expansion allows players to build, customize, and pilot starfighters (X-Wings, TIEs) and multi-crew gunships (YT-1300 Millennium Falcon chassis) in seamless space combat.",
+      },
+      {
+        q: "Can I unlock a Jedi character?",
+        a: "Yes! Different editions handle the Jedi path differently: SWGEmu uses the classic holographic mystery progression, while other editions offer dedicated Jedi profession paths.",
+      },
+      {
+        q: "Does SWG run on modern Windows 11 and Steam Deck?",
+        a: "Yes! Modern community launchpads include DirectX 9/11 wrappers, widescreen 4K resolutions, 60fps unlocked animations, and Wine/Proton support for Steam Deck.",
+      },
+    ],
+  },
+  "gamebuddies-io": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "An effortless, instant-access party gaming hub that turns any browser or mobile phone into a private game night with zero downloads required.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "GameBuddies.io solves the classic friction of group game nights: zero downloads, zero account setup required for guests, instant room code sharing, and a diverse suite of hilarious drawing, trivia, and word games that run flawlessly across PCs, Macs, tablets, and phones.",
+    longDescription:
+      "GameBuddies.io is an instant-access web-based multiplayer party hub designed for frictionless social play with friends, family, and coworkers. By eliminating client installs, launcher requirements, and mandatory account registration, anyone with a modern web browser can jump into a match in seconds.\n\nPlayers can host private game rooms with custom room codes or jump into public lobbies. The platform features an expanding library of casual party staples:\n- Draw & Guess: Real-time collaborative sketching and guessing game with fast rounds.\n- Word Guess: Secret word association and deducing rounds for verbal strategists.\n- Party Trivia: Competitive general knowledge and themed trivia quizzes.\n- Party Bombs: Rapid-fire hot-potato word association under ticking time pressure.\n- Connect 4 & Tabletop Classics: Quick 1v1 tactical face-offs between party rounds.\n\nWith responsive mobile touch controls, cross-platform synchronization, and integrated room chat, GameBuddies.io makes remote hangouts and discord game nights completely painless.",
+    bestFor: [
+      "Friends and remote teams wanting instant, zero-friction party games without installs",
+      "Discord communities looking for quick browser-based party activities",
+      "Casual game nights where players join from mixed devices (phones, laptops, tablets)",
+      "Families looking for clean, accessible drawing and trivia games",
+    ],
+    notFor: [
+      "Hardcore gamers seeking deep character progression or complex mechanics",
+      "Players wanting an offline single-player story campaign",
+    ],
+    comparableTo: [
+      "Jackbox Party Packs",
+      "Skribbl.io",
+      "Gartic Phone",
+      "Kahoot!",
+      "Board Game Arena",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Launch GameBuddies.io directly in your browser through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Click 'Create Room', select your party game mode, and share the room code or invite link with your friends.",
+      },
+      {
+        platform: "all",
+        text: "Friends can join instantly on phone, tablet, or PC by clicking your link.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is GameBuddies.io completely free?",
+        a: "Yes! GameBuddies.io is 100% free to play in your browser with no subscription or mandatory paywalls.",
+      },
+      {
+        q: "Do my friends need to create an account to join?",
+        a: "No! Guests can join any private game room simply by clicking your invite link and entering a display nickname.",
+      },
+      {
+        q: "Does GameBuddies work on mobile phones and tablets?",
+        a: "Yes! GameBuddies.io is built with responsive HTML5 touch controls, allowing players to sketch and type smoothly on iPhone, Android, iPad, and desktop.",
+      },
+      {
+        q: "How many players can join a room?",
+        a: "Most party modes support 2 to 16+ players in a single private lobby, making it ideal for both small friend groups and large office hangouts.",
+      },
+      {
+        q: "Are there custom word lists and trivia settings?",
+        a: "Yes! Room hosts can customize round durations, word difficulty, drawing time limits, and custom trivia topics.",
+      },
+      {
+        q: "Can I use GameBuddies inside Discord?",
+        a: "Yes! You can share your room link directly in any Discord voice channel or text chat for instant group joins.",
+      },
+    ],
+  },
+  pixreveal: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "An addictive, minimalist daily pixel-guessing challenge that turns image deduction into a satisfying daily ritual for puzzle lovers.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Pixreveal captures the brilliant 'Wordle-like' daily puzzle energy for visual learners: uncovering concealed pixel mosaics tile-by-tile, testing your pop culture and video game recognition under minimal reveal constraints.",
+    longDescription:
+      "Pixreveal is a daily web-based visual puzzle game that challenges players to identify iconic artwork, retro gaming sprites, pop culture characters, and famous photographs from heavily pixelated mosaics.\n\nEvery day presents a fresh set of visual puzzles. Players begin with a completely obscured or ultra-low-resolution image and reveal square tiles one by one. With each tile uncovered, more color cues, silhouettes, and distinctive contours appear. The goal is to deduce the subject in as few tile reveals as possible to earn maximum points and preserve your daily winning streak.\n\nFeaturing categories spanning 90s classic gaming, anime icons, movie posters, world landmarks, and nature photography, Pixreveal is the perfect lightweight daily brain workout.",
+    bestFor: [
+      "Daily puzzle players who love Wordle, Connections, and GeoGuessr",
+      "Retro gamers with an eye for iconic pixel art, 8-bit sprites, and game covers",
+      "Pop culture and movie trivia buffs who love visual deduction",
+      "Casual mobile and desktop players wanting a quick 5-minute morning puzzle ritual",
+    ],
+    notFor: [
+      "Gamers looking for fast-paced action or deep real-time mechanics",
+      "Players who dislike trivia and visual deduction games",
+    ],
+    comparableTo: [
+      "Wordle",
+      "GeoGuessr",
+      "Framed",
+      "Gamedle",
+      "Heardle",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Open Pixreveal directly in your browser through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Select today's Daily Challenge puzzle.",
+      },
+      {
+        platform: "all",
+        text: "Click tiles to reveal clue pixels and type your guesses into the search box to build your streak.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Pixreveal completely free?",
+        a: "Yes! Pixreveal is 100% free with no account creation or downloads required.",
+      },
+      {
+        q: "How often do new puzzles appear?",
+        a: "A new official Daily Puzzle set releases every 24 hours at midnight UTC, with endless practice modes also available.",
+      },
+      {
+        q: "How does scoring and streaks work?",
+        a: "Your score is based on how few pixels you uncover before submitting the correct answer. Daily streaks are saved in your browser.",
+      },
+      {
+        q: "Can I share my results with friends?",
+        a: "Yes! Pixreveal includes spoiler-free emoji share grids (similar to Wordle) so you can boast your daily score without ruining the image.",
+      },
+      {
+        q: "What categories of images are in the game?",
+        a: "Puzzles include retro video games, classic cartoons, movie posters, celebrity silhouettes, famous landmarks, and album art.",
+      },
+      {
+        q: "Does Pixreveal work on mobile phones?",
+        a: "Yes! Pixreveal is fully optimized for mobile touchscreens with responsive pinch-to-zoom and touch tile reveals.",
+      },
+    ],
+  },
+  "world-of-sea-battle": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "An exhilarating open-world age-of-sail MMORPG combining realistic wind physics, broadside artillery combat, and massive multi-fleet territory wars.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "World of Sea Battle delivers the pure pirate and naval fantasy that modern gamers crave: captaining dozens of authentic historical wooden warships across a vast seamless ocean, trading across ports, and commanding colossal broadside battles without predatory paywalls.",
+    longDescription:
+      "World of Sea Battle is an expansive free-to-play open-world naval warfare MMORPG developed by Neptune Games. Set during the golden Age of Sail, players begin with a humble coastal cutter and progress to command first-rate 100-gun ships of the line, nimble pirate corvettes, heavily armed bomb ketches, and swift merchant galleons.\n\nThe game stands out for its realistic sailing physics and tactical broadside combat: wind direction, tacking maneuvers, sail integrity, and rudder angles dictate your ship's maneuverability. Battles require deliberate positioning to unleash port and starboard cannon salvos, chain-shotting enemy masts to immobilize them, or firing grape-shot to clear decks before boarding.\n\nBeyond combat, World of Sea Battle features a living player-driven economic sandbox: players establish trade routes between colonial ports, transport valuable lumber and spices, construct coastal fortress outposts, and wage guild territory wars to control vital maritime trade lanes.",
+    bestFor: [
+      "Age of Sail and naval warfare enthusiasts who love realistic wooden tall ships",
+      "Players seeking broadside tactical combat and realistic wind/tacking physics",
+      "Fans of open-world sandbox MMOs with trade routes and port capturing",
+      "Gamers who loved Sid Meier's Pirates!, Naval Action, or Sea of Thieves fleet battles",
+    ],
+    notFor: [
+      "Players looking for high-speed modern arcade combat with instant rudder turns",
+      "Gamers who dislike ocean navigation and travel time across large map distances",
+    ],
+    comparableTo: [
+      "Naval Action",
+      "Sea of Thieves",
+      "Sid Meier's Pirates!",
+      "World of Warships",
+      "Skull and Bones",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and install World of Sea Battle for free via PlayBound using the official launcher or Steam.",
+      },
+      {
+        platform: "all",
+        text: "Launch the game, create your captain profile, and complete the naval maneuvering and broadside tutorial.",
+      },
+      {
+        platform: "all",
+        text: "Choose your path: become an independent merchant trader, a naval fleet commander, or a notorious open-sea pirate.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is World of Sea Battle free to play?",
+        a: "Yes! World of Sea Battle is free to download and play, with all ships, cannons, ports, and trade goods accessible through standard gameplay progression.",
+      },
+      {
+        q: "How does the sailing and wind physics work?",
+        a: "Your ship's speed and handling depend entirely on wind direction and sail trim (Full, Battle, or Furled Sails). Sailing into the wind requires tacking (zigzagging) to maintain momentum.",
+      },
+      {
+        q: "How many ships are available in the game?",
+        a: "Over 60 historical sailing vessels are modeled in the game, spanning sloops, brigs, frigates, galleons, and massive first-rate three-decker ships of the line.",
+      },
+      {
+        q: "Can I play solo or with friends?",
+        a: "Both! You can sail the open ocean solo hunting AI trade convoys and completing missions, or join a guild/clan to participate in massive 50+ player fleet sieges and territory battles.",
+      },
+      {
+        q: "Is there boarding combat?",
+        a: "Yes! Once you destroy an enemy ship's sails and grapple alongside, you can initiate crew boarding actions to capture the enemy vessel and seize its cargo.",
+      },
+      {
+        q: "Does World of Sea Battle run on Steam Deck?",
+        a: "Yes! World of Sea Battle runs well under Proton on Steam Deck with custom controller bindings for rudder, sails, and broadside aim.",
+      },
+    ],
+  },
+  "old-school-runescape": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The immortal crown jewel of retro MMORPGs, featuring unrivaled quest writing, infinitely satisfying skill progression, and absolute community democracy.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Old School RuneScape is the gold standard of sustainable game stewardship: every single piece of content, boss encounter, skill update, and quality-of-life patch must pass a strict 70% community supermajority player poll before it is added to the game.",
+    longDescription:
+      "Old School RuneScape (OSRS) is Jagex's legendary 2007-era sandbox fantasy MMORPG that has grown into one of the most vibrant online gaming communities in the world. Built on a simple point-and-click grid movement system and a rhythmic 0.6-second server tick, OSRS is easy to learn yet boasts extraordinary mechanical depth at the highest levels of combat.\n\nUnlike theme-park MMOs focused entirely on gear score rat races, OSRS is a true open-ended sandbox: level 23 distinct non-combat and combat skills (Woodcutting, Slayer, Runecraft, Herblore, Fishing), complete master-tier narrative quests with dry British wit (Desert Treasure, Dragon Slayer II, Song of the Elves), tackle high-stakes Wilderness PvP, or team up for four-player endgame raids in the Chambers of Xeric, Theatre of Blood, and Tombs of Amascut.\n\nWith full cross-platform progression between desktop, mobile, and Steam Deck, plus seamless integration with approved community open-source clients like RuneLite, Old School RuneScape offers hundreds of hours of free adventure.",
+    bestFor: [
+      "Gamers who love long-term goal progression, achievement diaries, and skill grinding",
+      "Players looking for witty, puzzle-heavy quests that feel like classic adventure games",
+      "Fans of sandbox player economies and real-time Grand Exchange trading",
+      "Cross-platform players who want to grind seamlessly between PC, phone, and Steam Deck",
+    ],
+    notFor: [
+      "Players demanding high-fidelity photorealistic graphics or modern action combat",
+      "Gamers who dislike point-and-click movement and tile-based positioning",
+    ],
+    comparableTo: [
+      "RuneScape 3",
+      "Albion Online",
+      "World of Warcraft Classic",
+      "Melvor Idle",
+      "Ultima Online",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and install the official Jagex Launcher or RuneLite client via PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Create a free Jagex Account and log in with your character.",
+      },
+      {
+        platform: "all",
+        text: "Complete Tutorial Island to master basic skills, combat, and trading before stepping into Lumbridge.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Old School RuneScape free to play?",
+        a: "Yes! The free-to-play portion of OSRS includes dozens of quests (including the iconic Dragon Slayer), all core combat skills, non-combat resource gathering, and full access to the Grand Exchange.",
+      },
+      {
+        q: "Can I buy membership with in-game gold?",
+        a: "Yes! Players can purchase 'Old School Bonds' on the Grand Exchange with in-game gold to redeem for 14 days of full membership without spending real money.",
+      },
+      {
+        q: "What is RuneLite?",
+        a: "RuneLite is the officially approved, open-source community client for OSRS. It features graphics enhancements (117 HD plugin, GPU rendering, uncapped FPS), quest helpers, tile indicators, and inventory tracking.",
+      },
+      {
+        q: "How does community polling work?",
+        a: "Every major update, new quest, boss, or skill proposal is submitted to an in-game poll booth. Updates only enter the game if they receive at least 70% 'Yes' votes from active players.",
+      },
+      {
+        q: "Does OSRS support cross-play and mobile progression?",
+        a: "Yes! You can log into the exact same character and world on Windows, macOS, Linux, Steam Deck, iOS, and Android seamlessly.",
+      },
+      {
+        q: "What are Ironman modes?",
+        a: "Ironman is a popular official game mode where players cannot trade with other players or use the Grand Exchange, requiring you to harvest and craft every single item yourself.",
+      },
+    ],
+  },
+  swtor: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The ultimate story-driven sci-fi MMORPG, delivering eight full-length cinematic Star Wars class campaigns with full voice acting and meaningful moral choices.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Star Wars: The Old Republic achieves what no other MMO has ever attempted: eight complete, full-budget BioWare single-player RPG storylines packed with orchestral scores, full voice acting, light/dark side moral decisions, and rich companion romances — 100% free to play.",
+    longDescription:
+      "Star Wars: The Old Republic (SWTOR) is the premier cinematic MMORPG set thousands of years before the rise of Darth Vader, during an era of open warfare between the Galactic Republic and the Sith Empire. Developed by BioWare and maintained by Broadsword, SWTOR plays like a direct sequel to the beloved Knights of the Old Republic (KOTOR) series.\n\nPlayers choose from eight distinct class storylines across Republic and Imperial factions: Jedi Knight, Jedi Consular, Trooper, Smuggler, Sith Warrior, Sith Inquisitor, Bounty Hunter, and Imperial Agent. Each storyline features hundreds of hours of cinematic dialogue choices that genuinely shape your character's moral alignment, companion relationships, and faction standing.\n\nBeyond the base campaigns, SWTOR features rich group content including four-player tactical Flashpoints, eight-player Operations, Galactic Stronghold player housing, fully customizable personal starships, and Galactic Starfighter 12v12 space dogfights.",
+    bestFor: [
+      "Star Wars and KOTOR fans wanting an epic, fully voiced cinematic story RPG",
+      "Solo players who enjoy narrative RPGs with companion romances and moral choices",
+      "MMO fans seeking classic tab-target dungeon Flashpoints and endgame Operations",
+      "Roleplayers who love custom outfits, lightsaber color crystals, and galactic player housing",
+    ],
+    notFor: [
+      "Players looking for twitch-based action combat with dodge rolls",
+      "Gamers who want an unguided, non-narrative sandbox without story cutscenes",
+    ],
+    comparableTo: [
+      "Star Wars: Knights of the Old Republic",
+      "Final Fantasy XIV",
+      "World of Warcraft",
+      "Guild Wars 2",
+      "The Elder Scrolls Online",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and install Star Wars: The Old Republic for free via Steam or the official launcher through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Create your free SWTOR account and pick your faction (Galactic Republic or Sith Empire).",
+      },
+      {
+        platform: "all",
+        text: "Select your Origin Story (e.g. Jedi Knight, Imperial Agent, Bounty Hunter) and begin your prologue on your starter homeworld.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is SWTOR really free to play?",
+        a: "Yes! All eight complete class storylines from Level 1 to 50, plus the Rise of the Hutt Cartel and Shadow of Revan expansions, are 100% free with no subscription required.",
+      },
+      {
+        q: "Can I play SWTOR entirely solo as a single-player RPG?",
+        a: "Yes! All eight origin storylines and most story Flashpoints include dedicated 'Story Mode' with combat droid companions, allowing you to experience the entire narrative solo at your own pace.",
+      },
+      {
+        q: "What makes the Imperial Agent storyline so famous?",
+        a: "The Imperial Agent story is widely praised by RPG critics as one of BioWare's finest narratives, featuring complex political espionage, mind games, multiple endings, and spy thriller branching paths.",
+      },
+      {
+        q: "Does SWTOR support space combat?",
+        a: "Yes! In addition to on-rails starship missions, SWTOR includes 'Galactic Starfighter', a free 12v12 PvP space dogfight arena with scout, strike fighter, gunship, and bomber classes.",
+      },
+      {
+        q: "Does SWTOR run on Steam Deck and modern Windows 11?",
+        a: "Yes! SWTOR has been modernized with a 64-bit client and DirectX 11 support, running smoothly on modern Windows 11 PCs and under SteamOS Proton on Steam Deck.",
+      },
+      {
+        q: "Can Jedi use double-bladed lightsabers or dual wield?",
+        a: "Yes! Through the Combat Style system, you can decouple your class story from your combat mechanics, allowing Jedi Knights to dual-wield or use double-bladed sabers freely.",
       },
     ],
   },

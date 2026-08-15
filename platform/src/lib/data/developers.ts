@@ -968,6 +968,39 @@ export const developers: Developer[] = [
     website: "https://en.wikipedia.org/wiki/Core_Design",
     artHue: 30,
   },
+  {
+    slug: "neptune-games",
+    name: "Neptune Games",
+    tagline: "Creators of World of Sea Battle.",
+    about:
+      "Independent game development studio specializing in open-world historical naval combat MMOs and realistic age-of-sail simulations.",
+    founded: 2018,
+    location: "Worldwide",
+    website: "https://www.worldofseabattle.com",
+    artHue: 210,
+  },
+  {
+    slug: "jagex",
+    name: "Jagex",
+    tagline: "Creators of RuneScape and Old School RuneScape.",
+    about:
+      "British game studio established in 2001, famous for pioneering browser and client-based fantasy MMORPGs.",
+    founded: 2001,
+    location: "Cambridge, United Kingdom",
+    website: "https://www.jagex.com",
+    artHue: 38,
+  },
+  {
+    slug: "broadsword",
+    name: "Broadsword / BioWare",
+    tagline: "Stewards of Star Wars: The Old Republic.",
+    about:
+      "Veteran MMORPG development studio responsible for live operations and major expansions for Star Wars: The Old Republic, Ultima Online, and Dark Age of Camelot.",
+    founded: 2014,
+    location: "Virginia, USA",
+    website: "https://www.swtor.com",
+    artHue: 200,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

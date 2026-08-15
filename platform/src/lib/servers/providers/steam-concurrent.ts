@@ -118,3 +118,18 @@ export function fetchWarThunderPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(236390, { label: "War Thunder (Steam)" });
 }
 
+/** World of Sea Battle — Steam app 2579170. */
+export function fetchWorldOfSeaBattlePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2579170, { label: "World of Sea Battle (Steam)" });
+}
+
+/** Old School RuneScape — Steam app 1343370. */
+export function fetchOldSchoolRuneScapePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1343370, { label: "Old School RuneScape (Steam)" });
+}
+
+/** Star Wars: The Old Republic — Steam app 1286830. */
+export function fetchSwtorPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1286830, { label: "Star Wars: The Old Republic (Steam)" });
+}
+
