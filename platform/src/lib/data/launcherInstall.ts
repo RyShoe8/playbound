@@ -247,14 +247,32 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "github-zip",
     repo: "ZDoom/gzdoom",
-    assetPattern: "Windows-64bit\\.zip$|win64.*\\.zip$",
+    // GZDoom renamed its release assets: they are now "gzdoom-<ver>-windows.zip"
+    // and the old "Windows-64bit.zip" pattern matched nothing, which made the
+    // install fail at download time while the recipe still looked valid.
+    // Anchored on .zip so the "-windows-pdb.7z" debug archive cannot match.
+    assetPattern: "gzdoom-.*-windows\\.zip$",
     exeHint: "gzdoom",
     overlayUrl: "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip",
     overlayFileName: "freedoom-0.13.0.zip",
     note: "Bundles the GZDoom source port with Freedoom Phase 1 & 2 IWADs for one-click play.",
   },
   freelancer: {
-    enabled: true,
+    /*
+     * DISABLED — needs a decision before this game ships.
+     *
+     * Two separate problems. The archive.org URL now 404s, so it does not work
+     * regardless. More importantly it was serving a rip of the 2003 Microsoft
+     * retail CD: Freelancer is commercial software that was never released as
+     * freeware, so distributing it is copyright infringement and sits directly
+     * against PlayBound only ever listing genuinely free games.
+     *
+     * Deliberately not repointed at another mirror — a working mirror would
+     * make the licensing problem worse, not better. The legitimate options are
+     * to list Freelancer as owner-supplied (locate an existing install, the
+     * way the EverQuest editions handle their client) or to drop it.
+     */
+    enabled: false,
     kind: "direct-zip",
     url: "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip",
     fileName: "Freelancer.zip",
@@ -269,9 +287,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   "ur-quan-masters": {
     enabled: true,
-    kind: "direct-zip",
-    url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-win32.zip",
-    fileName: "uqm-0.8.0-win32.zip",
+    // Upstream never published a 0.8.0 zip — the 0.8 directory ships a win32
+    // *installer*, so both the filename and the kind were wrong and the
+    // download 404'd. Verified against the SourceForge 0.8 file listing.
+    kind: "direct-installer",
+    url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-win32.exe",
+    fileName: "uqm-0.8-win32.exe",
     exeHint: "uqm",
     overlayUrl: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-content.uqm",
     overlayFileName: "uqm-0.8.0-content.uqm",
@@ -293,9 +314,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   bzflag: {
     enabled: true,
-    kind: "github-installer",
-    repo: "BZFlag-Dev/bzflag",
-    assetPattern: "bzflag-.*\\.exe$",
+    // BZFlag tags releases on GitHub but attaches no binaries to them, so the
+    // asset pattern could never match. Windows builds are published on their
+    // own download host instead.
+    kind: "direct-installer",
+    url: "https://download.bzflag.org/bzflag/windows/2.4.30/bzflag-2.4.30.exe",
+    fileName: "bzflag-2.4.30.exe",
+    versionLabel: "2.4.30",
     exeHint: "bzflag",
     knownExePaths: [
       "%PROGRAMFILES%\\BZFlag\\bzflag.exe",
@@ -337,9 +362,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   wolfenstein: {
     enabled: true,
-    kind: "github-zip",
-    repo: "ECWolfEngine/ECWolf",
-    assetPattern: "ecwolf.*windows.*\\.zip$|win64.*\\.zip$|\\.zip$",
+    // ECWolf tags versions but publishes no GitHub releases at all, so this
+    // recipe could never resolve. Builds come from the project's own site.
+    kind: "direct-zip",
+    url: "https://maniacsvault.net/ecwolf/files/ecwolf/1.x/ecwolf-1.4.2_x64.zip",
+    fileName: "ecwolf-1.4.2_x64.zip",
+    versionLabel: "1.4.2",
     note: "ECWolf source port — add legal Wolf3D shareware/data separately.",
     exeHint: "ecwolf",
   },
