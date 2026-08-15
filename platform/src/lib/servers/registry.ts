@@ -20,6 +20,7 @@ import {
   fetchHoloCurePlayers,
   fetchMarathon2Players,
   fetchTesArenaPlayers,
+  fetchOpenLaraPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -117,6 +118,10 @@ const providers: Record<string, ServerProvider> = {
   "tes-arena": {
     slug: "tes-arena",
     fetchServers: fetchTesArenaPlayers,
+  },
+  openlara: {
+    slug: "openlara",
+    fetchServers: fetchOpenLaraPlayers,
   },
 };
 

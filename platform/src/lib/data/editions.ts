@@ -232,6 +232,60 @@ export const editions: EditionSeed[] = [
     verificationLevel: "community_verified",
   },
   {
+    gameSlug: "openlara",
+    slug: "web-wasm",
+    name: "WebAssembly Browser Edition (Default)",
+    shortDescription: "Play classic Tomb Raider instantly in your browser with WebAssembly & WebGL.",
+    description:
+      "The instant WebAssembly release of OpenLara. Runs directly in any modern web browser at 60 FPS with full audio, dynamic water shaders, and shareware level data.",
+    type: "community",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://xproger.info/projects/OpenLara/",
+      github: "https://github.com/XProger/OpenLara",
+    },
+    installMethod: "browser",
+    installConfig: {
+      browser: {
+        playUrl: "https://xproger.info/projects/OpenLara/",
+      },
+    },
+    features: ["Singleplayer", "Controller Support", "Open Source", "Cross-Platform"],
+    tags: ["WebAssembly", "WebGL", "Browser", "Instant Play"],
+    aliases: ["OpenLara Web", "Browser Tomb Raider"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "openlara",
+    slug: "desktop-native",
+    name: "Desktop Native (OpenGL / VR / Split-Screen)",
+    shortDescription: "Native desktop client with 4K widescreen, VR support, and split-screen co-op.",
+    description:
+      "High-performance native desktop executable with OpenXR virtual reality headset support, uncapped framerates, 4K texture support, and local 2-player split-screen.",
+    type: "community",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://xproger.info/projects/OpenLara/",
+      github: "https://github.com/XProger/OpenLara",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "XProger/OpenLara",
+        assetPattern: ".*\\.zip$",
+        exeHint: "OpenLara.exe",
+        note: "Installs native desktop OpenLara.",
+      },
+    },
+    features: ["Singleplayer", "Controller Support", "Open Source", "Local Co-Op", "Mod Support"],
+    tags: ["Native", "64-Bit", "VR", "Split-Screen"],
+    aliases: ["OpenLara Desktop", "OpenLara PC"],
+    verificationLevel: "playbound_verified",
+  },
+  {
     gameSlug: "wolfenstein-enemy-territory",
     slug: "et-legacy",
     name: "ET: Legacy (Default)",
