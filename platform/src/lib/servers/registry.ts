@@ -13,6 +13,7 @@ import { fetchSpaceStation14Servers } from "./providers/space-station-14";
 import { fetchStarCraftServers } from "./providers/starcraft";
 import { fetchWolfensteinEnemyTerritoryServers } from "./providers/wolfenstein-enemy-territory";
 import { fetchAsheronsCallServers } from "./providers/asherons-call";
+import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
@@ -84,6 +85,10 @@ const providers: Record<string, ServerProvider> = {
   wolfenstein: {
     slug: "wolfenstein",
     fetchServers: fetchWolfensteinEnemyTerritoryServers,
+  },
+  "counter-strike-2": {
+    slug: "counter-strike-2",
+    fetchServers: fetchCounterStrike2Servers,
   },
   // Testing catalog games — visible to testers/admins via includeTesting; public
   // homepage Active Players stays published-only until status flips.
