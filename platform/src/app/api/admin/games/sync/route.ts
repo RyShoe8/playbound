@@ -9,16 +9,22 @@ import { ensureDerivedGameFields } from "@/lib/enrich";
 import { normalizeStatus, statusToPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
 
-export async function POST() {
+export async function POST(req: Request) {
   const { error } = await requireAdminSession();
   if (error) return error;
 
   await dbConnect();
 
+  const body = (await req.json().catch(() => ({}))) as { slugs?: string[] };
+  const targetSlugs = Array.isArray(body?.slugs) && body.slugs.length > 0 ? new Set(body.slugs) : null;
+  const EXCLUDED_SLUGS = new Set(["holocure"]);
+
   let created = 0;
   let updated = 0;
 
-  for (const seed of games) {
+  const targetList = games.filter((g) => (targetSlugs ? targetSlugs.has(g.slug) : !EXCLUDED_SLUGS.has(g.slug)));
+
+  for (const seed of targetList) {
     const g = ensureDerivedGameFields(seed);
     const developerName = developersBySlug.get(g.developerSlug)?.name ?? null;
     const launcher = g.launcherInstall ?? launcherInstallBySlug[g.slug] ?? null;
@@ -87,9 +93,9 @@ export async function POST() {
 
   return NextResponse.json({
     ok: true,
-    total: games.length,
+    total: targetList.length,
     created,
     updated,
-    message: `Successfully synchronized ${games.length} catalog games to MongoDB (${created} created, ${updated} updated).`,
+    message: `Successfully synchronized ${targetList.length} catalog games to MongoDB (${created} created, ${updated} updated).`,
   });
 }
