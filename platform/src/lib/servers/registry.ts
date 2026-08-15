@@ -22,6 +22,7 @@ import {
   fetchMarathon2Players,
   fetchTesArenaPlayers,
   fetchOpenLaraPlayers,
+  fetchWarThunderPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -131,6 +132,10 @@ const providers: Record<string, ServerProvider> = {
   openlara: {
     slug: "openlara",
     fetchServers: fetchOpenLaraPlayers,
+  },
+  "war-thunder": {
+    slug: "war-thunder",
+    fetchServers: fetchWarThunderPlayers,
   },
 };
 

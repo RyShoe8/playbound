@@ -2744,6 +2744,225 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "counter-strike-2": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The undisputed pinnacle of tactical first-person shooters, delivering razor-sharp sub-tick gunplay, volumetric reactive smoke physics, and pure skill-based esports competition.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Counter-Strike 2 is the most popular competitive esport on the planet for a reason: impeccable mechanical depth, perfectly balanced team economy, reactive volumetric smokes that interact with bullets and grenades, and completely free access to all maps, modes, and community workshop content with zero pay-to-win mechanics.",
+    longDescription:
+      "Counter-Strike 2 (CS2) is Valve's flagship tactical 5v5 multiplayer shooter, marking the largest technical leap in the franchise's twenty-five-year history. Built on Valve's Source 2 engine, CS2 introduces revolutionary sub-tick server architecture where movement, shooting, and utility throws are calculated at the exact millisecond of input rather than waiting for server tick intervals.\n\nMatches pit Terrorists against Counter-Terrorists across iconic bomb defusal and hostage rescue maps in the MR12 (first to 13 rounds) competitive format. Players manage an intricate in-game round economy, purchasing rifles (AK-47, M4A1-S, AWP), SMGs, pistols, and utility grenades (Smoke, Flashbang, HE Grenade, Molotov/Incendiary). In CS2, smoke grenades are dynamic volumetric objects that grow to fill physical spaces, reflect lighting, and can be temporarily cleared with grenade explosions or bullet fire.\n\nBeyond Valve's official Premier rating ladder and competitive matchmaking, Counter-Strike 2 supports an immense ecosystem of community-hosted servers, dedicated training workshops (Aim Botz, Recoil Master), surf/bhop movement courses, and professional third-party tournament hubs like FACEIT.",
+    bestFor: [
+      "Competitive FPS players seeking pure skill-based tactical gunplay and teamwork",
+      "Esports enthusiasts wanting ranked Premier matchmaking with calibrated rating leaderboards",
+      "Players who enjoy deep economy management and utility lineup coordination",
+      "Gamers wanting thousands of community workshop practice maps, surf courses, and deathmatch servers",
+    ],
+    notFor: [
+      "Casual gamers looking for hero abilities, ultimate powers, or health regeneration",
+      "Players looking for a single-player narrative campaign",
+    ],
+    comparableTo: [
+      "Valorant",
+      "Counter-Strike: Global Offensive",
+      "Tom Clancy's Rainbow Six Siege",
+      "Counter-Strike: Source",
+      "Crossfire",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Add Counter-Strike 2 to your Steam library for free and launch directly via PlayBound.",
+      },
+      {
+        platform: "linux",
+        text: "CS2 runs natively on 64-bit Linux with Vulkan rendering or on Steam Deck with gyro and trackpad aiming profiles.",
+      },
+      {
+        platform: "all",
+        text: "Subscribe to essential warmup maps like Aim Botz and Recoil Master from the Steam Workshop to calibrate your crosshair and spray control.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Counter-Strike 2 genuinely free to play?",
+        a: "Yes! Counter-Strike 2 is 100% free to download and play. All gameplay modes, maps, weapons, and community servers are completely free. Optional cosmetic weapon skins and cases do not alter weapon stats or gameplay balance.",
+      },
+      {
+        q: "What is Prime Status in CS2?",
+        a: "Prime Status is an optional one-time upgrade for Counter-Strike 2 that matches players exclusively with other Prime members in competitive matchmaking and unlocks weekly weapon skin and case drops.",
+      },
+      {
+        q: "How does Sub-Tick architecture work?",
+        a: "In CS2, sub-tick server architecture captures the exact millisecond you click to shoot, jump, or throw a grenade between server ticks, ensuring your shots register precisely where and when you aimed.",
+      },
+      {
+        q: "What makes CS2 smoke grenades different?",
+        a: "Smoke grenades in CS2 are dynamic 3D volumetric objects. They expand to naturally fill corridors, react to environmental lighting, and can be briefly blown open by HE grenade explosions or pierced with rifle fire.",
+      },
+      {
+        q: "Can I still play community servers and Workshop maps?",
+        a: "Yes! CS2 fully supports community dedicated servers (FFA Deathmatch, Retakes, Surf, KZ) and the Steam Workshop with hundreds of thousands of custom maps and training modules.",
+      },
+      {
+        q: "Does CS2 run on Linux and Steam Deck?",
+        a: "Yes! Valve provides a native Linux binary utilizing Vulkan graphics, and the game is playable on Steam Deck.",
+      },
+    ],
+  },
+  valorant: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A razor-sharp tactical shooter combining precise Counter-Strike-style gunplay with diverse agent ability synergies and 128-tick competitive servers.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Valorant masterfully blends tactical search-and-destroy fundamentals with dynamic agent abilities, offering high-fidelity 128-tick servers, robust competitive matchmaking, and unmatched anti-cheat integrity with zero gameplay-affecting paywalls.",
+    longDescription:
+      "VALORANT is Riot Games' free-to-play 5v5 tactical first-person hero shooter, engineered from the ground up for competitive esports excellence. Set on a near-future Earth, players select from a growing roster of radiant agents divided into four tactical roles: Duelists (aggressive entry fraggers), Initiators (reconnaissance and angle clearers), Controllers (smokes and vision blockers), and Sentinels (defensive anchors and trap planners).\n\nCombat revolves around intense 24-round matches (first to 13) where attackers attempt to plant the Spike and defenders fight to defuse it or eliminate the opposing squad. While agent abilities provide crucial utility—such as Sova's recon darts, Omen's teleporting smokes, and Killjoy's turret crossfires—gunplay is always lethal. Precise crosshair placement, first-bullet accuracy with rifles like the Vandal and Phantom, and recoil discipline dictate the outcome of every firefight.\n\nVALORANT runs exclusively on Riot's dedicated 128-tick server infrastructure with custom server-side hit registration, paired with the kernel-level Riot Vanguard anti-cheat system to maintain the highest competitive integrity across its ranked ladder.",
+    bestFor: [
+      "Competitive FPS players who love combining tactical gunplay with creative hero ability combos",
+      "Fans of 5v5 search-and-destroy seeking ultra-responsive 128-tick ranked matchmaking",
+      "Players who appreciate active balance patches, regular agent releases, and new map pools",
+      "Teams seeking deep strategic playbooks with coordinated smoke executions and retakes",
+    ],
+    notFor: [
+      "Casual players looking for offline bot campaigns or modded community servers",
+      "Players unable or unwilling to run kernel-level anti-cheat (Riot Vanguard on Windows)",
+      "Steam Deck / Linux native desktop users (Vanguard requires Windows TPM 2.0 / UEFI)",
+    ],
+    comparableTo: [
+      "Counter-Strike 2",
+      "Overwatch 2",
+      "Tom Clancy's Rainbow Six Siege",
+      "Apex Legends",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the official Riot Client installer from playvalorant.com or launch directly via PlayBound.",
+      },
+      {
+        platform: "windows",
+        text: "Install Riot Vanguard anti-cheat when prompted and perform a system reboot to initialize Vanguard drivers.",
+      },
+      {
+        platform: "all",
+        text: "Warm up in The Range to calibrate your mouse sensitivity, test agent abilities, and complete shooting drills.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is VALORANT completely free to play?",
+        a: "Yes! VALORANT is 100% free to play. All weapons, maps, game modes, and competitive ranks are accessible for free. Agents can be unlocked entirely through gameplay XP, and cosmetic weapon skins provide no gameplay advantages.",
+      },
+      {
+        q: "What is Riot Vanguard and why is it required?",
+        a: "Riot Vanguard is Riot's proprietary kernel-level anti-cheat system designed to prevent wallhacks, aimbots, and memory injection. It runs at system startup on Windows with Secure Boot and TPM 2.0 enabled.",
+      },
+      {
+        q: "How does the economy work in VALORANT?",
+        a: "Players earn Creds each round by winning, losing, getting kills, and planting the Spike. Creds are spent between rounds on armor, secondary/primary firearms (Vandal, Phantom, Operator), and agent ability charges.",
+      },
+      {
+        q: "What are the four agent roles?",
+        a: "Duelists (entry fraggers like Jett, Reyna, Raze), Initiators (info gatherers like Sova, Fade, Breach), Controllers (smoke deployers like Omen, Viper, Brimstone, Clove), and Sentinels (area anchors like Killjoy, Cypher, Deadlock).",
+      },
+      {
+        q: "Does VALORANT run on Steam Deck or Linux?",
+        a: "No. Because Riot Vanguard requires Windows-specific kernel drivers, UEFI Secure Boot, and TPM 2.0, VALORANT cannot run natively under Linux or SteamOS Proton.",
+      },
+      {
+        q: "Does VALORANT support controllers on PC?",
+        a: "On PC, VALORANT requires keyboard and mouse for ranked balance. Dedicated console versions are available natively on PlayStation 5 and Xbox Series X/S.",
+      },
+    ],
+  },
+  "war-thunder": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The ultimate combined-arms vehicular combat simulation, commanding thousands of painstakingly detailed tanks, fighter jets, and naval warships across colossal realistic battlefields.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "War Thunder is in a class of its own for vehicular combat depth: over 2,500 meticulously modeled military machines spanning pre-WWII biplanes to modern supersonic jets and composite-armor main battle tanks, combined with realistic ballistics and modular x-ray damage modeling.",
+    longDescription:
+      "War Thunder is the definitive free-to-play combined-arms vehicular warfare simulation developed by Gaijin Entertainment. Unlike arcade combat games with arbitrary health bars, War Thunder simulates combat through complex physics and component-level damage. Every projectile's penetration is calculated based on striking velocity, armor slope angle, and internal spalling, incapacitating vehicle crews or detonating ammo racks with radiographic X-ray kill cameras.\n\nPlayers fight across three distinct modes catering to different playstyles: Arcade Battles (accessible physics and aim indicators), Realistic Battles (authentic vehicle performance and no enemy markers), and Simulator Battles (full cockpit view with manual engine and trim management). Combined-arms battles seamlessly integrate tanks, self-propelled anti-aircraft guns, attack helicopters, and close-air-support fighter-bombers on the same map.\n\nWith ten major playable military aviation and ground research trees (USA, Germany, USSR, Great Britain, Japan, China, Italy, France, Sweden, and Israel), full Steam Deck support, and native Virtual Reality head-tracking in aircraft cockpits, War Thunder offers an unrivaled military sandbox.",
+    bestFor: [
+      "Military history and aviation enthusiasts who love deep vehicular technical accuracy",
+      "Players seeking realistic ballistics and component-based x-ray damage rather than HP bars",
+      "Gamers who want combined-arms warfare integrating tanks, strike fighters, and helicopters",
+      "VR flight simulator enthusiasts looking for dogfights with full HOTAS and joystick support",
+    ],
+    notFor: [
+      "Players looking for quick arcade run-and-gun action with instant health regeneration",
+      "Gamers unwilling to progress through extensive tech tree research tiers",
+    ],
+    comparableTo: [
+      "World of Tanks",
+      "DCS World",
+      "IL-2 Sturmovik",
+      "Arma 3",
+      "World of Warships",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install War Thunder for free via Steam or the Gaijin standalone launcher directly through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Select your preferred graphics texture pack (Standard Client for fast downloads, or Ultra HQ Textures for 4K vehicle fidelity).",
+      },
+      {
+        platform: "all",
+        text: "Configure your control scheme (Mouse Aim for keyboard/mouse, or dedicated HOTAS joystick profiles for flight simulation).",
+      },
+    ],
+    faq: [
+      {
+        q: "Is War Thunder really free to play?",
+        a: "Yes! War Thunder is 100% free to play. All standard tech trees, research vehicles, realistic and simulator game modes, and seasonal events can be played and unlocked through regular gameplay without paying.",
+      },
+      {
+        q: "How does the damage model work?",
+        a: "War Thunder does not use health bars. Damage is determined by internal armor penetration, module destruction (engine, transmission, cannon barrel, turret ring), and crew member incapacitation shown via dynamic X-ray hit cameras.",
+      },
+      {
+        q: "What is the difference between Arcade, Realistic, and Simulator modes?",
+        a: "Arcade offers boosted engine physics and target lead reticles. Realistic uses historical flight and armor characteristics without enemy radar markers. Simulator locks players into first-person cockpit views with full manual aircraft trim.",
+      },
+      {
+        q: "Does War Thunder support Virtual Reality (VR)?",
+        a: "Yes! War Thunder features native OpenXR and SteamVR support for cockpits and naval bridges, offering full 6DOF head tracking on Meta Quest, Valve Index, and HTC Vive.",
+      },
+      {
+        q: "Can I install custom user skins and sights?",
+        a: "Yes! War Thunder natively supports user-created 4K/8K camouflages, custom ballistic gunner sights, and custom sound mods downloaded from the official WT Live portal.",
+      },
+      {
+        q: "Does War Thunder support cross-play?",
+        a: "Yes! PC, PlayStation, and Xbox players all share the same matchmaking queues, squads, and multiplayer servers.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

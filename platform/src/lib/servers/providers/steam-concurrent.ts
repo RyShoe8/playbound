@@ -113,3 +113,8 @@ export function fetchOpenLaraPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(224960, { label: "OpenLara / Tomb Raider" });
 }
 
+/** War Thunder — Steam app 236390. */
+export function fetchWarThunderPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(236390, { label: "War Thunder (Steam)" });
+}
+

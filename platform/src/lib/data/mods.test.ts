@@ -49,7 +49,7 @@ describe("mod seed hygiene", () => {
     // a known host. A bare category page fails, which is what most of the
     // removed entries were.
     const deep =
-      /moddb\.com\/mods\/|mod\.io\/g\/[^/]+\/m\/|nexusmods\.com\/[^/]+\/mods\/|content\.luanti\.org\/packages\/|bananas\.openttd\.org\/package\//;
+      /moddb\.com\/mods\/|mod\.io\/g\/[^/]+\/m\/|nexusmods\.com\/[^/]+\/mods\/|content\.luanti\.org\/packages\/|bananas\.openttd\.org\/package\/|steamcommunity\.com\/sharedfiles\/filedetails|live\.warthunder\.com\/post\//;
     const bad = all.filter((m) => {
       if (m.githubRepo || m.directUrl) return false;
       if (String(m.downloadKind || "") !== "external") return false;

@@ -16,13 +16,18 @@ export async function POST(req: Request) {
   await dbConnect();
 
   const body = (await req.json().catch(() => ({}))) as { slugs?: string[] };
-  const targetSlugs = Array.isArray(body?.slugs) && body.slugs.length > 0 ? new Set(body.slugs) : null;
-  const EXCLUDED_SLUGS = new Set(["holocure"]);
+  if (!Array.isArray(body?.slugs) || body.slugs.length === 0) {
+    return NextResponse.json(
+      { error: "Explicit 'slugs' array is required. Bulk sync of the whole catalog is disabled to protect database entries." },
+      { status: 400 }
+    );
+  }
+
+  const targetSlugs = new Set(body.slugs);
+  const targetList = games.filter((g) => targetSlugs.has(g.slug));
 
   let created = 0;
   let updated = 0;
-
-  const targetList = games.filter((g) => (targetSlugs ? targetSlugs.has(g.slug) : !EXCLUDED_SLUGS.has(g.slug)));
 
   for (const seed of targetList) {
     const g = ensureDerivedGameFields(seed);
