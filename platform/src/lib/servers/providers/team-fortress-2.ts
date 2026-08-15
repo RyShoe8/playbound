@@ -14,5 +14,6 @@ export async function fetchTeamFortress2Servers(): Promise<GameServer[]> {
     appId: 440,
     label: "Team Fortress 2",
     defaultGameDir: "tf",
+    includeConcurrentTotal: true,
   });
 }
