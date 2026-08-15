@@ -5000,6 +5000,32 @@ async function confirmAndUninstallMod(slug) {
 }
 
 /** Web handoff already confirmed intent — uninstall without a second dialog. */
+/**
+ * Ask before a deep link destroys anything.
+ *
+ * Deep links are reachable by any web page: a link in a chat message is enough
+ * to invoke one. That is fine for install or play, which are additive and
+ * visible, but uninstall deletes a directory — and for plenty of games the save
+ * files live inside it. Nothing outside the app gets to make that call silently.
+ */
+async function confirmDestructiveDeepLink(title, detail) {
+  showMainWindow();
+  const parent = win && !win.isDestroyed() ? win : null;
+  const opts = {
+    type: "warning",
+    buttons: ["Cancel", "Remove"],
+    defaultId: 0,
+    cancelId: 0,
+    title: "PlayBound",
+    message: title,
+    detail,
+  };
+  const { response } = parent
+    ? await dialog.showMessageBox(parent, opts)
+    : await dialog.showMessageBox(opts);
+  return response === 1;
+}
+
 async function uninstallGameFromDeepLink(slug, editionSlug = null) {
   await ensureCatalogEntry(slug);
   const entry = catalog.find((e) => e.slug === slug);
@@ -5016,6 +5042,11 @@ async function uninstallGameFromDeepLink(slug, editionSlug = null) {
     });
     return { status: "not-installed" };
   }
+  const confirmed = await confirmDestructiveDeepLink(
+    `Uninstall ${title}?`,
+    "A link outside PlayBound asked to remove this game. Its install folder will be deleted, which may include saved games."
+  );
+  if (!confirmed) return { status: "cancelled" };
   const result = await uninstallGame(slug, editionSlug || null);
   context = null;
   afterUiReady(() => {
@@ -5047,6 +5078,11 @@ async function uninstallModFromDeepLink(slug) {
     });
     return { status: "not-installed" };
   }
+  const confirmed = await confirmDestructiveDeepLink(
+    `Remove ${title}?`,
+    "A link outside PlayBound asked to remove this mod from your install."
+  );
+  if (!confirmed) return { status: "cancelled" };
   const result = await uninstallMod(slug);
   context = null;
   afterUiReady(() => {
