@@ -108,6 +108,15 @@ module.exports = {
   win: {
     target: ["nsis", "portable"],
     artifactName: "PlayBound-Setup-${version}.${ext}",
+    /*
+     * An explicit multi-size .ico rather than letting electron-builder convert
+     * the PNG. Its conversion emits a single 256x256 entry, which Windows then
+     * downscales for the 32px taskbar and 16px window chrome — soft at best,
+     * and on some surfaces it falls back instead of using it. This carries
+     * exact 16/24/32/48/64/128/256 entries. Regenerate from assets/icon.png if
+     * the mark changes.
+     */
+    icon: "assets/icon.ico",
     ...windowsSigningOptions,
   },
 

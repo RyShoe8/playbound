@@ -853,18 +853,28 @@ body {
   background: var(--bg-card-hover);
 }
 
-/* Art, title and the game's own actions, all on one line. */
+/*
+ * Art, the game's copy, and its actions.
+ *
+ * Aligned to the top rather than centred, because the middle column grows: the
+ * edition control sits under the title rather than in the action column, where
+ * a long name like "HoloCure: Multiplayer (Experimental)" widened the third
+ * column and squeezed the game title into an ellipsis. Giving it its own line
+ * lets both read in full and makes the card taller only when there is
+ * something extra to show.
+ */
 .library-card-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 12px;
+  min-height: 76px;
 }
 
 .library-thumb {
-  width: 76px;
-  height: 50px;
+  width: 88px;
+  height: 58px;
   flex-shrink: 0;
   border-radius: 8px;
   overflow: hidden;
@@ -885,6 +895,24 @@ body {
 
 .library-card-copy {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+/* Its own line under the title, sized to its content up to the column width. */
+.library-card-copy .library-edition-select {
+  margin-top: 3px;
+  max-width: 100%;
+}
+
+.library-card-copy .library-edition-label {
+  margin-top: 2px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  max-width: 100%;
 }
 
 .library-card-title {

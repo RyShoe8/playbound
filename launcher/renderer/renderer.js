@@ -1660,7 +1660,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         // silently describe a different install than the one now selected.
         block.querySelector(".library-saves-panel")?.remove();
       });
-      actions.appendChild(picker);
+      copy.appendChild(picker);
     } else if (editions.length === 1 && isMeaningfulEditionName(editions[0].editionName)) {
       /*
        * Only when it says something. Nearly every game has exactly one
@@ -1672,7 +1672,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       label.className = "library-edition-label";
       label.title = editions[0].editionName;
       label.textContent = editions[0].editionName;
-      actions.appendChild(label);
+      copy.appendChild(label);
     }
 
     const group = document.createElement("div");

@@ -7167,6 +7167,18 @@ async function testUninstall(slug) {
   }
 }
 
+/*
+ * Windows identifies a running app by its Application User Model ID, and
+ * groups the taskbar button — and picks its icon — from that identity. With no
+ * AUMID set, Electron apps resolve to the framework rather than to us, so the
+ * taskbar shows Electron's logo and name no matter what icon the window or the
+ * executable carries. Must match electron-builder's appId and be set before
+ * any window opens.
+ */
+if (process.platform === "win32") {
+  app.setAppUserModelId("gg.playbound.launcher");
+}
+
 if (gotLock) {
   app.whenReady().then(async () => {
     if (process.argv.includes("--test-resolve")) return testResolve();
