@@ -5723,6 +5723,25 @@ ipcMain.handle("set-openciv3-display", async (_event, payload = {}) => {
 ipcMain.handle("open-folder", async (_event, dir) => {
   const target = String(dir || "");
   if (!target || !fs.existsSync(target)) throw new Error("Folder not found");
+  /*
+   * shell.openPath hands a *file* to its default handler, which for .exe, .bat
+   * or .lnk means running it. This handler takes a raw path from the renderer,
+   * so without this check any script execution in the renderer would escalate
+   * to running an arbitrary program on the host. Every caller passes an install
+   * directory, so requiring a directory costs nothing.
+   *
+   * Deliberately not constrained to allowedExecutableRoots(): players can point
+   * an install anywhere via Locate, and refusing to open a folder they chose
+   * would break a working feature to no benefit — the execution primitive is
+   * what mattered here, and it is gone.
+   */
+  let stat;
+  try {
+    stat = fs.statSync(target);
+  } catch {
+    throw new Error("Folder not found");
+  }
+  if (!stat.isDirectory()) throw new Error("Not a folder");
   await shell.openPath(target);
   return true;
 });
