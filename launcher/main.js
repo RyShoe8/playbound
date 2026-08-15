@@ -5813,12 +5813,30 @@ ipcMain.handle("get-gear-catalog", async () => {
 ipcMain.handle("get-events", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/events`, {
-      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { events: [] };
     return await res.json();
   } catch {
     return { events: [] };
+  }
+});
+ipcMain.handle("create-event", async (_event, payload) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events`, {
+      method: "POST",
+      headers: launcherApiHeaders({
+        "content-type": "application/json",
+      }),
+      body: JSON.stringify(payload || {}),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Failed to create event (HTTP ${res.status})` };
+    }
+    return { ok: true, event: data?.event };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error while creating event" };
   }
 });
 ipcMain.handle("get-free-offers", async () => {
