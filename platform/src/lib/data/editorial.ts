@@ -201,6 +201,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Completed standalone freeware arcade remake; verified v1.2 portable Windows build is preserved and fully functional.",
   },
+  mrboom: {
+    kind: "manual",
+    url: "http://mrboom.mumble.info/",
+    checkedAt: "2026-08-15",
+    note: "Open-source 8-player Bomberman party game with active Steam and standalone releases.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -4136,19 +4142,21 @@ export const editorial: Record<string, GameEditorial> = {
         "A joyful, chaotic 8-player open-source tribute to classic Bomberman, packed with classic powerups, bouncy retro tunes, and seamless couch multiplayer.",
       lastVerified: "2026-08-15",
     },
+    longDescription:
+      "Mr. Boom is an open-source 8-player Bomberman clone originally created in 1999 and modernized for modern platforms. Players drop timed explosives, blast soft blocks, collect game-changing powerups, and attempt to trap and eliminate opponents in fast, frantic grid-based arenas.\n\nGameplay follows the timeless Bomberman arcade formula: shatter destructible maze blocks to uncover critical upgrades including Extra Bombs (laying multiple explosives at once), Bigger Flames (expanding linear blast radius), Speed Skates (increasing movement speed), and Bomb Kicking/Punching gloves to launch live explosives across the arena into enemy paths.\n\nChaotic dynamic mechanics keep every round unpredictable. Ride animal mounts like hopping kangaroos that leap over obstacles, trigger remote-detonation explosives, and dodge sudden illness skull curses that reverse controls or cause frantic involuntary bomb drops. When the countdown timer reaches sudden death, falling perimeter blocks crush the grid, forcing survivors into tight, frantic center-stage duels.\n\nThe game is built from the ground up for instantaneous local couch multiplayer, supporting up to eight simultaneous players on a single PC or Steam Deck with full plug-and-play USB and Bluetooth controller recognition. Intelligent AI bots with adjustable difficulty settings fill empty slots for solo training or co-op skirmishes.\n\nWith both lightweight standalone portable releases and Steam integration, zero loading screens, battery-friendly performance, and tracker chiptune music, Mr. Boom delivers timeless party action with zero paywalls or microtransactions.",
     whyWePickedIt:
       "Mr. Boom is pure party gaming perfection: plug in up to eight gamepads on one PC, add intelligent AI bots, and enjoy instantaneous explosive mayhem without loading screens or microtransactions.",
-    longDescription:
-      "Mr. Boom is an open-source 8-player Bomberman clone originally created in 1999 and modernized for modern platforms. Players drop timed explosives, blast soft blocks, collect game-changing powerups, and attempt to corner opponents in fast, frantic grid-based arenas.\n\nFeaturing full 8-player local controller support, clever AI bots that scale in difficulty, kickable bombs, monster mounts, kangaroo jumps, and high-energy tracker music soundtracks, Mr. Boom is a staple for living room game nights and casual gaming tournaments.\n\nWith both standalone client and Steam releases, full cross-platform compatibility, and netplay support, Mr. Boom delivers timeless arcade party fun.",
     bestFor: [
       "Living room party game nights with 2 to 8 players on the same couch",
       "Fans of classic Super Bomberman, Saturn Bomberman, and arcade maze battles",
       "Steam Deck party gaming with multiple connected Bluetooth gamepads",
       "Quick, lighthearted competition suitable for players of all ages",
+      "Gamers looking for an instant-action, zero-install portable party title",
     ],
     notFor: [
       "Players seeking complex RPG leveling or lengthy story campaigns",
       "Gamers looking for slow-paced simulation games",
+      "Those wanting single-player puzzle narratives",
     ],
     comparableTo: [
       "Super Bomberman",
@@ -4156,15 +4164,20 @@ export const editorial: Record<string, GameEditorial> = {
       "Duck Game",
       "TowerFall",
       "Move or Die",
+      "Overcooked",
     ],
     installSteps: [
       {
         platform: "windows",
-        text: "Install Mr. Boom for free via Steam or the standalone release directly through PlayBound.",
+        text: "Install Mr. Boom for free via Steam or the standalone portable release directly through PlayBound.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux and Steam Deck, Mr. Boom runs natively with full controller and multi-gamepad pairing support.",
       },
       {
         platform: "all",
-        text: "Connect your controllers or configure keyboard layout.",
+        text: "Connect up to 8 gamepads or configure keyboard layouts in the options menu.",
       },
       {
         platform: "all",
@@ -4174,7 +4187,7 @@ export const editorial: Record<string, GameEditorial> = {
     faq: [
       {
         q: "Is Mr. Boom completely free?",
-        a: "Yes! Mr. Boom is 100% free and open source under the GPL-3.0 license.",
+        a: "Yes! Mr. Boom is 100% free and open source under the GPL-3.0 license with zero ads, paid DLC, or microtransactions.",
       },
       {
         q: "How many players can play simultaneously?",
@@ -4182,7 +4195,7 @@ export const editorial: Record<string, GameEditorial> = {
       },
       {
         q: "Can I play solo against AI bots?",
-        a: "Yes! You can fill any empty player slots with intelligent AI bots for solo practice.",
+        a: "Yes! You can fill any empty player slots with intelligent AI bots for solo practice or co-op team battles.",
       },
       {
         q: "What powerups are in the game?",
@@ -4190,11 +4203,11 @@ export const editorial: Record<string, GameEditorial> = {
       },
       {
         q: "Does Mr. Boom support modern game controllers?",
-        a: "Yes! Full plug-and-play support for Xbox, PlayStation, Switch Pro, and generic USB controllers.",
+        a: "Yes! Full plug-and-play support for Xbox, PlayStation, Switch Pro, Joy-Cons, and generic USB arcade sticks.",
       },
       {
         q: "Does Mr. Boom work on Steam Deck?",
-        a: "Yes! It is lightweight, battery-friendly, and perfect for portable multiplayer on Steam Deck.",
+        a: "Yes! It is lightweight, battery-friendly, and perfect for portable party multiplayer on Steam Deck with multiple Bluetooth controllers.",
       },
     ],
   },
