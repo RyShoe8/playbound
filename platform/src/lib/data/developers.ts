@@ -946,6 +946,28 @@ export const developers: Developer[] = [
     website: "https://thwargle.com",
     artHue: 40,
   },
+  {
+    slug: "xproger",
+    name: "Timur Gagiev (XProger)",
+    tagline: "Creator and lead architect of OpenLara.",
+    about:
+      "Graphics programmer and systems engineer who built OpenLara from the ground up, bringing classic Tomb Raider to modern WebAssembly, VR, and cross-platform desktop engines.",
+    founded: 2016,
+    location: "Worldwide",
+    website: "https://xproger.info",
+    artHue: 170,
+  },
+  {
+    slug: "core-design",
+    name: "Core Design",
+    tagline: "Original creators of the legendary Tomb Raider series.",
+    about:
+      "British game development studio founded in 1988, celebrated for creating Lara Croft and pioneering 3D action-adventure platforming.",
+    founded: 1988,
+    location: "Derby, United Kingdom",
+    website: "https://en.wikipedia.org/wiki/Core_Design",
+    artHue: 30,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

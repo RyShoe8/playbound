@@ -108,3 +108,8 @@ export function fetchTesArenaPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(1812290, { label: "The Elder Scrolls: Arena" });
 }
 
+/** OpenLara / Tomb Raider (1996) — Steam app 224960. */
+export function fetchOpenLaraPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(224960, { label: "OpenLara / Tomb Raider" });
+}
+

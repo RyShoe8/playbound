@@ -14,6 +14,7 @@ import { tf2Mods } from "./tf2Mods";
 import { daggerfallMods } from "./daggerfallMods";
 import { wolfensteinMods } from "./wolfensteinMods";
 import { asheronMods } from "./asheronMods";
+import { openlaraMods } from "./openlaraMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -34,6 +35,7 @@ export const mods: ModSeed[] = [
   ...daggerfallMods,
   ...wolfensteinMods,
   ...asheronMods,
+  ...openlaraMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );

@@ -96,6 +96,10 @@ const LOCATIONS = {
     },
     note: "Whole worlds directory — each world is a folder, and they grow without limit.",
   },
+  openlara: {
+    verified: "documented — OpenLara native saves directory",
+    resolve: (c) => path.join(c.appData, "OpenLara", "saves"),
+  },
 
   /* ── Documented from upstream, not yet exercised on a real install ──────
    * The entries above are proven: they are the same user-data roots the

@@ -2604,6 +2604,78 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  openlara: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "OpenLara clears all five: 100% free and open-source, actively maintained by XProger, fully browser playable with demo levels, and the definitive modern way to experience classic Tomb Raider.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "OpenLara is an astonishing technical feat of game engine preservation. Timur Gagiev (XProger) recreated the 1996 Tomb Raider engine from scratch, bringing real-time fluid water dynamics, first-person VR mode, split-screen 2-player local co-op, and high-framerate rendering directly into the web browser and desktop with zero friction.",
+    longDescription:
+      "OpenLara is the open-source modern engine reimplementation of classic Tomb Raider (Tomb Raider 1 through 5), written from the ground up by graphics programmer Timur Gagiev (XProger). Built with lightweight C/C++ and WebAssembly, OpenLara runs directly inside modern web browsers at 60+ FPS or natively on desktop operating systems (Windows, Linux, macOS).\n\nThe engine modernizes every aspect of 90s tomb raiding without losing the iconic atmosphere. It introduces real-time 3D fluid water shaders with dynamic swimming ripples, first-person camera perspective, 2-player local split-screen co-op, uncapped framerate physics interpolation, OpenXR virtual reality support, and native analog gamepad controls.\n\nOpenLara is freely playable out of the box with the original 1996 shareware levels (Caves and City of Vilcabamba). Players who own Tomb Raider 1–5 on Steam, GOG, or CD can simply drop their game data files (PHD/TR2/DAT) into the engine to enjoy the entire classic saga with modern visuals and controls.",
+    bestFor: [
+      "Fans of classic 90s action-adventure platforming and tomb exploration",
+      "Gamers who want to play Tomb Raider instantly in their browser with zero setup",
+      "Co-op enthusiasts wanting local 2-player split-screen tomb raiding",
+      "VR players looking to experience monumental ancient ruins in full 6DOF Virtual Reality",
+    ],
+    notFor: [
+      "Players expecting modern cover-shooter mechanics and cinematic quick-time events",
+      "Those who dislike precise grid-based jump timing and puzzle traps",
+    ],
+    comparableTo: [
+      "Tomb Raider I-III Remastered",
+      "Tomb Raider (1996)",
+      "Prince of Persia 3D",
+      "Indiana Jones and the Infernal Machine",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Click 'Play in Browser' on PlayBound to instantly launch OpenLara via WebAssembly with full game audio and shareware levels.",
+      },
+      {
+        platform: "windows",
+        text: "Download the native desktop client via PlayBound for 4K widescreen, VR headset support, and split-screen co-op.",
+      },
+      {
+        platform: "all",
+        text: "To play full campaigns (TR1–TR5), drag-and-drop your original game data files directly into OpenLara.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is OpenLara free to play?",
+        a: "Yes! OpenLara is 100% free and open-source under the BSD 2-Clause license. It includes the original 1996 shareware levels for free out of the box.",
+      },
+      {
+        q: "How do I play the full Tomb Raider 1, 2, or 3 campaigns?",
+        a: "If you own Tomb Raider on GOG, Steam, or original CD, simply drag your game data folder (containing LEVEL files) directly into OpenLara to play the entire game.",
+      },
+      {
+        q: "Does OpenLara support local multiplayer co-op?",
+        a: "Yes! OpenLara features a built-in 2-player split-screen mode for exploring tombs and solving puzzles together on a single screen with two controllers.",
+      },
+      {
+        q: "Can I play OpenLara in Virtual Reality (VR)?",
+        a: "Yes! The desktop build features native OpenXR support, allowing full stereoscopic 6DOF VR play on Meta Quest, Valve Index, and HTC Vive headsets.",
+      },
+      {
+        q: "What makes OpenLara different from DOSBox?",
+        a: "Unlike running Tomb Raider in DOSBox, OpenLara is a native source port featuring real-time water shaders, dynamic lighting, 144Hz+ uncapped framerates, 4K resolutions, and modern analog controller support.",
+      },
+      {
+        q: "Can I play custom community levels?",
+        a: "Yes! OpenLara can load custom levels created with the Tomb Raider Level Editor (TRLE).",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */
