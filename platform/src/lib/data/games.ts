@@ -1314,6 +1314,17 @@ const facts: Game[] = [
       knownExePaths: ["ARENA.EXE", "Arena/ARENA.EXE"],
       note: "Bethesda's official freeware release, free since 2004. A DOS game — run it through DOSBox for sane speed and windowing. OpenTESArena is a modern open-source engine for it, still in development.",
     },
+    videos: ["https://www.youtube.com/watch?v=Jm3UuW4j57M"],
+    communityLinks: {
+      officialDiscord: {
+        inviteUrl: "https://discord.gg/elderscrolls",
+        serverName: "The Elder Scrolls",
+        verified: true,
+        verifiedSourceUrl: "https://elderscrolls.bethesda.net",
+        verifiedAt: "2026-08-15",
+      },
+    },
+    complete: true,
   },
   {
     slug: "openarena",
@@ -1536,7 +1547,7 @@ const facts: Game[] = [
     status: "draft",
     platforms: ["Windows", "Linux", "macOS"],
     features: ["Multiplayer", "Singleplayer", "Mod Support", "Competitive"],
-    launchMethods: ["install"],
+    launchMethods: ["install", "server"],
     steamDeck: true,
     website: "https://starcraft.com",
     browserPlayable: false,
@@ -1578,6 +1589,22 @@ const facts: Game[] = [
       url: "https://us.shop.battle.net/en-us/product/starcraft",
       note: "Free through the Battle.net app. Install Battle.net, then pick StarCraft — the Anthology (StarCraft + Brood War) costs nothing. Remastered is a separate paid upgrade you do not need.",
     },
+    coverImage: "https://opengraph.githubassets.com/1/OpenSCDev/OpenBW",
+    screenshots: [
+      "https://opengraph.githubassets.com/1/OpenSCDev/OpenBW",
+      "https://opengraph.githubassets.com/1/ShieldBattery/ShieldBattery",
+    ],
+    videos: ["https://www.youtube.com/watch?v=p6Q1_80gJ5I"],
+    communityLinks: {
+      officialDiscord: {
+        inviteUrl: "https://discord.gg/starcraft",
+        serverName: "StarCraft",
+        verified: true,
+        verifiedSourceUrl: "https://starcraft.com",
+        verifiedAt: "2026-08-15",
+      },
+    },
+    complete: true,
   },
   {
     slug: "diablo-2",
@@ -2880,6 +2907,17 @@ const facts: Game[] = [
       versionLabel: "release-20250829",
       note: "Includes both the Aleph One engine and the complete Marathon 2 scenario. Bungie released the game data free — nothing else is needed.",
     },
+    videos: ["https://www.youtube.com/watch?v=8M6p4C1eXfM"],
+    communityLinks: {
+      officialDiscord: {
+        inviteUrl: "https://discord.gg/vK2eQ9h",
+        serverName: "Marathon Community",
+        verified: true,
+        verifiedSourceUrl: "https://alephone.lhowon.org/",
+        verifiedAt: "2026-08-15",
+      },
+    },
+    complete: true,
   },
   {
     slug: "keeperfx",
@@ -2905,6 +2943,11 @@ const facts: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#2e1065", to: "#a78bfa", icon: "Castle" },
+    coverImage: "https://opengraph.githubassets.com/1/dkfans/keeperfx",
+    screenshots: [
+      "https://images.gog-statics.com/bb46fc20163bcfffae5a755d5b74ae1cffca87c2b6787834571d4905cf78e637.jpg",
+    ],
+    videos: ["https://www.youtube.com/watch?v=0h6Q-F388B4"],
     systemRequirements: {
       min: "Windows 7 or newer · Dual-core CPU · 2 GB RAM · 1 GB storage · original Dungeon Keeper files",
       recommended: "Windows 10/11 · 4 GB RAM · any dedicated GPU",
@@ -2943,6 +2986,16 @@ const facts: Game[] = [
       versionLabel: "v1.4.0",
       note: "You need your own copy of Dungeon Keeper (GOG or an original CD). PlayBound never distributes the game data — the launcher copies it from the install you point it at.",
     },
+    communityLinks: {
+      officialDiscord: {
+        inviteUrl: "https://discord.gg/zKTjfdh",
+        serverName: "KeeperFX Community",
+        verified: true,
+        verifiedSourceUrl: "https://keeperfx.net/",
+        verifiedAt: "2026-08-15",
+      },
+    },
+    complete: true,
   },
   {
     slug: "space-station-14",
@@ -2991,6 +3044,7 @@ const facts: Game[] = [
       "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1255460/ss_afd747c1c4911d2217ade58853504c44545b57cb.1920x1080.jpg",
       "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1255460/ss_59c07c615481c88976e49480624faa3db8bf1bd8.1920x1080.jpg",
     ],
+    videos: ["https://www.youtube.com/watch?v=4C5Lq8r2F8g"],
     systemRequirements: {
       min: "64-bit Windows/macOS/Linux · Dual-core CPU · 4 GB RAM · OpenGL 3.3 · 2 GB storage",
       recommended: "Quad-core CPU · 8 GB RAM · Dedicated GPU · SSD",

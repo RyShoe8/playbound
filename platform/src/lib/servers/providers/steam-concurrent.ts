@@ -98,3 +98,13 @@ export function fetchHoloCurePlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(2420510, { label: "HoloCure" });
 }
 
+/** Classic Marathon 2 — Steam app 2398490. */
+export function fetchMarathon2Players(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2398490, { label: "Classic Marathon 2" });
+}
+
+/** The Elder Scrolls: Arena — Steam app 1812290. */
+export function fetchTesArenaPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1812290, { label: "The Elder Scrolls: Arena" });
+}
+

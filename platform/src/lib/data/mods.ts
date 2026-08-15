@@ -9,6 +9,7 @@ import { fossModsWave } from "./fossModsWave";
 import { phase2ModsRemasters } from "./phase2ModsRemasters";
 import { phase2ModsLive } from "./phase2ModsLive";
 import { verifiedModsWave } from "./verifiedModsWave";
+import { wave1Mods } from "./wave1Mods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -24,6 +25,7 @@ export const mods: ModSeed[] = [
   ...phase2ModsRemasters,
   ...phase2ModsLive,
   ...verifiedModsWave,
+  ...wave1Mods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );

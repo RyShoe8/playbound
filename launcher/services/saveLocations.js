@@ -145,6 +145,33 @@ const LOCATIONS = {
     verified: "documented — GameMaker local app data directory",
     resolve: (c) => path.join(c.localAppData || c.appData, "HoloCure"),
   },
+  alephone: {
+    verified: "documented — Aleph One user saved games directory",
+    resolve: (c) =>
+      process.platform === "darwin"
+        ? path.join(c.appData, "AlephOne", "Saved Games")
+        : path.join(c.localAppData || c.appData, "AlephOne", "Saved Games"),
+  },
+  keeperfx: {
+    verified: "documented — KeeperFX save directory inside install root",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),
+  },
+  "tes-arena": {
+    verified: "documented — Arena save games directory",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "SAVE") : null),
+  },
+  starcraft: {
+    verified: "documented — StarCraft user saves directory in Documents",
+    resolve: (c) => path.join(c.documents, "StarCraft", "Save"),
+  },
+  daggerfall: {
+    verified: "documented — Daggerfall Unity saves directory in AppData",
+    resolve: (c) => path.join(c.appData, "Daggerfall Unity", "Saves"),
+  },
+  freedoom: {
+    verified: "documented — Doom source port saves directory",
+    resolve: (c) => path.join(c.documents, "My Games", "Doom", "saves"),
+  },
 };
 
 /**
@@ -156,6 +183,8 @@ const LOCATIONS = {
  * would be a worse promise than saying nothing.
  */
 const NO_LOCAL_SAVES = {
+  "space-station-14": "Character data and game rounds are stored server-side by each station.",
+  "space-station-14-multiplayer-disaster-simulator": "Character data and game rounds are stored server-side by each station.",
   everquest: "Character data is stored server-side by Daybreak or the emulator.",
   warframe: "Account progress is server-side.",
   "villagers-and-heroes": "Account progress is server-side.",

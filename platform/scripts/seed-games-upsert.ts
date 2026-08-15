@@ -108,6 +108,7 @@ async function main() {
         videos: g.videos ?? [],
         developerName,
         launcherInstall: launcher,
+        communityLinks: g.communityLinks ?? {},
         status: forceDraft ? "draft" : createStatus,
         published: forceDraft ? false : createPublished,
         managedBy: "admin",
@@ -140,6 +141,7 @@ async function main() {
       notFor?: string[] | null;
       comparableTo?: string[] | null;
       installSteps?: unknown[] | null;
+      communityLinks?: { officialDiscord?: { inviteUrl?: string } };
       complete?: boolean;
     };
     const prevStatus = normalizeStatus(prev);
@@ -182,6 +184,7 @@ async function main() {
             notFor: g.notFor ?? [],
             comparableTo: g.comparableTo ?? [],
             qualityBar: g.qualityBar ?? null,
+            ...(g.communityLinks ? { communityLinks: g.communityLinks } : {}),
             complete: g.complete === true,
             ...(launcher && !prev.launcherInstall ? { launcherInstall: launcher } : {}),
             ...(launcher && prevStatus === "draft" ? { launcherInstall: launcher } : {}),
@@ -211,6 +214,9 @@ async function main() {
     }
     if (!prev.hardwareRequirements && g.hardwareRequirements) {
       patch.hardwareRequirements = g.hardwareRequirements;
+    }
+    if (g.communityLinks?.officialDiscord && !prev.communityLinks?.officialDiscord?.inviteUrl) {
+      patch.communityLinks = g.communityLinks;
     }
     if (!pickText(prev.longDescription, null) && g.longDescription) {
       patch.longDescription = g.longDescription;
