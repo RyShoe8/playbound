@@ -1,5 +1,5 @@
 import { AlertTriangle, ShieldCheck } from "lucide-react";
-import { isGameInstallBroken, verifiedLabel, brokenDetail } from "@/lib/recipeHealth";
+import type { Game } from "@/lib/data/types";
 
 /**
  * Says whether this game's one-click install was working the last time we
@@ -8,17 +8,31 @@ import { isGameInstallBroken, verifiedLabel, brokenDetail } from "@/lib/recipeHe
  * The whole promise of PlayBound is "click once and it works", and every
  * install points at an upstream that can move without warning — so the honest
  * thing is to check on a schedule and show the result rather than let a player
- * discover a dead download for us. When a recipe is known broken we say so up
- * front instead of letting them click into the failure.
+ * discover a dead download for us.
  *
- * Renders nothing when the last check is too old to stand behind; an unearned
- * "verified" badge is worse than no badge.
+ * Reads the same versionCheckStatus the /api/cron/catalog-versions probe
+ * writes and admin/version-issues lists, so players and admins are never
+ * looking at two different opinions of the same install.
  */
-export function InstallHealthNotice({ slug }: { slug: string }) {
-  const broken = isGameInstallBroken(slug);
 
-  if (broken) {
-    const detail = brokenDetail(`game:${slug}`);
+/** Past this, a pass is too old to stand behind and we say nothing. */
+const STALE_AFTER_HOURS = 24 * 4;
+
+function verifiedLabel(checkedAt: Date, now = new Date()): string | null {
+  const hours = (now.getTime() - checkedAt.getTime()) / 36e5;
+  if (Number.isNaN(hours) || hours < 0 || hours > STALE_AFTER_HOURS) return null;
+  if (hours < 1) return "Verified working just now";
+  if (hours < 2) return "Verified working 1 hour ago";
+  if (hours < 24) return `Verified working ${Math.floor(hours)} hours ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "Verified working yesterday" : `Verified working ${days} days ago`;
+}
+
+export function InstallHealthNotice({ game }: { game: Game }) {
+  const install = game.launcherInstall;
+  if (!install) return null;
+
+  if (install.versionCheckStatus === "broken") {
     return (
       <div
         role="status"
@@ -32,15 +46,26 @@ export function InstallHealthNotice({ slug }: { slug: string }) {
             hidden the install button rather than send you to a dead file. The links below still
             work.
           </p>
-          {detail ? (
-            <p className="mt-1 break-words font-mono text-xs text-amber-200/60">{detail}</p>
+          {install.versionCheckNote ? (
+            <p className="mt-1 break-words font-mono text-xs text-amber-200/60">
+              {install.versionCheckNote}
+            </p>
           ) : null}
         </div>
       </div>
     );
   }
 
-  const label = verifiedLabel();
+  // Anything other than a recent, explicit pass stays quiet. "skipped" in
+  // particular means the probe could not reach an answer — claiming verified
+  // off that is the unearned promise this whole feature exists to avoid.
+  if (install.versionCheckStatus !== "ok" && install.versionCheckStatus !== "updated") return null;
+  if (!install.lastVersionCheckAt) return null;
+
+  const checkedAt = new Date(install.lastVersionCheckAt);
+  if (Number.isNaN(checkedAt.getTime())) return null;
+
+  const label = verifiedLabel(checkedAt);
   if (!label) return null;
 
   return (
