@@ -56,7 +56,7 @@ export type CatalogLiveStats = {
   mostPopular: CatalogPopularGame[];
   /** Per-game playing-now for client-side compatibility scoping. */
   byGame: CatalogPopularGame[];
-  /** Non-virtual public edition counts keyed by game slug. */
+  /** Reachable (non-hidden, non-archived) edition counts keyed by game slug. */
   editionCountBySlug: Record<string, number>;
   asOf: string;
 };
@@ -144,12 +144,28 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   });
 }
 
-/** Public non-virtual edition counts per game — one aggregate instead of N list round-trips. */
+/**
+ * Reachable edition counts per game — one aggregate instead of N round-trips.
+ *
+ * Matches what a visitor can actually open, which is what the editions API
+ * serves: anything not hidden, so public and unlisted both count. Matching only
+ * "public" undercounted badly — all four Star Wars Galaxies editions are
+ * unlisted, so the game contributed nothing to a total the site was
+ * simultaneously showing all four of.
+ *
+ * Archived editions are excluded. They were counted before, which pulled the
+ * number the other way and hid how far short it fell.
+ */
 async function publicEditionCountsByGame(): Promise<Record<string, number>> {
   try {
     await dbConnect();
     const rows = await EditionModel.aggregate<{ _id: string; count: number }>([
-      { $match: { visibility: "public" } },
+      {
+        $match: {
+          visibility: { $ne: "hidden" },
+          status: { $ne: "archived" },
+        },
+      },
       { $group: { _id: "$gameSlug", count: { $sum: 1 } } },
     ]);
     const out: Record<string, number> = {};
