@@ -138,9 +138,15 @@ export function fetchWarThunderPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(236390, { label: "War Thunder" });
 }
 
-/** World of Sea Battle — Steam app 2579170. */
+/**
+ * World of Sea Battle — Steam app 2948190.
+ *
+ * Was 2579170, which is not a Steam app at all: appdetails answers
+ * success:false for it and the player-count call 404s. The game page had been
+ * showing a server error rather than a population.
+ */
 export function fetchWorldOfSeaBattlePlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(2579170, { label: "World of Sea Battle" });
+  return fetchSteamConcurrentPlayers(2948190, { label: "World of Sea Battle" });
 }
 
 
