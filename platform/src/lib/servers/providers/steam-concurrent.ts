@@ -127,11 +127,6 @@ export function fetchMarathon2Players(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(2398490, { label: "Classic Marathon 2" });
 }
 
-/** The Elder Scrolls: Arena — Steam app 1812290. */
-export function fetchTesArenaPlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(1812290, { label: "The Elder Scrolls: Arena" });
-}
-
 
 /** War Thunder — Steam app 236390. */
 export function fetchWarThunderPlayers(): Promise<GameServer[]> {
