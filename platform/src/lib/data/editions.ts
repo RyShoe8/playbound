@@ -86,6 +86,36 @@ export const editions: EditionSeed[] = [
     verificationLevel: "community_verified",
   },
   {
+    gameSlug: "daggerfall",
+    slug: "classic-dos",
+    name: "Classic DOS (1996)",
+    shortDescription: "Original 1996 DOS release of The Elder Scrolls II: Daggerfall.",
+    description:
+      "The unaltered 1996 MS-DOS release of Daggerfall as published by Bethesda Softworks. Play through DOSBox or DOSBox Staging for historical authenticity.",
+    type: "official",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://elderscrolls.bethesda.net/en/daggerfall",
+      steam: "https://store.steampowered.com/app/1812390/The_Elder_Scrolls_II_Daggerfall/",
+    },
+    installMethod: "direct_download",
+    installConfig: {
+      direct_download: {
+        url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/DFInstall.zip",
+        fileName: "DFInstall.zip",
+        fileSizeMB: 150,
+      },
+    },
+    requirements: {
+      notes: "Requires DOSBox or compatible DOS emulator.",
+    },
+    features: ["Singleplayer"],
+    tags: ["Classic", "DOS", "Retro", "RPG"],
+    aliases: ["Daggerfall DOS", "Vanilla Daggerfall"],
+    verificationLevel: "official",
+  },
+  {
     gameSlug: "everquest",
     slug: "official",
     name: "EverQuest Live",

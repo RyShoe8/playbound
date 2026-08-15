@@ -792,6 +792,72 @@ export const developers: Developer[] = [
     website: "https://github.com/TF2-Community-Mods",
     artHue: 260,
   },
+  {
+    slug: "interkarma",
+    name: "Interkarma",
+    tagline: "Lead creator and architect of Daggerfall Unity.",
+    about:
+      "Gavin 'Interkarma' Clayton created Daggerfall Unity, the landmark open-source recreation of Bethesda's 1996 classic RPG in the Unity engine.",
+    founded: 2014,
+    location: "Australia",
+    website: "https://www.dfworkshop.net",
+    artHue: 240,
+  },
+  {
+    slug: "dfworkshop",
+    name: "Daggerfall Workshop Community",
+    tagline: "The central modding and development community for DFU.",
+    about:
+      "Collaborative collective of modders, artists, and programmers expanding the Daggerfall Unity ecosystem with 3D models, shaders, and systems.",
+    founded: 2015,
+    location: "Worldwide",
+    website: "https://www.dfworkshop.net",
+    artHue: 260,
+  },
+  {
+    slug: "kingofworms",
+    name: "King of Worms",
+    tagline: "Creator of D.R.E.A.M. and premier Daggerfall artist.",
+    about:
+      "Lead artist and creator behind D.R.E.A.M., the monumental high-definition audiovisual remaster for Daggerfall Unity.",
+    founded: 2017,
+    location: "Czech Republic",
+    website: "https://www.dfworkshop.net",
+    artHue: 280,
+  },
+  {
+    slug: "jayh",
+    name: "JayH",
+    tagline: "Prolific quest designer for Daggerfall Unity.",
+    about:
+      "Creator of Quest Pack 1 and Archaeologists Guild, bringing hundreds of lore-friendly quests and factions to DFU.",
+    founded: 2018,
+    location: "Worldwide",
+    website: "https://www.dfworkshop.net",
+    artHue: 190,
+  },
+  {
+    slug: "hazelnut",
+    name: "Hazelnut",
+    tagline: "Core DFU systems engineer and immersion author.",
+    about:
+      "Core contributor to DFU engine mechanics and creator of Basic Roads, Roleplay & Realism, and Travel Options.",
+    founded: 2016,
+    location: "United Kingdom",
+    website: "https://www.dfworkshop.net",
+    artHue: 140,
+  },
+  {
+    slug: "ralzar",
+    name: "Ralzar",
+    tagline: "Gameplay systems and mechanics designer for DFU.",
+    about:
+      "Creator of Hotkey Casting, LevelUp Adjuster, ReadTheRooms, and numerous quality-of-life additions for DFU.",
+    founded: 2019,
+    location: "Norway",
+    website: "https://www.dfworkshop.net",
+    artHue: 210,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

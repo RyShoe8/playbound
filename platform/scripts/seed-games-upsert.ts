@@ -15,7 +15,6 @@ loadEnvConfig(process.cwd());
 export const DRAFT_ON_CREATE = new Set([
   "freedoom",
   "lincity-ng",
-  "daggerfall",
   "pixreveal",
   "gamebuddies-io",
   "star-wars-galaxies",
