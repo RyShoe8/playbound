@@ -1290,6 +1290,22 @@ const facts: Game[] = [
         enteredBy: "free-text-parser",
       },
     },
+    launcherInstall: {
+      enabled: true,
+      /*
+       * Bethesda's own freeware package, hosted on their CDN since the 2004
+       * tenth-anniversary release. Verified reachable and 9.1 MB. This is the
+       * self-installing DOS build; it bundles what it needs to run, which is
+       * why the download is far smaller than the installed footprint.
+       */
+      kind: "direct-zip",
+      url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/Arena106Setup.zip",
+      fileName: "Arena106Setup.zip",
+      versionLabel: "1.06 (Bethesda freeware release)",
+      exeHint: "ARENA.EXE",
+      knownExePaths: ["ARENA.EXE", "Arena/ARENA.EXE"],
+      note: "Bethesda's official freeware release, free since 2004. A DOS game — run it through DOSBox for sane speed and windowing. OpenTESArena is a modern open-source engine for it, still in development.",
+    },
   },
   {
     slug: "openarena",
@@ -1494,14 +1510,19 @@ const facts: Game[] = [
   {
     slug: "starcraft",
     title: "StarCraft",
-    tagline: "The RTS that defined competitive play — Remastered on Battle.net.",
+    tagline: "The RTS that defined competitive play, given away free by Blizzard.",
     description:
-      "StarCraft and Brood War remain free-to-play via Battle.net Remastered. PlayBound catalogs the franchise for discoverability and points at official Blizzard downloads plus map and campaign community hubs.",
+      "Blizzard made the original StarCraft and its Brood War expansion free in 2017 with patch 1.18, playable on modern Windows and macOS through the Battle.net app. Both campaigns, all three races and online multiplayer, at no cost. Remastered is a separate paid upgrade.",
     developerSlug: "blizzard",
     genres: ["Strategy"],
     tags: ["RTS", "Competitive", "Classic", "Esports"],
-    aliases: ["SC", "Brood War", "StarCraft Remastered"],
-    license: "Free to Play (Remastered)",
+    aliases: ["SC", "Brood War", "StarCraft Anthology", "StarCraft Remastered"],
+    /*
+     * The free product is the Anthology — StarCraft plus Brood War, patch 1.18,
+     * March 2017. Remastered is a paid upgrade and was previously recorded here
+     * as the free one, which got the catalog's central claim backwards.
+     */
+    license: "Free (StarCraft Anthology) · Remastered sold separately",
     releaseYear: 1998,
     sizeMB: 8000,
     status: "draft",
@@ -1535,6 +1556,19 @@ const facts: Game[] = [
         source: "unverified",
         enteredBy: "free-text-parser",
       },
+    },
+    launcherInstall: {
+      enabled: true,
+      /*
+       * External rather than a direct download. The Anthology is free but is
+       * distributed only through the Battle.net client, which handles its own
+       * account gate and patching — there is no standalone installer for us to
+       * fetch, and pretending otherwise would produce a one-click button that
+       * cannot work.
+       */
+      kind: "external",
+      url: "https://us.shop.battle.net/en-us/product/starcraft",
+      note: "Free through the Battle.net app. Install Battle.net, then pick StarCraft — the Anthology (StarCraft + Brood War) costs nothing. Remastered is a separate paid upgrade you do not need.",
     },
   },
   {
