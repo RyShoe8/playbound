@@ -15,12 +15,10 @@ loadEnvConfig(process.cwd());
 export const DRAFT_ON_CREATE = new Set([
   "freedoom",
   "lincity-ng",
-  "tes-arena",
   "daggerfall",
   "pixreveal",
   "gamebuddies-io",
   "star-wars-galaxies",
-  "starcraft",
   "diablo-2",
   "wolfenstein",
   "war-thunder",
@@ -201,7 +199,21 @@ async function main() {
     }
 
     // Published: fill empty media/editorial gaps — never demote or replace CMS text.
-    const patch: Record<string, unknown> = {};
+    if (g.features?.length) {
+      patch.features = g.features;
+    }
+    if (g.aliases?.length) {
+      patch.aliases = g.aliases;
+    }
+    if (g.qualityBar) {
+      patch.qualityBar = g.qualityBar;
+    }
+    if (launcher) {
+      patch.launcherInstall = launcher;
+    }
+    if (g.communityLinks?.officialDiscord?.inviteUrl) {
+      patch.communityLinks = g.communityLinks;
+    }
     if (!prev.coverImage && g.coverImage) patch.coverImage = g.coverImage;
     if (!(prev.screenshots?.length) && g.screenshots?.length) {
       patch.screenshots = g.screenshots;
@@ -209,46 +221,31 @@ async function main() {
     if (!(prev.videos?.length) && g.videos?.length) {
       patch.videos = g.videos;
     }
-    if (!prev.launcherInstall && launcher) {
-      patch.launcherInstall = launcher;
-    }
-    if (!prev.hardwareRequirements && g.hardwareRequirements) {
+    if (g.hardwareRequirements) {
       patch.hardwareRequirements = g.hardwareRequirements;
     }
-    if (g.communityLinks?.officialDiscord && !prev.communityLinks?.officialDiscord?.inviteUrl) {
-      patch.communityLinks = g.communityLinks;
-    }
-    if (!pickText(prev.longDescription, null) && g.longDescription) {
+    if (g.longDescription) {
       patch.longDescription = g.longDescription;
     }
-    if (!pickText(prev.whyWePickedIt, null) && g.whyWePickedIt) {
+    if (g.whyWePickedIt) {
       patch.whyWePickedIt = g.whyWePickedIt;
     }
-    if (
-      !(typeof prev.qualityBar === "object" &&
-        prev.qualityBar &&
-        "verdict" in prev.qualityBar &&
-        String((prev.qualityBar as { verdict?: string }).verdict || "").trim()) &&
-      g.qualityBar
-    ) {
-      patch.qualityBar = g.qualityBar;
-    }
-    if (!(prev.faq?.length) && g.faq?.length) {
+    if (g.faq?.length) {
       patch.faq = g.faq;
     }
-    if (!(prev.bestFor?.length) && g.bestFor?.length) {
+    if (g.bestFor?.length) {
       patch.bestFor = g.bestFor;
     }
-    if (!(prev.notFor?.length) && g.notFor?.length) {
+    if (g.notFor?.length) {
       patch.notFor = g.notFor;
     }
-    if (!(prev.comparableTo?.length) && g.comparableTo?.length) {
+    if (g.comparableTo?.length) {
       patch.comparableTo = g.comparableTo;
     }
-    if (!(prev.installSteps?.length) && g.installSteps?.length) {
+    if (g.installSteps?.length) {
       patch.installSteps = g.installSteps;
     }
-    if (prev.complete !== true && g.complete === true) {
+    if (g.complete === true) {
       patch.complete = true;
     }
     if (Object.keys(patch).length) {
