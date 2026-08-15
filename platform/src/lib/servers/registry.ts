@@ -15,6 +15,7 @@ import { fetchWolfensteinEnemyTerritoryServers } from "./providers/wolfenstein-e
 import { fetchAsheronsCallServers } from "./providers/asherons-call";
 import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
 import { fetchOldSchoolRuneScapeServers } from "./providers/old-school-runescape";
+import { fetchStarWarsGalaxiesServers } from "./providers/star-wars-galaxies";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
@@ -155,6 +156,14 @@ const providers: Record<string, ServerProvider> = {
     slug: "swtor",
     fetchServers: fetchSwtorPlayers,
   },
+  /*
+   * Only SWG Legends of the four shards publishes a live count; see the
+   * provider for what the other three offer instead.
+   */
+  "star-wars-galaxies": {
+    slug: "star-wars-galaxies",
+    fetchServers: fetchStarWarsGalaxiesServers,
+  },
   mrboom: {
     slug: "mrboom",
     fetchServers: fetchMrBoomPlayers,
@@ -172,7 +181,9 @@ const providers: Record<string, ServerProvider> = {
 /**
  * Draft / catalog multiplayer titles without an honest public master or status API
  * in this pass (do not invent lobby rows). Revisit when a stable source exists:
- * - star-wars-galaxies (edition-specific emulators; EQ-style pop later)
+ * - swg Infinity, Restoration and Beyond shards (Infinity advertises a weekly
+ *   figure rather than a concurrent one, Restoration 403s automated requests,
+ *   Beyond publishes nothing; SWG Legends is wired)
  * - diablo-2 (Battle.net / closed)
  * - world-of-tanks, apex-legends, hearthstone, genshin-impact, dota-2,
  *   league-of-legends, valorant, quake-champions (matchmaking only; Riot and
