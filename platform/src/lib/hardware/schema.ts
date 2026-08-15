@@ -5,6 +5,30 @@ export const performanceTierSchema = z.enum(PERFORMANCE_TIERS);
 export const graphicsApiSchema = z.enum(GRAPHICS_APIS);
 export const requirementSourceSchema = z.enum(REQUIREMENT_SOURCES);
 
+/**
+ * A hardware figure, or none.
+ *
+ * Zero is allowed because these are requirements, and "0" is a real answer:
+ * a browser game needs no disk. Requiring a positive number meant a game that
+ * genuinely needs nothing could not be saved without inventing a 1MB
+ * requirement — a small lie in a field the compatibility checker reads.
+ *
+ * Null is accepted and normalised away so that documents already storing null
+ * for an unset figure do not fail validation on an unrelated edit.
+ *
+ * Falsy values are skipped by the compatibility checker, so 0 reads as "no
+ * constraint" rather than "needs zero and therefore always passes".
+ */
+function optionalHardwareAmount(max: number) {
+  // preprocess rather than transform: transform makes the output key required
+  // (as `number | undefined`), which no longer matches the optional field on
+  // RequirementSpec and breaks every consumer of the inferred type.
+  return z.preprocess(
+    (v) => (v === null || v === "" ? undefined : v),
+    z.number().int().nonnegative().max(max).optional()
+  );
+}
+
 export const requirementSpecSchema = z
   .object({
     os: z.array(z.enum(["windows", "macos", "linux"])).optional(),
@@ -13,9 +37,9 @@ export const requirementSpecSchema = z
     cpuText: z.string().max(200).optional(),
     gpuTier: performanceTierSchema.optional(),
     gpuText: z.string().max(200).optional(),
-    ramMB: z.number().int().positive().max(1_000_000).optional(),
-    vramMB: z.number().int().positive().max(1_000_000).optional(),
-    storageMB: z.number().int().positive().max(100_000_000).optional(),
+    ramMB: optionalHardwareAmount(1_000_000),
+    vramMB: optionalHardwareAmount(1_000_000),
+    storageMB: optionalHardwareAmount(100_000_000),
     apis: z.array(graphicsApiSchema).optional(),
     notes: z.string().max(500).optional(),
   })
