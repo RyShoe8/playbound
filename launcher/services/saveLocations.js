@@ -156,6 +156,13 @@ const LOCATIONS = {
         ? path.join(c.appData, "AlephOne", "Saved Games")
         : path.join(c.localAppData || c.appData, "AlephOne", "Saved Games"),
   },
+  "marathon-2": {
+    verified: "documented — Aleph One user saved games directory",
+    resolve: (c) =>
+      process.platform === "darwin"
+        ? path.join(c.appData, "AlephOne", "Saved Games")
+        : path.join(c.localAppData || c.appData, "AlephOne", "Saved Games"),
+  },
   keeperfx: {
     verified: "documented — KeeperFX save directory inside install root",
     resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),

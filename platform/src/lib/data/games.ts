@@ -3066,12 +3066,7 @@ const facts: Game[] = [
     },
   },
   {
-    /*
-     * Slug is the engine name rather than the game's. marathon-2 would serve
-     * search better — nobody looks for "alephone" — but renaming is a CMS edit,
-     * not a seed edit, since seed matches on slug.
-     */
-    slug: "alephone",
+    slug: "marathon-2",
     title: "Marathon 2: Durandal",
     tagline: "Bungie's 1995 shooter, given away free and still worth playing.",
     description:
@@ -3079,7 +3074,7 @@ const facts: Game[] = [
     developerSlug: "aleph-one-team",
     genres: ["FPS", "Shooter", "Action"],
     tags: ["Classic", "Story Rich", "Open Source", "Retro", "Singleplayer"],
-    aliases: ["Marathon", "Marathon 2", "Durandal", "Aleph One", "Marathon Durandal"],
+    aliases: ["Marathon", "Marathon 2", "Durandal", "Aleph One", "Marathon Durandal", "alephone"],
     license: "Open Source (GPL-3.0) · game data free from Bungie",
     releaseYear: 1995,
     sizeMB: 180,

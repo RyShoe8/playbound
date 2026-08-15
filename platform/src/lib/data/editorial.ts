@@ -466,6 +466,74 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "marathon-2": {
+    qualityBar: clearsAll(
+      "Bungie's cerebral sci-fi masterpiece, delivering razor-sharp terminal lore, chilling rogue AI philosophy from Durandal, and dual-shotgun combat that shaped the DNA of modern first-person shooters."
+    ),
+    maintenanceCheck: { kind: "github", repo: "Aleph-One-Marathon/alephone" },
+    longDescription:
+      "Before Halo, Bungie made Marathon — and Marathon 2 is the one people still argue about.\n\nReleased in 1995 for the Mac, it arrived while Doom was defining what a shooter was, and quietly disagreed with most of it. Doom gave you a wordless marine and a body count. Marathon 2 gave you terminals: screens scattered through every level carrying thousands of words of story from an artificial intelligence called Durandal, who is manipulative, funny, self-aware and slowly going insane. You are working for him. It is not clear you should be.\n\nThe design disagrees in mechanical ways too. You can swim. You can look up and down properly. Levels have objectives beyond reaching the exit — rescuing trapped crew, activating systems, exploring backwards — and they expect you to read the terminals to know what you are doing. Enemies coordinate. Ammunition is scarce enough to matter. It is slower and more deliberate than its contemporaries, and it rewards patience in a way 1995 shooters generally did not.\n\nAleph One is what keeps it alive. Bungie released the engine source in 2000, and the project has maintained it ever since: modern resolutions and widescreen, OpenGL rendering, mouselook, gamepad support, internet multiplayer and native Windows, macOS and Linux builds. Bungie also allowed the complete game data to be distributed free, so the download is the whole thing — engine and game together, no purchase, no store, no hunting for files.\n\nThe honest caveat is that this is a genuinely old game underneath. The textures are low-resolution, enemies are sprites, and level geometry can be maze-like in a way modern shooters trained you out of. If you need a map that holds your hand, this will frustrate you. If you want to see where a lot of modern sci-fi shooter writing actually came from, it is right here, complete, for free.",
+    whyWePickedIt:
+      "Most free classics are free because nobody wanted them. Marathon 2 is free because Bungie chose to release it, and it happens to contain some of the best writing in the genre's history — an AI narrator that games spent the next twenty years imitating badly. That it now installs in one click with mouselook and widescreen, rather than requiring an emulator and a prayer, is the entire reason preservation projects matter.",
+    bestFor: [
+      "Anyone interested in where Halo, and Bungie's writing, actually came from",
+      "Players who like story delivered through reading and exploration",
+      "Deliberate, resource-conscious shooting rather than constant action",
+      "Very low-spec machines — it runs on essentially anything",
+      "Mac and Linux players, who get first-class native builds",
+    ],
+    notFor: [
+      "Players who want modern visuals; this is 1995 sprite art at heart",
+      "Anyone who dislikes maze-like level design or backtracking",
+      "Those who skip text — most of the story lives in optional terminals",
+      "People looking for a populated multiplayer scene rather than a campaign",
+    ],
+    comparableTo: ["Halo", "Doom", "System Shock", "Quake", "Duke Nukem 3D"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install through PlayBound, or download the Marathon 2 package from the Aleph One site. The download includes both the engine and the full game.",
+      },
+      {
+        platform: "all",
+        text: "Turn on mouselook in Preferences → Controls if it is not already enabled. The default control scheme dates from 1995 and is not what you want.",
+      },
+      {
+        platform: "all",
+        text: "Read the terminals. They are not optional flavour — objectives and story are both delivered through them.",
+      },
+      {
+        platform: "macos",
+        text: "The Mac build is unsigned, so the first launch needs a right-click and Open rather than a double-click.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Marathon 2 really free?",
+        a: "Yes. Bungie permitted the Marathon trilogy's game data to be distributed at no cost, and the Aleph One engine that runs it is open source under the GPL. The download includes both — there is nothing to buy and no original copy required.",
+      },
+      {
+        q: "What is Aleph One?",
+        a: "Aleph One is the open-source continuation of Bungie's Marathon 2 engine, maintained since Bungie released the source code in 2000. It adds modern resolutions, mouselook, OpenGL rendering and network play, and is what makes the games run on current machines.",
+      },
+      {
+        q: "Should I play Marathon 1 first?",
+        a: "Not necessarily. Marathon 2 is the usual starting point — it is the strongest of the three and its story stands on its own. The first game is also free if you want the full arc afterwards.",
+      },
+      {
+        q: "Does it work on modern Windows, Mac and Linux?",
+        a: "Yes, with native builds for all three, including Apple Silicon. There is no emulator or compatibility layer involved.",
+      },
+      {
+        q: "Is there still multiplayer?",
+        a: "Yes, Aleph One supports internet and LAN play, though the population is small and organised through community channels rather than matchmaking. Treat this as a single-player game with multiplayer available, not the other way round.",
+      },
+      {
+        q: "Can I play it on Steam Deck?",
+        a: "Yes. It is extremely light on hardware and works well with a gamepad configuration, though a mouse remains the better way to aim.",
+      },
+    ],
+  },
 
   keeperfx: {
     qualityBar: {
