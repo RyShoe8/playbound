@@ -468,9 +468,17 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   "league-of-legends": {
     enabled: true,
-    kind: "external",
-    url: "https://www.leagueoflegends.com",
-    note: "Riot Client only — do not use unofficial clients.",
+    kind: "direct-installer",
+    url: "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.na.exe",
+    fileName: "Install-League-of-Legends-NA.exe",
+    registryTitles: ["League of Legends", "Riot Client"],
+    knownExePaths: [
+      "C:\\Riot Games\\League of Legends\\LeagueClient.exe",
+      "C:\\Riot Games\\Riot Client\\RiotClientServices.exe",
+      "%PROGRAMFILES%\\Riot Games\\League of Legends\\LeagueClient.exe",
+    ],
+    exeHint: "LeagueClient|RiotClient",
+    note: "Official Riot standalone installer for League of Legends and Riot Client.",
   },
   valorant: {
     enabled: true,
