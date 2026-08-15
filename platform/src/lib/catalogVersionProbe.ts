@@ -273,6 +273,30 @@ export async function probeGameInstall(install: {
     }
     return reach;
   }
+  /*
+   * Fall back on what the recipe can actually do rather than on what it calls
+   * itself. locate-then-zip and itch-zip both landed on the old "unhandled
+   * kind" line and were skipped in silence, which read in admin as "this game
+   * has no version" when it really meant "nobody ever looked".
+   *
+   * A locate-then-zip base game is supplied by the player, but the overlay we
+   * put on top of it is ordinary software with ordinary releases — KeeperFX
+   * publishes them at dkfans/keeperfx — and that is worth tracking.
+   *
+   * Only the version is learned here. gameProbePatchFields rewrites url,
+   * fileName, versionLabel and assetPattern for direct* recipes and auto-heals
+   * alone, so neither of these kinds can have its recipe edited by this path.
+   */
+  if (install.repo) {
+    return probeGithubZip({
+      repo: install.repo,
+      assetPattern: install.assetPattern,
+      currentVersion: install.versionLabel,
+    });
+  }
+  if (install.url) {
+    return probeDirectUrl(install.url, install.versionLabel);
+  }
   return { status: "skipped", detectedVersion: install.versionLabel || null, note: `Unhandled kind ${kind}` };
 }
 
