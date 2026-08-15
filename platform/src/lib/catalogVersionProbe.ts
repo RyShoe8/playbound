@@ -200,9 +200,18 @@ export async function probeDirectUrl(url: string, currentVersion?: string | null
       };
     }
 
-    // 429 and 5xx mean "ask again later". Marking them broken would pull a
-    // working game's install button over someone else's bad afternoon.
-    if (last.status === 429 || (last.status ?? 0) >= 500) {
+    /*
+     * 429 and 5xx mean "ask again later". Marking them broken would pull a
+     * working game's install button over someone else's bad afternoon.
+     *
+     * 406 and 403 belong with them. They are refusals of the caller, not
+     * statements about the file: GitLab answers 406 to requests from cloud
+     * egress while serving the identical URL to a browser, which is what put
+     * the FlightGear Blacklist add-on in the broken list while it downloaded
+     * fine for every actual player. A file that is gone answers 404.
+     */
+    const status = last.status ?? 0;
+    if (status === 429 || status === 406 || status === 403 || status >= 500) {
       return { status: "skipped", detectedVersion: currentVersion || null, note: last.detail };
     }
 
