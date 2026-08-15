@@ -207,6 +207,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Open-source 8-player Bomberman party game with active Steam and standalone releases.",
   },
+  triplea: {
+    kind: "manual",
+    url: "https://triplea-game.org/",
+    checkedAt: "2026-08-15",
+    note: "Actively maintained open-source turn-based strategy wargame engine with 400+ community maps and active online lobby.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -2791,6 +2797,86 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "How does movement in Quake Champions work?",
         a: "Movement relies on classic Quake physics: hold forward and jump, then alternate strafe keys and smooth mouse turns to build momentum (strafe jumping). Different Champions also feature unique movement traits such as Slash's crouch slide, Visor's uncapped speed, and Anarki's air control.",
+      },
+    ],
+  },
+  triplea: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The ultimate open-source turn-based grand strategy wargame engine, delivering hundreds of historical scenarios, deep economy logistics, and seamless multiplayer.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "TripleA is the definitive free, open-source turn-based grand strategy wargame engine. Originally created to simulate the deep tactical mechanics of classic tabletop board games like Axis & Allies, TripleA has grown into a versatile, community-driven simulation platform featuring hundreds of historical, geopolitical, and fantasy conflict scenarios.\n\nGameplay unfolds across massive theater maps where players command global factions—such as the Allied and Axis powers in World War II. Each turn demands comprehensive strategic management: allocating Industrial Production Certificates (IPCs) to purchase specialized military assets (infantry, artillery, tanks, tactical bombers, battleships, submarines, and aircraft carriers), mobilizing industrial centers, and orchestrating multi-front amphibious and airborne invasions.\n\nCombat uses a combined-arms dice simulation engine where unit stats, defending terrain, anti-aircraft flak, shore bombardments, and tactical synergy determine battle outcomes. Artillery boosts infantry attack power, fighter squadrons provide carrier defense, and destroyer flotillas detect submerged enemy submarines, rewarding historical army compositions over brute numerical force.\n\nAt the core of TripleA's enduring appeal is its built-in in-game map downloader, granting instant one-click access to over 400 community-crafted scenarios. Re-fight World War II on the colossal Global 1940 map, experience trench warfare in The Great War 1914, command Napoleonic armies across 19th-century Europe, relive the Punic Wars between Rome and Carthage, or lead the armies of Middle-Earth in the War of the Ring.\n\nTripleA supports flexible multiplayer formats, including an active online community lobby, local hotseat couch play, direct IP networking, Play-by-Email (PBEM), and intelligent AI bots (Fast AI, Hard AI, Pro AI) for solo commanding. 100% free and open-source under the GPL-3.0 license with zero ads or microtransactions.",
+    whyWePickedIt:
+      "TripleA is the gold standard of open-source turn-based grand strategy. With its rich Axis & Allies-inspired rule system, hundreds of free downloadable historical scenarios, and active multiplayer lobby, it offers infinite tactical replayability for wargaming fans.",
+    bestFor: [
+      "Fans of Axis & Allies, Risk, and classic tabletop grand strategy board games",
+      "Turn-based wargamers who enjoy macro-economic resource management (IPCs) and combined-arms military logistics",
+      "History enthusiasts wanting hundreds of scenarios from Ancient Rome to WWI, WWII, and the Cold War",
+      "Multiplayer groups wanting hotseat, online lobby, or asynchronous Play-by-Email (PBEM) matches",
+      "Linux, macOS, and Windows gamers looking for a lightweight, cross-platform strategy engine",
+    ],
+    notFor: [
+      "Gamers looking for fast-paced real-time strategy (RTS) or action combat",
+      "Players wanting 3D cinematic animations rather than tactical 2D map board representations",
+      "Those who dislike dice-based combat probability and attrition calculations",
+    ],
+    comparableTo: [
+      "Axis & Allies 1942 Online",
+      "Hearts of Iron IV",
+      "Strategic Command: World at War",
+      "Gary Grigsby's War in the East",
+      "Freeciv",
+      "The Battle for Wesnoth",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and run the official 64-bit Windows installer from PlayBound or the TripleA website. The installer includes bundled Java for zero-configuration setup.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux, run the native shell installer or extract the portable tarball with openjdk-11 or higher.",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, open the native .dmg package and drag TripleA to your Applications folder.",
+      },
+      {
+        platform: "all",
+        text: "Launch TripleA and click 'Download Maps' from the main menu to browse and install over 400 community scenarios including World War II Global 1940.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is TripleA completely free?",
+        a: "Yes! TripleA is 100% free and open source under the GPL-3.0 license. All 400+ community maps, rule engines, and multiplayer features are completely free forever.",
+      },
+      {
+        q: "How do I download more maps in TripleA?",
+        a: "From the TripleA main menu, simply click 'Download Maps'. The in-game downloader lets you filter, preview, and download hundreds of community-created historical and fantasy scenarios with one click.",
+      },
+      {
+        q: "Can I play multiplayer with friends?",
+        a: "Yes! TripleA supports four multiplayer methods: the built-in Official Online Lobby (finding public matches worldwide), Direct Connect (LAN or IP), Local Hotseat (passing the keyboard/mouse on one PC), and Play-by-Email (PBEM) / Play-by-Forum.",
+      },
+      {
+        q: "Does TripleA require Java to be installed?",
+        a: "The official Windows and macOS installers come bundled with an integrated Java Runtime Environment (JRE), so you do not need to install Java manually.",
+      },
+      {
+        q: "Can I play solo against the computer?",
+        a: "Yes! TripleA includes multiple AI bot engines—including Fast AI, Hard AI, and Pro AI—capable of managing complex multi-nation economies, naval operations, and combat maneuvers.",
+      },
+      {
+        q: "What is WWII Global 1940 in TripleA?",
+        a: "World War II Global 1940 is one of the most popular community scenarios in TripleA, uniting the European and Pacific theaters into a massive worldwide war with accurate starting orders of battle, national objectives, and political rules.",
       },
     ],
   },
