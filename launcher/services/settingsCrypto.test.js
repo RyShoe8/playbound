@@ -1,32 +1,16 @@
 /*
- * Encryption-at-rest for the launcher token.
+ * Encryption-at-rest for the launcher token, plus API-base resolution.
  *
- * loadSettings/saveSettings live in main.js, which cannot be required outside
- * Electron, so the two functions are lifted out of the real source and run
- * against a stubbed keyring. That keeps the test honest — it exercises the
- * shipped code rather than a re-typed copy of it — at the cost of depending on
- * their shape, which the extract() guard below reports clearly if it changes.
+ * settings.js takes its paths and its keyring as injected dependencies, so this
+ * drives the real module directly with a stubbed safeStorage — no Electron and
+ * no reaching into main.js.
  *
  * Run with: npm run test:settings
  */
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-
-const MAIN = path.join(__dirname, "..", "main.js");
-const src = fs.readFileSync(MAIN, "utf8").replace(/\r\n/g, "\n");
-
-function extract(name) {
-  const start = src.indexOf(`function ${name}(`);
-  if (start < 0) {
-    throw new Error(`main.js no longer defines function ${name}() — update this test.`);
-  }
-  const end = src.indexOf("\n}\n", start);
-  if (end < 0) throw new Error(`could not find the end of ${name}() in main.js`);
-  return src.slice(start, end + 2);
-}
-
-const body = [extract("encryptionAvailable"), extract("loadSettings"), extract("saveSettings")].join("\n");
+const { createSettings } = require("./settings");
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pb-settings-"));
 const SETTINGS_FILE = path.join(tmp, "settings.json");
@@ -47,15 +31,14 @@ function makeStorage(available) {
   };
 }
 
-function build(available) {
-  const factory = new Function(
-    "fs",
-    "path",
-    "SETTINGS_FILE",
-    "safeStorage",
-    `${body}\nreturn { loadSettings, saveSettings };`
-  );
-  return factory(fs, path, SETTINGS_FILE, makeStorage(available));
+function build(available, { isAllowedApiBase = () => true } = {}) {
+  return createSettings({
+    settingsFile: SETTINGS_FILE,
+    defaultGamesDir: path.join(tmp, "Games"),
+    defaultApiBase: "https://playbound.club",
+    isAllowedApiBase,
+    safeStorage: makeStorage(available),
+  });
 }
 
 const results = [];
@@ -119,6 +102,37 @@ const raw = () => JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
     JSON.stringify({ launcherTokenEnc: Buffer.from("garbage").toString("base64") })
   );
   check("undecryptable token yields signed-out", !build(true).loadSettings().launcherToken);
+}
+
+// A corrupt or empty settings file must read as empty, not throw.
+{
+  fs.writeFileSync(SETTINGS_FILE, "{ not json");
+  check("corrupt settings file yields {}", Object.keys(build(true).loadSettings()).length === 0);
+  fs.writeFileSync(SETTINGS_FILE, "\"a string\"");
+  check("non-object settings file yields {}", Object.keys(build(true).loadSettings()).length === 0);
+}
+
+/*
+ * getApiBase re-checks the allowlist on every read. settings.json is a file on
+ * disk, so a stored origin that was valid when written is not evidence it still
+ * passes — these two pin that it is re-tested rather than trusted.
+ */
+{
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ apiBase: "https://evil.example" }));
+  const rejecting = build(true, { isAllowedApiBase: (u) => u === "https://playbound.club" });
+  check("disallowed stored apiBase falls back to the default", rejecting.getApiBase() === "https://playbound.club");
+
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ apiBase: "https://playbound.club/" }));
+  const accepting = build(true);
+  check("allowed stored apiBase is used, trailing slash trimmed", accepting.getApiBase() === "https://playbound.club");
+}
+
+// gamesRoot falls back when unset or blank.
+{
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ gamesDir: "   " }));
+  check("blank gamesDir falls back to the default", build(true).gamesRoot() === path.join(tmp, "Games"));
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ gamesDir: "D:\\Elsewhere" }));
+  check("configured gamesDir is honoured", build(true).gamesRoot() === "D:\\Elsewhere");
 }
 
 let failed = 0;
