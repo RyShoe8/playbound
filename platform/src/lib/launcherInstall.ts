@@ -41,6 +41,15 @@ export type LauncherInstall = {
   fileName?: string | null;
   versionLabel?: string | null;
   knownExePaths?: string[];
+  /**
+   * MD5 of the downloaded archive, verified before install.
+   *
+   * The launcher has always supported this — it reads the field and calls
+   * verifyChecksumMd5 — but the type never declared it, so no recipe could set
+   * one without a type error and nothing in the catalog was ever verified.
+   * Worth setting wherever the host publishes a hash.
+   */
+  checksumMd5?: string | null;
   /** Extra DisplayName strings to match in Windows uninstall registry. */
   registryTitles?: string[];
   /** Expanded game/content root for mods (installer games where exe is nested). */
@@ -78,6 +87,7 @@ export type LauncherCatalogEntry = {
   fileName?: string;
   versionLabel?: string;
   knownExePaths?: string[];
+  checksumMd5?: string;
   registryTitles?: string[];
   installRoot?: string;
   connectArgs?: string[];
@@ -266,6 +276,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.fileName) entry.fileName = li.fileName;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
+  if (li.checksumMd5) entry.checksumMd5 = li.checksumMd5;
   if (li.registryTitles?.length) entry.registryTitles = li.registryTitles;
   if (li.installRoot) entry.installRoot = li.installRoot;
   if (li.connectArgs?.length) entry.connectArgs = li.connectArgs;
