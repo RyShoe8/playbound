@@ -9,7 +9,6 @@
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "seed:games": "tsx scripts/seed-games.ts",
-    "seed:games-upsert": "tsx scripts/seed-games-upsert.ts",
     "fix:game-media": "tsx scripts/fix-game-media.ts",
     "seed:launcher-install": "tsx scripts/seed-launcher-install.ts",
     "upload:launcher": "tsx scripts/upload-launcher.ts",
