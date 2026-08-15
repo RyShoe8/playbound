@@ -2765,6 +2765,75 @@ const facts: Game[] = [
       },
     },
   },
+  {
+    slug: "space-station-14",
+    title: "Space Station 14",
+    tagline: "A space station full of strangers, one traitor, and no script.",
+    description:
+      "An open-source reimplementation of Space Station 13: a round-based roleplaying sandbox where every player has a job, the station is fully simulated down to the air in each room, and the story comes from what the crew does to each other.",
+    developerSlug: "space-wizards",
+    genres: ["Simulation", "Sandbox", "Social Deduction"],
+    tags: ["Roleplay", "Emergent", "Community Servers", "Open Source", "Round-Based"],
+    aliases: ["SS14", "Space Station 13", "SS13"],
+    license: "Open Source (MIT)",
+    releaseYear: 2020,
+    /* Launcher is a few MB; the content it pulls per server is the real cost. */
+    sizeMB: 1500,
+    /*
+     * Testing rather than published: the entry is complete but nobody at
+     * PlayBound has played a full round on a current build to confirm the
+     * install path end to end. Promote once someone has.
+     */
+    status: "testing",
+    platforms: ["Windows", "macOS", "Linux"],
+    features: ["Multiplayer", "Cross-Platform", "Mod Support", "Open Source", "Controller Support"],
+    launchMethods: ["install", "server"],
+    browserPlayable: false,
+    steamDeck: true,
+    website: "https://spacestation14.com/",
+    githubRepo: "space-wizards/space-station-14",
+    gameOfWeek: false,
+    hiddenGem: true,
+    art: { from: "#0f172a", to: "#38bdf8", icon: "Rocket" },
+    systemRequirements: {
+      min: "64-bit Windows/macOS/Linux · Dual-core CPU · 4 GB RAM · OpenGL 3.3 · 2 GB storage",
+      recommended: "Quad-core CPU · 8 GB RAM · Dedicated GPU · SSD",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 4096,
+        storageMB: 2048,
+        cpuText: "Dual-core CPU",
+        gpuText: "OpenGL 3.3 capable",
+      },
+      recommended: {
+        ramMB: 8192,
+        storageMB: 4096,
+        cpuText: "Quad-core CPU",
+        gpuText: "Dedicated GPU",
+        gpuTier: "entry",
+        notes: "SSD",
+      },
+      provenance: {
+        source: "playbound_verified",
+      },
+    },
+    launcherInstall: {
+      enabled: true,
+      kind: "github-zip",
+      repo: "space-wizards/SS14.Launcher",
+      assetPattern: "SS14.Launcher_Windows.zip",
+      exeHint: "SS14.Launcher.exe",
+      knownExePaths: ["SS14.Launcher.exe"],
+      versionLabel: "v0.39.1",
+      /*
+       * The launcher is the whole install. Game content is fetched per server
+       * on first join and cached, which is why there is no game build to pin a
+       * version against — the server decides which build you run.
+       */
+      note: "Installs the official SS14 launcher. Pick a server from its list and the matching game build downloads automatically on first join.",
+    },
+  },
 ];
 
 export const games: Game[] = facts.map(withEditorial);

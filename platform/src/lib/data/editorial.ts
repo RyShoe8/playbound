@@ -158,6 +158,91 @@ function clearsAll(verdict: string): Game["qualityBar"] {
 }
 
 export const editorial: Record<string, GameEditorial> = {
+  "space-station-14": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Space Station 14 clears all five: MIT-licensed with no store or subscription, playable start to finish on populated servers today, developed daily in the open, and singular enough that nothing commercial really competes with it.",
+      lastVerified: VERIFIED,
+    },
+    maintenanceCheck: { kind: "github", repo: "space-wizards/space-station-14" },
+    longDescription:
+      "Space Station 13 has been the best game nobody can play for twenty years. It runs on BYOND, an engine from 1996, and its interface assumes you already know everything. Space Station 14 is the attempt to keep what made it extraordinary and throw away the part that kept people out.\n\nA round begins with the crew arriving on a station. You are assigned a job — engineer, botanist, security officer, chef, janitor, clown — and you go and do it. The engineers actually start the reactor, and if they do it badly the station loses power. The chef actually cooks, using food the botanist actually grew. The doctors treat injuries that have specific causes, on a body with individually damageable parts. Nothing is abstracted into a progress bar.\n\nMeanwhile, somebody has been quietly told they are a traitor.\n\nWhat makes it work is that the simulation is honest. Atmospherics tracks gas composition, temperature and pressure per tile, so a hull breach is a real physical event that spreads. Power is a network you can trace and sabotage. Because the systems are consistent rather than scripted, players invent things the developers never planned — and the resulting stories are the actual product. A round can be a quiet shift where the biggest crisis is a plumbing failure, or it can end with the station on fire and the surviving crew arguing over who to trust in the escape shuttle.\n\nIt is round-based, which matters more than it sounds. Nothing carries over. There is no account progression, no unlocks, no gear score — the newest player and the veteran start each round on equal footing, and status comes entirely from competence and reputation. That design is why it stays interesting after a hundred hours and why it has no monetisation to speak of.\n\nThe honest warning: this is not a game you drop into for fifteen minutes. Rounds run one to two hours, jobs have real learning curves, and the community expects you to stay in character. Most servers have new-player-friendly rules and will tolerate a lot of fumbling — but pick a job like Cargo Technician or Botanist for your first few rounds rather than Head of Security.",
+    whyWePickedIt:
+      "We put a lot of preservation projects in this catalog, and most of them are careful recreations of something that already worked. Space Station 14 is doing something harder — taking a genuinely great design trapped in an unusable engine and rebuilding it so that ordinary people can reach it. It is also the clearest example we have of a game where the interesting part is other players rather than content, which is exactly the kind of thing that dies when nobody is running free servers.",
+    bestFor: [
+      "Players who want stories that emerge rather than stories that are written",
+      "Anyone curious about Space Station 13 who bounced off the BYOND client",
+      "Long sessions — rounds typically run one to two hours",
+      "People who enjoy roleplay and being in character with strangers",
+      "Modest hardware; it is 2D and undemanding",
+    ],
+    notFor: [
+      "Short sessions — you cannot meaningfully play this in fifteen minutes",
+      "Anyone who wants persistent progression, unlocks or a gear treadmill",
+      "Players who dislike reading, learning systems, or asking other people for help",
+      "Solo play, since an empty station has essentially nothing to do",
+    ],
+    comparableTo: ["Space Station 13", "Barotrauma", "Among Us", "Rimworld", "Dwarf Fortress"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install the Space Station 14 launcher through PlayBound, or download it from the official site.",
+      },
+      {
+        platform: "all",
+        text: "Create a Space Station 14 account in the launcher. It is free and is only used to identify you to servers.",
+      },
+      {
+        platform: "all",
+        text: "Pick a server from the launcher's list. The matching game build downloads automatically the first time you join, so the first connection is slower than later ones.",
+      },
+      {
+        platform: "all",
+        text: "Choose a low-pressure job for your first round — Botanist, Cargo Technician or Janitor. Avoid command and security roles until you know the station.",
+      },
+      {
+        platform: "linux",
+        text: "Mark the launcher binary executable if your desktop environment does not do it for you.",
+        command: "chmod +x SS14.Launcher",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Space Station 14 free?",
+        a: "Yes, entirely. The game and engine are MIT-licensed open source, there is no purchase, subscription or in-game store, and the community servers are run by volunteers. An account is required, but it is free and exists only so servers can identify players.",
+      },
+      {
+        q: "What is the difference between Space Station 14 and Space Station 13?",
+        a: "Space Station 13 is the original, built on the BYOND engine from the 1990s. Space Station 14 is a from-scratch reimplementation on a purpose-built engine with a modern interface, better performance and native Windows, macOS and Linux clients. The design is the same; the barrier to entry is much lower.",
+      },
+      {
+        q: "How long is a round?",
+        a: "Usually one to two hours. Rounds end when the shuttle leaves or the station becomes unsurvivable, and nothing carries over to the next one — there is no progression system.",
+      },
+      {
+        q: "Do I need to roleplay?",
+        a: "On most servers, yes, at least lightly. Staying in character is a rule rather than a suggestion, and servers vary in how strictly they enforce it. Each server publishes its rules in the launcher, and low-roleplay servers exist if that is not for you.",
+      },
+      {
+        q: "Is it hard to learn?",
+        a: "The systems are deep, but you do not need to know them all. Pick a simple job, read your department's wiki page, and ask in-character questions — helping new players is part of the culture. Expect your first couple of rounds to be confusing regardless.",
+      },
+      {
+        q: "Can I play Space Station 14 alone?",
+        a: "Not meaningfully. The entire game is other people; an empty station has almost nothing to offer. You can host a local server to learn controls, but that is practice rather than play.",
+      },
+      {
+        q: "Does it run on Steam Deck or low-end hardware?",
+        a: "Yes. It is a 2D game with modest requirements and runs comfortably on a Steam Deck or an older laptop. The main constraint is that it is mouse-and-keyboard heavy, so a Deck benefits from a control layout or an external keyboard.",
+      },
+    ],
+  },
+
   openra: {
     qualityBar: clearsAll(
       "OpenRA clears all five: genuinely free with no monetisation, stable and complete, actively developed, good enough to recommend at full price, and high quality enough to earn a place in a deliberately small catalog."
