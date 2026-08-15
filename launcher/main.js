@@ -1406,8 +1406,15 @@ async function refreshRemoteCatalog(force = false) {
     return;
   }
   try {
+    /*
+     * A deadline, because there is a working catalog on disk already. Without
+     * one this waits on undici's default, which is long enough that a captive
+     * portal or a dead connection keeps the catalog stale for minutes; ten
+     * seconds is far past a healthy response and well short of that.
+     */
     const res = await fetch(`${getApiBase()}/api/launcher/catalog`, {
       headers: launcherApiHeaders(),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -7046,21 +7053,9 @@ if (gotLock) {
 
     void flushLastCrashReport();
 
-    await refreshRemoteCatalog();
-    for (const entry of catalog) {
-      if (
-        (entry.kind === "github-installer" || entry.kind === "direct-installer") &&
-        !(Array.isArray(entry.knownExePaths) && entry.knownExePaths.length > 0)
-      ) {
-        console.warn(`[catalog] installer ${entry.slug} is missing knownExePaths`);
-      }
-    }
-    scanKnownInstalls();
-    setupAutoUpdater();
-
     const launchUrl = process.argv.find((a) => a.startsWith(`${PROTOCOL}://`));
     const parsedLaunch = launchUrl ? parseDeepLink(launchUrl) : null;
-    
+
     if (Platform.getOS() === "macos") {
       const template = [
         {
@@ -7094,6 +7089,35 @@ if (gotLock) {
     }
     
     createWindow();
+
+    /*
+     * Everything below used to run before createWindow(), which meant the
+     * window did not exist until a network round trip to /api/launcher/catalog
+     * had finished — and that fetch has no deadline of its own, so a captive
+     * portal or a slow connection left the user staring at nothing with no
+     * indication the app had started. None of it is needed to paint the first
+     * screen: the renderer pulls the catalog through get-catalog per screen and
+     * already falls back to the bundled-plus-cached copy, which is exactly what
+     * it shows offline today.
+     *
+     * Running the install scan after the window also fixes a quiet bug. It ends
+     * by sending "install-detected" to win, which did not exist yet at this
+     * point in startup, so the result of the very first scan was dropped.
+     */
+    void (async () => {
+      await refreshRemoteCatalog();
+      for (const entry of catalog) {
+        if (
+          (entry.kind === "github-installer" || entry.kind === "direct-installer") &&
+          !(Array.isArray(entry.knownExePaths) && entry.knownExePaths.length > 0)
+        ) {
+          console.warn(`[catalog] installer ${entry.slug} is missing knownExePaths`);
+        }
+      }
+      scanKnownInstalls();
+    })();
+
+    setupAutoUpdater();
     scheduleLibrarySync();
     if (parsedLaunch) {
       handleDeepLink(parsedLaunch);
