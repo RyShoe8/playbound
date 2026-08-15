@@ -76,10 +76,6 @@ const providers: Record<string, ServerProvider> = {
     slug: "space-station-14",
     fetchServers: fetchSpaceStation14Servers,
   },
-  "space-station-14-multiplayer-disaster-simulator": {
-    slug: "space-station-14-multiplayer-disaster-simulator",
-    fetchServers: fetchSpaceStation14Servers,
-  },
   starcraft: {
     slug: "starcraft",
     fetchServers: fetchStarCraftServers,
