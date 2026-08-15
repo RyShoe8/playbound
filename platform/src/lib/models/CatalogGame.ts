@@ -1,5 +1,6 @@
 import { Schema, model, models } from "mongoose";
 import { HardwareRequirementsBlockSchema } from "@/lib/models/hardwareRequirementsSchema";
+import { LAUNCHER_INSTALL_KINDS } from "@/lib/launcherInstall";
 
 const GameArtSchema = new Schema(
   {
@@ -23,16 +24,7 @@ const LauncherInstallSchema = new Schema(
     enabled: { type: Boolean, default: true },
     kind: {
       type: String,
-      enum: [
-        "github-zip",
-        "github-installer",
-        "github-jar",
-        "direct-zip",
-        "direct-installer",
-        "direct-exe",
-        "openttd-zip",
-        "external",
-      ],
+      enum: LAUNCHER_INSTALL_KINDS,
       required: true,
     },
     repo: { type: String, default: null },
