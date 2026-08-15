@@ -154,6 +154,34 @@ async function main() {
     assert.equal(r.status, "captured");
   });
 
+  await check("refuses to snapshot a home or system root", async () => {
+    // A registry mistake must not turn into copying someone's entire home
+    // directory, or worse, restoring over it.
+    const r = await sd.snapshot("bad", null, os.homedir());
+    assert.equal(r.status, "unsafe-path");
+  });
+
+  await check("refuses to restore into a home or system root", async () => {
+    let threw = false;
+    try {
+      await sd.restore("0ad", null, os.homedir(), first.id);
+    } catch {
+      threw = true;
+    }
+    assert.ok(threw, "restore into home was not rejected");
+  });
+
+  await check("every save location resolves somewhere safe", async () => {
+    const { supportedSlugs, saveDirFor } = require("./saveLocations");
+    for (const slug of supportedSlugs()) {
+      const dir = saveDirFor(slug);
+      // null is fine — it means "not present on this machine".
+      if (!dir) continue;
+      const r = await sd.snapshot(`probe-${slug}`, null, dir, { maxSnapshotMb: 0.0001 });
+      assert.notEqual(r.status, "unsafe-path", `${slug} resolved to an unsafe path: ${dir}`);
+    }
+  });
+
   await check("isInside rejects traversal", () => {
     assert.equal(isInside("/root/../etc/passwd", "/root"), false);
     assert.equal(isInside("/root/sub/file", "/root"), true);

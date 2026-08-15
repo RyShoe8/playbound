@@ -5375,7 +5375,13 @@ ipcMain.handle("get-installed-mods", () => listInstalledMods());
 /** Snapshots for a game, newest first, plus whether saves are supported here. */
 ipcMain.handle("saves-list", async (_event, slug, editionSlug) => {
   if (!saveLocations.supportsCloudSaves(slug)) {
-    return { supported: false, snapshots: [] };
+    // Distinguish "this game keeps nothing locally" from "we haven't got to it
+    // yet" — the first is a permanent answer the player deserves to be told.
+    return {
+      supported: false,
+      noLocalSaves: saveLocations.noLocalSavesReason(slug),
+      snapshots: [],
+    };
   }
   const saveDir = saveLocations.saveDirFor(slug);
   const snapshots = await saveData.list(slug, editionSlug || DEFAULT_EDITION_SLUG);

@@ -49,6 +49,36 @@ function isInside(child, root) {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+/**
+ * Directories a save location must never resolve to.
+ *
+ * Save paths are per-game data, and a wrong one is the single most damaging
+ * mistake this module could make: snapshotting a home directory would copy
+ * gigabytes, and restoring over one would overwrite unrelated files. A bad
+ * path normally just yields "no-saves", but a path that resolves to something
+ * real and wrong would not, so the obvious roots are refused outright.
+ */
+function isDangerousRoot(dir) {
+  const full = normalize(dir);
+  const home = normalize(require("os").homedir());
+  const candidates = [
+    home,
+    process.env.APPDATA,
+    process.env.LOCALAPPDATA,
+    process.env.USERPROFILE,
+    process.env.PROGRAMFILES,
+    process.env["ProgramFiles(x86)"],
+    path.join(home, "Documents"),
+    path.join(home, "Documents", "My Games"),
+  ]
+    .filter(Boolean)
+    .map(normalize);
+
+  if (candidates.some((c) => c === full)) return true;
+  // A drive root or filesystem root.
+  return path.dirname(full) === full;
+}
+
 /** A filesystem-safe key for a game+edition pair. */
 function snapshotKey(gameSlug, editionSlug) {
   const raw = `${gameSlug}__${editionSlug || "official"}`;
@@ -161,6 +191,11 @@ function createSaveData({ snapshotRoot }) {
     { reason = "manual", now = new Date(), maxSnapshotMb = null } = {}
   ) {
     const source = normalize(saveDir);
+    if (isDangerousRoot(source)) {
+      // A registry mistake, not a player problem — refuse loudly rather than
+      // snapshotting someone's entire home directory.
+      return { status: "unsafe-path", saveDir: source };
+    }
     if (!(await pathExists(source))) {
       return { status: "no-saves", saveDir: source };
     }
@@ -239,6 +274,9 @@ function createSaveData({ snapshotRoot }) {
    */
   async function restore(gameSlug, editionSlug, saveDir, snapshotId, { now = new Date() } = {}) {
     const target = normalize(saveDir);
+    if (isDangerousRoot(target)) {
+      throw new Error("Refusing to restore into a system or home directory");
+    }
     const from = path.join(gameRoot(gameSlug, editionSlug), snapshotId);
     if (!isInside(from, root)) throw new Error("Refusing to restore from outside the save root");
     if (!(await pathExists(from))) throw new Error(`Snapshot ${snapshotId} not found`);

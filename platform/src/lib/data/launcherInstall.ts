@@ -316,7 +316,17 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     note: "Official open-source port of Star Control II with full game content.",
   },
   airforce: {
-    enabled: true,
+    /*
+     * DISABLED — allegro.cc is gone, not just this file. The whole host fails
+     * to resolve, so the attachment this pointed at cannot be recovered from
+     * it, and there is no other publisher: AirForce was distributed solely
+     * through that community's attachment system.
+     *
+     * Left in place rather than deleted so the game keeps its catalog entry
+     * and this note explains why it cannot be installed. Re-enable only
+     * against a source that actually serves the file.
+     */
+    enabled: false,
     kind: "direct-zip",
     url: "https://www.allegro.cc/files/attachment/593457",
     fileName: "AirForce_Executable_1.0.0.0.zip",
@@ -686,7 +696,11 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "star-wars-galaxies": {
     enabled: true,
     kind: "external",
-    url: "https://swgrestoration.com",
+    // The project moved to swgr.org; swgrestoration.com no longer resolves at
+    // all (no DNS, not a 404). Still actively developed — content updates
+    // through 2026 — and their installer fetches the game client itself, so a
+    // hand-off is the right shape here.
+    url: "https://swgr.org/play/",
     exeHint: "SWGR|swg",
     knownExePaths: [
       "%LOCALAPPDATA%\\SWG Restoration\\SWGRestoration.exe",
