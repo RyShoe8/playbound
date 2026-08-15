@@ -24,19 +24,26 @@ export async function fetchSteamConcurrentPlayers(
   appId: number,
   opts?: { label?: string }
 ): Promise<GameServer[]> {
+  /*
+   * The key is optional here. GetNumberOfCurrentPlayers is a public endpoint —
+   * verified against CS2, TF2, War Thunder, SWTOR, Marathon 2, TES Arena and
+   * HoloCure with no key at all, all answering result 1 with a real count.
+   *
+   * This used to return an empty list whenever STEAM_WEB_API_KEY was unset,
+   * which silently zeroed the player count for every game that depends on this
+   * provider. Sent when we have one, since a keyed request gets the friendlier
+   * rate limit, and simply omitted when we do not.
+   */
   const key = steamApiKey();
-  if (!key) {
-    if (!warnedMissingKey) {
-      console.warn(
-        "[servers] steam-concurrent: STEAM_WEB_API_KEY is not set — returning empty list"
-      );
-      warnedMissingKey = true;
-    }
-    return [];
+  if (!key && !warnedMissingKey) {
+    console.warn(
+      "[servers] steam-concurrent: STEAM_WEB_API_KEY is not set — using the public endpoint unkeyed"
+    );
+    warnedMissingKey = true;
   }
 
   const url = new URL(STEAM_PLAYERS_URL);
-  url.searchParams.set("key", key);
+  if (key) url.searchParams.set("key", key);
   url.searchParams.set("appid", String(appId));
 
   const res = await fetch(url.toString(), {

@@ -57,8 +57,17 @@ export function parseSteamAddr(addr: string | undefined): { host: string; port: 
   return { host, port };
 }
 
-/** Pure mapper for tests — no network / GeoIP. */
-export function mapSteamServerListRows(rows: SteamServerListRow[]): GameServer[] {
+/**
+ * Pure mapper for tests — no network / GeoIP.
+ *
+ * `defaultGameDir` is the label used when Steam omits gamedir on a row. It is a
+ * parameter because every Source game reports its own ("tf", "csgo"), and the
+ * shape of the response is otherwise identical across them.
+ */
+export function mapSteamServerListRows(
+  rows: SteamServerListRow[],
+  defaultGameDir = "tf"
+): GameServer[] {
   const mapped: GameServer[] = [];
   const seen = new Set<string>();
 
@@ -76,7 +85,7 @@ export function mapSteamServerListRows(rows: SteamServerListRow[]): GameServer[]
       players: row.players != null ? Number(row.players) : 0,
       maxPlayers: row.max_players != null ? Number(row.max_players) : null,
       map: row.map ? String(row.map) : null,
-      gameType: row.gamedir || "tf",
+      gameType: row.gamedir || defaultGameDir,
       location: null,
       // Steam GetServerList does not always expose password; treat VAC-only as open.
       protected: false,
