@@ -143,45 +143,119 @@ async function newestMtime(fsp, path, dir, { skip } = {}) {
 /**
  * Build the sync client.
  *
- * Network access is injected so the transport can be swapped or stubbed; the
- * launcher passes its authenticated fetch wrapper.
+ * Every dependency is injected — network, archiving, the local snapshot engine
+ * — so this file stays testable and does not reach back into main.js.
+ *
+ * @param {object} deps
+ * @param {() => string} deps.apiBase
+ * @param {(url: string, init?: object) => Promise<Response>} deps.authedFetch
+ * @param {object} deps.saveData          SaveData instance.
+ * @param {(dir: string, zipPath: string) => Promise<void>} deps.zipDir
+ * @param {(zipPath: string, destDir: string) => Promise<void>} deps.unzip
+ * @param {() => string} deps.tempDir
  */
-function createCloudSaves({ apiBase, authedFetch, saveData, log = () => {} }) {
-  async function listRemote(gameSlug, editionSlug) {
-    const url =
+function createCloudSaves({ apiBase, authedFetch, saveData, zipDir, unzip, tempDir, fsp, path, log = () => {} }) {
+  function endpoint(gameSlug, editionSlug, suffix = "") {
+    return (
       `${apiBase()}/api/launcher/saves/${encodeURIComponent(gameSlug)}` +
-      `/${encodeURIComponent(editionSlug || "official")}`;
-    const res = await authedFetch(url, { method: "GET" });
+      `/${encodeURIComponent(editionSlug || "official")}${suffix}`
+    );
+  }
+
+  async function listRemote(gameSlug, editionSlug) {
+    const res = await authedFetch(endpoint(gameSlug, editionSlug), { method: "GET" });
     if (res.status === 404) return [];
-    if (!res.ok) throw new Error(`Save list failed (${res.status})`);
+    if (res.status === 503) throw new Error("Cloud saves aren't switched on yet.");
+    if (res.status === 401) throw new Error("Sign in to PlayBound to use cloud saves.");
+    if (!res.ok) throw new Error(`Couldn't read cloud saves (${res.status})`);
     const data = await res.json();
     return Array.isArray(data?.snapshots) ? data.snapshots : [];
   }
 
   /**
-   * Push the newest local snapshot.
+   * Push the current saves.
    *
-   * Snapshots first so there is always a local copy of exactly what was sent —
-   * if the upload half-completes, the player has lost nothing.
+   * Snapshots locally first, so there is always an exact local copy of whatever
+   * was sent — a half-finished upload then costs nothing. The archive goes
+   * straight to storage through a presigned URL rather than through our API,
+   * which is what makes a 200MB save possible at all.
    */
-  async function upload(gameSlug, editionSlug, saveDir) {
-    const snap = await saveData.snapshot(gameSlug, editionSlug, saveDir, { reason: "cloud-upload" });
-    if (snap.status !== "captured") return { status: snap.status };
-
-    const url =
-      `${apiBase()}/api/launcher/saves/${encodeURIComponent(gameSlug)}` +
-      `/${encodeURIComponent(editionSlug || "official")}`;
-    const res = await authedFetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ snapshotId: snap.id, files: snap.files, bytes: snap.bytes }),
+  async function upload(gameSlug, editionSlug, saveDir, { maxSnapshotMb = null } = {}) {
+    const snap = await saveData.snapshot(gameSlug, editionSlug, saveDir, {
+      reason: "cloud-upload",
+      maxSnapshotMb,
     });
-    if (!res.ok) throw new Error(`Save upload failed (${res.status})`);
-    log(`uploaded ${gameSlug} save snapshot ${snap.id}`);
-    return { status: "uploaded", snapshotId: snap.id, files: snap.files };
+    if (snap.status !== "captured") return { status: snap.status, ...snap };
+
+    const zipPath = path.join(tempDir(), `pb-save-${gameSlug}-${snap.id}.zip`);
+    await zipDir(snap.dir, zipPath);
+    const { size } = await fsp.stat(zipPath);
+
+    try {
+      const res = await authedFetch(endpoint(gameSlug, editionSlug), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ snapshotId: snap.id, bytes: size }),
+      });
+
+      if (res.status === 413) {
+        const body = await res.json().catch(() => ({}));
+        return { status: "too-large", message: body.message, bytes: size };
+      }
+      if (!res.ok) throw new Error(`Couldn't start upload (${res.status})`);
+
+      const { uploadUrl } = await res.json();
+      const put = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "content-type": "application/zip", "content-length": String(size) },
+        body: await fsp.readFile(zipPath),
+      });
+      if (!put.ok) throw new Error(`Upload rejected by storage (${put.status})`);
+
+      log(`uploaded ${gameSlug} save ${snap.id} (${size} bytes)`);
+      return { status: "uploaded", snapshotId: snap.id, files: snap.files, bytes: size };
+    } finally {
+      await fsp.rm(zipPath, { force: true }).catch(() => {});
+    }
   }
 
-  return { listRemote, upload, decideSync, newestMtime };
+  /**
+   * Pull a snapshot down and put it in place.
+   *
+   * Restoring goes through SaveData rather than unpacking straight over the
+   * save folder, so the same safety snapshot is taken as any other restore and
+   * a bad cloud copy stays undoable.
+   */
+  async function download(gameSlug, editionSlug, saveDir, snapshotId = null) {
+    const res = await authedFetch(
+      endpoint(gameSlug, editionSlug, `/download${snapshotId ? `?snapshot=${encodeURIComponent(snapshotId)}` : ""}`),
+      { method: "GET" }
+    );
+    if (res.status === 404) return { status: "none" };
+    if (!res.ok) throw new Error(`Couldn't fetch cloud save (${res.status})`);
+    const { downloadUrl, snapshotId: id } = await res.json();
+
+    const zipPath = path.join(tempDir(), `pb-save-dl-${gameSlug}-${id}.zip`);
+    try {
+      const blob = await fetch(downloadUrl);
+      if (!blob.ok) throw new Error(`Storage refused the download (${blob.status})`);
+      await fsp.writeFile(zipPath, Buffer.from(await blob.arrayBuffer()));
+
+      // Unpack into the local snapshot store, then restore from it, so the
+      // cloud copy becomes an ordinary entry in the player's history.
+      const localDir = path.join(saveData.gameRoot(gameSlug, editionSlug), id);
+      await fsp.mkdir(localDir, { recursive: true });
+      await unzip(zipPath, localDir);
+
+      const restored = await saveData.restore(gameSlug, editionSlug, saveDir, id);
+      log(`restored ${gameSlug} from cloud save ${id}`);
+      return { status: "restored", snapshotId: id, ...restored };
+    } finally {
+      await fsp.rm(zipPath, { force: true }).catch(() => {});
+    }
+  }
+
+  return { listRemote, upload, download, decideSync, newestMtime };
 }
 
 module.exports = { createCloudSaves, decideSync, newestMtime, SKEW_TOLERANCE_MS };

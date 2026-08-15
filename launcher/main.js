@@ -13,6 +13,7 @@ const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
+const { createCloudSaves } = require("./services/CloudSaves");
 const { withOutboundUtm } = require("./utm");
 const {
   OPENCIV3_SLUG,
@@ -2098,6 +2099,75 @@ GameLauncher.managedJavaResolver = () => managedJava.findManagedJavaBinary();
  */
 const saveData = createSaveData({
   snapshotRoot: path.join(app.getPath("userData"), "saves"),
+});
+
+/**
+ * Zip a directory, mirroring extractZip's approach on each platform.
+ *
+ * Uses the OS's own tooling rather than adding a compression dependency, and
+ * passes paths as script parameters rather than interpolating them, for the
+ * same reason extractZip does.
+ */
+function zipDirectory(sourceDir, zipPath) {
+  return new Promise((resolve, reject) => {
+    let child;
+    let cleanup = () => {};
+
+    if (process.platform === "win32") {
+      const scriptPath = path.join(
+        app.getPath("temp"),
+        `playbound-zip-${process.pid}-${Date.now()}.ps1`
+      );
+      const script =
+        "param([Parameter(Mandatory=$true)][string]$Src,[Parameter(Mandatory=$true)][string]$Zip)\r\n" +
+        "Compress-Archive -Path (Join-Path $Src '*') -DestinationPath $Zip -Force\r\n";
+      try {
+        fs.writeFileSync(scriptPath, script, "utf8");
+      } catch (err) {
+        reject(err);
+        return;
+      }
+      cleanup = () => {
+        try {
+          fs.unlinkSync(scriptPath);
+        } catch {
+          /* best effort */
+        }
+      };
+      child = spawn(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-Src", sourceDir, "-Zip", zipPath],
+        { windowsHide: true }
+      );
+    } else {
+      child = spawn("zip", ["-r", "-q", zipPath, "."], { cwd: sourceDir, windowsHide: true });
+    }
+
+    let err = "";
+    child.stderr?.on("data", (d) => (err += d));
+    child.on("error", (e) => {
+      cleanup();
+      reject(e);
+    });
+    child.on("close", (code) => {
+      cleanup();
+      if (code === 0) resolve();
+      else reject(new Error(`Archiving saves failed (${err.trim() || code})`));
+    });
+  });
+}
+
+const cloudSaves = createCloudSaves({
+  apiBase: getApiBase,
+  authedFetch: (url, init = {}) =>
+    fetch(url, { ...init, headers: launcherApiHeaders(init.headers || {}) }),
+  saveData,
+  zipDir: zipDirectory,
+  unzip: extractZip,
+  tempDir: () => app.getPath("temp"),
+  fsp,
+  path,
+  log: (msg) => console.log(`[saves] ${msg}`),
 });
 
 /**
@@ -5424,6 +5494,78 @@ ipcMain.handle("saves-restore", async (_event, slug, editionSlug, snapshotId) =>
   const saveDir = saveLocations.saveDirFor(slug);
   if (!saveDir) throw new Error("No save folder is known for this game.");
   return saveData.restore(slug, editionSlug || DEFAULT_EDITION_SLUG, saveDir, snapshotId);
+});
+
+/**
+ * What syncing would do right now, without doing it.
+ *
+ * The renderer asks before acting so a conflict can be surfaced as a choice
+ * rather than resolved silently — see decideSync, which refuses to guess when
+ * both sides changed.
+ */
+ipcMain.handle("saves-sync-status", async (_event, slug, editionSlug) => {
+  const ed = editionSlug || DEFAULT_EDITION_SLUG;
+  if (!saveLocations.supportsCloudSaves(slug)) return { supported: false };
+  if (!loadSettings().launcherToken) return { supported: true, signedIn: false };
+
+  const saveDir = saveLocations.saveDirFor(slug);
+  const [local] = await saveData.list(slug, ed);
+  let remote = [];
+  try {
+    remote = await cloudSaves.listRemote(slug, ed);
+  } catch (err) {
+    return { supported: true, signedIn: true, error: err?.message || String(err) };
+  }
+
+  const localUpdatedAt =
+    (saveDir && (await cloudSaves.newestMtime(fsp, path, saveDir))) || local?.createdAt || null;
+  const settings = loadSettings();
+  const syncKey = `${slug}::${ed}`;
+  const lastSyncedAt = settings.saveSyncedAt?.[syncKey] || null;
+
+  const decision = cloudSaves.decideSync({
+    localUpdatedAt,
+    remoteUpdatedAt: remote[0]?.uploadedAt || null,
+    lastSyncedAt,
+    deviceId: settings.analyticsId || "this-device",
+  });
+
+  return {
+    supported: true,
+    signedIn: true,
+    decision,
+    remote: remote[0] || null,
+    localUpdatedAt,
+    lastSyncedAt,
+  };
+});
+
+/** Record a successful sync so the next decision has a baseline. */
+function markSynced(slug, editionSlug) {
+  const settings = loadSettings();
+  settings.saveSyncedAt = settings.saveSyncedAt || {};
+  settings.saveSyncedAt[`${slug}::${editionSlug}`] = new Date().toISOString();
+  saveSettings(settings);
+}
+
+ipcMain.handle("saves-upload", async (_event, slug, editionSlug) => {
+  const ed = editionSlug || DEFAULT_EDITION_SLUG;
+  const saveDir = saveLocations.saveDirFor(slug);
+  if (!saveDir) throw new Error("No save folder is known for this game.");
+  const result = await cloudSaves.upload(slug, ed, saveDir, {
+    maxSnapshotMb: saveLocations.cloudPolicyFor().maxSnapshotMb,
+  });
+  if (result.status === "uploaded") markSynced(slug, ed);
+  return result;
+});
+
+ipcMain.handle("saves-download", async (_event, slug, editionSlug, snapshotId) => {
+  const ed = editionSlug || DEFAULT_EDITION_SLUG;
+  const saveDir = saveLocations.saveDirFor(slug);
+  if (!saveDir) throw new Error("No save folder is known for this game.");
+  const result = await cloudSaves.download(slug, ed, saveDir, snapshotId || null);
+  if (result.status === "restored") markSynced(slug, ed);
+  return result;
 });
 
 /** Open the folder holding this game's snapshots, so recovery never needs us. */

@@ -1732,6 +1732,109 @@ function describeSaveReason(reason) {
 }
 
 /**
+ * The cloud row inside the saves panel.
+ *
+ * Sync is presented as a decision the player makes, never one taken for them.
+ * When both this machine and another have moved on since the last sync there is
+ * no correct automatic answer — picking the newer one would throw away someone's
+ * session on the other device — so that case offers both directions and says
+ * what each will do.
+ */
+async function renderCloudRow(panel, game, editionSlug, refresh) {
+  const row = panel.querySelector(".saves-cloud");
+  if (!row) return;
+
+  let status;
+  try {
+    status = await window.playbound.savesSyncStatus(game.slug, editionSlug);
+  } catch (err) {
+    row.dataset.state = "error";
+    row.textContent = `Cloud saves unavailable: ${err.message || err}`;
+    return;
+  }
+
+  if (!status?.supported) {
+    row.remove();
+    return;
+  }
+  if (!status.signedIn) {
+    row.dataset.state = "signed-out";
+    row.textContent = "Sign in to PlayBound to sync these saves to your other devices.";
+    return;
+  }
+  if (status.error) {
+    row.dataset.state = "error";
+    row.textContent = `Cloud saves unavailable: ${status.error}`;
+    return;
+  }
+
+  const action = status.decision?.action || "noop";
+  const reason = status.decision?.reason || "";
+
+  const buttons =
+    action === "conflict"
+      ? `<button class="btn-secondary btn-sm btn-cloud-up" type="button">Upload this PC's</button>
+         <button class="btn-secondary btn-sm btn-cloud-down" type="button">Use the cloud copy</button>`
+      : action === "upload"
+        ? `<button class="btn-secondary btn-sm btn-cloud-up" type="button">Upload</button>`
+        : action === "download"
+          ? `<button class="btn-secondary btn-sm btn-cloud-down" type="button">Download</button>`
+          : `<button class="btn-secondary btn-sm btn-cloud-up" type="button">Upload anyway</button>`;
+
+  row.dataset.state = action;
+  row.innerHTML = `
+    <div class="saves-cloud-main">
+      <span class="saves-cloud-title">${
+        action === "conflict" ? "Saves differ between devices" : "Cloud saves"
+      }</span>
+      <span class="saves-cloud-sub">${escapeHtml(reason)}</span>
+    </div>
+    <div class="library-action-group">${buttons}</div>`;
+
+  row.querySelector(".btn-cloud-up")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    try {
+      setStatus(`Uploading ${game.title} saves…`);
+      const res = await window.playbound.savesUpload(game.slug, editionSlug);
+      if (res?.status === "too-large") {
+        setStatus(res.message || "Saves are too large to sync.", true);
+      } else if (res?.status === "no-saves") {
+        setStatus("No save files found to upload yet.", true);
+      } else {
+        setStatus("Saves uploaded.");
+      }
+      refresh();
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
+
+  row.querySelector(".btn-cloud-down")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (
+      !confirm(
+        `Replace this PC's ${game.title} saves with the cloud copy?\n\n` +
+          `Your current saves will be backed up first, so you can undo this.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setStatus(`Downloading ${game.title} saves…`);
+      const res = await window.playbound.savesDownload(game.slug, editionSlug, null);
+      setStatus(
+        res?.status === "none"
+          ? "No cloud saves stored for this game yet."
+          : "Cloud saves restored. Your previous saves are still in the list."
+      );
+      refresh();
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
+}
+
+/**
  * Show a game's save history, and let the player put one back.
  *
  * Saves are the one thing PlayBound touches that a player cannot replace, so
@@ -1811,7 +1914,10 @@ async function toggleSavesPanel(block, game, editionSlug) {
           <button class="btn-secondary btn-sm btn-saves-folder" type="button">Folder</button>
         </div>
       </div>
+      <div class="saves-cloud" data-state="loading">Checking cloud saves…</div>
       <div class="saves-list">${rows}</div>`;
+
+    void renderCloudRow(panel, game, editionSlug, () => render(snapshots));
 
     panel.querySelector(".btn-saves-now")?.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -3395,12 +3501,23 @@ async function renderGameDetailView(slug) {
         </section>`
       : "";
 
-  const editionPickerOptions = editions
-    .map(
+  /*
+   * No pre-selected edition when there is a real choice.
+   *
+   * Editions are not cosmetic — Project Quarm and EverQuest Live are different
+   * servers, vanilla and Rat King Adventure are different games. Defaulting the
+   * picker meant Install silently committed to whichever happened to be marked
+   * default, which is the wrong call to make on someone's behalf.
+   */
+  const editionPickerOptions = [
+    `<option value="" selected>Choose an edition…</option>`,
+    ...editions.map(
       (ed) =>
-        `<option value="${escapeHtml(ed.editionSlug)}" ${ed.isDefault ? "selected" : ""}>${escapeHtml(ed.editionName)}${ed.isDefault ? " (default)" : ""}</option>`
-    )
-    .join("");
+        `<option value="${escapeHtml(ed.editionSlug)}">${escapeHtml(ed.editionName)}${
+          ed.isDefault ? " (recommended)" : ""
+        }</option>`
+    ),
+  ].join("");
 
   container.innerHTML = `
     <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 12px">← Back</button>
@@ -3472,7 +3589,8 @@ async function renderGameDetailView(slug) {
           ${
             editions.length > 1
               ? `<label class="view-sub" for="detail-edition-pick">Edition</label>
-                 <select class="input-text" id="detail-edition-pick" style="max-width:320px;margin:8px 0 14px">${editionPickerOptions}</select>`
+                 <select class="input-text" id="detail-edition-pick" style="max-width:320px;margin:8px 0 6px">${editionPickerOptions}</select>
+                 <p class="view-sub edition-gate-hint" id="detail-edition-hint" style="margin:0 0 14px">This game has ${editions.length} editions — pick one to install.</p>`
               : ""
           }
           ${
@@ -3529,13 +3647,33 @@ async function renderGameDetailView(slug) {
     for (const ed of editions) {
       const row = document.createElement("div");
       row.className = "edition-row";
+      const cover = ed.coverImage || ed.heroImage || "";
       row.innerHTML = `
+        <div class="edition-row-thumb">${
+          cover ? "" : escapeHtml((ed.editionName || "?").charAt(0))
+        }</div>
         <div class="edition-row-copy">
-          <strong>${escapeHtml(ed.editionName)}</strong>
+          <strong>${escapeHtml(ed.editionName)}${
+            ed.isDefault ? ` <span class="edition-row-tag">Default</span>` : ""
+          }</strong>
           <span>${escapeHtml(ed.editionType || "")}${ed.shortDescription ? ` · ${escapeHtml(ed.shortDescription)}` : ""}</span>
         </div>
         <button type="button" class="btn-secondary btn-sm">View</button>
       `;
+      if (cover) {
+        // Set via DOM rather than markup so a broken URL cannot inject, and so
+        // a failed load falls back to the initial rather than an empty box.
+        const thumb = row.querySelector(".edition-row-thumb");
+        const img = document.createElement("img");
+        img.src = cover;
+        img.alt = "";
+        img.loading = "lazy";
+        img.addEventListener("error", () => {
+          img.remove();
+          thumb.textContent = (ed.editionName || "?").charAt(0);
+        });
+        thumb.appendChild(img);
+      }
       row.querySelector("button")?.addEventListener("click", () => {
         openEditionDetail(slug, ed.editionSlug);
       });
@@ -3543,11 +3681,29 @@ async function renderGameDetailView(slug) {
     }
   }
 
+  /**
+   * Which edition to install, or null when the player has not chosen yet.
+   *
+   * Only falls back to a default when there is no real choice to make — with
+   * one edition (or none) the picker is not shown, so there is nothing to ask.
+   */
   function selectedEditionSlug() {
     const pick = document.getElementById("detail-edition-pick");
-    if (pick?.value) return pick.value;
+    if (pick) return pick.value || null;
     const def = editions.find((e) => e.isDefault) || editions[0];
     return def?.editionSlug || null;
+  }
+
+  /** Keep Install inert until an edition is picked, and say why. */
+  function syncInstallGate() {
+    const pick = document.getElementById("detail-edition-pick");
+    const btn = document.getElementById("install-tab-install");
+    if (!pick || !btn) return;
+    const chosen = Boolean(pick.value);
+    btn.disabled = !chosen;
+    btn.title = chosen ? "" : "Choose an edition first";
+    const hint = document.getElementById("detail-edition-hint");
+    if (hint) hint.hidden = chosen;
   }
 
   function selectedAddons() {
@@ -3578,8 +3734,32 @@ async function renderGameDetailView(slug) {
     }
   }
 
+  /**
+   * Install, but never without an explicit edition when one is owed.
+   *
+   * Shared by every install entry point on this page so the rule cannot be
+   * bypassed by whichever button happens to be on screen.
+   */
+  async function runInstallGated() {
+    const ed = selectedEditionSlug();
+    if (editions.length > 1 && !ed) {
+      setStatus("Choose which edition you want before installing.", true);
+      const pick = document.getElementById("detail-edition-pick");
+      if (pick) {
+        // Send the player to the tab that actually holds the picker.
+        document.getElementById("install-tab-install")?.click();
+        pick.focus();
+      }
+      return;
+    }
+    await runInstall(ed);
+  }
+
+  document.getElementById("detail-edition-pick")?.addEventListener("change", syncInstallGate);
+  syncInstallGate();
+
   document.getElementById("install-tab-install")?.addEventListener("click", () => {
-    void runInstall(selectedEditionSlug());
+    void runInstallGated();
   });
   document.getElementById("install-tab-website")?.addEventListener("click", () => {
     if (detail.website) {
@@ -3881,7 +4061,7 @@ async function renderGameDetailView(slug) {
       if (currentView === "library") renderLibraryView();
     });
     document.getElementById("act-install").addEventListener("click", async () => {
-      await runInstall(selectedEditionSlug());
+      await runInstallGated();
     });
   } else {
     const showLocate =
@@ -3891,7 +4071,7 @@ async function renderGameDetailView(slug) {
       ${showLocate ? `<button class="btn-secondary" id="act-locate">I've finished installing</button>` : ""}
     `;
     document.getElementById("act-install").addEventListener("click", async () => {
-      await runInstall(selectedEditionSlug());
+      await runInstallGated();
     });
     document.getElementById("act-locate")?.addEventListener("click", async () => {
       setStatus("Looking for install…");

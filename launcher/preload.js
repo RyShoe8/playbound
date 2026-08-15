@@ -38,6 +38,11 @@ contextBridge.exposeInMainWorld("playbound", {
     ipcRenderer.invoke("saves-restore", slug, editionSlug || null, snapshotId),
   savesOpenFolder: (slug, editionSlug) =>
     ipcRenderer.invoke("saves-open-folder", slug, editionSlug || null),
+  savesSyncStatus: (slug, editionSlug) =>
+    ipcRenderer.invoke("saves-sync-status", slug, editionSlug || null),
+  savesUpload: (slug, editionSlug) => ipcRenderer.invoke("saves-upload", slug, editionSlug || null),
+  savesDownload: (slug, editionSlug, snapshotId) =>
+    ipcRenderer.invoke("saves-download", slug, editionSlug || null, snapshotId || null),
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   clearContext: () => ipcRenderer.invoke("clear-context"),
   openExternal: (url, opts) => ipcRenderer.invoke("open-external", url, opts || null),
