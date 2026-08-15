@@ -28,6 +28,35 @@ body {
   height: 100vh;
   overflow: hidden;
   user-select: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Custom scrollbars matching website */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background 0.15s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 #app {
@@ -2092,7 +2121,8 @@ textarea.input-text {
   visibility: hidden;
   transform: translateY(-6px) scale(0.98);
   transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s;
-  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .premium-select.open .premium-select-dropdown {
@@ -2102,20 +2132,29 @@ textarea.input-text {
 }
 
 .premium-select-dropdown::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .premium-select-dropdown::-webkit-scrollbar-track {
   background: transparent;
+  margin: 4px 0;
 }
 
 .premium-select-dropdown::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background 0.15s ease;
 }
 
 .premium-select-dropdown::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(139, 92, 246, 0.6);
+  background-clip: content-box;
+}
+
+.premium-select-dropdown::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .premium-select-item {
