@@ -165,6 +165,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-14",
     note: "Official freeware release by Revolution Software; hosted permanently on ScummVM and GOG.",
   },
+  "privateer-gemini-gold": {
+    kind: "manual",
+    url: "https://privateer.sourceforge.net",
+    checkedAt: "2026-08-15",
+    note: "Finished standalone open-source remake; verified 1.03 Windows, Linux, and macOS installer packages remain online.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -1536,6 +1542,93 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Is Endless Sky still being updated?",
         a: "Yes. An active contributor community ships regular releases with new missions, ships and systems.",
+      },
+    ],
+  },
+
+  "privateer-gemini-gold": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A complete, standalone remake of Wing Commander: Privateer that delivers full-freedom space trading, combat, and faction warfare without requiring original 1993 CD files or DOSBox configuration.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "Back in 1993, Origin Systems released Wing Commander: Privateer, setting the gold standard for open-ended space combat and trading by dropping players into the gritty Gemini Sector with an old scout ship, a handful of credits, and the freedom to forge their own destiny. Privateer Gemini Gold is an ambitious, community-crafted remake that rebuilds that legendary experience from the ground up on the open-source Vega Strike 3D engine.\n\nYou step into the cockpit of Grayson Burrows, beginning with a battered Tarsus scout class ship and a hefty bank loan. From the bustling landing pads of New Detroit to the frontier mining outposts of the Palan system, the entire Gemini Sector is open for business. How you earn your keep is entirely up to you: haul legal commodities between agricultural and industrial hubs, sign up for bounty contracts through the Mercenaries Guild, take high-risk courier runs for the Merchants Guild, or smuggle contraband through Confed patrols while dodging pirates and fanatical Retro cultists.\n\nUnlike DOSBox-emulated releases of the 1993 original, Gemini Gold runs natively on modern hardware at high widescreen resolutions with 32-bit color. Ship models, asteroid fields, jump gates, and base concourses have been reconstructed with real 3D geometry and enhanced lighting. The iconic ship progression remains intact—players can gradually upgrade shields, engines, and quad lasers, or trade up to a heavy-hauling Galaxy, agile Orion, or deadly Centurion heavy fighter.\n\nThe game seamlessly integrates both the full original Privateer storyline—following an ancient alien artifact that threatens the stability of the sector—and the Righteous Fire expansion campaign. It supports analog flight sticks, throttles, and modern gamepads, giving flight-sim enthusiasts authentic tactical dogfighting controls.\n\nWhile development concluded with the polished 1.03 stable release, Gemini Gold stands as a timeless preservation milestone: a complete, self-contained space simulator that requires no proprietary base game files and remains completely free to explore.",
+    whyWePickedIt:
+      "We added Privateer Gemini Gold because it exemplifies the very best of community-led game preservation. Rather than letting a landmark 90s space trading sim fade into DOSBox compatibility quirks, the team rebuilt the entire sector on an open-source engine and gave it away freely. It delivers the genuine thrill of open-ended space capitalism and tactical dogfighting with zero monetization and complete standalone independence.",
+    bestFor: [
+      "Fans of 90s space trading classics like Wing Commander: Privateer, Freelancer, and Elite",
+      "Players seeking an open-ended galaxy with freedom to trade, hunt bounties, or smuggle",
+      "Single-player pilots who want a rich, story-driven campaign with branching faction jobs",
+      "HOTAS and flight-stick owners looking for tactical space dogfighting",
+      "Low-spec PCs and Steam Deck players looking for a lightweight, self-contained space sim",
+    ],
+    notFor: [
+      "Players looking for multiplayer servers or online persistent universes",
+      "Anyone demanding cutting-edge AAA photorealistic graphics over authentic 90s-era 3D aesthetics",
+      "Pilots expecting arcade auto-aim rather than momentum-based space flight physics",
+      "Those wanting continuous live-service updates; this is a finished classic release",
+    ],
+    comparableTo: [
+      "Wing Commander: Privateer",
+      "Freelancer",
+      "Elite Dangerous",
+      "Vega Strike",
+      "Naev",
+      "Endless Sky",
+    ],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install through the PlayBound Launcher for one-click setup. The launcher downloads the official 1.03 package directly from SourceForge and configures your executable paths.",
+      },
+      {
+        platform: "windows",
+        text: "For manual install on Windows, download PrivateerGold1.03.exe from the official SourceForge project page and run the setup wizard.",
+      },
+      {
+        platform: "windows",
+        text: "Run setup.exe in your installation folder prior to the first launch to set your desired screen resolution, fullscreen/windowed mode, and joystick sensitivity.",
+      },
+      {
+        platform: "linux",
+        text: "For Linux, download PrivateerGold1.03.bz2.bin, grant execute permissions, and launch the binary installer.",
+        command: "chmod +x PrivateerGold1.03.bz2.bin && ./PrivateerGold1.03.bz2.bin",
+      },
+      {
+        platform: "macos",
+        text: "For macOS, download and open the PrivateerGold1.03.dmg image and copy Privateer Gemini Gold to your Applications folder.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Privateer Gemini Gold free?",
+        a: "Yes. Privateer Gemini Gold is completely free and open-source under the GPL-2.0 license. There are no microtransactions, in-game stores, or paywalled ships.",
+      },
+      {
+        q: "Do I need the original 1993 Wing Commander Privateer to play?",
+        a: "No. Gemini Gold is a fully standalone remake built on the open-source Vega Strike engine. It contains all ship models, stations, textures, and campaign missions out of the box without requiring original CD files.",
+      },
+      {
+        q: "What ships can I pilot in Gemini Gold?",
+        a: "You begin with the Tarsus scout ship and can purchase and customize the Orion light fighter, the Galaxy heavy merchant freighter, or the formidable Centurion heavy fighter, each with distinct hardpoints and cargo capacities.",
+      },
+      {
+        q: "Does Gemini Gold include the Righteous Fire expansion?",
+        a: "Yes. Both the original Privateer artifact campaign and the Righteous Fire expansion story arcs are fully implemented.",
+      },
+      {
+        q: "Does Privateer Gemini Gold support flight sticks and gamepads?",
+        a: "Yes. The Vega Strike engine supports USB joysticks, throttles, rudder pedals, and standard gamepads with customizable axis and button bindings.",
+      },
+      {
+        q: "Is there a multiplayer mode in Privateer Gemini Gold?",
+        a: "No. Privateer Gemini Gold is strictly an offline single-player experience focused on solitary exploration, trading, and campaign progression.",
       },
     ],
   },

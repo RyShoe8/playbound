@@ -2333,5 +2333,77 @@ export const editions: EditionSeed[] = [
     tags: ["Arena FPS", "Fast Paced", "Source Mod", "Community"],
     verificationLevel: "community_verified",
   },
+  {
+    gameSlug: "privateer-gemini-gold",
+    slug: "gemini-gold-1-03",
+    name: "Privateer Gemini Gold (v1.03)",
+    shortDescription: "Faithful 3D remake of Wing Commander: Privateer on the open-source Vega Strike engine.",
+    description:
+      "The definitive standalone release of Gemini Gold 1.03. Features 3D ship models, high-resolution cockpits, re-rendered base concourses, modern OpenGL support, and faithful recreation of the original 1993 missions, commodity trading, and faction warfare.",
+    type: "remaster",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://privateer.sourceforge.net",
+      forum: "https://privateer.sourceforge.net/comlink/",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-installer",
+        url: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.exe",
+        fileName: "PrivateerGold1.03.exe",
+        versionLabel: "1.03",
+        exeHint: "privateer|vegastrike",
+        note: "Official standalone Windows installer for Privateer Gemini Gold 1.03.",
+      },
+    },
+    requirements: {
+      min: "1.0 GHz CPU · 512 MB RAM · OpenGL 1.4 GPU · 1.5 GB disk space",
+      recommended: "2.0 GHz Dual-Core · 2 GB RAM · Dedicated GPU · 2 GB disk space",
+      notes: "Run setup.exe in the game folder to configure screen resolution and joystick settings.",
+    },
+    features: ["Singleplayer", "Story Campaign", "Mod Support", "Joystick Support", "Remaster"],
+    tags: ["Remaster", "Space Sim", "Trading", "Dogfighting", "Singleplayer"],
+    aliases: ["Gemini Gold", "PGG", "Privateer Remake 1.03"],
+    version: "1.03",
+    verificationLevel: "official",
+    verificationNote: "Verified official SourceForge installer package.",
+    faq: [
+      {
+        q: "What is included in Gemini Gold 1.03?",
+        a: "Full campaigns for both the original Wing Commander Privateer and the Righteous Fire expansion, complete 3D ship models, stations, trading commodities, and guilds.",
+      },
+    ],
+  },
+  {
+    gameSlug: "privateer-gemini-gold",
+    slug: "gemini-gold-unix",
+    name: "Privateer Gemini Gold (Linux & macOS Native)",
+    shortDescription: "Native Linux and macOS builds distributed as standalone tarball / DMG archives.",
+    description:
+      "Native Unix builds of Gemini Gold powered by Vega Strike's cross-platform POSIX engine. No Wine or emulation required on Linux or Intel macOS.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://privateer.sourceforge.net",
+    },
+    installMethod: "manual",
+    requirements: {
+      min: "1.0 GHz x86 CPU · 512 MB RAM · OpenGL 1.4 GPU · 1.5 GB disk space",
+      recommended: "2.0 GHz Dual-Core · 2 GB RAM · Dedicated GPU · 2 GB disk space",
+      notes: "Linux requires bzip2 and standard OpenGL runtime libraries. macOS package supports Intel DMG.",
+    },
+    features: ["Singleplayer", "Linux Native", "macOS Native", "Story Campaign", "Joystick Support"],
+    tags: ["Linux", "macOS", "Space Sim", "Open Source Engine"],
+    version: "1.03",
+    verificationLevel: "community_verified",
+  },
 ];
+
 
