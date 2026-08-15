@@ -157,8 +157,8 @@ export function AdminGamesTable({
           bVal = Number(Boolean(b.complete));
           break;
         case "Published":
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          aVal = a.status === "published" && a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.status === "published" && b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         case "Updated":
         default:
@@ -326,9 +326,13 @@ export function AdminGamesTable({
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      <LocalTime
-                        value={g.createdAt ? new Date(g.createdAt).toISOString() : null}
-                      />
+                      {currentStatus === "published" && g.createdAt ? (
+                        <LocalTime
+                          value={new Date(g.createdAt).toISOString()}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground/40">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       <LocalTime
