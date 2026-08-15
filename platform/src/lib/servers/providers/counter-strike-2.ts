@@ -17,5 +17,6 @@ export async function fetchCounterStrike2Servers(): Promise<GameServer[]> {
     appId: 730,
     label: "Counter-Strike 2",
     defaultGameDir: "csgo",
+    includeConcurrentTotal: true,
   });
 }

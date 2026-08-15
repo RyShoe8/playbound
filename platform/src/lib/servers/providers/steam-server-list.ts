@@ -107,8 +107,23 @@ export async function fetchSteamServerList(opts: {
   appId: number;
   label: string;
   defaultGameDir: string;
+  /**
+   * Prepend the platform-wide concurrent count to the server list.
+   *
+   * GetServerList enumerates community servers only, and for these games that
+   * is a rounding error against the real population — CS2 was showing 609
+   * players from its community list while 944,507 were in Valve matchmaking,
+   * and TF2 140 against 57,854. Reporting only the list makes a game with a
+   * million players look dead.
+   *
+   * The two overlap slightly, since the concurrent figure includes the people
+   * on those community servers. At 0.06% of the total it is not worth the
+   * arithmetic, and it could not be done accurately anyway: the list is capped
+   * at MAX_SERVERS, so we never see every community server to subtract.
+   */
+  includeConcurrentTotal?: boolean;
 }): Promise<GameServer[]> {
-  const { appId, label, defaultGameDir } = opts;
+  const { appId, label, defaultGameDir, includeConcurrentTotal } = opts;
   const concurrent = () => fetchSteamConcurrentPlayers(appId, { label });
 
   const key = steamApiKey();
@@ -136,7 +151,11 @@ export async function fetchSteamServerList(opts: {
     };
     const rows = Array.isArray(data?.response?.servers) ? data.response.servers : [];
     if (rows.length === 0) return concurrent();
-    return attachGeo(mapSteamServerListRows(rows, defaultGameDir));
+
+    const servers = await attachGeo(mapSteamServerListRows(rows, defaultGameDir));
+    if (!includeConcurrentTotal) return servers;
+    // Total first, community servers under it.
+    return [...(await concurrent()), ...servers];
   } catch (err) {
     console.warn(
       `[servers] ${label}: server list unavailable, using concurrent count —`,
