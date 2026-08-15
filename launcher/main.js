@@ -124,6 +124,22 @@ const ALLOWED_API_BASE_HOSTS = new Set([
   "127.0.0.1",
 ]);
 
+/**
+ * Whether a Vercel preview deployment may be trusted as an origin.
+ *
+ * "*.vercel.app whose name contains 'playbound'" is not a restriction: any
+ * Vercel user can claim a project name carrying our brand. That matters more
+ * than it looks, because the API base decides which catalog we trust and
+ * catalog entries register their own download hosts (see
+ * registerCatalogEntryHosts) — so accepting a stranger's preview deployment
+ * ends in the launcher running that stranger's binary. Previews stay available
+ * while developing and are refused outright by a shipped build.
+ */
+function isTrustedPreviewHost(host) {
+  if (app.isPackaged) return false;
+  return host.endsWith(".vercel.app") && host.includes("playbound");
+}
+
 function isAllowedApiBase(raw) {
   try {
     const u = new URL(String(raw || "").replace(/\/$/, ""));
@@ -132,7 +148,7 @@ function isAllowedApiBase(raw) {
     }
     const host = u.hostname.toLowerCase();
     if (ALLOWED_API_BASE_HOSTS.has(host)) return true;
-    if (host.endsWith(".vercel.app") && host.includes("playbound")) return true;
+    if (isTrustedPreviewHost(host)) return true;
     return false;
   } catch {
     return false;
@@ -322,7 +338,7 @@ function hostAllowedForDownload(hostname) {
   if (host.endsWith(".vercel-storage.com")) return true;
   // One-click catalog hosts (direct-installer / zip / exe recipes).
   if (host === "files.freeciv.org" || host.endsWith(".freeciv.org")) return true;
-  if (host === "sourceforge.net" || host.endsWith(".sourceforge.net") || host.includes("sourceforge.net")) return true;
+  if (host === "sourceforge.net" || host.endsWith(".sourceforge.net")) return true;
   if (host === "dl.xonotic.org" || host.endsWith(".xonotic.org")) return true;
   if (host === "releases.wildfiregames.com" || host.endsWith(".wildfiregames.com")) return true;
   if (host === "gitlab.com" || host.endsWith(".gitlab.com") || host.endsWith(".gitlab-static.net")) {
@@ -354,7 +370,11 @@ function hostAllowedForDownload(hostname) {
   if (host === "allegro.cc" || host.endsWith(".allegro.cc")) return true;
   if (host === "bzflag.org" || host.endsWith(".bzflag.org")) return true;
   if (host === "scummvm.org" || host.endsWith(".scummvm.org")) return true;
-  if (host.includes("itchio-mirror") || host.endsWith(".r2.cloudflarestorage.com")) return true;
+  // Anchored at both ends on purpose. A bare substring test would also accept
+  // "itchio-mirror.attacker.example", which is exactly what this list exists to
+  // keep out — the launcher executes what it downloads.
+  if (/^itchio-mirror[a-z0-9-]*\.(hwcdn\.net|b-cdn\.net)$/.test(host)) return true;
+  if (host.endsWith(".r2.cloudflarestorage.com")) return true;
   if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
   if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
   if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net")) return true;
@@ -365,7 +385,7 @@ function hostAllowedForDownload(hostname) {
     /* ignore */
   }
   if (ALLOWED_API_BASE_HOSTS.has(host)) return true;
-  if (host.endsWith(".vercel.app") && host.includes("playbound")) return true;
+  if (isTrustedPreviewHost(host)) return true;
   return false;
 }
 

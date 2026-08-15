@@ -6,6 +6,7 @@ import {
   presignUpload,
   deleteSnapshot,
   saveKey,
+  usedBytesForUser,
 } from "@/lib/saves/r2";
 
 export const runtime = "nodejs";
@@ -25,12 +26,26 @@ export const runtime = "nodejs";
 /** Free accounts keep one snapshot per game; older ones are pruned on upload. */
 const FREE_KEEP_PER_GAME = 1;
 const FREE_MAX_BYTES = 250 * 1024 * 1024;
+/*
+ * Account-wide ceiling. The per-game limit alone is not a limit: these routes
+ * take the game slug from the URL and never check it against the catalog, so a
+ * client that makes up slugs earns a fresh per-game allowance every time. This
+ * is what actually bounds what one account can cost us.
+ */
+const FREE_MAX_ACCOUNT_BYTES = 2 * 1024 * 1024 * 1024;
+
+/** Slugs reach us from the URL, so keep them to the shape a real slug has. */
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/i;
 
 function planFor(user: { role?: string; tester?: boolean }) {
   // Subscriptions do not exist yet. Kept as a lookup rather than a constant so
   // raising the ceiling later is a data change, not a hunt through this file.
   void user;
-  return { keepPerGame: FREE_KEEP_PER_GAME, maxBytes: FREE_MAX_BYTES };
+  return {
+    keepPerGame: FREE_KEEP_PER_GAME,
+    maxBytes: FREE_MAX_BYTES,
+    maxAccountBytes: FREE_MAX_ACCOUNT_BYTES,
+  };
 }
 
 export async function GET(
@@ -82,6 +97,10 @@ export async function POST(
     return NextResponse.json({ error: "bytes must be a positive number" }, { status: 400 });
   }
 
+  if (!SLUG_RE.test(slug) || !SLUG_RE.test(edition)) {
+    return NextResponse.json({ error: "Invalid game or edition" }, { status: 400 });
+  }
+
   const plan = planFor(user);
   if (bytes > plan.maxBytes) {
     // Refused before signing rather than after uploading, so a player is not
@@ -113,6 +132,23 @@ export async function POST(
     });
     const excess = existing.slice(Math.max(0, plan.keepPerGame - 1));
     await Promise.all(excess.map((s) => deleteSnapshot(s.key)));
+
+    // Checked after pruning so the space this upload is about to reclaim counts
+    // in the account's favour rather than against it.
+    const used = await usedBytesForUser(userId);
+    if (used + bytes > plan.maxAccountBytes) {
+      return NextResponse.json(
+        {
+          error: "account-full",
+          message: `Cloud saves are limited to ${(plan.maxAccountBytes / 1073741824).toFixed(
+            0
+          )}GB per account. Remove some saved games to free up space.`,
+          usedBytes: used,
+          maxAccountBytes: plan.maxAccountBytes,
+        },
+        { status: 413 }
+      );
+    }
 
     const key = saveKey({ userId, gameSlug: slug, editionSlug: edition, snapshotId });
     const uploadUrl = await presignUpload(key, bytes);
