@@ -2531,6 +2531,79 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "asherons-call": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Asheron's Call clears all five: 100% free with no subscription, powered by the actively maintained open-source ACEmulator community, and an irreplaceable titan of seamless open-world MMORPG design.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Asheron's Call is one of the foundational big-three MMORPGs that defined PC online gaming. Its seamless 500-square-mile continent of Dereth without loading screens between zones, classless skill point system, dynamic projectile-dodging combat, and revolutionary player monarchy allegiance hierarchy remain unmatched to this day.",
+    longDescription:
+      "Asheron's Call is the legendary 1999 3D fantasy MMORPG originally developed by Turbine and published by Microsoft. Set on the dangerous, seamless continent of Dereth, players explore an uninterrupted open world filled with Olthoi hives, ancient Empyrean ruins, sprawling multi-level dungeon labyrinths, and bustling frontier settlements.\n\nUnlike traditional class-locked MMORPGs, Asheron's Call features a completely freeform skill-point system. Players distribute experience points into Melee, Missile, or Magic skills (War, Life, Creature, and Item Magic) to build custom archetypes. Combat is fast-paced and twitch-sensitive: arrows and spell projectiles travel physically through 3D space and can be sidestepped, while weapon attacks feature variable power bars and swing heights.\n\nDereth's social fabric is powered by the Allegiance system — a pyramidal feudal structure where sworn vassals pass experience up to their patron in exchange for guidance, protection, and rare loot. Following the 2017 retail shutdown, the open-source ACEmulator (ACE) project meticulously recreated server physics, world databases, and live events, allowing thousands of players to experience both classic pre-expansion and End-of-Retail servers completely free.",
+    bestFor: [
+      "Fans of classic golden-age MMORPGs like EverQuest, Ultima Online, and Dark Age of Camelot",
+      "Players who value classless, sandbox character building with deep spellcrafting",
+      "Gamers who appreciate immense seamless open-world exploration with zero invisible walls",
+      "Those who love player-driven politics, vassal hierarchies, and fellowship hunting",
+    ],
+    notFor: [
+      "Players seeking modern theme-park MMORPGs with quest markers and automated dungeon finders",
+      "Gamers who dislike complex spell component reagent management",
+    ],
+    comparableTo: [
+      "EverQuest",
+      "Ultima Online",
+      "Dark Age of Camelot",
+      "Star Wars Galaxies",
+      "Project Gorgon",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and install the Asheron's Call community client and ThwargLauncher via PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Launch ThwargLauncher, pick your preferred community world (such as Coldeve for retail PvE or Levistras for manual no-bot play), and enter your character credentials.",
+      },
+      {
+        platform: "all",
+        text: "Optionally install Decal and Virindi Tank from PlayBound's 1-click mod installer for enhanced HUD overlays and navigation waypoints.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Asheron's Call completely free to play?",
+        a: "Yes! While official retail servers closed in 2017, the game is now 100% free and open-source through community-maintained ACEmulator servers. There are no fees, subscriptions, or cash shops.",
+      },
+      {
+        q: "What is ACEmulator (ACE)?",
+        a: "ACEmulator is an open-source C# server emulator built from scratch by the community. It accurately reproduces retail movement physics, spell formulas, dungeon encounters, and quest mechanics.",
+      },
+      {
+        q: "What is the difference between Coldeve, Levistras, and Seedsow?",
+        a: "Coldeve is an End-of-Retail PvE server allowing multi-boxing. Levistras is a strictly manual-play PvE server with a zero-tolerance policy on automated macroing. Seedsow is a classic server recreating the 1999–2005 pre-Throne of Destiny era.",
+      },
+      {
+        q: "What is the Allegiance system in Asheron's Call?",
+        a: "The Allegiance system is a player-run feudal hierarchy. A vassal swears allegiance to a patron; when the vassal earns experience, a bonus percentage is automatically generated and passed up to the patron, encouraging mentorship and guild loyalty.",
+      },
+      {
+        q: "How does magic work in Asheron's Call?",
+        a: "Magic is divided into War, Life, Creature, and Item Magic. Spells require specific herb and mineral reagents (like Brimstone and Mandrake) and scarabs. Spells can be cast as projectiles, self-buffs, or fellowship enchantments.",
+      },
+      {
+        q: "Can I play Asheron's Call on modern Windows and widescreen monitors?",
+        a: "Yes! Using ThwargLauncher and modern D3D wrappers, the game runs smoothly in 1080p, 1440p, and 4K resolutions on Windows 10/11.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

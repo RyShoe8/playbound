@@ -183,6 +183,7 @@ const LOCATIONS = {
  * would be a worse promise than saying nothing.
  */
 const NO_LOCAL_SAVES = {
+  "asherons-call": "MMORPG character data and inventory are stored server-side on ACEmulator worlds; local data is launcher configs and Decal plugin settings.",
   "wolfenstein-enemy-territory": "Pure multiplayer objective shooter; local data is configs (etconfig.cfg) and demos rather than persistent save games.",
   wolfenstein: "Pure multiplayer objective shooter; local data is configs (etconfig.cfg) and demos rather than persistent save games.",
   "team-fortress-2": "Item inventory, loadouts, and stats are stored server-side on Steam / Valve servers; local data is configs, custom HUDs, and demos.",
