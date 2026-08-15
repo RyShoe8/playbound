@@ -158,6 +158,156 @@ function clearsAll(verdict: string): Game["qualityBar"] {
 }
 
 export const editorial: Record<string, GameEditorial> = {
+  alephone: {
+    qualityBar: clearsAll(
+      "Marathon 2 clears all five: Bungie released the game data free and the engine is GPL, the trilogy is complete and finished, Aleph One still ships releases thirty years on, and the writing holds up against shooters made this decade."
+    ),
+    maintenanceCheck: { kind: "github", repo: "Aleph-One-Marathon/alephone" },
+    longDescription:
+      "Before Halo, Bungie made Marathon — and Marathon 2 is the one people still argue about.\n\nReleased in 1995 for the Mac, it arrived while Doom was defining what a shooter was, and quietly disagreed with most of it. Doom gave you a wordless marine and a body count. Marathon 2 gave you terminals: screens scattered through every level carrying thousands of words of story from an artificial intelligence called Durandal, who is manipulative, funny, self-aware and slowly going insane. You are working for him. It is not clear you should be.\n\nThe design disagrees in mechanical ways too. You can swim. You can look up and down properly. Levels have objectives beyond reaching the exit — rescuing trapped crew, activating systems, exploring backwards — and they expect you to read the terminals to know what you are doing. Enemies coordinate. Ammunition is scarce enough to matter. It is slower and more deliberate than its contemporaries, and it rewards patience in a way 1995 shooters generally did not.\n\nAleph One is what keeps it alive. Bungie released the engine source in 2000, and the project has maintained it ever since: modern resolutions and widescreen, OpenGL rendering, mouselook, gamepad support, internet multiplayer and native Windows, macOS and Linux builds. Bungie also allowed the complete game data to be distributed free, so the download is the whole thing — engine and game together, no purchase, no store, no hunting for files.\n\nThe honest caveat is that this is a genuinely old game underneath. The textures are low-resolution, enemies are sprites, and level geometry can be maze-like in a way modern shooters trained you out of. If you need a map that holds your hand, this will frustrate you. If you want to see where a lot of modern sci-fi shooter writing actually came from, it is right here, complete, for free.",
+    whyWePickedIt:
+      "Most free classics are free because nobody wanted them. Marathon 2 is free because Bungie chose to release it, and it happens to contain some of the best writing in the genre's history — an AI narrator that games spent the next twenty years imitating badly. That it now installs in one click with mouselook and widescreen, rather than requiring an emulator and a prayer, is the entire reason preservation projects matter.",
+    bestFor: [
+      "Anyone interested in where Halo, and Bungie's writing, actually came from",
+      "Players who like story delivered through reading and exploration",
+      "Deliberate, resource-conscious shooting rather than constant action",
+      "Very low-spec machines — it runs on essentially anything",
+      "Mac and Linux players, who get first-class native builds",
+    ],
+    notFor: [
+      "Players who want modern visuals; this is 1995 sprite art at heart",
+      "Anyone who dislikes maze-like level design or backtracking",
+      "Those who skip text — most of the story lives in optional terminals",
+      "People looking for a populated multiplayer scene rather than a campaign",
+    ],
+    comparableTo: ["Halo", "Doom", "System Shock", "Quake", "Duke Nukem 3D"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install through PlayBound, or download the Marathon 2 package from the Aleph One site. The download includes both the engine and the full game.",
+      },
+      {
+        platform: "all",
+        text: "Turn on mouselook in Preferences → Controls if it is not already enabled. The default control scheme dates from 1995 and is not what you want.",
+      },
+      {
+        platform: "all",
+        text: "Read the terminals. They are not optional flavour — objectives and story are both delivered through them.",
+      },
+      {
+        platform: "macos",
+        text: "The Mac build is unsigned, so the first launch needs a right-click and Open rather than a double-click.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Marathon 2 really free?",
+        a: "Yes. Bungie permitted the Marathon trilogy's game data to be distributed at no cost, and the Aleph One engine that runs it is open source under the GPL. The download includes both — there is nothing to buy and no original copy required.",
+      },
+      {
+        q: "What is Aleph One?",
+        a: "Aleph One is the open-source continuation of Bungie's Marathon 2 engine, maintained since Bungie released the source code in 2000. It adds modern resolutions, mouselook, OpenGL rendering and network play, and is what makes the games run on current machines.",
+      },
+      {
+        q: "Should I play Marathon 1 first?",
+        a: "Not necessarily. Marathon 2 is the usual starting point — it is the strongest of the three and its story stands on its own. The first game is also free if you want the full arc afterwards.",
+      },
+      {
+        q: "Does it work on modern Windows, Mac and Linux?",
+        a: "Yes, with native builds for all three, including Apple Silicon. There is no emulator or compatibility layer involved.",
+      },
+      {
+        q: "Is there still multiplayer?",
+        a: "Yes, Aleph One supports internet and LAN play, though the population is small and organised through community channels rather than matchmaking. Treat this as a single-player game with multiplayer available, not the other way round.",
+      },
+      {
+        q: "Can I play it on Steam Deck?",
+        a: "Yes. It is extremely light on hardware and works well with a gamepad configuration, though a mouse remains the better way to aim.",
+      },
+    ],
+  },
+
+  keeperfx: {
+    qualityBar: {
+      /*
+       * Not genuinelyFree: KeeperFX itself is GPL, but it cannot run without
+       * Dungeon Keeper data that has to be bought. Marking this true because
+       * the patch is free would misrepresent what a player actually needs to
+       * spend to play, which is the one thing this checklist exists to answer.
+       */
+      genuinelyFree: false,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "KeeperFX clears four of five. The project is free, finished, actively developed and excellent — but it needs Dungeon Keeper's original data files, which are not free, so it does not clear our first criterion on its own.",
+      lastVerified: VERIFIED,
+    },
+    maintenanceCheck: { kind: "github", repo: "dkfans/keeperfx" },
+    longDescription:
+      "Dungeon Keeper asked a question most strategy games still avoid: what if you were the dungeon at the bottom of the map, and the heroes were the problem?\n\nYou dig out rooms, build a treasury and a lair, and lure imps, bile demons, dark mistresses and horned reapers into working for you. You slap them when they slack off. You torture captured heroes until they change sides. It is funny in a genuinely mean-spirited way, narrated by a voice that clearly enjoys your worst decisions, and the management underneath it is sharper than the humour suggests — creatures have needs, moods and grudges, and a dungeon that ignores them falls apart from the inside.\n\nKeeperFX is what makes it playable now. Rather than wrapping the 1997 binary in DOSBox, the project has spent over fifteen years replacing that binary function by function with maintained C code. The result runs natively on modern Windows at modern resolutions, with a rewritten creature AI, a working campaign editor, restored cut content, multiplayer, and a large library of fan-made campaigns that in several cases exceed the original in design quality.\n\nThe catch, and the reason this entry does not clear our first criterion, is that KeeperFX is a rebuild of the engine and not a replacement for the content. It needs Dungeon Keeper's original data files — levels, sprites, the voice acting — and those are still commercial. A GOG copy is inexpensive and goes on sale often, and an original CD works equally well, but you do have to own one. PlayBound will not distribute those files, so the launcher asks you to point at your own installation and overlays KeeperFX onto a copy of it.\n\nIf you already own Dungeon Keeper in any form, this is unambiguously the best way to play it. If you do not, factor in the cost of the base game before starting.",
+    whyWePickedIt:
+      "We list a lot of remakes that replace their originals outright, and KeeperFX deliberately does not — it rebuilds the engine and leaves the content alone, which is why it is still going after fifteen years while flashier projects stalled. It is also the clearest case in the catalog of a title we rate highly but cannot call free, and saying so plainly is more useful than quietly bending the definition.",
+    bestFor: [
+      "Anyone who already owns Dungeon Keeper on GOG or CD",
+      "Players who like management sims with a mean streak",
+      "Fans of the fan-campaign scene, which is large and still active",
+      "Modern Windows machines where the original refuses to behave",
+    ],
+    notFor: [
+      "Players unwilling to buy the original game, which is required",
+      "Anyone wanting Dungeon Keeper 2 — that is OpenKeeper, a separate project",
+      "Mac and Linux users, unless you are comfortable running it through Wine",
+      "Those after a gentle builder; this one expects you to be actively cruel",
+    ],
+    comparableTo: ["Dungeon Keeper", "Dungeons 3", "War for the Overworld", "Evil Genius", "Startopia"],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install or locate your own copy of Dungeon Keeper first — the GOG release or an original CD both work.",
+      },
+      {
+        platform: "windows",
+        text: "Start the KeeperFX install in PlayBound. It will ask you to point at that copy, then build a separate KeeperFX install from it, leaving your original untouched.",
+      },
+      {
+        platform: "windows",
+        text: "Launch KeeperFX and set your resolution in the launcher window. It defaults conservatively and there is no reason to stay there.",
+      },
+      {
+        platform: "windows",
+        text: "Play the original campaign first. The fan campaigns assume you already know the systems and several are considerably harder.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is KeeperFX free?",
+        a: "The project itself is free and open source, but it is not a complete game on its own — it needs Dungeon Keeper's original data files, which are commercial. You will need a GOG copy or an original CD, so playing it is not free overall.",
+      },
+      {
+        q: "Do I need the original Dungeon Keeper?",
+        a: "Yes. KeeperFX rebuilds the engine, not the content — the levels, artwork and audio all come from your own copy. PlayBound does not distribute those files.",
+      },
+      {
+        q: "Does KeeperFX work with the GOG version?",
+        a: "Yes, the GOG release is the most straightforward source. An original CD install works too, as does the copy EA gave away during its On the House promotion if you claimed it at the time.",
+      },
+      {
+        q: "Is this Dungeon Keeper 1 or 2?",
+        a: "The first one. Dungeon Keeper 2 has a separate reimplementation called OpenKeeper, which is a different project at an earlier stage.",
+      },
+      {
+        q: "What does KeeperFX add over the original?",
+        a: "Native modern Windows support, high resolutions, a substantially reworked creature AI, restored cut content, a campaign editor, multiplayer fixes, and support for a large library of fan-made campaigns.",
+      },
+      {
+        q: "Can I run KeeperFX on Linux or macOS?",
+        a: "There is no native build; it targets Windows. It generally runs well under Wine or Proton, including on Steam Deck, but that is community territory rather than something the project supports directly.",
+      },
+    ],
+  },
+
   "space-station-14": {
     qualityBar: {
       genuinelyFree: true,
