@@ -12,6 +12,7 @@ import { verifiedModsWave } from "./verifiedModsWave";
 import { wave1Mods } from "./wave1Mods";
 import { tf2Mods } from "./tf2Mods";
 import { daggerfallMods } from "./daggerfallMods";
+import { wolfensteinMods } from "./wolfensteinMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -30,6 +31,7 @@ export const mods: ModSeed[] = [
   ...wave1Mods,
   ...tf2Mods,
   ...daggerfallMods,
+  ...wolfensteinMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );

@@ -183,6 +183,8 @@ const LOCATIONS = {
  * would be a worse promise than saying nothing.
  */
 const NO_LOCAL_SAVES = {
+  "wolfenstein-enemy-territory": "Pure multiplayer objective shooter; local data is configs (etconfig.cfg) and demos rather than persistent save games.",
+  wolfenstein: "Pure multiplayer objective shooter; local data is configs (etconfig.cfg) and demos rather than persistent save games.",
   "team-fortress-2": "Item inventory, loadouts, and stats are stored server-side on Steam / Valve servers; local data is configs, custom HUDs, and demos.",
   "space-station-14": "Character data and game rounds are stored server-side by each station.",
   "space-station-14-multiplayer-disaster-simulator": "Character data and game rounds are stored server-side by each station.",

@@ -116,6 +116,60 @@ export const editions: EditionSeed[] = [
     verificationLevel: "official",
   },
   {
+    gameSlug: "wolfenstein-enemy-territory",
+    slug: "et-legacy",
+    name: "ET: Legacy (Default)",
+    shortDescription: "Modern 64-bit open-source engine with modern OpenGL, widescreen, and server downloader.",
+    description:
+      "ET: Legacy is the recommended, fully open-source modern engine for Wolfenstein: Enemy Territory. Compatible with all original 2.60b mods and maps, with native 64-bit performance, raw mouse input, and modern audio rendering.",
+    type: "community_fork",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.etlegacy.com/",
+      github: "https://github.com/etlegacy/etlegacy",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "etlegacy/etlegacy",
+        assetPattern: "etlegacy-.*-x86_64\\.zip$|etlegacy-.*-win32\\.zip$|\\.zip$",
+        exeHint: "etl",
+        note: "Installs complete ET: Legacy client.",
+      },
+    },
+    features: ["Multiplayer", "Dedicated Servers", "Mod Support", "Open Source", "Controller Support"],
+    tags: ["Engine", "64-Bit", "Remaster", "Open Source"],
+    aliases: ["ETL", "ET Legacy"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "wolfenstein-enemy-territory",
+    slug: "steam",
+    name: "Steam Official",
+    shortDescription: "Official id Software / Bethesda release on Steam.",
+    description:
+      "The official release of Wolfenstein: Enemy Territory on Steam by id Software and Bethesda Softworks. Free to play.",
+    type: "official",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      steam: "https://store.steampowered.com/app/1873030/Wolfenstein_Enemy_Territory/",
+      website: "https://www.splashdamage.com/games/wolfenstein-enemy-territory/",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "1873030",
+      },
+    },
+    features: ["Multiplayer", "Dedicated Servers", "Mod Support"],
+    tags: ["Official", "Steam"],
+    aliases: ["Steam ET"],
+    verificationLevel: "official",
+  },
+  {
     gameSlug: "everquest",
     slug: "official",
     name: "EverQuest Live",
