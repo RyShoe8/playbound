@@ -27,6 +27,29 @@ export type MaintenanceCheck =
   | { kind: "github"; repo: string }
   | { kind: "manual"; url: string; checkedAt: string; note: string };
 
+/**
+ * House style. The three prose fields do three different jobs and are easy to
+ * blur together — the first attempt at OpenArena got all three wrong in the
+ * same way, by being writerly where it should have been useful.
+ *
+ * `qualityBar.verdict` — how the game feels to play. Short, present tense,
+ * concrete about sensation and mechanics. Never a summary of which criteria
+ * passed; the checkboxes beside it already say that.
+ *
+ * `longDescription` — expository and specific, well past 450 characters.
+ * Themed paragraphs: what it is and how it came to exist, what the
+ * moment-to-moment play is like, the actual systems by name (modes, movement
+ * techniques, weapon roles), and where the project stands today. Close by
+ * framing why it matters to PlayBound in particular. Informative beats
+ * literary: no aphorisms, no clever fragments.
+ *
+ * `whyWePickedIt` — mission-framed. What does this game demonstrate about free
+ * gaming, preservation, or the communities keeping something alive? Not an
+ * anecdote. Finish by lifting it past the obvious dismissal.
+ *
+ * Facts may come from source material. Sentences may not — every entry is
+ * written from scratch.
+ */
 export type GameEditorial = Pick<
   Game,
   | "qualityBar"
