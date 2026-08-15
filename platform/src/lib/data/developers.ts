@@ -704,6 +704,94 @@ export const developers: Developer[] = [
     website: "https://github.com/Space-Wizards/space-station-14",
     artHue: 195,
   },
+  {
+    slug: "tf2c-team",
+    name: "TF2 Classic Team",
+    tagline: "Community developers behind Team Fortress 2 Classic.",
+    about:
+      "A talented team of community modders and programmers who created Team Fortress 2 Classic, reimagining the game's classic 2008–2009 golden era with 4-team battles, the Civilian VIP class, and restored beta content.",
+    founded: 2015,
+    location: "Worldwide",
+    website: "https://tf2classic.com",
+    artHue: 25,
+  },
+  {
+    slug: "open-fortress-team",
+    name: "Open Fortress Team",
+    tagline: "Source engine fast-paced arena FPS developers.",
+    about:
+      "Creators of Open Fortress, bringing retro 90s arena deathmatch, bunnyhopping, and weapon pickup action to the Source engine.",
+    founded: 2019,
+    location: "Worldwide",
+    website: "https://openfortress.fun",
+    artHue: 45,
+  },
+  {
+    slug: "mastercoms",
+    name: "mastercoms",
+    tagline: "Source engine performance and visual optimization specialist.",
+    about:
+      "The developer and maintainer of Mastercomfig, the standard performance optimization and visual configuration suite used across the global TF2 community.",
+    founded: 2017,
+    location: "Worldwide",
+    website: "https://github.com/mastercoms/mastercomfig",
+    artHue: 210,
+  },
+  {
+    slug: "toonhud-team",
+    name: "Griever (ToonHUD)",
+    tagline: "Clean, highly customizable user interface for TF2.",
+    about:
+      "Creator of ToonHUD, one of the most widely used and customizable modern head-up displays for Team Fortress 2.",
+    founded: 2014,
+    location: "Finland",
+    website: "https://github.com/ToonHUD/ToonHUD",
+    artHue: 140,
+  },
+  {
+    slug: "flawhud-team",
+    name: "CriticalFlaw",
+    tagline: "High-contrast esports tournament HUD for TF2.",
+    about:
+      "Developer of FlawHUD, a tournament-grade, minimalist competitive HUD engineered for maximum combat readability.",
+    founded: 2016,
+    location: "Worldwide",
+    website: "https://github.com/CriticalFlaw/flawhud",
+    artHue: 280,
+  },
+  {
+    slug: "budhud-team",
+    name: "Bud (budhud)",
+    tagline: "Streamlined competitive HUD for TF2.",
+    about:
+      "Developer of budhud, a clean, high-visibility user interface tailored for competitive 6v6, Highlander, and casual play.",
+    founded: 2015,
+    location: "Worldwide",
+    website: "https://github.com/Raver2097/budhud",
+    artHue: 160,
+  },
+  {
+    slug: "paysus",
+    name: "Paysus",
+    tagline: "Master first-person animator for Source engine games.",
+    about:
+      "Acclaimed community animator who completely overhauled the first-person weapon handling and reload animations for all nine TF2 classes.",
+    founded: 2015,
+    location: "Worldwide",
+    website: "https://github.com/TF2-Community-Mods",
+    artHue: 330,
+  },
+  {
+    slug: "moonlight-mvm",
+    name: "Moonlight MvM Team",
+    tagline: "Community Mann vs. Machine tour and mission creators.",
+    about:
+      "Community project organizing large-scale custom Mann vs. Machine charity events, custom robot waves, and unique in-game medals.",
+    founded: 2020,
+    location: "Worldwide",
+    website: "https://github.com/TF2-Community-Mods",
+    artHue: 260,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

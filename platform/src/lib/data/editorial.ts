@@ -2321,6 +2321,75 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "team-fortress-2": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The gold standard for class-based multiplayer shooters. Nine distinct classes, expressive movement physics, countless game modes, and an unmatched community server and modding ecosystem.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Team Fortress 2 is an enduring masterpiece of multiplayer game design. Its asymmetric class balance, rocket jumping mechanics, timeless art direction, and massive community-hosted server scene offer endless tactical variety with zero pay-to-win barriers.",
+    longDescription:
+      "Team Fortress 2 (TF2) is Valve's legendary class-based first-person shooter. Set in a charming 1960s spy-fi universe, the game pits Reliable Excavation Demolition (RED) against Builders League United (BLU) across objective-driven game modes including Payload, Control Points, King of the Hill, and Attack/Defend.\n\nAt the core of TF2's longevity are its nine distinct mercenary classes, divided into Offense (Scout, Soldier, Pyro), Defense (Demoman, Heavy, Engineer), and Support (Medic, Sniper, Spy). Each class features completely asymmetric movement mechanics, health pools, weapon loadouts, and tactical roles — from the high-flying rocket jumps of the Soldier to the deception and backstabs of the Spy.\n\nBeyond casual and competitive matchmaking, TF2 boasts one of the most vibrant community server ecosystems in PC gaming, hosting classic gamemodes like Saxton Hale (VSH), Zombie Fortress, Prop Hunt, Surf, and Jump training. The game also includes Mann vs. Machine (MvM), an intense 6-player cooperative horde defense mode against waves of robotic invaders with in-depth weapon upgrades.",
+    bestFor: [
+      "Fans of fast-paced class-based shooters with deep movement physics",
+      "Players seeking active community-run servers with custom maps and game modes",
+      "Co-op enthusiasts wanting challenging PvE horde modes in Mann vs. Machine",
+      "Gamers with low-to-mid spec hardware wanting high frame rates",
+    ],
+    notFor: [
+      "Players looking for modern realistic mil-sim gunplay or sprint/ADS mechanics",
+      "Those looking for a single-player narrative story campaign",
+    ],
+    comparableTo: [
+      "Overwatch 2",
+      "Paladins",
+      "Team Fortress Classic",
+      "Open Fortress",
+      "Team Fortress 2 Classic",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install and launch Team Fortress 2 for free on Steam. PlayBound integrates directly with Steam to launch the game and browse community servers.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux and Steam Deck, TF2 runs natively or through Proton with native 64-bit binaries and full controller support.",
+      },
+      {
+        platform: "all",
+        text: "Join casual matchmaking, jump into community servers, or install custom HUDs and mastercomfig performance presets via PlayBound.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Team Fortress 2 genuinely free to play?",
+        a: "Yes! TF2 is 100% free to download and play with no paywalls on maps, classes, weapons, or game modes. All unlockable weapons can be earned through random drop timers, milestone achievements, or weapon crafting.",
+      },
+      {
+        q: "What is Mann vs. Machine (MvM)?",
+        a: "Mann vs. Machine is TF2's 6-player cooperative PvE horde mode where mercenaries defend a base against waves of robotic armies, upgrading weapon stats, resistances, and canteen power-ups between rounds.",
+      },
+      {
+        q: "How do custom HUDs and Mastercomfig work in TF2?",
+        a: "TF2 has native mod folder support (`tf/custom`). Dropping custom HUDs (like ToonHUD or FlawHUD) or Mastercomfig presets directly into your custom folder immediately enhances interface clarity and maximizes frame rate stability.",
+      },
+      {
+        q: "What are Team Fortress 2 Classic and Open Fortress?",
+        a: "TF2 Classic and Open Fortress are standalone community Source SDK mods. TF2 Classic restores 2008-era balance with 4-team battles and the Civilian VIP class, while Open Fortress delivers fast-paced 90s arena deathmatch with bunnyhopping and weapon pickups.",
+      },
+      {
+        q: "Does TF2 run well on modern PCs and Steam Deck?",
+        a: "Yes! Valve updated TF2 with native 64-bit client binaries, dramatically improving performance, memory headroom, and high refresh rate stability on modern Windows, Linux, and Steam Deck devices.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

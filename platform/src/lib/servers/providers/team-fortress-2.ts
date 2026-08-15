@@ -1,10 +1,11 @@
 import { attachGeo } from "../geo";
 import type { GameServer } from "../types";
 import { MAX_SERVERS } from "../types";
+import { fetchSteamConcurrentPlayers } from "./steam-concurrent";
 
 /**
  * Team Fortress 2 public servers via Steam Web API GetServerList.
- * Requires STEAM_WEB_API_KEY (Steam Web API key from steamcommunity.com/dev/apikey).
+ * Falls back to live Steam concurrent player counts if STEAM_WEB_API_KEY is not configured.
  */
 
 const APP_ID = 440;
@@ -89,13 +90,7 @@ export function mapSteamServerListRows(rows: SteamServerListRow[]): GameServer[]
 export async function fetchTeamFortress2Servers(): Promise<GameServer[]> {
   const key = steamApiKey();
   if (!key) {
-    if (!warnedMissingKey) {
-      console.warn(
-        "[servers] team-fortress-2: STEAM_WEB_API_KEY is not set — returning empty list"
-      );
-      warnedMissingKey = true;
-    }
-    return [];
+    return fetchSteamConcurrentPlayers(APP_ID, { label: "Team Fortress 2" });
   }
 
   const url = new URL(STEAM_LIST_URL);
