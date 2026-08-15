@@ -19,15 +19,12 @@ export const DRAFT_ON_CREATE = new Set([
   "gamebuddies-io",
   "star-wars-galaxies",
   "diablo-2",
-  "war-thunder",
   "world-of-tanks",
   "apex-legends",
   "hearthstone",
   "genshin-impact",
   "dota-2",
   "league-of-legends",
-  "valorant",
-  "counter-strike-2",
   "quake-champions",
 ]);
 

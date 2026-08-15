@@ -5,7 +5,6 @@ import { listAllGames } from "@/lib/catalog";
 import { editionCountsByGame } from "@/lib/editions";
 import { modCountsByGame } from "@/lib/mods";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
-import { SyncCatalogToDbButton } from "@/components/admin/SyncCatalogToDbButton";
 import { AdminGamesTable } from "@/components/admin/AdminGamesTable";
 
 export const metadata: Metadata = { title: "Admin · Games" };
@@ -21,7 +20,6 @@ export default async function AdminGamesPage() {
           <p className="mt-1 text-muted-foreground">Create, edit, and publish catalog entries in MongoDB.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <SyncCatalogToDbButton />
           <ProvisionDiscordAllButton />
           <Link
             href="/admin/games/new"

@@ -286,6 +286,158 @@ export const editions: EditionSeed[] = [
     verificationLevel: "playbound_verified",
   },
   {
+    gameSlug: "counter-strike-2",
+    slug: "official",
+    name: "Counter-Strike 2 (Default)",
+    shortDescription: "Official Steam release powered by Source 2 with sub-tick architecture.",
+    description:
+      "Valve's primary tactical 5v5 competitive release. Features responsive volumetric smokes, Premier MMR matchmaking, and full Steam Workshop community support.",
+    type: "official",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.counter-strike.net",
+      discord: "https://discord.gg/counterstrike",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "730",
+      },
+    },
+    features: ["Multiplayer", "Competitive", "Workshop", "Mod Support", "Dedicated Servers"],
+    tags: ["FPS", "Tactical", "Esports", "Source 2"],
+    aliases: ["CS2 Official", "Counter-Strike 2 Steam"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "counter-strike-2",
+    slug: "csgo-legacy",
+    name: "CS:GO Legacy Archive (Frozen 1.38.8.7)",
+    shortDescription: "The frozen final 2023 build of CS:GO for custom community servers and demos.",
+    description:
+      "Accessible via Steam beta properties. Preserves the classic Global Offensive branch for viewing older replay demos and playing on legacy community servers.",
+    type: "community",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://www.counter-strike.net",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "730",
+      },
+    },
+    features: ["Multiplayer", "Legacy Server Support", "Demo Viewer"],
+    tags: ["Legacy", "Archive", "Global Offensive"],
+    aliases: ["CS:GO Legacy", "CSGO 2023"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "valorant",
+    slug: "official",
+    name: "Riot Client Edition (Default)",
+    shortDescription: "Official standalone PC client direct from Riot Games.",
+    description:
+      "The primary PC client for VALORANT featuring direct Riot Vanguard anti-cheat updates, instant patch downloads, and access to all official ranked and casual queues.",
+    type: "official",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://playvalorant.com",
+      discord: "https://discord.gg/valorant",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://playvalorant.com",
+        fileName: "Install-VALORANT.exe",
+        sizeMB: 65,
+      },
+    },
+    features: ["Multiplayer", "Competitive", "Hero Roster", "128-Tick Servers"],
+    tags: ["FPS", "Hero Shooter", "Tactical", "Esports"],
+    aliases: ["Valorant Riot", "Valorant PC"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "valorant",
+    slug: "epic",
+    name: "Epic Games Edition",
+    shortDescription: "Play VALORANT through the Epic Games launcher.",
+    description:
+      "Integrates VALORANT with your Epic Games account library, friend lists, and cross-game notifications while running the official Riot client backend.",
+    type: "official",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://playvalorant.com",
+    },
+    installMethod: "epic",
+    installConfig: {
+      epic: {
+        productSlug: "valorant",
+        launchUrl: "com.epicgames.launcher://apps/Valorant?action=launch&silent=true",
+      },
+    },
+    features: ["Multiplayer", "Epic Games Integration"],
+    tags: ["Epic Games", "Launcher", "Free"],
+    aliases: ["Valorant Epic"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "war-thunder",
+    slug: "official",
+    name: "Steam Edition (Default)",
+    shortDescription: "Official Steam release with automatic updates and SteamVR support.",
+    description:
+      "The official Steam client for War Thunder. Supports seamless Steam Wallet purchases, full Steam Deck integration, and native SteamVR cockpit head tracking.",
+    type: "official",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://warthunder.com",
+      discord: "https://discord.gg/warthunder",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "236390",
+      },
+    },
+    features: ["Multiplayer", "Cross-Platform", "VR Support", "Controller Support"],
+    tags: ["Vehicles", "Simulation", "Steam", "VR"],
+    aliases: ["War Thunder Steam"],
+    verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "war-thunder",
+    slug: "gaijin-client",
+    name: "Gaijin Direct Launcher Edition",
+    shortDescription: "Standalone PC launcher with Ultra HQ 4K texture packages.",
+    description:
+      "Direct standalone launcher managed by Gaijin Entertainment. Offers modular downloads including Ultra HQ vehicle texture packs and direct WT Live integration.",
+    type: "official",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://warthunder.com",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://warthunder.com",
+        fileName: "wt_launcher.exe",
+        sizeMB: 35,
+      },
+    },
+    features: ["Multiplayer", "Ultra HQ Textures", "WT Live Support"],
+    tags: ["Gaijin", "Standalone", "4K"],
+    aliases: ["War Thunder Gaijin"],
+    verificationLevel: "playbound_verified",
+  },
+  {
     gameSlug: "wolfenstein-enemy-territory",
     slug: "et-legacy",
     name: "ET: Legacy (Default)",

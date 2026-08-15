@@ -15,6 +15,9 @@ import { daggerfallMods } from "./daggerfallMods";
 import { wolfensteinMods } from "./wolfensteinMods";
 import { asheronMods } from "./asheronMods";
 import { openlaraMods } from "./openlaraMods";
+import { cs2Mods } from "./cs2Mods";
+import { valorantMods } from "./valorantMods";
+import { warthunderMods } from "./warthunderMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -36,6 +39,9 @@ export const mods: ModSeed[] = [
   ...wolfensteinMods,
   ...asheronMods,
   ...openlaraMods,
+  ...cs2Mods,
+  ...valorantMods,
+  ...warthunderMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
