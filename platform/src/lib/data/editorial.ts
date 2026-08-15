@@ -177,6 +177,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Commercial free-to-play arena FPS; seasonal battle passes and active matchmaking queues on Steam.",
   },
+  "league-of-legends": {
+    kind: "manual",
+    url: "https://www.leagueoflegends.com",
+    checkedAt: "2026-08-15",
+    note: "Actively maintained global live-service MOBA; bi-weekly patch cadence, new champion releases, and seasonal esports circuits.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -2761,6 +2767,87 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "How does movement in Quake Champions work?",
         a: "Movement relies on classic Quake physics: hold forward and jump, then alternate strafe keys and smooth mouse turns to build momentum (strafe jumping). Different Champions also feature unique movement traits such as Slash's crouch slide, Visor's uncapped speed, and Anarki's air control.",
+      },
+    ],
+  },
+  "league-of-legends": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The defining competitive MOBA of the modern era, pairing deep team strategy and 165+ champion toolkits with unmatched tactical nuance and continuous live balance.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "League of Legends (LoL) is Riot Games' genre-defining 5v5 multiplayer online battle arena. Since its 2009 debut, the game has evolved into one of the most played and watched video games in history. Matches take place on Summoner's Rift—a symmetrical arena with three lanes (Top, Mid, Bot), an extensive neutral jungle, and a river intersecting the map. Two teams of five players select unique champions and work cooperatively to destroy enemy defensive towers, control neutral objectives, and shatter the enemy's Nexus core.\n\nAt the center of League's enduring depth is its monumental roster of over 165 playable champions. Each champion features an asymmetric kit comprising a unique passive and four active abilities, categorized into six primary playstyle classes: durable Tanks who initiate teamfights, burst Assassins targeting priority carries, control Mages dealing sustained magic damage, ranged Marksmen (ADCs) scaling into late-game powerhouses, versatile Fighters brawling on the front line, and utility Supports providing vision, shields, and crowd control.\n\nStrategy hinges on micro-mechanical execution and macro-map decision making. Players earn gold and experience by last-hitting lane minions, clearing jungle camps, and eliminating enemy champions. This economy fuels a comprehensive shop with hundreds of synergistic legendary and mythic items that adapt to situational team comps—countering tank armor, building anti-heal Grievous Wounds, or securing survivability through active items like Zhonya's Hourglass.\n\nControlling neutral objectives dictates the tempo of the late game. Slaying Elemental Drakes grants cumulative elemental buffs culminating in powerful Dragon Souls, while the Elder Dragon provides an execute threshold on low-health enemies. Securing Baron Nashor empowers minion waves with siege capabilities, enabling teams to crack open heavily fortified base inhibitors.\n\nBeyond competitive 5v5 Ranked Draft and Clash tournaments, League offers alternate game modes such as All Random All Mid (ARAM) on the single-lane Howling Abyss for continuous teamfighting, and periodic rotating modes like Arena (2v2v2v2 augments) and URF (Ultra Rapid Fire). Free-to-play with all gameplay-affecting elements earnable via in-game Blue Essence, League of Legends remains the pinnacle of tactical competitive PC gaming.",
+    whyWePickedIt:
+      "League of Legends is the gold standard of competitive MOBA design. With its bi-weekly balance updates, massive champion variety, intricate teamfight dynamics, and vibrant global esports scene, it offers virtually infinite competitive replayability with zero pay-to-win barriers.",
+    bestFor: [
+      "Players who love deep strategic teamplay, lane management, and coordinated 5v5 teamfights",
+      "Competitive gamers seeking an established, highly active ranked ladder with millions of players",
+      "Fans of intricate character mechanics and theorycrafting item synergies across 165+ champions",
+      "Players wanting fast, casual teamfighting in ARAM (All Random All Mid)",
+      "Low-spec PC owners wanting smooth 60+ FPS performance on modest hardware",
+    ],
+    notFor: [
+      "Players seeking single-player offline campaigns or casual pauseable games",
+      "Gamers unwilling to install Riot Vanguard kernel-level anti-cheat on Windows",
+      "Those frustrated by steep learning curves and high communicative team dependencies",
+      "Linux/Steam Deck users (Vanguard anti-cheat does not support Linux/Proton)",
+    ],
+    comparableTo: [
+      "Dota 2",
+      "Heroes of the Storm",
+      "Smite",
+      "Predecessor",
+      "League of Legends: Wild Rift",
+      "Battlerite",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and run the official Riot Games installer (live.na.exe / Install-League-of-Legends-NA.exe). PlayBound integrates directly with the Riot Client to detect and launch your installation.",
+      },
+      {
+        platform: "windows",
+        text: "Follow the on-screen prompts to install the Riot Client, League of Legends, and Riot Vanguard anti-cheat. Restart your PC if prompted to initialize Vanguard kernel drivers.",
+      },
+      {
+        platform: "macos",
+        text: "On macOS, download the native DMG installer. League of Legends runs natively on Intel and Apple Silicon Macs without requiring Vanguard.",
+      },
+      {
+        platform: "all",
+        text: "Complete the initial Tutorial matches to learn lane navigation, last-hitting, turret aggro, and unlock your first starter champion capsules.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is League of Legends completely free to play?",
+        a: "Yes. League of Legends is 100% free-to-play. All champions can be unlocked permanently using Blue Essence earned through level-up capsules, first-win bonuses, and event missions. Microtransactions are strictly limited to cosmetics (skins, emotes, ward skins, and chromas).",
+      },
+      {
+        q: "What is Riot Vanguard and why is it required?",
+        a: "Riot Vanguard is Riot Games' custom kernel-level anti-cheat system designed to prevent scripting, vision hacks, and botting in League of Legends. It is mandatory on Windows 10 and 11 (requiring TPM 2.0 and Secure Boot on Windows 11).",
+      },
+      {
+        q: "Can I play League of Legends on macOS or Linux?",
+        a: "League of Legends runs natively on macOS (Apple Silicon and Intel). However, due to Vanguard anti-cheat requirements, League of Legends is not supported on Linux or Steam Deck via Proton/Wine.",
+      },
+      {
+        q: "What is the difference between Summoner's Rift and ARAM?",
+        a: "Summoner's Rift is the standard 3-lane competitive map featuring a jungle, neutral objectives (Baron and Dragons), and structured strategic phases. ARAM (All Random All Mid) takes place on a single bridge (the Howling Abyss) with random champion assignments, constant 5v5 teamfights, and accelerated gold/XP gain.",
+      },
+      {
+        q: "How do I unlock champions without spending real money?",
+        a: "Every time you level up your account, you receive a Champion Capsule containing Champion Shards. You can disenchant unwanted shards into Blue Essence or upgrade them at a discount to permanently unlock that champion.",
+      },
+      {
+        q: "What are the six champion classes in League?",
+        a: "The classes are Tanks (high health and crowd control), Fighters/Bruisers (melee damage and durability), Assassins (high mobility and burst damage), Mages (ranged area-of-effect magic abilities), Marksmen/ADCs (sustained ranged physical damage), and Supports (healing, shields, peel, and vision control).",
       },
     ],
   },

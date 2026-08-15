@@ -29,6 +29,7 @@ import {
   fetchQuakeChampionsPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
+import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
@@ -175,6 +176,10 @@ const providers: Record<string, ServerProvider> = {
   "quake-champions": {
     slug: "quake-champions",
     fetchServers: fetchQuakeChampionsPlayers,
+  },
+  "league-of-legends": {
+    slug: "league-of-legends",
+    fetchServers: fetchLeagueOfLegendsServers,
   },
 };
 

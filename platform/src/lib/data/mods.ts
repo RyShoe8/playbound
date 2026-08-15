@@ -21,6 +21,7 @@ import { warthunderMods } from "./warthunderMods";
 import { swgMods } from "./swgMods";
 import { geminiGoldMods } from "./geminiGoldMods";
 import { quakeChampionsMods } from "./quakeChampionsMods";
+import { leagueOfLegendsMods } from "./leagueOfLegendsMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -48,6 +49,7 @@ export const mods: ModSeed[] = [
   ...swgMods,
   ...geminiGoldMods,
   ...quakeChampionsMods,
+  ...leagueOfLegendsMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );

@@ -2461,6 +2461,78 @@ export const editions: EditionSeed[] = [
     tags: ["Full Roster", "Champions Pack", "Arena Shooter"],
     verificationLevel: "official",
   },
+  {
+    gameSlug: "league-of-legends",
+    slug: "lol-pc-client",
+    name: "League of Legends (Riot PC Client)",
+    shortDescription: "Official Windows client powered by the Riot Games launcher with Vanguard anti-cheat.",
+    description:
+      "The definitive Windows release of League of Legends. Direct installation of the Riot Client and League of Legends, granting full access to Summoner's Rift ranked queues, ARAM, rotating game modes, and in-game shop.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.leagueoflegends.com",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-installer",
+        url: "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.na.exe",
+        fileName: "Install-League-of-Legends-NA.exe",
+        versionLabel: "Latest",
+        exeHint: "LeagueClient|RiotClient",
+        note: "Official Riot Games installer.",
+      },
+    },
+    requirements: {
+      min: "Intel Core i3-530 / 4 GB RAM / Nvidia GeForce 9600GT / 22 GB storage",
+      recommended: "Intel Core i5-3300 / 8 GB RAM / GTX 560 / SSD",
+      notes: "Requires TPM 2.0 and Secure Boot on Windows 11 for Riot Vanguard.",
+    },
+    features: ["Multiplayer", "Competitive", "Ranked", "Vanguard Anti-Cheat", "Custom Lobbies"],
+    tags: ["MOBA", "Esports", "Free to Play", "Strategy"],
+    aliases: ["LoL Windows", "League PC"],
+    version: "Season 2026",
+    verificationLevel: "official",
+    faq: [
+      {
+        q: "What is included with the official PC client?",
+        a: "Full access to Summoner's Rift, ARAM, Arena, ranked ladders, Clash tournaments, and the complete shop with 165+ earnable champions.",
+      },
+    ],
+  },
+  {
+    gameSlug: "league-of-legends",
+    slug: "lol-mac",
+    name: "League of Legends (macOS Native)",
+    shortDescription: "Native macOS build for Intel and Apple Silicon Macs.",
+    description:
+      "Native macOS client of League of Legends with full Metal graphics acceleration. Runs smoothly across Apple Silicon (M1/M2/M3/M4) and Intel Macs without requiring Windows Vanguard kernel drivers.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://www.leagueoflegends.com",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.leagueoflegends.com",
+      },
+    },
+    requirements: {
+      min: "macOS 10.15+ · 4 GB RAM · Metal compatible GPU · 22 GB disk space",
+      recommended: "macOS 12+ · 8 GB RAM · Apple Silicon M1+ · SSD",
+    },
+    features: ["Multiplayer", "macOS Native", "Apple Silicon Optimized", "Metal Graphics", "Competitive"],
+    tags: ["macOS", "Apple Silicon", "MOBA", "Free to Play"],
+    verificationLevel: "official",
+  },
 ];
 
 
