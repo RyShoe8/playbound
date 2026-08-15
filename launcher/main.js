@@ -15,6 +15,7 @@ const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
+const { createSecurity } = require("./services/security");
 const { withOutboundUtm } = require("./utm");
 const {
   OPENCIV3_SLUG,
@@ -43,54 +44,35 @@ const DEFAULT_API_BASE = "https://playbound.club";
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
 
 /*
- * Bound here, near the constants it needs, rather than further down where these
- * functions used to be declared. They were hoisted function declarations and
- * are now const bindings, so anything calling loadSettings() before this line
- * would hit the temporal dead zone — keeping it at the top of the module means
- * that cannot happen. isAllowedApiBase is still hoisted and is only invoked
- * later, so passing the reference here is fine.
+ * Both bound here, near the constants they need, rather than further down where
+ * these functions used to be declared. They were hoisted function declarations
+ * and are now const bindings, so anything calling loadSettings() earlier in the
+ * module would hit the temporal dead zone — keeping them at the top means that
+ * cannot happen.
+ *
+ * Security comes first because settings needs isAllowedApiBase to resolve the
+ * API origin. The dependency runs both ways (the download allowlist trusts
+ * whatever host the API base names), so getApiBase is passed as a thunk and
+ * read at call time rather than now.
  */
+const {
+  registerDownloadHostFromUrl,
+  registerCatalogEntryHosts,
+  isAllowedApiBase,
+  assertDownloadUrl,
+  assertOpenExternalUrl,
+} = createSecurity({
+  isPackaged: () => app.isPackaged,
+  getApiBase: () => getApiBase(),
+});
+
 const { loadSettings, saveSettings, gamesRoot, getApiBase } = createSettings({
   settingsFile: SETTINGS_FILE,
   defaultGamesDir: DEFAULT_GAMES_DIR,
   defaultApiBase: DEFAULT_API_BASE,
-  isAllowedApiBase: (url) => isAllowedApiBase(url),
+  isAllowedApiBase,
   safeStorage,
 });
-
-/** Dynamically registered download hosts from official site API catalog & edition payloads. */
-const dynamicAllowedDownloadHosts = new Set();
-
-function registerDownloadHostFromUrl(rawUrl) {
-  try {
-    if (!rawUrl) return;
-    const u = new URL(String(rawUrl));
-    if (u.hostname) {
-      dynamicAllowedDownloadHosts.add(u.hostname.toLowerCase());
-    }
-  } catch {
-    /* ignore */
-  }
-}
-
-function registerCatalogEntryHosts(entry) {
-  if (!entry || typeof entry !== "object") return;
-  registerDownloadHostFromUrl(entry.url);
-  registerDownloadHostFromUrl(entry.downloadUrl);
-  registerDownloadHostFromUrl(entry.coverImage);
-  if (Array.isArray(entry.addons)) {
-    for (const addon of entry.addons) {
-      registerDownloadHostFromUrl(addon?.url);
-    }
-  }
-  if (entry.installConfig && typeof entry.installConfig === "object") {
-    for (const val of Object.values(entry.installConfig)) {
-      if (val && typeof val === "object" && val.url) {
-        registerDownloadHostFromUrl(val.url);
-      }
-    }
-  }
-}
 
 function loadCachedCatalog() {
   try {
@@ -132,63 +114,6 @@ let catalog = (() => {
   }
   return merged;
 })();
-
-/** Origins the settings UI may retarget as API base. */
-const ALLOWED_API_BASE_HOSTS = new Set([
-  "playbound.club",
-  "www.playbound.club",
-  "localhost",
-  "127.0.0.1",
-]);
-
-/**
- * Whether a Vercel preview deployment may be trusted as an origin.
- *
- * "*.vercel.app whose name contains 'playbound'" is not a restriction: any
- * Vercel user can claim a project name carrying our brand. That matters more
- * than it looks, because the API base decides which catalog we trust and
- * catalog entries register their own download hosts (see
- * registerCatalogEntryHosts) — so accepting a stranger's preview deployment
- * ends in the launcher running that stranger's binary. Previews stay available
- * while developing and are refused outright by a shipped build.
- */
-function isTrustedPreviewHost(host) {
-  if (app.isPackaged) return false;
-  return host.endsWith(".vercel.app") && host.includes("playbound");
-}
-
-function isAllowedApiBase(raw) {
-  try {
-    const u = new URL(String(raw || "").replace(/\/$/, ""));
-    if (u.protocol !== "https:" && !(u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1"))) {
-      return false;
-    }
-    const host = u.hostname.toLowerCase();
-    if (ALLOWED_API_BASE_HOSTS.has(host)) return true;
-    if (isTrustedPreviewHost(host)) return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-function assertOpenExternalUrl(raw) {
-  let u;
-  try {
-    u = new URL(String(raw || ""));
-  } catch {
-    throw new Error("Invalid URL");
-  }
-  const proto = u.protocol.toLowerCase();
-  if (proto === "https:") return u.toString();
-  if (proto === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1")) {
-    return u.toString();
-  }
-  if (proto === "mailto:") return u.toString();
-  // Steam install / run deep links from catalog external recipes.
-  if (proto === "steam:") return u.toString();
-  throw new Error(`Blocked external URL scheme: ${proto}`);
-}
 
 /**
  * @param {string} raw
@@ -338,88 +263,6 @@ function steamDeepLinkFor(rawUrl) {
   } catch {
     return null;
   }
-}
-
-function hostAllowedForDownload(hostname) {
-  const host = String(hostname || "").toLowerCase();
-  if (!host) return false;
-  if (dynamicAllowedDownloadHosts.has(host)) return true;
-  if (host === "github.com" || host === "www.github.com") return true;
-  if (host.endsWith(".githubusercontent.com")) return true;
-  if (host === "cdn.openttd.org" || host.endsWith(".openttd.org")) return true;
-  if (host.endsWith(".adoptium.net") || host === "api.adoptium.net") return true;
-  if (host === "contentdb.luanti.org" || host.endsWith(".luanti.org")) return true;
-  if (host === "content.minetest.net" || host.endsWith(".minetest.net")) return true;
-  if (host.endsWith(".github.com") && host.includes("objects")) return true;
-  if (host.endsWith(".public.blob.vercel-storage.com")) return true;
-  if (host.endsWith(".vercel-storage.com")) return true;
-  // One-click catalog hosts (direct-installer / zip / exe recipes).
-  if (host === "files.freeciv.org" || host.endsWith(".freeciv.org")) return true;
-  if (host === "sourceforge.net" || host.endsWith(".sourceforge.net")) return true;
-  if (host === "dl.xonotic.org" || host.endsWith(".xonotic.org")) return true;
-  if (host === "releases.wildfiregames.com" || host.endsWith(".wildfiregames.com")) return true;
-  if (host === "gitlab.com" || host.endsWith(".gitlab.com") || host.endsWith(".gitlab-static.net")) {
-    return true;
-  }
-  if (host === "zero-k.info" || host.endsWith(".zero-k.info")) return true;
-  if (host === "hedgewars.org" || host.endsWith(".hedgewars.org")) return true;
-  if (host === "openarena.ws" || host.endsWith(".openarena.ws")) return true;
-  if (host === "megaphilx.com" || host.endsWith(".megaphilx.com")) return true;
-  if (host === "villagersandheroes.com" || host.endsWith(".villagersandheroes.com")) return true;
-  if (host === "download.flightgear.org" || host.endsWith(".flightgear.org")) return true;
-  // Brewall's EverQuest map packs — see verifiedModsWave.ts.
-  if (host === "eqmaps.info" || host.endsWith(".eqmaps.info")) return true;
-  // MMOs that ship their own installer — see launcherInstallBySlug in
-  // platform/src/lib/data/launcherInstall.ts. Each pairs an exact host with a
-  // dotted-suffix match, so a lookalike like "evilguildwars2.com" cannot pass.
-  if (host === "albiononline.com" || host.endsWith(".albiononline.com")) return true;
-  if (host === "guildwars2.com" || host.endsWith(".guildwars2.com")) return true;
-  if (host === "arena.net" || host.endsWith(".arena.net")) return true;
-  if (host === "lotro.com" || host.endsWith(".lotro.com")) return true;
-  if (host === "daybreakgames.com" || host.endsWith(".daybreakgames.com")) return true;
-  if (host === "swtor.com" || host.endsWith(".swtor.com")) return true;
-  if (host === "runescape.com" || host.endsWith(".runescape.com")) return true;
-  if (host === "xsolla.com" || host.endsWith(".xsolla.com")) return true;
-  if (host === "itch.io" || host.endsWith(".itch.io") || host.endsWith(".itch.zone")) return true;
-  if (host === "archive.org" || host.endsWith(".archive.org")) return true;
-  if (host === "codeberg.org" || host.endsWith(".codeberg.org")) return true;
-  if (host === "myabandonware.com" || host.endsWith(".myabandonware.com")) return true;
-  if (host === "allegro.cc" || host.endsWith(".allegro.cc")) return true;
-  if (host === "bzflag.org" || host.endsWith(".bzflag.org")) return true;
-  if (host === "scummvm.org" || host.endsWith(".scummvm.org")) return true;
-  // Anchored at both ends on purpose. A bare substring test would also accept
-  // "itchio-mirror.attacker.example", which is exactly what this list exists to
-  // keep out — the launcher executes what it downloads.
-  if (/^itchio-mirror[a-z0-9-]*\.(hwcdn\.net|b-cdn\.net)$/.test(host)) return true;
-  if (host.endsWith(".r2.cloudflarestorage.com")) return true;
-  if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
-  if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
-  if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net")) return true;
-  try {
-    const apiHost = new URL(getApiBase()).hostname.toLowerCase();
-    if (host === apiHost) return true;
-  } catch {
-    /* ignore */
-  }
-  if (ALLOWED_API_BASE_HOSTS.has(host)) return true;
-  if (isTrustedPreviewHost(host)) return true;
-  return false;
-}
-
-function assertDownloadUrl(raw) {
-  let u;
-  try {
-    u = new URL(String(raw || ""));
-  } catch {
-    throw new Error("Invalid download URL");
-  }
-  if (u.protocol !== "https:" && !(u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1"))) {
-    throw new Error("Download URL must be https");
-  }
-  if (!hostAllowedForDownload(u.hostname)) {
-    throw new Error(`Download host not allowed: ${u.hostname}`);
-  }
-  return u.toString();
 }
 
 function normalizeFsPath(p) {
