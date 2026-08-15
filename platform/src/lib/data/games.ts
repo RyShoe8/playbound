@@ -3642,7 +3642,12 @@ const facts: Game[] = [
     complete: true,
   },
   {
-    slug: "swtor",
+    /*
+     * Matches the published record. Seeding this as "swtor" created a second,
+     * separate game rather than filling in the real one, so its editorial and
+     * player count went to a page that was never published.
+     */
+    slug: "star-wars-the-old-republic",
     title: "Star Wars: The Old Republic",
     tagline: "The fully voiced cinematic Star Wars MMORPG across eight iconic class storylines.",
     description:

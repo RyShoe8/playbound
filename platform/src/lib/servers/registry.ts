@@ -136,6 +136,16 @@ const providers: Record<string, ServerProvider> = {
     slug: "old-school-runescape",
     fetchServers: fetchOldSchoolRuneScapePlayers,
   },
+  /*
+   * The published game is star-wars-the-old-republic; "swtor" was a second
+   * record created from seed and never published, so the count was being
+   * served to a page nobody could reach. Both are registered because the
+   * short slug is still what people search for.
+   */
+  "star-wars-the-old-republic": {
+    slug: "star-wars-the-old-republic",
+    fetchServers: fetchSwtorPlayers,
+  },
   swtor: {
     slug: "swtor",
     fetchServers: fetchSwtorPlayers,

@@ -3335,7 +3335,7 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
-  swtor: {
+  "star-wars-the-old-republic": {
     qualityBar: {
       genuinelyFree: true,
       finished: true,
