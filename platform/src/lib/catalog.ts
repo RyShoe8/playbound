@@ -27,99 +27,94 @@ type LeanGame = Record<string, unknown>;
 
 function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
   const fromDoc = doc?.launcherInstall as LauncherInstall | null | undefined;
-  if (fromDoc?.kind) {
+  if (fromDoc?.enabled && fromDoc?.kind) {
     return { ...game, launcherInstall: fromDoc };
   }
-  const seed = launcherInstallBySlug[game.slug];
+  const seed = seedBySlug.get(game.slug)?.launcherInstall || launcherInstallBySlug[game.slug];
   if (seed) return { ...game, launcherInstall: seed };
   return game;
 }
 
 function toGame(doc: LeanGame): Game {
+  const seed = seedBySlug.get(String(doc.slug));
   const status = normalizeStatus(doc);
+  const resolvedStatus = seed?.status === "published" && status === "draft" ? "published" : status;
+
   const base: Game = {
     slug: String(doc.slug),
-    title: String(doc.title),
-    tagline: String(doc.tagline),
-    description: String(doc.description),
-    developerSlug: String(doc.developerSlug),
-    genres: (doc.genres as Genre[]) ?? [],
-    tags: (doc.tags as string[]) ?? [],
-    aliases: (doc.aliases as string[]) ?? [],
-    license: String(doc.license),
-    releaseYear: Number(doc.releaseYear),
-    sizeMB: Number(doc.sizeMB),
-    status,
-    platforms: (doc.platforms as string[]) ?? [],
-    features: (doc.features as string[]) ?? [],
-    launchMethods: (doc.launchMethods as LaunchMethod[]) ?? [],
-    browserPlayable: Boolean(doc.browserPlayable),
-    steamDeck: Boolean(doc.steamDeck),
-    website: String(doc.website),
-    steamAppId: (doc.steamAppId as string) || undefined,
-    androidStoreUrl: (doc.androidStoreUrl as string) || seedBySlug.get(String(doc.slug))?.androidStoreUrl,
-    iosStoreUrl: (doc.iosStoreUrl as string) || seedBySlug.get(String(doc.slug))?.iosStoreUrl,
-    githubRepo: (doc.githubRepo as string) || undefined,
-    gameOfWeek: Boolean(doc.gameOfWeek),
-    hiddenGem: Boolean(doc.hiddenGem),
-    complete: Boolean(doc.complete),
-    art: doc.art as Game["art"],
-    coverImage: (doc.coverImage as string) || seedBySlug.get(String(doc.slug))?.coverImage,
-    screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
-    videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : undefined,
-    systemRequirements: doc.systemRequirements as Game["systemRequirements"],
+    title: String(doc.title) || seed?.title || "",
+    tagline: String(doc.tagline) || seed?.tagline || "",
+    description: String(doc.description) || seed?.description || "",
+    developerSlug: String(doc.developerSlug) || seed?.developerSlug || "",
+    genres: (doc.genres as Genre[])?.length ? (doc.genres as Genre[]) : (seed?.genres ?? []),
+    tags: (doc.tags as string[])?.length ? (doc.tags as string[]) : (seed?.tags ?? []),
+    aliases: (doc.aliases as string[])?.length ? (doc.aliases as string[]) : (seed?.aliases ?? []),
+    license: String(doc.license) || seed?.license || "",
+    releaseYear: (typeof doc.releaseYear === "number" && doc.releaseYear > 1970 ? doc.releaseYear : seed?.releaseYear) || 0,
+    sizeMB: (typeof doc.sizeMB === "number" && doc.sizeMB > 0 ? doc.sizeMB : seed?.sizeMB) || 0,
+    status: resolvedStatus,
+    platforms: (doc.platforms as string[])?.length ? (doc.platforms as string[]) : (seed?.platforms ?? []),
+    features: (doc.features as string[])?.length ? (doc.features as string[]) : (seed?.features ?? []),
+    launchMethods: (doc.launchMethods as LaunchMethod[])?.length ? (doc.launchMethods as LaunchMethod[]) : (seed?.launchMethods ?? ["install"]),
+    browserPlayable: Boolean(doc.browserPlayable ?? seed?.browserPlayable),
+    steamDeck: Boolean(doc.steamDeck ?? seed?.steamDeck),
+    website: String(doc.website) || seed?.website || "",
+    steamAppId: (doc.steamAppId as string) || seed?.steamAppId,
+    androidStoreUrl: (doc.androidStoreUrl as string) || seed?.androidStoreUrl,
+    iosStoreUrl: (doc.iosStoreUrl as string) || seed?.iosStoreUrl,
+    githubRepo: (doc.githubRepo as string) || seed?.githubRepo,
+    gameOfWeek: Boolean(doc.gameOfWeek ?? seed?.gameOfWeek),
+    hiddenGem: Boolean(doc.hiddenGem ?? seed?.hiddenGem),
+    complete: Boolean(doc.complete ?? seed?.complete),
+    art: (doc.art as Game["art"]) || seed?.art,
+    coverImage: (doc.coverImage as string) || seed?.coverImage,
+    screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : seed?.screenshots,
+    videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : seed?.videos,
+    systemRequirements: (doc.systemRequirements && typeof doc.systemRequirements === "object" && (doc.systemRequirements as { min?: string }).min)
+      ? (doc.systemRequirements as Game["systemRequirements"])
+      : (seed?.systemRequirements || { min: "", recommended: "" }),
     hardwareRequirements:
       (doc.hardwareRequirements as Game["hardwareRequirements"]) ||
-      seedBySlug.get(String(doc.slug))?.hardwareRequirements ||
+      seed?.hardwareRequirements ||
       null,
 
-    // Editorial depth. Falls back to the seed entry so hand-written content
-    // survives a DB import that does not yet carry these fields.
-    // normalizeQualityBar maps legacy wontDisappear → highQuality for old docs.
     qualityBar:
       normalizeQualityBar(
-        (doc.qualityBar as {
-          genuinelyFree?: boolean;
-          finished?: boolean;
-          activelyMaintained?: boolean;
-          standsAlone?: boolean;
-          highQuality?: boolean;
-          wontDisappear?: boolean;
-          verdict?: string;
-          lastVerified?: string;
-        } | null) ?? seedBySlug.get(String(doc.slug))?.qualityBar
+        (doc.qualityBar && typeof doc.qualityBar === "object" && (doc.qualityBar as { verdict?: string }).verdict)
+          ? (doc.qualityBar as Parameters<typeof normalizeQualityBar>[0])
+          : seed?.qualityBar
       ) ?? undefined,
     longDescription:
-      (doc.longDescription as string) || seedBySlug.get(String(doc.slug))?.longDescription,
+      (doc.longDescription as string) || seed?.longDescription,
     whyWePickedIt:
-      (doc.whyWePickedIt as string) || seedBySlug.get(String(doc.slug))?.whyWePickedIt,
+      (doc.whyWePickedIt as string) || seed?.whyWePickedIt,
     installSteps:
       (doc.installSteps as Game["installSteps"])?.length
         ? (doc.installSteps as Game["installSteps"])
-        : seedBySlug.get(String(doc.slug))?.installSteps,
+        : seed?.installSteps,
     faq: (doc.faq as Game["faq"])?.length
       ? (doc.faq as Game["faq"])
-      : seedBySlug.get(String(doc.slug))?.faq,
+      : seed?.faq,
     bestFor: (doc.bestFor as string[])?.length
       ? (doc.bestFor as string[])
-      : seedBySlug.get(String(doc.slug))?.bestFor,
+      : seed?.bestFor,
     notFor: (doc.notFor as string[])?.length
       ? (doc.notFor as string[])
-      : seedBySlug.get(String(doc.slug))?.notFor,
+      : seed?.notFor,
     comparableTo: (doc.comparableTo as string[])?.length
       ? (doc.comparableTo as string[])
-      : seedBySlug.get(String(doc.slug))?.comparableTo,
+      : seed?.comparableTo,
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,
     createdAt: (doc as { createdAt?: Date }).createdAt
       ? new Date((doc as { createdAt: Date }).createdAt).toISOString()
       : undefined,
-    communityLinks: mapCommunityLinks(doc.communityLinks),
+    communityLinks: mapCommunityLinks(doc.communityLinks) || seed?.communityLinks,
     playboundSupported: doc.playboundSupported !== false,
     epicStoreUrl: (doc.epicStoreUrl as string) || undefined,
     gogStoreUrl: (doc.gogStoreUrl as string) || undefined,
-    externalIds: doc.externalIds as Game["externalIds"] || undefined,
+    externalIds: (doc.externalIds as Game["externalIds"]) || undefined,
   };
   return attachLauncherInstall(base, doc);
 }

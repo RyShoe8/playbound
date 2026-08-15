@@ -20,7 +20,7 @@ import {
 const PlatformSessionSchema = new Schema(
   {
     /** Client-generated UUID. Lets a client resume its own row after a blip. */
-    sessionId: { type: String, required: true, unique: true, index: true },
+    sessionId: { type: String, required: true, unique: true },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",

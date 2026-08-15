@@ -17,7 +17,7 @@ const GpuEntrySchema = new Schema(
 
 const UserHardwareProfileSchema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
     schemaVersion: { type: Number, default: 1 },
     collectedAt: { type: Date, required: true },
     os: {
