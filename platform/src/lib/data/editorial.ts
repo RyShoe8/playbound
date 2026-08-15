@@ -158,6 +158,102 @@ function clearsAll(verdict: string): Game["qualityBar"] {
 }
 
 export const editorial: Record<string, GameEditorial> = {
+  openarena: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      /*
+       * 0.8.8 is from 2012 and nothing has shipped since. The servers are full
+       * and the game is complete, but "actively maintained" is a claim about
+       * development, and there is none — saying otherwise would make the other
+       * four ticks worth less.
+       */
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Four out of five, and the missing one is not the one you would worry about. OpenArena has not shipped a release since 2012, but it did not need to — it is a finished arena shooter with servers that still fill up, and it asks nothing of you but the download.",
+      lastVerified: VERIFIED,
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://openarena.ws/download.php",
+      checkedAt: VERIFIED,
+      note: "0.8.8 (Feb 2012) remains the current release; no newer stable build exists. Community servers verified live at 70 listed, 221 players.",
+    },
+    longDescription:
+      "When id Software released the Quake III engine under the GPL, it handed the internet a perfect arena shooter with a hole in the middle: the code was free, the guns and maps were not. OpenArena is what happens when a community spends twenty years filling that hole with work of their own.\n\nEverything you shoot, stand on and hear here was made from scratch to be given away. The maps are original, the weapons are original, the announcer bellowing over your killing spree is original. That matters less as a licensing footnote than as the reason the whole thing is one download with nothing withheld — no base game to own first, no assets to source from somewhere grey.\n\nWhat you get is the real thing, not an homage. Movement is weightless and fast, strafe-jumping carries you across an arena in a couple of seconds, and the rocket launcher is aimed at the floor as often as at a person. The railgun rewards patience, the shotgun punishes it. Health and armour sit on fixed timers, so the good players are the ones counting seconds in their heads while you are still looking for a fight.\n\nThe honest catch is the calendar. The last release landed in February 2012 and the roster of populated servers is smaller than it was — you will find deathmatch and CTF running most evenings in Europe and North America, not a matchmaking queue that fills in ten seconds. What is still there is genuinely there: real people, real servers, most of them running for longer than some studios have existed.\n\nIt also runs on anything. The engine is from 1999, so a laptop with integrated graphics will hold triple-digit frame rates, and the whole game fits in the space of a single modern patch.",
+    whyWePickedIt:
+      "We added OpenArena because it is the cleanest answer we have to a question people ask us constantly: what do I play when I do not want to spend money and do not want to be sold anything. There is no launcher, no account, no season, no shop. You download it, you open it, you are in a game.\n\nThere is also something we find quietly impressive about it. Most free shooters are free because someone is monetising your attention somewhere else. This one is free because a group of people decided the engine deserved a game to go with it and then made every texture and sound themselves. Fourteen years after the last release the servers still have people on them, which tells you they got it right.",
+    bestFor: [
+      "Anyone who misses Quake III and does not want to pay for it again",
+      "Old laptops and integrated graphics — the engine is from 1999",
+      "LAN parties, where it needs no accounts and no internet at all",
+      "Short sessions; a deathmatch round is over in ten minutes",
+      "Players who want mechanical skill to decide matches rather than unlocks",
+    ],
+    notFor: [
+      "Anyone expecting a populated matchmaking queue at any hour",
+      "Players who want modern shooter comforts — no progression, no loadouts",
+      "Those who need current visuals; this is 2005 art on a 1999 engine",
+      "Anyone hoping for active development, which stopped in 2012",
+    ],
+    comparableTo: ["Quake III Arena", "Quake Live", "Xonotic", "Unvanquished", "Warsow", "Doom"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install through PlayBound, which pulls the 0.8.8 archive from the project's SourceForge mirror and checks it against the published MD5.",
+      },
+      {
+        platform: "all",
+        text: "Nothing else is needed. OpenArena is a complete game — it does not read any files from Quake III.",
+      },
+      {
+        platform: "all",
+        text: "Raise com_maxfps before your first match. The default is conservative and the movement feels markedly different once it is uncapped.",
+      },
+      {
+        platform: "all",
+        text: "Use the in-game server browser rather than starting a local match; the populated servers are where the game actually lives.",
+      },
+      {
+        platform: "linux",
+        text: "Mark the binary executable if your file manager has not done it for you.",
+        command: "chmod +x openarena.x86_64",
+      },
+    ],
+    faq: [
+      {
+        q: "Is OpenArena really free?",
+        a: "Completely. The engine is GPL and every asset was created by the community to be freely licensed, so there is nothing to buy, no account to make and no store. You do not need to own Quake III or any other game.",
+      },
+      {
+        q: "Do I need Quake III Arena to play it?",
+        a: "No. OpenArena reuses id Software's open-sourced engine but ships its own maps, weapons, models and sounds. It is a complete standalone game.",
+      },
+      {
+        q: "Is anyone still playing in 2026?",
+        a: "Yes, though modestly. We counted 70 listed servers with 221 players across them when this entry was last checked, concentrated in Europe and North America. Expect populated deathmatch and CTF in the evenings rather than instant matchmaking.",
+      },
+      {
+        q: "Why is the last release from 2012?",
+        a: "Development on the stable branch stopped after 0.8.8. The game was finished by then, and community work since has gone into maps and the experimental OpenArena eXpanded branch rather than new official releases.",
+      },
+      {
+        q: "Will it run on my old laptop?",
+        a: "Almost certainly. The engine dates from 1999, so integrated graphics will hold well over a hundred frames per second. The only real requirement is about 700 MB of disk space.",
+      },
+      {
+        q: "Can I play offline or on a LAN?",
+        a: "Yes to both. Bots fill any arena for offline practice, and LAN play needs no internet connection and no accounts, which makes it a reliable choice for a room full of machines.",
+      },
+      {
+        q: "Is this related to The Elder Scrolls: Arena?",
+        a: "No, despite both being in this catalog. That is a 1994 Bethesda RPG; this is a multiplayer arena shooter. They share nothing but the word.",
+      },
+    ],
+  },
+
   starcraft: {
     qualityBar: {
       genuinelyFree: true,

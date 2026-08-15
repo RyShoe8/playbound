@@ -1368,16 +1368,17 @@ const facts: Game[] = [
   {
     slug: "openarena",
     title: "OpenArena",
-    tagline: "A free arena shooter in the Quake III spirit.",
+    tagline: "Rocket jumps, railgun duels, and nothing to buy.",
     description:
-      "OpenArena is a free and open-source arena FPS inspired by Quake III Arena. Jump into deathmatch, CTF, and tournament modes with fully free assets — not an Elder Scrolls title, despite the shared “Arena” name.",
+      "A community-built arena shooter running on the open-sourced Quake III engine, with its own freely licensed maps, weapons and characters. Fast, weightless movement, thirty-odd arenas, and dedicated servers that have been running for two decades.",
     developerSlug: "openarena-team",
-    genres: ["FPS", "Arcade"],
-    tags: ["Arena Shooter", "Competitive", "Classic", "Open Source"],
-    aliases: ["OA", "Open Arena"],
-    license: "Open Source (GPL-2.0)",
+    genres: ["FPS", "Arcade", "Action"],
+    tags: ["Arena Shooter", "Competitive", "Classic", "Open Source", "Deathmatch", "CTF", "LAN"],
+    aliases: ["OA", "Open Arena", "OpenArena 0.8.8"],
+    license: "Open Source (GPL-2.0) · assets under CC/GPL",
     releaseYear: 2005,
-    sizeMB: 500,
+    /* SourceForge reports the 0.8.8 archive at 425,189,255 bytes. */
+    sizeMB: 405,
     status: "testing",
     platforms: ["Windows", "macOS", "Linux"],
     features: ["Multiplayer", "Dedicated Servers", "LAN Support", "Mod Support"],
@@ -1388,31 +1389,73 @@ const facts: Game[] = [
     gameOfWeek: false,
     hiddenGem: false,
     art: { from: "#7c2d12", to: "#fdba74", icon: "Crosshair" },
+    /*
+     * The engine is id Tech 3, shipped in 1999. Anything with a GPU clears it;
+     * the honest constraint is disk, since the archive alone is 405MB.
+     */
     systemRequirements: {
-      min: "1.5 GHz CPU · 512 MB RAM · OpenGL 1.3 · 600 MB storage",
-      recommended: "2.5 GHz CPU · 2 GB RAM · Any modern GPU · 1 GB storage",
+      min: "Any 64-bit Windows, macOS or Linux · 1 GHz CPU · 512 MB RAM · OpenGL 1.2 · 700 MB storage",
+      recommended: "Dual-core CPU · 2 GB RAM · Any dedicated or integrated GPU · 1 GB storage · 60+ Hz display",
     },
     hardwareRequirements: {
       min: {
+        os: ["windows", "macos", "linux"],
         ramMB: 512,
-        apis: [
-          "opengl",
-        ],
-        storageMB: 600,
-        cpuText: "1.5 GHz CPU",
-        gpuText: "OpenGL 1.3",
+        vramMB: 32,
+        storageMB: 700,
+        apis: ["opengl"],
+        cpuText: "1 GHz single-core",
+        cpuTier: "low",
+        gpuText: "Any OpenGL 1.2 capable GPU",
+        gpuTier: "low",
+        notes: "Runs on hardware two decades old; the download is the real cost.",
       },
       recommended: {
+        os: ["windows", "macos", "linux"],
         ramMB: 2048,
+        vramMB: 256,
         storageMB: 1024,
-        cpuText: "2.5 GHz CPU",
-        gpuText: "Any modern GPU",
+        apis: ["opengl"],
+        cpuText: "Any dual-core CPU",
+        cpuTier: "low",
+        gpuText: "Any dedicated or integrated GPU from the last decade",
+        gpuTier: "entry",
+        notes: "A high-refresh display matters more here than the GPU does.",
       },
+      target: { resolution: "1920x1080", fps: 125, preset: "High quality" },
       provenance: {
-        source: "unverified",
-        enteredBy: "free-text-parser",
+        source: "playbound_verified",
+        sourceUrl: "https://openarena.ws/download.php",
+        verifiedAt: "2026-08-15",
+        enteredBy: "playbound",
       },
     },
+    launcherInstall: {
+      enabled: true,
+      /*
+       * SourceForge rather than the link on openarena.ws, which points at
+       * GameFront and answers 403 — that host has been dead for years. The
+       * project's own SourceForge mirror serves the identical archive and
+       * publishes an MD5, so the launcher can verify what it downloaded instead
+       * of trusting the transfer.
+       */
+      kind: "direct-zip",
+      url: "https://sourceforge.net/projects/oarena/files/openarena-0.8.8.zip/download",
+      fileName: "openarena-0.8.8.zip",
+      versionLabel: "0.8.8",
+      checksumMd5: "9f353d96d7889c377349d692c3905e5b",
+      exeHint: "openarena",
+      knownExePaths: [
+        "openarena-0.8.8/openarena.exe",
+        "openarena-0.8.8/oa_ded.exe",
+        "openarena.exe",
+      ],
+      installRoot: "openarena-0.8.8",
+      /* Quake III's connect syntax, which OpenArena inherits unchanged. */
+      connectArgs: ["+connect {host}:{port}"],
+      note: "0.8.8 is the last stable release (2012) and is what every public server runs. It is a complete game — no original Quake III files needed.",
+    },
+    complete: true,
   },
   {
     slug: "pixreveal",
