@@ -858,6 +858,50 @@ export const developers: Developer[] = [
     website: "https://www.dfworkshop.net",
     artHue: 210,
   },
+  {
+    slug: "splash-damage",
+    name: "Splash Damage",
+    tagline: "Creators of Wolfenstein: Enemy Territory and Enemy Territory: Quake Wars.",
+    about:
+      "Legendary British video game developer founded in 2001, renowned for crafting objective-driven multiplayer shooters including Wolfenstein: Enemy Territory, Brink, and Gears Tactics.",
+    founded: 2001,
+    location: "Bromley, United Kingdom",
+    website: "https://www.splashdamage.com",
+    artHue: 25,
+  },
+  {
+    slug: "etlegacy-team",
+    name: "ET: Legacy Project",
+    tagline: "Open-source continuation of Wolfenstein: Enemy Territory.",
+    about:
+      "Open-source community project maintaining and modernizing Wolfenstein: Enemy Territory with 64-bit binaries, modern OpenGL renderer, and cross-platform compatibility.",
+    founded: 2011,
+    location: "Worldwide",
+    website: "https://www.etlegacy.com",
+    artHue: 15,
+  },
+  {
+    slug: "etpro-team",
+    name: "ETPro Team",
+    tagline: "Authors of the gold-standard tournament competitive mod for ET.",
+    about:
+      "Competitive modding group whose ETPro mod powered over a decade of international esports tournaments and leagues for Wolfenstein: Enemy Territory.",
+    founded: 2003,
+    location: "Worldwide",
+    website: "https://www.etlegacy.com",
+    artHue: 200,
+  },
+  {
+    slug: "omnibot-team",
+    name: "Omni-Bot Team",
+    tagline: "Pioneering tactical bot artificial intelligence.",
+    about:
+      "Creators of Omni-Bot, the advanced goal-oriented action planning bot AI system for id Tech 3 multiplayer games.",
+    founded: 2004,
+    location: "Worldwide",
+    website: "https://omni-bot.com",
+    artHue: 180,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

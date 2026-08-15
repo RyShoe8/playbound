@@ -11,6 +11,7 @@ import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
 import { fetchSpaceStation14Servers } from "./providers/space-station-14";
 import { fetchStarCraftServers } from "./providers/starcraft";
+import { fetchWolfensteinEnemyTerritoryServers } from "./providers/wolfenstein-enemy-territory";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
@@ -66,6 +67,18 @@ const providers: Record<string, ServerProvider> = {
     slug: "space-station-14-multiplayer-disaster-simulator",
     fetchServers: fetchSpaceStation14Servers,
   },
+  starcraft: {
+    slug: "starcraft",
+    fetchServers: fetchStarCraftServers,
+  },
+  "wolfenstein-enemy-territory": {
+    slug: "wolfenstein-enemy-territory",
+    fetchServers: fetchWolfensteinEnemyTerritoryServers,
+  },
+  wolfenstein: {
+    slug: "wolfenstein",
+    fetchServers: fetchWolfensteinEnemyTerritoryServers,
+  },
   // Testing catalog games — visible to testers/admins via includeTesting; public
   // homepage Active Players stays published-only until status flips.
   freeciv: { slug: "freeciv", fetchServers: fetchFreecivServers },
@@ -99,10 +112,6 @@ const providers: Record<string, ServerProvider> = {
   "tes-arena": {
     slug: "tes-arena",
     fetchServers: fetchTesArenaPlayers,
-  },
-  starcraft: {
-    slug: "starcraft",
-    fetchServers: fetchStarCraftServers,
   },
 };
 

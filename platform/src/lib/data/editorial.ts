@@ -2458,6 +2458,79 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "wolfenstein-enemy-territory": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Wolfenstein: Enemy Territory clears all five: 100% free with no store or DLC since 2003, powered by the actively maintained ET: Legacy engine, and an immortal pioneer of class-based objective FPS design.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Enemy Territory is one of the most influential multiplayer FPS games in PC gaming history. Splash Damage and id Software created a timeless masterpiece of objective warfare, class synergy, and construction mechanics that inspired Dirty Bomb, Brink, and Overwatch — completely free forever.",
+    longDescription:
+      "Wolfenstein: Enemy Territory is the legendary free multiplayer first-person shooter developed by Splash Damage and id Software. Set during World War II across North Africa and Europe, matches pit Allied and Axis teams against each other in asymmetric, multi-stage objective warfare — repairing tanks, blowing bridge defenses, storming coastal gun batteries, and stealing top-secret war documents.\n\nGameplay centers on five specialized character classes: Soldier (heavy machine guns, panzerfaust, mortars), Medic (healing packs, syringe revives), Engineer (dynamite, landmines, bridge/command post construction, defusing), Field Ops (ammunition supply, artillery strikes, airstrikes), and Covert Ops (sniping, smoke grenades, silenced weapons, stealing enemy uniforms, satchel charges).\n\nThe game is actively maintained and modernized by the open-source ET: Legacy project, bringing 64-bit performance, high-definition widescreen rendering, raw input, cross-platform compatibility (Windows, Linux, macOS), and a vibrant community of active public and competitive stopwatch servers.",
+    bestFor: [
+      "Fans of objective-driven class-based tactical team shooters",
+      "Competitive FPS players who love stopwatch tournament formats and high-skill tracking",
+      "Gamers seeking true team synergy with engineers, medics, and field ops",
+      "Low-to-mid spec PC and laptop owners wanting 120+ FPS performance",
+    ],
+    notFor: [
+      "Players looking for a single-player narrative campaign",
+      "Those who dislike fast-paced strafe jumping and tracking-heavy gunplay",
+    ],
+    comparableTo: [
+      "Team Fortress 2",
+      "Dirty Bomb",
+      "Brink",
+      "Day of Defeat: Source",
+      "Return to Castle Wolfenstein",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install the ET: Legacy client via PlayBound. The installer bundles the latest 64-bit engine and automatically downloads community maps on server connection.",
+      },
+      {
+        platform: "linux",
+        text: "Run the native Linux 64-bit binary or AppImage, or play via Proton on Steam Deck with community controller configs.",
+      },
+      {
+        platform: "all",
+        text: "Join populated community servers directly from the in-game server browser or through PlayBound's live server list.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Wolfenstein: Enemy Territory completely free?",
+        a: "Yes! id Software and Splash Damage released Enemy Territory in 2003 as a completely free standalone multiplayer game. There has never been a price tag, subscription, or microtransaction.",
+      },
+      {
+        q: "What is ET: Legacy?",
+        a: "ET: Legacy is an open-source continuation of the Enemy Territory GPL code. It fixes hundreds of legacy bugs, adds 64-bit architecture, modern OpenGL rendering, widescreen support, and built-in map/mod auto-downloading.",
+      },
+      {
+        q: "Can I play Wolfenstein: Enemy Territory offline with bots?",
+        a: "Yes! With the Omni-Bot mod, you can play offline single-player skirmishes or local co-op with highly capable tactical AI bots that complete complex mission objectives.",
+      },
+      {
+        q: "How does the Stopwatch competitive format work?",
+        a: "In Stopwatch mode, teams take turns attacking and defending the same map. The team that completes all objectives in the shortest amount of time wins the match.",
+      },
+      {
+        q: "What are the five classes in Enemy Territory?",
+        a: "The classes are Soldier (heavy weapons), Medic (health & revives), Engineer (construction, repairs, dynamite), Field Ops (ammo & artillery), and Covert Ops (stealth, sniping, uniform disguises).",
+      },
+      {
+        q: "Does Enemy Territory work on Steam Deck?",
+        a: "Yes! ET: Legacy runs natively on Linux/SteamOS and supports gamepad binding for full handheld play.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

@@ -19,7 +19,6 @@ export const DRAFT_ON_CREATE = new Set([
   "gamebuddies-io",
   "star-wars-galaxies",
   "diablo-2",
-  "wolfenstein",
   "war-thunder",
   "world-of-tanks",
   "apex-legends",
