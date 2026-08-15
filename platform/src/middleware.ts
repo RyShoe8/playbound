@@ -19,12 +19,35 @@ const ALLOWED_PREFIXES = [
   "/terms",
 ];
 
+/*
+ * NextAuth's session cookie, both names it uses. Checked directly because
+ * getToken() decrypts the JWT before it can tell us there was nothing to
+ * decrypt, and this gate only ever fires for a signed-in OAuth account that has
+ * not chosen a username yet. Anonymous traffic — most of it, on a site that
+ * lives on search — carries neither cookie and can skip the crypto entirely.
+ * Launcher API calls authenticate with a Bearer token rather than a cookie, so
+ * they take this path too.
+ */
+const SESSION_COOKIE_PREFIXES = ["next-auth.session-token", "__Secure-next-auth.session-token"];
+
+/** True if a session cookie is present in any form NextAuth v4 writes it. */
+function hasSessionCookie(req: NextRequest): boolean {
+  // Prefix rather than exact name: a JWT over the 4KB cookie limit is split
+  // into .0/.1 chunks, and an exact match would miss those and wave the
+  // request through without checking whether a username is still needed.
+  return req.cookies
+    .getAll()
+    .some((c) => SESSION_COOKIE_PREFIXES.some((p) => c.name === p || c.name.startsWith(`${p}.`)));
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   if (ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.next();
   }
+
+  if (!hasSessionCookie(req)) return NextResponse.next();
 
   const token = await getToken({
     req,
