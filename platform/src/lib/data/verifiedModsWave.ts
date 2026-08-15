@@ -170,6 +170,20 @@ export const verifiedModsWave: ModSeed[] = [
  *                                OpenCiv3 is pre-alpha and its BIQ/SAV loader
  *                                is incomplete — these scenarios do not load.
  *
+ *  Verified and wanted, but blocked on a decision rather than on evidence:
+ *    mastercomfig (Team Fortress 2)   Real, active and well-licensed — v9.100.1
+ *                                     (Jul 2026), 717 stars, MIT,
+ *                                     github.com/mastercomfig/mastercomfig.
+ *                                     Installs as .vpk files into tf/custom.
+ *                                     Not added yet for two reasons: TF2 is
+ *                                     still an unpublished "Testing" game, and
+ *                                     the release ships 16 assets because users
+ *                                     pick a *preset* (low/medium/high/ultra)
+ *                                     plus optional addons. A mod entry can
+ *                                     only carry one download, so which preset
+ *                                     PlayBound ships is a product call, not a
+ *                                     research one. Revisit when TF2 publishes.
+ *
  *  No evidence the named item exists — do not add without a working URL:
  *    SuperTux "Forest Worlds" / "Yeti's Revenge" / "Castle Worlds"
  *    SuperTuxKart "Subsea Odyssey" / "Canyon Run" / "Volcano Track"

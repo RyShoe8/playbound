@@ -518,6 +518,28 @@ export const developers: Developer[] = [
     artHue: 45,
   },
   {
+    slug: "trashboxbobylev",
+    name: "TrashboxBobylev",
+    tagline: "Builder of sprawling Pixel Dungeon offshoots.",
+    about:
+      "TrashboxBobylev maintains Rat King Adventure, a long-running fork of Shattered Pixel Dungeon that piles on new heroes, items and mechanics well past the scope of the original, alongside other Pixel Dungeon variants. Releases ship for desktop and Android together.",
+    founded: 2019,
+    location: "Worldwide",
+    website: "https://github.com/TrashboxBobylev",
+    artHue: 15,
+  },
+  {
+    slug: "zrp200",
+    name: "Zrp200",
+    tagline: "Turned an April Fools joke into a full roguelike.",
+    about:
+      "Zrp200 develops Rat King Pixel Dungeon 2, a fork of Shattered Pixel Dungeon that rebuilds the original's Rat King Dungeon April Fools mod as a full game — heroes are dramatically stronger and the run is deliberately more forgiving than Shattered's.",
+    founded: 2021,
+    location: "Worldwide",
+    website: "https://github.com/Zrp200/rkpd2",
+    artHue: 330,
+  },
+  {
     slug: "brewall",
     name: "Brewall",
     tagline: "Hand-drawn EverQuest cartography, expansion after expansion.",

@@ -88,3 +88,71 @@ describe("HoloCure editions", () => {
     expect(loader.testedGameVersion).toBeTruthy();
   });
 });
+
+const spd = editions.filter((e) => e.gameSlug === "shattered-pixel-dungeon");
+
+describe("Shattered Pixel Dungeon editions", () => {
+  it("keeps an explicit official edition so vanilla stays installable", () => {
+    // listEditionsForGame() only synthesizes a virtual official edition when a
+    // game has ZERO stored editions. The moment the forks below exist, that
+    // fallback stops firing — so deleting this entry silently removes vanilla
+    // Shattered Pixel Dungeon from the site.
+    const official = spd.find((e) => e.slug === "official");
+    expect(official, "vanilla SPD must be a stored edition").toBeDefined();
+    expect(official!.installConfig?.playbound_installer?.repo).toBe(
+      "00-Evan/shattered-pixel-dungeon"
+    );
+  });
+
+  it("defaults to vanilla, not a fork", () => {
+    const defaults = spd.filter((e) => e.isDefault);
+    expect(defaults).toHaveLength(1);
+    expect(defaults[0].slug).toBe("official");
+  });
+
+  it("anchors fork asset patterns so phones and dev builds can't be picked", () => {
+    // Both forks publish .apk files next to the desktop jar, and rkpd2 also
+    // publishes an -INDEV work-in-progress build. An unanchored pattern would
+    // happily hand a player an Android package or an unfinished build.
+    for (const slug of ["rat-king-adventure", "rkpd2"]) {
+      const cfg = spd.find((e) => e.slug === slug)!.installConfig!.playbound_installer!;
+      expect(cfg.kind).toBe("github-jar");
+      const re = new RegExp(cfg.assetPattern!, "i");
+      expect(re.test("android-release.apk")).toBe(false);
+      expect(re.test("rkpd2-3.0.1-INDEV.jar")).toBe(false);
+      expect(cfg.assetPattern).toMatch(/^\^/);
+      expect(cfg.assetPattern).toMatch(/\$$/);
+    }
+  });
+
+  it("matches the desktop jar each fork actually ships", () => {
+    const rka = spd.find((e) => e.slug === "rat-king-adventure")!.installConfig!
+      .playbound_installer!;
+    expect(new RegExp(rka.assetPattern!, "i").test("desktop-2.3.2.jar")).toBe(true);
+
+    const rkpd2 = spd.find((e) => e.slug === "rkpd2")!.installConfig!.playbound_installer!;
+    expect(new RegExp(rkpd2.assetPattern!, "i").test("rkpd2-3.0.1.jar")).toBe(true);
+  });
+});
+
+describe("edition seed integrity", () => {
+  it("never gives one game two default editions", () => {
+    const byGame = new Map<string, number>();
+    for (const e of editions.filter((x) => x.isDefault)) {
+      byGame.set(e.gameSlug, (byGame.get(e.gameSlug) ?? 0) + 1);
+    }
+    expect([...byGame.entries()].filter(([, n]) => n > 1)).toEqual([]);
+  });
+
+  it("has no duplicate slug within a game", () => {
+    const seen = new Set<string>();
+    const dupes: string[] = [];
+    for (const e of editions) {
+      const key = `${e.gameSlug}/${e.slug}`;
+      if (seen.has(key)) dupes.push(key);
+      seen.add(key);
+    }
+    expect(dupes).toEqual([]);
+  });
+});
+

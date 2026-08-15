@@ -860,5 +860,115 @@ export const editions: EditionSeed[] = [
     aliases: ["Classic", "DOS"],
     verificationLevel: "official",
   },
+
+  /* ── Shattered Pixel Dungeon ────────────────────────────────────────────
+   * SPD is GPLv3 and has a large family of forks that are full standalone
+   * games rather than mods — each ships its own desktop build, keeps its own
+   * saves, and runs alongside vanilla. That makes them editions.
+   *
+   * The "official" entry below is NOT optional. listEditionsForGame() only
+   * synthesizes a virtual official edition when a game has zero stored
+   * editions, so adding the forks alone would remove vanilla Shattered Pixel
+   * Dungeon as an install option entirely.
+   */
+  {
+    gameSlug: "shattered-pixel-dungeon",
+    slug: "official",
+    name: "Shattered Pixel Dungeon",
+    shortDescription: "The original roguelike by Evan Debenham, as released upstream.",
+    description:
+      "Shattered Pixel Dungeon is a traditional roguelike dungeon crawler with randomized levels, dozens of enemies and hundreds of items, built on the source of Watabou's original Pixel Dungeon. This is the unmodified game from its own developer.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://shatteredpixel.com",
+      github: "https://github.com/00-Evan/shattered-pixel-dungeon",
+      wiki: "https://pixeldungeon.fandom.com/wiki/Shattered_Pixel_Dungeon",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "00-Evan/shattered-pixel-dungeon",
+        assetPattern: "Windows\\.zip$",
+        exeHint: "ShatteredPD|Shattered",
+      },
+    },
+    features: ["Singleplayer", "Daily Runs", "Controller Support"],
+    tags: ["Roguelike", "Open Source", "Vanilla"],
+    aliases: ["SPD", "Shattered"],
+    verificationLevel: "official",
+  },
+  {
+    gameSlug: "shattered-pixel-dungeon",
+    slug: "rat-king-adventure",
+    name: "Rat King Adventure",
+    shortDescription: "Sprawling fork with far more heroes, items and mechanics than vanilla.",
+    description:
+      "Rat King Adventure is a long-running fork of Shattered Pixel Dungeon that expands well past the original's scope — extra hero classes, a much larger item pool, reworked mechanics and new content layered throughout the dungeon. It installs and saves separately, so it never disturbs a vanilla run.\n\nDesktop builds are Java, so PlayBound installs a Java runtime for you if one isn't already present.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      github: "https://github.com/TrashboxBobylev/Rat-King-Adventure",
+      website: "https://github.com/TrashboxBobylev/Rat-King-Adventure/releases",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-jar",
+        repo: "TrashboxBobylev/Rat-King-Adventure",
+        // Releases ship android-debug.apk, android-release.apk and
+        // desktop-<version>.jar side by side; anchor so only the desktop jar
+        // can ever match.
+        assetPattern: "^desktop-[\\d.]+\\.jar$",
+        exeHint: "Rat-King-Adventure|desktop",
+        note: "Java desktop build. PlayBound installs a Java runtime if needed.",
+      },
+    },
+    features: ["Singleplayer", "Daily Runs"],
+    tags: ["Roguelike", "Fork", "Open Source", "Expanded"],
+    aliases: ["RKA", "Rat King"],
+    verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "shattered-pixel-dungeon",
+    slug: "rkpd2",
+    name: "Rat King Pixel Dungeon 2",
+    shortDescription: "Deliberately generous fork — stronger heroes, a more forgiving run.",
+    description:
+      "Rat King Pixel Dungeon 2 rebuilds Shattered's Rat King Dungeon April Fools mod as a full game. Heroes are dramatically buffed and the run is intentionally easier than vanilla, which makes it a good way in for players who bounce off Shattered's difficulty. Installs and saves separately from vanilla.\n\nDesktop builds are Java, so PlayBound installs a Java runtime for you if one isn't already present.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 30,
+    links: {
+      github: "https://github.com/Zrp200/rkpd2",
+      website: "https://zrp200.itch.io/rkpd2",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-jar",
+        repo: "Zrp200/rkpd2",
+        // Releases carry both a stable jar and an -INDEV jar. Requiring the
+        // version to run straight into ".jar" excludes the INDEV build, which
+        // is a work-in-progress and should not be what players get.
+        assetPattern: "^rkpd2-[\\d.]+\\.jar$",
+        exeHint: "rkpd2",
+        note: "Java desktop build. PlayBound installs a Java runtime if needed.",
+      },
+    },
+    features: ["Singleplayer", "Daily Runs"],
+    tags: ["Roguelike", "Fork", "Open Source", "Beginner Friendly"],
+    aliases: ["RKPD2", "Rat King Pixel Dungeon"],
+    verificationLevel: "community_verified",
+  },
 ];
 
