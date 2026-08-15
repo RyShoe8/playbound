@@ -1425,6 +1425,83 @@ async function toggleLibraryAddPanel(forceOpen = false) {
   searchEl?.focus();
 }
 
+/**
+ * A "⋯" button that reveals secondary actions.
+ *
+ * Library cards had every action as a peer button — Play, Folder, Saves,
+ * Display, Remove — so a game with three editions showed sixteen buttons of
+ * identical weight, and Remove sat directly beside Play. Collapsing everything
+ * except the primary action leaves one obvious thing to click and puts the
+ * destructive one behind a deliberate second step.
+ *
+ * @param {{label: string, onClick: function, danger?: boolean}[]} items
+ */
+function buildOverflowMenu(items) {
+  const wrap = document.createElement("div");
+  wrap.className = "action-menu";
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "btn-secondary btn-sm action-menu-trigger";
+  trigger.setAttribute("aria-haspopup", "true");
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.setAttribute("aria-label", "More actions");
+  trigger.textContent = "⋯";
+
+  const menu = document.createElement("div");
+  menu.className = "action-menu-panel hidden";
+  menu.setAttribute("role", "menu");
+
+  for (const item of items) {
+    if (!item) continue;
+    const entry = document.createElement("button");
+    entry.type = "button";
+    entry.className = `action-menu-item${item.danger ? " danger" : ""}`;
+    entry.setAttribute("role", "menuitem");
+    entry.textContent = item.label;
+    entry.addEventListener("click", (e) => {
+      e.stopPropagation();
+      close();
+      item.onClick(e);
+    });
+    menu.appendChild(entry);
+  }
+
+  function close() {
+    menu.classList.add("hidden");
+    trigger.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", onOutside, true);
+    document.removeEventListener("keydown", onKey, true);
+  }
+  function onOutside(e) {
+    if (!wrap.contains(e.target)) close();
+  }
+  function onKey(e) {
+    if (e.key === "Escape") close();
+  }
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const opening = menu.classList.contains("hidden");
+    // Only one menu open at a time, or stale popovers stack up over cards.
+    document
+      .querySelectorAll(".action-menu-panel:not(.hidden)")
+      .forEach((p) => p.classList.add("hidden"));
+    if (!opening) {
+      close();
+      return;
+    }
+    menu.classList.remove("hidden");
+    trigger.setAttribute("aria-expanded", "true");
+    document.addEventListener("click", onOutside, true);
+    document.addEventListener("keydown", onKey, true);
+  });
+
+  wrap.appendChild(trigger);
+  wrap.appendChild(menu);
+  return wrap;
+}
+
 function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
   const block = document.createElement("div");
   block.className = "library-game-block";
@@ -1495,110 +1572,117 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     const editions = Array.isArray(game.installedEditions)
       ? game.installedEditions.filter((e) => e.exe || e.dir)
       : [];
+
+    /*
+     * One row: which edition, then the single thing you came to do, then
+     * everything else behind a menu.
+     *
+     * Editions used to repeat a full button set per edition, so three editions
+     * meant three Play buttons, three Folders and three Removes stacked up —
+     * and picking the right row was the hard part. A selector makes the choice
+     * explicit and leaves exactly one Play on the card.
+     */
+    let selected = editions[0]?.editionSlug || game.editionSlug || null;
+    const selectedEdition = () => editions.find((e) => e.editionSlug === selected) || null;
+
     if (editions.length > 1) {
-      actions.innerHTML = editions
+      const picker = document.createElement("select");
+      picker.className = "library-edition-select";
+      picker.setAttribute("aria-label", `Edition of ${game.title}`);
+      picker.innerHTML = editions
         .map(
-          (ed) => `
-        <div class="library-edition-actions">
-          <span class="library-edition-label" title="${escapeHtml(ed.editionName || ed.editionSlug)}">${escapeHtml(ed.editionName || ed.editionSlug)}</span>
-          <div class="library-action-group">
-            ${ed.exe ? `<button class="btn-success btn-sm btn-lib-play-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Play</button>` : ""}
-            ${ed.dir ? `<button class="btn-secondary btn-sm btn-lib-folder-ed" type="button" data-dir="${escapeHtml(ed.dir)}">Folder</button>` : ""}
-            <button class="btn-secondary btn-sm btn-lib-saves-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Saves</button>
-            <button class="btn-danger btn-sm btn-lib-uninstall-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Remove</button>
-          </div>
-        </div>`
+          (ed) =>
+            `<option value="${escapeHtml(ed.editionSlug)}">${escapeHtml(
+              ed.editionName || ed.editionSlug
+            )}</option>`
         )
         .join("");
-      actions.querySelectorAll(".btn-lib-play-ed").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          const ed = btn.dataset.edition;
-          try {
-            setStatus(`Checking Java / launching ${game.title} (${ed})…`);
-            await window.playbound.play(game.slug, null, ed);
-            startGameSession(game.slug, game.title);
-            setStatus(`Launched ${game.title}`);
-          } catch (err) {
-            setStatus(err.message || String(err), true);
-          }
-        });
+      picker.value = selected || editions[0].editionSlug;
+      picker.addEventListener("click", (e) => e.stopPropagation());
+      picker.addEventListener("change", (e) => {
+        e.stopPropagation();
+        selected = picker.value;
+        // A save panel belongs to one edition; drop it rather than let it
+        // silently describe a different install than the one now selected.
+        block.querySelector(".library-saves-panel")?.remove();
       });
-      actions.querySelectorAll(".btn-lib-folder-ed").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (btn.dataset.dir) window.playbound.openFolder(btn.dataset.dir);
-        });
-      });
-      actions.querySelectorAll(".btn-lib-uninstall-ed").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          const ed = btn.dataset.edition;
-          const label = editions.find((x) => x.editionSlug === ed)?.editionName || ed;
-          if (!confirm(`Remove ${game.title} — ${label}?`)) return;
-          try {
-            await window.playbound.uninstall(game.slug, ed);
-            setStatus(`Removed ${label}`);
-            renderLibraryView();
-          } catch (err) {
-            setStatus(err.message || String(err), true);
-          }
-        });
-      });
+      actions.appendChild(picker);
+    } else if (editions.length === 1 && editions[0].editionName) {
+      const label = document.createElement("span");
+      label.className = "library-edition-label";
+      label.title = editions[0].editionName;
+      label.textContent = editions[0].editionName;
+      actions.appendChild(label);
     } else {
-      const onlyEd = editions[0]?.editionSlug || game.editionSlug || null;
-      const showDisplay = game.slug === "openciv3";
-      actions.innerHTML = `
-      <div class="library-action-group">
-        <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
-        ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
-        ${showDisplay ? `<button class="btn-secondary btn-sm btn-lib-display" type="button">Display</button>` : ""}
-        <button class="btn-secondary btn-sm btn-lib-saves" type="button">Saves</button>
-        <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
-      </div>
-    `;
-      actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        try {
-          setStatus(`Checking Java / launching ${game.title}…`);
-          await window.playbound.play(game.slug, null, onlyEd);
-          startGameSession(game.slug, game.title);
-          setStatus(`Launched ${game.title}`);
-        } catch (err) {
-          setStatus(err.message || String(err), true);
-        }
-      });
-      actions.querySelector(".btn-lib-folder")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const dir = game.dir || editions[0]?.dir;
+      actions.appendChild(document.createElement("span"));
+    }
+
+    const group = document.createElement("div");
+    group.className = "library-action-group";
+
+    const play = document.createElement("button");
+    play.type = "button";
+    play.className = "btn-success btn-sm btn-lib-play";
+    play.textContent = "Play";
+    play.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const ed = editions.length > 1 ? selected : selected || null;
+      try {
+        setStatus(`Checking Java / launching ${game.title}…`);
+        await window.playbound.play(game.slug, null, ed);
+        startGameSession(game.slug, game.title);
+        setStatus(`Launched ${game.title}`);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+    group.appendChild(play);
+
+    const menuItems = [];
+
+    menuItems.push({
+      label: "Open folder",
+      onClick: () => {
+        const dir = selectedEdition()?.dir || game.dir || editions[0]?.dir;
         if (dir) window.playbound.openFolder(dir);
+        else setStatus("No folder recorded for this install.", true);
+      },
+    });
+
+    menuItems.push({
+      label: "Save backups",
+      onClick: () => toggleSavesPanel(block, game, editions.length > 1 ? selected : selected || null),
+    });
+
+    if (game.slug === "openciv3") {
+      menuItems.push({
+        label: "Display settings",
+        onClick: () => toggleOpenCiv3DisplayPanel(block, game),
       });
-      actions.querySelector(".btn-lib-display")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        void toggleOpenCiv3DisplayPanel(block, game);
-      });
-      actions.querySelector(".btn-lib-uninstall")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (!confirm(`Uninstall ${game.title}?`)) return;
+    }
+
+    menuItems.push({
+      label: editions.length > 1 ? "Remove this edition" : "Uninstall",
+      danger: true,
+      onClick: async () => {
+        const ed = editions.length > 1 ? selected : selected || null;
+        const label =
+          editions.length > 1
+            ? `${game.title} — ${selectedEdition()?.editionName || ed}`
+            : game.title;
+        if (!confirm(`Uninstall ${label}?`)) return;
         try {
-          await window.playbound.uninstall(game.slug, onlyEd);
-          setStatus(`Uninstalled ${game.title}`);
+          await window.playbound.uninstall(game.slug, ed);
+          setStatus(`Uninstalled ${label}`);
           renderLibraryView();
         } catch (err) {
           setStatus(err.message || String(err), true);
         }
-      });
-      actions.querySelector(".btn-lib-saves")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleSavesPanel(block, game, onlyEd);
-      });
-    }
-    actions.querySelectorAll(".btn-lib-saves-ed").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleSavesPanel(block, game, btn.dataset.edition || null);
-      });
+      },
     });
+
+    group.appendChild(buildOverflowMenu(menuItems));
+    actions.appendChild(group);
     block.appendChild(actions);
   }
 
@@ -1896,19 +1980,22 @@ function buildModsDisclosure(gameMods, modTitles) {
     const title = modTitles.get(mod.slug) || mod.title || mod.slug;
     const row = document.createElement("div");
     row.className = "library-mod-row";
+    // Same shape as the game row above it: name, one action, then a menu.
     row.innerHTML = `
-      <button type="button" class="library-mod-title linkish">${escapeHtml(title)}</button>
-      <div class="library-mod-actions">
-        <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
-        ${mod.dir ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
-        <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
-      </div>
+      <button type="button" class="library-mod-title linkish" title="${escapeHtml(title)}">${escapeHtml(title)}</button>
+      <div class="library-action-group library-mod-actions"></div>
     `;
     row.querySelector(".library-mod-title")?.addEventListener("click", (e) => {
       e.stopPropagation();
       openModDetail(mod.slug, "library");
     });
-    row.querySelector(".btn-mod-play")?.addEventListener("click", async (e) => {
+
+    const modActions = row.querySelector(".library-mod-actions");
+    const modPlay = document.createElement("button");
+    modPlay.type = "button";
+    modPlay.className = "btn-primary btn-sm btn-mod-play";
+    modPlay.textContent = "Play";
+    modPlay.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
         setStatus(`Launching ${title}…`);
@@ -1918,16 +2005,24 @@ function buildModsDisclosure(gameMods, modTitles) {
         setStatus(err.message || String(err), true);
       }
     });
-    row.querySelector(".btn-mod-folder")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      window.playbound.openFolder(mod.dir);
-    });
-    row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (!confirm(`Remove mod ${title} from library tracking?`)) return;
-      await window.playbound.uninstallMod(mod.slug);
-      renderLibraryView();
-    });
+    modActions.appendChild(modPlay);
+
+    modActions.appendChild(
+      buildOverflowMenu([
+        mod.dir
+          ? { label: "Open folder", onClick: () => window.playbound.openFolder(mod.dir) }
+          : null,
+        {
+          label: "Remove",
+          danger: true,
+          onClick: async () => {
+            if (!confirm(`Remove mod ${title} from library tracking?`)) return;
+            await window.playbound.uninstallMod(mod.slug);
+            renderLibraryView();
+          },
+        },
+      ])
+    );
     panel.appendChild(row);
   }
 

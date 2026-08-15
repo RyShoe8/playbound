@@ -1153,11 +1153,12 @@ body {
 }
 
 .mod-row,
+/* Name on the left, actions on the right — same shape as the game row above. */
 .library-mod-row {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 10px;
   padding: 8px 10px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1179,6 +1180,11 @@ button.library-mod-title {
   font: inherit;
   padding: 0;
   text-align: left;
+  /* A long mod name must not push its own buttons out of the row. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 button.library-mod-title:hover {
@@ -2099,4 +2105,89 @@ textarea.input-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── overflow action menu ─────────────────────────────────────
+ * Library rows show one primary action and hide the rest behind
+ * "⋯", so a game with several editions no longer presents a wall
+ * of equally-weighted buttons with Remove sitting next to Play.
+ */
+.action-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.action-menu-trigger {
+  padding-left: 10px;
+  padding-right: 10px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.action-menu-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  min-width: 168px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-sidebar, #120f1a);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+.action-menu-panel.hidden {
+  display: none;
+}
+
+.action-menu-item {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.action-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Destructive actions read as destructive before they are clicked. */
+.action-menu-item.danger {
+  color: var(--danger, #f07178);
+}
+
+.action-menu-item.danger:hover {
+  background: rgba(240, 113, 120, 0.12);
+}
+
+/* Edition picker — replaces one repeated button set per edition. */
+.library-edition-select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  background: var(--bg-card, rgba(23, 20, 33, 0.7));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.library-edition-select:focus-visible {
+  outline: 2px solid var(--border-focus, rgba(155, 123, 255, 0.4));
+  outline-offset: 1px;
 }
