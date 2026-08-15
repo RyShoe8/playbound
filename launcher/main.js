@@ -14,6 +14,7 @@ const { createManagedJava } = require("./services/ManagedJava");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const { createCloudSaves } = require("./services/CloudSaves");
+const { createSettings } = require("./services/settings");
 const { withOutboundUtm } = require("./utm");
 const {
   OPENCIV3_SLUG,
@@ -40,6 +41,22 @@ const CATALOG_CACHE_FILE = path.join(app.getPath("userData"), "catalog-cache.jso
 const DEFAULT_API_BASE = "https://playbound.club";
 /** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
+
+/*
+ * Bound here, near the constants it needs, rather than further down where these
+ * functions used to be declared. They were hoisted function declarations and
+ * are now const bindings, so anything calling loadSettings() before this line
+ * would hit the temporal dead zone — keeping it at the top of the module means
+ * that cannot happen. isAllowedApiBase is still hoisted and is only invoked
+ * later, so passing the reference here is fine.
+ */
+const { loadSettings, saveSettings, gamesRoot, getApiBase } = createSettings({
+  settingsFile: SETTINGS_FILE,
+  defaultGamesDir: DEFAULT_GAMES_DIR,
+  defaultApiBase: DEFAULT_API_BASE,
+  isAllowedApiBase: (url) => isAllowedApiBase(url),
+  safeStorage,
+});
 
 /** Dynamically registered download hosts from official site API catalog & edition payloads. */
 const dynamicAllowedDownloadHosts = new Set();
@@ -1388,90 +1405,8 @@ function installedEditionsPayload(slug) {
     }));
 }
 
-/**
- * Whether the OS can back an encrypted secret (DPAPI, Keychain, libsecret).
- *
- * Guarded because this is unavailable before the app is ready and on Linux
- * boxes with no keyring at all, and it throws rather than returning false.
- */
-function encryptionAvailable() {
-  try {
-    return safeStorage.isEncryptionAvailable();
-  } catch {
-    return false;
-  }
-}
-
-/*
- * settings.json holds the launcher token, which is a durable bearer for the
- * user's whole account, in a predictable path — precisely what credential
- * stealers scrape. It is encrypted at rest against the OS account instead.
- *
- * The encoding lives at the file boundary so the ~40 places that read
- * settings.launcherToken keep seeing an ordinary string, and so an existing
- * plaintext token migrates itself on the next write. Where the OS offers no
- * backing store we keep writing plaintext rather than lock someone out of
- * their own account.
- */
-function loadSettings() {
-  let raw;
-  try {
-    raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
-  } catch {
-    return {};
-  }
-  if (!raw || typeof raw !== "object") return {};
-  const enc = typeof raw.launcherTokenEnc === "string" ? raw.launcherTokenEnc : "";
-  if (enc) {
-    // Callers never see ciphertext, so a stray save cannot round-trip it.
-    delete raw.launcherTokenEnc;
-    try {
-      if (encryptionAvailable()) {
-        raw.launcherToken = safeStorage.decryptString(Buffer.from(enc, "base64"));
-      }
-    } catch {
-      /* Written by another OS account, or the keyring was reset: signed out. */
-    }
-  }
-  return raw;
-}
-
-/** Settings → games directory, falling back to the platform default. */
-function gamesRoot() {
-  const configured = String(loadSettings().gamesDir || "").trim();
-  return configured || DEFAULT_GAMES_DIR;
-}
-
-function saveSettings(settings) {
-  const out = { ...settings };
-  delete out.launcherTokenEnc;
-  const token = typeof out.launcherToken === "string" ? out.launcherToken.trim() : "";
-  if (token && encryptionAvailable()) {
-    try {
-      out.launcherTokenEnc = safeStorage.encryptString(token).toString("base64");
-      delete out.launcherToken;
-    } catch {
-      /* Keep the plaintext field rather than losing the session. */
-    }
-  }
-  fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
-  // 0600 so other accounts on a shared machine cannot read it (no-op on Windows,
-  // where the userData directory already carries the ACL).
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(out, null, 2), { mode: 0o600 });
-}
-
-function getApiBase() {
-  const settings = loadSettings();
-  const fromSettings = settings.apiBase;
-  if (fromSettings && isAllowedApiBase(fromSettings)) {
-    return String(fromSettings).replace(/\/$/, "");
-  }
-  const fromEnv = process.env.PLAYBOUND_API_BASE;
-  if (fromEnv && isAllowedApiBase(fromEnv)) {
-    return String(fromEnv).replace(/\/$/, "");
-  }
-  return DEFAULT_API_BASE;
-}
+/* loadSettings / saveSettings / gamesRoot / getApiBase now live in
+ * services/settings.js and are bound near the top of this file. */
 
 /**
  * Main-process analytics. Declared after its dependencies exist because the
