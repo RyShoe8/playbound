@@ -23,6 +23,9 @@ import {
   fetchTesArenaPlayers,
   fetchOpenLaraPlayers,
   fetchWarThunderPlayers,
+  fetchWorldOfSeaBattlePlayers,
+  fetchOldSchoolRuneScapePlayers,
+  fetchSwtorPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -136,6 +139,18 @@ const providers: Record<string, ServerProvider> = {
   "war-thunder": {
     slug: "war-thunder",
     fetchServers: fetchWarThunderPlayers,
+  },
+  "world-of-sea-battle": {
+    slug: "world-of-sea-battle",
+    fetchServers: fetchWorldOfSeaBattlePlayers,
+  },
+  "old-school-runescape": {
+    slug: "old-school-runescape",
+    fetchServers: fetchOldSchoolRuneScapePlayers,
+  },
+  swtor: {
+    slug: "swtor",
+    fetchServers: fetchSwtorPlayers,
   },
 };
 

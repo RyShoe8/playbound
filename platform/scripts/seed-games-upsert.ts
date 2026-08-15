@@ -13,11 +13,7 @@ loadEnvConfig(process.cwd());
 
 /** New titles introduced in catalog waves — created as drafts unless seed sets status. */
 export const DRAFT_ON_CREATE = new Set([
-  "freedoom",
   "lincity-ng",
-  "pixreveal",
-  "gamebuddies-io",
-  "star-wars-galaxies",
   "diablo-2",
   "world-of-tanks",
   "apex-legends",

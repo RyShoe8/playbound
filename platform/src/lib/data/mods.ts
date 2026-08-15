@@ -18,6 +18,7 @@ import { openlaraMods } from "./openlaraMods";
 import { cs2Mods } from "./cs2Mods";
 import { valorantMods } from "./valorantMods";
 import { warthunderMods } from "./warthunderMods";
+import { swgMods } from "./swgMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -42,6 +43,7 @@ export const mods: ModSeed[] = [
   ...cs2Mods,
   ...valorantMods,
   ...warthunderMods,
+  ...swgMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
