@@ -5369,6 +5369,63 @@ ipcMain.handle("uninstall", (_event, slug, editionSlug) =>
 );
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
+
+/* ── saves ─────────────────────────────────────────────────── */
+
+/** Snapshots for a game, newest first, plus whether saves are supported here. */
+ipcMain.handle("saves-list", async (_event, slug, editionSlug) => {
+  if (!saveLocations.supportsCloudSaves(slug)) {
+    return { supported: false, snapshots: [] };
+  }
+  const saveDir = saveLocations.saveDirFor(slug);
+  const snapshots = await saveData.list(slug, editionSlug || DEFAULT_EDITION_SLUG);
+  return {
+    supported: true,
+    saveDir,
+    saveDirExists: Boolean(saveDir && fs.existsSync(saveDir)),
+    snapshots: snapshots.map((s) => ({
+      id: s.id,
+      createdAt: s.createdAt || null,
+      files: s.files ?? null,
+      bytes: s.bytes ?? null,
+      reason: s.reason || null,
+    })),
+  };
+});
+
+/** Back up the current saves on demand, rather than waiting for the game to exit. */
+ipcMain.handle("saves-snapshot", async (_event, slug, editionSlug) => {
+  if (!saveLocations.supportsCloudSaves(slug)) throw new Error("Saves are not supported for this game yet.");
+  const saveDir = saveLocations.saveDirFor(slug);
+  if (!saveDir || !fs.existsSync(saveDir)) throw new Error("No save folder found for this game yet.");
+  const policy = saveLocations.policyFor(slug);
+  const result = await saveData.snapshot(slug, editionSlug || DEFAULT_EDITION_SLUG, saveDir, {
+    reason: "manual",
+    maxSnapshotMb: policy.maxSnapshotMb,
+  });
+  if (result.status === "captured") await saveData.prune(slug, editionSlug || DEFAULT_EDITION_SLUG, policy.keep);
+  return result;
+});
+
+/**
+ * Put a snapshot back.
+ *
+ * The engine takes its own safety snapshot first, so this is reversible — the
+ * renderer surfaces that id so "undo" is a real option rather than advice.
+ */
+ipcMain.handle("saves-restore", async (_event, slug, editionSlug, snapshotId) => {
+  if (!snapshotId) throw new Error("No snapshot chosen.");
+  const saveDir = saveLocations.saveDirFor(slug);
+  if (!saveDir) throw new Error("No save folder is known for this game.");
+  return saveData.restore(slug, editionSlug || DEFAULT_EDITION_SLUG, saveDir, snapshotId);
+});
+
+/** Open the folder holding this game's snapshots, so recovery never needs us. */
+ipcMain.handle("saves-open-folder", async (_event, slug, editionSlug) => {
+  const dir = saveData.gameRoot(slug, editionSlug || DEFAULT_EDITION_SLUG);
+  await fsp.mkdir(dir, { recursive: true });
+  return shell.openPath(dir);
+});
 ipcMain.handle("uninstall-mod", (_event, slug) => uninstallMod(slug));
 ipcMain.handle("create-shortcut", (_event, slug) => createGameShortcut(slug));
 ipcMain.handle("get-openciv3-display", async () => {
