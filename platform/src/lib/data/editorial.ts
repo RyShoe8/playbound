@@ -189,6 +189,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Valve's flagship live MOBA; regular gameplay updates, seasonal acts (Crownfall), and active global matchmaking with 600k+ concurrent Steam players.",
   },
+  "genshin-impact": {
+    kind: "manual",
+    url: "https://genshin.hoyoverse.com",
+    checkedAt: "2026-08-15",
+    note: "HoYoverse's flagship live-service action RPG; regular 6-week major update schedule with new regions, characters, and Archon quests.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -2773,6 +2779,86 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "How does movement in Quake Champions work?",
         a: "Movement relies on classic Quake physics: hold forward and jump, then alternate strafe keys and smooth mouse turns to build momentum (strafe jumping). Different Champions also feature unique movement traits such as Slash's crouch slide, Visor's uncapped speed, and Anarki's air control.",
+      },
+    ],
+  },
+  "genshin-impact": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A masterclass in free-to-play open-world action RPG design, delivering console-grade exploration, intricate elemental combat, and breathtaking orchestral world-building.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "Genshin Impact is HoYoverse's monumental open-world action role-playing game. Set in the expansive, breathtaking fantasy continent of Teyvat, players awaken as the Traveler—an interdimensional voyager separated from their twin by an unknown god. Guided by the cheerful fairy companion Paimon, your quest leads you across seven distinct elemental nations (Mondstadt, Liyue, Inazuma, Sumeru, Fontaine, Natlan, and Snezhnaya), each ruled by an Archon god and steeped in rich regional lore and distinct musical scores.\n\nCombat centers on a fluid, action-packed elemental reaction system. Characters wield one of seven elements: Pyro (Fire), Hydro (Water), Cryo (Ice), Electro (Lightning), Anemo (Wind), Geo (Earth), and Dendro (Nature). By swapping seamlessly between four characters in active combat, players trigger high-impact elemental chain reactions—such as Vaporize and Melt for catastrophic damage multipliers, Swirl for elemental spreading, Frozen for crowd control, and Bloom/Hyperbloom for automated homing dendro cores.\n\nTeyvat offers one of the most rewarding open worlds in gaming. Players can scale any cliffside, glide across mountain ranges, dive underwater in Fontaine, navigate lava rivers in Natlan, and uncover thousands of environmental puzzles, hidden chests, Seelie guides, and time-trial challenges. Rewarding exploration directly fuels character progression with Primogems, artifact upgrades, and talent materials.\n\nThe game delivers hundreds of hours of fully voiced main Archon Quests, character Story Quests, and intricate world exploration questlines rivaling full-priced single-player RPGs. A deep progression loop includes the Spiral Abyss endgame dungeon, Imaginarium Theater, artifact domain farming, and periodic major seasonal festival events.\n\nWhile featuring a gacha character wish system, all story content, exploration, world quests, and events can be cleared entirely with the free guaranteed starter cast (Traveler, Amber, Kaeya, Lisa, Xiangling, Barbara, Lynette, and Collei). Genshin Impact supports seamless cross-save and cross-play across PC, PlayStation, iOS, and Android.",
+    whyWePickedIt:
+      "Genshin Impact proved that a free-to-play live-service game could deliver single-player open-world quality on par with the finest prestige console RPGs. Its breathtaking art direction, lush orchestral soundtrack, deep elemental combat, and massive free world make it an extraordinary achievement in PC gaming.",
+    bestFor: [
+      "Fans of rich open-world exploration, environmental puzzles, and Breath of the Wild-style gliding/climbing",
+      "Action RPG players who enjoy character switching and multi-elemental reaction combos",
+      "Gamers looking for hundreds of hours of high-production, fully voiced anime narrative and lore",
+      "Players wanting cross-platform progression and co-op with friends on PC, mobile, and PlayStation",
+      "Free-to-play gamers looking for a complete, high-quality RPG experience without mandatory spending",
+    ],
+    notFor: [
+      "Players looking for competitive PvP multiplayer or server browsers (Genshin is entirely PvE)",
+      "Those sensitive to gacha monetization systems or stamina-gated daily artifact farming",
+      "Linux/Steam Deck users who cannot run HoYoverse's proprietary anti-cheat without unofficial workarounds",
+    ],
+    comparableTo: [
+      "Honkai: Star Rail",
+      "Wuthering Waves",
+      "The Legend of Zelda: Breath of the Wild",
+      "Granblue Fantasy: Relink",
+      "Tower of Fantasy",
+      "Zenless Zone Zero",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and run the official HoYoPlay standalone PC installer from HoYoverse. PlayBound integrates directly with HoYoPlay to detect and launch your installation.",
+      },
+      {
+        platform: "windows",
+        text: "Install Genshin Impact through HoYoPlay. An SSD is strongly recommended to ensure smooth open-world asset streaming and fast loading times.",
+      },
+      {
+        platform: "windows",
+        text: "Launch Genshin Impact, select your preferred server region (America, Europe, Asia, or TW/HK/MO), and log in with your HoYoverse account.",
+      },
+      {
+        platform: "all",
+        text: "Complete the Prologue Archon Quest in Mondstadt to unlock elemental resonance, your glider license, and your first free companion party members.",
+      },
+    ],
+    faq: [
+      {
+        q: "Can I play Genshin Impact without spending any money?",
+        a: "Yes. 100% of the storyline, open world, domains, and limited-time events are completely free with no paywalls. The game regularly awards free Primogems through exploration, quests, daily commissions, and events to let free-to-play players Wish on exclusive 5-star character and weapon banners.",
+      },
+      {
+        q: "How does Co-Op multiplayer work in Genshin Impact?",
+        a: "Co-Op unlocks at Adventure Rank (AR) 16. Up to four players on the same server region can explore the host's world together, clear domains and weekly bosses, fight world bosses, and gather resources.",
+      },
+      {
+        q: "Does Genshin Impact support cross-save across devices?",
+        a: "Yes. By linking your HoYoverse account, your progress, characters, and inventory seamlessly sync across PC, iOS, Android, and PlayStation platforms on the same regional server.",
+      },
+      {
+        q: "Can Genshin Impact be played on Steam Deck or Linux?",
+        a: "Genshin Impact does not officially support Linux or Steam Deck due to its kernel-level anti-cheat. While community compatibility layers exist, official PC support is limited to Windows 10 and 11.",
+      },
+      {
+        q: "What are the best starter characters given for free?",
+        a: "You receive Traveler (adaptable across all 7 elements), Amber (Pyro archer), Kaeya (Cryo sword), Lisa (Electro catalyst), Barbara (Hydro healer), Xiangling (one of the strongest Pyro sub-DPS in the game from Spiral Abyss Floor 3), Collei (Dendro bow), and Lynette (Anemo sword).",
+      },
+      {
+        q: "How does the 50/50 and Pity system work in Genshin Impact?",
+        a: "Character event banners guarantee a 5-star character within 90 Wishes (Soft Pity starts around 74). If your first 5-star is not the featured promotional character (a '50/50 loss'), your next 5-star character is 100% guaranteed to be the featured character.",
       },
     ],
   },

@@ -456,9 +456,19 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   "genshin-impact": {
     enabled: true,
-    kind: "external",
-    url: "https://genshin.hoyoverse.com",
-    note: "Official Hoyoverse launcher only.",
+    kind: "direct-installer",
+    url: "https://sg-hyp-public.hoyoverse.com/hyp/hyp-prod/pkg/installer/HYP_1.0.0.0_Setup.exe",
+    fileName: "HYP_Genshin_Setup.exe",
+    registryTitles: ["Genshin Impact", "HoYoPlay", "miHoYo Launcher"],
+    knownExePaths: [
+      "%PROGRAMFILES%\\Genshin Impact\\Genshin Impact Game\\GenshinImpact.exe",
+      "%PROGRAMFILES%\\HoYoPlay\\launcher.exe",
+      "%PROGRAMFILES(X86)%\\Genshin Impact\\launcher.exe",
+      "C:\\Program Files\\Genshin Impact\\Genshin Impact Game\\GenshinImpact.exe",
+      "C:\\Program Files\\HoYoPlay\\launcher.exe",
+    ],
+    exeHint: "GenshinImpact|HoYoPlay",
+    note: "Official HoYoPlay standalone PC client from HoYoverse.",
   },
   "dota-2": {
     enabled: true,

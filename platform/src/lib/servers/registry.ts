@@ -31,6 +31,7 @@ import {
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
+import { fetchGenshinImpactServers } from "./providers/genshin-impact";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
@@ -185,6 +186,10 @@ const providers: Record<string, ServerProvider> = {
   "dota-2": {
     slug: "dota-2",
     fetchServers: fetchDota2Players,
+  },
+  "genshin-impact": {
+    slug: "genshin-impact",
+    fetchServers: fetchGenshinImpactServers,
   },
 };
 

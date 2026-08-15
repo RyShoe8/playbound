@@ -23,6 +23,7 @@ import { geminiGoldMods } from "./geminiGoldMods";
 import { quakeChampionsMods } from "./quakeChampionsMods";
 import { leagueOfLegendsMods } from "./leagueOfLegendsMods";
 import { dota2Mods } from "./dota2Mods";
+import { genshinImpactMods } from "./genshinImpactMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -52,6 +53,7 @@ export const mods: ModSeed[] = [
   ...quakeChampionsMods,
   ...leagueOfLegendsMods,
   ...dota2Mods,
+  ...genshinImpactMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
