@@ -133,3 +133,13 @@ export function fetchSwtorPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(1286830, { label: "Star Wars: The Old Republic (Steam)" });
 }
 
+/** Mr. Boom — Steam app 1351050. */
+export function fetchMrBoomPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1351050, { label: "Mr. Boom (Steam)" });
+}
+
+/** Microsoft Allegiance — Steam app 700480. */
+export function fetchAllegiancePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(700480, { label: "Microsoft Allegiance (Steam)" });
+}
+

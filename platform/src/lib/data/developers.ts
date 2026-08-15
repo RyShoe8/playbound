@@ -1001,6 +1001,61 @@ export const developers: Developer[] = [
     website: "https://www.swtor.com",
     artHue: 200,
   },
+  {
+    slug: "dune-legacy-team",
+    name: "Dune Legacy Project",
+    tagline: "Creators of the modern Dune II open-source engine.",
+    about:
+      "Open-source development team dedicated to modernizing Westwood Studios' 1992 RTS classic with modern controls and high-resolution rendering.",
+    founded: 2009,
+    location: "Worldwide",
+    website: "https://dunelegacy.sourceforge.net/",
+    artHue: 35,
+  },
+  {
+    slug: "javanaise",
+    name: "Javanaise & Contributors",
+    tagline: "Creators of Mr. Boom.",
+    about:
+      "Independent open-source developers behind the cross-platform 8-player Bomberman clone Mr. Boom.",
+    founded: 1999,
+    location: "Worldwide",
+    website: "http://mrboom.mumble.info/",
+    artHue: 0,
+  },
+  {
+    slug: "openmohaa-team",
+    name: "OpenMOHAA Team",
+    tagline: "Modern open-source engine for Medal of Honor: Allied Assault.",
+    about:
+      "Reverse engineering and systems engineering group restoring Medal of Honor: Allied Assault on 64-bit modern platforms using id Tech 3 / ioquake3.",
+    founded: 2021,
+    location: "Worldwide",
+    website: "https://openmohaa.org",
+    artHue: 120,
+  },
+  {
+    slug: "snk",
+    name: "SNK Corporation",
+    tagline: "Pioneers of Neo Geo, Metal Slug, and King of Fighters.",
+    about:
+      "Legendary Japanese arcade game developer established in 1978, celebrated for timeless 2D pixel art and arcade action masterpieces.",
+    founded: 1978,
+    location: "Osaka, Japan",
+    website: "https://www.snk-corp.co.jp/",
+    artHue: 45,
+  },
+  {
+    slug: "freeallegiance-team",
+    name: "FreeAllegiance Community",
+    tagline: "Stewards of Microsoft Allegiance open-source space combat RTS.",
+    about:
+      "Dedicated non-profit player organization preserving and expanding Microsoft Research's 2000 hybrid space sim and RTS masterpiece Allegiance.",
+    founded: 2004,
+    location: "Worldwide",
+    website: "https://www.freeallegiance.org/",
+    artHue: 220,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

@@ -26,6 +26,8 @@ import {
   fetchWorldOfSeaBattlePlayers,
   fetchOldSchoolRuneScapePlayers,
   fetchSwtorPlayers,
+  fetchMrBoomPlayers,
+  fetchAllegiancePlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -151,6 +153,18 @@ const providers: Record<string, ServerProvider> = {
   swtor: {
     slug: "swtor",
     fetchServers: fetchSwtorPlayers,
+  },
+  mrboom: {
+    slug: "mrboom",
+    fetchServers: fetchMrBoomPlayers,
+  },
+  "microsoft-allegiance": {
+    slug: "microsoft-allegiance",
+    fetchServers: fetchAllegiancePlayers,
+  },
+  allegiance: {
+    slug: "allegiance",
+    fetchServers: fetchAllegiancePlayers,
   },
 };
 
