@@ -2244,7 +2244,7 @@ async function renderEditionsView(gameSlugParam) {
         <p class="view-sub" style="margin:4px 0 0 0" id="editions-sub">Loading editions for ${escapeHtml(gameSlug)}…</p>
       </div>
     </div>
-    <div id="editions-grid" class="game-grid" style="margin-top:16px"></div>
+    <div id="editions-grid" class="editions-grid" style="margin-top:20px"></div>
   `;
 
   document.getElementById("editions-back-game")?.addEventListener("click", () => {
@@ -2261,7 +2261,7 @@ async function renderEditionsView(gameSlugParam) {
   }
 
   const sub = document.getElementById("editions-sub");
-  if (sub) sub.textContent = `Alternate builds and versions of ${catalogTitle}.`;
+  if (sub) sub.textContent = `Alternate builds, community servers, and versions of ${catalogTitle}.`;
 
   const grid = document.getElementById("editions-grid");
   try {
@@ -2274,35 +2274,40 @@ async function renderEditionsView(gameSlugParam) {
     }
     grid.replaceChildren(
       ...editions.map((ed) => {
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = "game-card";
-        card.style.textAlign = "left";
-        card.style.cursor = "pointer";
+        const card = document.createElement("div");
+        card.className = "edition-card";
         const cover = ed.coverImage || ed.heroImage || "";
+        const desc = ed.shortDescription || ed.description || "Alternate edition of this game.";
         card.innerHTML = `
-          <div class="card-banner" style="background:linear-gradient(135deg,#1e293b,#7c3aed)">
-            ${cover ? "" : escapeHtml((ed.editionName || "?").charAt(0))}
+          <div class="edition-card-banner">
+            ${cover ? `<img class="edition-card-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" />` : `<span>${escapeHtml((ed.editionName || "?").charAt(0))}</span>`}
+            <div class="edition-card-gradient"></div>
           </div>
-          <div class="card-body">
-            <div class="card-title">${escapeHtml(ed.editionName || ed.editionSlug)}</div>
-            <div class="card-blurb">${escapeHtml(
-              [ed.editionType, ed.isDefault ? "Default" : "", ed.shortDescription]
-                .filter(Boolean)
-                .join(" · ")
-            )}</div>
+          <div class="edition-card-body">
+            <div class="edition-card-header">
+              <h3 class="edition-card-title">${escapeHtml(ed.editionName || ed.editionSlug)}</h3>
+              ${ed.isDefault ? `<span class="edition-row-tag">Default</span>` : ""}
+            </div>
+            <p class="edition-card-desc">${escapeHtml(desc)}</p>
+            <div class="edition-card-badges">
+              ${ed.editionType ? `<span class="chip">${escapeHtml(ed.editionType)}</span>` : ""}
+              ${ed.verificationLevel ? `<span class="chip chip-accent">${escapeHtml(ed.verificationLevel)}</span>` : ""}
+              ${ed.version ? `<span class="chip" style="font-size:10px">v${escapeHtml(ed.version)}</span>` : ""}
+            </div>
+            <div class="edition-card-footer">
+              <button type="button" class="btn-primary btn-sm btn-ed-install">Install / Play</button>
+              <button type="button" class="btn-secondary btn-sm btn-ed-details">Details →</button>
+            </div>
           </div>
         `;
-        if (cover) {
-          const banner = card.querySelector(".card-banner");
-          banner.textContent = "";
-          const img = document.createElement("img");
-          img.className = "card-cover";
-          img.src = cover;
-          img.alt = "";
-          img.loading = "lazy";
-          banner.appendChild(img);
-        }
+        card.querySelector(".btn-ed-details")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openEditionDetail(gameSlug, ed.editionSlug);
+        });
+        card.querySelector(".btn-ed-install")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openEditionDetail(gameSlug, ed.editionSlug);
+        });
         card.addEventListener("click", () => {
           openEditionDetail(gameSlug, ed.editionSlug);
         });
@@ -2461,16 +2466,218 @@ async function renderEventsView() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Events</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Game Nights and tournaments — join and play.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Game Nights and tournaments — join, play, and host.</p>
       </div>
-      <button class="btn-secondary btn-sm" id="btn-open-events-web">Open playbound.club/events</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-primary btn-sm" id="btn-create-event" type="button">+ Create Event</button>
+        <button class="btn-secondary btn-sm" id="btn-open-events-web" type="button">Open playbound.club/events</button>
+      </div>
     </div>
     <div id="events-banner" class="events-banner" style="margin-top: 16px"></div>
     <div id="events-list" class="events-list" style="margin-top: 20px"></div>
+
+    <!-- Create Event Modal -->
+    <div class="modal-overlay" id="modal-create-event">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Create Event</h2>
+          <button type="button" class="modal-close" id="btn-close-create-event">✕</button>
+        </div>
+        <form id="form-create-event" class="modal-body">
+          <div class="form-group">
+            <label for="event-title">Event Title *</label>
+            <input type="text" class="input-text" id="event-title" required placeholder="e.g. OpenRA Saturday Night Battle" />
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="event-type">Event Type</label>
+              <select class="input-text" id="event-type">
+                <option value="game_night">Game Night</option>
+                <option value="tournament">Tournament</option>
+                <option value="release">Showcase / Release</option>
+                <option value="meetup">Community Meetup</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="event-game">Game</label>
+              <select class="input-text" id="event-game">
+                <option value="">No specific game</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="event-starts-at">Starts At *</label>
+              <input type="datetime-local" class="input-text" id="event-starts-at" required />
+            </div>
+            <div class="form-group">
+              <label for="event-ends-at">Ends At (optional)</label>
+              <input type="datetime-local" class="input-text" id="event-ends-at" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="event-description">Description *</label>
+            <textarea class="input-text" id="event-description" rows="3" required placeholder="Details about this match, rules, voice chat channels, or schedule…"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="event-discord">Discord Invite / Voice Link (optional)</label>
+            <input type="url" class="input-text" id="event-discord" placeholder="https://discord.gg/..." />
+          </div>
+
+          <div id="tournament-fields" style="display: none;" class="form-row-2">
+            <div class="form-group">
+              <label for="event-tournament-format">Tournament Format</label>
+              <select class="input-text" id="event-tournament-format">
+                <option value="single_elim">Single Elimination</option>
+                <option value="double_elim">Double Elimination</option>
+                <option value="round_robin">Round Robin</option>
+                <option value="ffa">Free For All</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="event-team-size">Team Size</label>
+              <select class="input-text" id="event-team-size">
+                <option value="1">1v1 (Solo)</option>
+                <option value="2">2v2 (Duos)</option>
+                <option value="3">3v3 (Trios)</option>
+                <option value="4">4v4 (Squads)</option>
+              </select>
+            </div>
+          </div>
+
+          <p id="create-event-error" class="view-sub" style="color:var(--danger); display:none; margin:0"></p>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="btn-cancel-create-event">Cancel</button>
+            <button type="submit" class="btn-primary" id="btn-submit-create-event">Create Event</button>
+          </div>
+        </form>
+      </div>
+    </div>
   `;
 
   document.getElementById("btn-open-events-web")?.addEventListener("click", () => {
     window.playbound.openExternal("https://playbound.club/events");
+  });
+
+  // Modal controls
+  const modal = document.getElementById("modal-create-event");
+  const openBtn = document.getElementById("btn-create-event");
+  const closeBtn = document.getElementById("btn-close-create-event");
+  const cancelBtn = document.getElementById("btn-cancel-create-event");
+  const typeSelect = document.getElementById("event-type");
+  const gameSelect = document.getElementById("event-game");
+  const tournamentFields = document.getElementById("tournament-fields");
+  const form = document.getElementById("form-create-event");
+  const errorMsg = document.getElementById("create-event-error");
+
+  // Populate games dropdown
+  try {
+    const catalog = await window.playbound.getCatalog();
+    (catalog || []).forEach((g) => {
+      const opt = document.createElement("option");
+      opt.value = g.slug;
+      opt.textContent = g.title;
+      gameSelect.appendChild(opt);
+    });
+    enhanceSelect(gameSelect);
+    gameSelect._syncCustomSelect?.();
+  } catch {}
+
+  enhanceSelect(typeSelect);
+  enhanceSelect(document.getElementById("event-tournament-format"));
+  enhanceSelect(document.getElementById("event-team-size"));
+
+  const closeModal = () => {
+    modal.classList.remove("open");
+    if (errorMsg) errorMsg.style.display = "none";
+  };
+
+  openBtn?.addEventListener("click", () => {
+    // Set default startsAt to next full hour
+    const now = new Date();
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    const startsInput = document.getElementById("event-starts-at");
+    if (startsInput && !startsInput.value) startsInput.value = localIso;
+    modal.classList.add("open");
+  });
+
+  closeBtn?.addEventListener("click", closeModal);
+  cancelBtn?.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  typeSelect?.addEventListener("change", () => {
+    if (tournamentFields) {
+      tournamentFields.style.display = typeSelect.value === "tournament" ? "grid" : "none";
+    }
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = document.getElementById("event-title").value.trim();
+    const description = document.getElementById("event-description").value.trim();
+    const eventType = typeSelect.value;
+    const gameSlug = gameSelect.value || null;
+    const startsAtVal = document.getElementById("event-starts-at").value;
+    const endsAtVal = document.getElementById("event-ends-at").value;
+    const discord = document.getElementById("event-discord").value.trim();
+
+    if (!title || !description || !startsAtVal) {
+      if (errorMsg) {
+        errorMsg.textContent = "Please fill in all required fields.";
+        errorMsg.style.display = "block";
+      }
+      return;
+    }
+
+    const startsAtIso = new Date(startsAtVal).toISOString();
+    const endsAtIso = endsAtVal ? new Date(endsAtVal).toISOString() : null;
+    const submitBtn = document.getElementById("btn-submit-create-event");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating…";
+    }
+    if (errorMsg) errorMsg.style.display = "none";
+
+    const payload = {
+      title,
+      description,
+      eventType,
+      gameSlug,
+      startsAt: startsAtIso,
+      endsAt: endsAtIso,
+      discordInviteUrl: discord || null,
+      status: "registration_open",
+      ...(eventType === "tournament"
+        ? {
+            tournamentFormat: document.getElementById("event-tournament-format")?.value || "single_elim",
+            teamSize: Number(document.getElementById("event-team-size")?.value) || 1,
+            checkInRequired: true,
+          }
+        : {}),
+    };
+
+    const res = await window.playbound.createEvent(payload);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Create Event";
+    }
+
+    if (res && res.ok) {
+      closeModal();
+      notifyStatus(`Event "${title}" created!`);
+      await renderEventsView();
+    } else {
+      if (errorMsg) {
+        errorMsg.textContent = res?.error || "Failed to create event. Make sure you are signed in from Settings.";
+        errorMsg.style.display = "block";
+      }
+    }
   });
 
   const res = (await window.playbound.getEvents?.()) || { events: [] };
@@ -2478,7 +2685,7 @@ async function renderEventsView() {
   const list = document.getElementById("events-list");
   const banner = document.getElementById("events-banner");
   if (!events.length) {
-    list.innerHTML = `<p class="view-sub">No upcoming events. Check playbound.club/events for updates.</p>`;
+    list.innerHTML = `<p class="view-sub">No upcoming events. Host one with + Create Event above!</p>`;
     return;
   }
 

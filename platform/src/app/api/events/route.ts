@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import { Tournament } from "@/lib/models/Tournament";
+import { userFromLauncherBearer } from "@/lib/library";
 import {
   createPlatformEvent,
   eventCreateSchema,
@@ -39,14 +40,24 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  let userId: string | null = null;
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
-    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  if (session?.user?.id) {
+    userId = session.user.id;
+  } else {
+    const launcherUser = await userFromLauncherBearer(req);
+    if (launcherUser?._id) {
+      userId = launcherUser._id.toString();
+    }
+  }
+
+  if (!userId) {
+    return NextResponse.json({ error: "Sign in required to create an event." }, { status: 401 });
   }
 
   try {
     const body = eventCreateSchema.parse(await req.json());
-    const doc = await createPlatformEvent(body, session.user.id);
+    const doc = await createPlatformEvent(body, userId);
 
     if (body.eventType === "tournament") {
       await dbConnect();
