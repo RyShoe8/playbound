@@ -43,5 +43,10 @@ export const mods: ModSeed[] = [
 export const modsBySlug = new Map(mods.map((m) => [m.slug, m]));
 
 export function modsForBaseGame(baseGameSlug: string): ModSeed[] {
-  return mods.filter((m) => m.baseGameSlug === baseGameSlug);
+  const norm = baseGameSlug === "alephone" ? "marathon-2" : baseGameSlug;
+  return mods.filter(
+    (m) =>
+      m.baseGameSlug === baseGameSlug ||
+      (norm === "marathon-2" && (m.baseGameSlug === "alephone" || m.baseGameSlug === "marathon-2"))
+  );
 }

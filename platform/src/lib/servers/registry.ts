@@ -120,6 +120,10 @@ const providers: Record<string, ServerProvider> = {
     slug: "alephone",
     fetchServers: fetchMarathon2Players,
   },
+  "marathon-2": {
+    slug: "marathon-2",
+    fetchServers: fetchMarathon2Players,
+  },
   "tes-arena": {
     slug: "tes-arena",
     fetchServers: fetchTesArenaPlayers,

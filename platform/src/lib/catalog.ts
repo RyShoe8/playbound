@@ -168,7 +168,18 @@ function mapCommunityLinks(raw: unknown): Game["communityLinks"] | undefined {
 }
 
 /** Seed lookup, used to backfill editorial fields absent from DB documents. */
-const seedBySlug = new Map(seedGames.map((g) => [g.slug, g]));
+const seedBySlug = new Map<string, Game>();
+for (const g of seedGames) {
+  seedBySlug.set(g.slug, g);
+  if (g.aliases) {
+    for (const alias of g.aliases) {
+      const lower = alias.toLowerCase();
+      if (!seedBySlug.has(lower)) {
+        seedBySlug.set(lower, g);
+      }
+    }
+  }
+}
 
 function seedGameWithInstall(g: Game): Game {
   return attachLauncherInstall(g);
