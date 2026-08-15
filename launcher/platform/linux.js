@@ -55,6 +55,9 @@ module.exports = {
     if (String(exePath).toLowerCase().endsWith(".jar")) {
       return ["java", "-jar", exePath];
     }
+    if (String(exePath).toLowerCase().endsWith(".exe")) {
+      return ["wine", exePath];
+    }
     return [exePath];
   },
 };

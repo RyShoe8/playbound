@@ -24,9 +24,9 @@ export type MobilePlayGame = {
   launchMethods: LaunchMethod[];
 };
 
-/** Desktop gets the PlayBound Launcher; phones/tablets never do. */
+/** Desktop & Linux get the PlayBound Launcher; phones/tablets never do. */
 export function shouldOfferLauncher(device: DeviceType): boolean {
-  return device === "desktop" || device === "macos";
+  return device === "desktop" || device === "macos" || device === "linux";
 }
 
 /**

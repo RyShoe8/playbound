@@ -15,9 +15,11 @@ const CHANGE_EVENT = "pb-device-change";
 
 function typeFromClientState(width: number, ua: string): DeviceType {
   const isMac = /Mac OS X|Macintosh/i.test(ua);
+  const isLinux = /Linux/i.test(ua) && !/Android/i.test(ua);
   if (width < BREAKPOINTS.mobile) return "mobile";
   if (width < BREAKPOINTS.tablet) return "tablet";
   if (isMac) return "macos";
+  if (isLinux) return "linux";
   return "desktop";
 }
 
@@ -46,7 +48,7 @@ function toInfo(type: DeviceType): DeviceInfo {
     type,
     isMobile: type === "mobile",
     isTablet: type === "tablet",
-    isDesktop: type === "desktop" || type === "macos",
+    isDesktop: type === "desktop" || type === "macos" || type === "linux",
   };
 }
 

@@ -636,7 +636,66 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
       "%PROGRAMFILES%\\HoloCure\\HoloCure.exe",
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+      "~/PlayBound/Games/holocure/HoloCure.exe",
+      "~/.local/share/HoloCure/HoloCure.exe",
+      "~/.steam/steam/steamapps/common/HoloCure/HoloCure.exe",
     ],
-    note: "Downloads and extracts the official standalone HoloCure build from itch.io.",
+    note: "Downloads and extracts the official standalone HoloCure build from itch.io. Runs on Windows and Linux (via Wine/Proton/Steam Deck).",
+  },
+
+  daggerfall: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "Interkarma/daggerfall-unity",
+    assetPattern: "dfu_windows.*\\.zip$|DaggerfallUnity.*\\.zip$",
+    exeHint: "DaggerfallUnity",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\DaggerfallUnity\\DaggerfallUnity.exe",
+      "%PROGRAMFILES%\\DaggerfallUnity\\DaggerfallUnity.exe",
+      "~/PlayBound/Games/daggerfall/DaggerfallUnity.x86_64",
+      "~/DaggerfallUnity/DaggerfallUnity.x86_64",
+    ],
+    note: "Daggerfall Unity open-source remaster with native Windows and Linux support.",
+  },
+
+  "tes-arena": {
+    enabled: true,
+    kind: "github-zip",
+    repo: "afritz1/OpenTESArena",
+    assetPattern: ".*windows.*\\.zip$|.*win64.*\\.zip$|\\.zip$",
+    exeHint: "OpenTESArena",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\OpenTESArena\\OpenTESArena.exe",
+      "%PROGRAMFILES%\\OpenTESArena\\OpenTESArena.exe",
+      "~/PlayBound/Games/tes-arena/OpenTESArena",
+    ],
+    note: "OpenTESArena modern open-source engine reimplementation for The Elder Scrolls: Arena.",
+  },
+
+  "star-wars-galaxies": {
+    enabled: true,
+    kind: "external",
+    url: "https://swgrestoration.com",
+    exeHint: "SWGR|swg",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\SWG Restoration\\SWGRestoration.exe",
+      "%PROGRAMFILES%\\SWG Restoration\\SWGRestoration.exe",
+      "~/PlayBound/Games/star-wars-galaxies/SWGRestoration.exe",
+    ],
+    note: "Star Wars Galaxies restoration MMO client with Windows and Linux launcher support.",
+  },
+
+  pixreveal: {
+    enabled: true,
+    kind: "external",
+    url: "https://pixreveal.com",
+    note: "Play directly in any web browser without installation.",
+  },
+
+  "gamebuddies-io": {
+    enabled: true,
+    kind: "external",
+    url: "https://gamebuddies.io",
+    note: "Play directly in any web browser without installation.",
   },
 };

@@ -4,7 +4,7 @@
  * Windows, macOS, Linux, Android, iOS, Web.
  */
 
-export type DeviceType = "desktop" | "macos" | "tablet" | "mobile";
+export type DeviceType = "desktop" | "macos" | "linux" | "tablet" | "mobile";
 export type CompatibilityFilterMode = "compatible" | "all";
 
 export type GameLike = {
@@ -20,6 +20,7 @@ const MOBILE_PLATFORMS = new Set(["android", "ios", "web", "browser"]);
 export const PLATFORMS_FOR_DEVICE: Record<DeviceType, ReadonlySet<string>> = {
   desktop: DESKTOP_PLATFORMS,
   macos: new Set(["macos", "web", "browser"]),
+  linux: new Set(["linux", "web", "browser"]),
   tablet: MOBILE_PLATFORMS,
   mobile: MOBILE_PLATFORMS,
 };
@@ -56,7 +57,8 @@ export function deviceTypeFromUaDevice(
   const os = (uaOs || "").toLowerCase();
   if (d === "mobile") return "mobile";
   if (d === "tablet") return "tablet";
-  if (os === "macos") return "macos";
+  if (os === "macos" || os === "mac os" || os === "darwin") return "macos";
+  if (os === "linux") return "linux";
   return "desktop";
 }
 
@@ -68,8 +70,8 @@ export function isGameCompatible(game: GameLike, device: DeviceType): boolean {
 
   if (platforms.some((p) => allowed.has(p))) return true;
 
-  // Steam Deck titles count as desktop-compatible even without a listed OS.
-  if (device === "desktop" && game.steamDeck) return true;
+  // Steam Deck titles count as desktop & linux compatible even without an explicit native OS.
+  if ((device === "desktop" || device === "linux") && game.steamDeck) return true;
 
   return false;
 }
