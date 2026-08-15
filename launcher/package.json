@@ -10,6 +10,7 @@
     "sync-catalog": "node scripts/sync-catalog.js",
     "test:saves": "node services/SaveData.test.js",
     "test:settings": "node services/settingsCrypto.test.js",
+    "test:security": "node services/security.test.js",
     "dist": "node scripts/build-windows.js --dev",
     "dist:dev": "node scripts/build-windows.js --dev",
     "dist:prod": "node scripts/build-windows.js --prod",
