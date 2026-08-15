@@ -2363,6 +2363,8 @@ async function renderModsView() {
       opt.textContent = title;
       gameSelect.appendChild(opt);
     });
+  enhanceSelect(gameSelect);
+  gameSelect._syncCustomSelect?.();
 
   const paint = () => {
     const q = (search.value || "").trim().toLowerCase();
@@ -2628,6 +2630,8 @@ function fillModDropdown(baseSlug) {
   );
   modSelect.innerHTML = options.join("");
   modSelect.value = serversState.selectedModSlug || "";
+  enhanceSelect(modSelect);
+  modSelect._syncCustomSelect?.();
 }
 
 function selectedModOrNull() {
@@ -2652,7 +2656,11 @@ async function refreshServersPickersAndList() {
     document.getElementById("servers-table-wrap").innerHTML = serversState.installedOnly
       ? `<p class="view-sub">No installed games have live server browsers. Install a multiplayer title, or turn off Installed only.</p>`
       : `<p class="view-sub">No server providers available right now.</p>`;
-    if (gameSelect) gameSelect.innerHTML = "";
+    if (gameSelect) {
+      gameSelect.innerHTML = "";
+      enhanceSelect(gameSelect);
+      gameSelect._syncCustomSelect?.();
+    }
     fillModDropdown("");
     if (note) {
       note.textContent = "";
@@ -2674,6 +2682,9 @@ async function refreshServersPickersAndList() {
           `<option value="${escapeHtml(g.slug)}" ${g.slug === serversState.selectedSlug ? "selected" : ""}>${escapeHtml(g.title)}${g.testing ? " · Testing" : ""}</option>`
       )
       .join("");
+
+  enhanceSelect(gameSelect);
+  gameSelect._syncCustomSelect?.();
 
   fillModDropdown(serversState.selectedSlug);
 
@@ -3025,6 +3036,8 @@ async function renderGamesView() {
     if (gamesFilters.genre === genre) opt.selected = true;
     genreSelect.appendChild(opt);
   });
+  enhanceSelect(genreSelect);
+  genreSelect._syncCustomSelect?.();
 
   const apply = () => paintGamesGrid(catalog);
   document.getElementById("games-search").addEventListener("input", (e) => {
@@ -3481,6 +3494,48 @@ async function fillGameHardwareCompat(slug) {
   } catch (err) {
     body.textContent = err?.message || "Couldn’t check compatibility.";
   }
+}
+
+function youtubeId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) {
+      return u.pathname.replace(/^\//, "").split("/")[0] || null;
+    }
+    if (u.hostname.includes("youtube.com")) {
+      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/")[2] || null;
+      if (u.pathname.startsWith("/shorts/")) return u.pathname.split("/")[2] || null;
+      return u.searchParams.get("v");
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function vimeoId(url) {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.includes("vimeo.com")) return null;
+    const parts = u.pathname.split("/").filter(Boolean);
+    const id = parts.find((p) => /^\d+$/.test(p));
+    return id || null;
+  } catch {
+    return null;
+  }
+}
+
+function classifyMediaUrl(src) {
+  const url = String(src || "").trim();
+  const yt = youtubeId(url);
+  if (yt) {
+    return { kind: "youtube", src: url, embedUrl: `https://www.youtube-nocookie.com/embed/${yt}` };
+  }
+  const vim = vimeoId(url);
+  if (vim) {
+    return { kind: "vimeo", src: url, embedUrl: `https://player.vimeo.com/video/${vim}` };
+  }
+  return { kind: "direct", src: url };
 }
 
 async function renderGameDetailView(slug) {
@@ -3988,31 +4043,106 @@ async function renderGameDetailView(slug) {
       });
     }
     if (mediaSec) {
-      const vids = Array.isArray(detail.videos) ? detail.videos.filter(Boolean) : [];
-      const mediaShots = (detail.screenshots || [])
-        .map(
-          (src) =>
-            `<a class="shot-thumb" href="${escapeHtml(src)}" data-ext="${escapeHtml(src)}"><img src="${escapeHtml(src)}" alt="" loading="lazy" /></a>`
-        )
-        .join("");
-      mediaSec.innerHTML = `
-        ${
-          vids.length
-            ? `<section class="detail-section"><h2 class="detail-section-title">Videos</h2><div class="media-video-list">${vids
+      const vids = (Array.isArray(detail.videos) ? detail.videos : [])
+        .filter(Boolean)
+        .map(classifyMediaUrl);
+      const shots = (Array.isArray(detail.screenshots) ? detail.screenshots : []).filter(Boolean);
+
+      const countText = [
+        vids.length > 0 ? `${vids.length} ${vids.length === 1 ? "video" : "videos"}` : "",
+        shots.length > 0 ? `${shots.length} ${shots.length === 1 ? "screenshot" : "screenshots"}` : ""
+      ].filter(Boolean).join(" · ");
+
+      let videosHtml = "";
+      if (vids.length > 0) {
+        videosHtml = `
+          <details open class="media-details-group">
+            <summary class="media-details-summary">
+              <span class="media-details-summary-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18"/><line x1="7" x2="7" y1="2" y2="22"/><line x1="17" x2="17" y1="2" y2="22"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="2" x2="7" y1="7" y2="7"/><line x1="2" x2="7" y1="17" y2="17"/><line x1="17" x2="22" y1="17" y2="17"/><line x1="17" x2="22" y1="7" y2="7"/></svg>
+                <span>Videos</span>
+                <span class="media-details-count-badge">${vids.length}</span>
+              </span>
+              <svg class="media-details-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="media-grid-videos">
+              ${vids
+                .map((v) => {
+                  if (v.kind === "youtube" || v.kind === "vimeo") {
+                    return `
+                      <div class="media-video-frame">
+                        <iframe src="${escapeHtml(v.embedUrl)}" title="${escapeHtml(detail.title || "Game")} video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                      </div>
+                    `;
+                  }
+                  return `
+                    <div class="media-video-frame">
+                      <video src="${escapeHtml(v.src)}" controls preload="metadata" poster="${escapeHtml(detail.coverImage || "")}"></video>
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>
+          </details>
+        `;
+      }
+
+      let screenshotsHtml = "";
+      if (shots.length > 0) {
+        screenshotsHtml = `
+          <details open class="media-details-group">
+            <summary class="media-details-summary">
+              <span class="media-details-summary-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                <span>Screenshots</span>
+                <span class="media-details-count-badge">${shots.length}</span>
+              </span>
+              <svg class="media-details-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="media-grid-screenshots">
+              ${shots
                 .map(
-                  (url, i) =>
-                    `<a href="${escapeHtml(url)}" data-ext="${escapeHtml(url)}">Video ${i + 1}</a>`
+                  (src) =>
+                    `<a class="media-screenshot-card" href="${escapeHtml(src)}" data-ext="${escapeHtml(src)}">
+                      <img src="${escapeHtml(src)}" alt="${escapeHtml(detail.title || "")} screenshot" loading="lazy" />
+                    </a>`
                 )
-                .join("")}</div></section>`
-            : ""
-        }
-        ${
-          mediaShots
-            ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${mediaShots}</div></section>`
-            : `<p class="view-sub">No media yet.</p>`
-        }
+                .join("")}
+            </div>
+          </details>
+        `;
+      } else if (vids.length === 0) {
+        screenshotsHtml = `
+          <p class="view-sub">No screenshots uploaded for ${escapeHtml(detail.title || "this game")} yet.</p>
+        `;
+      }
+
+      const footerHtml = `
+        <p class="view-sub" style="font-size:12px; margin-top:12px">
+          More screenshots and trailers live on ${
+            detail.website
+              ? `<a href="#" id="media-official-link" style="color:var(--accent-light);font-weight:600">the official ${escapeHtml(detail.title || "game")} site</a>`
+              : `the official ${escapeHtml(detail.title || "game")} site`
+          }.
+        </p>
       `;
-      mediaSec.querySelectorAll("[data-ext]").forEach((a) => {
+
+      mediaSec.innerHTML = `
+        <div class="media-header">
+          <h2>Media</h2>
+          <span class="media-header-count">${escapeHtml(countText)}</span>
+        </div>
+        ${videosHtml}
+        ${screenshotsHtml}
+        ${footerHtml}
+      `;
+
+      document.getElementById("media-official-link")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (detail.website) window.playbound.openExternal(detail.website);
+      });
+
+      mediaSec.querySelectorAll("a.media-screenshot-card").forEach((a) => {
         a.addEventListener("click", (e) => {
           e.preventDefault();
           window.playbound.openExternal(a.dataset.ext);
@@ -4298,83 +4428,103 @@ async function renderGameDetailView(slug) {
     modsSec.innerHTML = `<p class="view-sub">No catalog mods for this title yet.</p>`;
   }
 
-  const serversRes = await window.playbound.getServers(slug);
-  const sSec = document.getElementById("detail-servers-sec");
-  if (serversRes.supported && serversRes.servers?.length > 0) {
-    const allServers = serversRes.servers.slice(0, 40);
+  async function loadDetailServers() {
+    const sSec = document.getElementById("detail-servers-sec");
+    if (!sSec) return;
+    sSec.innerHTML = `<p class="view-sub">Loading live servers…</p>`;
+    const serversRes = await window.playbound.getServers(slug);
+    if (serversRes.supported && serversRes.servers?.length > 0) {
+      const allServers = serversRes.servers.slice(0, 40);
 
-    function paintDetailServers() {
-      const { sort, sortDir } = detailServersSort;
-      const dir = sortDir === "asc" ? 1 : -1;
-      const sorted = allServers.slice().sort((a, b) => {
-        if (sort === "players") {
-          return dir * ((Number(a.players) || 0) - (Number(b.players) || 0));
-        }
-        const av = sort === "map" ? a.map || "" : a.name || "";
-        const bv = sort === "map" ? b.map || "" : b.name || "";
-        return dir * String(av).localeCompare(String(bv), undefined, { sensitivity: "base" });
-      });
-      const totalPlayers = sorted.reduce((n, s) => n + (Number(s.players) || 0), 0);
-      const header = (key, label) => {
-        const active = detailServersSort.sort === key;
-        const arrow = active ? (detailServersSort.sortDir === "asc" ? " ↑" : " ↓") : "";
-        return `<th class="sortable${active ? " sorted" : ""}" data-sort="${key}">${escapeHtml(label)}${arrow}</th>`;
-      };
-      sSec.innerHTML = `
-        <p class="servers-stats" style="margin-top:0">${totalPlayers} players · ${sorted.length} servers</p>
-        <table class="server-table">
-          <thead>
-            <tr>
-              ${header("name", "Server Name")}
-              ${header("players", "Players")}
-              ${header("map", "Map")}
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sorted
-              .map(
-                (s) => `
-              <tr>
-                <td><strong>${escapeHtml(s.name)}</strong></td>
-                <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
-                <td>${escapeHtml(s.map || "Standard")}</td>
-                <td>
-                  <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>
-                </td>
-              </tr>
-            `
-              )
-              .join("")}
-          </tbody>
-        </table>
-      `;
-      sSec.querySelectorAll("th.sortable").forEach((th) => {
-        th.addEventListener("click", () => {
-          const key = th.dataset.sort;
-          if (detailServersSort.sort === key) {
-            detailServersSort.sortDir = detailServersSort.sortDir === "asc" ? "desc" : "asc";
-          } else {
-            detailServersSort.sort = key;
-            detailServersSort.sortDir = SERVER_SORT_DEFAULT_DIR[key] || "asc";
+      function paintDetailServers() {
+        const { sort, sortDir } = detailServersSort;
+        const dir = sortDir === "asc" ? 1 : -1;
+        const sorted = allServers.slice().sort((a, b) => {
+          if (sort === "players") {
+            return dir * ((Number(a.players) || 0) - (Number(b.players) || 0));
           }
-          paintDetailServers();
+          const av = sort === "map" ? a.map || "" : a.name || "";
+          const bv = sort === "map" ? b.map || "" : b.name || "";
+          return dir * String(av).localeCompare(String(bv), undefined, { sensitivity: "base" });
         });
-      });
-      sSec.querySelectorAll(".btn-join-s").forEach((b) => {
-        b.addEventListener("click", async () => {
-          await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
-          startGameSession(slug, detail.title || slug);
+        const totalPlayers = sorted.reduce((n, s) => n + (Number(s.players) || 0), 0);
+        const header = (key, label) => {
+          const active = detailServersSort.sort === key;
+          const arrow = active ? (detailServersSort.sortDir === "asc" ? " ↑" : " ↓") : "";
+          return `<th class="sortable${active ? " sorted" : ""}" data-sort="${key}">${escapeHtml(label)}${arrow}</th>`;
+        };
+        sSec.innerHTML = `
+          <div class="detail-servers-header">
+            <p class="servers-stats">${totalPlayers} player${totalPlayers === 1 ? "" : "s"} · ${sorted.length} server${sorted.length === 1 ? "" : "s"}</p>
+            <button class="btn-secondary btn-sm" id="detail-servers-refresh" type="button">Refresh</button>
+          </div>
+          <table class="server-table">
+            <thead>
+              <tr>
+                ${header("name", "Server Name")}
+                ${header("players", "Players")}
+                ${header("map", "Map")}
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sorted
+                .map(
+                  (s) => `
+                <tr>
+                  <td><strong>${escapeHtml(s.name)}</strong></td>
+                  <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
+                  <td>${escapeHtml(s.map || "Standard")}</td>
+                  <td>
+                    <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>
+                  </td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+        document.getElementById("detail-servers-refresh")?.addEventListener("click", () => {
+          loadDetailServers();
         });
-      });
-    }
+        sSec.querySelectorAll("th.sortable").forEach((th) => {
+          th.addEventListener("click", () => {
+            const key = th.dataset.sort;
+            if (detailServersSort.sort === key) {
+              detailServersSort.sortDir = detailServersSort.sortDir === "asc" ? "desc" : "asc";
+            } else {
+              detailServersSort.sort = key;
+              detailServersSort.sortDir = SERVER_SORT_DEFAULT_DIR[key] || "asc";
+            }
+            paintDetailServers();
+          });
+        });
+        sSec.querySelectorAll(".btn-join-s").forEach((b) => {
+          b.addEventListener("click", async () => {
+            await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
+            startGameSession(slug, detail.title || slug);
+          });
+        });
+      }
 
-    paintDetailServers();
-  } else if (detail.multiplayer) {
-    sSec.innerHTML = `<p class="view-sub">No live servers listed right now — try the Servers view.</p>`;
-  } else {
-    sSec.innerHTML = `<p class="view-sub">This title doesn't list dedicated servers.</p>`;
+      paintDetailServers();
+    } else if (detail.multiplayer) {
+      sSec.innerHTML = `
+        <div class="detail-servers-header">
+          <p class="view-sub" style="margin:0">No live servers listed right now.</p>
+          <button class="btn-secondary btn-sm" id="detail-servers-refresh" type="button">Refresh</button>
+        </div>
+      `;
+      document.getElementById("detail-servers-refresh")?.addEventListener("click", () => {
+        loadDetailServers();
+      });
+    } else {
+      sSec.innerHTML = `<p class="view-sub">This title doesn't list dedicated servers.</p>`;
+    }
   }
+
+  void loadDetailServers();
 }
 
 function openGameDetail(slug, fromView) {
@@ -5709,6 +5859,40 @@ function enhanceSelect(selectEl) {
   selectEl.addEventListener("change", renderOptions);
   selectEl.addEventListener("input", renderOptions);
   selectEl._syncCustomSelect = renderOptions;
+
+  const origAppendChild = selectEl.appendChild.bind(selectEl);
+  selectEl.appendChild = function(child) {
+    const res = origAppendChild(child);
+    renderOptions();
+    return res;
+  };
+  const origInsertBefore = selectEl.insertBefore.bind(selectEl);
+  selectEl.insertBefore = function(newNode, refNode) {
+    const res = origInsertBefore(newNode, refNode);
+    renderOptions();
+    return res;
+  };
+  const origRemoveChild = selectEl.removeChild.bind(selectEl);
+  selectEl.removeChild = function(child) {
+    const res = origRemoveChild(child);
+    renderOptions();
+    return res;
+  };
+  try {
+    const innerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+    if (innerHTMLDescriptor && innerHTMLDescriptor.set) {
+      Object.defineProperty(selectEl, "innerHTML", {
+        get() {
+          return innerHTMLDescriptor.get.call(this);
+        },
+        set(val) {
+          innerHTMLDescriptor.set.call(this, val);
+          renderOptions();
+        },
+        configurable: true
+      });
+    }
+  } catch {}
   
   try {
     const protoVal = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
@@ -5724,7 +5908,7 @@ function enhanceSelect(selectEl) {
   }
 
   const observer = new MutationObserver(() => renderOptions());
-  observer.observe(selectEl, { childList: true, attributes: true, attributeFilter: ["disabled", "value"] });
+  observer.observe(selectEl, { childList: true, subtree: true, attributes: true, attributeFilter: ["disabled", "value"] });
   
   renderOptions();
 }
