@@ -207,15 +207,19 @@ const flightgearMods: ModSeed[] = [
     desc: "Automatically ignore multiplayer pilots by callsign or aircraft model.",
     website: "https://gitlab.com/JohanG/blacklist",
     /*
-     * Link-out rather than a direct download: GitLab answers 406 to every
-     * automated request for its archive endpoints. Confirmed it is the client
-     * and not the URL — the same link returns 200 in a browser, while both
-     * plain Node and Electron's own fetch (which is what the launcher
-     * downloads with) get 406, and the /api/v4 archive endpoint behaves the
-     * same. Nothing we can send fixes it, so the honest recipe is to send the
-     * player to the project page and let their browser fetch it.
+     * Served from our own blob rather than GitLab, which answers 406 to every
+     * automated request for its archive endpoints — confirmed against plain
+     * Node and Electron's own fetch, which is what the launcher downloads
+     * with, so no header we can send fixes it.
+     *
+     * Mirrored, not rehosted for convenience: this is a GPL FlightGear add-on,
+     * so redistribution is explicitly permitted, and `website` above still
+     * points at the upstream project as the canonical home. Re-mirror with
+     * scripts/mirror-asset.ts when upstream publishes a new version.
      */
-    kind: "external",
+    kind: "direct-zip",
+    direct:
+      "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/mods/flightgear-addon-blacklist/blacklist-master.zip",
     size: 4,
     changes: "Hides blacklisted multiplayer callsigns and models from the session.",
     summary: "Lets you mute problem callsigns or models on busy multiplayer networks.",

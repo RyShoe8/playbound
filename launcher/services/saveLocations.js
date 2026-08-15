@@ -33,6 +33,18 @@ const fs = require("fs");
  * @property {string} [installDir] Where the game itself lives, when known.
  */
 
+/**
+ * Ceiling on a single snapshot, in megabytes.
+ *
+ * Snapshots are full copies, so a game that keeps gigabytes of world data would
+ * quietly consume tens of gigabytes of the player's disk across a history. Past
+ * this the snapshot is skipped and reported, rather than silently filling the
+ * drive of someone who only wanted to play a game.
+ *
+ * Per-game overrides live in LOCATIONS below.
+ */
+const DEFAULT_MAX_SNAPSHOT_MB = 250;
+
 /** Games whose saves sit under a per-user data directory the launcher already uses. */
 const LOCATIONS = {
   "0ad": {
@@ -66,7 +78,15 @@ const LOCATIONS = {
       const minetest = path.join(c.appData, "Minetest", "worlds");
       return fs.existsSync(luanti) ? luanti : minetest;
     },
-    note: "Whole worlds directory — each world is a folder.",
+    /*
+     * A generated voxel world grows without bound — a long-running Luanti
+     * server directory reaches gigabytes — so this keeps a much lower ceiling
+     * and only one snapshot. Backing up a 4 GB world ten times over would cost
+     * a player 40 GB to protect a game they may have tried once.
+     */
+    maxSnapshotMb: 750,
+    keep: 1,
+    note: "Whole worlds directory — each world is a folder, and they grow without limit.",
   },
 };
 
@@ -99,8 +119,31 @@ function supportsCloudSaves(gameSlug) {
   return Object.prototype.hasOwnProperty.call(LOCATIONS, gameSlug);
 }
 
+/** Retention policy for a game: how large a snapshot may be, and how many to keep. */
+function policyFor(gameSlug) {
+  const entry = LOCATIONS[gameSlug];
+  return {
+    maxSnapshotMb: entry?.maxSnapshotMb ?? DEFAULT_MAX_SNAPSHOT_MB,
+    /*
+     * Local history is generous because it costs the player's own disk, not
+     * PlayBound's storage, and it is what makes a bad restore recoverable.
+     * What gets uploaded is a separate, much smaller decision — see the cloud
+     * retention policy, which keeps one snapshot per game.
+     */
+    keep: entry?.keep ?? 10,
+  };
+}
+
 function supportedSlugs() {
   return Object.keys(LOCATIONS);
 }
 
-module.exports = { LOCATIONS, saveDirFor, supportsCloudSaves, supportedSlugs, defaultContext };
+module.exports = {
+  LOCATIONS,
+  saveDirFor,
+  supportsCloudSaves,
+  supportedSlugs,
+  defaultContext,
+  policyFor,
+  DEFAULT_MAX_SNAPSHOT_MB,
+};

@@ -4560,9 +4560,25 @@ async function snapshotSavesAfterPlay(slug) {
     const game = ensureGameInstallRecord(state[slug]);
     const editionSlug = game.editionSlug || DEFAULT_EDITION_SLUG;
 
-    const result = await saveData.snapshot(slug, editionSlug, saveDir, { reason: "after-play" });
+    const policy = saveLocations.policyFor(slug);
+    const result = await saveData.snapshot(slug, editionSlug, saveDir, {
+      reason: "after-play",
+      maxSnapshotMb: policy.maxSnapshotMb,
+    });
+
+    if (result.status === "too-large") {
+      // Sandbox worlds outgrow this legitimately. Say so once rather than
+      // silently doing nothing, so a player is never under the impression
+      // their saves are protected when they are not.
+      console.warn(
+        `[saves] ${slug}: saves are ${(result.bytes / 1048576).toFixed(0)}MB, over the ` +
+          `${policy.maxSnapshotMb}MB limit — skipping backup.`
+      );
+      return;
+    }
     if (result.status !== "captured") return;
-    await saveData.prune(slug, editionSlug);
+
+    await saveData.prune(slug, editionSlug, policy.keep);
     console.log(`[saves] ${slug}: captured ${result.files} file(s) as ${result.id}`);
   } catch (err) {
     console.warn(`[saves] snapshot after play failed for ${slug}:`, err?.message || err);

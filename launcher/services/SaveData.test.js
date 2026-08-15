@@ -108,6 +108,37 @@ async function main() {
     assert.equal(after[0].id, before[0].id);
   });
 
+  await check("refuses to snapshot a save directory over the size limit", async () => {
+    // Luanti worlds grow without bound; ten full copies of one would cost a
+    // player tens of gigabytes to protect a game they may have tried once.
+    const bigDir = path.join(tmp, "big", "saves");
+    await fsp.mkdir(bigDir, { recursive: true });
+    await fsp.writeFile(path.join(bigDir, "world.dat"), Buffer.alloc(3 * 1024 * 1024));
+    const r = await sd.snapshot("luanti", null, bigDir, { maxSnapshotMb: 1 });
+    assert.equal(r.status, "too-large");
+    assert.ok(r.bytes > r.limitBytes);
+    // and nothing was written
+    assert.equal((await sd.list("luanti", null)).length, 0);
+  });
+
+  await check("still snapshots a save directory under the limit", async () => {
+    const okDir = path.join(tmp, "small", "saves");
+    await fsp.mkdir(okDir, { recursive: true });
+    await fsp.writeFile(path.join(okDir, "slot.sav"), Buffer.alloc(64 * 1024));
+    const r = await sd.snapshot("openttd", null, okDir, { maxSnapshotMb: 1 });
+    assert.equal(r.status, "captured");
+  });
+
+  await check("size measurement ignores caches, matching the copy", async () => {
+    const d = path.join(tmp, "cachey", "saves");
+    await fsp.mkdir(path.join(d, "cache"), { recursive: true });
+    await fsp.writeFile(path.join(d, "real.sav"), Buffer.alloc(32 * 1024));
+    await fsp.writeFile(path.join(d, "cache", "junk.bin"), Buffer.alloc(4 * 1024 * 1024));
+    // Would exceed 1MB if the cache counted; it must not.
+    const r = await sd.snapshot("naev", null, d, { maxSnapshotMb: 1 });
+    assert.equal(r.status, "captured");
+  });
+
   await check("isInside rejects traversal", () => {
     assert.equal(isInside("/root/../etc/passwd", "/root"), false);
     assert.equal(isInside("/root/sub/file", "/root"), true);
