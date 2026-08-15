@@ -39,6 +39,7 @@ import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { FreeOfferBanner } from "@/components/FreeOfferBanner";
 import { offersForGame } from "@/lib/freeOffers/service";
 import { GameInstallContent } from "@/components/GameInstallContent";
+import { InstallHealthNotice } from "@/components/InstallHealthNotice";
 import { ModCard } from "@/components/ModCard";
 import { launcherPlayModUrl } from "@/lib/launcher";
 import {
@@ -332,6 +333,11 @@ export default async function GamePage({
                 faqSchema(game.faq?.length ? game.faq : deriveFaq(game))
               )}
             />
+            {/* Above the instructions on purpose: if the download is currently
+                dead, that is the first thing a reader needs, not the last. */}
+            <div className="mb-4">
+              <InstallHealthNotice slug={game.slug} />
+            </div>
             <GameInstallContent game={game} />
           </>
         )}

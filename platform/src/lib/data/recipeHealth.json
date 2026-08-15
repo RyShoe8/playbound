@@ -1,0 +1,68 @@
+{
+  "checkedAt": "2026-08-15T02:32:21.800Z",
+  "ok": 92,
+  "broken": 12,
+  "skipped": 105,
+  "failures": [
+    {
+      "id": "game:freedoom",
+      "kind": "github-zip",
+      "detail": "release g4.14.2 has no asset matching /Windows-64bit\\.zip$|win64.*\\.zip$/ — offers: gzdoom-4-14-2-macos.zip, gzdoom-4-14-2-windows-pdb.7z, gzdoom-4-14-2-windows.zip, gzdoom_4.14.2_amd64.deb, gzdoom_4.14.2_arm64.deb"
+    },
+    {
+      "id": "game:freelancer",
+      "kind": "direct-zip",
+      "detail": "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip — HTTP 404"
+    },
+    {
+      "id": "game:ur-quan-masters",
+      "kind": "direct-zip",
+      "detail": "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-win32.zip — HTTP 404"
+    },
+    {
+      "id": "game:bzflag",
+      "kind": "github-installer",
+      "detail": "release v2.4.30 has no asset matching /bzflag-.*\\.exe$/ — offers: (none)"
+    },
+    {
+      "id": "game:wolfenstein",
+      "kind": "github-zip",
+      "detail": "ECWolfEngine/ECWolf has no published release"
+    },
+    {
+      "id": "game:star-wars-galaxies",
+      "kind": "external",
+      "detail": "https://swgrestoration.com — fetch failed"
+    },
+    {
+      "id": "edition:everquest/project-quarm",
+      "kind": "direct-zip",
+      "detail": "https://sahaquiel.us/quarm/TAKP2.2.zip — fetch failed"
+    },
+    {
+      "id": "edition:freelancer/freelancer-hd-fluf",
+      "kind": "direct-zip",
+      "detail": "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip — HTTP 404"
+    },
+    {
+      "id": "edition:freelancer/freelancer-vanilla",
+      "kind": "direct-zip",
+      "detail": "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip — HTTP 404"
+    },
+    {
+      "id": "edition:ur-quan-masters/uqm-playbound-edition",
+      "kind": "direct-zip",
+      "detail": "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-win32.zip — HTTP 404"
+    },
+    {
+      "id": "edition:ur-quan-masters/uqm-classic",
+      "kind": "direct-zip",
+      "detail": "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-win32.zip — HTTP 404"
+    },
+    {
+      "id": "mod:flightgear-addon-blacklist",
+      "kind": "direct-zip",
+      "detail": "https://gitlab.com/JohanG/blacklist/-/archive/master/blacklist-master.zip — HTTP 406"
+    }
+  ]
+}
