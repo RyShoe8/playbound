@@ -16,6 +16,7 @@ const saveLocations = require("./services/saveLocations");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
+const { createDeepLinks } = require("./services/deepLinks");
 const { withOutboundUtm } = require("./utm");
 const {
   OPENCIV3_SLUG,
@@ -73,6 +74,8 @@ const { loadSettings, saveSettings, gamesRoot, getApiBase } = createSettings({
   isAllowedApiBase,
   safeStorage,
 });
+
+const { parseDeepLink, extractLinkHandoff } = createDeepLinks(PROTOCOL);
 
 function loadCachedCatalog() {
   try {
@@ -363,68 +366,6 @@ if (!gotLock) {
     if (url) handleDeepLink(parseDeepLink(url));
     showMainWindow();
   });
-}
-
-function parseDeepLink(url) {
-  // playbound://install/openra
-  // playbound://install-mod/my-mod
-  // playbound://play-mod/my-mod
-  // playbound://open-folder/openra
-  // playbound://open-folder-mod/my-mod
-  // playbound://uninstall-mod/my-mod
-  // playbound://locate/naev
-  // playbound://join/openra?host=1.2.3.4&port=1234&name=Server
-  // playbound://auth
-  // playbound://sync
-  // playbound://link?code=...
-  try {
-    const normalized = String(url).replace(/^playbound:\/\//i, "https://");
-    const u = new URL(normalized);
-    const action = u.hostname.toLowerCase();
-    if (action === "auth") return { action: "auth" };
-    if (action === "sync") return { action: "sync" };
-    if (action === "link") {
-      /*
-       * Only the one-time code is accepted. A durable bearer used to be honoured
-       * here too, which meant any web page could navigate to
-       * playbound://link?token=<their own token> and silently rebind someone
-       * else's launcher to the attacker's account — handing over their library
-       * and every cloud save written afterwards. The site has only ever minted
-       * ?code= (see lib/launcher.ts), so nothing legitimate used that path.
-       */
-      return { action: "link", code: u.searchParams.get("code") || "" };
-    }
-    const slug = u.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    const slugActions = [
-      "install",
-      "play",
-      "uninstall",
-      "join",
-      "install-mod",
-      "play-mod",
-      "open-folder",
-      "open-folder-mod",
-      "uninstall-mod",
-      "locate",
-    ];
-    if (!slug || !slugActions.includes(action)) {
-      return null;
-    }
-    /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string }} */
-    const parsed = { action, slug };
-    if (action === "join") {
-      parsed.host = u.searchParams.get("host") || "";
-      parsed.port = Number(u.searchParams.get("port") || 0);
-      parsed.name = u.searchParams.get("name") || "";
-    }
-    if (action === "install" || action === "play" || action === "uninstall") {
-      const edition = u.searchParams.get("edition");
-      if (edition) parsed.editionSlug = edition;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
 }
 
 const CONNECTED_LIBRARY_MSG = "Signed in. Your installs sync automatically.";
@@ -861,16 +802,6 @@ function scheduleLibrarySync() {
   librarySyncTimer = setInterval(() => {
     void syncLibraryNow({ quiet: true });
   }, LIBRARY_SYNC_INTERVAL_MS);
-}
-
-function extractLinkHandoff(url) {
-  try {
-    const parsed = parseDeepLink(url);
-    if (parsed?.action === "link" && parsed.code) return parsed;
-  } catch {
-    /* ignore */
-  }
-  return null;
 }
 
 function clearAuthWindowSecrets() {
