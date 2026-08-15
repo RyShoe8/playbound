@@ -3705,14 +3705,16 @@ async function fillGameHardwareCompat(slug) {
 
 function youtubeId(url) {
   try {
-    const u = new URL(url);
+    const raw = String(url || "").trim();
+    if (!raw) return null;
+    const match = raw.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
+    if (match?.[1]) return match[1];
+    const u = new URL(raw);
     if (u.hostname.includes("youtu.be")) {
       return u.pathname.replace(/^\//, "").split("/")[0] || null;
     }
     if (u.hostname.includes("youtube.com")) {
-      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/")[2] || null;
-      if (u.pathname.startsWith("/shorts/")) return u.pathname.split("/")[2] || null;
-      return u.searchParams.get("v");
+      return u.searchParams.get("v") || u.pathname.split("/")[2] || null;
     }
   } catch {
     /* ignore */
@@ -3730,6 +3732,13 @@ function vimeoId(url) {
   } catch {
     return null;
   }
+}
+
+function isPlayableVideo(url) {
+  if (!url) return false;
+  const s = String(url).trim();
+  if (youtubeId(s) || vimeoId(s)) return true;
+  return /\.(mp4|webm|m3u8)(\?|$)/i.test(s) || (s.includes("steamstatic.com") && (s.includes("movie") || s.includes(".webm") || s.includes(".mp4")));
 }
 
 function classifyMediaUrl(src) {
@@ -4251,7 +4260,7 @@ async function renderGameDetailView(slug) {
     }
     if (mediaSec) {
       const vids = (Array.isArray(detail.videos) ? detail.videos : [])
-        .filter(Boolean)
+        .filter(isPlayableVideo)
         .map(classifyMediaUrl);
       const shots = (Array.isArray(detail.screenshots) ? detail.screenshots : []).filter(Boolean);
 
@@ -4278,13 +4287,15 @@ async function renderGameDetailView(slug) {
                   if (v.kind === "youtube" || v.kind === "vimeo") {
                     return `
                       <div class="media-video-frame">
-                        <iframe src="${escapeHtml(v.embedUrl)}" title="${escapeHtml(detail.title || "Game")} video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe src="${escapeHtml(v.embedUrl)}" title="${escapeHtml(detail.title || "Game")} video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
                       </div>
                     `;
                   }
                   return `
                     <div class="media-video-frame">
-                      <video src="${escapeHtml(v.src)}" controls preload="metadata" poster="${escapeHtml(detail.coverImage || "")}"></video>
+                      <video src="${escapeHtml(v.src)}" controls preload="metadata" poster="${escapeHtml(detail.coverImage || "")}">
+                        <source src="${escapeHtml(v.src)}" />
+                      </video>
                     </div>
                   `;
                 })
