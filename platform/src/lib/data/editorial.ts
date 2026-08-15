@@ -195,6 +195,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "HoYoverse's flagship live-service action RPG; regular 6-week major update schedule with new regions, characters, and Archon quests.",
   },
+  "gradius-remake": {
+    kind: "manual",
+    url: "https://archive.org/details/gradius-remake-pc",
+    checkedAt: "2026-08-15",
+    note: "Completed standalone freeware arcade remake; verified v1.2 portable Windows build is preserved and fully functional.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -2779,6 +2785,86 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "How does movement in Quake Champions work?",
         a: "Movement relies on classic Quake physics: hold forward and jump, then alternate strafe keys and smooth mouse turns to build momentum (strafe jumping). Different Champions also feature unique movement traits such as Slash's crouch slide, Visor's uncapped speed, and Anarki's air control.",
+      },
+    ],
+  },
+  "gradius-remake": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A flawless, widescreen-enhanced modern tribute to the foundational 1985 arcade side-scrolling shoot 'em up that defined the genre.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "Gradius Remake is a loving, high-framerate modern PC recreation of Konami's landmark 1985 arcade shoot 'em up. As the pilot of the legendary hyperspace starfighter Vic Viper, players embark on a desperate solo campaign across deep space to destroy the invading bio-mechanical armada of the Bacterian Empire and save Planet Gradius from annihilation.\n\nThe game preserves the revolutionary horizontal power-up gauge that transformed the shoot 'em up genre forever. Slaying red enemy formations releases glowing orange power capsules; collecting each capsule advances an illuminated selection cursor across six upgrade tiers: Speed Up (stackable engine propulsion), Missile (ground-dropping diagonal bombs), Double (angled forward-and-upward cannons), Laser (piercing horizontal plasma beams), Option (glowing satellite drones that duplicate every shot fired), and ? (frontal directional shield barrier).\n\nLevel design tests pure situational awareness and twitch reflexes across classic and reimagined sectors. Navigate deadly cosmic asteroid fields, weave through impenetrable volcanic cavern mazes with churning magma columns, dodge laser-spewing Moai stone monoliths, and breach organic cellular fortresses guarded by pulsing tentacle monstrosities.\n\nEvery stage culminates in a legendary confrontation with the Bacterian mothership Big Core. Players must carefully weave between rotating blue laser volleys, shoot through protective energy shields, and destroy the glowing central core before the mothership charges across the screen.\n\nThis modernized remake features smooth 60 FPS performance, crisp widescreen presentation, optional retro CRT scanline shaders, rearranged stereo arcade soundtracks, and native USB gamepad / arcade stick mapping. A timeless arcade masterclass built for classic shmup veterans and new pilots alike.",
+    whyWePickedIt:
+      "Gradius established the foundational DNA of horizontal arcade shooters: customizable weapon gauges, iconic Option satellite drones, and memorable boss battles. This remake perfectly preserves the tense challenge of the arcade original while delivering silky 60 FPS widescreen action on modern PCs.",
+    bestFor: [
+      "Retro arcade and shoot 'em up enthusiasts who love Vic Viper, R-Type, and classic side-scrollers",
+      "Players who appreciate customizable weapon bar power-up systems and tactical loadout planning",
+      "Gamers seeking intense reflex-driven boss fights and high-score chasing",
+      "Steam Deck and PC gamers wanting a lightweight, zero-bloat portable arcade title with gamepad support",
+      "Fans of 80s arcade chiptune soundtracks and pixel art aesthetic",
+    ],
+    notFor: [
+      "Gamers looking for modern bullet-hell shmups with microscopic hitboxes and screen-clearing bombs",
+      "Players frustrated by 'checkpoint recovery' loops where losing power-ups makes recovery challenging",
+      "Those seeking multi-hour narrative-heavy RPG storylines",
+    ],
+    comparableTo: [
+      "R-Type Dimensions",
+      "Dariusburst: Chronicle Saviours",
+      "Salamander / Life Force",
+      "Super Hydorah",
+      "ZeroRanger",
+      "Thunder Force IV",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the portable Gradius Remake archive via PlayBound or the official archive. Extract the folder to any directory and launch Gradius.exe.",
+      },
+      {
+        platform: "windows",
+        text: "Connect any USB gamepad or arcade stick. Access the in-game Options menu to configure fire buttons and optional CRT scanline filters.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux and Steam Deck, run Gradius.exe through Proton or Wine with full gamepad recognition.",
+      },
+      {
+        platform: "all",
+        text: "Learn the power-up order: prioritize 1-2 Speed Ups and an initial Option drone before committing to Double or Laser weaponry.",
+      },
+    ],
+    faq: [
+      {
+        q: "How does the Gradius power-up meter work?",
+        a: "Collecting orange power capsules moves your selection cursor from left to right along the bottom bar: Speed Up -> Missile -> Double -> Laser -> Option -> ? (Shield). Pressing the Power-Up button activates whichever upgrade is currently highlighted and resets the cursor to the start.",
+      },
+      {
+        q: "What do the Option shadow drones do?",
+        a: "Option drones (also known as Multiples) are glowing orange energy satellites that trail your Vic Viper's exact movement path and duplicate all of your active primary weapons and missiles, multiplying your firepower up to four times.",
+      },
+      {
+        q: "Can I use the Konami Code in Gradius Remake?",
+        a: "Yes! Entering the legendary Konami Code (Up, Up, Down, Down, Left, Right, Left, Right, B, A) when paused instantly equips your Vic Viper with a full suite of power-ups.",
+      },
+      {
+        q: "Does Gradius Remake support controllers and arcade sticks?",
+        a: "Yes. The game features native XInput and DirectInput support for Xbox, PlayStation, 8BitDo, and arcade fight sticks with remappable action buttons.",
+      },
+      {
+        q: "What is the difference between Double and Laser?",
+        a: "Double and Laser are mutually exclusive primary weapons: Double fires one forward shot and one diagonal upward shot (great for ceiling turrets), while Laser fires a continuous piercing horizontal beam that obliterates entire enemy columns.",
+      },
+      {
+        q: "What happens when you lose a life in Gradius?",
+        a: "When destroyed, you respawn at the nearest stage checkpoint with a stock Vic Viper and lose all accumulated power-ups. Recovering from a death requires careful dodging to rebuild your Speed and Option drones.",
       },
     ],
   },

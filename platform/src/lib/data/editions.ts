@@ -2669,6 +2669,76 @@ export const editions: EditionSeed[] = [
     tags: ["Epic Games", "Open World", "Action RPG", "Free to Play"],
     verificationLevel: "official",
   },
+  {
+    gameSlug: "gradius-remake",
+    slug: "gradius-remake-portable",
+    name: "Gradius Remake (Portable PC Edition)",
+    shortDescription: "Standalone portable arcade remake with 60 FPS widescreen action, CRT filters, and gamepad support.",
+    description:
+      "The definitive standalone PC release of Gradius Remake. Features instant zero-install portable execution, customizable controls, scanline options, and stereo soundtrack.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://archive.org/details/gradius-remake-pc",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://archive.org/download/gradius-remake-pc/GradiusRemake.zip",
+        fileName: "GradiusRemake.zip",
+        exeHint: "Gradius|Nemesis",
+        note: "Standalone portable arcade shoot 'em up package.",
+      },
+    },
+    requirements: {
+      min: "1.0 GHz CPU / 512 MB RAM / DirectX 9.0c GPU / 100 MB storage",
+      recommended: "Dual-Core 2.0 GHz / 2 GB RAM / Dedicated GPU / USB Gamepad",
+    },
+    features: ["Singleplayer", "Controller Support", "Pixel Art", "Widescreen Support", "High Framerate", "Scanline Filter"],
+    tags: ["Shmup", "Arcade", "Retro", "Space", "2D"],
+    aliases: ["Gradius PC", "Gradius Portable", "Nemesis Remake"],
+    version: "v1.2",
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Does this require an emulator?",
+        a: "No. Gradius Remake runs natively on modern Windows PC without needing external emulators or ROM files.",
+      },
+    ],
+  },
+  {
+    gameSlug: "gradius-remake",
+    slug: "gradius-arcade-original",
+    name: "Gradius (1985 Arcade Edition)",
+    shortDescription: "The original 1985 Konami arcade coin-op edition with authentic dip-switch options.",
+    description:
+      "The legendary original 1985 Konami Bubble System arcade coin-op experience with authentic DIP switch configuration, original 4:3 raster resolution, and classic FM sound.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://archive.org/details/arcade_gradius",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://archive.org/details/arcade_gradius",
+      },
+    },
+    requirements: {
+      min: "Modern web browser or arcade emulator / 512 MB RAM",
+      recommended: "Arcade Fight Stick / Gamepad",
+    },
+    features: ["Singleplayer", "Authentic Arcade", "Original Soundtrack", "DIP Switches"],
+    tags: ["Arcade", "Retro", "Classic", "Konami", "Shmup"],
+    verificationLevel: "community_verified",
+  },
 ];
 
 
