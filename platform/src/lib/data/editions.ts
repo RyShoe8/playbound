@@ -2599,6 +2599,76 @@ export const editions: EditionSeed[] = [
     tags: ["Workshop", "Custom Games", "Auto Chess", "Arcade"],
     verificationLevel: "community_verified",
   },
+  {
+    gameSlug: "genshin-impact",
+    slug: "genshin-pc-hoyoplay",
+    name: "Genshin Impact (HoYoPlay PC Client)",
+    shortDescription: "The official standalone PC client powered by HoYoPlay with full 4K HDR graphics and controller support.",
+    description:
+      "The definitive PC release of Genshin Impact. Features direct launcher integration, full 60 FPS / 4K resolution support, customizable controller bindings, and cross-save progression.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://genshin.hoyoverse.com",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-installer",
+        url: "https://sg-hyp-public.hoyoverse.com/hyp/hyp-prod/pkg/installer/HYP_1.0.0.0_Setup.exe",
+        fileName: "HYP_Genshin_Setup.exe",
+        exeHint: "GenshinImpact|HoYoPlay",
+        note: "Official HoYoPlay standalone PC client installer from HoYoverse.",
+      },
+    },
+    requirements: {
+      min: "Intel Core i5-2500K / 8 GB RAM / GT 1030 2GB / 85 GB storage",
+      recommended: "Intel Core i7-7700K / 16 GB RAM / GTX 1060 6GB / NVMe SSD",
+    },
+    features: ["Singleplayer", "Co-op", "Crossplay", "Controller Support", "Direct Installer", "4K HDR"],
+    tags: ["Open World", "Action RPG", "Anime", "Free to Play", "Co-op"],
+    aliases: ["Genshin PC", "HoYoPlay Genshin"],
+    version: "Luna Rite / Natlan Update",
+    verificationLevel: "official",
+    faq: [
+      {
+        q: "Does this installer include all game files?",
+        a: "The installer sets up the official HoYoPlay launcher, which will download and manage the full 85 GB game client with automatic background patch updates.",
+      },
+    ],
+  },
+  {
+    gameSlug: "genshin-impact",
+    slug: "genshin-epic",
+    name: "Genshin Impact (Epic Games Edition)",
+    shortDescription: "The Epic Games Store edition with Epic social friends and wallet integration.",
+    description:
+      "Genshin Impact delivered through the Epic Games Launcher, sharing the same live servers, accounts, and cross-save data as the official standalone client.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://store.epicgames.com/p/genshin-impact",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://store.epicgames.com/p/genshin-impact",
+      },
+    },
+    requirements: {
+      min: "Intel Core i5-2500K / 8 GB RAM / GT 1030 2GB / 85 GB storage",
+      recommended: "Intel Core i7-7700K / 16 GB RAM / GTX 1060 6GB / SSD",
+    },
+    features: ["Singleplayer", "Co-op", "Epic Store Integration", "Crossplay", "Controller Support"],
+    tags: ["Epic Games", "Open World", "Action RPG", "Free to Play"],
+    verificationLevel: "official",
+  },
 ];
 
 
