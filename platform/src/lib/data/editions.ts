@@ -97,14 +97,13 @@ export const editions: EditionSeed[] = [
     sortOrder: 20,
     links: {
       website: "https://elderscrolls.bethesda.net/en/daggerfall",
-      steam: "https://store.steampowered.com/app/1812390/The_Elder_Scrolls_II_Daggerfall/",
     },
-    installMethod: "direct_download",
+    installMethod: "official_download",
     installConfig: {
-      direct_download: {
+      official_download: {
         url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/DFInstall.zip",
         fileName: "DFInstall.zip",
-        fileSizeMB: 150,
+        sizeMB: 150,
       },
     },
     requirements: {
@@ -122,7 +121,7 @@ export const editions: EditionSeed[] = [
     shortDescription: "Modern 64-bit open-source engine with modern OpenGL, widescreen, and server downloader.",
     description:
       "ET: Legacy is the recommended, fully open-source modern engine for Wolfenstein: Enemy Territory. Compatible with all original 2.60b mods and maps, with native 64-bit performance, raw mouse input, and modern audio rendering.",
-    type: "community_fork",
+    type: "community",
     isDefault: true,
     sortOrder: 10,
     links: {
@@ -155,8 +154,7 @@ export const editions: EditionSeed[] = [
     isDefault: false,
     sortOrder: 20,
     links: {
-      steam: "https://store.steampowered.com/app/1873030/Wolfenstein_Enemy_Territory/",
-      website: "https://www.splashdamage.com/games/wolfenstein-enemy-territory/",
+      website: "https://store.steampowered.com/app/1873030/Wolfenstein_Enemy_Territory/",
     },
     installMethod: "steam",
     installConfig: {

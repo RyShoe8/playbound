@@ -1685,7 +1685,6 @@ const facts: Game[] = [
   },
   {
     slug: "wolfenstein-enemy-territory",
-    previousSlugs: ["wolfenstein"],
     title: "Wolfenstein: Enemy Territory",
     tagline: "The definitive objective-based team shooter — 100% free since 2003.",
     description:

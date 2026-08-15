@@ -197,6 +197,7 @@ async function main() {
     }
 
     // Published: fill empty media/editorial gaps — never demote or replace CMS text.
+    const patch: Record<string, unknown> = {};
     if (g.features?.length) {
       patch.features = g.features;
     }
