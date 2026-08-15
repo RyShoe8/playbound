@@ -158,6 +158,178 @@ function clearsAll(verdict: string): Game["qualityBar"] {
 }
 
 export const editorial: Record<string, GameEditorial> = {
+  starcraft: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      /*
+       * Classic StarCraft gets occasional compatibility and security patches
+       * rather than active development, and there is no public repository to
+       * check — hence a manual entry that verify:maintenance will flag when it
+       * goes stale rather than a github check that would always look dead.
+       */
+      activelyMaintained: false,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "StarCraft clears four of five: Blizzard gave away the Anthology outright, both campaigns are complete, and it remains one of the finest strategy games ever made. Development effectively stopped after patch 1.23, so we do not claim it is actively maintained.",
+      lastVerified: VERIFIED,
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://us.shop.battle.net/en-us/product/starcraft",
+      checkedAt: VERIFIED,
+      note: "Classic StarCraft receives only sporadic compatibility patches; Blizzard disbanded the Classic Games team in 2024. Free Anthology availability re-confirmed on Battle.net.",
+    },
+    longDescription:
+      "In 1998 Blizzard shipped a strategy game with three factions that barely shared a rule between them, and accidentally invented a national sport.\n\nTerran, Zerg and Protoss are not the usual reskins with different unit names. Terrans build modular bases they can literally lift and relocate, repair their machines, and fight a slow attrition game. Zerg buy nothing individually — they spend larvae, spread creep, and win by arriving with more bodies than you have bullets. Protoss field expensive, powerful units with regenerating shields and can teleport reinforcements straight into a fight. Balancing three armies this different should have been impossible, and Blizzard spent two decades proving it wasn't.\n\nThat balance is why StarCraft became infrastructure in South Korea — televised leagues, professional teams, players with salaries and fan clubs, a competitive scene that outlived several console generations. Brood War, the expansion, is the version that scene actually played, and it is included free.\n\nThe campaigns deserve their own mention. Sixty missions across the two releases, tied together by briefing-room scenes and a genuinely good story about Sarah Kerrigan, told with a confidence most games still don't manage. You can play the whole thing solo and never touch multiplayer.\n\nWhat Blizzard did in 2017 is the reason it is in this catalog: patch 1.18 made the original game and Brood War free permanently, added Windows 10 and modern macOS compatibility, windowed mode, observer mode and improved matchmaking. StarCraft: Remastered launched later the same year as a paid upgrade with 4K art — worth having, entirely optional, and not what you are downloading here.\n\nBe clear about what it is: a 1998 game at 640×480 with heavy sprite art and interface conventions that predate conveniences you now consider standard. There is no unit rally-point sophistication, selection caps exist, and the learning curve for multiplayer is close to vertical. As a single-player campaign and a piece of design history, it is unmatched at the price.",
+    whyWePickedIt:
+      "Very few genuinely canonical games are free, and fewer still were made free deliberately by the company that still profits from the franchise. Blizzard could have left StarCraft behind a storefront forever; instead they patched it for modern machines and gave it away. That combination — historically important, still excellent, actually free — is exactly what this catalog exists to surface.",
+    bestFor: [
+      "Anyone who wants to understand why RTS design peaked here",
+      "Sixty missions of single-player campaign, no multiplayer required",
+      "Players curious about the game that built professional esports",
+      "Very old hardware — it is a 1998 game and runs on anything",
+    ],
+    notFor: [
+      "Players who need modern visuals or interface conveniences",
+      "Anyone hoping for a gentle multiplayer ladder; the skill floor is brutal",
+      "Linux users, who will need Wine or Proton rather than a native build",
+      "Those who want the 4K art, which is the paid Remastered upgrade",
+    ],
+    comparableTo: ["Command & Conquer", "Age of Empires II", "Warcraft III", "Supreme Commander", "Dune 2000"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install the Battle.net desktop app from Blizzard and sign in with a free Battle.net account.",
+      },
+      {
+        platform: "all",
+        text: "Find StarCraft in the game list and install it. The Anthology — StarCraft plus Brood War — costs nothing; do not buy Remastered unless you specifically want the 4K art.",
+      },
+      {
+        platform: "all",
+        text: "Play the StarCraft campaign before Brood War. Brood War continues the story directly and assumes you know the units.",
+      },
+      {
+        platform: "linux",
+        text: "There is no native Linux build. Battle.net and StarCraft both run under Wine or Proton, but that route is community-supported rather than official.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is StarCraft actually free?",
+        a: "Yes. Blizzard made StarCraft and its Brood War expansion free permanently in March 2017 with patch 1.18. You need a free Battle.net account and the Battle.net app, but there is nothing to buy.",
+      },
+      {
+        q: "What is the difference between the free version and Remastered?",
+        a: "The free Anthology is the complete original game and expansion with modern compatibility. Remastered is a paid upgrade that adds 4K artwork and some quality-of-life features. Gameplay and balance are identical, and the two can play together online.",
+      },
+      {
+        q: "Does the free version include Brood War?",
+        a: "Yes. Both the original campaign and the Brood War expansion are included, which is roughly sixty missions in total.",
+      },
+      {
+        q: "Can I play StarCraft on modern Windows and macOS?",
+        a: "Yes. Patch 1.18 added support for current Windows and macOS versions along with windowed mode. There is no native Linux client, though it runs under Wine and Proton.",
+      },
+      {
+        q: "Is anyone still playing StarCraft multiplayer?",
+        a: "Yes, though it is a small and extremely skilled population, particularly in South Korea. Expect a steep introduction if you go straight to ladder play.",
+      },
+      {
+        q: "Is StarCraft still being updated?",
+        a: "Not meaningfully. It receives occasional compatibility and security patches, but active development stopped and Blizzard disbanded its Classic Games team in 2024. The game is complete and stable as it stands.",
+      },
+    ],
+  },
+
+  "tes-arena": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: false,
+      standsAlone: true,
+      /*
+       * Not highQuality: Arena matters historically and is free, but it is a
+       * 1994 dungeon crawler with generated content that repeats heavily. It
+       * earns a place as the series' origin rather than on play quality, and
+       * saying so is more useful than pretending otherwise.
+       */
+      highQuality: false,
+      verdict:
+        "Arena clears three of five. Bethesda released it as freeware and it is complete and playable, but it stopped being updated in the 1990s and its procedurally generated world repeats badly. It is here as the origin of The Elder Scrolls, not as a game we would recommend over Daggerfall or Morrowind.",
+      lastVerified: VERIFIED,
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/Arena106Setup.zip",
+      checkedAt: VERIFIED,
+      note: "Bethesda's freeware package, unchanged since the 2004 anniversary release. Download URL re-verified reachable and serving 9.1 MB.",
+    },
+    longDescription:
+      "The Elder Scrolls: Arena was supposed to be a gladiator game. Somewhere in development it turned into an entire continent, and Bethesda has been building on that accident ever since.\n\nArena drops you into Tamriel with a mission to recover the eight pieces of the Staff of Chaos, scattered across dungeons in a world containing every province the series would later visit individually. The scale is genuinely absurd for 1994 — hundreds of towns, each with shops, temples, inns and their own inhabitants, all generated rather than hand-placed. You can walk out of the main quest and simply travel, taking odd jobs, robbing dungeons, and getting lost in a way that later, more curated Elder Scrolls games deliberately reined in.\n\nWhat is remarkable is how much of the series' DNA is already present. Skills improve through use. Guilds have their own quest lines and ranks. Spells can be made rather than bought. Days pass, shops close at night, and there is a working calendar behind it all. Morrowind and Skyrim refined these ideas; they did not invent them.\n\nThe cost is that most of Tamriel is procedural. Towns share layouts, dungeon corridors repeat, and quest text recycles. Twenty hours in you will have seen the shapes the generator knows. Combat is a matter of holding a mouse button and dragging a direction, which was novel then and is tiresome now. It is genuinely hard, frequently unfair, and does not explain itself.\n\nBethesda made it freeware in 2004 for the series' tenth anniversary, and the download here is their own package. Being a DOS game, it wants DOSBox to run at a sensible speed. If you would rather play it with modern controls and rendering, OpenTESArena is an open-source engine reimplementation in active development — impressive and worth watching, though not yet finished enough to be the way we recommend starting.",
+    whyWePickedIt:
+      "We include Arena for the same reason a museum keeps first drafts. It is not the best Elder Scrolls game and we are not going to pretend it is — but it is the one where the series' whole design philosophy shows up fully formed, thirty years ago, and Bethesda gave it away rather than reselling it. That deserves a proper entry rather than a footnote.",
+    bestFor: [
+      "Anyone curious about where Elder Scrolls design actually started",
+      "Players who enjoy getting lost in enormous, indifferent worlds",
+      "Retro RPG fans comfortable with DOS-era conventions",
+      "Extremely low-spec machines — it is a 1994 game",
+    ],
+    notFor: [
+      "Players expecting Skyrim; this is far more primitive and far less forgiving",
+      "Anyone who dislikes repetitive procedurally generated content",
+      "Those who want guidance — the game explains almost nothing",
+      "Players unwilling to configure DOSBox for a reasonable experience",
+    ],
+    comparableTo: ["The Elder Scrolls II: Daggerfall", "Ultima Underworld", "Might and Magic", "Morrowind"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Install through PlayBound, which fetches Bethesda's official freeware package.",
+      },
+      {
+        platform: "all",
+        text: "Run it through DOSBox — DOSBox Staging is the best current build. Without it the game runs at whatever speed your CPU feels like, which is not playable.",
+      },
+      {
+        platform: "all",
+        text: "Set cycles in DOSBox if movement feels too fast or too slow. Around 20000 cycles is a reasonable starting point.",
+      },
+      {
+        platform: "all",
+        text: "Save often and in multiple slots. Arena is from an era that considered losing progress part of the experience.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is The Elder Scrolls: Arena free?",
+        a: "Yes. Bethesda released it as freeware in 2004 to mark the series' tenth anniversary, and still hosts the download themselves. It is also free on Steam and GOG.",
+      },
+      {
+        q: "Do I need DOSBox to play Arena?",
+        a: "In practice, yes. Arena is a DOS game, and without DOSBox it either refuses to run on modern Windows or runs at an unusable speed. The GOG release bundles a pre-configured DOSBox if you would rather not set one up.",
+      },
+      {
+        q: "Is Arena worth playing today, or should I start with Daggerfall?",
+        a: "Daggerfall is the better game and is also free. Play Arena if you are specifically interested in the series' origins; play Daggerfall, ideally through Daggerfall Unity, if you want a genuinely engrossing old Elder Scrolls game.",
+      },
+      {
+        q: "What is OpenTESArena?",
+        a: "An open-source reimplementation of Arena's engine with modern rendering and controls, in active development. It is promising and is progressing quickly, but it is not yet complete, so the original freeware release remains the way to actually finish the game.",
+      },
+      {
+        q: "How long is Arena?",
+        a: "The main quest runs roughly thirty to forty hours, and the world is effectively endless because most of it is generated. Most players see what the generator has to offer well before exhausting it.",
+      },
+      {
+        q: "Is this related to OpenArena?",
+        a: "No. OpenArena is a free Quake III-style arena shooter and shares nothing with this game but the word Arena.",
+      },
+    ],
+  },
+
   alephone: {
     qualityBar: clearsAll(
       "Marathon 2 clears all five: Bungie released the game data free and the engine is GPL, the trilogy is complete and finished, Aleph One still ships releases thirty years on, and the writing holds up against shooters made this decade."
