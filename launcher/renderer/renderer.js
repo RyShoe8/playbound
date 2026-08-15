@@ -2080,9 +2080,9 @@ async function toggleOpenCiv3DisplayPanel(block, game) {
   panel.innerHTML = `
     <div class="openciv3-display-title">Window resolution</div>
     <p class="view-sub openciv3-display-hint">OpenCiv3 starts small by default. Pick a size — applied on next launch.</p>
-    <label class="openciv3-display-label">Preset
+    <div class="openciv3-display-label">Preset
       <select id="openciv3-preset" class="openciv3-display-select">${presetOptions}</select>
-    </label>
+    </div>
     <div class="openciv3-display-custom">
       <label class="openciv3-display-label">Width
         <input type="number" id="openciv3-width" class="openciv3-display-input" min="640" max="7680" step="1" value="${width}" />
@@ -2561,18 +2561,18 @@ async function renderServersView() {
     </div>
 
     <div class="servers-toolbar">
-      <label class="servers-field">
+      <div class="servers-field">
         <span class="servers-field-label">Game</span>
         <select class="input-text" id="servers-game" aria-label="Base game"></select>
-      </label>
-      <label class="servers-field">
+      </div>
+      <div class="servers-field">
         <span class="servers-field-label">Mod</span>
         <select class="input-text" id="servers-mod" aria-label="Mod"></select>
-      </label>
-      <label class="servers-field servers-field-grow">
+      </div>
+      <div class="servers-field servers-field-grow">
         <span class="servers-field-label">Search</span>
         <input type="search" class="input-text" id="servers-search" placeholder="Name, map, players…" value="${escapeHtml(serversState.search)}" />
-      </label>
+      </div>
       <label class="filter-check servers-installed-check"><input type="checkbox" id="servers-installed-only" ${serversState.installedOnly ? "checked" : ""} /> Installed only</label>
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
@@ -5600,19 +5600,28 @@ async function initAddFriendsPanel() {
   };
 }
 function enhanceSelect(selectEl) {
-  if (selectEl.dataset.premium) return;
+  if (!selectEl || selectEl.dataset.premium === "true") return;
   selectEl.dataset.premium = "true";
+  selectEl.classList.add("premium-select-native-hidden");
   selectEl.style.display = "none";
   
   const wrapper = document.createElement("div");
   wrapper.className = "premium-select";
+  if (selectEl.id) wrapper.dataset.for = selectEl.id;
   if (selectEl.style.flex) wrapper.style.flex = selectEl.style.flex;
+  if (selectEl.style.maxWidth) wrapper.style.maxWidth = selectEl.style.maxWidth;
+  if (selectEl.style.minWidth) wrapper.style.minWidth = selectEl.style.minWidth;
+  if (selectEl.style.margin) wrapper.style.margin = selectEl.style.margin;
   
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "premium-select-btn";
+  btn.setAttribute("aria-haspopup", "listbox");
+  btn.setAttribute("aria-expanded", "false");
+  if (selectEl.disabled) btn.disabled = true;
   
   const span = document.createElement("span");
+  span.className = "premium-select-label";
   btn.appendChild(span);
   
   const icon = document.createElement("span");
@@ -5622,6 +5631,8 @@ function enhanceSelect(selectEl) {
   
   const dropdown = document.createElement("div");
   dropdown.className = "premium-select-dropdown";
+  dropdown.setAttribute("role", "listbox");
+  dropdown.tabIndex = -1;
   
   wrapper.appendChild(btn);
   wrapper.appendChild(dropdown);
@@ -5630,51 +5641,111 @@ function enhanceSelect(selectEl) {
   
   function renderOptions() {
     dropdown.innerHTML = "";
+    btn.disabled = !!selectEl.disabled;
+
+    let selectedOpt = selectEl.selectedIndex >= 0 ? selectEl.options[selectEl.selectedIndex] : null;
+    if (!selectedOpt && selectEl.options.length > 0) {
+      selectedOpt = selectEl.options[0];
+    }
+    span.textContent = selectedOpt ? (selectedOpt.textContent || selectedOpt.label || selectedOpt.value) : "Select…";
+
     Array.from(selectEl.options).forEach((opt) => {
+      const isSelected = opt === selectedOpt || String(opt.value) === String(selectEl.value);
       const item = document.createElement("div");
-      item.className = "premium-select-item" + (opt.selected ? " selected" : "");
-      item.textContent = opt.textContent;
-      if (opt.selected) {
+      item.className = "premium-select-item" + (isSelected ? " selected" : "") + (opt.disabled ? " disabled" : "");
+      item.setAttribute("role", "option");
+      item.setAttribute("aria-selected", isSelected ? "true" : "false");
+      item.dataset.value = opt.value;
+
+      const itemText = document.createElement("span");
+      itemText.className = "premium-select-item-text";
+      itemText.textContent = opt.textContent || opt.label || opt.value;
+      item.appendChild(itemText);
+
+      if (isSelected) {
         const check = document.createElement("span");
         check.className = "premium-select-check";
-        check.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        check.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
         item.appendChild(check);
-        span.textContent = opt.textContent;
       }
-      item.addEventListener("click", () => {
+
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (opt.disabled) return;
         selectEl.value = opt.value;
-        selectEl.dispatchEvent(new Event("change"));
         wrapper.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
         renderOptions();
+        selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+        selectEl.dispatchEvent(new Event("input", { bubbles: true }));
+        if (typeof selectEl.onchange === "function") {
+          selectEl.onchange(new Event("change"));
+        }
       });
+
       dropdown.appendChild(item);
     });
-    if (selectEl.options.length > 0 && selectEl.selectedIndex >= 0) {
-      span.textContent = selectEl.options[selectEl.selectedIndex].textContent;
-    }
   }
   
   btn.addEventListener("click", (e) => {
+    e.preventDefault();
     e.stopPropagation();
+    if (btn.disabled || selectEl.disabled) return;
     const isOpen = wrapper.classList.contains("open");
-    document.querySelectorAll(".premium-select").forEach(p => p.classList.remove("open"));
+    document.querySelectorAll(".premium-select.open").forEach(p => {
+      p.classList.remove("open");
+      p.querySelector(".premium-select-btn")?.setAttribute("aria-expanded", "false");
+    });
     if (!isOpen) {
       wrapper.classList.add("open");
+      btn.setAttribute("aria-expanded", "true");
       renderOptions();
+      const sel = dropdown.querySelector(".premium-select-item.selected");
+      if (sel) sel.scrollIntoView({ block: "nearest" });
     }
   });
   
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) wrapper.classList.remove("open");
-  });
-  
   selectEl.addEventListener("change", renderOptions);
+  selectEl.addEventListener("input", renderOptions);
+  selectEl._syncCustomSelect = renderOptions;
   
+  try {
+    const protoVal = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+    if (protoVal && protoVal.set) {
+      Object.defineProperty(selectEl, "value", {
+        get() { return protoVal.get.call(this); },
+        set(v) { protoVal.set.call(this, v); renderOptions(); },
+        configurable: true
+      });
+    }
+  } catch {
+    /* ignore descriptor errors */
+  }
+
   const observer = new MutationObserver(() => renderOptions());
-  observer.observe(selectEl, { childList: true });
+  observer.observe(selectEl, { childList: true, attributes: true, attributeFilter: ["disabled", "value"] });
   
   renderOptions();
 }
+
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".premium-select.open").forEach(p => {
+    if (!p.contains(e.target)) {
+      p.classList.remove("open");
+      p.querySelector(".premium-select-btn")?.setAttribute("aria-expanded", "false");
+    }
+  });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".premium-select.open").forEach(p => {
+      p.classList.remove("open");
+      p.querySelector(".premium-select-btn")?.setAttribute("aria-expanded", "false");
+    });
+  }
+});
 
 const selectObserver = new MutationObserver((mutations) => {
   mutations.forEach((mutation) => {
