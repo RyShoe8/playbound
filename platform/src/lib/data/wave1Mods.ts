@@ -49,7 +49,6 @@ function m(d: Def): ModSeed {
     directUrl: d.direct ?? null,
     installRelativePath: d.path,
     art: { from: "#1e293b", to: "#64748b", icon: "Package" },
-    published: true,
     summary: d.summary,
     changes: d.changes,
     installHint: d.hint,

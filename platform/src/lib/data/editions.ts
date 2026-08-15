@@ -1266,7 +1266,7 @@ export const editions: EditionSeed[] = [
     installConfig: {
       external_installer: {
         url: "https://us.shop.battle.net/en-us/product/starcraft",
-        instructionNote: "Install Battle.net and select StarCraft (free Anthology).",
+        instructions: "Install Battle.net and select StarCraft (free Anthology).",
       },
     },
     features: ["Singleplayer", "Multiplayer", "Classic Campaign", "Official Matchmaking"],
