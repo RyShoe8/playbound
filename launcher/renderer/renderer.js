@@ -256,6 +256,7 @@ const serversState = {
   search: "",
   pingById: {},
   installedOnly: false,
+  withPlayersOnly: false,
   sort: "players", // name | players | map | location | ping
   sortDir: "desc", // asc | desc
 };
@@ -2783,6 +2784,7 @@ async function renderServersView() {
         <input type="search" class="input-text" id="servers-search" placeholder="Name, map, players…" value="${escapeHtml(serversState.search)}" />
       </div>
       <label class="filter-check servers-installed-check"><input type="checkbox" id="servers-installed-only" ${serversState.installedOnly ? "checked" : ""} /> Installed only</label>
+      <label class="filter-check"><input type="checkbox" id="servers-with-players" ${serversState.withPlayersOnly ? "checked" : ""} /> Servers With Players</label>
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
     <p class="servers-stats" id="servers-stats"></p>
@@ -2801,6 +2803,10 @@ async function renderServersView() {
     serversState.installedOnly = e.target.checked;
     serversState.pingById = {};
     void refreshServersPickersAndList();
+  });
+  document.getElementById("servers-with-players").addEventListener("change", (e) => {
+    serversState.withPlayersOnly = e.target.checked;
+    paintServersTable();
   });
 
   await loadServersBrowser();
@@ -3008,6 +3014,15 @@ function filterServersForMod(servers, mod) {
 function filteredServerRows() {
   const q = serversState.search.trim().toLowerCase();
   let rows = _serversCache.servers || [];
+  /*
+   * Most master lists are mostly idle boxes that still answer a query, so an
+   * unfiltered browser buries the few worth joining. A null count is dropped
+   * too: a server that does not report its population is not evidence that
+   * anyone is on it.
+   */
+  if (serversState.withPlayersOnly) {
+    rows = rows.filter((s) => Number(s.players) > 0);
+  }
   if (q) {
     rows = rows.filter((s) => {
       const blob = `${s.name || ""} ${s.map || ""} ${s.players ?? ""}/${s.maxPlayers ?? ""} ${s.gameType || ""}`.toLowerCase();

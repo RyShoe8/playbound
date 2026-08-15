@@ -21,7 +21,6 @@ import {
   fetchAsphaltLegendsUnitePlayers,
   fetchHoloCurePlayers,
   fetchMarathon2Players,
-  fetchTesArenaPlayers,
   fetchWarThunderPlayers,
   fetchWorldOfSeaBattlePlayers,
   fetchSwtorPlayers,
@@ -121,10 +120,6 @@ const providers: Record<string, ServerProvider> = {
     slug: "marathon-2",
     fetchServers: fetchMarathon2Players,
   },
-  "tes-arena": {
-    slug: "tes-arena",
-    fetchServers: fetchTesArenaPlayers,
-  },
   "war-thunder": {
     slug: "war-thunder",
     fetchServers: fetchWarThunderPlayers,
@@ -189,8 +184,11 @@ const providers: Record<string, ServerProvider> = {
  *   league-of-legends, valorant, quake-champions (matchmaking only; Riot and
  *   Blizzard titles publish neither a master list nor a concurrent count, and
  *   third-party player estimates are models rather than measurements)
- * - war-thunder, world-of-sea-battle, star-wars-the-old-republic, marathon-2,
- *   tes-arena (Steam concurrent count only; no public server browser exists)
+ * - war-thunder, world-of-sea-battle, star-wars-the-old-republic, marathon-2
+ *   (Steam concurrent count only; no public server browser exists)
+ * - tes-arena (single-player only; a 1994 game with no multiplayer has no place
+ *   in a server browser, and the Steam count went with it since the registry is
+ *   what supplies both)
  * - freedoom, lincity-ng, daggerfall, pixreveal (not server-browser games)
  * - gamebuddies-io (browser party; no public master)
  * - openciv3, openlara (offline single-player engines with no service to query;

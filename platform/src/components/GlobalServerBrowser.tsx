@@ -147,6 +147,7 @@ export function GlobalServerBrowser({
   const [modSlug, setModSlug] = useState(queryMod);
   const [editionSlug, setEditionSlug] = useState(queryEdition);
   const [installedOnly, setInstalledOnly] = useState(false);
+  const [withPlayersOnly, setWithPlayersOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
   const [viewer, setViewer] = useState<ViewerGeo | null>(null);
@@ -338,13 +339,33 @@ export function GlobalServerBrowser({
           const needle = edition.toLowerCase();
           const matched = servers.filter((s) => (s.gameType || "").toLowerCase() === needle);
           const label = editionLabel || edition;
-          setFilterNote(
-            matched.length
-              ? `Showing servers for ${label}.`
-              : `No live servers for ${label} right now.`
+          /*
+           * Only some providers encode the edition in gameType — EverQuest
+           * reports "project-quarm" and "project-99", which is what this filter
+           * was written for. Most use the field for what it says: a game mode
+           * or gamedir, "csgo" for Counter-Strike, "Free" and "Members" for
+           * RuneScape. Against those, an exact match found nothing and the
+           * browser went blank for every edition except All.
+           *
+           * Whether any server carries the tag tells us which case we are in.
+           * When none do, the list is shown unfiltered and the note says the
+           * game does not tag its servers — the same shape as the mod filter
+           * above. Falling back is only dishonest if it is silent.
+           */
+          const taggedByEdition = servers.some((s) =>
+            (s.gameType || "").toLowerCase() === needle
           );
-          // Exact edition filter only — never silently fall back to all servers.
-          servers = matched;
+          if (taggedByEdition) {
+            setFilterNote(`Showing servers for ${label}.`);
+            servers = matched;
+          } else {
+            const anyTagged = servers.some((s) => s.gameType);
+            setFilterNote(
+              anyTagged
+                ? `${slug} servers aren't tagged by edition — showing all of them.`
+                : `Showing all ${slug} servers; this game doesn't report editions.`
+            );
+          }
         }
         return servers;
       };
@@ -451,6 +472,15 @@ export function GlobalServerBrowser({
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = data?.servers || [];
+    /*
+     * Most master lists are mostly empty servers — an idle box still answers a
+     * query — so an unfiltered browser buries the handful worth joining. Null
+     * counts are dropped too: a server that does not report its population is
+     * not evidence of anyone being on it.
+     */
+    if (withPlayersOnly) {
+      list = list.filter((s) => Number(s.players) > 0);
+    }
     if (q) {
       list = list.filter((s) => {
         const editionLabel = s.gameType
@@ -484,7 +514,7 @@ export function GlobalServerBrowser({
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [data, search, sortKey, sortDir, estFor, editionNameBySlug]);
+  }, [data, search, withPlayersOnly, sortKey, sortDir, estFor, editionNameBySlug]);
 
   const totalPlayers = useMemo(
     () => rows.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
@@ -609,6 +639,14 @@ export function GlobalServerBrowser({
           />
           Installed only
         </label>
+        <label className="flex h-10 items-center gap-2 rounded-xl border border-border bg-secondary px-3 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={withPlayersOnly}
+            onChange={(e) => setWithPlayersOnly(e.target.checked)}
+          />
+          Servers With Players
+        </label>
         <button
           type="button"
           onClick={() => {
@@ -669,9 +707,11 @@ export function GlobalServerBrowser({
         <EmptyHint icon={Server}>
           {data?.error
             ? "No servers returned (see error above)."
-            : effectiveEditionSlug
-              ? `No servers for ${editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug}.`
-              : "No servers match."}
+            : withPlayersOnly
+              ? "Every listed server is empty right now. Turn off Servers With Players to see them all."
+              : effectiveEditionSlug
+                ? `No servers for ${editionNameBySlug.get(effectiveEditionSlug) || effectiveEditionSlug}.`
+                : "No servers match."}
         </EmptyHint>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
