@@ -206,8 +206,16 @@ const flightgearMods: ModSeed[] = [
     tagline: "Ignore callsigns and MP models.",
     desc: "Automatically ignore multiplayer pilots by callsign or aircraft model.",
     website: "https://gitlab.com/JohanG/blacklist",
-    kind: "direct-zip",
-    direct: "https://gitlab.com/JohanG/blacklist/-/archive/master/blacklist-master.zip",
+    /*
+     * Link-out rather than a direct download: GitLab answers 406 to every
+     * automated request for its archive endpoints. Confirmed it is the client
+     * and not the URL — the same link returns 200 in a browser, while both
+     * plain Node and Electron's own fetch (which is what the launcher
+     * downloads with) get 406, and the /api/v4 archive endpoint behaves the
+     * same. Nothing we can send fixes it, so the honest recipe is to send the
+     * player to the project page and let their browser fetch it.
+     */
+    kind: "external",
     size: 4,
     changes: "Hides blacklisted multiplayer callsigns and models from the session.",
     summary: "Lets you mute problem callsigns or models on busy multiplayer networks.",

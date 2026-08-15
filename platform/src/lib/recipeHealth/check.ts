@@ -96,10 +96,13 @@ async function github<T>(
  * or mishandle HEAD while serving GET perfectly well, and treating that as a
  * broken recipe would be a false alarm on a working install.
  */
-export async function checkUrl(
+/** Attempts for connection-level failures, which are usually transient. */
+const NETWORK_ATTEMPTS = 3;
+
+async function attemptUrl(
   url: string,
-  fetchImpl: typeof fetch = fetch
-): Promise<{ ok: boolean; retryable?: boolean; detail?: string }> {
+  fetchImpl: typeof fetch
+): Promise<{ ok: boolean; retryable?: boolean; detail?: string; threw?: boolean }> {
   try {
     const head = await fetchImpl(url, { method: "HEAD", headers: { "user-agent": UA } });
     if (head.ok) return { ok: true };
@@ -116,8 +119,36 @@ export async function checkUrl(
     const retryable = ranged.status === 429 || ranged.status >= 500;
     return { ok: false, retryable, detail: `HTTP ${ranged.status}` };
   } catch (err) {
-    return { ok: false, detail: err instanceof Error ? err.message : String(err) };
+    return { ok: false, threw: true, detail: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * Whether a URL serves something.
+ *
+ * HEAD first because these are often hundreds of megabytes, falling back to a
+ * one-byte ranged GET: plenty of download hosts (SourceForge among them) reject
+ * or mishandle HEAD while serving GET perfectly well.
+ *
+ * Connection-level failures are retried rather than believed. A single dropped
+ * connection is far more often our network or the host briefly throttling a
+ * scripted client than a dead download, and treating the first blip as fact
+ * would flag live games as broken — Freeciv did exactly that on one run and
+ * passed on the next. Only a host that refuses repeatedly is called broken.
+ */
+export async function checkUrl(
+  url: string,
+  fetchImpl: typeof fetch = fetch,
+  { attempts = NETWORK_ATTEMPTS, delayMs = 400 } = {}
+): Promise<{ ok: boolean; retryable?: boolean; detail?: string }> {
+  let last = await attemptUrl(url, fetchImpl);
+  for (let i = 1; i < attempts && !last.ok && last.threw; i++) {
+    await new Promise((r) => setTimeout(r, delayMs * i));
+    last = await attemptUrl(url, fetchImpl);
+  }
+  const { threw, ...result } = last;
+  void threw;
+  return result;
 }
 
 /** A recipe in the shape this module needs, from any of our sources. */

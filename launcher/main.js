@@ -11,6 +11,8 @@ const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
+const { createSaveData } = require("./services/SaveData");
+const saveLocations = require("./services/saveLocations");
 const { withOutboundUtm } = require("./utm");
 const {
   OPENCIV3_SLUG,
@@ -2089,6 +2091,14 @@ const managedJava = createManagedJava({
   onProgress: (payload) => sendProgress(payload),
 });
 GameLauncher.managedJavaResolver = () => managedJava.findManagedJavaBinary();
+
+/**
+ * Save history lives under userData, beside settings — not in the game folder,
+ * so uninstalling a game never takes its backups with it.
+ */
+const saveData = createSaveData({
+  snapshotRoot: path.join(app.getPath("userData"), "saves"),
+});
 
 /**
  * Prompt to install PlayBound-managed Java. Returns whether install succeeded.
@@ -4522,8 +4532,40 @@ function sendGameExited(slug) {
   // Reported from here rather than the renderer so a session still closes when
   // the window is hidden to the tray or the game outlived the launcher UI.
   void telemetry.editionExited(editionInfoFor(slug));
+  void snapshotSavesAfterPlay(slug);
   if (win && !win.isDestroyed()) {
     win.webContents.send("game-exited", { slug });
+  }
+}
+
+/**
+ * Back up a game's saves once it closes.
+ *
+ * Deliberately local-only and shipped ahead of any cloud transport: the thing
+ * that actually loses people's progress is a game corrupting its own save or a
+ * player overwriting the wrong slot, and a local versioned history fixes that
+ * without a server, an account, or a network round trip.
+ *
+ * Exiting is the right moment — the files have just been written and are not
+ * being held open. Failures are logged and swallowed; a backup must never be
+ * able to interfere with having just finished playing.
+ */
+async function snapshotSavesAfterPlay(slug) {
+  try {
+    if (!saveLocations.supportsCloudSaves(slug)) return;
+    const saveDir = saveLocations.saveDirFor(slug);
+    if (!saveDir || !fs.existsSync(saveDir)) return;
+
+    const state = loadState();
+    const game = ensureGameInstallRecord(state[slug]);
+    const editionSlug = game.editionSlug || DEFAULT_EDITION_SLUG;
+
+    const result = await saveData.snapshot(slug, editionSlug, saveDir, { reason: "after-play" });
+    if (result.status !== "captured") return;
+    await saveData.prune(slug, editionSlug);
+    console.log(`[saves] ${slug}: captured ${result.files} file(s) as ${result.id}`);
+  } catch (err) {
+    console.warn(`[saves] snapshot after play failed for ${slug}:`, err?.message || err);
   }
 }
 

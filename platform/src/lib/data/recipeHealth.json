@@ -1,23 +1,18 @@
 {
-  "checkedAt": "2026-08-15T04:03:14.650Z",
-  "ok": 121,
-  "broken": 3,
-  "skipped": 84,
+  "checkedAt": "2026-08-15T04:27:40.939Z",
+  "ok": 50,
+  "broken": 2,
+  "skipped": 156,
   "failures": [
-    {
-      "id": "game:airforce",
-      "kind": "direct-zip",
-      "detail": "https://www.allegro.cc/files/attachment/593457 — fetch failed"
-    },
     {
       "id": "game:star-wars-galaxies",
       "kind": "external",
       "detail": "https://swgrestoration.com — fetch failed"
     },
     {
-      "id": "mod:flightgear-addon-blacklist",
+      "id": "game:airforce",
       "kind": "direct-zip",
-      "detail": "https://gitlab.com/JohanG/blacklist/-/archive/master/blacklist-master.zip — HTTP 406"
+      "detail": "https://www.allegro.cc/files/attachment/593457 — fetch failed"
     }
   ]
 }
