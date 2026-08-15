@@ -902,6 +902,50 @@ export const developers: Developer[] = [
     website: "https://omni-bot.com",
     artHue: 180,
   },
+  {
+    slug: "turbine",
+    name: "Turbine Entertainment",
+    tagline: "Pioneers of 3D virtual worlds and Asheron's Call.",
+    about:
+      "Legendary MMORPG development studio founded in 1994, renowned for creating Asheron's Call, Dungeons & Dragons Online, and The Lord of the Rings Online.",
+    founded: 1994,
+    location: "Needham, Massachusetts, USA",
+    website: "https://www.turbine.com",
+    artHue: 210,
+  },
+  {
+    slug: "acemulator-team",
+    name: "ACEmulator Team",
+    tagline: "Open-source preservation and server emulation for Asheron's Call.",
+    about:
+      "Community of open-source engineers building ACE, the high-performance C# server emulator that accurately preserves retail Asheron's Call gameplay.",
+    founded: 2017,
+    location: "Worldwide",
+    website: "https://github.com/ACEmulator/ACE",
+    artHue: 160,
+  },
+  {
+    slug: "virindi-team",
+    name: "Virindi Plugins",
+    tagline: "Essential navigation, combat, and automation plugins for AC.",
+    about:
+      "Developer of Virindi Tank, Virindi Item Tool, and the Virindi Views framework powering modern Asheron's Call gameplay.",
+    founded: 2008,
+    location: "Worldwide",
+    website: "http://www.virindi.net",
+    artHue: 280,
+  },
+  {
+    slug: "thwargle",
+    name: "Thwargle",
+    tagline: "Creator of ThwargLauncher for Asheron's Call.",
+    about:
+      "Software developer who created ThwargLauncher, the universal launcher, server browser, and multi-account manager for Asheron's Call.",
+    founded: 2017,
+    location: "Worldwide",
+    website: "https://thwargle.com",
+    artHue: 40,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

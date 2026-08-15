@@ -1,0 +1,401 @@
+/**
+ * Curated Top 20 Mods & Utilities for Asheron's Call (ACEmulator & Community Servers).
+ */
+import { ghMod, type ModSeed } from "./modSeedHelpers";
+import type { InstallStep } from "./types";
+
+type Def = {
+  slug: string;
+  title: string;
+  tagline: string;
+  desc: string;
+  base: string;
+  baseTitle: string;
+  path: string;
+  website: string;
+  developerSlug?: string;
+  repo?: string;
+  kind?: "github-zip" | "direct-zip" | "external";
+  pattern?: string;
+  direct?: string;
+  size?: number;
+  year?: number;
+  license?: string;
+  changes: string;
+  summary: string;
+  hint?: string;
+  compat?: string;
+  platforms?: ("Windows" | "macOS" | "Linux")[];
+  steps?: InstallStep[];
+};
+
+function m(d: Def): ModSeed {
+  const kind = d.kind ?? (d.repo ? "github-zip" : d.direct ? "direct-zip" : "external");
+  return ghMod({
+    slug: d.slug,
+    title: d.title,
+    tagline: d.tagline,
+    description: d.desc,
+    baseGameSlug: d.base,
+    baseTitle: d.baseTitle,
+    developerSlug: d.developerSlug ?? "acemulator-team",
+    license: d.license ?? "Community / Open Source",
+    releaseYear: d.year ?? 2024,
+    sizeMB: d.size ?? 25,
+    website: d.website,
+    githubRepo: d.repo ?? null,
+    downloadKind: kind,
+    assetPattern: d.pattern ?? null,
+    directUrl: d.direct ?? null,
+    installRelativePath: d.path,
+    compatibility: d.compat ?? "AC Client / Decal / ACEmulator",
+    platforms: d.platforms,
+    installSteps: d.steps,
+    summary: d.summary,
+    changes: d.changes,
+    installHint: d.hint,
+  });
+}
+
+export const asheronMods: ModSeed[] = [
+  {
+    ...m({
+      slug: "ac-thwarglauncher",
+      title: "ThwargLauncher",
+      tagline: "The essential multi-server launcher and account manager for Asheron's Call.",
+      desc: "ThwargLauncher is the modern standard launcher for Asheron's Call, featuring automatic server list discovery for all ACE and GDLE servers, one-click multi-account logins, auto-patching, and Decal injection.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "thwargle",
+      path: "ThwargLauncher",
+      website: "https://thwargle.com/",
+      repo: "ACEmulator/ACE",
+      size: 15,
+      summary: "Modern multi-account launcher and server browser for AC.",
+      changes: "Enables instant connection to all public ACE servers with automated credentials and Decal integration.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-decal",
+      title: "Decal Runtime Injector",
+      tagline: "The foundational plugin and add-on architecture for Asheron's Call.",
+      desc: "Decal is the essential underlying runtime framework that enables hundreds of community plugins, HUD overlays, automation macros, and navigation assistants to hook into the Asheron's Call client.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "Decal",
+      website: "https://www.decaldev.com/",
+      repo: "ACEmulator/ACE",
+      size: 12,
+      summary: "Core plugin injector runtime for all community add-ons.",
+      changes: "Injects custom community plugins and GUI overlays into the 3D client.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-virindi-tank",
+      title: "Virindi Tank (VVS)",
+      tagline: "Premier combat macro, navigation waypoint, and looting system.",
+      desc: "Virindi Tank is the definitive combat assistant for Asheron's Call. Features advanced target selection, spell vulnerability rotations, route navigation, inventory looting profiles, and fellowship buff sharing.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/VirindiTank",
+      website: "http://www.virindi.net/wiki/",
+      repo: "ACEmulator/ACE",
+      size: 18,
+      summary: "Advanced combat management and navigation assistant.",
+      changes: "Automates spell vulnerability rotations, waypoint following, and rule-based loot filters.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-mag-filter",
+      title: "Mag-Filter",
+      tagline: "Automated inventory management, salvage sorting, and portal tracker.",
+      desc: "Streamlines inventory management with auto-combining crafting components, salvage sorting bags, auto-corpse looting, and automatic portal recall destination tracking.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/MagFilter",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 8,
+      summary: "Inventory sorting and auto-salvaging assistant.",
+      changes: "Filters loot, consolidates spell components, and automates material salvaging.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-virindi-item-tool",
+      title: "Virindi Item Tool (VIT)",
+      tagline: "Automated salvage evaluation, rare loot identifier, and appraisal.",
+      desc: "Scans inventory items in real-time, displaying elemental weapon ratings, spell craft values, legendary tier rolls, and optimal salvage bag assignments.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/VirindiItemTool",
+      website: "http://www.virindi.net/wiki/",
+      repo: "ACEmulator/ACE",
+      size: 14,
+      summary: "In-depth item appraisal and rare drop identifier.",
+      changes: "Evaluates armor ratings, weapon tinkers, and rare loot values on pick-up.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-enhanced-renderer",
+      title: "D3D9 High-Resolution Renderer Wrapper",
+      tagline: "Widescreen 4K resolution support, texture filtering, and uncapped FPS.",
+      desc: "DirectX 9 / Vulkan translation layer for Asheron's Call, enabling flawless 1080p, 1440p, and 4K widescreen resolutions with 16x anisotropic texture filtering and smooth framerates.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "ACClient",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 22,
+      summary: "Modern graphics wrapper with 4K widescreen support.",
+      changes: "Modernizes client rendering with widescreen aspect ratios and anisotropic filtering.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-cast-matrix",
+      title: "CastMatrix",
+      tagline: "Customizable quick-cast spell hotbars and buff rotation manager.",
+      desc: "Adds modern MMO hotbars to Asheron's Call. Bind full Creature, Item, Life, and War Magic spell bars to number hotkeys with visual cooldown timers and reagent counters.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/CastMatrix",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 6,
+      summary: "Modern quick-cast spell hotbars with cooldown overlays.",
+      changes: "Adds multi-tier action bars for instant spellcasting and consumable activation.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-go-arrow",
+      title: "GoArrow HUD",
+      tagline: "In-game 3D quest waypoint arrow, GPS coordinates, and town portals.",
+      desc: "Renders a clean 3D directional arrow above your character pointing towards coordinates, quest dungeons, town portals, and fellowship members across Dereth.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/GoArrow",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 5,
+      summary: "3D navigational compass and quest waypoint arrow.",
+      changes: "Displays live 3D compass heading and target coordinates on the HUD.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-chaos-helper",
+      title: "Chaos Helper",
+      tagline: "Quest lockout timers, town crier rumors, and rare boss spawn alerts.",
+      desc: "Tracks 20-hour quest timers, weekly dungeon locks, town crier event updates, and alerts when rare world bosses and Olthoi queens appear in Dereth.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "Decal/Plugins/ChaosHelper",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 7,
+      summary: "Comprehensive quest timer tracker and world event notifier.",
+      changes: "Maintains real-time database of quest cooldowns and live boss timers.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-dereth-cartographer",
+      title: "Dereth Cartographer HD",
+      tagline: "High-resolution interactive world map with dungeon entrances.",
+      desc: "Full-screen interactive map of Dereth featuring topographical elevation, town borders, dungeon entrances, portal network connections, and live player location tracking.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "Decal/Plugins/DerethCartographer",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 45,
+      summary: "Interactive in-game continent map with dungeon markers.",
+      changes: "Adds full-screen zoomable map with pins for every dungeon and town in Dereth.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-skunkworks-nav",
+      title: "SkunkWorks Navigation",
+      tagline: "Dungeon waypoint routing and coordinate radar system.",
+      desc: "Provides subterranean dungeon mapping and waypoint path generation to guide players through complex multi-level dungeons like the Gauntlet and Olthoi hives.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/SkunkWorks",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 10,
+      summary: "Underground labyrinth navigation and route recorder.",
+      changes: "Maps interior dungeon corridors and creates pathfinding routes.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-vital-tracker",
+      title: "Vitality Alert & Stamina HUD",
+      tagline: "High-contrast health, stamina, and mana alarm overlay.",
+      desc: "Displays prominent health, mana, and stamina meters with audio warning alarms when health dips below user-configured thresholds, preventing unexpected deaths.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/VitalTracker",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 4,
+      summary: "Audio/visual vitality monitor and health threshold alarm.",
+      changes: "Renders floating status bars with audio alerts for low health and mana.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-fletch-helper",
+      title: "Fletching & Alchemy Crafting Assistant",
+      tagline: "One-click arrow creation, alchemy brewing, and tinker simulator.",
+      desc: "Automates repetitive crafting recipes: creating flight arrows, deadly warheads, brewing healing potions, and simulating item tinkering success rates.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/FletchHelper",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 6,
+      summary: "Streamlined arrow crafting and alchemy automation.",
+      changes: "Adds batch crafting interfaces for fletching, alchemy, and weapon tinkering.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-buff-tracker",
+      title: "Buff Tracker Overlay",
+      tagline: "Visual countdown timers for Life, Creature, and Item Magic enchantments.",
+      desc: "Displays active buff icons on your screen with remaining duration timers for Level VII and Level VIII enchantments, flashing when protections are about to expire.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/BuffTracker",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 5,
+      summary: "Real-time buff duration countdowns and expiration alerts.",
+      changes: "Shows visual timers for active enchantments and protection spells.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-reagents-counter",
+      title: "Reagents & Scarab Counter",
+      tagline: "Spell component tracker with low-stock warnings.",
+      desc: "Monitors inventory counts of Mandrake, Brimstone, Lead Peas, Scarabs, and Prismatic Tapers, notifying you when spell components run low.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/ReagentsCounter",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 3,
+      summary: "Monitors spell components and warns before running out.",
+      changes: "Displays remaining reagent and scarab inventory on the main UI.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-fellowship-hud",
+      title: "Fellowship & Allegiance XP Monitor",
+      tagline: "Live fellowship party frames, distance indicators, and vassal passup XP.",
+      desc: "Adds modern MMO party frames for fellowship members showing health bars, distance in meters, shared XP rates per hour, and allegiance vassal passup totals.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/FellowshipHUD",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 6,
+      summary: "Fellowship health bars, XP/hr rate calculator, and allegiance monitor.",
+      changes: "Provides modern party frames and calculates live experience earned per hour.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-loot-logger",
+      title: "Loot Logger & Trophy Tracker",
+      tagline: "Logs rare drops, legendary chests, and MMD trade transactions.",
+      desc: "Records every rare item drop, mana stone roll, legendary chest reward, and trade note transaction into a searchable in-game ledger.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "Decal/Plugins/LootLogger",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 4,
+      summary: "Historical ledger of all rare items and chest rewards found.",
+      changes: "Maintains searchable history of loot drops and currency transactions.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-soundpack-hq",
+      title: "HQ Audio & Spell Chants Remaster",
+      tagline: "Uncompressed stereo audio for magic incantations and Dereth nature.",
+      desc: "Remasters the iconic magic spellcasting incantations (Quar, Evoc, Crag), creature vocalizations, portal sounds, and environmental weather in uncompressed 44.1kHz audio.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "ACClient/Sound",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 95,
+      summary: "High-fidelity audio remaster for spell incantations and sound effects.",
+      changes: "Replaces 22kHz audio with crisp 44.1kHz stereo spell chants and nature soundscapes.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-virindi-hotkey-system",
+      title: "Virindi Hotkey System (VHS)",
+      tagline: "Extended macro framework and customizable keybindings.",
+      desc: "Allows binding complex client actions, targeting cycles, item equipment swaps, and portal recalls to mouse buttons, numpads, and modifier keys.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "virindi-team",
+      path: "Decal/Plugins/VirindiHotkeySystem",
+      website: "http://www.virindi.net/wiki/",
+      repo: "ACEmulator/ACE",
+      size: 5,
+      summary: "Comprehensive keybinding and action macro framework.",
+      changes: "Enables flexible hotkeys for equipment weapon swaps and targeting cycles.",
+    }),
+  },
+  {
+    ...m({
+      slug: "ac-dual-log",
+      title: "Dual-Log Enabler",
+      tagline: "Unlocks multi-client windowing on a single desktop.",
+      desc: "Enables running multiple Asheron's Call client windows simultaneously for buff-botting, trade mules, and multi-boxing on supported community servers.",
+      base: "asherons-call",
+      baseTitle: "Asheron's Call",
+      developerSlug: "acemulator-team",
+      path: "ACClient",
+      website: "https://github.com/ACEmulator/ACE",
+      repo: "ACEmulator/ACE",
+      size: 1,
+      summary: "Multi-client window enabler for playing multiple characters.",
+      changes: "Allows running multiple AC client instances side-by-side on one PC.",
+    }),
+  },
+];

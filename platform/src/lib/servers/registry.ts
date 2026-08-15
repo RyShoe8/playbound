@@ -12,6 +12,7 @@ import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
 import { fetchSpaceStation14Servers } from "./providers/space-station-14";
 import { fetchStarCraftServers } from "./providers/starcraft";
 import { fetchWolfensteinEnemyTerritoryServers } from "./providers/wolfenstein-enemy-territory";
+import { fetchAsheronsCallServers } from "./providers/asherons-call";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
@@ -58,6 +59,10 @@ const providers: Record<string, ServerProvider> = {
   },
   "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
   everquest: { slug: "everquest", fetchServers: fetchEverQuestServers },
+  "asherons-call": {
+    slug: "asherons-call",
+    fetchServers: fetchAsheronsCallServers,
+  },
   // Space Station 14 official Hub API
   "space-station-14": {
     slug: "space-station-14",
