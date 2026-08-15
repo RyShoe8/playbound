@@ -96,7 +96,107 @@ const LOCATIONS = {
     },
     note: "Whole worlds directory — each world is a folder, and they grow without limit.",
   },
+
+  /* ── Documented from upstream, not yet exercised on a real install ──────
+   * The entries above are proven: they are the same user-data roots the
+   * launcher already writes mods into. The ones below come from upstream
+   * documentation instead, so they are marked as such — a wrong path here
+   * mostly yields "no-saves", and SaveData refuses anything resolving to a
+   * home or system root, but they are worth confirming as each game is played.
+   */
+  "battle-for-wesnoth": {
+    verified: "documented — Wesnoth user data directory",
+    // Version-stamped: Wesnoth1.18, Wesnoth1.20…
+    resolve: (c) => {
+      const parent = path.join(c.documents, "My Games");
+      const versioned = newestMatchingDir(parent, /^Wesnoth[\d.]+$/i);
+      return versioned ? path.join(versioned, "saves") : null;
+    },
+  },
+  "warzone-2100": {
+    verified: "documented — Warzone 2100 Project user data directory",
+    resolve: (c) => {
+      const parent = path.join(c.appData, "Warzone 2100 Project");
+      const versioned = newestMatchingDir(parent, /^Warzone 2100/i);
+      return versioned ? path.join(versioned, "savegames") : null;
+    },
+  },
+  openra: {
+    verified: "documented — OpenRA support directory",
+    resolve: (c) => path.join(c.documents, "OpenRA", "Saves"),
+  },
+  freeciv: {
+    verified: "documented — Freeciv save directory",
+    resolve: (c) => path.join(c.appData, "freeciv", "saves"),
+  },
+  hedgewars: {
+    verified: "documented — Hedgewars user data directory",
+    resolve: (c) => path.join(c.documents, "Hedgewars", "Saves"),
+  },
+  supertux: {
+    verified: "documented — SuperTux profile directory",
+    resolve: (c) => path.join(c.appData, "SuperTux2"),
+  },
+  "shattered-pixel-dungeon": {
+    verified: "documented — libGDX user directory used by the desktop build",
+    resolve: (c) => path.join(c.home, ".shatteredpixel", "shattered-pixel-dungeon"),
+  },
+  holocure: {
+    verified: "documented — GameMaker local app data directory",
+    resolve: (c) => path.join(c.localAppData || c.appData, "HoloCure"),
+  },
 };
+
+/**
+ * Games with no local saves to protect.
+ *
+ * Recorded rather than left absent so nobody adds them later assuming an
+ * oversight. In each of these, progress lives on someone else's server: there
+ * is nothing on disk that restoring could bring back, and pretending otherwise
+ * would be a worse promise than saying nothing.
+ */
+const NO_LOCAL_SAVES = {
+  everquest: "Character data is stored server-side by Daybreak or the emulator.",
+  warframe: "Account progress is server-side.",
+  "villagers-and-heroes": "Account progress is server-side.",
+  "asphalt-legends": "Live-service account progress is server-side.",
+  xonotic: "Keeps configs and demos, not save games.",
+  unvanquished: "Keeps configs and demos, not save games.",
+  "beyond-all-reason": "Matches are server-side; local data is replays and settings.",
+  "zero-k": "Matches are server-side; local data is replays and settings.",
+};
+
+/**
+ * Newest child of `parent` whose name matches `pattern`.
+ *
+ * Several games stamp the version into their user-data folder — Wesnoth uses
+ * "Wesnoth1.18", Warzone "Warzone 2100 4.7" — so a hardcoded path silently
+ * stops finding saves the moment the game updates. Picking the newest match
+ * follows the player forward instead.
+ */
+function newestMatchingDir(parent, pattern) {
+  try {
+    const entries = fs
+      .readdirSync(parent, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && pattern.test(e.name))
+      .map((e) => {
+        const full = path.join(parent, e.name);
+        let mtime = 0;
+        try {
+          mtime = fs.statSync(full).mtimeMs;
+        } catch {
+          /* unreadable: sorts last */
+        }
+        return { full, name: e.name, mtime };
+      });
+    if (!entries.length) return null;
+    // Prefer the most recently touched, which is the version being played.
+    entries.sort((a, b) => b.mtime - a.mtime || b.name.localeCompare(a.name));
+    return entries[0].full;
+  } catch {
+    return null;
+  }
+}
 
 function defaultContext() {
   const home = require("os").homedir();
@@ -109,7 +209,8 @@ function defaultContext() {
     process.platform === "darwin"
       ? path.join(home, "Documents")
       : path.join(process.env.USERPROFILE || home, "Documents");
-  return { home, appData, documents };
+  const localAppData = process.env.LOCALAPPDATA || appData;
+  return { home, appData, documents, localAppData };
 }
 
 /** Absolute save directory for a game, or null when we do not know one. */
@@ -158,8 +259,16 @@ function supportedSlugs() {
   return Object.keys(LOCATIONS);
 }
 
+/** Why a game has no save backups, when that is deliberate rather than pending. */
+function noLocalSavesReason(gameSlug) {
+  return NO_LOCAL_SAVES[gameSlug] || null;
+}
+
 module.exports = {
   LOCATIONS,
+  NO_LOCAL_SAVES,
+  noLocalSavesReason,
+  newestMatchingDir,
   saveDirFor,
   supportsCloudSaves,
   supportedSlugs,

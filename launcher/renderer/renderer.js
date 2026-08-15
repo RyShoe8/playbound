@@ -1761,11 +1761,16 @@ async function toggleSavesPanel(block, game, editionSlug) {
   }
 
   if (!data?.supported) {
-    panel.innerHTML = `
-      <div class="saves-empty">
-        PlayBound doesn't back up saves for ${escapeHtml(game.title)} yet — we only do it for games
-        whose save location we've confirmed, so we never copy or overwrite the wrong folder.
-      </div>`;
+    panel.innerHTML = data?.noLocalSaves
+      ? `<div class="saves-empty">
+           ${escapeHtml(game.title)} has nothing to back up on this PC. ${escapeHtml(
+             data.noLocalSaves
+           )}
+         </div>`
+      : `<div class="saves-empty">
+           PlayBound doesn't back up saves for ${escapeHtml(game.title)} yet — we only do it for
+           games whose save location we've confirmed, so we never copy or overwrite the wrong folder.
+         </div>`;
     return;
   }
 
