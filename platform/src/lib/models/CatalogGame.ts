@@ -149,6 +149,15 @@ const CatalogGameSchema = new Schema(
     notFor: { type: [String], default: [] },
     comparableTo: { type: [String], default: [] },
     published: { type: Boolean, default: true, index: true },
+    /**
+     * When this game was last moved to published.
+     *
+     * The admin list had a Published column but nothing to put in it, so it
+     * showed createdAt — which for an imported game is the day the row was
+     * written, not the day anyone published it. Set whenever status becomes
+     * published; left alone otherwise, so unpublishing does not erase it.
+     */
+    publishedAt: { type: Date, default: null },
     status: {
       type: String,
       enum: ["draft", "watchlist", "testing", "published"],

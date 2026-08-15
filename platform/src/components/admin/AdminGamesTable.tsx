@@ -11,6 +11,8 @@ import { LocalTime } from "@/components/LocalTime";
 export type AdminGameRow = Game & {
   published: boolean;
   updatedAt?: string;
+  /** Set when the game was last moved to published; absent on older rows. */
+  publishedAt?: string | null;
   installCount?: number;
 };
 
@@ -157,8 +159,9 @@ export function AdminGamesTable({
           bVal = Number(Boolean(b.complete));
           break;
         case "Published":
-          aVal = a.status === "published" && a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.status === "published" && b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          // Same fallback as the cell, so sorting matches what is displayed.
+          aVal = a.status === "published" ? new Date(a.publishedAt || a.createdAt || 0).getTime() : 0;
+          bVal = b.status === "published" ? new Date(b.publishedAt || b.createdAt || 0).getTime() : 0;
           break;
         case "Updated":
         default:
@@ -326,9 +329,14 @@ export function AdminGamesTable({
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      {currentStatus === "published" && g.createdAt ? (
+                      {currentStatus === "published" && (g.publishedAt || g.createdAt) ? (
+                        /*
+                         * publishedAt is the real answer. createdAt is kept as a
+                         * fallback only for rows published before that field
+                         * existed — otherwise they would all blank out at once.
+                         */
                         <LocalTime
-                          value={new Date(g.createdAt).toISOString()}
+                          value={new Date(g.publishedAt || g.createdAt!).toISOString()}
                         />
                       ) : (
                         <span className="text-muted-foreground/40">—</span>

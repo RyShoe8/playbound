@@ -30,9 +30,21 @@ export async function PATCH(
     const status = body.status;
     const published = statusToPublished(status);
 
+    /*
+     * Stamp the moment of publication. Without this the admin list had nothing
+     * to show in its Published column and fell back to createdAt, so a game
+     * imported weeks ago appeared to have been published weeks ago the instant
+     * you published it.
+     *
+     * Only written when the game is going published — unpublishing leaves the
+     * previous date rather than wiping it, and republishing moves it forward.
+     */
+    const set: Record<string, unknown> = { status, published };
+    if (published) set.publishedAt = new Date();
+
     let doc = await CatalogGame.findOneAndUpdate(
       { slug },
-      { $set: { status, published } },
+      { $set: set },
       { returnDocument: "after" }
     ).lean();
 
@@ -46,6 +58,7 @@ export async function PATCH(
         ...existingGame,
         status,
         published,
+        publishedAt: published ? new Date() : null,
       });
       doc = created.toObject();
     }

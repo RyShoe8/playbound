@@ -250,7 +250,7 @@ export async function listGames(opts?: { includeTesting?: boolean }): Promise<Ga
 
 /** All games including drafts (admin). */
 export async function listAllGames(): Promise<
-  (Game & { published: boolean; status: CatalogStatus; updatedAt?: string; installCount?: number })[]
+  (Game & { published: boolean; status: CatalogStatus; updatedAt?: string; publishedAt?: string | null; installCount?: number })[]
 > {
   try {
     await dbConnect();
@@ -271,6 +271,7 @@ export async function listAllGames(): Promise<
         published: status === "published",
         status,
         updatedAt: (d as { updatedAt?: Date }).updatedAt?.toISOString(),
+        publishedAt: (d as { publishedAt?: Date | null }).publishedAt?.toISOString() ?? null,
         installCount: Number((d as { installCount?: number }).installCount) || 0,
       };
     });
