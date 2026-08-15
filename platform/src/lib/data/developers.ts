@@ -518,6 +518,17 @@ export const developers: Developer[] = [
     artHue: 45,
   },
   {
+    slug: "privateer-gemini-gold",
+    name: "Privateer Gemini Gold Team",
+    tagline: "Rebuilt a 1993 space sim on an open-source engine.",
+    about:
+      "A volunteer team who recreated Origin's Wing Commander: Privateer on the open-source Vega Strike engine, giving the Gemini Sector modern resolutions, 3D ships and current-OS support. Distributed freely by the project itself for Windows, macOS and Linux.",
+    founded: 2005,
+    location: "Worldwide",
+    website: "https://privateer.sourceforge.net",
+    artHue: 220,
+  },
+  {
     slug: "trashboxbobylev",
     name: "TrashboxBobylev",
     tagline: "Builder of sprawling Pixel Dungeon offshoots.",

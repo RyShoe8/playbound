@@ -108,9 +108,24 @@ async function main() {
     assert.equal(after[0].id, before[0].id);
   });
 
-  await check("refuses to snapshot a save directory over the size limit", async () => {
-    // Luanti worlds grow without bound; ten full copies of one would cost a
-    // player tens of gigabytes to protect a game they may have tried once.
+  await check("local snapshots are unlimited by default", async () => {
+    // Local history costs the player's disk, not ours, and it is what makes a
+    // bad restore recoverable — so nothing is capped unless a caller asks.
+    const { policyFor } = require("./saveLocations");
+    assert.equal(policyFor("luanti").maxSnapshotMb, Infinity);
+    assert.equal(policyFor("luanti").keep, Infinity);
+    assert.equal(policyFor("0ad").maxSnapshotMb, Infinity);
+  });
+
+  await check("cloud uploads are capped at 250MB on the free plan", async () => {
+    const { canUploadSnapshot, cloudPolicyFor } = require("./saveLocations");
+    assert.equal(cloudPolicyFor("free").maxSnapshotMb, 250);
+    assert.equal(cloudPolicyFor("free").keepPerGame, 1);
+    assert.equal(canUploadSnapshot(249 * 1024 * 1024), true);
+    assert.equal(canUploadSnapshot(251 * 1024 * 1024), false);
+  });
+
+  await check("an explicit size limit is still honoured when passed", async () => {
     const bigDir = path.join(tmp, "big", "saves");
     await fsp.mkdir(bigDir, { recursive: true });
     await fsp.writeFile(path.join(bigDir, "world.dat"), Buffer.alloc(3 * 1024 * 1024));

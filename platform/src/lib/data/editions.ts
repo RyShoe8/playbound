@@ -196,9 +196,10 @@ export const editions: EditionSeed[] = [
     gameSlug: "everquest",
     slug: "project-quarm",
     name: "Project Quarm",
-    shortDescription: "Community EverQuest era with curated progression.",
+    shortDescription:
+      "Community EverQuest era with curated progression. Requires your own EverQuest client.",
     description:
-      "Project Quarm is a community EverQuest server that uses the TAKP classic client and login system. PlayBound can install the public TAKP/Quarm v2.2 base client for you, but you still create a TAKP forum + game account and apply the latest Quarm patch from Discord before you can log in.\n\nQuarm is a third-party community project and is not affiliated with Daybreak. Always get patches and rules from official Quarm channels.",
+      "Project Quarm is a community EverQuest server that uses the TAKP classic client and login system.\n\nYou provide your own legal EverQuest client — PlayBound does not distribute it. You will also need a TAKP forum and game account and the latest Quarm patch from their Discord before you can log in.\n\nQuarm is a third-party community project and is not affiliated with Daybreak. Always get patches and rules from official Quarm channels.",
     type: "community",
     status: "active",
     visibility: "public",
@@ -325,7 +326,8 @@ export const editions: EditionSeed[] = [
     gameSlug: "everquest",
     slug: "project-99",
     name: "Project 1999",
-    shortDescription: "Classic EverQuest recreation circa late 1990s / early Velious.",
+    shortDescription:
+      "Classic EverQuest recreation circa late 1990s / early Velious. Requires your own Titanium client.",
     description:
       "Project 1999 recreates classic EverQuest eras on community servers. PlayBound cannot ship Titanium — you provide a legal EverQuest Titanium install, then PlayBound copies it, overlays the public P99Files zip, and launches with patchme.\n\nYou also need a Project 1999 forum account and a login-server account before the client will authenticate. P99 is not affiliated with Daybreak.",
     type: "community",
@@ -722,9 +724,10 @@ export const editions: EditionSeed[] = [
     gameSlug: "freelancer",
     slug: "freelancer-hd-fluf",
     name: "Freelancer: HD Edition (FLUF Enhanced)",
-    shortDescription: "Comprehensive HD visual overhaul, widescreen UI, 60+ FPS engine, and FLUF framework.",
+    shortDescription:
+      "HD overhaul, widescreen UI, 60+ FPS engine and the FLUF framework. Requires your own copy of Freelancer.",
     description:
-      "The definitive modern way to experience Freelancer. Bundles high-resolution textures, high-polygon ship models, modernized widescreen interface, and TheStarport's FLUF (Freelancer Universal Framework) on Codeberg for enhanced crash prevention, modern memory management, and rock-solid Windows 10/11 compatibility.",
+      "The definitive modern way to experience Freelancer. Bundles high-resolution textures, high-polygon ship models, a modernised widescreen interface, and TheStarport's FLUF (Freelancer Universal Framework) for crash prevention, modern memory management and solid Windows 10/11 compatibility.\n\nYou need your own copy of Freelancer installed. PlayBound does not distribute the game — the launcher asks you to point at your existing install, then applies this edition on top of it. Your original files are left intact.",
     type: "remaster",
     status: "active",
     visibility: "public",
@@ -743,14 +746,28 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        // See the freelancer entry in launcherInstall.ts: this URL 404s and was
-        // serving a rip of the commercial 2003 retail CD. Pointed at the mod
-        // project instead until Freelancer is either owner-supplied or dropped.
-        kind: "external",
-        url: "https://the-starport.net",
+        // Owner-supplied, matching the EverQuest Titanium editions: PlayBound
+        // never ships Freelancer, it applies this on top of a copy the player
+        // already has. See launcherInstall.ts for the base recipe.
+        kind: "locate-then-zip",
+        requiresBaseDir: true,
         exeHint: "Freelancer|FL",
         versionLabel: "HD Edition + FLUF",
-        note: "Requires your own copy of Freelancer. The HD Edition installer is published by The Starport.",
+        note: "Requires your own copy of Freelancer. PlayBound never ships the game — it copies your install and applies the HD Edition and FLUF on top.",
+        steps: [
+          {
+            platform: "all",
+            text: "Install Freelancer from your own disc or backup. PlayBound does not distribute the game.",
+          },
+          {
+            platform: "all",
+            text: "Choose Install here and point PlayBound at that Freelancer folder when prompted.",
+          },
+          {
+            platform: "all",
+            text: "PlayBound copies it into your library and layers the HD Edition and FLUF on the copy, leaving your original untouched.",
+          },
+        ],
       },
     },
     features: [
@@ -770,9 +787,10 @@ export const editions: EditionSeed[] = [
     gameSlug: "freelancer",
     slug: "freelancer-vanilla",
     name: "Freelancer (Vanilla / Classic)",
-    shortDescription: "Original 2003 retail release with essential modern compatibility patches.",
+    shortDescription:
+      "The original 2003 release, unmodified. Requires your own copy of Freelancer.",
     description:
-      "The pure 2003 Digital Anvil experience with essential no-CD and modern OS patches, preserving the original graphical presentation and mechanics.",
+      "The pure 2003 Digital Anvil experience, preserving the original presentation and mechanics.\n\nYou need your own copy of Freelancer. PlayBound does not distribute the game — this edition exists so the launcher can track and launch an install you already own alongside the modded editions.",
     type: "official",
     status: "active",
     visibility: "public",
@@ -785,10 +803,10 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        // Same as above — the archive.org rip is both dead and not ours to
-        // distribute. Vanilla Freelancer has to come from the player's own copy.
-        kind: "external",
-        url: "https://the-starport.net",
+        // Owner-supplied. Vanilla Freelancer has to come from the player's own
+        // copy — PlayBound locates it rather than distributing it.
+        kind: "locate-then-zip",
+        requiresBaseDir: true,
         exeHint: "Freelancer|FL",
         versionLabel: "1.1 Classic",
         note: "Classic 2003 unmodded experience. Requires your own copy of Freelancer.",
