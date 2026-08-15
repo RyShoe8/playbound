@@ -1502,41 +1502,95 @@ function buildOverflowMenu(items) {
   return wrap;
 }
 
+/**
+ * The artwork thumbnail for a library row.
+ *
+ * Falls back to the game's gradient and initial, and does the same if the
+ * image fails to load, so a dead cover never leaves an empty rectangle.
+ */
+/**
+ * Whether an edition name tells the player anything.
+ *
+ * "Official", "Official Vanilla Edition" and friends are what almost every
+ * game reports, so showing them adds a line of text to every row that carries
+ * no information. Anything else — Project Quarm, Rat King Adventure — is
+ * precisely what someone needs to see.
+ */
+function isMeaningfulEditionName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return false;
+  return !/^(official|default|standard|base|vanilla)\b/i.test(trimmed);
+}
+
+function buildLibraryThumb(game) {
+  const thumb = document.createElement("div");
+  thumb.className = "library-thumb";
+  const grad =
+    Array.isArray(game.art) && game.art.length >= 2
+      ? `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`
+      : `linear-gradient(135deg, #312e81, #a78bfa)`;
+  thumb.style.background = grad;
+  thumb.textContent = (game.title || "?").charAt(0);
+
+  if (game.coverImage) {
+    const img = document.createElement("img");
+    img.src = game.coverImage;
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("load", () => {
+      thumb.textContent = "";
+      thumb.appendChild(img);
+    });
+    img.addEventListener("error", () => img.remove());
+  }
+  return thumb;
+}
+
+/**
+ * One installed game, as a single horizontal card.
+ *
+ * Previously this was a 192px-wide column holding a vertical cover card, then
+ * a strip of buttons, then a mods disclosure — three separate boxes that read
+ * as unrelated, with no width left for a row of controls. Everything now lives
+ * inside one bordered card: art and title on the left, the action for that
+ * game on the right, and editions and mods nested beneath a divider so they
+ * clearly belong to the game above them rather than floating alongside it.
+ */
 function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
   const block = document.createElement("div");
   block.className = "library-game-block";
+  // State drives the dimming and cursor that used to live on the old card
+  // classes, which this layout no longer emits.
+  if (opts.orphan) block.classList.add("is-orphan");
+  if (game.pending) block.classList.add("is-pending");
 
-  if (opts.orphan) {
-    const card = document.createElement("div");
-    card.className = "game-card library-orphan-card";
-    card.innerHTML = `
-      <div class="card-banner" style="background:linear-gradient(135deg,#312e81,#a78bfa)">${escapeHtml((game.title || "?").charAt(0))}</div>
-      <div class="card-body">
-        <div class="card-title">${escapeHtml(game.title)}</div>
-        <div class="card-blurb">Installed mods only</div>
-      </div>
-    `;
-    block.appendChild(card);
-  } else if (game.pending) {
-    const card = document.createElement("div");
-    card.className = "game-card library-pending-card";
-    const bgGrad =
-      Array.isArray(game.art) && game.art.length >= 2
-        ? `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`
-        : `linear-gradient(135deg, #312e81, #a78bfa)`;
-    card.innerHTML = `
-      <div class="card-banner" style="background:${bgGrad}">${escapeHtml((game.title || "?").charAt(0))}</div>
-      <div class="card-body">
-        <div class="card-title">${escapeHtml(game.title)}</div>
-        <div class="card-blurb">${
-          game.scanning ? "Scanning for install…" : `Install not found yet — ${selectExecutableLabel().toLowerCase()}`
-        }</div>
-      </div>
-    `;
-    card.addEventListener("click", () => openGameDetail(game.slug, "library"));
-    block.appendChild(card);
-  } else {
-    block.appendChild(createGameCard(game));
+  const head = document.createElement("div");
+  head.className = "library-card-head";
+  head.appendChild(buildLibraryThumb(game));
+
+  const copy = document.createElement("div");
+  copy.className = "library-card-copy";
+
+  const subtitle = opts.orphan
+    ? "Installed mods only"
+    : game.pending
+      ? game.scanning
+        ? "Scanning for install…"
+        : `Install not found yet — ${selectExecutableLabel().toLowerCase()}`
+      : [game.genres?.[0], game.approxSize].filter(Boolean).join(" · ");
+
+  copy.innerHTML = `
+    <div class="library-card-title">${escapeHtml(game.title)}</div>
+    <div class="library-card-sub">${escapeHtml(subtitle || "")}</div>
+  `;
+  head.appendChild(copy);
+  block.appendChild(head);
+
+  if (!opts.orphan) {
+    copy.querySelector(".library-card-title")?.addEventListener("click", () =>
+      openGameDetail(game.slug, "library")
+    );
+    copy.querySelector(".library-card-title")?.classList.add("linkish");
   }
 
   const actions = document.createElement("div");
@@ -1567,7 +1621,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       await window.playbound.dismissPendingInstall?.(game.slug);
       renderLibraryView();
     });
-    block.appendChild(actions);
+    head.appendChild(actions);
   } else if (!opts.orphan && (game.exe || game.dir || (game.installedEditions || []).length)) {
     const editions = Array.isArray(game.installedEditions)
       ? game.installedEditions.filter((e) => e.exe || e.dir)
@@ -1607,14 +1661,18 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         block.querySelector(".library-saves-panel")?.remove();
       });
       actions.appendChild(picker);
-    } else if (editions.length === 1 && editions[0].editionName) {
+    } else if (editions.length === 1 && isMeaningfulEditionName(editions[0].editionName)) {
+      /*
+       * Only when it says something. Nearly every game has exactly one
+       * edition called "Official", so printing it on every row was pure
+       * noise — the label earns its place only when the player is running
+       * something other than the standard build.
+       */
       const label = document.createElement("span");
       label.className = "library-edition-label";
       label.title = editions[0].editionName;
       label.textContent = editions[0].editionName;
       actions.appendChild(label);
-    } else {
-      actions.appendChild(document.createElement("span"));
     }
 
     const group = document.createElement("div");
@@ -1683,11 +1741,16 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
 
     group.appendChild(buildOverflowMenu(menuItems));
     actions.appendChild(group);
-    block.appendChild(actions);
+    head.appendChild(actions);
   }
 
   if (gameMods.length) {
-    block.appendChild(buildModsDisclosure(gameMods, modTitles));
+    // Nested inside the card, under a divider, so mods read as belonging to
+    // the game above them rather than as a separate floating panel.
+    const extra = document.createElement("div");
+    extra.className = "library-card-extra";
+    extra.appendChild(buildModsDisclosure(gameMods, modTitles));
+    block.appendChild(extra);
   }
   return block;
 }
