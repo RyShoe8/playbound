@@ -9,11 +9,15 @@ import { fetchOpenRaServers } from "./providers/openra";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
+import { fetchSpaceStation14Servers } from "./providers/space-station-14";
+import { fetchStarCraftServers } from "./providers/starcraft";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
   fetchOpenCiv3Players,
   fetchHoloCurePlayers,
+  fetchMarathon2Players,
+  fetchTesArenaPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -53,6 +57,15 @@ const providers: Record<string, ServerProvider> = {
   },
   "0ad": { slug: "0ad", fetchServers: () => fetchRemoteWithLobbyAuth("0ad") },
   everquest: { slug: "everquest", fetchServers: fetchEverQuestServers },
+  // Space Station 14 official Hub API
+  "space-station-14": {
+    slug: "space-station-14",
+    fetchServers: fetchSpaceStation14Servers,
+  },
+  "space-station-14-multiplayer-disaster-simulator": {
+    slug: "space-station-14-multiplayer-disaster-simulator",
+    fetchServers: fetchSpaceStation14Servers,
+  },
   // Testing catalog games — visible to testers/admins via includeTesting; public
   // homepage Active Players stays published-only until status flips.
   freeciv: { slug: "freeciv", fetchServers: fetchFreecivServers },
@@ -62,7 +75,7 @@ const providers: Record<string, ServerProvider> = {
     slug: "team-fortress-2",
     fetchServers: fetchTeamFortress2Servers,
   },
-  // Steam concurrent only (Mad Otter has no public shard API). Undercounts mobile.
+  // Steam concurrent only
   "villagers-and-heroes": {
     slug: "villagers-and-heroes",
     fetchServers: fetchVillagersAndHeroesPlayers,
@@ -74,6 +87,22 @@ const providers: Record<string, ServerProvider> = {
   openciv3: {
     slug: "openciv3",
     fetchServers: fetchOpenCiv3Players,
+  },
+  holocure: {
+    slug: "holocure",
+    fetchServers: fetchHoloCurePlayers,
+  },
+  alephone: {
+    slug: "alephone",
+    fetchServers: fetchMarathon2Players,
+  },
+  "tes-arena": {
+    slug: "tes-arena",
+    fetchServers: fetchTesArenaPlayers,
+  },
+  starcraft: {
+    slug: "starcraft",
+    fetchServers: fetchStarCraftServers,
   },
 };
 

@@ -594,6 +594,116 @@ export const developers: Developer[] = [
     website: "https://www.eqmaps.info",
     artHue: 150,
   },
+  {
+    slug: "shieldbattery-team",
+    name: "ShieldBattery Team",
+    tagline: "Modern competitive community client for StarCraft: Brood War.",
+    about:
+      "ShieldBattery is a modern open-source platform for StarCraft 1 that adds 60fps interpolation, rollback netcode, integrated web ladder, automated matchmaking, and high-performance server architecture to Brood War.",
+    founded: 2016,
+    location: "Worldwide",
+    website: "https://shieldbattery.net",
+    artHue: 210,
+  },
+  {
+    slug: "opentesarena-team",
+    name: "OpenTESArena Team",
+    tagline: "Open-source modern engine reimplementation of The Elder Scrolls: Arena.",
+    about:
+      "A volunteer open-source project written in modern C++ to recreate the original 1994 The Elder Scrolls: Arena engine from scratch, supporting modern operating systems, hardware accelerated graphics, and modding.",
+    founded: 2015,
+    location: "Worldwide",
+    website: "https://github.com/aep93/OpenTESArena",
+    artHue: 35,
+  },
+  {
+    slug: "rubicon-team",
+    name: "Rubicon Development Team",
+    tagline: "The team behind Marathon Rubicon and Rubicon X.",
+    about:
+      "Led by Chris Jacobson and Scott Kevill, the Rubicon team authored one of the most celebrated total conversion scenarios for Bungie's Marathon trilogy, with custom textures, weapons, branching narrative, and full voice acting.",
+    founded: 1997,
+    location: "Worldwide",
+    website: "https://marathon.bungie.org/story/rubicon.html",
+    artHue: 15,
+  },
+  {
+    slug: "eternal-team",
+    name: "Eternal Project Team",
+    tagline: "Creators of the massive Marathon Eternal time-travel saga.",
+    about:
+      "A long-running community collective on Pfhorums that crafted Marathon Eternal X, a 52-level epic campaign spanning alternate timelines, original soundtrack, high-res sprites, and complex story terminals.",
+    founded: 2004,
+    location: "Worldwide",
+    website: "https://eternal.lhowon.org",
+    artHue: 280,
+  },
+  {
+    slug: "gor-mw",
+    name: "GorMW",
+    tagline: "High-resolution texture and 3D model craftsmanship for Marathon.",
+    about:
+      "Community artist and asset developer who created comprehensive high-resolution texture packs and 3D weapon models for the Aleph One Marathon series.",
+    founded: 2010,
+    location: "Worldwide",
+    website: "https://alephone.lhowon.org",
+    artHue: 40,
+  },
+  {
+    slug: "dayo",
+    name: "Dayo",
+    tagline: "Custom campaign author for KeeperFX.",
+    about:
+      "Prolific Dungeon Keeper level designer and modder known for authoring Burden of the Undead, one of the deepest and most strategically challenging custom campaigns for KeeperFX.",
+    founded: 2012,
+    location: "Worldwide",
+    website: "https://keeperfx.net",
+    artHue: 260,
+  },
+  {
+    slug: "dzjeear",
+    name: "DzjeeAr",
+    tagline: "Veteran Dungeon Keeper campaign architect.",
+    about:
+      "Creator of DzjeeAr's Campaign for KeeperFX, featuring custom level scripting, intricate cavern design, and unique objectives that test experienced Dungeon Keepers.",
+    founded: 2011,
+    location: "Worldwide",
+    website: "https://keeperfx.net",
+    artHue: 120,
+  },
+  {
+    slug: "mass-recall-team",
+    name: "Mass Recall Team",
+    tagline: "Recreating the original StarCraft campaigns with modern craft.",
+    about:
+      "The dedicated team behind StarCraft: Mass Recall, recreating the classic StarCraft and Brood War campaigns with cinematic cutscenes, high-definition models, and refined RTS mechanics.",
+    founded: 2014,
+    location: "Worldwide",
+    website: "https://www.sc2mapster.com/projects/starcraft-mass-recall",
+    artHue: 215,
+  },
+  {
+    slug: "cosmonarchy-team",
+    name: "Cosmonarchy Team",
+    tagline: "Pro-level overhaul and unit expansion for StarCraft: Brood War.",
+    about:
+      "A competitive community development team building Cosmonarchy BW, an extensive tactical mod that rebalances every unit and introduces dozens of new tech trees to Brood War.",
+    founded: 2019,
+    location: "Worldwide",
+    website: "https://github.com/MicroGamer/CosmonarchyBW",
+    artHue: 180,
+  },
+  {
+    slug: "ss14-frontier-team",
+    name: "Frontier Station Team",
+    tagline: "Open-space persistent exploration for Space Station 14.",
+    about:
+      "The community team maintaining Frontier Station, a persistent sandbox RPG fork of Space Station 14 featuring personal starships, asteroid mining, deep-space salvage, and trading economies.",
+    founded: 2022,
+    location: "Worldwide",
+    website: "https://github.com/Space-Wizards/space-station-14",
+    artHue: 195,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
