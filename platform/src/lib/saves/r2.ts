@@ -63,21 +63,59 @@ function bucket(): string {
  * The caller is responsible for having authenticated that user — nothing here
  * infers identity from the request.
  */
+/**
+ * Reduce one path segment to characters that cannot change a key's shape.
+ * Notably strips "/" and "..", so no caller can escape its own prefix.
+ */
+function safeSegment(s: string): string {
+  return String(s).replace(/[^a-z0-9_.-]/gi, "_");
+}
+
 export function saveKey(opts: {
   userId: string;
   gameSlug: string;
   editionSlug: string;
   snapshotId: string;
 }): string {
-  const safe = (s: string) => String(s).replace(/[^a-z0-9_.-]/gi, "_");
-  return `saves/${safe(opts.userId)}/${safe(opts.gameSlug)}/${safe(opts.editionSlug)}/${safe(
-    opts.snapshotId
-  )}.zip`;
+  return `${savePrefix(opts)}${safeSegment(opts.snapshotId)}.zip`;
 }
 
 export function savePrefix(opts: { userId: string; gameSlug: string; editionSlug: string }): string {
-  const safe = (s: string) => String(s).replace(/[^a-z0-9_.-]/gi, "_");
-  return `saves/${safe(opts.userId)}/${safe(opts.gameSlug)}/${safe(opts.editionSlug)}/`;
+  return `${userPrefix(opts.userId)}${safeSegment(opts.gameSlug)}/${safeSegment(opts.editionSlug)}/`;
+}
+
+/** Everything one account has stored, across every game. */
+export function userPrefix(userId: string): string {
+  return `saves/${safeSegment(userId)}/`;
+}
+
+/**
+ * Total bytes an account is using.
+ *
+ * The per-game quota is enforced per prefix, and nothing validates that a slug
+ * names a real game — so a client that invents slugs gets a fresh per-game
+ * allowance each time. This is the backstop that makes the ceiling account-wide
+ * and therefore actually bounded.
+ */
+export async function usedBytesForUser(userId: string): Promise<number> {
+  const prefix = userPrefix(userId);
+  let total = 0;
+  let token: string | undefined;
+  // Bounded so a pathological account cannot spin this handler indefinitely.
+  for (let page = 0; page < 20; page++) {
+    const res = await r2().send(
+      new ListObjectsV2Command({
+        Bucket: bucket(),
+        Prefix: prefix,
+        MaxKeys: 1000,
+        ContinuationToken: token,
+      })
+    );
+    for (const o of res.Contents ?? []) total += Number(o.Size ?? 0);
+    if (!res.IsTruncated || !res.NextContinuationToken) break;
+    token = res.NextContinuationToken;
+  }
+  return total;
 }
 
 export interface RemoteSnapshot {

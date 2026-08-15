@@ -5636,7 +5636,11 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    // Every attribute we build today is double-quoted, so this is not currently
+    // reachable — it is here so that writing a single-quoted one later cannot
+    // quietly open an injection point in catalog-driven markup.
+    .replace(/'/g, "&#39;");
 }
 
 window.playbound.onProgress(({ phase, received, total, addon, message }) => {
