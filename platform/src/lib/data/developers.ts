@@ -551,6 +551,17 @@ export const developers: Developer[] = [
     artHue: 330,
   },
   {
+    slug: "space-wizards",
+    name: "Space Wizards Federation",
+    tagline: "The volunteer collective rebuilding Space Station 13 from scratch.",
+    about:
+      "Space Wizards Federation is the open-source community behind Space Station 14, a ground-up reimplementation of the cult BYOND game Space Station 13 on a purpose-built engine, RobustToolbox. The project is developed entirely in the open on GitHub under the MIT license by hundreds of contributors, with the servers people actually play on run independently by community operators rather than by the developers.",
+    founded: 2019,
+    location: "Distributed",
+    website: "https://spacestation14.com/",
+    artHue: 199,
+  },
+  {
     slug: "brewall",
     name: "Brewall",
     tagline: "Hand-drawn EverQuest cartography, expansion after expansion.",
