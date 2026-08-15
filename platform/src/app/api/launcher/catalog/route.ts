@@ -7,6 +7,8 @@ import {
   sizeLabelFromMB,
   absoluteMediaUrl,
   type LauncherInstall,
+  hasServerBrowser,
+  isMultiplayerGame,
 } from "@/lib/launcherInstall";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
@@ -35,6 +37,7 @@ export async function GET(req: Request) {
             genres: g.genres,
             tags: g.tags,
             launchMethods: g.launchMethods,
+            features: g.features,
             origin,
           });
           return entry
@@ -62,7 +65,9 @@ export async function GET(req: Request) {
           approxSize: sizeLabelFromMB(g.sizeMB) ?? "Browser",
           genres: Array.isArray(g.genres) ? g.genres : [],
           tags: Array.isArray(g.tags) ? g.tags : [],
-          multiplayer: Boolean(g.launchMethods?.includes("server")),
+          multiplayer: hasServerBrowser(g),
+          hasServerBrowser: hasServerBrowser(g),
+          isMultiplayer: isMultiplayerGame(g),
           status: g.status || "published",
           testing: g.status === "testing",
           platforms: Array.isArray(g.platforms) ? g.platforms : [],

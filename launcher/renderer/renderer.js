@@ -3301,7 +3301,13 @@ function paintGamesGrid(catalog) {
     list = list.filter((g) => (g.genres || []).includes(gamesFilters.genre));
   }
   if (gamesFilters.multiplayerOnly) {
-    list = list.filter((g) => g.multiplayer);
+    /*
+     * isMultiplayer, not multiplayer. The old field means "has a server
+     * browser", so filtering on it hid twenty multiplayer games that simply do
+     * not run community servers — GameBuddies, Dota 2, Warframe, Hearthstone.
+     * Falls back for older API responses that do not send the new field.
+     */
+    list = list.filter((g) => (g.isMultiplayer ?? g.multiplayer));
   }
   if (gamesFilters.installableOnly) {
     list = list.filter((g) => g.kind && g.kind !== "external");
@@ -3865,7 +3871,7 @@ async function renderGameDetailView(slug) {
     <section class="detail-hero">
       ${coverHtml}
       <div class="detail-hero-copy">
-        <div class="chip-row">${genreChips}${detail.multiplayer ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
+        <div class="chip-row">${genreChips}${(detail.isMultiplayer ?? detail.multiplayer) ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
         <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
         <p class="view-sub detail-hero-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
         <div class="detail-hero-actions" id="detail-actions"></div>
@@ -3875,7 +3881,7 @@ async function renderGameDetailView(slug) {
     <nav class="detail-tabs" id="detail-tabs">
       <button type="button" class="detail-tab ${detailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
       <button type="button" class="detail-tab ${detailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
-      ${detail.multiplayer ? `<button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
+      ${(detail.hasServerBrowser ?? detail.multiplayer) ? `<button type="button" class="detail-tab ${detailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
       ${detail.mods && detail.mods.length > 0 ? `<button type="button" class="detail-tab ${detailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>` : ""}
       <button type="button" class="detail-tab ${detailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
       <button type="button" class="detail-tab ${detailActiveTab === "achievements" ? "active" : ""}" data-tab="achievements">Achievements</button>
@@ -4727,7 +4733,7 @@ async function renderGameDetailView(slug) {
       }
 
       paintDetailServers();
-    } else if (detail.multiplayer) {
+    } else if (detail.hasServerBrowser ?? detail.multiplayer) {
       sSec.innerHTML = `
         <div class="detail-servers-header">
           <p class="view-sub" style="margin:0">No live servers listed right now.</p>

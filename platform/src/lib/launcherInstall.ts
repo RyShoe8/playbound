@@ -87,7 +87,12 @@ export type LauncherCatalogEntry = {
   coverImage?: string | null;
   genres?: string[];
   tags?: string[];
+  /** @deprecated Means "has a server browser". Use hasServerBrowser / isMultiplayer. */
   multiplayer?: boolean;
+  /** Gates the Servers tab. */
+  hasServerBrowser?: boolean;
+  /** Drives the Multiplayer filter and chip. */
+  isMultiplayer?: boolean;
   addons?: LauncherInstallAddon[];
   overlayUrl?: string;
   overlayFileName?: string;
@@ -120,6 +125,34 @@ export function isPcInstallCandidate(game: {
   if (game.browserPlayable && !methods.includes("install")) return false;
   if (!methods.includes("install")) return false;
   return platforms.some((p) => /windows|macos|linux/i.test(p));
+}
+
+/**
+ * Two questions the launcher used to answer with one field.
+ *
+ * `multiplayer` has always meant "has a browsable server list", because that is
+ * what gates the Servers tab. The renderer also uses it for the Multiplayer
+ * filter and chip, where it means something else entirely — so a game like
+ * GameBuddies, which is nothing but multiplayer party games and has no server
+ * list, was filtered out of Multiplayer. Twenty published games are in that
+ * position.
+ *
+ * These two replace it. `multiplayer` is still sent, unchanged, because
+ * launchers already in the wild gate the Servers tab on it; redefining it would
+ * give all twenty an empty tab until everyone updated. Once builds have aged
+ * out it can go.
+ */
+export function hasServerBrowser(game: { launchMethods?: string[] }): boolean {
+  return Boolean(game.launchMethods?.includes("server"));
+}
+
+/** Whether the game is played with other people, server list or not. */
+export function isMultiplayerGame(game: {
+  launchMethods?: string[];
+  features?: string[];
+}): boolean {
+  if (hasServerBrowser(game)) return true;
+  return (game.features ?? []).some((f) => /multiplayer|mmo|co-?op|pvp/i.test(f));
 }
 
 export function defaultLauncherInstallForWebsite(website: string): LauncherInstall {
@@ -206,6 +239,8 @@ export function toLauncherCatalogEntry(input: {
   genres?: string[];
   tags?: string[];
   launchMethods?: string[];
+  /** Needed for isMultiplayer — a game can be multiplayer with no server list. */
+  features?: string[];
   origin?: string;
 }): LauncherCatalogEntry {
   const li = input.launcherInstall;
@@ -218,7 +253,9 @@ export function toLauncherCatalogEntry(input: {
     approxSize: sizeLabelFromMB(input.sizeMB),
     genres: Array.isArray(input.genres) ? input.genres : [],
     tags: Array.isArray(input.tags) ? input.tags : [],
-    multiplayer: Boolean(input.launchMethods?.includes("server")),
+    multiplayer: hasServerBrowser(input),
+    hasServerBrowser: hasServerBrowser(input),
+    isMultiplayer: isMultiplayerGame(input),
   };
   const cover = absoluteMediaUrl(input.coverImage, input.origin || "https://playbound.club");
   if (cover) entry.coverImage = cover;
