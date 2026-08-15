@@ -14,6 +14,7 @@ import { fetchStarCraftServers } from "./providers/starcraft";
 import { fetchWolfensteinEnemyTerritoryServers } from "./providers/wolfenstein-enemy-territory";
 import { fetchAsheronsCallServers } from "./providers/asherons-call";
 import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
+import { fetchOldSchoolRuneScapeServers } from "./providers/old-school-runescape";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
@@ -22,7 +23,6 @@ import {
   fetchTesArenaPlayers,
   fetchWarThunderPlayers,
   fetchWorldOfSeaBattlePlayers,
-  fetchOldSchoolRuneScapePlayers,
   fetchSwtorPlayers,
   fetchMrBoomPlayers,
   fetchAllegiancePlayers,
@@ -132,9 +132,14 @@ const providers: Record<string, ServerProvider> = {
     slug: "world-of-sea-battle",
     fetchServers: fetchWorldOfSeaBattlePlayers,
   },
+  /*
+   * Jagex's own world list, not Steam concurrents. Steam reported 2,122 for a
+   * game whose world list totalled 132,303 at the same moment — hardly anyone
+   * launches OSRS through Steam.
+   */
   "old-school-runescape": {
     slug: "old-school-runescape",
-    fetchServers: fetchOldSchoolRuneScapePlayers,
+    fetchServers: fetchOldSchoolRuneScapeServers,
   },
   /*
    * The published game is star-wars-the-old-republic; "swtor" was a second
@@ -173,7 +178,7 @@ const providers: Record<string, ServerProvider> = {
  *   league-of-legends, valorant, quake-champions (matchmaking only; Riot and
  *   Blizzard titles publish neither a master list nor a concurrent count, and
  *   third-party player estimates are models rather than measurements)
- * - war-thunder, world-of-sea-battle, old-school-runescape, swtor, marathon-2,
+ * - war-thunder, world-of-sea-battle, star-wars-the-old-republic, marathon-2,
  *   tes-arena (Steam concurrent count only; no public server browser exists)
  * - freedoom, lincity-ng, daggerfall, pixreveal (not server-browser games)
  * - gamebuddies-io (browser party; no public master)
