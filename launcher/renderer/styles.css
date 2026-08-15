@@ -927,11 +927,20 @@ body {
   flex: 0 0 auto;
 }
 
+/*
+ * Label and buttons as two grid columns rather than flex siblings.
+ *
+ * The label used to be `flex: 1 1 auto` in a wrapping row, so as soon as an
+ * edition name was long enough it consumed the free space and pushed Play /
+ * Folder / Remove onto a second line — the buttons for one edition ended up
+ * looking like they belonged to the next. The grid pins the buttons to their
+ * own column at their natural width and makes the label absorb the rest.
+ */
 .library-edition-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 6px;
+  gap: 6px 10px;
   width: 100%;
 }
 
@@ -942,11 +951,41 @@ body {
 }
 
 .library-edition-label {
-  flex: 1 1 auto;
   min-width: 0;
   font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
+  /* Truncate rather than wrap: a long edition name must not reflow the row. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/** The action buttons for one row. Kept on a single line by design. */
+.library-action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.library-action-group > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/*
+ * Narrow windows are the one case where a single line genuinely will not fit.
+ * Rather than let the columns collide, stack them and let the buttons keep
+ * their row.
+ */
+@media (max-width: 520px) {
+  .library-edition-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .library-action-group {
+    flex-wrap: wrap;
+  }
 }
 
 .openciv3-display-panel {
@@ -1991,3 +2030,73 @@ textarea.input-text {
   width: 100%;
 }
 
+
+/* ── save backups ─────────────────────────────────────────────
+ * Sits under a library card when Saves is toggled. Rows are
+ * time-first because "which backup" is a question about when, not
+ * about ids or byte counts.
+ */
+.library-saves-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated, var(--card, rgba(255, 255, 255, 0.03)));
+}
+
+.saves-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.saves-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.saves-sub,
+.saves-empty {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.saves-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.saves-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.saves-row-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.saves-when {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.saves-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

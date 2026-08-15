@@ -31,6 +31,13 @@ contextBridge.exposeInMainWorld("playbound", {
   getInstalledMods: () => ipcRenderer.invoke("get-installed-mods"),
   uninstallMod: (slug) => ipcRenderer.invoke("uninstall-mod", slug),
   createShortcut: (slug) => ipcRenderer.invoke("create-shortcut", slug),
+  // Save backups. Local and versioned; see services/SaveData.js.
+  savesList: (slug, editionSlug) => ipcRenderer.invoke("saves-list", slug, editionSlug || null),
+  savesSnapshot: (slug, editionSlug) => ipcRenderer.invoke("saves-snapshot", slug, editionSlug || null),
+  savesRestore: (slug, editionSlug, snapshotId) =>
+    ipcRenderer.invoke("saves-restore", slug, editionSlug || null, snapshotId),
+  savesOpenFolder: (slug, editionSlug) =>
+    ipcRenderer.invoke("saves-open-folder", slug, editionSlug || null),
   openFolder: (dir) => ipcRenderer.invoke("open-folder", dir),
   clearContext: () => ipcRenderer.invoke("clear-context"),
   openExternal: (url, opts) => ipcRenderer.invoke("open-external", url, opts || null),

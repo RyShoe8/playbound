@@ -1500,10 +1500,13 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         .map(
           (ed) => `
         <div class="library-edition-actions">
-          <span class="library-edition-label">${escapeHtml(ed.editionName || ed.editionSlug)}</span>
-          ${ed.exe ? `<button class="btn-success btn-sm btn-lib-play-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Play</button>` : ""}
-          ${ed.dir ? `<button class="btn-secondary btn-sm btn-lib-folder-ed" type="button" data-dir="${escapeHtml(ed.dir)}">Folder</button>` : ""}
-          <button class="btn-danger btn-sm btn-lib-uninstall-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Remove</button>
+          <span class="library-edition-label" title="${escapeHtml(ed.editionName || ed.editionSlug)}">${escapeHtml(ed.editionName || ed.editionSlug)}</span>
+          <div class="library-action-group">
+            ${ed.exe ? `<button class="btn-success btn-sm btn-lib-play-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Play</button>` : ""}
+            ${ed.dir ? `<button class="btn-secondary btn-sm btn-lib-folder-ed" type="button" data-dir="${escapeHtml(ed.dir)}">Folder</button>` : ""}
+            <button class="btn-secondary btn-sm btn-lib-saves-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Saves</button>
+            <button class="btn-danger btn-sm btn-lib-uninstall-ed" type="button" data-edition="${escapeHtml(ed.editionSlug)}">Remove</button>
+          </div>
         </div>`
         )
         .join("");
@@ -1546,10 +1549,13 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       const onlyEd = editions[0]?.editionSlug || game.editionSlug || null;
       const showDisplay = game.slug === "openciv3";
       actions.innerHTML = `
-      <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
-      ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
-      ${showDisplay ? `<button class="btn-secondary btn-sm btn-lib-display" type="button">Display</button>` : ""}
-      <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
+      <div class="library-action-group">
+        <button class="btn-success btn-sm btn-lib-play" type="button">Play</button>
+        ${game.dir || editions[0]?.dir ? `<button class="btn-secondary btn-sm btn-lib-folder" type="button">Folder</button>` : ""}
+        ${showDisplay ? `<button class="btn-secondary btn-sm btn-lib-display" type="button">Display</button>` : ""}
+        <button class="btn-secondary btn-sm btn-lib-saves" type="button">Saves</button>
+        <button class="btn-danger btn-sm btn-lib-uninstall" type="button">Remove</button>
+      </div>
     `;
       actions.querySelector(".btn-lib-play")?.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -1582,7 +1588,17 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           setStatus(err.message || String(err), true);
         }
       });
+      actions.querySelector(".btn-lib-saves")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleSavesPanel(block, game, onlyEd);
+      });
     }
+    actions.querySelectorAll(".btn-lib-saves-ed").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleSavesPanel(block, game, btn.dataset.edition || null);
+      });
+    });
     block.appendChild(actions);
   }
 
@@ -1590,6 +1606,183 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     block.appendChild(buildModsDisclosure(gameMods, modTitles));
   }
   return block;
+}
+
+/* ── save backups ──────────────────────────────────────────── */
+
+function formatSaveBytes(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
+function formatSaveWhen(iso) {
+  if (!iso) return "unknown time";
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "unknown time";
+  const mins = Math.floor((Date.now() - then.getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return then.toLocaleDateString();
+}
+
+/**
+ * Why a snapshot was taken, in words a player recognises.
+ *
+ * "pre-restore" matters most: it is the copy taken automatically before a
+ * restore replaced things, and it is what makes a wrong restore undoable — so
+ * it should read as a safety net rather than as noise in the list.
+ */
+function describeSaveReason(reason) {
+  if (!reason) return "";
+  if (reason === "after-play") return "after playing";
+  if (reason === "manual") return "backed up manually";
+  if (reason === "cloud-upload") return "before syncing";
+  if (String(reason).startsWith("pre-restore")) return "before a restore";
+  return String(reason);
+}
+
+/**
+ * Show a game's save history, and let the player put one back.
+ *
+ * Saves are the one thing PlayBound touches that a player cannot replace, so
+ * this deliberately explains what will happen before it happens, and says
+ * plainly that the current saves are kept.
+ */
+async function toggleSavesPanel(block, game, editionSlug) {
+  const existing = block.querySelector(".library-saves-panel");
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "library-saves-panel";
+  panel.innerHTML = `<div class="saves-empty">Loading save history…</div>`;
+  block.appendChild(panel);
+
+  let data;
+  try {
+    data = await window.playbound.savesList(game.slug, editionSlug);
+  } catch (err) {
+    panel.innerHTML = `<div class="saves-empty">Couldn't read save history: ${escapeHtml(
+      err.message || String(err)
+    )}</div>`;
+    return;
+  }
+
+  if (!data?.supported) {
+    panel.innerHTML = `
+      <div class="saves-empty">
+        PlayBound doesn't back up saves for ${escapeHtml(game.title)} yet — we only do it for games
+        whose save location we've confirmed, so we never copy or overwrite the wrong folder.
+      </div>`;
+    return;
+  }
+
+  const render = (snapshots) => {
+    const rows = snapshots.length
+      ? snapshots
+          .map(
+            (s) => `
+        <div class="saves-row">
+          <div class="saves-row-main">
+            <span class="saves-when">${escapeHtml(formatSaveWhen(s.createdAt))}</span>
+            <span class="saves-meta">${escapeHtml(
+              [
+                s.files ? `${s.files} file${s.files === 1 ? "" : "s"}` : "",
+                formatSaveBytes(s.bytes),
+                describeSaveReason(s.reason),
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            )}</span>
+          </div>
+          <button class="btn-secondary btn-sm btn-saves-restore" type="button" data-id="${escapeHtml(
+            s.id
+          )}">Restore</button>
+        </div>`
+          )
+          .join("")
+      : `<div class="saves-empty">No backups yet. PlayBound takes one automatically each time you finish playing.</div>`;
+
+    panel.innerHTML = `
+      <div class="saves-header">
+        <div>
+          <div class="saves-title">Save backups</div>
+          <div class="saves-sub">Kept on this PC. Restoring always keeps a copy of your current saves first.</div>
+        </div>
+        <div class="library-action-group">
+          <button class="btn-secondary btn-sm btn-saves-now" type="button">Back up now</button>
+          <button class="btn-secondary btn-sm btn-saves-folder" type="button">Folder</button>
+        </div>
+      </div>
+      <div class="saves-list">${rows}</div>`;
+
+    panel.querySelector(".btn-saves-now")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        setStatus(`Backing up ${game.title} saves…`);
+        const res = await window.playbound.savesSnapshot(game.slug, editionSlug);
+        if (res?.status === "no-saves") {
+          setStatus("No save files found to back up yet.", true);
+        } else if (res?.status === "too-large") {
+          setStatus(
+            `Saves are ${formatSaveBytes(res.bytes)} — too large to back up automatically.`,
+            true
+          );
+        } else {
+          setStatus(`Backed up ${res.files} save file${res.files === 1 ? "" : "s"}.`);
+        }
+        const fresh = await window.playbound.savesList(game.slug, editionSlug);
+        render(fresh.snapshots || []);
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+
+    panel.querySelector(".btn-saves-folder")?.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      // Backups are plain copied files, so a player can always recover by hand.
+      await window.playbound.savesOpenFolder(game.slug, editionSlug);
+    });
+
+    panel.querySelectorAll(".btn-saves-restore").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const when = snapshots.find((s) => s.id === id)?.createdAt;
+        if (
+          !confirm(
+            `Restore ${game.title} saves from ${formatSaveWhen(when)}?\n\n` +
+              `Your current saves will be backed up first, so you can undo this.`
+          )
+        ) {
+          return;
+        }
+        try {
+          setStatus(`Restoring ${game.title} saves…`);
+          const res = await window.playbound.savesRestore(game.slug, editionSlug, id);
+          setStatus(
+            res?.safetySnapshot
+              ? `Restored ${res.files} file${res.files === 1 ? "" : "s"}. Your previous saves are still in the list.`
+              : `Restored ${res?.files ?? 0} file(s).`
+          );
+          const fresh = await window.playbound.savesList(game.slug, editionSlug);
+          render(fresh.snapshots || []);
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+        }
+      });
+    });
+  };
+
+  render(data.snapshots || []);
 }
 
 async function toggleOpenCiv3DisplayPanel(block, game) {
