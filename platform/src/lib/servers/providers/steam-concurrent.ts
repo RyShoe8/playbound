@@ -106,10 +106,16 @@ export function fetchAsphaltLegendsUnitePlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(922250, { label: "Asphalt Legends Unite" });
 }
 
-/** OpenCiv3 (using Civ 3 Complete Steam app 3910 as proxy for activity). */
-export function fetchOpenCiv3Players(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(3910, { label: "OpenCiv3" });
-}
+/*
+ * OpenCiv3 and OpenLara deliberately have no entry here.
+ *
+ * They used to report Civilization III Complete (app 3910) and Tomb Raider
+ * 1996 (app 224960) as stand-ins. Those count people playing the original
+ * commercial games — neither open-source project is on Steam — so the figure
+ * described a different audience while carrying the project's name. Both are
+ * offline single-player engines with no service, no accounts and no telemetry,
+ * so there is nothing real to query and no proxy worth the misdirection.
+ */
 
 /** HoloCure — Save the Fans! — Steam app 2420510. */
 export function fetchHoloCurePlayers(): Promise<GameServer[]> {
@@ -126,10 +132,6 @@ export function fetchTesArenaPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(1812290, { label: "The Elder Scrolls: Arena" });
 }
 
-/** OpenLara / Tomb Raider (1996) — Steam app 224960. */
-export function fetchOpenLaraPlayers(): Promise<GameServer[]> {
-  return fetchSteamConcurrentPlayers(224960, { label: "OpenLara / Tomb Raider" });
-}
 
 /** War Thunder — Steam app 236390. */
 export function fetchWarThunderPlayers(): Promise<GameServer[]> {

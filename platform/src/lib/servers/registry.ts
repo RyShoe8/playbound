@@ -17,11 +17,9 @@ import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
 import {
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
-  fetchOpenCiv3Players,
   fetchHoloCurePlayers,
   fetchMarathon2Players,
   fetchTesArenaPlayers,
-  fetchOpenLaraPlayers,
   fetchWarThunderPlayers,
   fetchWorldOfSeaBattlePlayers,
   fetchOldSchoolRuneScapePlayers,
@@ -110,10 +108,6 @@ const providers: Record<string, ServerProvider> = {
     slug: "asphalt-legends-unite",
     fetchServers: fetchAsphaltLegendsUnitePlayers,
   },
-  openciv3: {
-    slug: "openciv3",
-    fetchServers: fetchOpenCiv3Players,
-  },
   holocure: {
     slug: "holocure",
     fetchServers: fetchHoloCurePlayers,
@@ -129,10 +123,6 @@ const providers: Record<string, ServerProvider> = {
   "tes-arena": {
     slug: "tes-arena",
     fetchServers: fetchTesArenaPlayers,
-  },
-  openlara: {
-    slug: "openlara",
-    fetchServers: fetchOpenLaraPlayers,
   },
   "war-thunder": {
     slug: "war-thunder",
@@ -168,12 +158,20 @@ const providers: Record<string, ServerProvider> = {
  * Draft / catalog multiplayer titles without an honest public master or status API
  * in this pass (do not invent lobby rows). Revisit when a stable source exists:
  * - star-wars-galaxies (edition-specific emulators; EQ-style pop later)
- * - starcraft, diablo-2 (Battle.net / closed)
- * - war-thunder, world-of-tanks, apex-legends, hearthstone, genshin-impact,
- *   dota-2, league-of-legends, valorant, counter-strike-2, quake-champions
- *   (matchmaking; no public PC master we wire today)
- * - freedoom, lincity-ng, daggerfall, tes-arena, pixreveal (not server-browser games)
+ * - diablo-2 (Battle.net / closed)
+ * - world-of-tanks, apex-legends, hearthstone, genshin-impact, dota-2,
+ *   league-of-legends, valorant, quake-champions (matchmaking only; Riot and
+ *   Blizzard titles publish neither a master list nor a concurrent count, and
+ *   third-party player estimates are models rather than measurements)
+ * - war-thunder, world-of-sea-battle, old-school-runescape, swtor, marathon-2,
+ *   tes-arena (Steam concurrent count only; no public server browser exists)
+ * - freedoom, lincity-ng, daggerfall, pixreveal (not server-browser games)
  * - gamebuddies-io (browser party; no public master)
+ * - openciv3, openlara (offline single-player engines with no service to query;
+ *   they previously reported Civilization III and Tomb Raider 1996 Steam counts
+ *   as proxies, which measured a different audience under the project's name)
+ * - keeperfx (direct-IP multiplayer arranged via Discord; the masterserver in
+ *   dkfans/keeperfx-masterserver is not deployed anywhere public)
  *
  * Slugs that already advertise launchMethods "server" but still lack a provider
  * can be listed in UNSUPPORTED_SERVER_SLUGS so the launcher index can show them
