@@ -1272,9 +1272,17 @@ const facts: Game[] = [
     steamDeck: true,
     website: "https://elderscrolls.bethesda.net/en/arena",
     browserPlayable: false,
+    /* Bethesda also publish the freeware release on Steam at no cost. */
+    steamAppId: "1812290",
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#422006", to: "#fbbf24", icon: "Castle" },
+    coverImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1812290/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1812290/ss_919f8eec6fa9373426c423cc239aac5e82ac7a87.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1812290/ss_3426c2296258230868893c56ea63bffc889014d8.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1812290/ss_b58ff2583c955488f7de8e1511ae7caf8e250e45.1920x1080.jpg",
+    ],
     systemRequirements: {
       min: "DOSBox or compatible · 512 MB RAM · 100 MB storage",
       recommended: "DOSBox Staging · modern PC",
@@ -2825,9 +2833,17 @@ const facts: Game[] = [
     steamDeck: true,
     website: "https://alephone.lhowon.org/",
     githubRepo: "Aleph-One-Marathon/alephone",
+    /* Bungie also publish it free on Steam as "Classic Marathon 2". */
+    steamAppId: "2398490",
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#431407", to: "#fb923c", icon: "Crosshair" },
+    coverImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/2398490/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2398490/ss_810599d8e4b4791ab4227bfb1075a0693f28089a.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2398490/ss_97cfb5980d43be58fa988d5f25a90bb0fae9bef4.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2398490/ss_ca4d8007a81d02009dcb4d6c471e1e0bf6bc6f01.1920x1080.jpg",
+    ],
     systemRequirements: {
       min: "Any 64-bit desktop · 1 GB RAM · OpenGL 2.1 · 250 MB storage",
       recommended: "Any machine made this century",
@@ -2955,9 +2971,26 @@ const facts: Game[] = [
     steamDeck: true,
     website: "https://spacestation14.com/",
     githubRepo: "space-wizards/space-station-14",
+    /*
+     * Free on Steam too. Recorded for store matching and search rather than as
+     * the install route — the direct launcher download needs no Steam account.
+     */
+    steamAppId: "1255460",
     gameOfWeek: false,
     hiddenGem: true,
     art: { from: "#0f172a", to: "#38bdf8", icon: "Rocket" },
+    /*
+     * Steam's own CDN rather than mirrored copies. cdn.cloudflare.steamstatic
+     * and shared.akamai.steamstatic are both already in next.config.ts
+     * remotePatterns, so these render, and hotlinking the store art avoids
+     * redistributing anyone's screenshots from our own bucket.
+     */
+    coverImage: "https://cdn.cloudflare.steamstatic.com/steam/apps/1255460/header.jpg",
+    screenshots: [
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1255460/ss_7d038c88ea58c995b54517a5dede618b3b35ba2a.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1255460/ss_afd747c1c4911d2217ade58853504c44545b57cb.1920x1080.jpg",
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1255460/ss_59c07c615481c88976e49480624faa3db8bf1bd8.1920x1080.jpg",
+    ],
     systemRequirements: {
       min: "64-bit Windows/macOS/Linux · Dual-core CPU · 4 GB RAM · OpenGL 3.3 · 2 GB storage",
       recommended: "Quad-core CPU · 8 GB RAM · Dedicated GPU · SSD",
@@ -3005,13 +3038,7 @@ const facts: Game[] = [
         verifiedAt: "2026-08-15",
       },
     },
-    /*
-     * Not marked complete: screenshots and video are still missing. Media has
-     * to be mirrored into our own blob first — next.config.ts restricts
-     * next/image to twelve remote hosts, and spacestation14.com is not one of
-     * them, so pasting their URLs in would store links that render as nothing.
-     */
-    complete: false,
+    complete: true,
   },
 ];
 
