@@ -160,3 +160,9 @@ export function fetchAllegiancePlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(700480, { label: "Microsoft Allegiance" });
 }
 
+/** Quake Champions — Steam app 611500. */
+export function fetchQuakeChampionsPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(611500, { label: "Quake Champions" });
+}
+
+

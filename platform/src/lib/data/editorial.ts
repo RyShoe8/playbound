@@ -171,6 +171,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Finished standalone open-source remake; verified 1.03 Windows, Linux, and macOS installer packages remain online.",
   },
+  "quake-champions": {
+    kind: "manual",
+    url: "https://store.steampowered.com/app/611500/Quake_Champions/",
+    checkedAt: "2026-08-15",
+    note: "Commercial free-to-play arena FPS; seasonal battle passes and active matchmaking queues on Steam.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -2673,6 +2679,88 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Is HoloCure an official Hololive product?",
         a: "No. HoloCure is an unofficial fan game created by Kay Yu under Cover Corp's Hololive Derivative Works Guidelines, featuring original artwork and custom soundtrack remixes by Eufrik.",
+      },
+    ],
+  },
+  "quake-champions": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "High-intensity arena combat that pairs Quake's legendary speed and weapon triangle with character-specific movement mechanics and active abilities.",
+      lastVerified: "2026-08-15",
+    },
+    longDescription:
+      "Quake Champions is the modern revival of the foundational arena first-person shooter genre, developed by id Software in conjunction with Saber Interactive. Carrying forward the DNA of Quake III Arena and Quake Live, the game centers around blisteringly fast movement, pinpoint weapon accuracy, and map control. It introduces a roster of 16 distinct Champions—ranging from series icons like Ranger, Visor, and Doom Slayer to guest characters like B.J. Blazkowicz—each equipped with tailored active abilities and movement styles like crouch sliding, air control, and rocket jumping.\n\nAt the core of the combat loop is Quake's legendary Holy Trinity of weaponry: the Rocket Launcher for area denial and aerial juggles, the Lightning Gun for close-to-mid-range tracking, and the Railgun for long-range hitscan punishment. Complementing these are the Super Shotgun, Heavy Machinegun, Tri-bolt, and Plasma Gun. Weapons spawn on fixed timers across intricately balanced gothic, elder god, and industrial arenas, requiring players to control mega health, heavy armor, and power-ups like Quad Damage and Protection.\n\nGame modes span casual and competitive playstyles. Casual queues feature classic Deathmatch, 4v4 Team Deathmatch, Instagib, Unholy Trinity (infinite ammo with rockets, rail, and lightning only), and Clan Arena. For competitive purists, the ranked 1v1 Duel ladder tests raw mechanical aim, spatial awareness, and item timing in intense multi-round showdowns.\n\nThe game features dedicated global servers with modern netcode, custom lobby hosting, extensive crosshair and FOV customization, and comprehensive stats tracking. Crossplay between Steam and PC Game Pass ensures healthy matchmaking pools across North America, Europe, and international regions.\n\nQuake Champions remains the most accessible modern gateway into pure, uncompromised arena FPS mechanics: there is no loadout advantage, no sprint penalty, and no bloom—only mechanical skill, speed, and map intelligence.",
+    whyWePickedIt:
+      "We added Quake Champions because it represents the highest mechanical skill ceiling in competitive first-person shooters. At a time when modern shooters favor automated aim assist, sprint fatigue, and tactical low-mobility positioning, Quake Champions celebrates raw mechanical mastery, rocket jumping acrobatics, and tactical item control—all in a completely free-to-play package.",
+    bestFor: [
+      "Competitive FPS veterans who love rocket jumping, strafe jumping, and fast arena combat",
+      "Duelists looking for the ultimate 1v1 tactical shooter experience",
+      "Players wanting pure mechanical aim drills (tracking, flicking, projectile prediction)",
+      "Fans of Quake III Arena and Unreal Tournament looking for a modern matchmade title",
+      "Gamers with high-refresh-rate monitors seeking responsive uncapped frame rates",
+    ],
+    notFor: [
+      "Players who prefer tactical, slow-paced mil-sims (e.g. CS2, Valorant, or Rainbow Six)",
+      "Those looking for a single-player narrative campaign",
+      "Casual players frustrated by high initial mechanical skill curves",
+      "Pilots wanting modifiable source-port servers (which classic Quake III / OpenArena offer instead)",
+    ],
+    comparableTo: [
+      "Quake III Arena",
+      "Quake Live",
+      "OpenArena",
+      "Unreal Tournament",
+      "Diabotical",
+      "Team Fortress 2",
+      "Splitgate",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install and launch Quake Champions for free on Steam (App ID 611500). PlayBound connects directly with Steam to launch the client.",
+      },
+      {
+        platform: "windows",
+        text: "Adjust mouse raw input, Field of View (105-120 FOV recommended), and uncapped framerate settings in the in-game Video and Controls menus.",
+      },
+      {
+        platform: "linux",
+        text: "On Linux and Steam Deck, run through Proton (GE-Proton or Proton Experimental). Enable anti-cheat compatibility for online matchmaking.",
+      },
+      {
+        platform: "all",
+        text: "Complete the initial Tutorial in the Practice arena to earn your first Champion unlocks and familiarize yourself with movement mechanics.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Quake Champions free?",
+        a: "Yes. Quake Champions is completely free-to-play on Steam with full access to all casual and ranked game modes, public matchmaking, and custom games.",
+      },
+      {
+        q: "How do I unlock Champions?",
+        a: "Champions can be unlocked permanently with in-game Shards earned from leveling up, completing daily challenges, and battle pass tiers. You can also rent Champions for 24 hours with Favor or purchase the full Champions Pack.",
+      },
+      {
+        q: "What is the Holy Trinity in Quake?",
+        a: "The Holy Trinity refers to the three core weapons that define high-level Quake combat: the Rocket Launcher (projectile splash damage and vertical mobility), Lightning Gun (continuous close-range tracking beam), and Railgun (high-damage long-range hitscan rifle).",
+      },
+      {
+        q: "Does Quake Champions run on Linux and Steam Deck?",
+        a: "Yes. Quake Champions runs smoothly on Linux distributions and Steam Deck using Valve's Proton compatibility layer.",
+      },
+      {
+        q: "Can I host custom matches with friends?",
+        a: "Yes. Custom games allow you to select any arena, configure specific game modes (including Instagib, Duel, TDM, and Unholy Trinity), adjust match timers, and invite friends to private lobbies.",
+      },
+      {
+        q: "How does movement in Quake Champions work?",
+        a: "Movement relies on classic Quake physics: hold forward and jump, then alternate strafe keys and smooth mouse turns to build momentum (strafe jumping). Different Champions also feature unique movement traits such as Slash's crouch slide, Visor's uncapped speed, and Anarki's air control.",
       },
     ],
   },

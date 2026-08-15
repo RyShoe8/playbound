@@ -2404,6 +2404,63 @@ export const editions: EditionSeed[] = [
     version: "1.03",
     verificationLevel: "community_verified",
   },
+  {
+    gameSlug: "quake-champions",
+    slug: "qc-steam",
+    name: "Quake Champions (Steam Free-to-Play)",
+    shortDescription: "Official free-to-play arena FPS client with casual and competitive ranked matchmaking.",
+    description:
+      "The official Steam release of Quake Champions. Provides immediate free access to casual Deathmatch, Team Deathmatch, Instagib, Unholy Trinity, and competitive 1v1 Duel ladders, with in-game Shards to unlock all Champions.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://quake.bethesda.net",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://store.steampowered.com/app/611500/Quake_Champions/",
+      },
+    },
+    requirements: {
+      min: "Intel Core i5-750 / 8 GB RAM / Nvidia GT 730 (2 GB) / 35 GB storage",
+      recommended: "Intel Core i7-7700K / 16 GB RAM / GTX 1080 (8 GB) / NVMe SSD",
+    },
+    features: ["Multiplayer", "Competitive", "Crossplay", "Controller Support", "Leaderboards", "Custom Lobbies"],
+    tags: ["Arena Shooter", "FPS", "Free to Play", "Competitive", "Esports"],
+    aliases: ["QC Steam", "Quake Champions Free"],
+    version: "Season 24",
+    verificationLevel: "official",
+    faq: [
+      {
+        q: "What is included with the free Steam edition?",
+        a: "Full access to all casual and competitive modes, custom matches, daily challenges, and in-game earnable currency to unlock every Champion.",
+      },
+    ],
+  },
+  {
+    gameSlug: "quake-champions",
+    slug: "qc-champions-pack",
+    name: "Quake Champions (Full Roster & Custom Games)",
+    shortDescription: "All 16 Champions permanently unlocked with custom game hosting and lore scrolls.",
+    description:
+      "Unlocks the entire roster of 16 Champions instantly, granting immediate permanent access to Ranger, Visor, Nyx, Scalebearer, Anarki, Slash, Clutch, Galena, Sorlag, Doom Slayer, Keel, Strogg & Peeker, Eisen, Athena, Death Knight, and B.J. Blazkowicz, along with custom private game hosting privileges.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://quake.bethesda.net",
+    },
+    installMethod: "official_download",
+    features: ["All Champions Unlocked", "Custom Game Hosting", "Lore Scrolls", "Competitive"],
+    tags: ["Full Roster", "Champions Pack", "Arena Shooter"],
+    verificationLevel: "official",
+  },
 ];
 
 

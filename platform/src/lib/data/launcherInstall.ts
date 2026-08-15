@@ -488,7 +488,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "external",
     url: "https://store.steampowered.com/app/611500/Quake_Champions/",
-    note: "Steam or Bethesda.net.",
+    registryTitles: ["Quake Champions"],
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\quakechampions\\client\\bin\\pc\\QuakeChampions.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\common\\quakechampions\\client\\bin\\pc\\QuakeChampions.exe",
+    ],
+    exeHint: "QuakeChampions|quake",
+    note: "Free on Steam (App ID 611500). Launches through Steam client.",
   },
 
   /*

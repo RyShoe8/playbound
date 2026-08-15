@@ -20,6 +20,7 @@ import { valorantMods } from "./valorantMods";
 import { warthunderMods } from "./warthunderMods";
 import { swgMods } from "./swgMods";
 import { geminiGoldMods } from "./geminiGoldMods";
+import { quakeChampionsMods } from "./quakeChampionsMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -46,6 +47,7 @@ export const mods: ModSeed[] = [
   ...warthunderMods,
   ...swgMods,
   ...geminiGoldMods,
+  ...quakeChampionsMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
