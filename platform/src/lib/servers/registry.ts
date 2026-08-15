@@ -26,6 +26,7 @@ import {
   fetchSwtorPlayers,
   fetchMrBoomPlayers,
   fetchAllegiancePlayers,
+  fetchQuakeChampionsPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
@@ -170,6 +171,10 @@ const providers: Record<string, ServerProvider> = {
   allegiance: {
     slug: "allegiance",
     fetchServers: fetchAllegiancePlayers,
+  },
+  "quake-champions": {
+    slug: "quake-champions",
+    fetchServers: fetchQuakeChampionsPlayers,
   },
 };
 
