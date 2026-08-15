@@ -34,16 +34,32 @@ const fs = require("fs");
  */
 
 /**
- * Ceiling on a single snapshot, in megabytes.
+ * Local snapshots are deliberately unlimited.
  *
- * Snapshots are full copies, so a game that keeps gigabytes of world data would
- * quietly consume tens of gigabytes of the player's disk across a history. Past
- * this the snapshot is skipped and reported, rather than silently filling the
- * drive of someone who only wanted to play a game.
+ * They live on the player's own disk and cost PlayBound nothing, and they are
+ * what makes a bad restore recoverable — so capping them would trade away the
+ * safety guarantee to save storage that is not ours. A Luanti player with a
+ * large world still gets full local history.
  *
- * Per-game overrides live in LOCATIONS below.
+ * The limits that matter are on what gets *uploaded*; see CLOUD_POLICY.
  */
-const DEFAULT_MAX_SNAPSHOT_MB = 250;
+const DEFAULT_MAX_SNAPSHOT_MB = Infinity;
+const DEFAULT_KEEP_LOCAL = Infinity;
+
+/**
+ * What free accounts may store in the cloud.
+ *
+ * This is the half PlayBound pays for in storage and egress, so it is capped
+ * where local history is not: one snapshot per game, and a size ceiling applied
+ * by measured bytes rather than by game, because a Mindustry player with
+ * hundreds of schematics can outgrow a casual Luanti world.
+ *
+ * Raised for subscribers once that ships — hence a named policy rather than
+ * constants scattered through the sync path.
+ */
+const CLOUD_POLICY = {
+  free: { maxSnapshotMb: 250, keepPerGame: 1 },
+};
 
 /** Games whose saves sit under a per-user data directory the launcher already uses. */
 const LOCATIONS = {
@@ -78,14 +94,6 @@ const LOCATIONS = {
       const minetest = path.join(c.appData, "Minetest", "worlds");
       return fs.existsSync(luanti) ? luanti : minetest;
     },
-    /*
-     * A generated voxel world grows without bound — a long-running Luanti
-     * server directory reaches gigabytes — so this keeps a much lower ceiling
-     * and only one snapshot. Backing up a 4 GB world ten times over would cost
-     * a player 40 GB to protect a game they may have tried once.
-     */
-    maxSnapshotMb: 750,
-    keep: 1,
     note: "Whole worlds directory — each world is a folder, and they grow without limit.",
   },
 };
@@ -119,19 +127,31 @@ function supportsCloudSaves(gameSlug) {
   return Object.prototype.hasOwnProperty.call(LOCATIONS, gameSlug);
 }
 
-/** Retention policy for a game: how large a snapshot may be, and how many to keep. */
+/**
+ * Local retention for a game. Unlimited unless a game opts into a limit,
+ * because this storage belongs to the player, not to us.
+ */
 function policyFor(gameSlug) {
   const entry = LOCATIONS[gameSlug];
   return {
     maxSnapshotMb: entry?.maxSnapshotMb ?? DEFAULT_MAX_SNAPSHOT_MB,
-    /*
-     * Local history is generous because it costs the player's own disk, not
-     * PlayBound's storage, and it is what makes a bad restore recoverable.
-     * What gets uploaded is a separate, much smaller decision — see the cloud
-     * retention policy, which keeps one snapshot per game.
-     */
-    keep: entry?.keep ?? 10,
+    keep: entry?.keep ?? DEFAULT_KEEP_LOCAL,
   };
+}
+
+/**
+ * Whether a snapshot is small enough to upload on a given plan.
+ *
+ * Decided on measured bytes rather than on which game produced them: size is
+ * the thing that costs money, and no game is reliably small or reliably large.
+ */
+function cloudPolicyFor(plan = "free") {
+  return CLOUD_POLICY[plan] ?? CLOUD_POLICY.free;
+}
+
+function canUploadSnapshot(bytes, plan = "free") {
+  const { maxSnapshotMb } = cloudPolicyFor(plan);
+  return bytes <= maxSnapshotMb * 1024 * 1024;
 }
 
 function supportedSlugs() {
@@ -145,5 +165,8 @@ module.exports = {
   supportedSlugs,
   defaultContext,
   policyFor,
+  cloudPolicyFor,
+  canUploadSnapshot,
+  CLOUD_POLICY,
   DEFAULT_MAX_SNAPSHOT_MB,
 };

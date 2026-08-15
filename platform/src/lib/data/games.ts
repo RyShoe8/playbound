@@ -472,6 +472,52 @@ const facts: Game[] = [
     },
   },
   {
+    slug: "privateer-gemini-gold",
+    title: "Privateer Gemini Gold",
+    tagline: "Wing Commander's open-ended space sim, rebuilt and free.",
+    description:
+      "Privateer Gemini Gold is a faithful remake of Origin's 1993 Wing Commander: Privateer, rebuilt on the open-source Vega Strike engine. You start with a battered Tarsus and a loan to service, then make your own way through the Gemini Sector — run cargo, take bounty contracts, smuggle, or follow the artefact storyline that ties the sector's factions together.\n\nUnlike the original it runs natively at modern resolutions with 3D ships and current-OS support, and the project distributes it freely for Windows, macOS and Linux.",
+    developerSlug: "privateer-gemini-gold",
+    genres: ["Space", "Simulation", "Action", "RPG"],
+    tags: ["Space Sim", "Open World", "Trading", "Dogfighting", "Remake", "Classic"],
+    license: "Free (Vega Strike engine, GPL) — distributed by the project",
+    releaseYear: 2010,
+    sizeMB: 320,
+    status: "published",
+    platforms: ["Windows", "macOS", "Linux"],
+    features: ["Singleplayer", "Story Campaign", "Mod Support"],
+    launchMethods: ["install"],
+    steamDeck: true,
+    website: "https://privateer.sourceforge.net",
+    browserPlayable: false,
+    gameOfWeek: false,
+    hiddenGem: true,
+    art: { from: "#0b1120", to: "#f59e0b", icon: "Rocket" },
+    systemRequirements: {
+      min: "1.5 GHz CPU · 1 GB RAM · OpenGL 2.0 GPU · 1.5 GB storage",
+      recommended: "2.4 GHz Dual-Core CPU · 2 GB RAM · Dedicated GPU · 2 GB storage",
+    },
+    hardwareRequirements: {
+      min: {
+        ramMB: 1024,
+        apis: ["opengl"],
+        storageMB: 1500,
+        cpuText: "1.5 GHz CPU",
+        gpuText: "OpenGL 2.0 GPU",
+      },
+      recommended: {
+        ramMB: 2048,
+        storageMB: 2048,
+        cpuText: "2.4 GHz Dual-Core CPU",
+        gpuText: "Dedicated GPU",
+      },
+      provenance: {
+        source: "unverified",
+        enteredBy: "free-text-parser",
+      },
+    },
+  },
+  {
     slug: "shattered-pixel-dungeon",
     title: "Shattered Pixel Dungeon",
     tagline: "The roguelike that respects your time and ruins your evening.",
@@ -2380,11 +2426,18 @@ const facts: Game[] = [
     title: "Freelancer",
     tagline: "The legendary open-world space combat and trading simulation.",
     description:
-      "Freelancer puts you in the cockpit of pilot Edison Trent in the 30th-century Sirius Sector. Chart your own path across dozens of star systems: trade luxury commodities, hunt criminal syndicates for bounty cash, mine asteroid belts, upgrade starfighters, and uncover a galaxy-spanning alien conspiracy.",
+      "Freelancer puts you in the cockpit of pilot Edison Trent in the 30th-century Sirius Sector. Chart your own path across dozens of star systems: trade luxury commodities, hunt criminal syndicates for bounty cash, mine asteroid belts, upgrade starfighters, and uncover a galaxy-spanning alien conspiracy.\n\nYou need your own copy of Freelancer to use anything here. PlayBound does not distribute the game — it points at your existing install and adds the community work built on top of it, chiefly the HD Edition and the FLUF framework that keep a 2003 game running well on modern Windows.",
     developerSlug: "digital-anvil",
     genres: ["Space", "Simulation", "Action", "RPG"],
     tags: ["Space Sim", "Open World", "Sci-Fi", "Trading", "Dogfighting", "Singleplayer", "Multiplayer", "Classic"],
-    license: "Abandonware / Community Maintained",
+    /*
+     * Not "abandonware" — that is not a legal category, and Freelancer is still
+     * Microsoft's copyright regardless of being unavailable to buy. PlayBound
+     * lists it for the community mods built on top of it, and never ships the
+     * game: installs copy a player's own legal copy, the same way the
+     * EverQuest Titanium editions work.
+     */
+    license: "Commercial (owner-supplied) · community mods",
     releaseYear: 2003,
     sizeMB: 1200,
     status: "published",

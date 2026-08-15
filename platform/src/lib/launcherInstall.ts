@@ -8,6 +8,15 @@ export const LAUNCHER_INSTALL_KINDS = [
   "direct-exe",
   "openttd-zip",
   "itch-zip",
+  /**
+   * Owner-supplied: the launcher asks the player to locate a copy they already
+   * own, copies it into the library, then overlays our content on top. Used
+   * where the base game is commercial and not ours to distribute — the
+   * EverQuest Titanium editions and Freelancer. The launcher has handled this
+   * since installLocateThenZip; it was simply missing from this union, so the
+   * game-level recipe could not express what editions already did.
+   */
+  "locate-then-zip",
   "external",
 ] as const;
 
@@ -46,6 +55,14 @@ export type LauncherInstall = {
   addons?: LauncherInstallAddon[];
   overlayUrl?: string | null;
   overlayFileName?: string | null;
+  /**
+   * Prompt for an existing install before doing anything else.
+   *
+   * Pairs with "locate-then-zip" for games PlayBound must not distribute: the
+   * player points at their own copy, which is then copied into the library and
+   * overlaid. Already honoured by the launcher and by edition install configs.
+   */
+  requiresBaseDir?: boolean;
 };
 
 /** Shape returned to the Electron launcher (catalog row). */
@@ -74,6 +91,8 @@ export type LauncherCatalogEntry = {
   addons?: LauncherInstallAddon[];
   overlayUrl?: string;
   overlayFileName?: string;
+  /** Ask the player to locate a copy they own before installing anything. */
+  requiresBaseDir?: boolean;
 };
 
 export function absoluteMediaUrl(pathOrUrl: string | null | undefined, origin: string): string | null {
@@ -217,5 +236,12 @@ export function toLauncherCatalogEntry(input: {
   if (li.addons?.length) entry.addons = li.addons;
   if (li.overlayUrl) entry.overlayUrl = li.overlayUrl;
   if (li.overlayFileName) entry.overlayFileName = li.overlayFileName;
+  /*
+   * Without this the launcher never learns it must ask for an existing copy,
+   * so an owner-supplied game would fall through to a normal install and fail
+   * with nothing to download. LauncherCatalogEntry already declared the field;
+   * only the mapping was missing.
+   */
+  if (li.requiresBaseDir) entry.requiresBaseDir = true;
   return entry;
 }

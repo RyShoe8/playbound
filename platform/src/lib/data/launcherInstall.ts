@@ -259,23 +259,17 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   freelancer: {
     /*
-     * DISABLED — needs a decision before this game ships.
+     * Owner-supplied, exactly like the EverQuest Titanium editions.
      *
-     * Two separate problems. The archive.org URL now 404s, so it does not work
-     * regardless. More importantly it was serving a rip of the 2003 Microsoft
-     * retail CD: Freelancer is commercial software that was never released as
-     * freeware, so distributing it is copyright infringement and sits directly
-     * against PlayBound only ever listing genuinely free games.
-     *
-     * Deliberately not repointed at another mirror — a working mirror would
-     * make the licensing problem worse, not better. The legitimate options are
-     * to list Freelancer as owner-supplied (locate an existing install, the
-     * way the EverQuest editions handle their client) or to drop it.
+     * Freelancer is still Microsoft's copyright and was never released as
+     * freeware, so PlayBound never ships it — this used to point at a rip of
+     * the 2003 retail CD on archive.org, which was both dead and not ours to
+     * distribute. requiresBaseDir makes the launcher ask the player for their
+     * own install first; everything PlayBound adds goes on top of that copy.
      */
-    enabled: false,
-    kind: "direct-zip",
-    url: "https://archive.org/download/freelancer-v1-2003-microsoft-game-studios-cd/Freelancer.zip",
-    fileName: "Freelancer.zip",
+    enabled: true,
+    kind: "locate-then-zip",
+    requiresBaseDir: true,
     exeHint: "Freelancer|FL",
     knownExePaths: [
       "%PROGRAMFILES%\\Microsoft Games\\Freelancer\\EXE\\Freelancer.exe",
@@ -283,7 +277,24 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%LOCALAPPDATA%\\Programs\\Freelancer\\EXE\\Freelancer.exe",
       "%USERPROFILE%\\Games\\Freelancer\\EXE\\Freelancer.exe",
     ],
-    note: "Community-preserved Freelancer release with modern compatibility patches from The Starport.",
+    note: "Requires your own copy of Freelancer. PlayBound never ships the game — it locates your install and applies the community patches on top.",
+  },
+  "privateer-gemini-gold": {
+    enabled: true,
+    // The project publishes its own Windows installer on SourceForge; verified
+    // 321 MB and serving 200 to the launcher's user agent.
+    kind: "direct-installer",
+    url: "https://downloads.sourceforge.net/project/privateer/Wing%20Commander%20Privateer/Privateer%20Gemini%20Gold%201.03/PrivateerGold1.03.exe",
+    fileName: "PrivateerGold1.03.exe",
+    versionLabel: "1.03",
+    exeHint: "privateer|vegastrike",
+    registryTitles: ["Privateer Gemini Gold", "Privateer"],
+    knownExePaths: [
+      "%PROGRAMFILES%\\Privateer Gemini Gold\\privateer.exe",
+      "%PROGRAMFILES(X86)%\\Privateer Gemini Gold\\privateer.exe",
+      "%LOCALAPPDATA%\\Programs\\Privateer Gemini Gold\\privateer.exe",
+    ],
+    note: "Opens the official Privateer Gemini Gold setup — finish the wizard, then Play.",
   },
   "ur-quan-masters": {
     enabled: true,
