@@ -3408,6 +3408,369 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+  "dune-legacy": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The definitive modernization of the grandfather of real-time strategy, transforming 1992's Dune II into a fluid modern RTS with multi-unit selection, HD widescreen, and online multiplayer.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Westwood's 1992 Dune II established every convention of modern real-time strategy, but its original one-unit-at-a-time control scheme was painfully dated. Dune Legacy preserves the full charm and planetary warfare of Arrakis while introducing modern right-click drag-box selection, zoomable high-res graphics, and instant modern OS play.",
+    longDescription:
+      "Dune Legacy is an open-source modernization of Westwood Studios' genre-defining 1992 masterpiece Dune II: Battle for Arrakis. Frank Herbert's desert planet of Arrakis becomes the ultimate battleground where three Great Houses — the noble Atreides, the brutal Harkonnen, and the insidious Ordos — vie for control of the universe's most precious resource: the spice Melange.\n\nWhile the original DOS release forced players to click individual units and select 'Move' commands from sidebars, Dune Legacy overhauls the game with contemporary RTS controls: drag-box multi-unit selection, right-click move and attack orders, build queues, waypoint rallying, and minimap navigation.\n\nThe project features high-definition texture scaling, widescreen display support, smooth scrolling, a built-in map editor, and cross-platform online multiplayer with custom game lobbies.",
+    bestFor: [
+      "Classic RTS enthusiasts who want to experience the origin of Command & Conquer and StarCraft",
+      "Dune and sci-fi fans seeking authentic Arrakis planetary conquest with Sandworms",
+      "Retro gamers who love retro pixel art paired with contemporary quality-of-life controls",
+    ],
+    notFor: [
+      "Players looking for 3D cinematic RTS engines like modern StarCraft II or Dawn of War",
+      "Gamers who dislike retro base building and resource harvesting mechanics",
+    ],
+    comparableTo: [
+      "Command & Conquer: Remastered",
+      "OpenRA",
+      "StarCraft",
+      "Dune: Spice Wars",
+      "Warcraft II",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and install Dune Legacy for free through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Select your allegiance: House Atreides (Sonic Tanks), House Harkonnen (Devastators), or House Ordos (Deviators).",
+      },
+      {
+        platform: "all",
+        text: "Harvest spice, lay concrete foundations, build outposts, and watch out for massive Sandworms emerging from the dunes.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Dune Legacy free to play?",
+        a: "Yes! Dune Legacy is completely free and open source under the GPL-2.0 license.",
+      },
+      {
+        q: "What improvements does Dune Legacy add over original Dune II?",
+        a: "It adds multi-unit selection, right-click orders, build queues, high-resolution widescreen graphics, smooth zoom, hotkeys, AI skirmish mode, map editor, and online multiplayer.",
+      },
+      {
+        q: "How do Sandworms work in the game?",
+        a: "Sandworms roam the open desert terrain, attracted by the vibrations of moving vehicles and spice harvesters. Unwary units can be swallowed whole in a single strike!",
+      },
+      {
+        q: "Are the unique house superweapons included?",
+        a: "Yes! Atreides retain their Sonic Tanks and Fremen allies, Harkonnen command heavy Devastator tanks and Death Hand missiles, and Ordos field fast Raider trikes and Deviator gas tanks.",
+      },
+      {
+        q: "Does Dune Legacy support multiplayer?",
+        a: "Yes! You can host or join LAN and internet multiplayer matches with custom skirmish maps and selectable starting spice reserves.",
+      },
+      {
+        q: "Does Dune Legacy run on Steam Deck?",
+        a: "Yes! Dune Legacy runs flawlessly on Steam Deck and modern Windows 11 with responsive touchscreen and trackpad controls.",
+      },
+    ],
+  },
+  mrboom: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A joyful, chaotic 8-player open-source tribute to classic Bomberman, packed with classic powerups, bouncy retro tunes, and seamless couch multiplayer.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Mr. Boom is pure party gaming perfection: plug in up to eight gamepads on one PC, add intelligent AI bots, and enjoy instantaneous explosive mayhem without loading screens or microtransactions.",
+    longDescription:
+      "Mr. Boom is an open-source 8-player Bomberman clone originally created in 1999 and modernized for modern platforms. Players drop timed explosives, blast soft blocks, collect game-changing powerups, and attempt to corner opponents in fast, frantic grid-based arenas.\n\nFeaturing full 8-player local controller support, clever AI bots that scale in difficulty, kickable bombs, monster mounts, kangaroo jumps, and high-energy tracker music soundtracks, Mr. Boom is a staple for living room game nights and casual gaming tournaments.\n\nWith both standalone client and Steam releases, full cross-platform compatibility, and netplay support, Mr. Boom delivers timeless arcade party fun.",
+    bestFor: [
+      "Living room party game nights with 2 to 8 players on the same couch",
+      "Fans of classic Super Bomberman, Saturn Bomberman, and arcade maze battles",
+      "Steam Deck party gaming with multiple connected Bluetooth gamepads",
+      "Quick, lighthearted competition suitable for players of all ages",
+    ],
+    notFor: [
+      "Players seeking complex RPG leveling or lengthy story campaigns",
+      "Gamers looking for slow-paced simulation games",
+    ],
+    comparableTo: [
+      "Super Bomberman",
+      "Bomberman '94",
+      "Duck Game",
+      "TowerFall",
+      "Move or Die",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install Mr. Boom for free via Steam or the standalone release directly through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Connect your controllers or configure keyboard layout.",
+      },
+      {
+        platform: "all",
+        text: "Select player and AI bot counts, choose your battle arena, and start blasting!",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Mr. Boom completely free?",
+        a: "Yes! Mr. Boom is 100% free and open source under the GPL-3.0 license.",
+      },
+      {
+        q: "How many players can play simultaneously?",
+        a: "Up to 8 players can play together locally on a single machine or over online netplay.",
+      },
+      {
+        q: "Can I play solo against AI bots?",
+        a: "Yes! You can fill any empty player slots with intelligent AI bots for solo practice.",
+      },
+      {
+        q: "What powerups are in the game?",
+        a: "Powerups include extra bomb capacity, larger explosion radius, speed skates, bomb punching/kicking gloves, monster mounts, and trigger remotes.",
+      },
+      {
+        q: "Does Mr. Boom support modern game controllers?",
+        a: "Yes! Full plug-and-play support for Xbox, PlayStation, Switch Pro, and generic USB controllers.",
+      },
+      {
+        q: "Does Mr. Boom work on Steam Deck?",
+        a: "Yes! It is lightweight, battery-friendly, and perfect for portable multiplayer on Steam Deck.",
+      },
+    ],
+  },
+  openmohaa: {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The definitive modernization of Steven Spielberg's cinematic WWII classic, restoring Medal of Honor: Allied Assault with 64-bit architecture, widescreen 4K visuals, and flawless modern OS compatibility.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Medal of Honor: Allied Assault (designed by the original team that later created Call of Duty) defined the cinematic military shooter with its legendary Omaha Beach D-Day landing. OpenMOHAA modernizes this historic masterpiece on modern 64-bit multi-core PCs with raw mouse input, 144Hz+ refresh rates, and native widescreen rendering.",
+    longDescription:
+      "OpenMOHAA is a modern open-source re-implementation of 2002's legendary WWII shooter Medal of Honor: Allied Assault and its official expansion packs (Spearhead and Breakthrough). Built upon id Tech 3, OpenMOHAA brings 20+ years of engine advancements to Lt. Mike Powell's historic European theater missions.\n\nFrom the harrowing chaos of Omaha Beach on D-Day to covert infiltration missions behind German lines in Norway and France, Allied Assault remains one of the most atmospheric historical military campaigns ever made. OpenMOHAA resolves original CD-ROM SecuROM DRM lockouts, eliminates FOV stretching on 16:9 and 21:9 monitors, introduces raw mouse input for pinpoint sniper aim, and modernizes audio rendering for contemporary spatial sound.\n\nWith active support for classic multiplayer maps (Stalingrad, V2 Rocket Facility) and community mods, OpenMOHAA is the ultimate way to play this timeless shooter today.",
+    bestFor: [
+      "Fans of classic WWII military shooters like original Call of Duty, Return to Castle Wolfenstein, and Brothers in Arms",
+      "Gamers who want to experience the iconic D-Day Omaha Beach invasion in uncapped framerates",
+      "Retro FPS enthusiasts looking for authentic weapon handling without modern regenerating health",
+    ],
+    notFor: [
+      "Players seeking modern sprint-slide-cancel movement or hero abilities",
+      "Gamers who dislike classic health pack and medkit resource management",
+    ],
+    comparableTo: [
+      "Call of Duty (2003)",
+      "Return to Castle Wolfenstein",
+      "Battlefield 1942",
+      "Brothers in Arms: Road to Hill 30",
+      "Sniper Elite",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Locate your Medal of Honor: Allied Assault game directory (from original CD media or digital copy).",
+      },
+      {
+        platform: "windows",
+        text: "Install OpenMOHAA via PlayBound, which automatically links your game assets and installs 64-bit modern engine binaries.",
+      },
+      {
+        platform: "all",
+        text: "Launch OpenMOHAA, configure your 4K widescreen resolution and controls, and step onto the transport craft.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is OpenMOHAA free?",
+        a: "Yes! The OpenMOHAA engine is 100% free open-source software under GPL-2.0. You only need the original game asset files (Main/pak*.pk3) to play.",
+      },
+      {
+        q: "Does OpenMOHAA include the Omaha Beach mission?",
+        a: "Yes! The entire legendary single-player campaign, including Mission 3: Operation Overlord (Omaha Beach), is fully playable.",
+      },
+      {
+        q: "Does it support the Spearhead and Breakthrough expansions?",
+        a: "Yes! OpenMOHAA includes full compatibility with both official expansion packs and their unique weapons (British Lee-Enfield, Italian Carcano).",
+      },
+      {
+        q: "Does OpenMOHAA fix widescreen stretching?",
+        a: "Yes! OpenMOHAA provides native horizontal Field of View (FOV) scaling for 16:9, 16:10, 21:9 ultrawide, and multi-monitor setups without stretching the HUD.",
+      },
+      {
+        q: "Does multiplayer work?",
+        a: "Yes! OpenMOHAA supports LAN play and direct IP connection to community multiplayer servers for classic Free-for-All, Team Deathmatch, and Objective modes.",
+      },
+      {
+        q: "Does it run on Steam Deck and Linux?",
+        a: "Yes! Native Linux and Steam Deck builds are supported with full gamepad mapping profiles.",
+      },
+    ],
+  },
+  "metal-slug-remake": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "The peerless masterclass of 2D arcade pixel art and explosive run-and-gun carnage, celebrating SNK's iconic military satire with buttery-smooth gameplay.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Metal Slug represents the absolute zenith of hand-drawn 2D pixel animation: every explosion, mechanical transformation, enemy surrender, and death animation was painstakingly illustrated with staggering detail and irreverent humor.",
+    longDescription:
+      "Metal Slug: Community Remake delivers the definitive 2D side-scrolling run-and-gun arcade experience originally created by Nazca Corporation and SNK for the Neo Geo. Players control Peregrine Falcon Strike Force veterans Marco Rossi and Tarma Roving as they wage all-out guerrilla war against General Morden's rebel army.\n\nArmed with high-caliber sidearms and legendary weapon drops — Heavy Machine Guns ('HEAVY MACHINE GUN!'), Rocket Launchers, Flamethrowers, and Shotguns — players blast through dense jungle fortresses, snowy mountain passes, and sprawling military complexes.\n\nPilot the iconic SV-001 'Metal Slug' super vehicle tank with vulcan cannons and cannon shells, rescue imprisoned bearded POWs for bonus rewards, and team up with a friend for classic two-player simultaneous co-op action.",
+    bestFor: [
+      "Arcade purists and retro gamers who love Contra, Gunstar Heroes, and Cuphead",
+      "Fans of world-class 2D pixel art and detailed hand-drawn sprite animation",
+      "Two-player couch co-op pairs wanting instant pickup-and-play action",
+    ],
+    notFor: [
+      "Players seeking complex 3D environments or modern narrative RPG progression",
+      "Gamers easily frustrated by classic arcade difficulty and bullet-dodging reflexes",
+    ],
+    comparableTo: [
+      "Contra",
+      "Cuphead",
+      "Gunstar Heroes",
+      "Broforce",
+      "Huntdown",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and extract Metal Slug: Community Remake in one click via PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Connect one or two gamepads and map your Fire, Jump, and Grenade buttons in the input menu.",
+      },
+      {
+        platform: "all",
+        text: "Press Start to drop into Mission 1: Rolling Bubbles.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is this remake free to play?",
+        a: "Yes! This standalone community project is completely free to download and play.",
+      },
+      {
+        q: "Does it support two-player simultaneous co-op?",
+        a: "Yes! Two players can play together on the same screen using two gamepads or keyboard + gamepad.",
+      },
+      {
+        q: "Can I enter and drive the Metal Slug tank?",
+        a: "Yes! Jump into the SV-001 tank to gain high-armor defense, dual twin-barrel vulcan cannons, and explosive cannon mortar rounds.",
+      },
+      {
+        q: "Are the classic voice lines and sound effects included?",
+        a: "Yes! Features all original iconic voice announcements ('Rocket Lawnchair!', 'Thank you!'), military radio cues, and arcade soundtracks.",
+      },
+      {
+        q: "Does it support 60 FPS and modern controllers?",
+        a: "Yes! Fully uncapped smooth 60 FPS animation with native XInput controller support for Xbox, PlayStation, and Switch gamepads.",
+      },
+      {
+        q: "Does it run on Steam Deck?",
+        a: "Yes! Perfect for portable arcade action on Steam Deck with zero setup required.",
+      },
+    ],
+  },
+  "microsoft-allegiance": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "A legendary space combat simulation and real-time strategy hybrid, uniting first-person starfighter dogfights with top-down fleet command in massive online team warfare.",
+      lastVerified: "2026-08-15",
+    },
+    whyWePickedIt:
+      "Microsoft Allegiance is one of the most innovative and forward-thinking multiplayer games ever created. Built by Microsoft Research in 2000 and open-sourced to the community in 2004, it seamlessly bridges the gap between first-person space flight simulators and real-time strategy commander mechanics.",
+    longDescription:
+      "Microsoft Allegiance (FreeAllegiance) is a groundbreaking multiplayer space combat simulation and team real-time strategy hybrid set during the 22nd-century colonization of the solar system.\n\nIn every match, two or more teams compete across interconnected space sectors. One player on each team takes the Commander seat in top-down RTS view: managing team funds, placing orbital stations, ordering automated helium-3 miners, researching tech trees, and issuing tactical waypoint orders. Simultaneously, all other teammates fly in first-person 3D space as pilots: flying stealth scout ships, interceptor dogfighters, heavy bombers, gunships, and massive capital ships.\n\nMatches require intricate coordination: scouts probe asteroid fields for enemy bases, stealth bombers coordinate warp-gate ambushes on enemy refineries, and capital ships lead fleet sieges with live gunner turrets operated by fellow players.\n\nPreserved and actively played on Steam and standalone servers by the FreeAllegiance community, Allegiance represents a unique multiplayer triumph.",
+    bestFor: [
+      "Flight simulation and space dogfight enthusiasts looking for high-skill Newtonian physics",
+      "RTS fans who love commanding actual human pilots in coordinated fleet battles",
+      "Team-oriented gamers who enjoy communication, tactical scouting, and role specialization",
+      "Sci-Fi gamers who loved Freespace 2, Wing Commander, and Homeworld",
+    ],
+    notFor: [
+      "Casual solo players looking for brainless run-and-gun action without team communication",
+      "Players unwilling to learn Newtonian 6DOF flight physics and energy management",
+    ],
+    comparableTo: [
+      "Natural Selection 2",
+      "Freespace 2",
+      "Homeworld",
+      "Star Wars: Squadrons",
+      "Empires Mod",
+      "Savage: The Battle for Newerth",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install FreeAllegiance for free via Steam or the official community installer through PlayBound.",
+      },
+      {
+        platform: "all",
+        text: "Complete the Cadet Flight Training academy missions to learn 6DOF flight, missile locking, and energy management.",
+      },
+      {
+        platform: "all",
+        text: "Join an active community server, pick your faction, and follow your Commander's flight orders.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Microsoft Allegiance completely free?",
+        a: "Yes! Microsoft Research released the entire source code and game assets under a free shared-source license in 2004. FreeAllegiance is 100% free.",
+      },
+      {
+        q: "How does the Commander / Pilot hybrid gameplay work?",
+        a: "The Commander manages bases, research, and economy in top-down RTS mode, while teammates fly individual starfighters in 3D first-person space combat carrying out strategic objectives.",
+      },
+      {
+        q: "What types of ships can pilots fly?",
+        a: "Pilots can fly Scouts, Interceptors, Fighters, Stealth Bombers, Gunships, Troop Transports, and multi-crew Capital Ships with player-manned turrets.",
+      },
+      {
+        q: "Can multiple players crew the same capital ship?",
+        a: "Yes! Large cruisers and gunships have dedicated pilot, bombardier, and automated turret gunner seats that teammates can man together.",
+      },
+      {
+        q: "Does Allegiance support flight sticks and joysticks?",
+        a: "Yes! Allegiance features full analog support for flight joysticks, HOTAS throttles, rudder pedals, and precision mouse flight.",
+      },
+      {
+        q: "Are active multiplayer matches still played?",
+        a: "Yes! The FreeAllegiance community hosts regular community match nights, squad wars, and rookie training academies on community servers.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

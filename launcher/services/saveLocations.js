@@ -183,6 +183,14 @@ const LOCATIONS = {
     verified: "documented — Doom source port saves directory",
     resolve: (c) => path.join(c.documents, "My Games", "Doom", "saves"),
   },
+  "dune-legacy": {
+    verified: "documented — Dune Legacy saves in appData",
+    resolve: (c) => path.join(c.appData, "dunelegacy", "save"),
+  },
+  openmohaa: {
+    verified: "documented — OpenMOHAA save directory in Documents",
+    resolve: (c) => path.join(c.documents, "My Games", "OpenMOHAA", "save"),
+  },
 };
 
 /**
@@ -207,6 +215,10 @@ const NO_LOCAL_SAVES = {
   "world-of-sea-battle": "Ships, gold, captain progression, and guild port assets are stored server-side on Neptune Games MMO servers; local data is client graphics configs.",
   "old-school-runescape": "Character stats, bank items, quests, and Grand Exchange offers are stored server-side on Jagex servers; local data is RuneLite plugin settings and screenshots.",
   swtor: "Character progression, inventory, stronghold decorations, and cartel unlocks are stored server-side on EA/BioWare servers; local data is UI profiles and keybind XMLs.",
+  mrboom: "Local and network party arcade game; no persistent story save files required.",
+  "metal-slug-remake": "Arcade run-and-gun action saves high scores in local INI config; no persistent story save files required.",
+  "microsoft-allegiance": "Multiplayer space combat and RTS stats are stored server-side on community servers; local data is pilot profiles and keybind configurations.",
+  allegiance: "Multiplayer space combat and RTS stats are stored server-side on community servers; local data is pilot profiles and keybind configurations.",
   "space-station-14": "Character data and game rounds are stored server-side by each station.",
   "space-station-14-multiplayer-disaster-simulator": "Character data and game rounds are stored server-side by each station.",
   everquest: "Character data is stored server-side by Daybreak or the emulator.",
