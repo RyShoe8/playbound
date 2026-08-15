@@ -16,15 +16,33 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Seed the game catalog (production Mongo)
+### Updating the game catalog (production Mongo)
 
-`npm run build` runs `seed:games` after Next.js builds. On Vercel, the first deploy with an empty Mongo catalog upserts games from `src/lib/data/games.ts`. Later builds skip seeding once any catalog docs exist (so Admin CMS edits are not overwritten).
-
-To force a manual seed against an empty DB:
+Catalog changes go through `POST /api/admin/games/sync`, which takes an explicit
+list of slugs and writes those games from `src/lib/data/games.ts` (plus the
+editorial merged into them) into Mongo, then revalidates the `catalog` tag.
 
 ```bash
-npx vercel env run -e production -- npm run seed:games
+curl -X POST https://playbound.club/api/admin/games/sync \
+  -H 'content-type: application/json' \
+  -d '{"slugs":["space-station-14","marathon-2"]}'
 ```
+
+Two things to know before using it:
+
+- **Naming a slug overwrites that game.** The route `$set`s the whole payload,
+  so seed wins over any Admin CMS edits for the games you list. Check whether a
+  game has been hand-edited before syncing it.
+- **There is no bulk mode, deliberately.** A request without `slugs` is refused.
+  That is what stops an unrelated deploy from flattening entries that are only
+  maintained in the CMS, HoloCure being the case that prompted it.
+
+Builds do not seed. `npm run build` is `next build` plus the auth-URL check, and
+nothing writes to the catalog during a deploy.
+
+`npm run seed:games` still exists for bootstrapping an **empty** database — it
+counts existing documents first and exits if any are present, so it cannot be
+used to update a live catalog.
 
 ### Admin media (covers / screenshots)
 
