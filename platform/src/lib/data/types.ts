@@ -34,7 +34,8 @@ export type Genre =
   | "Card Game"
   | "Idle"
   | "Horror"
-  | "MOBA";
+  | "MOBA"
+  | "Party Game";
 
 export interface GameArt {
   /** CSS color stops for the generated cover gradient (fallback) */

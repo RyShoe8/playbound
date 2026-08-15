@@ -49,6 +49,12 @@ export const GENRES = [
   "Idle",
   "Horror",
   "MOBA",
+  /*
+   * Party Game covers the browser and living-room titles that Social Deduction
+   * and Arcade both described badly — GameBuddies and PixReveal are the cases
+   * that prompted it.
+   */
+  "Party Game",
 ] as const;
 
 export const LAUNCH_METHODS = ["browser", "install", "server"] as const;
@@ -87,6 +93,12 @@ export const FEATURES = [
   "Multiplayer",
   "Singleplayer",
   "Co-op",
+  /*
+   * Couch Co-Op is the umbrella for playing together on one machine. It sits
+   * above Split-Screen Co-op and Hotseat, which are two specific ways of doing
+   * it — a game sharing one screen without splitting it had no honest option.
+   */
+  "Couch Co-Op",
   "Split-Screen Co-op",
   "Hotseat",
   "LAN Support",
