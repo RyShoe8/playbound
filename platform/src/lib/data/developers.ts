@@ -1056,6 +1056,17 @@ export const developers: Developer[] = [
     website: "https://www.freeallegiance.org/",
     artHue: 220,
   },
+  {
+    slug: "konami-community",
+    name: "Gradius Community & Fan Remakes",
+    tagline: "Preserving and remaking the landmark arcade shoot 'em up franchise.",
+    about:
+      "A collective of independent retro developers and shoot 'em up enthusiasts dedicated to recreating, modernizing, and celebrating Konami's iconic Gradius and Nemesis side-scrolling shooter legacy on PC.",
+    founded: 1985,
+    location: "Worldwide",
+    website: "https://www.konami.com",
+    artHue: 210,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
