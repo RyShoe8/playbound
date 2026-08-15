@@ -464,7 +464,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "external",
     url: "https://store.steampowered.com/app/570/Dota_2/",
-    note: "Free on Steam.",
+    registryTitles: ["Dota 2"],
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\dota 2 beta\\game\\bin\\win64\\dota2.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\common\\dota 2 beta\\game\\bin\\win64\\dota2.exe",
+    ],
+    exeHint: "dota2|dota",
+    note: "Free on Steam (App ID 570). Launches through Steam client.",
   },
   "league-of-legends": {
     enabled: true,

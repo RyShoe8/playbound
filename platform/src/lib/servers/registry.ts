@@ -27,6 +27,7 @@ import {
   fetchMrBoomPlayers,
   fetchAllegiancePlayers,
   fetchQuakeChampionsPlayers,
+  fetchDota2Players,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
@@ -180,6 +181,10 @@ const providers: Record<string, ServerProvider> = {
   "league-of-legends": {
     slug: "league-of-legends",
     fetchServers: fetchLeagueOfLegendsServers,
+  },
+  "dota-2": {
+    slug: "dota-2",
+    fetchServers: fetchDota2Players,
   },
 };
 
