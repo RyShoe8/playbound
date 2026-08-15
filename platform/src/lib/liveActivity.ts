@@ -27,10 +27,18 @@ const EXTERNAL_CONCURRENT_PROVIDERS: Record<string, () => Promise<number>> = {
 
 const CACHE_SECONDS = 900;
 const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
-/** Cap per-game master-server polls so cold catalog stats finish under launcher/API budgets. */
+/**
+ * Cap per-game master-server polls so cold catalog stats finish under
+ * launcher/API budgets.
+ *
+ * EverQuest used to get 12s here because its login-server polls are slow. A
+ * fan-out finishes with its slowest member, so that one exception set the floor
+ * for the whole catalog aggregate: every fifteen minutes, when the cache
+ * expired, whoever loaded the homepage first waited up to twelve seconds for a
+ * number that is the sum of forty games. One game contributing zero on a slow
+ * poll is a rounding error in that sum. A twelve-second homepage is not.
+ */
 const MULTIPLAYER_FANOUT_MS = 4500;
-/** EverQuest login-server polls need longer than the shared fan-out budget. */
-const EVERQUEST_FANOUT_MS = 12000;
 
 export type CatalogPopularGame = {
   slug: string;
@@ -392,14 +400,11 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
   const [settled, platformPlayers, platformByGame, editionCountBySlug, externalEntries] = await Promise.all([
     Promise.allSettled(
       multiplayer.map((g) =>
-        withTimeout(
-          multiplayerForGame(g.slug),
-          g.slug === "everquest" ? EVERQUEST_FANOUT_MS : MULTIPLAYER_FANOUT_MS,
-          {
-            players: 0,
-            servers: 0,
-          }
-        )
+        // One budget for everyone; see MULTIPLAYER_FANOUT_MS for why.
+        withTimeout(multiplayerForGame(g.slug), MULTIPLAYER_FANOUT_MS, {
+          players: 0,
+          servers: 0,
+        })
       )
     ),
     countActivePlatformPlayers(),
