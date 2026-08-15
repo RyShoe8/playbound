@@ -1863,7 +1863,7 @@ export const editorial: Record<string, GameEditorial> = {
     ],
     notFor: [
       "Players looking for official built-in online multiplayer out of the box (the vanilla game is strictly single-player)",
-      "Anyone expecting native mobile (Android/iOS) support—HoloCure is strictly a Windows PC game",
+      "Anyone expecting native mobile (Android/iOS) support—HoloCure is built for Windows and Linux/Steam Deck PCs",
       "Those seeking realistic 3D AAA graphics rather than polished, vibrant 2D pixel art",
     ],
     comparableTo: [
@@ -1879,8 +1879,8 @@ export const editorial: Record<string, GameEditorial> = {
         text: "Click 'Install with PlayBound Launcher' or download the standalone archive directly from the official itch.io / Steam distribution.",
       },
       {
-        platform: "windows",
-        text: "Extract or install the game to your preferred PC directory. The game runs natively on 64-bit Windows without third-party runtimes.",
+        platform: "linux",
+        text: "On Linux and Steam Deck, PlayBound Launcher extracts HoloCure into your library and launches it seamlessly via Proton / Wine with full controller and Deck support.",
       },
       {
         platform: "all",
@@ -1893,8 +1893,8 @@ export const editorial: Record<string, GameEditorial> = {
         a: "HoloCure is 100% free with absolutely zero monetization or microtransactions. The in-game character gacha and shop upgrades use HoloCoins earned strictly through regular gameplay.",
       },
       {
-        q: "Can I play HoloCure with a controller or on Steam Deck?",
-        a: "Yes. The developers officially recommend playing with a controller (Xbox, PlayStation, 8BitDo, etc.). The game is also marked as Playable on Steam Deck and runs exceptionally well on handheld PCs.",
+        q: "Can I play HoloCure on Linux, Steam Deck, or with a controller?",
+        a: "Yes! HoloCure holds a Platinum rating on ProtonDB and runs flawlessly on Linux desktops and Steam Deck via Wine/Proton. Full gamepad support is built-in.",
       },
       {
         q: "Does HoloCure have multiplayer?",

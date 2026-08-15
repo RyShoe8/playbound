@@ -22,7 +22,7 @@ export function ActiveOffersGrid({ offers }: { offers: FreeOfferRecord[] }) {
       <EmptyHint icon={Gift}>
         <p className="font-semibold">
           {mode === "compatible" && offers.length > 0
-            ? `No active promotions compatible with ${device.type === "desktop" ? "PC" : device.type === "macos" ? "Mac" : "mobile"}`
+            ? `No active promotions compatible with ${device.type === "desktop" ? "PC" : device.type === "macos" ? "Mac" : device.type === "linux" ? "Linux" : "mobile"}`
             : "No active promotions right now"}
         </p>
         <p className="text-xs">
