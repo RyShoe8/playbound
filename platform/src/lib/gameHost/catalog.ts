@@ -23,7 +23,14 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     title: "OpenRA",
     defaultPort: 1234,
     portEnd: 1250,
-    protocol: "udp",
+    /*
+     * TCP. OpenRA's server is a TcpListener and clients connect to it over TCP;
+     * the only UDP it speaks is the LAN discovery beacon, which is meaningless
+     * on a public host. This said "udp", so the firewall opened UDP and dropped
+     * every client's TCP handshake — the server came up fine and joining always
+     * failed.
+     */
+    protocol: "tcp",
   },
   openttd: {
     slug: "openttd",

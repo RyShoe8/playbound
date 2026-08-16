@@ -106,7 +106,12 @@ function isOpenRaFamily(slug, entry) {
   if (slug === "openra") return true;
   if (entry?.repo === "OpenRA/OpenRA") return true;
   const args = entry?.connectArgs;
-  return Array.isArray(args) && args.some((a) => String(a).includes("Game.Connect"));
+  // Both spellings: Launch.Connect is OpenRA's real setting, Game.Connect is
+  // the incorrect one older catalog recipes carried.
+  return (
+    Array.isArray(args) &&
+    args.some((a) => /\b(Launch|Game)\.Connect\b/.test(String(a)))
+  );
 }
 
 module.exports = {

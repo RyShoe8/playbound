@@ -156,30 +156,23 @@ chown -R playbound:playbound "$GAMES_DIR"
 echo "==> firewall"
 ufw allow OpenSSH || true
 ufw allow 8741/tcp comment "playbound-game-host" || true
-# Game listen ranges (must also be open in the Contabo panel if they use one).
-ufw allow 1234:1250/udp comment "openra" || true
-ufw allow 3979:3999/tcp comment "openttd" || true
-ufw allow 3979:3999/udp comment "openttd" || true
-ufw allow 30000:30020/udp comment "luanti" || true
-ufw allow 6567:6587/tcp comment "mindustry" || true
-ufw allow 6567:6587/udp comment "mindustry" || true
-ufw allow 46631:46650/tcp comment "hedgewars" || true
-ufw allow 46631:46650/udp comment "hedgewars" || true
-ufw allow 2100:2120/tcp comment "warzone" || true
-ufw allow 2100:2120/udp comment "warzone" || true
-ufw allow 5556:5576/tcp comment "freeciv" || true
-ufw allow 5154:5174/tcp comment "bzflag" || true
-ufw allow 5154:5174/udp comment "bzflag" || true
-ufw allow 2759:2779/tcp comment "stk" || true
-ufw allow 26000:26020/udp comment "xonotic" || true
-ufw allow 27960:27980/udp comment "openarena" || true
-ufw allow 5500:5520/tcp comment "keeperfx" || true
-ufw allow 5500:5520/udp comment "keeperfx" || true
-ufw allow 4226:4267/udp comment "alephone-marathon" || true
-ufw allow 3303:3323/tcp comment "triplea" || true
-ufw allow 15000:15020/tcp comment "wesnoth" || true
-ufw allow 10666:10686/udp comment "freedoom" || true
-ufw allow 20595:20615/udp comment "0ad" || true
+
+# Game listen ranges come from recipes.js so the firewall and the host agent
+# cannot disagree. That drift was not hypothetical: OpenRA was listed as UDP
+# while its server speaks TCP, so the dedicated process came up healthy and
+# every client's handshake was dropped by the firewall.
+# (Ranges must also be open in the Contabo panel if it has its own firewall.)
+while read -r range proto slug; do
+  ufw allow "${range}/${proto}" comment "${slug}" || true
+done < <(node --input-type=module -e '
+  const { pathToFileURL } = await import("node:url");
+  const { recipes } = await import(pathToFileURL(process.argv[1]).href);
+  for (const [slug, r] of Object.entries(recipes)) {
+    const protos = r.protocol === "both" ? ["tcp", "udp"] : [r.protocol];
+    for (const proto of protos) console.log(r.portStart + ":" + r.portEnd + " " + proto + " " + slug);
+  }
+' "$AGENT_DIR/recipes.js")
+
 ufw allow 3478/udp comment "coturn-stun" || true
 ufw allow 3478/tcp comment "coturn-turn" || true
 ufw allow 49152:50152/udp comment "coturn-relay" || true
