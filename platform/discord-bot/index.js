@@ -114,9 +114,11 @@ function playboundRecord(channel, invite, previous) {
 }
 
 async function ensureCategory(guild, name) {
-  const existing = guild.channels.cache.find(
-    (c) => c.type === ChannelType.GuildCategory && c.name === name
-  );
+  const match = (c) => c && c.type === ChannelType.GuildCategory && c.name === name;
+  const cached = guild.channels.cache.find(match);
+  if (cached) return cached;
+  const fetched = await guild.channels.fetch();
+  const existing = fetched.find(match);
   if (existing) return existing;
   return guild.channels.create({ name, type: ChannelType.GuildCategory });
 }
@@ -720,27 +722,26 @@ const server = http.createServer(async (req, res) => {
   // ── Phase 4: Temporary party voice channels ──────────────────────────
   if (req.method === "POST" && req.url === "/parties/voice") {
     if (!requireSecret(req, res)) return;
+    if (!client.isReady()) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Discord bot not ready" }));
+      return;
+    }
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
       const { partyId, gameSlug } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
-      const game = gameSlug
-        ? await games.findOne({ slug: gameSlug, published: true })
-        : null;
-      const title = game?.title || gameSlug || "Party";
-      const safeName = String(title)
+      const title = String(gameSlug || "").trim() || "Party";
+      const safeName = title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
         .slice(0, 80);
-      const category = await guild.channels.create({
-        name: `PlayBound — ${title.slice(0, 80)}`,
-        type: ChannelType.GuildCategory,
-        reason: `PlayBound party ${partyId || ""}`,
-      });
+      const shortId = String(partyId || "").replace(/[^a-z0-9]/gi, "").slice(-6) || "voice";
+      const category = await ensureCategory(guild, "PlayBound Parties");
       const voice = await guild.channels.create({
-        name: `party-${safeName || "voice"}`.slice(0, 90),
+        name: `party-${safeName && safeName !== "party" ? safeName : shortId}`.slice(0, 90),
         type: ChannelType.GuildVoice,
         parent: category.id,
         reason: `PlayBound party voice ${partyId || ""}`,
@@ -813,15 +814,14 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { voiceChannelId, categoryId } = JSON.parse(body || "{}");
+      const { voiceChannelId } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
-      for (const id of [voiceChannelId, categoryId]) {
-        if (!id) continue;
+      if (voiceChannelId) {
         try {
-          const ch = await guild.channels.fetch(id);
+          const ch = await guild.channels.fetch(String(voiceChannelId));
           if (ch) await ch.delete("PlayBound party cleanup");
         } catch (err) {
-          console.warn("party cleanup channel", id, err?.message || err);
+          console.warn("party cleanup channel", voiceChannelId, err?.message || err);
         }
       }
       res.writeHead(200, { "content-type": "application/json" });

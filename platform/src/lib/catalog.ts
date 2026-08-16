@@ -70,9 +70,11 @@ function toGame(doc: LeanGame): Game {
     gameOfWeek: Boolean(doc.gameOfWeek ?? seed?.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem ?? seed?.hiddenGem),
     complete: Boolean(doc.complete ?? seed?.complete),
-    art: (doc.art as Game["art"]) || seed?.art,
-    coverImage: (doc.coverImage as string) || seed?.coverImage,
-    screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : seed?.screenshots,
+    art: (doc.art as Game["art"]) || seed?.art || { from: "#1e293b", to: "#64748b", icon: "Gamepad2" },
+    coverImage: (doc.coverImage as string) || usableSeedMedia(seed?.coverImage),
+    screenshots: (doc.screenshots as string[])?.length
+      ? (doc.screenshots as string[])
+      : usableSeedScreenshots(seed?.screenshots),
     videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : seed?.videos,
     systemRequirements: (doc.systemRequirements && typeof doc.systemRequirements === "object" && (doc.systemRequirements as { min?: string }).min)
       ? (doc.systemRequirements as Game["systemRequirements"])
@@ -192,13 +194,26 @@ function seedGameWithInstall(g: Game): Game {
   return attachLauncherInstall(g);
 }
 
+/** Seed local /games/... paths mostly 404; only keep remote seed media. */
+function usableSeedMedia(url?: string): string | undefined {
+  const value = String(url || "").trim();
+  if (!value || value.startsWith("/games/")) return undefined;
+  return value;
+}
+
+function usableSeedScreenshots(urls?: string[]): string[] | undefined {
+  if (!urls?.length) return undefined;
+  const kept = urls.map((u) => usableSeedMedia(u)).filter((u): u is string => Boolean(u));
+  return kept.length ? kept : undefined;
+}
+
 async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> {
   try {
     await dbConnect();
     const docs = await CatalogGame.find(filter).sort({ title: 1 }).lean();
     return docs.map((d) => toGame(d as LeanGame));
   } catch (err) {
-    console.error("[catalog] Mongo read failed, falling back to seed:", err);
+    console.error("[catalog] Mongo read failed:", err);
     return [];
   }
 }
@@ -220,9 +235,7 @@ async function readVisibleGames(includeTesting: boolean): Promise<Game[]> {
     ...mongoVisibleFilter({ includeTesting }),
     playboundSupported: { $ne: false },
   };
-  const fromDb = await fromMongo(filter);
-  if (fromDb.length > 0) return fromDb;
-  return seedGames.map(seedGameWithInstall);
+  return fromMongo(filter);
 }
 
 /**
@@ -274,28 +287,10 @@ export async function listAllGames(): Promise<
         installCount: Number((d as { installCount?: number }).installCount) || 0,
       };
     });
-    const dbSlugs = new Set(dbGames.map((g) => g.slug));
-    const testingSeeds = seedGames
-      .filter((s) => s.status === "testing" && !dbSlugs.has(s.slug))
-      .map((s) => {
-        const withInstall = seedGameWithInstall(s);
-        return {
-          ...withInstall,
-          published: false,
-          status: "testing" as const,
-          updatedAt: s.updatedAt,
-          publishedAt: null,
-          installCount: 0,
-        };
-      });
-    return [...dbGames, ...testingSeeds];
-  } catch {
-    return seedGames.map((g) => ({
-      ...seedGameWithInstall(g),
-      published: g.status === "published",
-      status: (g.status as CatalogStatus) || "draft",
-      installCount: 0,
-    }));
+    return dbGames;
+  } catch (err) {
+    console.error("[catalog] listAllGames failed:", err);
+    return [];
   }
 }
 
@@ -325,8 +320,7 @@ export async function getGame(
     console.error("[catalog] getGame failed:", err);
   }
 
-  const seed = seedGames.find((g) => g.slug === slug);
-  return seed ? seedGameWithInstall(seed) : undefined;
+  return undefined;
 }
 
 /**

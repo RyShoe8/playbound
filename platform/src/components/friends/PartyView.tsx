@@ -50,6 +50,15 @@ export function PartyView({
       linkPrompted.current = true;
       setDiscordPrompt({ open: true, inviteUrl: party.discord.inviteUrl });
     }
+    if (
+      party.voiceEnabled &&
+      !party.discord.inviteUrl &&
+      !party.discord.voiceChannelId
+    ) {
+      setVoiceError("Couldn't start Discord voice. Try Enable Voice again.");
+    } else if (party.discord.inviteUrl || party.discord.voiceChannelId) {
+      setVoiceError(null);
+    }
   }, [party]);
 
   if (!userId) return null;

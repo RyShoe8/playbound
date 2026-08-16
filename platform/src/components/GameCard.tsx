@@ -176,7 +176,7 @@ export function GameCard({ game, className }: { game: Game; className?: string }
     <Link
       href={`/games/${game.slug}`}
       className={cn(
-        "group flex h-full w-52 shrink-0 snap-start flex-col sm:w-[230px]",
+        "group flex h-full w-[250px] shrink-0 snap-start flex-col sm:w-[276px]",
         className
       )}
     >
@@ -188,8 +188,8 @@ export function GameCard({ game, className }: { game: Game; className?: string }
         </div>
       </div>
       <div className="mt-2 flex min-h-[4.75rem] flex-1 flex-col gap-0.5 px-0.5">
-        <p className="truncate text-sm font-semibold">{game.title}</p>
-        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-auto" />
+        <p className="truncate text-base font-semibold">{game.title}</p>
+        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-auto" size="md" />
       </div>
     </Link>
   );

@@ -21,7 +21,7 @@ const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: stri
 ];
 
 export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; onCreated?: () => void }) {
-  const { createParty, inviteFriends } = usePartyStore();
+  const { createParty, inviteFriends, provisionDiscord } = usePartyStore();
   const { friends } = useFriendsStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +39,6 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
     }
     setBusy(true);
     setError(null);
-    const voiceWindow =
-      wantVoice && typeof window !== "undefined"
-        ? window.open("about:blank", "playbound-party-voice")
-        : null;
     try {
       telemetry.track("party_create_clicked", { gameSlug: gameSlug || "", visibility, wantVoice });
       const party = await createParty({
@@ -58,10 +54,16 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         if (selectedFriends.size > 0) {
           await inviteFriends(party.id, [...selectedFriends]);
         }
-        followPartyVoice(party, voiceWindow);
+        if (wantVoice) {
+          const voice = await provisionDiscord(party.id);
+          if (voice.error && !voice.inviteUrl) {
+            setError("Couldn't start Discord voice. Try Enable Voice again.");
+          } else {
+            followPartyVoice(voice);
+          }
+        }
         onCreated?.();
       } else {
-        if (voiceWindow && !voiceWindow.closed) voiceWindow.close();
         setError("Failed to create party. You might already have one active.");
       }
     } finally {

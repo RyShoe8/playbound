@@ -226,7 +226,6 @@ export async function createParty(opts: {
     gameSlug: gameSlug || null,
   });
   if (gameSlug) await provisionPartyHost(doc);
-  const voice = wantVoice ? await syncPartyVoiceForMember(doc, opts.userId) : SKIP_VOICE;
   const nameById = await resolveUsernames([opts.userId]);
   return {
     party: serializeParty(
@@ -235,7 +234,7 @@ export async function createParty(opts: {
       game?.title || null
     ),
     status: 201,
-    ...voice,
+    ...SKIP_VOICE,
   };
 }
 
