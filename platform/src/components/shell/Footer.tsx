@@ -9,7 +9,6 @@ const links = [
   { href: "/gear", label: "Gear" },
   { href: "/mods", label: "Mods" },
   { href: "/servers", label: "Servers" },
-  { href: "/parties", label: "Parties" },
   { href: "/events", label: "Events" },
   { href: "/weekly", label: "Weekly" },
   { href: "/standards", label: "Our Standard" },
@@ -33,8 +32,8 @@ export function Footer() {
             Play<span className="text-primary">Bound</span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            High-quality free games, actually worth your time. Every title is tested and played
-            before it is added, and clears{" "}
+            Discover. Play. Connect. Every title is tested and played before it is added, and
+            clears{" "}
             <Link href="/standards" className="font-semibold text-foreground/80 hover:text-primary">
               the PlayBound Bar
             </Link>

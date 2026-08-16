@@ -143,7 +143,11 @@ export default async function EventDetailPage({ params }: Props) {
             <span className="rounded-md bg-red-500/15 px-2 py-0.5 text-red-400">Live now</span>
           ) : null}
           <span>
-            {event.eventType === "tournament" ? "Tournament" : "Game Night"}
+            {event.eventType === "tournament"
+              ? "Tournament"
+              : event.eventType === "party"
+                ? "Party"
+                : "Game Night"}
           </span>
           {event.hostType === "playbound" ? (
             <span className="rounded-md bg-primary/15 px-2 py-0.5 text-primary">

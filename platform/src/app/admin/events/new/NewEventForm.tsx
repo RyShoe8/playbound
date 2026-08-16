@@ -80,6 +80,7 @@ export function NewEventForm({
         >
           <option value="game_night">Game Night</option>
           <option value="tournament">Tournament</option>
+          <option value="party">Party</option>
         </PremiumSelect>
       </label>
       <label className="block space-y-1 text-sm">

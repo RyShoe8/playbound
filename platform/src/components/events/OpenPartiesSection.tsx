@@ -1,23 +1,13 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { PartyPopper, Users } from "lucide-react";
-import { pageMetadata } from "@/lib/seo";
-import { listOpenPublicParties } from "@/lib/playTogether/party";
+import { Users } from "lucide-react";
 import { JoinPartyButton } from "@/components/friends/JoinPartyButton";
-import type { PartyPayload } from "@/lib/playTogether/types";
-
-export const metadata: Metadata = pageMetadata({
-  title: "Open Parties — PlayBound",
-  description: "Public parties waiting for players, grouped by game. Join a lobby or drop into a session with space.",
-  path: "/parties",
-});
-
-export const dynamic = "force-dynamic";
+import { partyDisplayName, type PartyPayload } from "@/lib/playTogether/types";
 
 function groupByGame(parties: PartyPayload[]): { slug: string; title: string; parties: PartyPayload[] }[] {
   const map = new Map<string, { slug: string; title: string; parties: PartyPayload[] }>();
   for (const party of parties) {
     const slug = party.gameSlug;
+    if (!slug) continue;
     const existing = map.get(slug);
     if (existing) {
       existing.parties.push(party);
@@ -32,54 +22,43 @@ function groupByGame(parties: PartyPayload[]): { slug: string; title: string; pa
   return [...map.values()].sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export default async function PartiesPage() {
-  const parties = await listOpenPublicParties(100);
+export function OpenPartiesSection({ parties }: { parties: PartyPayload[] }) {
   const groups = groupByGame(parties);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="space-y-2">
-        <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
-          <PartyPopper className="size-3.5" /> Open parties
-        </p>
-        <h1 className="text-3xl font-extrabold tracking-tight">Join a party</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-          Public lobbies waiting for players, plus in-progress games with space. Create your own from{" "}
+    <section id="parties" className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 className="text-lg font-bold">Open Parties</h2>
+        <p className="text-sm text-muted-foreground">
+          Create one from{" "}
           <Link href="/friends" className="font-semibold text-primary hover:underline">
             Friends
           </Link>
-          .
         </p>
-      </header>
+      </div>
 
       {groups.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-6 text-center">
           <p className="font-semibold">No open public parties right now</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Start one from Friends and set it to Public so others can find it here.
           </p>
-          <Link
-            href="/friends"
-            className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            Create a party
-          </Link>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {groups.map((group) => (
-            <section key={group.slug} id={group.slug} className="space-y-3">
+            <div key={group.slug} id={group.slug} className="space-y-3">
               <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-xl font-bold">
+                <h3 className="text-base font-bold">
                   <Link href={`/games/${group.slug}`} className="hover:text-primary hover:underline">
                     {group.title}
                   </Link>
-                </h2>
+                </h3>
                 <p className="text-xs text-muted-foreground">
                   {group.parties.length} open {group.parties.length === 1 ? "party" : "parties"}
                 </p>
               </div>
-              <ul className="grid gap-3 sm:grid-cols-2">
+              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {group.parties.map((party) => (
                   <li
                     key={party.id}
@@ -87,7 +66,7 @@ export default async function PartiesPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate font-bold">{party.leaderUsername}&apos;s party</p>
+                        <p className="truncate font-bold">{partyDisplayName(party)}</p>
                         <p className="text-xs capitalize text-muted-foreground">
                           {party.status === "playing" ? "In progress — space left" : "Waiting for players"}
                         </p>
@@ -103,10 +82,10 @@ export default async function PartiesPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

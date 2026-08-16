@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFriendsUserId } from "@/lib/friendsAuth";
-import { provisionPartyDiscordVoice } from "@/lib/playTogether/discordPartyProvision";
+import { syncPartyVoiceForMember } from "@/lib/playTogether/discordPartyProvision";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 
@@ -26,20 +26,9 @@ export async function POST(req: Request, ctx: RouteContext) {
     if (String(party.leaderId) !== userId) {
       return NextResponse.json({ error: "Only the leader can provision Discord" }, { status: 403 });
     }
-    if (party.discord?.voiceChannelId && !party.discord?.cleanedAt) {
-      return NextResponse.json({
-        party: {
-          discord: {
-            voiceChannelId: party.discord.voiceChannelId,
-            inviteUrl: party.discord.inviteUrl,
-          },
-        },
-        alreadyProvisioned: true,
-      });
-    }
-
-    const ok = await provisionPartyDiscordVoice(party);
-    if (!ok) {
+    const voice = await syncPartyVoiceForMember(party, userId);
+    const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || null;
+    if (!inviteUrl && !party.discord?.voiceChannelId) {
       return NextResponse.json(
         { error: "Discord voice provisioning unavailable" },
         { status: 503 }
@@ -50,9 +39,12 @@ export async function POST(req: Request, ctx: RouteContext) {
       party: {
         discord: {
           voiceChannelId: party.discord?.voiceChannelId || null,
-          inviteUrl: party.discord?.inviteUrl || null,
+          inviteUrl,
         },
       },
+      needsDiscordLink: voice.needsDiscordLink,
+      inviteUrl,
+      moved: voice.moved,
     });
   } catch (err) {
     console.error("POST /api/parties/[id]/discord failed:", err);

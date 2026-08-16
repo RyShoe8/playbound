@@ -27,7 +27,7 @@ export default async function GearDirectoryPage() {
   const categories = Object.keys(grouped).sort();
 
   return (
-    <div className="space-y-12 px-4 py-8 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+    <div className="space-y-12 px-4 py-8 sm:px-6 lg:px-8">
       <header className="text-center space-y-4">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">Gear</h1>
         <p className="mx-auto max-w-2xl text-lg text-muted-foreground">

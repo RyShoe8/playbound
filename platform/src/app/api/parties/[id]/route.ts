@@ -3,6 +3,8 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
 import {
   getParty,
   setVisibility,
+  setPartyGame,
+  setPartyName,
   endParty,
 } from "@/lib/playTogether/party";
 import { PARTY_VISIBILITIES, type PartyVisibility } from "@/lib/playTogether/types";
@@ -39,6 +41,26 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   try {
     const { id } = await ctx.params;
     const body = await req.json();
+
+    if (body.name !== undefined) {
+      const result = await setPartyName(
+        id,
+        userId,
+        typeof body.name === "string" ? body.name : null
+      );
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    if (typeof body.gameSlug === "string") {
+      const result = await setPartyGame(id, userId, body.gameSlug);
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
 
     if (body.visibility) {
       if (!(PARTY_VISIBILITIES as readonly string[]).includes(body.visibility)) {

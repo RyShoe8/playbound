@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Gamepad2, House, LibraryBig, Mouse, PartyPopper, Puzzle, Server, Shield } from "lucide-react";
+import { Gamepad2, House, LibraryBig, Mouse, Puzzle, Server, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -11,7 +11,6 @@ const items = [
   { href: "/discover", label: "Games", icon: Gamepad2 },
   { href: "/mods", label: "Mods", icon: Puzzle },
   { href: "/servers", label: "Servers", icon: Server },
-  { href: "/parties", label: "Parties", icon: PartyPopper },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/gear", label: "Gear", icon: Mouse },
 ];

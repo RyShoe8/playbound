@@ -96,7 +96,7 @@ export function CatalogStatsCard({
     { label: "Mods", value: live.modCount, href: "/mods" },
     { label: "Editions", value: live.editionCount, href: null },
     { label: "Gamers Playing", value: live.playingNow, href: null },
-    { label: "Open Parties", value: openPartyCount, href: "/parties" },
+    { label: "Open Parties", value: openPartyCount, href: "/events" },
   ];
 
   return (

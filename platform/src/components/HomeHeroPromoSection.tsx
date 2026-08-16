@@ -98,7 +98,7 @@ export function HomeHeroPromoSection({
       icon: ShieldCheck,
       title: "Curated Free-to-Play",
       tagline: "Four-point quality standard",
-      desc: "Every title is tested and played before it is added: genuinely free, finished enough to enjoy, plays reliably, and high quality or showing good potential.",
+      desc: "Every title is tested and played before it is added: genuinely free, ready to play, curated through thorough testing, and high quality or showing strong potential.",
       color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     },
     {
@@ -166,23 +166,24 @@ export function HomeHeroPromoSection({
               </div>
 
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-                High-quality free games,{" "}
+                Discover. Play.{" "}
                 <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                  actually worth your time.
+                  Connect.
                 </span>
               </h1>
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                PlayBound is the curated platform built exclusively for PC gamers: every game is
-                tested and played before it is added, and every title clears{" "}
+                PlayBound is a curated gaming platform built to make finding and playing great free
+                games easier. Every game is{" "}
                 <Link
                   href="/standards"
                   className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
                 >
-                  four strict quality standards
-                </Link>
-                , seamless 1-click launcher installation for games and mods, intelligent hardware
-                performance grading, live multiplayer lobbies, and cross-device cloud saves.
+                  tested and played
+                </Link>{" "}
+                before we add it, with everything you need to get playing—from one-click game and
+                mod installation to hardware compatibility, live multiplayer, parties, events, and
+                cloud saves.
               </p>
             </div>
 

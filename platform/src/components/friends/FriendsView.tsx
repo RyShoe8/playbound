@@ -261,7 +261,6 @@ export function FriendsView({
   const [lfgBusy, setLfgBusy] = useState(false);
   const [lfgActive, setLfgActive] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createGameSlug, setCreateGameSlug] = useState(games[0]?.slug || "");
   const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
     open: false,
     inviteUrl: null,
@@ -485,25 +484,7 @@ export function FriendsView({
 
       {addOpen ? <AddFriends games={games} genres={genres} /> : null}
       {createOpen ? (
-        <div className="space-y-3">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Game
-            <select
-              value={createGameSlug}
-              onChange={(e) => setCreateGameSlug(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
-            >
-              {games.map((g) => (
-                <option key={g.slug} value={g.slug}>
-                  {g.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          {createGameSlug ? (
-            <CreatePartyPanel gameSlug={createGameSlug} onCreated={() => setCreateOpen(false)} />
-          ) : null}
-        </div>
+        <CreatePartyPanel onCreated={() => setCreateOpen(false)} />
       ) : null}
 
       <div className="rounded-xl border border-border bg-card/40 px-3 py-2">
@@ -551,26 +532,10 @@ export function FriendsView({
         ) : null}
       </div>
 
-      {!activeParty && !createOpen ? (
-        <button
-          type="button"
-          onClick={() => {
-            setCreateOpen(true);
-            setAddOpen(false);
-          }}
-          className="flex w-full flex-col items-start gap-1 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-4 text-left transition-colors hover:border-primary/70 hover:bg-primary/10"
-        >
-          <span className="text-sm font-bold text-primary">Start a party</span>
-          <span className="text-xs text-muted-foreground">
-            Host a lobby, invite friends, and play together.
-          </span>
-        </button>
-      ) : null}
-
       {activeParty && (
         <div className="space-y-3">
-          <PartyView party={activeParty} />
-          {activeParty.status === "ready" && session?.user && activeParty.leaderId === session.user.id && (
+          <PartyView party={activeParty} games={games} />
+          {activeParty.status === "ready" && session?.user && activeParty.leaderId === session.user.id && activeParty.gameSlug && (
             <PartyConfigSync partyId={activeParty.id} gameSlug={activeParty.gameSlug} />
           )}
         </div>

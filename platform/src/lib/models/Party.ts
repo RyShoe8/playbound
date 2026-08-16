@@ -68,8 +68,10 @@ const PartySchema = new Schema(
       },
     },
 
-    // Game configuration — the reason parties exist.
-    gameSlug: { type: String, required: true, index: true },
+    name: { type: String, default: null, maxlength: 60 },
+
+    // Game configuration — optional at create; leader picks it in the party window.
+    gameSlug: { type: String, default: "", index: true },
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
 
@@ -156,6 +158,7 @@ export type PartyDoc = {
   _id: Types.ObjectId;
   leaderId: Types.ObjectId;
   members: PartyMemberDoc[];
+  name?: string | null;
   gameSlug: string;
   editionSlug?: string | null;
   modSlugs: string[];

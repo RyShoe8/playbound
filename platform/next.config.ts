@@ -107,6 +107,7 @@ const nextConfig: NextConfig = {
       // still request the legacy favicon paths.
       { source: "/favicon.ico", destination: "/icon", permanent: false },
       { source: "/favicon.png", destination: "/icon", permanent: false },
+      { source: "/parties", destination: "/events", permanent: true },
     ];
   },
 };
