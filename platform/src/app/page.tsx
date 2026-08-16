@@ -19,7 +19,6 @@ import {
 } from "@/components/HomeServerPreviews";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
-import { countOpenPublicParties } from "@/lib/playTogether/party";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
@@ -81,14 +80,18 @@ function HomeLiveServersFallback() {
 }
 
 export default async function HomePage() {
-  const [gamesNewestFirst, games, popular, mods, liveStats, openPartyCount, collections] =
+  /*
+   * No party count here. This render is CDN-cached, so a count computed in it
+   * is frozen — the 0 a just-created public party could not clear.
+   * CatalogStatsCard fetches it on the client instead.
+   */
+  const [gamesNewestFirst, games, popular, mods, liveStats, collections] =
     await Promise.all([
       listGamesNewestFirst(),
       listGames(),
       mostPopularGames(12),
       listMods({ view: "card" }),
       getCatalogLiveStats(),
-      countOpenPublicParties(),
       listCollections(),
     ]);
 
@@ -103,7 +106,6 @@ export default async function HomePage() {
         gamesNewestFirst={gamesNewestFirst}
         games={games.map((g) => ({ slug: g.slug }))}
         live={liveStats}
-        openPartyCount={openPartyCount}
       />
 
       {/* ── Free Games This Week ──────────────────────────────── */}
