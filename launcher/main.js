@@ -3782,9 +3782,8 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       campaign: "launcher_install_external",
       content: slug,
     });
-    if (entry.postInstallDiscord) {
-      await maybeOpenEditionPostInstallHandoff(entry, null);
-    }
+    // No post-install hand-off here: there is no install directory yet at this
+    // point, so it had nothing to open and only ever fired the Discord jump.
     // A plain external entry is a hand-off and we are done. One that also
     // carries a mod loader is not: PlayBound still has to place the mod files
     // once the store finishes installing, so watch for the executable the same
@@ -4272,21 +4271,17 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
   }
 }
 
+/**
+ * Post-install hand-off for editions that still need a manual patch step.
+ *
+ * This used to throw the player out to Discord in the middle of installing,
+ * including for any edition whose slug happened to be project-quarm even when
+ * the recipe asked for no such thing. Being bounced into a chat app by an
+ * install reads as the install going wrong, so the folder is opened and the
+ * remaining step is stated in the launcher instead. The Discord link is still
+ * on the edition page for whoever wants it.
+ */
 async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
-  // Only Quarm-style recipes (explicit flag / URL) — not every edition with a Discord link.
-  const discord =
-    (typeof entry?.postInstallDiscord === "string" && entry.postInstallDiscord) ||
-    (entry?.postInstallDiscord === true &&
-      (entry?.editionLinks?.discord || "https://discord.gg/projectquarm")) ||
-    (entry?.editionSlug === "project-quarm"
-      ? entry?.editionLinks?.discord || "https://discord.gg/projectquarm"
-      : null);
-  if (!discord) return null;
-  try {
-    await safeOpenExternal(discord, { campaign: "launcher_post_install_discord" });
-  } catch {
-    /* ignore */
-  }
   if (gameDir && fs.existsSync(gameDir)) {
     try {
       await shell.openPath(gameDir);
@@ -4294,7 +4289,7 @@ async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
       /* ignore */
     }
   }
-  return "Base client installed. Download the latest patch from Discord #server-files and extract it into the opened folder.";
+  return "Base client installed. Add the latest patch from the edition's Discord #server-files to the opened folder before logging in.";
 }
 
 /**
