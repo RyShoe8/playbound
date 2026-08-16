@@ -258,15 +258,7 @@ export async function listAllGames(): Promise<
   try {
     await dbConnect();
     const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
-    if (docs.length === 0) {
-      return seedGames.map((g) => ({
-        ...seedGameWithInstall(g),
-        published: true,
-        status: "published" as const,
-        installCount: 0,
-      }));
-    }
-    return docs.map((d) => {
+    const dbGames = docs.map((d) => {
       const lean = d as LeanGame;
       const status = normalizeStatus(lean);
       return {
@@ -278,11 +270,26 @@ export async function listAllGames(): Promise<
         installCount: Number((d as { installCount?: number }).installCount) || 0,
       };
     });
+    const dbSlugs = new Set(dbGames.map((g) => g.slug));
+    const testingSeeds = seedGames
+      .filter((s) => s.status === "testing" && !dbSlugs.has(s.slug))
+      .map((s) => {
+        const withInstall = seedGameWithInstall(s);
+        return {
+          ...withInstall,
+          published: false,
+          status: "testing" as const,
+          updatedAt: s.updatedAt,
+          publishedAt: null,
+          installCount: 0,
+        };
+      });
+    return [...dbGames, ...testingSeeds];
   } catch {
     return seedGames.map((g) => ({
       ...seedGameWithInstall(g),
-      published: true,
-      status: "published" as const,
+      published: g.status === "published",
+      status: (g.status as CatalogStatus) || "draft",
       installCount: 0,
     }));
   }
