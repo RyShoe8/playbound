@@ -1,6 +1,6 @@
 :root {
-  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Geist', 'Inter', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'JetBrains Mono', monospace;
   --bg-dark: #0c0a12;
   --bg-card: rgba(23, 20, 33, 0.7);
   --bg-card-hover: rgba(35, 30, 50, 0.8);
@@ -261,16 +261,10 @@ body {
 .view {
   display: none;
   padding: 28px 36px;
-  animation: fadeIn 0.25s ease-out;
 }
 
 .view.active {
   display: block;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Typography & General Components */
@@ -779,10 +773,15 @@ body {
   gap: 16px;
 }
 
-.chip-row {
+.chip-row,
+.card-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.card-tags {
+  margin-top: 6px;
 }
 
 .chip {

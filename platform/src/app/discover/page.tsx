@@ -7,7 +7,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Games — Free Catalog Worth Playing",
   description:
-    "Browse every game in the PlayBound catalog. A deliberately small list — each title clears five published criteria for whether a free game is actually good.",
+    "Browse every game in the PlayBound catalog. A deliberately small list — each title is tested and played, then clears four published criteria for whether a free game is actually good.",
   path: "/discover",
 });
 

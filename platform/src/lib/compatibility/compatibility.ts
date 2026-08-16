@@ -62,6 +62,49 @@ export function deviceTypeFromUaDevice(
   return "desktop";
 }
 
+/** Mods inherit the base game, then apply their own platform list if set. */
+export function isModCompatible(
+  mod: GameLike,
+  baseGame: GameLike | null | undefined,
+  device: DeviceType
+): boolean {
+  if (baseGame && !isGameCompatible(baseGame, device)) return false;
+  if (mod.platforms?.length) {
+    return isGameCompatible({ platforms: mod.platforms }, device);
+  }
+  return Boolean(baseGame) || isGameCompatible(mod, device);
+}
+
+/** Editions inherit the parent game's platforms unless they declare their own. */
+export function isEditionCompatible(
+  edition: GameLike,
+  game: GameLike,
+  device: DeviceType
+): boolean {
+  if (!isGameCompatible(game, device)) return false;
+  if (edition.platforms?.length) {
+    return isGameCompatible({ ...game, platforms: edition.platforms }, device);
+  }
+  return true;
+}
+
+/** Compatible editions first; original order is otherwise preserved. */
+export function sortEditionsByCompatibility<T extends GameLike>(
+  editions: T[],
+  game: GameLike,
+  device: DeviceType
+): T[] {
+  return editions
+    .map((edition, index) => ({ edition, index }))
+    .sort((a, b) => {
+      const ac = isEditionCompatible(a.edition, game, device) ? 0 : 1;
+      const bc = isEditionCompatible(b.edition, game, device) ? 0 : 1;
+      if (ac !== bc) return ac - bc;
+      return a.index - b.index;
+    })
+    .map((row) => row.edition);
+}
+
 export function isGameCompatible(game: GameLike, device: DeviceType): boolean {
   if (game.browserPlayable) return true;
 

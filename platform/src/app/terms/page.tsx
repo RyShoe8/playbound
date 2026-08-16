@@ -26,7 +26,7 @@ export default function TermsPage() {
           Terms of Use
         </h1>
         <p className="text-sm text-muted-foreground">
-          Last updated: August 14, 2026 · Effective immediately
+          Last updated: August 16, 2026 · Effective immediately
         </p>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           Welcome to PlayBound, operated by{" "}
@@ -57,6 +57,13 @@ export default function TermsPage() {
           <div>
             <strong className="text-foreground">Developer Rights:</strong> All game copyrights, assets, and
             trademarks remain the property of their respective creators.
+          </div>
+        </div>
+        <div className="flex items-start gap-2.5">
+          <Scale className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div>
+            <strong className="text-foreground">Legal Copies Only:</strong> We do not condone piracy. If you
+            use a game to play a mod, we assume you already own that game legally.
           </div>
         </div>
         <div className="flex items-start gap-2.5">
@@ -112,10 +119,28 @@ export default function TermsPage() {
         </p>
       </section>
 
-      {/* Section 3: Acceptable Use & Community Guidelines */}
+      {/* Section 3: Legal copies & mods */}
       <section className="space-y-3">
         <h2 className="text-xl font-bold tracking-tight text-foreground">
-          3. Acceptable Use &amp; Code of Conduct
+          3. Legal Copies of Games &amp; Mods
+        </h2>
+        <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+          PlayBound does not condone, host, or distribute illegal copies of games. Catalog titles
+          are listed from official developer releases, authorized mirrors, and other legitimate
+          sources. We do not provide pirated installers, cracked binaries, or circumvention tools.
+        </p>
+        <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Some mods require a copy of the original game to play. If you use a game copy to install
+          or play a mod through PlayBound, we assume you already own that game legally. You are
+          responsible for complying with the game&apos;s license and the laws that apply to you.
+          Using PlayBound does not grant you a license to any commercial game you do not own.
+        </p>
+      </section>
+
+      {/* Section 4: Acceptable Use & Community Guidelines */}
+      <section className="space-y-3">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
+          4. Acceptable Use &amp; Code of Conduct
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           When participating in PlayBound community discussions, reviews, party lobbies, and server
@@ -135,7 +160,7 @@ export default function TermsPage() {
 
       {/* Section 4: User Accounts & Security */}
       <section className="space-y-3">
-        <h2 className="text-xl font-bold tracking-tight text-foreground">4. User Accounts</h2>
+        <h2 className="text-xl font-bold tracking-tight text-foreground">5. User Accounts</h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           You are responsible for maintaining the confidentiality of your login credentials and for all
           activity under your account. You agree to notify us immediately of any unauthorized account access.
@@ -146,7 +171,7 @@ export default function TermsPage() {
       {/* Section 5: Desktop Launcher & Local Software */}
       <section className="space-y-3">
         <h2 className="text-xl font-bold tracking-tight text-foreground">
-          5. Desktop Launcher &amp; Software Execution
+          6. Desktop Launcher &amp; Software Execution
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           The PlayBound Desktop Launcher operates locally on your machine to automate package decompression
@@ -158,7 +183,7 @@ export default function TermsPage() {
 
       {/* Section 6: Warranty Disclaimers */}
       <section className="space-y-3">
-        <h2 className="text-xl font-bold tracking-tight text-foreground">6. Warranty Disclaimer</h2>
+        <h2 className="text-xl font-bold tracking-tight text-foreground">7. Warranty Disclaimer</h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           PlayBound and its associated tools are provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot;
           basis without warranties of any kind, whether express or implied. We do not warrant that the
@@ -169,7 +194,7 @@ export default function TermsPage() {
 
       {/* Section 7: Limitation of Liability */}
       <section className="space-y-3">
-        <h2 className="text-xl font-bold tracking-tight text-foreground">7. Limitation of Liability</h2>
+        <h2 className="text-xl font-bold tracking-tight text-foreground">8. Limitation of Liability</h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
           To the fullest extent permitted by applicable law, The Media Shop and its operators shall not be
           liable for any indirect, incidental, consequential, or punitive damages arising from your use of
@@ -179,7 +204,7 @@ export default function TermsPage() {
 
       {/* Section 8: Changes & Governing Law */}
       <section className="space-y-3 rounded-xl border border-border bg-card/60 p-5">
-        <h2 className="text-lg font-bold text-foreground">8. Changes &amp; Contact</h2>
+        <h2 className="text-lg font-bold text-foreground">9. Changes &amp; Contact</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           We may revise these Terms periodically. Continued use of PlayBound constitutes acceptance of the
           revised terms. For legal notices, licensing inquiries, or questions regarding these terms,

@@ -42,7 +42,9 @@ if (!TOKEN || !GUILD_ID || !MONGODB_URI) {
   process.exit(1);
 }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
+});
 const mongo = new MongoClient(MONGODB_URI);
 let games;
 let editions;
@@ -759,6 +761,47 @@ const server = http.createServer(async (req, res) => {
       );
     } catch (err) {
       console.error("parties/voice", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/parties/voice/move") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { voiceChannelId, discordUserIds } = JSON.parse(body || "{}");
+      const ids = Array.isArray(discordUserIds) ? discordUserIds.map(String) : [];
+      if (!voiceChannelId || ids.length === 0) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "voiceChannelId and discordUserIds required" }));
+        return;
+      }
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const channel = await guild.channels.fetch(String(voiceChannelId));
+      if (!channel || channel.type !== ChannelType.GuildVoice) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Voice channel not found" }));
+        return;
+      }
+      let moved = 0;
+      for (const id of ids) {
+        try {
+          const member = await guild.members.fetch(id);
+          if (member.voice?.channelId && member.voice.channelId !== channel.id) {
+            await member.voice.setChannel(channel.id, "PlayBound party voice");
+            moved += 1;
+          }
+        } catch (err) {
+          console.warn("party voice move", id, err?.message || err);
+        }
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, moved, guildId: GUILD_ID }));
+    } catch (err) {
+      console.error("parties/voice/move", err);
       res.writeHead(500);
       res.end(String(err?.message || err));
     }

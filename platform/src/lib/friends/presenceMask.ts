@@ -1,3 +1,32 @@
+import { STALE_AFTER_MS } from "@/lib/presence/types";
+
+/** Treat a missed heartbeat the same way the sweep does, so friends lists don't wait on cron. */
+export function applyPresenceFreshness<
+  T extends {
+    status?: string;
+    lastHeartbeat?: unknown;
+    currentGameId?: string | null;
+    currentEditionId?: string | null;
+    lookingForPlayers?: boolean;
+    lookingForPlayersGameId?: string | null;
+    lookingForPlayersUntil?: unknown;
+    currentPartyId?: string | null;
+  },
+>(presence: T, now = Date.now()): T {
+  const hb = presence.lastHeartbeat ? new Date(presence.lastHeartbeat as string | Date).getTime() : 0;
+  if (hb && now - hb < STALE_AFTER_MS) return presence;
+  return {
+    ...presence,
+    status: "offline",
+    currentGameId: null,
+    currentEditionId: null,
+    lookingForPlayers: false,
+    lookingForPlayersGameId: null,
+    lookingForPlayersUntil: null,
+    currentPartyId: null,
+  };
+}
+
 /** Mask presence for other viewers when the user opted to appear offline. */
 export function maskPresenceForOthers<
   T extends {
@@ -13,6 +42,7 @@ export function maskPresenceForOthers<
     lookingForPlayersGameId?: string | null;
     lookingForPlayersGameTitle?: string | null;
     lookingForPlayersUntil?: unknown;
+    currentPartyId?: string | null;
   },
 >(presence: T, appearOffline: boolean, hideActivity = false): T {
   if (appearOffline) {
@@ -28,6 +58,7 @@ export function maskPresenceForOthers<
       lookingForPlayersGameId: null,
       lookingForPlayersGameTitle: null,
       lookingForPlayersUntil: null,
+      currentPartyId: null,
     };
   }
   if (!hideActivity) return presence;

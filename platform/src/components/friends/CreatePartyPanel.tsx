@@ -4,18 +4,26 @@ import { useState } from "react";
 import { usePartyStore } from "@/stores/partyStore";
 import { useFriendsStore } from "@/stores/friendsStore";
 import type { PartyVisibility } from "@/lib/playTogether/types";
-import { PARTY_VISIBILITIES } from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
 import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { isHostableGame } from "@/lib/gameHost/catalog";
+
+const VISIBILITY_OPTIONS: { value: PartyVisibility; label: string; hint: string }[] = [
+  { value: "public", label: "Public", hint: "Anyone signed in can join. Listed on Parties." },
+  { value: "friends", label: "Friends only", hint: "Only your friends can join." },
+  { value: "password", label: "Password", hint: "Anyone with the password can join. Not listed publicly." },
+  { value: "invite_only", label: "Invite only", hint: "People you invite can join." },
+];
 
 export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; onCreated?: () => void }) {
   const { createParty, inviteFriends } = usePartyStore();
   const { friends } = useFriendsStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [visibility, setVisibility] = useState<PartyVisibility>("friends");
+  const [password, setPassword] = useState("");
+  const [wantVoice, setWantVoice] = useState(true);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
     open: false,
@@ -23,14 +31,20 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
   });
 
   async function handleCreate() {
+    if (visibility === "password" && password.trim().length < 4) {
+      setError("Password must be at least 4 characters.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      telemetry.track("party_create_clicked", { gameSlug, visibility });
+      telemetry.track("party_create_clicked", { gameSlug, visibility, wantVoice });
       const party = await createParty({
         gameSlug,
         visibility,
         maxSize: 8,
+        password: visibility === "password" ? password.trim() : null,
+        wantVoice,
       });
 
       if (party) {
@@ -64,20 +78,54 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
 
       <div className="space-y-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Visibility
+          Who can join
         </label>
         <select
           value={visibility}
           onChange={(e) => setVisibility(e.target.value as PartyVisibility)}
           className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
         >
-          {PARTY_VISIBILITIES.filter((v) => v !== "event").map((v) => (
-            <option key={v} value={v}>
-              {v === "friends" ? "Friends Only (Discoverable)" : "Invite Only"}
+          {VISIBILITY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>
+        <p className="text-xs text-muted-foreground">
+          {VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.hint}
+        </p>
       </div>
+
+      {visibility === "password" ? (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Party password
+          </label>
+          <input
+            type="text"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 4 characters"
+            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+            autoComplete="off"
+          />
+        </div>
+      ) : null}
+
+      <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border border-border px-3 py-2">
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold">Voice channel</span>
+          <span className="block text-xs text-muted-foreground">
+            Open a Discord voice room for this party
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          className="mt-1 size-4 accent-primary"
+          checked={wantVoice}
+          onChange={(e) => setWantVoice(e.target.checked)}
+        />
+      </label>
 
       <div className="space-y-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -92,6 +140,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
                 <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-secondary/60">
                   <input
                     type="checkbox"
+                    className="accent-primary"
                     checked={selectedFriends.has(f.id)}
                     onChange={() => {
                       const next = new Set(selectedFriends);

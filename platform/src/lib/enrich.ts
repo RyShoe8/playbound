@@ -282,16 +282,16 @@ export function deriveQualityBarSignals(input: {
     if (months <= 12) {
       derived.activelyMaintained = true;
       evidence.push(
-        `Actively maintained: last upstream activity ${input.lastUpstreamActivity.slice(0, 10)} (${months.toFixed(1)} months ago).`
+        `Plays reliably: last upstream activity ${input.lastUpstreamActivity.slice(0, 10)} (${months.toFixed(1)} months ago) — still confirm a real play session before listing.`
       );
     } else {
       evidence.push(
-        `Actively maintained: FAILS — last upstream activity ${input.lastUpstreamActivity.slice(0, 10)} is ${months.toFixed(1)} months ago, beyond the twelve-month threshold.`
+        `Plays reliably: last upstream activity ${input.lastUpstreamActivity.slice(0, 10)} is ${months.toFixed(1)} months ago. Confirm a real play session by hand — inactivity is a signal, not an automatic fail.`
       );
     }
   } else {
     evidence.push(
-      "Actively maintained: no upstream repository to check. Verify by hand and record the source in editorial.ts."
+      "Plays reliably: no upstream repository to check. Install it, play it, and record the source in editorial.ts."
     );
   }
 

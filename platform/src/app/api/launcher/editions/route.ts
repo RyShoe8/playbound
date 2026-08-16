@@ -69,6 +69,9 @@ export async function GET(req: Request) {
           version: edition.version ?? null,
           verificationLevel: edition.verificationLevel,
           verified: edition.verified,
+          tags: edition.tags || [],
+          genres: game.genres || [],
+          platforms: game.platforms || [],
 
           art: game.art,
           /*

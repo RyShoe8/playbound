@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { Users } from "lucide-react";
-import type { CatalogLiveStats, CatalogPopularGame } from "@/lib/liveActivity";
-import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
-import {
-  filterGamesForPreference,
-  type GameLike,
-} from "@/lib/compatibility/compatibility";
+import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { Avatar } from "@/components/ui/bits";
 
 export type TopPlayer = {
@@ -87,75 +82,52 @@ export function ActivityStatsCard({
 
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"] as const;
 
-export type CatalogStatsGame = GameLike & { slug: string };
-export type CatalogStatsMod = { baseGameSlug: string };
-
-/** Homepage header catalog snapshot. Respects Compatible / All Games. */
+/** Homepage header catalog snapshot. Same 15-minute numbers for every visitor. */
 export function CatalogStatsCard({
   live,
-  games,
-  mods,
+  openPartyCount = 0,
 }: {
   live: CatalogLiveStats;
-  games: CatalogStatsGame[];
-  mods: CatalogStatsMod[];
+  openPartyCount?: number;
 }) {
-  const { mode, device } = useCompatibilityFilter();
-  const compatibleOnly = mode === "compatible";
-
-  const byGame = Array.isArray(live.byGame) ? live.byGame : live.mostPopular;
-  const editionCountBySlug = live.editionCountBySlug ?? {};
-
-  let gameCount = live.gameCount;
-  let modCount = live.modCount;
-  let editionCount = live.editionCount;
-  let playingNow = live.playingNow;
-  let mostPopular: CatalogPopularGame[] = live.mostPopular;
-  let footer = "Across supported games • Updated every 15 min";
-
-  if (compatibleOnly) {
-    const compatibleGames = filterGamesForPreference(games, "compatible", device.type);
-    const compatibleSlugs = new Set(compatibleGames.map((g) => g.slug));
-
-    gameCount = compatibleGames.length;
-    modCount = mods.filter((m) => compatibleSlugs.has(m.baseGameSlug)).length;
-    editionCount = [...compatibleSlugs].reduce(
-      (sum, slug) => sum + Math.max(1, Number(editionCountBySlug[slug]) || 0),
-      0
-    );
-    playingNow = byGame
-      .filter((g) => compatibleSlugs.has(g.slug))
-      .reduce((sum, g) => sum + (Number(g.playingNow) || 0), 0);
-    mostPopular = byGame
-      .filter((g) => compatibleSlugs.has(g.slug))
-      .slice()
-      .sort((a, b) => b.playingNow - a.playingNow || a.title.localeCompare(b.title))
-      .slice(0, 3);
-    footer = "Compatible with this device • Updated every 15 min";
-  }
-
+  const mostPopular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
   const items = [
-    { label: "Games", value: gameCount },
-    { label: "Mods", value: modCount },
-    { label: "Editions", value: editionCount },
-    { label: "Gamers Playing", value: playingNow },
+    { label: "Games", value: live.gameCount, href: "/discover" },
+    { label: "Mods", value: live.modCount, href: "/mods" },
+    { label: "Editions", value: live.editionCount, href: null },
+    { label: "Gamers Playing", value: live.playingNow, href: null },
+    { label: "Open Parties", value: openPartyCount, href: "/parties" },
   ];
 
   return (
-    <div className="w-full rounded-xl border border-border bg-card p-3 sm:max-w-sm lg:w-80">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-        {items.map((item) => (
-          <div key={item.label}>
-            <dt className="text-xs text-muted-foreground">{item.label}</dt>
+    <div className="flex h-full min-h-[320px] w-full flex-col rounded-xl border border-border bg-card p-4 sm:max-w-sm lg:w-80">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+        {items.map((item) => {
+          const value = (
             <dd className="text-lg font-extrabold tabular-nums tracking-tight">
               {item.value.toLocaleString()}
             </dd>
-          </div>
-        ))}
+          );
+          return (
+            <div key={item.label}>
+              {item.href ? (
+                <Link href={item.href} className="group block rounded-md outline-none hover:text-primary">
+                  <dt className="text-xs text-muted-foreground group-hover:text-primary">{item.label}</dt>
+                  {value}
+                </Link>
+              ) : (
+                <>
+                  <dt className="text-xs text-muted-foreground">{item.label}</dt>
+                  {value}
+                </>
+              )}
+            </div>
+          );
+        })}
       </dl>
 
       {mostPopular.length > 0 && (
-        <div className="mt-3 border-t border-border pt-2.5">
+        <div className="mt-3 flex-1 border-t border-border pt-2.5">
           <p className="text-xs font-semibold">Most Popular Right Now</p>
           <ol className="mt-1.5 space-y-1">
             {mostPopular.map((game, i) => (
@@ -175,7 +147,9 @@ export function CatalogStatsCard({
         </div>
       )}
 
-      <p className="mt-2.5 text-[11px] text-muted-foreground">{footer}</p>
+      <p className="mt-auto pt-2.5 text-[11px] text-muted-foreground">
+        Across supported games • Updated every 15 min
+      </p>
     </div>
   );
 }

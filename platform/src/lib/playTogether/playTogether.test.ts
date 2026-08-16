@@ -157,6 +157,17 @@ describe("party rules", () => {
       const p = mockParty();
       expect(canJoinParty(p, "user2", true).ok).toBe(true);
     });
+
+    it("allows anyone to join a public party", () => {
+      const p = mockParty({ visibility: "public" });
+      expect(canJoinParty(p, "user2", false).ok).toBe(true);
+    });
+
+    it("requires a matching password for password parties", () => {
+      const p = mockParty({ visibility: "password" });
+      expect(canJoinParty(p, "user2", false).ok).toBe(false);
+      expect(canJoinParty(p, "user2", false, true).ok).toBe(true);
+    });
   });
 
   describe("nextLeader", () => {

@@ -3,11 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob: https: http:; frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://*.steamstatic.com https://*.akamai.steamstatic.com; connect-src 'self' https: http:;" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <title>PlayBound</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
   </head>
   <body>
     <div id="app">
@@ -109,7 +114,57 @@
 
       <!-- Main Content -->
       <main id="content">
-        <div id="view-home" class="view active"></div>
+        <div id="view-home" class="view active">
+          <div class="home-header-row">
+            <div class="home-header-copy">
+              <h1 class="view-title">Welcome back</h1>
+              <p class="view-sub">Play your favorite titles or browse free games on PlayBound.</p>
+            </div>
+            <div id="home-stats-slot">
+              <aside class="catalog-stats-card" aria-busy="true">
+                <dl class="catalog-stats-grid">
+                  <div><dt>Games</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
+                  <div><dt>Mods</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
+                  <div><dt>Editions</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
+                  <div><dt>Gamers Playing</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
+                </dl>
+                <div class="catalog-stats-popular">
+                  <h3>Most Popular Right Now</h3>
+                  <ol>
+                    <li><span class="stat-skeleton stat-skeleton-line" aria-hidden="true"></span></li>
+                    <li><span class="stat-skeleton stat-skeleton-line" aria-hidden="true"></span></li>
+                    <li><span class="stat-skeleton stat-skeleton-line" aria-hidden="true"></span></li>
+                  </ol>
+                </div>
+                <p class="catalog-stats-footer">Across supported games • Updated every 15 min</p>
+              </aside>
+            </div>
+          </div>
+
+          <div id="home-recent-section" class="hidden">
+            <div class="section-header">Recently Played</div>
+            <div id="home-recent-grid" class="game-grid"></div>
+          </div>
+
+          <div id="home-free-offers-section" class="hidden">
+            <div class="section-header">
+              <span>🎁 Free Games This Week</span>
+              <button class="btn-secondary btn-sm" id="home-browse-free-games">See All on Web</button>
+            </div>
+            <div id="home-free-offers-grid" class="free-offers-grid"></div>
+          </div>
+
+          <div class="section-header">
+            <span>Newest Games</span>
+            <button class="btn-secondary btn-sm" id="home-browse-games">Browse Games</button>
+          </div>
+          <div id="home-newest-grid" class="game-grid"></div>
+
+          <div class="section-header">Most Popular Games</div>
+          <div id="home-popular-grid" class="game-grid">
+            <p class="view-sub">Loading popularity data…</p>
+          </div>
+        </div>
         <div id="view-games" class="view"></div>
         <div id="view-editions" class="view"></div>
         <div id="view-mods" class="view"></div>
@@ -133,6 +188,6 @@
         </div>
       </footer>
     </div>
-    <script src="renderer.js"></script>
+    <script type="module" src="boot.js"></script>
   </body>
 </html>

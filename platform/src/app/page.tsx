@@ -19,6 +19,7 @@ import {
 } from "@/components/HomeServerPreviews";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 import { getCatalogLiveStats } from "@/lib/liveActivity";
+import { countOpenPublicParties } from "@/lib/playTogether/party";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
@@ -80,12 +81,13 @@ function HomeLiveServersFallback() {
 }
 
 export default async function HomePage() {
-  const [gamesNewestFirst, games, popular, mods, liveStats] = await Promise.all([
+  const [gamesNewestFirst, games, popular, mods, liveStats, openPartyCount] = await Promise.all([
     listGamesNewestFirst(),
     listGames(),
     mostPopularGames(12),
     listMods({ view: "card" }),
     getCatalogLiveStats(),
+    countOpenPublicParties(),
   ]);
   if (!gamesNewestFirst.length) return null;
 
@@ -98,14 +100,9 @@ export default async function HomePage() {
       {/* ── PlayBound Promotion & Top Hero / Stats Row ── */}
       <HomeHeroPromoSection
         gamesNewestFirst={gamesNewestFirst}
-        games={games.map((g) => ({
-          slug: g.slug,
-          platforms: g.platforms,
-          browserPlayable: g.browserPlayable,
-          steamDeck: g.steamDeck,
-        }))}
-        mods={mods.map((m) => ({ baseGameSlug: m.baseGameSlug }))}
+        games={games.map((g) => ({ slug: g.slug }))}
         live={liveStats}
+        openPartyCount={openPartyCount}
       />
 
       {/* ── Free Games This Week ──────────────────────────────── */}

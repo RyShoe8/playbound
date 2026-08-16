@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId } = body;
+    const { gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice } = body;
 
     if (!gameSlug || typeof gameSlug !== "string") {
       return NextResponse.json({ error: "gameSlug is required" }, { status: 400 });
@@ -55,6 +55,8 @@ export async function POST(req: Request) {
       visibility: (visibility as PartyVisibility) || "friends",
       maxSize: typeof maxSize === "number" ? maxSize : undefined,
       eventId: eventId || null,
+      password: typeof password === "string" ? password : null,
+      wantVoice: wantVoice !== false,
     });
 
     if ("error" in result) {

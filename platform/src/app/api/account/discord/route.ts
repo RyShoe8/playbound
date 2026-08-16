@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 import dbConnect from "@/lib/db";
 import DiscordConnection from "@/lib/models/DiscordConnection";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+export async function GET(req: Request) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     await dbConnect();
-    const connection = await DiscordConnection.findOne({ userId: session.user.id }).lean();
+    const connection = await DiscordConnection.findOne({ userId }).lean();
     
     if (!connection) {
       return NextResponse.json({ linked: false });

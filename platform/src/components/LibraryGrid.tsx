@@ -12,7 +12,7 @@ import {
   launcherUninstallUrl,
 } from "@/lib/launcher";
 import { GameArt } from "@/components/GameArt";
-import { GamePlatformBadges } from "@/components/GamePlatformBadges";
+import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
 import { LibraryDeviceHint } from "@/components/LibraryDeviceHint";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
@@ -173,7 +173,7 @@ function MobileLibraryRow({
             ownedElsewhere={ownedElsewhere}
             game={game}
           />
-          <GamePlatformBadges game={game} compact singleLine />
+          <CardCategoryTags genres={game.genres} tags={game.tags} />
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
@@ -294,7 +294,7 @@ function DesktopLibraryRow({
             </Link>
             <p className="truncate text-sm text-muted-foreground">{game.genres.join(" · ")}</p>
           </div>
-          <GamePlatformBadges game={game} compact singleLine />
+          <CardCategoryTags genres={game.genres} tags={game.tags} />
         </div>
         <div className="mt-2">
           <StatusBadges

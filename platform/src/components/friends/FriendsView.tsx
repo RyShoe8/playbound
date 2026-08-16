@@ -16,6 +16,8 @@ import { usePartyStore } from "@/stores/partyStore";
 import { PartyView } from "@/components/friends/PartyView";
 import { PartyDiscovery } from "@/components/friends/PartyDiscovery";
 import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
+import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
+import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 
 function PrivacyToggle({
   label,
@@ -55,6 +57,8 @@ function FriendCard({
   offline,
   onRemove,
   lfgJoinSlug,
+  partyId,
+  onJoinParty,
 }: {
   friend: FriendUser;
   subtitle: ReactNode;
@@ -69,6 +73,8 @@ function FriendCard({
    * to act on the signal at all.
    */
   lfgJoinSlug?: string | null;
+  partyId?: string | null;
+  onJoinParty?: (partyId: string) => void;
 }) {
   const gameSlug = friend.presence.currentGameId;
   const join = friend.join;
@@ -141,6 +147,14 @@ function FriendCard({
           >
             View Game
           </Link>
+        ) : partyId ? (
+          <button
+            type="button"
+            className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
+            onClick={() => onJoinParty?.(partyId)}
+          >
+            Join Party
+          </button>
         ) : lfgJoinSlug ? (
           <Link
             href={`/games/${encodeURIComponent(lfgJoinSlug)}`}
@@ -218,12 +232,19 @@ export function FriendsView({
   const [appearBusy, setAppearBusy] = useState(false);
   const [lfgBusy, setLfgBusy] = useState(false);
   const [lfgActive, setLfgActive] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createGameSlug, setCreateGameSlug] = useState(games[0]?.slug || "");
+  const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
+    open: false,
+    inviteUrl: null,
+  });
   const {
     playingFriends,
     awayFriends,
     onlineFriends,
     offlineFriends,
     lookingFriends,
+    inPartyFriends,
     incomingRequests,
     outgoingRequests,
     startPolling,
@@ -269,9 +290,12 @@ export function FriendsView({
         
       startPartyPolling(15000);
       if (partyParam) {
-        // If a party param was passed (e.g. from invite link), join it.
-        joinParty(partyParam).catch(console.error);
-        // We could replace URL to remove param but leaving it is fine.
+        void joinParty(partyParam).then((party) => {
+          const voice = followPartyVoice(party);
+          if (voice.needsDiscordLink) {
+            setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
+          }
+        });
       }
     }
     return () => {
@@ -391,6 +415,13 @@ export function FriendsView({
           </button>
           <button
             type="button"
+            onClick={() => setCreateOpen((v) => !v)}
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:brightness-110"
+          >
+            {createOpen ? "Close" : "Create Party"}
+          </button>
+          <button
+            type="button"
             onClick={() => setAddOpen((v) => !v)}
             className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80"
           >
@@ -400,6 +431,27 @@ export function FriendsView({
       </div>
 
       {addOpen ? <AddFriends games={games} genres={genres} /> : null}
+      {createOpen ? (
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Game
+            <select
+              value={createGameSlug}
+              onChange={(e) => setCreateGameSlug(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+            >
+              {games.map((g) => (
+                <option key={g.slug} value={g.slug}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          {createGameSlug ? (
+            <CreatePartyPanel gameSlug={createGameSlug} onCreated={() => setCreateOpen(false)} />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-border bg-card/40 px-3 py-2">
         <button
@@ -549,6 +601,35 @@ export function FriendsView({
           </div>
         ) : null}
 
+        {inPartyFriends.length > 0 ? (
+          <FriendsSection title="In a Party" count={inPartyFriends.length}>
+            {inPartyFriends.map((f) => (
+              <FriendCard
+                key={`party-${f.id}`}
+                friend={f}
+                onRemove={removeFriend}
+                partyId={f.presence.currentPartyId}
+                onJoinParty={(id) => {
+                  void joinParty(id).then((party) => {
+                    const voice = followPartyVoice(party);
+                    if (voice.needsDiscordLink) {
+                      setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
+                    }
+                  });
+                }}
+                subtitle={
+                  <span className="text-primary">
+                    In a party
+                    {f.presence.currentGameTitle || f.presence.currentGameId
+                      ? ` · ${f.presence.currentGameTitle || f.presence.currentGameId}`
+                      : ""}
+                  </span>
+                }
+              />
+            ))}
+          </FriendsSection>
+        ) : null}
+
         {playingFriends.length > 0 ? (
           <FriendsSection title="Playing Now" count={playingFriends.length}>
             {playingFriends.map((f) => (
@@ -625,6 +706,11 @@ export function FriendsView({
           </FriendsSection>
         ) : null}
       </div>
+      <DiscordLinkPrompt
+        open={discordPrompt.open}
+        inviteUrl={discordPrompt.inviteUrl}
+        onClose={() => setDiscordPrompt({ open: false, inviteUrl: null })}
+      />
     </div>
   );
 }

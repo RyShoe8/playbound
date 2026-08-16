@@ -4,7 +4,7 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import type { ModCardMod } from "@/lib/mods";
-import { isGameCompatible } from "@/lib/compatibility/compatibility";
+import { isModCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { ModCard } from "@/components/ModCard";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
@@ -40,11 +40,10 @@ export function ModsFilters({
   const filtered = useMemo(() => {
     let list = mods;
 
-    // Compatibility is judged by the base game, since that is what has to run.
     if (mode !== "all") {
       list = list.filter((m) => {
         const game = gamesBySlug[m.baseGameSlug];
-        return game ? isGameCompatible(game, device.type) : false;
+        return isModCompatible(m, game, device.type);
       });
     }
 

@@ -4,10 +4,14 @@ import { authOptions } from "@/lib/auth";
 import crypto from "crypto";
 
 export async function GET(req: Request) {
+  const incoming = new URL(req.url);
+  const from = incoming.searchParams.get("from") === "launcher" ? "launcher" : "web";
   const session = await getServerSession(authOptions);
   if (!session?.user) {
-    // Request-relative: keeps the user on the host they are browsing.
-    return NextResponse.redirect(new URL("/login?callbackUrl=/profile", req.url));
+    const next = from === "launcher"
+      ? "/api/auth/discord/start?from=launcher"
+      : "/api/auth/discord/start";
+    return NextResponse.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(next)}`, req.url));
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
@@ -26,19 +30,15 @@ export async function GET(req: Request) {
   url.searchParams.set("prompt", "consent");
 
   const res = NextResponse.redirect(url.toString());
-  res.cookies.set("pb_discord_oauth_state", state, {
+  const cookie = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     maxAge: 600,
     path: "/",
-  });
-  res.cookies.set("pb_discord_oauth_uid", session.user.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 600,
-    path: "/",
-  });
+  };
+  res.cookies.set("pb_discord_oauth_state", state, cookie);
+  res.cookies.set("pb_discord_oauth_uid", session.user.id, cookie);
+  res.cookies.set("pb_discord_oauth_from", from, cookie);
   return res;
 }

@@ -35,7 +35,8 @@ export type RuleParty = {
 export function canJoinParty(
   party: RuleParty,
   userId: string,
-  isFriend: boolean
+  isFriend: boolean,
+  passwordOk = false
 ): { ok: boolean; reason?: string } {
   if (party.status === "ended") {
     return { ok: false, reason: "Party has ended" };
@@ -51,6 +52,17 @@ export function canJoinParty(
 
   if (party.members.length >= party.maxSize) {
     return { ok: false, reason: "Party is full" };
+  }
+
+  if (party.visibility === "public") {
+    return { ok: true };
+  }
+
+  if (party.visibility === "password") {
+    if (!passwordOk) {
+      return { ok: false, reason: "Password required" };
+    }
+    return { ok: true };
   }
 
   if (party.visibility === "invite_only") {

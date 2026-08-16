@@ -5,7 +5,7 @@ import Presence from "@/lib/models/Presence";
 import DiscordConnection from "@/lib/models/DiscordConnection";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listGames } from "@/lib/catalog";
-import { maskPresenceForOthers } from "@/lib/friends/presenceMask";
+import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 
 type PopulatedFriendUser = {
@@ -82,6 +82,7 @@ export async function GET(req: Request) {
         currentGameTitle: slug ? titleBySlug.get(slug) || slug : null,
         currentEditionId: p.currentEditionId,
         currentPage: p.currentPage,
+        currentPartyId: p.currentPartyId ? String(p.currentPartyId) : null,
         lastHeartbeat: p.lastHeartbeat,
         lastSeen: p.lastHeartbeat,
         lookingForPlayers,
@@ -100,10 +101,13 @@ export async function GET(req: Request) {
     }
 
     const friends = friendUsers.map((user) => {
-      const raw = presenceMap.get(user.id.toString()) || {
-        status: "offline",
-        lookingForPlayers: false,
-      };
+      const raw = applyPresenceFreshness(
+        presenceMap.get(user.id.toString()) || {
+          status: "offline",
+          lookingForPlayers: false,
+        },
+        now
+      );
       const presence = maskPresenceForOthers(raw, user.appearOffline, user.hideActivity);
       const game = presence.currentGameId
         ? gameBySlug.get(String(presence.currentGameId))
