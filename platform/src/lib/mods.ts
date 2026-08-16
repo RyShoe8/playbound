@@ -270,6 +270,7 @@ export async function listMods(opts?: ListModsOptions): Promise<CatalogModPublic
 }
 
 async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPublic[]> {
+  let dbMods: CatalogModPublic[] = [];
   try {
     await dbConnect();
     const parts: Record<string, unknown>[] = [];
@@ -286,24 +287,29 @@ async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPubli
     const query = CatalogMod.find(filter).sort({ title: 1 });
     if (opts?.view === "card") query.select(CARD_PROJECTION);
     const docs = await query.lean();
-    if (docs.length > 0) {
-      return docs.map((d) => toMod(d as LeanMod));
-    }
-    if (opts?.baseGameSlug) {
-      const matchingSeeds = seedMods.filter((s) => s.baseGameSlug === opts.baseGameSlug);
-      if (matchingSeeds.length > 0) {
-        return matchingSeeds.map(seedToCatalogMod);
-      }
-    }
-    return [];
+    dbMods = docs.map((d) => toMod(d as LeanMod));
   } catch (err) {
     console.error("[mods] listMods failed:", err);
-    if (opts?.baseGameSlug) {
-      const matchingSeeds = seedMods.filter((s) => s.baseGameSlug === opts.baseGameSlug);
-      return matchingSeeds.map(seedToCatalogMod);
-    }
-    return [];
   }
+
+  const dbSlugs = new Set(dbMods.map((m) => m.slug));
+  let candidateSeeds = seedMods;
+  if (opts?.baseGameSlug) {
+    candidateSeeds = candidateSeeds.filter((s) => s.baseGameSlug === opts.baseGameSlug);
+  }
+  if (opts && "editionSlug" in opts && opts.editionSlug !== null) {
+    // Seed mods are game-level; none have a specific editionSlug.
+    candidateSeeds = [];
+  }
+  if (!opts?.includeUnpublished && !opts?.includeTesting) {
+    candidateSeeds = candidateSeeds.filter((s) => s.published !== false);
+  }
+
+  const missingSeeds = candidateSeeds
+    .filter((s) => !dbSlugs.has(s.slug))
+    .map(seedToCatalogMod);
+
+  return [...dbMods, ...missingSeeds].sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export async function listAllMods(): Promise<
