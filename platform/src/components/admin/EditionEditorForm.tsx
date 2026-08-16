@@ -1,7 +1,7 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 import { Plus, X } from "lucide-react";
@@ -154,6 +154,22 @@ export function EditionEditorForm({
         ...prev.installConfig,
         [method]: { ...(prev.installConfig[method] ?? {}), ...value },
       },
+    }));
+  }
+
+  /**
+   * Replaces a whole install-method object rather than merging into it.
+   *
+   * patchConfig above spreads, which is right for the individual fields but
+   * cannot remove a key — so it can never be used to edit a recipe as JSON.
+   */
+  function replaceConfig<M extends keyof EditionInstallConfig>(
+    method: M,
+    value: NonNullable<EditionInstallConfig[M]>
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      installConfig: { ...prev.installConfig, [method]: value },
     }));
   }
 
@@ -868,6 +884,7 @@ export function EditionEditorForm({
             method={form.installMethod}
             config={form.installConfig}
             patchConfig={patchConfig}
+            replaceConfig={replaceConfig}
           />
         </div>
       </AdminCollapsibleSection>
@@ -1236,12 +1253,17 @@ function InstallMethodFields({
   method,
   config,
   patchConfig,
+  replaceConfig,
 }: {
   method: InstallMethod;
   config: EditionInstallConfig;
   patchConfig: <M extends keyof EditionInstallConfig>(
     method: M,
     value: Partial<NonNullable<EditionInstallConfig[M]>>
+  ) => void;
+  replaceConfig: <M extends keyof EditionInstallConfig>(
+    method: M,
+    value: NonNullable<EditionInstallConfig[M]>
   ) => void;
 }) {
   switch (method) {
@@ -1371,6 +1393,10 @@ function InstallMethodFields({
             value={config.playbound_installer?.exeHint ?? ""}
             onChange={(v) => patchConfig("playbound_installer", { exeHint: v })}
           />
+          <RecipeJsonField
+            value={config.playbound_installer ?? {}}
+            onChange={(next) => replaceConfig("playbound_installer", next)}
+          />
         </>
       );
     case "manual":
@@ -1383,6 +1409,87 @@ function InstallMethodFields({
     default:
       return null;
   }
+}
+
+/**
+ * The whole playbound_installer recipe as editable JSON.
+ *
+ * The fields above cover the common recipe keys, but not every one — the mod
+ * loader file list, install roots, connect args and add-ons have no field, so
+ * editing them meant running a script against the database. This is the escape
+ * hatch for those, and for any key added later before it gets a control.
+ *
+ * Local draft state so a half-typed object does not blow away the form on every
+ * keystroke; the parent is only updated once the text parses to an object.
+ */
+function RecipeJsonField({
+  value,
+  onChange,
+}: {
+  value: Record<string, unknown>;
+  onChange: (value: Record<string, unknown>) => void;
+}) {
+  const [draft, setDraft] = useState(() => JSON.stringify(value, null, 2));
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  // Re-sync when the fields above change the recipe, but never mid-edit.
+  const serialized = JSON.stringify(value, null, 2);
+  const lastExternal = useRef(serialized);
+  useEffect(() => {
+    if (serialized !== lastExternal.current) {
+      lastExternal.current = serialized;
+      if (!error) setDraft(serialized);
+    }
+  }, [serialized, error]);
+
+  function apply(text: string) {
+    setDraft(text);
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        setError("Recipe must be a JSON object.");
+        return;
+      }
+      setError(null);
+      lastExternal.current = JSON.stringify(parsed, null, 2);
+      onChange(parsed as Record<string, unknown>);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid JSON");
+    }
+  }
+
+  return (
+    <div className="sm:col-span-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+      >
+        {open ? "Hide" : "Edit"} full recipe JSON
+      </button>
+      {open ? (
+        <>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Everything the fields above cannot reach — mod loader files, install roots, connect
+            args. Saves with the form.
+          </p>
+          <textarea
+            rows={14}
+            spellCheck={false}
+            value={draft}
+            onChange={(e) => apply(e.target.value)}
+            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs"
+          />
+          {error ? (
+            <p className="mt-1 text-xs text-destructive">{error} — not saved until valid.</p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">Valid JSON.</p>
+          )}
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function Field({

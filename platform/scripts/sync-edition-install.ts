@@ -20,11 +20,12 @@
  * --dry-run prints the before/after recipe and writes nothing.
  */
 
-import "dotenv/config";
-import mongoose from "mongoose";
-import dbConnect from "@/lib/db";
-import Edition from "@/lib/models/Edition";
-import { editions as seedEditions } from "@/lib/data/editions";
+import { loadEnvConfig } from "@next/env";
+
+// Before any import that reads process.env. src/lib/db throws at import time
+// when MONGODB_URI is unset, and @next/env is what picks up .env.local the way
+// the app does — plain dotenv only reads .env and would miss it entirely.
+loadEnvConfig(process.cwd());
 
 type Target = { gameSlug: string; slug: string };
 
@@ -45,9 +46,25 @@ async function main() {
   const { targets, dryRun } = parseArgs(process.argv.slice(2));
   if (targets.length === 0) {
     console.error("Name at least one edition, e.g. tes-arena/opentesarena");
+    console.error("Usage: npx tsx scripts/sync-edition-install.ts [--dry-run] <gameSlug>/<editionSlug>…");
     process.exitCode = 1;
     return;
   }
+
+  if (!process.env.MONGODB_URI) {
+    console.error(
+      "MONGODB_URI is not set. Run this from platform/ with the production value " +
+        "available (.env.local, or `vercel env pull`)."
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  // Imported here, after env is loaded, for the reason given at the top.
+  const mongoose = (await import("mongoose")).default;
+  const dbConnect = (await import("../src/lib/db")).default;
+  const Edition = (await import("../src/lib/models/Edition")).default;
+  const { editions: seedEditions } = await import("../src/lib/data/editions");
 
   await dbConnect();
 
@@ -98,8 +115,9 @@ async function main() {
   await mongoose.disconnect();
 }
 
-main().catch(async (err) => {
-  console.error(err);
-  await mongoose.disconnect().catch(() => undefined);
-  process.exitCode = 1;
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  // Hard exit: mongoose is scoped inside main(), so there is no handle to close
+  // here, and an open connection would otherwise keep the process alive.
+  process.exit(1);
 });
