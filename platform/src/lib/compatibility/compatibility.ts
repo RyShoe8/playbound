@@ -13,6 +13,11 @@ export type GameLike = {
   steamDeck?: boolean;
 };
 
+/** Editions inherit the parent game; they may optionally override platforms. */
+export type EditionLike = {
+  platforms?: string[];
+};
+
 const DESKTOP_PLATFORMS = new Set(["windows", "macos", "linux", "web", "browser"]);
 const MOBILE_PLATFORMS = new Set(["android", "ios", "web", "browser"]);
 
@@ -77,7 +82,7 @@ export function isModCompatible(
 
 /** Editions inherit the parent game's platforms unless they declare their own. */
 export function isEditionCompatible(
-  edition: GameLike,
+  edition: EditionLike,
   game: GameLike,
   device: DeviceType
 ): boolean {
@@ -89,7 +94,7 @@ export function isEditionCompatible(
 }
 
 /** Compatible editions first; original order is otherwise preserved. */
-export function sortEditionsByCompatibility<T extends GameLike>(
+export function sortEditionsByCompatibility<T extends EditionLike>(
   editions: T[],
   game: GameLike,
   device: DeviceType
