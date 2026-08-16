@@ -217,8 +217,15 @@ async function readVisibleGames(includeTesting: boolean): Promise<Game[]> {
     playboundSupported: { $ne: false },
   };
   const fromDb = await fromMongo(filter);
-  if (fromDb.length > 0) return fromDb;
-  return seedGames.map(seedGameWithInstall);
+  const dbSlugs = new Set(fromDb.map((g) => g.slug));
+  const missingSeeds = seedGames
+    .filter(
+      (g) =>
+        !dbSlugs.has(g.slug) &&
+        (includeTesting || g.status === "published")
+    )
+    .map(seedGameWithInstall);
+  return [...fromDb, ...missingSeeds];
 }
 
 /**
@@ -258,15 +265,7 @@ export async function listAllGames(): Promise<
   try {
     await dbConnect();
     const docs = await CatalogGame.find().sort({ updatedAt: -1 }).lean();
-    if (docs.length === 0) {
-      return seedGames.map((g) => ({
-        ...seedGameWithInstall(g),
-        published: true,
-        status: "published" as const,
-        installCount: 0,
-      }));
-    }
-    return docs.map((d) => {
+    const dbGames = docs.map((d) => {
       const lean = d as LeanGame;
       const status = normalizeStatus(lean);
       return {
@@ -278,13 +277,35 @@ export async function listAllGames(): Promise<
         installCount: Number((d as { installCount?: number }).installCount) || 0,
       };
     });
+    const dbSlugs = new Set(dbGames.map((g) => g.slug));
+    const missingSeeds = seedGames
+      .filter((s) => !dbSlugs.has(s.slug))
+      .map((s) => {
+        const withInstall = seedGameWithInstall(s);
+        const status = (s.status as CatalogStatus) || "draft";
+        return {
+          ...withInstall,
+          published: status === "published",
+          status,
+          updatedAt: s.updatedAt,
+          publishedAt: s.publishedAt ?? null,
+          installCount: 0,
+        };
+      });
+    return [...dbGames, ...missingSeeds];
   } catch {
-    return seedGames.map((g) => ({
-      ...seedGameWithInstall(g),
-      published: true,
-      status: "published" as const,
-      installCount: 0,
-    }));
+    return seedGames.map((g) => {
+      const withInstall = seedGameWithInstall(g);
+      const status = (g.status as CatalogStatus) || "draft";
+      return {
+        ...withInstall,
+        published: status === "published",
+        status,
+        updatedAt: g.updatedAt,
+        publishedAt: g.publishedAt ?? null,
+        installCount: 0,
+      };
+    });
   }
 }
 
