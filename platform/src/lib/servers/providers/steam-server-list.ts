@@ -126,8 +126,9 @@ export async function fetchSteamServerList(opts: {
   const { appId, label, defaultGameDir, includeConcurrentTotal } = opts;
   const concurrent = () => fetchSteamConcurrentPlayers(appId, { label });
 
+  const concurrentPromise = concurrent();
   const key = steamApiKey();
-  if (!key) return concurrent();
+  if (!key) return concurrentPromise;
 
   const url = new URL(STEAM_LIST_URL);
   url.searchParams.set("key", key);
@@ -141,7 +142,7 @@ export async function fetchSteamServerList(opts: {
         accept: "application/json",
       },
       next: { revalidate: 60 },
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(3_000),
     });
     // 403 is what a missing, expired or unentitled key returns.
     if (!res.ok) throw new Error(`Steam GetServerList returned ${res.status}`);
@@ -150,17 +151,18 @@ export async function fetchSteamServerList(opts: {
       response?: { servers?: SteamServerListRow[] };
     };
     const rows = Array.isArray(data?.response?.servers) ? data.response.servers : [];
-    if (rows.length === 0) return concurrent();
+    if (rows.length === 0) return concurrentPromise;
 
     const servers = await attachGeo(mapSteamServerListRows(rows, defaultGameDir));
     if (!includeConcurrentTotal) return servers;
     // Total first, community servers under it.
-    return [...(await concurrent()), ...servers];
+    const concurrentTotal = await concurrentPromise;
+    return [...concurrentTotal, ...servers];
   } catch (err) {
     console.warn(
       `[servers] ${label}: server list unavailable, using concurrent count —`,
       err instanceof Error ? err.message : err
     );
-    return concurrent();
+    return concurrentPromise;
   }
 }

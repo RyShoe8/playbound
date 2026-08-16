@@ -1078,6 +1078,17 @@ export const developers: Developer[] = [
     website: "https://triplea-game.org/",
     artHue: 15,
   },
+  {
+    slug: "oddshot-games",
+    name: "Oddshot Games",
+    tagline: "Physics-driven, skill-based competitive multiplayer sports games.",
+    about:
+      "Belgian independent game studio known for creating physics-driven sports titles including Slapshot: Rebound and Strikers Club, emphasizing pure manual athlete control and community-first competitive esports.",
+    founded: 2020,
+    location: "Belgium",
+    website: "https://oddshot.gg/",
+    artHue: 145,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

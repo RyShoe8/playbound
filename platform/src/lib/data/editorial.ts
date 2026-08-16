@@ -219,6 +219,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "FreeAllegiance open-source community active with Steam and standalone multiplayer servers.",
   },
+  "strikers-club": {
+    kind: "manual",
+    url: "https://oddshot.gg/",
+    checkedAt: "2026-08-15",
+    note: "Oddshot Games actively maintains Strikers Club on Steam with regular updates and community playtests.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -4524,6 +4530,80 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "Are active multiplayer matches still played?",
         a: "Yes! The FreeAllegiance community hosts regular community match nights, squad wars, and rookie training academies on community servers.",
+      },
+    ],
+  },
+
+  "strikers-club": {
+    qualityBar: clearsAll(
+      "Strikers Club clears all five: 100% free-to-play with zero pay-to-win mechanics, actively maintained by Oddshot Games, fully standalone physics-driven competitive multiplayer, and delivers deep mechanical soccer gameplay."
+    ),
+    longDescription:
+      "Strikers Club is a physics-driven, skill-based multiplayer soccer game developed by Oddshot Games, the indie studio celebrated for the breakout physics hockey title Slapshot: Rebound. Bringing their signature mechanical philosophy to the football pitch, Strikers Club strips away the automated aim assistance, rubber-banding, and scripted magnetic ball animations typical of mainstream sports games in favor of 100% physics-calculated ball physics and direct athlete control.\n\nIn Strikers Club, you control only your own individual player on the pitch. There is no switching between AI teammates or relying on automated defensive positioning. Every step, slide tackle, first touch, and curved strike is governed by your movement momentum, contact angle, and player trajectory. The result is a game where individual skill and tactical team communication are the sole arbiters of victory.\n\nThe game offers exceptional match versatility, supporting casual and competitive lobbies ranging from fast-paced 1v1 duels, 3v3 and 4v4 street soccer cage formats, all the way up to full 11v11 squad matches with dedicated goalkeepers, midfielders, and wingers. High-skill mechanics like lofted through-balls, bicycle kicks, diving headers, and wall bounces create endless creative goal-scoring opportunities.\n\nAt the core of the experience is the Club system. Players can form persistent Strikers Clubs with up to 20 friends, design custom team jerseys and logos, construct their home stadium, and compete across structured seasonal league divisions with promotion and relegation battles against rival clubs worldwide.\n\nPowered by dedicated low-latency multiplayer servers and supporting both gamepads and keyboard/mouse, Strikers Club delivers crisp competitive soccer that runs smoothly on standard gaming rigs.",
+    whyWePickedIt:
+      "Oddshot Games has crafted a pure physics-first soccer experience that respects player skill above all else. With zero pay-to-win mechanics, direct athlete control, and deep club progression, Strikers Club is the premier skill-based football title for competitive sports fans.",
+    bestFor: [
+      "Players who want pure physics and manual skill without magnet-ball animations",
+      "Co-op groups and clubs wanting to play together as individual teammates",
+      "Fans of Rocket League, Slapshot: Rebound, and competitive sports mechanics",
+      "Competitive esports players looking for a high mechanical skill ceiling",
+      "Anyone tired of pay-to-win card packs in mainstream soccer games",
+    ],
+    notFor: [
+      "Gamers who want to control an entire 11-man team with tactical managerial menus",
+      "Players looking for scripted, automated FIFA / EA FC passing and shooting assist",
+      "Single-player story career mode enthusiasts",
+    ],
+    comparableTo: [
+      "Rocket League",
+      "Slapshot: Rebound",
+      "Rematch",
+      "Supraball",
+      "Kopanito All-Stars Football",
+      "Pro Evolution Soccer",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Install Strikers Club for free directly through Steam (App ID 1952920).",
+      },
+      {
+        platform: "windows",
+        text: "Connect your Xbox or PlayStation gamepad and customize your analog stick deadzones and shot curve sensitivity in settings.",
+      },
+      {
+        platform: "windows",
+        text: "Spend 10 minutes in the solo practice gym mastering manual ball touches, wall rebounds, and power curved shots.",
+      },
+      {
+        platform: "windows",
+        text: "Team up with friends to form a persistent Strikers Club and climb the competitive seasonal ladder.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Strikers Club free to play?",
+        a: "Yes! Strikers Club is 100% free to play with zero pay-to-win mechanics or stat-altering purchases.",
+      },
+      {
+        q: "How does Strikers Club differ from FIFA / EA Sports FC?",
+        a: "In Strikers Club, you control only your single athlete on the pitch with 100% manual physics ball controls. There is no automated magnet-ball or aim assist.",
+      },
+      {
+        q: "Can I play with a controller or keyboard and mouse?",
+        a: "Both input methods are fully supported! Controllers provide smooth 360-degree analog steering, while keyboard and mouse allow precision directional aiming.",
+      },
+      {
+        q: "What team sizes and match modes are available?",
+        a: "Matches range from 1v1 duels, 3v3 and 4v4 cage matches, up to full 11v11 squad formations with dedicated goalkeepers.",
+      },
+      {
+        q: "How does the Strikers Club league system work?",
+        a: "You can create or join a persistent club with friends, customize your team kit and stadium, and compete in seasonal divisions with promotion and relegation.",
+      },
+      {
+        q: "What are the hardware requirements?",
+        a: "Strikers Club runs smoothly on modest PCs, requiring an Intel Core i3 processor, 4 GB RAM, and a DirectX 11 compatible graphics card.",
       },
     ],
   },
