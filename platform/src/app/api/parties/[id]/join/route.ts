@@ -17,7 +17,12 @@ export async function POST(req: Request, ctx: RouteContext) {
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
-    return NextResponse.json({ party: result.party });
+    return NextResponse.json({
+      party: result.party,
+      needsDiscordLink: result.needsDiscordLink,
+      inviteUrl: result.inviteUrl,
+      moved: result.moved,
+    });
   } catch (err) {
     console.error("POST /api/parties/[id]/join failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

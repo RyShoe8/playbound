@@ -40,6 +40,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "Warzone2100/warzone2100",
     assetPattern: "win_x64_archive\\.zip$",
     exeHint: "warzone2100",
+    connectArgs: ["--join={host}:{port}"],
     addons: [
       {
         id: "hq-videos",
@@ -56,6 +57,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "supertuxkart/stk-code",
     assetPattern: "-win\\.zip$",
     exeHint: "supertuxkart",
+    connectArgs: ["--connect-now={host}:{port}"],
   },
   luanti: {
     enabled: true,
@@ -91,6 +93,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "Anuken/Mindustry",
     assetPattern: "^Mindustry\\.jar$",
     note: "Requires Java 17+ (Adoptium Temurin).",
+    connectArgs: ["{host}:{port}"],
   },
   "battle-for-wesnoth": {
     enabled: true,
@@ -139,6 +142,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "openttd-zip",
     exeHint: "openttd",
+    connectArgs: ["-n", "{host}:{port}"],
   },
   "beyond-all-reason": {
     enabled: true,
@@ -185,6 +189,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%PROGRAMFILES(X86)%\\Hedgewars\\hedgewars.exe",
       "%LOCALAPPDATA%\\Programs\\Hedgewars\\hedgewars.exe",
     ],
+    connectArgs: ["--connect", "{host}:{port}"],
   },
   unvanquished: {
     enabled: true,

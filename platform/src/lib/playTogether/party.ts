@@ -23,6 +23,17 @@ import {
   type PartyPayload,
   type PartyMemberPayload,
 } from "@/lib/playTogether/types";
+import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
+import {
+  cleanupPartyDiscordVoice,
+  syncPartyVoiceForMember,
+  type PartyVoiceFollowup,
+} from "@/lib/playTogether/discordPartyProvision";
+import {
+  hostedPayloadFromDoc,
+  provisionPartyHost,
+  releasePartyHost,
+} from "@/lib/gameHost/provision";
 import {
   canJoinParty,
   canLeaveParty,
@@ -116,6 +127,10 @@ function serializeParty(
       voiceChannelId: (discord.voiceChannelId as string) || null,
       inviteUrl: (discord.inviteUrl as string) || null,
     },
+    hosted: hostedPayloadFromDoc(
+      String(doc.gameSlug),
+      (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[1]) || null
+    ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
     createdAt: (doc.createdAt as Date)?.toISOString() || new Date().toISOString(),
   };
@@ -131,7 +146,10 @@ export async function createParty(opts: {
   visibility?: PartyVisibility;
   maxSize?: number;
   eventId?: string | null;
-}): Promise<{ party: PartyPayload; status: 201 } | { error: string; status: 400 | 409 | 404 }> {
+}): Promise<
+  | ({ party: PartyPayload; status: 201 } & PartyVoiceFollowup)
+  | { error: string; status: 400 | 409 | 404 }
+> {
   await dbConnect();
 
   const game = await getGame(opts.gameSlug, { includeTesting: true });
@@ -167,6 +185,9 @@ export async function createParty(opts: {
     lastActivity: now,
   });
 
+  await setPresenceParty(opts.userId, { partyId: String(doc._id), gameSlug: opts.gameSlug });
+  await provisionPartyHost(doc);
+  const voice = await syncPartyVoiceForMember(doc, opts.userId);
   const nameById = await resolveUsernames([opts.userId]);
   return {
     party: serializeParty(
@@ -175,6 +196,7 @@ export async function createParty(opts: {
       game.title
     ),
     status: 201,
+    ...voice,
   };
 }
 
@@ -183,7 +205,10 @@ export async function createParty(opts: {
 export async function joinParty(
   partyId: string,
   userId: string
-): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+): Promise<
+  | ({ party: PartyPayload; status: 200 } & PartyVoiceFollowup)
+  | { error: string; status: 400 | 403 | 404 }
+> {
   await dbConnect();
 
   const doc = await Party.findById(partyId);
@@ -212,6 +237,9 @@ export async function joinParty(
 
   await doc.save();
 
+  await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
+  const voice = await syncPartyVoiceForMember(doc, userId);
+
   const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
@@ -221,6 +249,7 @@ export async function joinParty(
   return {
     party: serializeParty(doc.toObject(), nameById, game?.title || null),
     status: 200,
+    ...voice,
   };
 }
 
@@ -258,7 +287,11 @@ export async function leaveParty(
       // Last person leaving — end the party.
       doc.status = "ended";
       doc.endedAt = now;
+      await releasePartyHost(doc);
       await doc.save();
+      await setPresenceParty(userId, { partyId: null });
+      await clearPresenceForParty(String(doc._id));
+      void cleanupPartyDiscordVoice(doc);
       return { party: null, status: 200 };
     }
   }
@@ -271,7 +304,15 @@ export async function leaveParty(
     doc.endedAt = now;
   }
 
+  if (doc.status === "ended") {
+    await releasePartyHost(doc);
+  }
   await doc.save();
+  await setPresenceParty(userId, { partyId: null });
+  if (doc.status === "ended") {
+    await clearPresenceForParty(String(doc._id));
+    void cleanupPartyDiscordVoice(doc);
+  }
 
   const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
@@ -310,6 +351,7 @@ export async function removeMember(
   const newRp = toRuleParty(doc.toObject());
   doc.status = derivePartyStatus(doc.status as PartyStatus, newRp.members);
   await doc.save();
+  await setPresenceParty(targetId, { partyId: null });
 
   const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
@@ -463,6 +505,7 @@ export async function launchParty(
   if (!check.ok) return { error: check.reason || "Cannot launch", status: 403 };
 
   const now = new Date();
+  await provisionPartyHost(doc);
   doc.status = "playing";
   doc.lastActivity = now;
   await doc.save();
@@ -499,7 +542,10 @@ export async function endParty(
   doc.status = "ended";
   doc.endedAt = now;
   doc.lastActivity = now;
+  await releasePartyHost(doc);
   await doc.save();
+  await clearPresenceForParty(String(doc._id));
+  void cleanupPartyDiscordVoice(doc);
 
   return { status: 200 };
 }
@@ -718,17 +764,21 @@ export async function sweepStaleParties(now = new Date()) {
   await dbConnect();
   const cutoff = new Date(now.getTime() - PARTY_IDLE_TIMEOUT_MS);
 
-  const result = await Party.updateMany(
-    { status: { $nin: ["ended"] }, lastActivity: { $lt: cutoff } },
-    {
-      $set: {
-        status: "ended",
-        endedAt: now,
-      },
-    }
-  );
+  const stale = await Party.find({
+    status: { $nin: ["ended"] },
+    lastActivity: { $lt: cutoff },
+  });
 
-  return { ended: result.modifiedCount ?? 0 };
+  let ended = 0;
+  for (const doc of stale) {
+    doc.status = "ended";
+    doc.endedAt = now;
+    await releasePartyHost(doc);
+    await doc.save();
+    ended += 1;
+  }
+
+  return { ended };
 }
 
 /* ─── legacy stubs (backward compat for Phase 3 tests) ───────────────────── */

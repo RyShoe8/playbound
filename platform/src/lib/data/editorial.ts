@@ -949,6 +949,10 @@ export const editorial: Record<string, GameEditorial> = {
         q: "How is OpenRA different from the C&C Remastered Collection?",
         a: "The Remastered Collection is a paid product that upgrades the original graphics while keeping the original engine behaviour. OpenRA is free and rewrites the engine, modernising unit control, pathfinding and multiplayer — a different design philosophy rather than a cheaper version of the same thing.",
       },
+      {
+        q: "Why can't friends join my OpenRA game / why doesn't my server show up?",
+        a: "OpenRA lists a game only after the master server can reach your PC on UDP 1234. That fails on many home routers, campus Wi-Fi, and CGNAT. Joining someone else's listed server never needs a port forward. If you host from home, PlayBound turns on OpenRA's built-in UPnP so most consumer routers open the port automatically. Creating a PlayBound party starts a dedicated room on PlayBound's public server — everyone connects outbound, no port forward. There is no in-engine relay.",
+      },
     ],
   },
 
