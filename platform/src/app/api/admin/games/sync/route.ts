@@ -118,6 +118,7 @@ export async function POST(req: Request) {
       launcherInstall: launcher,
       status,
       published,
+      publishedAt: published ? ((existing as { publishedAt?: Date | null })?.publishedAt ?? new Date()) : null,
       complete: g.complete === true,
       managedBy: "admin",
     };
