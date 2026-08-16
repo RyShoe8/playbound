@@ -11,13 +11,12 @@ import { NewsletterForm } from "@/components/NewsletterForm";
 import { FreeGamesSection, FreeGamesSectionFallback } from "@/components/FreeGamesSection";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { HomeGamesSections } from "@/components/HomeGamesSections";
-import { HomeHero } from "@/components/HomeHero";
+import { HomeHeroPromoSection } from "@/components/HomeHeroPromoSection";
 import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import {
   HomeServerPreviews,
   type HomeServerPreview,
 } from "@/components/HomeServerPreviews";
-import { CatalogStatsCard, type CatalogStatsGame, type CatalogStatsMod } from "@/components/ActivityStatsCard";
 import { Badge, SectionHeader } from "@/components/ui/bits";
 import { getCatalogLiveStats } from "@/lib/liveActivity";
 
@@ -48,46 +47,6 @@ async function loadServerPreviews(): Promise<HomeServerPreview[]> {
     if (result.status === "fulfilled" && result.value) rows.push(result.value);
   }
   return rows;
-}
-
-function CatalogStatsFallback() {
-  return (
-    <div className="w-full rounded-xl border border-border bg-card p-3 sm:max-w-sm lg:w-80">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-        {[
-          { label: "Games" },
-          { label: "Mods" },
-          { label: "Editions" },
-          { label: "Gamers Playing" },
-        ].map((item) => (
-          <div key={item.label}>
-            <dt className="text-xs text-muted-foreground">{item.label}</dt>
-            <dd className="mt-1 h-6 w-16 animate-pulse rounded bg-muted" />
-          </div>
-        ))}
-      </dl>
-      <div className="mt-3 border-t border-border pt-2.5">
-        <p className="text-xs font-semibold">Most Popular Right Now</p>
-        <div className="mt-2 space-y-2.5">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
-          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-          <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
-        </div>
-      </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">Loading live activity…</p>
-    </div>
-  );
-}
-
-async function CatalogStatsSection({
-  games,
-  mods,
-}: {
-  games: CatalogStatsGame[];
-  mods: CatalogStatsMod[];
-}) {
-  const live = await getCatalogLiveStats();
-  return <CatalogStatsCard live={live} games={games} mods={mods} />;
 }
 
 async function HomeLiveServersSection() {
@@ -121,11 +80,12 @@ function HomeLiveServersFallback() {
 }
 
 export default async function HomePage() {
-  const [gamesNewestFirst, games, popular, mods] = await Promise.all([
+  const [gamesNewestFirst, games, popular, mods, liveStats] = await Promise.all([
     listGamesNewestFirst(),
     listGames(),
     mostPopularGames(12),
     listMods({ view: "card" }),
+    getCatalogLiveStats(),
   ]);
   if (!gamesNewestFirst.length) return null;
 
@@ -135,37 +95,18 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
-      {/* The H1 is descriptive rather than the rotating hero game title — the
-          site's most important heading should say what the site is. */}
-      <header className="flex flex-col gap-6 pt-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 max-w-3xl">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-            High-quality free games, actually worth your time
-          </h1>
-          <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
-            Free games are not scarce — good ones are. Every title on PlayBound clears{" "}
-            <Link href="/standards" className="font-semibold text-primary hover:underline">
-              five published criteria
-            </Link>
-            : genuinely free, finished, actively maintained, good on its own merits, and
-            high quality only. {games.length} games so far. One new pick every
-            Wednesday.
-          </p>
-        </div>
-        <Suspense fallback={<CatalogStatsFallback />}>
-          <CatalogStatsSection
-            games={games.map((g) => ({
-              slug: g.slug,
-              platforms: g.platforms,
-              browserPlayable: g.browserPlayable,
-              steamDeck: g.steamDeck,
-            }))}
-            mods={mods.map((m) => ({ baseGameSlug: m.baseGameSlug }))}
-          />
-        </Suspense>
-      </header>
-
-      <HomeHero gamesNewestFirst={gamesNewestFirst} />
+      {/* ── PlayBound Promotion & Top Hero / Stats Row ── */}
+      <HomeHeroPromoSection
+        gamesNewestFirst={gamesNewestFirst}
+        games={games.map((g) => ({
+          slug: g.slug,
+          platforms: g.platforms,
+          browserPlayable: g.browserPlayable,
+          steamDeck: g.steamDeck,
+        }))}
+        mods={mods.map((m) => ({ baseGameSlug: m.baseGameSlug }))}
+        live={liveStats}
+      />
 
       {/* ── Free Games This Week ──────────────────────────────── */}
       <Suspense fallback={<FreeGamesSectionFallback />}>

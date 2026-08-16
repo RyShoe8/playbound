@@ -45,7 +45,7 @@ export function ModCard({
 
   const body = (
     <>
-      <ModArt mod={mod} baseGame={baseGame} className="h-[120px] w-full" />
+      <ModArt mod={mod} baseGame={baseGame} className="h-[138px] w-full" />
       <div className="flex flex-1 flex-col p-4">
         <p className="truncate text-[16px] font-bold leading-tight">{mod.title}</p>
         <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
