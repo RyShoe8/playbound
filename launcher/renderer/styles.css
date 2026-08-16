@@ -356,12 +356,26 @@ body {
   position: relative;
   aspect-ratio: 3 / 4;
   flex-shrink: 0;
+  /* Game cards override this below; mod and free-offer cards keep 3/4. */
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background-size: cover;
   background-position: center;
+}
+
+/*
+ * Game cards sit 20% shorter than the 3/4 portrait the mod and free-offer
+ * cards use, and the height comes off the artwork rather than the footer so
+ * the tags and player count are untouched. 29/30 lands the card at 80.0% of
+ * its old height against the ~38px footer, and being an aspect-ratio it holds
+ * at every grid width. Applies to every game card in the app — the grids on
+ * home, games, library, servers, gear, settings and the detail views all build
+ * their cards from createGameCard.
+ */
+.game-card:not(.mod-card):not(.free-offer-card) .card-art {
+  aspect-ratio: 29 / 30;
 }
 
 .card-art-fallback {
