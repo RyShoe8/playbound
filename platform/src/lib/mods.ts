@@ -193,7 +193,6 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
  */
 const CARD_EXCLUDED_FIELDS = [
   "longDescription",
-  "whatItChanges",
   "compatibility",
   "hardwareRequirements",
   "installSteps",
