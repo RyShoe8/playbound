@@ -42,6 +42,19 @@ export function AdminEventsTable({
     }
   }
 
+  async function deleteEvent(id: string) {
+    if (!confirm("Are you sure you want to permanently delete this event?")) return;
+    setBusyId(id);
+    try {
+      await fetch(`/api/events/${id}`, {
+        method: "DELETE",
+      });
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   if (!events.length) {
     return <p className="text-sm text-muted-foreground">No events yet.</p>;
   }
@@ -105,6 +118,14 @@ export function AdminEventsTable({
                       Cancel
                     </button>
                   ) : null}
+                  <button
+                    type="button"
+                    disabled={busyId === e.id}
+                    onClick={() => void deleteEvent(e.id)}
+                    className="rounded-md border border-destructive/40 px-2 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10"
+                  >
+                    Delete
+                  </button>
                 </div>
               </td>
             </tr>

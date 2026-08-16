@@ -2,7 +2,6 @@
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import type { ModCardMod } from "@/lib/mods";
 import { isModCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
@@ -26,7 +25,6 @@ export function ModsFilters({
   gamesBySlug: Record<string, ModBaseGameInfo | undefined>;
 }) {
   const { mode, device } = useCompatibilityFilter();
-  const [query, setQuery] = useState("");
   const [gameSlug, setGameSlug] = useState("");
 
   /** Only games that actually have mods — an empty option helps nobody. */
@@ -51,64 +49,42 @@ export function ModsFilters({
       list = list.filter((m) => m.baseGameSlug === gameSlug);
     }
 
-    const q = query.trim().toLowerCase();
-    if (q) {
-      list = list.filter((m) => {
-        const game = gamesBySlug[m.baseGameSlug];
-        // The base game's title is searched too: people look for "OpenRA mods"
-        // by typing the game, not the mod.
-        return [m.title, m.tagline, game?.title]
-          .filter(Boolean)
-          .some((field) => String(field).toLowerCase().includes(q));
-      });
-    }
-
     return [...list].sort((a, b) => a.title.localeCompare(b.title));
-  }, [mods, gamesBySlug, mode, device.type, gameSlug, query]);
+  }, [mods, gamesBySlug, mode, device.type, gameSlug]);
 
   const animKey = `${mode}|${gameSlug}|${filtered.map((m) => m.slug).join(",")}`;
 
   return (
     <>
       {/* ── Filter toolbar ──────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <div className="relative min-w-0 flex-1 basis-48">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder="Search mods or games…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search mods"
-            className="h-9 w-full rounded-lg border border-input bg-secondary/50 pr-3 pl-9 text-sm font-medium outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring"
-          />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/60 p-2.5 backdrop-blur-sm sm:p-3">
+        <div className="flex items-center gap-3">
+          <PremiumSelect
+            value={gameSlug}
+            onChange={(e) => setGameSlug(e.target.value)}
+            aria-label="Filter by game"
+            className="!w-auto h-9 min-w-[160px] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
+          >
+            <option value="">All games</option>
+            {gameOptions.map((g) => (
+              <option key={g.slug} value={g.slug}>
+                {g.title}
+              </option>
+            ))}
+          </PremiumSelect>
         </div>
 
-        <PremiumSelect
-          value={gameSlug}
-          onChange={(e) => setGameSlug(e.target.value)}
-          aria-label="Filter by game"
-          className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
-        >
-          <option value="">All games</option>
-          {gameOptions.map((g) => (
-            <option key={g.slug} value={g.slug}>
-              {g.title}
-            </option>
-          ))}
-        </PremiumSelect>
+        {/* ── Count ────────────────────────────────────────────── */}
+        <p className="pr-1 text-xs font-bold text-muted-foreground tabular-nums">
+          {filtered.length} mod{filtered.length === 1 ? "" : "s"}
+          {mode === "compatible" ? " (compatible)" : ""}
+        </p>
       </div>
-
-      {/* ── Count ────────────────────────────────────────────── */}
-      <p className="mt-2.5 text-sm font-medium text-muted-foreground">
-        {filtered.length} mod{filtered.length === 1 ? "" : "s"}
-        {mode === "compatible" ? " for games compatible with this device" : ""}
-      </p>
 
       {/* ── Grid ─────────────────────────────────────────────── */}
       {filtered.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          {mode === "compatible" && !query && !gameSlug
+          {mode === "compatible" && !gameSlug
             ? "No mods for compatible games right now. Switch to All Games to browse everything."
             : "No mods match your filters."}
         </p>
