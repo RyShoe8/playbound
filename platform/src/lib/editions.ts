@@ -79,8 +79,34 @@ function seedToEdition(seed: EditionSeed): Edition {
 
 const VIRTUAL_PREFIX = "virtual:";
 
+/**
+ * Percent-decode a route id, tolerating ids that were never encoded.
+ *
+ * decodeURIComponent throws on a stray "%", which a hand-edited URL can carry,
+ * and that must not become a 500 — an id we cannot decode is simply an id that
+ * will not match anything.
+ */
+export function decodeEditionId(id: string): string {
+  if (!id) return "";
+  try {
+    return decodeURIComponent(id);
+  } catch {
+    return id;
+  }
+}
+
+/** Seed-backed id, e.g. "seed:holocure:playbound". Accepts encoded ids. */
+export function parseSeedEditionId(
+  id: string
+): { gameSlug: string; slug: string } | null {
+  const decoded = decodeEditionId(id);
+  if (!decoded.startsWith("seed:")) return null;
+  const [, gameSlug, slug] = decoded.split(":");
+  return gameSlug && slug ? { gameSlug, slug } : null;
+}
+
 export function isVirtualId(id: string): boolean {
-  return id.startsWith(VIRTUAL_PREFIX);
+  return decodeEditionId(id).startsWith(VIRTUAL_PREFIX);
 }
 
 function str(value: unknown, fallback = ""): string {
@@ -400,7 +426,15 @@ export async function getEditionBySlug(
 }
 
 /** One edition by database id. Never resolves virtual ids — they do not exist. */
-export async function getEditionById(id: string): Promise<Edition | undefined> {
+export async function getEditionById(rawId: string): Promise<Edition | undefined> {
+  /*
+   * Seed and virtual ids carry colons ("seed:holocure:playbound"). A colon is
+   * legal in a path segment but routinely arrives percent-encoded, and
+   * "seed%3A…" fails the prefix test — so the id fell through to findById,
+   * which cannot cast it, and the admin edit page 404'd on every seed-backed
+   * edition. Decoding first makes both spellings resolve.
+   */
+  const id = decodeEditionId(rawId);
   if (!id || isVirtualId(id)) return undefined;
   if (id.startsWith("seed:")) {
     const parts = id.split(":");
