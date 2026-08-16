@@ -128,6 +128,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getRecentlyPlayed: () => ipcRenderer.invoke("get-recently-played"),
   getGameDetail: (slug) => ipcRenderer.invoke("get-game-detail", slug),
   getModDetail: (slug) => ipcRenderer.invoke("get-mod-detail", slug),
+  getGearDetail: (slug) => ipcRenderer.invoke("get-gear-detail", slug),
   getLiveStats: (opts) => ipcRenderer.invoke("get-live-stats", opts || {}),
   getEditions: (gameSlug) => ipcRenderer.invoke("get-editions", gameSlug || null),
   getGameGuides: (slug) => ipcRenderer.invoke("get-game-guides", slug),
