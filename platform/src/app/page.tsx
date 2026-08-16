@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Gem, Newspaper, Server } from "lucide-react";
-import { collections } from "@/lib/data";
 import { listGamesNewestFirst, listGames, mostPopularGames, getGame } from "@/lib/catalog";
+import { listCollections } from "@/lib/collections";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
 import { CardRow } from "@/components/GameCard";
@@ -81,15 +81,16 @@ function HomeLiveServersFallback() {
 }
 
 export default async function HomePage() {
-  const [gamesNewestFirst, games, popular, mods, liveStats, openPartyCount] = await Promise.all([
-    listGamesNewestFirst(),
-    listGames(),
-    mostPopularGames(12),
-    listMods({ view: "card" }),
-    getCatalogLiveStats(),
-    countOpenPublicParties(),
-  ]);
-  if (!gamesNewestFirst.length) return null;
+  const [gamesNewestFirst, games, popular, mods, liveStats, openPartyCount, collections] =
+    await Promise.all([
+      listGamesNewestFirst(),
+      listGames(),
+      mostPopularGames(12),
+      listMods({ view: "card" }),
+      getCatalogLiveStats(),
+      countOpenPublicParties(),
+      listCollections(),
+    ]);
 
   const featuredMods = mods.slice(0, FEATURED_MODS_LIMIT);
   const featuredCollections = collections.slice(0, 3);
@@ -171,28 +172,30 @@ export default async function HomePage() {
       )}
 
       {/* ── Collections ────────────────────────────────────────── */}
-      <section>
-        <SectionHeader
-          title="Curated Collections"
-          subtitle="Hand-picked groupings from PlayBound"
-          href="/collections"
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredCollections.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/collections/${c.slug}`}
-              className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
-            >
-              <p className="flex items-center gap-1.5 font-bold">
-                <Gem className="size-3.5 text-primary" /> {c.title}
-              </p>
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{c.gameSlugs.length} games</p>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {featuredCollections.length > 0 && (
+        <section>
+          <SectionHeader
+            title="Curated Collections"
+            subtitle="Hand-picked groupings from PlayBound"
+            href="/collections"
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredCollections.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/collections/${c.slug}`}
+                className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
+              >
+                <p className="flex items-center gap-1.5 font-bold">
+                  <Gem className="size-3.5 text-primary" /> {c.title}
+                </p>
+                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{c.gameSlugs.length} games</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

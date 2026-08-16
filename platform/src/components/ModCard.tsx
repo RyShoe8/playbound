@@ -46,10 +46,10 @@ export function ModCard({
 
   const body = (
     <>
-      <ModArt mod={mod} baseGame={baseGame} className="h-[138px] w-full" />
+      <ModArt mod={mod} baseGame={baseGame} className="h-[152px] w-full" />
       <div className="flex flex-1 flex-col p-4">
-        <p className="truncate text-[16px] font-bold leading-tight">{mod.title}</p>
-        <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+        <p className="truncate text-[19px] font-bold leading-tight">{mod.title}</p>
+        <p className="mt-1 flex-1 text-[14px] leading-relaxed text-muted-foreground line-clamp-2">
           {mod.tagline}
         </p>
         <CardCategoryTags
@@ -57,12 +57,13 @@ export function ModCard({
           tags={mod.tags}
           className="mt-2"
           max={3}
+          size="md"
         />
         <div className="mt-3.5 flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-[11px] text-muted-foreground/70">
+          <span className="min-w-0 truncate text-xs text-muted-foreground/70">
             {footer || "\u00a0"}
           </span>
-          <span className="shrink-0 rounded-full border border-border bg-secondary/50 px-3 py-1 text-xs font-semibold text-secondary-foreground transition-colors group-hover:border-primary/30 group-hover:bg-secondary">
+          <span className="shrink-0 rounded-full border border-border bg-secondary/50 px-3 py-1 text-[13px] font-semibold text-secondary-foreground transition-colors group-hover:border-primary/30 group-hover:bg-secondary">
             View
           </span>
         </div>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { CoverImage } from "@/components/CoverImage";
 import {
   Blocks,
   Bomb,
@@ -71,27 +71,6 @@ export function GameArt({
   const iconClass =
     iconSize === "sm" ? "size-8" : iconSize === "md" ? "size-14" : "size-20";
 
-  if (game.coverImage) {
-    const remote = /^https?:\/\//i.test(game.coverImage);
-    return (
-      <div className={cn("relative overflow-hidden bg-secondary", className)}>
-        <Image
-          src={game.coverImage}
-          alt={`${game.title} cover`}
-          fill
-          unoptimized={remote}
-          className="object-cover"
-          sizes="(max-width: 768px) 50vw, 25vw"
-        />
-        {showTitle && (
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-8 pb-2.5">
-            <p className="truncate text-sm font-bold text-white drop-shadow">{game.title}</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn("relative flex items-center justify-center overflow-hidden", className)}
@@ -118,9 +97,17 @@ export function GameArt({
         className={cn(iconClass, "relative text-white/85 drop-shadow-[0_4px_14px_rgba(0,0,0,0.45)]")}
         strokeWidth={1.5}
       />
+      {game.coverImage ? (
+        <CoverImage
+          src={game.coverImage}
+          alt={`${game.title} cover`}
+          className="z-10"
+          sizes="(max-width: 768px) 50vw, 25vw"
+        />
+      ) : null}
       {showTitle && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pt-8 pb-2.5">
-          <p className="truncate text-sm font-bold text-white drop-shadow">{game.title}</p>
+        <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-8 pb-2.5">
+          <p className="truncate text-base font-bold text-white drop-shadow">{game.title}</p>
         </div>
       )}
     </div>

@@ -3,8 +3,8 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Search } from "lucide-react";
+import { CoverImage } from "@/components/CoverImage";
 import type { Game, Genre } from "@/lib/data/types";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
@@ -65,21 +65,17 @@ function CatalogCard({
     >
       {/* Banner */}
       <div
-        className="relative flex h-[138px] items-center justify-center overflow-hidden text-[32px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]"
+        className="relative flex h-[152px] items-center justify-center overflow-hidden text-[36px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]"
         style={{ background: bgGrad }}
       >
+        {(game.title || "?").charAt(0)}
         {game.coverImage ? (
-          <Image
+          <CoverImage
             src={game.coverImage}
             alt={`${game.title} cover art`}
-            fill
-            unoptimized={/^https?:\/\//i.test(game.coverImage)}
-            className="object-cover"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           />
-        ) : (
-          (game.title || "?").charAt(0)
-        )}
+        ) : null}
         {incompatibleLabel ? (
           <span className="absolute top-2 left-2 rounded-md border border-border/80 bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
             {incompatibleLabel}
@@ -89,18 +85,18 @@ function CatalogCard({
 
       {/* Body */}
       <div className="flex flex-1 flex-col p-4">
-        <p className="truncate text-[16px] font-bold leading-tight">
+        <p className="truncate text-[19px] font-bold leading-tight">
           {game.title}
         </p>
-        <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+        <p className="mt-1 flex-1 text-[14px] leading-relaxed text-muted-foreground line-clamp-2">
           {game.tagline}
         </p>
-        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-2" />
+        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-2" size="md" />
         <div className="mt-3.5 flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground/70">
+          <span className="text-xs text-muted-foreground/70">
             {sizeLabel(game.sizeMB)}
           </span>
-          <span className="rounded-full border border-border bg-secondary/50 px-3 py-1 text-xs font-semibold text-secondary-foreground transition-colors group-hover:border-primary/30 group-hover:bg-secondary">
+          <span className="rounded-full border border-border bg-secondary/50 px-3 py-1 text-[13px] font-semibold text-secondary-foreground transition-colors group-hover:border-primary/30 group-hover:bg-secondary">
             View
           </span>
         </div>
@@ -403,7 +399,7 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
         </p>
       ) : (
         <CompatibleGamesFade animKey={animKey}>
-          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
+          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(288px,1fr))] gap-5">
             {filtered.map((g, i) => (
               <div
                 key={g.slug}

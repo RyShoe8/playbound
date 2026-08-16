@@ -47,7 +47,7 @@ export async function provisionPartyDiscordVoice(
         partyId: String(party._id),
         gameSlug: party.gameSlug,
       }),
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(25_000),
     });
 
     if (!res.ok) {
@@ -73,7 +73,12 @@ export async function provisionPartyDiscordVoice(
     await party.save();
     return true;
   } catch (err) {
-    console.warn("discord party voice provision error", err);
+    const timedOut =
+      err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    console.warn(
+      timedOut ? "discord party voice provision timeout" : "discord party voice provision error",
+      err
+    );
     return false;
   }
 }
@@ -105,7 +110,7 @@ export async function cleanupPartyDiscordVoice(
         voiceChannelId: discord.voiceChannelId,
         categoryId: discord.categoryId,
       }),
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(25_000),
     });
 
     if (!res.ok) {
@@ -145,7 +150,7 @@ export async function moveDiscordUsersToPartyVoice(
         authorization: `Bearer ${secret}`,
       },
       body: JSON.stringify({ voiceChannelId, discordUserIds }),
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(25_000),
     });
     if (!res.ok) {
       console.warn("discord party voice move failed", res.status);

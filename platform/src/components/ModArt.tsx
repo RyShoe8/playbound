@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { CoverImage } from "@/components/CoverImage";
 import { resolveModVisual, type BaseGameVisualInput, type ModVisualInput } from "@/lib/modMedia";
 
 /**
@@ -19,15 +19,17 @@ export function ModArt({
   const visual = resolveModVisual(mod, baseGame);
 
   if (visual.kind === "image") {
-    const remote = /^https?:\/\//i.test(visual.url);
     return (
-      <div className={cn("relative overflow-hidden bg-secondary", className)}>
-        <Image
+      <div
+        className={cn(
+          "relative flex items-center justify-center overflow-hidden bg-secondary text-[36px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]",
+          className
+        )}
+      >
+        {(mod.title || "?").charAt(0)}
+        <CoverImage
           src={visual.url}
           alt={alt || `${mod.title} cover`}
-          fill
-          unoptimized={remote}
-          className="object-cover"
           sizes="(max-width: 768px) 50vw, 33vw"
         />
       </div>
@@ -37,7 +39,7 @@ export function ModArt({
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center overflow-hidden text-[32px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]",
+        "relative flex items-center justify-center overflow-hidden text-[36px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]",
         className
       )}
       style={{

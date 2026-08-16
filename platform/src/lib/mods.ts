@@ -4,38 +4,14 @@ import CatalogMod from "@/lib/models/CatalogMod";
 import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 import type { ModHardwareRequirements } from "@/lib/hardware/types";
-import { mods as seedMods, type ModSeed } from "@/lib/data/mods";
+import { mods as seedMods } from "@/lib/data/mods";
 
-function seedToCatalogMod(s: ModSeed): CatalogModPublic {
-  return {
-    slug: s.slug,
-    title: s.title,
-    tagline: s.tagline,
-    description: s.description,
-    baseGameSlug: s.baseGameSlug,
-    editionSlug: null,
-    developerSlug: s.developerSlug,
-    license: s.license,
-    releaseYear: s.releaseYear,
-    sizeMB: s.sizeMB,
-    website: s.website,
-    githubRepo: s.githubRepo ?? undefined,
-    downloadKind: s.downloadKind,
-    assetPattern: s.assetPattern ?? undefined,
-    directUrl: s.directUrl ?? undefined,
-    installRelativePath: s.installRelativePath,
-    art: s.art ?? { from: "#1e293b", to: "#64748b", icon: "Package" },
-    coverImage: s.coverImage,
-    screenshots: s.screenshots ?? [],
-    managedBy: s.managedBy,
-    status: s.published ? "published" : "draft",
-    longDescription: s.longDescription,
-    whatItChanges: s.whatItChanges,
-    compatibility: s.compatibility,
-    platforms: s.platforms,
-    installSteps: s.installSteps,
-    faq: s.faq,
-  };
+const seedBySlug = new Map(seedMods.map((s) => [s.slug, s]));
+
+function usableSeedMedia(url?: string): string | undefined {
+  const value = String(url || "").trim();
+  if (!value || value.startsWith("/games/") || value.startsWith("/mods/")) return undefined;
+  return value;
 }
 
 export type CatalogModPublic = {
@@ -130,11 +106,12 @@ export type ModInstallMeta = {
 type LeanMod = Record<string, unknown>;
 
 function toMod(doc: LeanMod): CatalogModPublic {
+  const seed = seedBySlug.get(String(doc.slug));
   return {
     slug: String(doc.slug),
     title: String(doc.title),
     tagline: String(doc.tagline),
-    description: String(doc.description),
+    description: String(doc.description) || seed?.description || "",
     baseGameSlug: String(doc.baseGameSlug),
     editionSlug: (doc.editionSlug as string) || null,
     developerSlug: String(doc.developerSlug),
@@ -147,9 +124,11 @@ function toMod(doc: LeanMod): CatalogModPublic {
     assetPattern: (doc.assetPattern as string) || undefined,
     directUrl: (doc.directUrl as string) || undefined,
     installRelativePath: String(doc.installRelativePath ?? "mods"),
-    art: doc.art as GameArt,
-    coverImage: (doc.coverImage as string) || undefined,
-    screenshots: (doc.screenshots as string[])?.length ? (doc.screenshots as string[]) : undefined,
+    art: (doc.art as GameArt) || seed?.art || { from: "#1e293b", to: "#64748b", icon: "Package" },
+    coverImage: (doc.coverImage as string) || usableSeedMedia(seed?.coverImage),
+    screenshots: (doc.screenshots as string[])?.length
+      ? (doc.screenshots as string[])
+      : seed?.screenshots?.map((u) => usableSeedMedia(u)).filter((u): u is string => Boolean(u)),
     managedBy: (doc.managedBy as "admin" | "developer") || "admin",
     status: normalizeStatus(doc),
     detectedVersion: (doc.detectedVersion as string) || undefined,
@@ -160,9 +139,9 @@ function toMod(doc: LeanMod): CatalogModPublic {
     versionCheckNote: (doc.versionCheckNote as string) || undefined,
     autoUpdatePinned: doc.autoUpdatePinned !== false,
 
-    longDescription: (doc.longDescription as string) || undefined,
-    whatItChanges: (doc.whatItChanges as string) || undefined,
-    compatibility: (doc.compatibility as string) || undefined,
+    longDescription: (doc.longDescription as string) || seed?.longDescription,
+    whatItChanges: (doc.whatItChanges as string) || seed?.whatItChanges,
+    compatibility: (doc.compatibility as string) || seed?.compatibility,
     platforms: Array.isArray(doc.platforms)
       ? (doc.platforms as CatalogModPublic["platforms"])
       : undefined,
@@ -294,24 +273,7 @@ async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPubli
     console.error("[mods] listMods failed:", err);
   }
 
-  const dbSlugs = new Set(dbMods.map((m) => m.slug));
-  let candidateSeeds = seedMods;
-  if (opts?.baseGameSlug) {
-    candidateSeeds = candidateSeeds.filter((s) => s.baseGameSlug === opts.baseGameSlug);
-  }
-  if (opts && "editionSlug" in opts && opts.editionSlug !== null) {
-    // Seed mods are game-level; none have a specific editionSlug.
-    candidateSeeds = [];
-  }
-  if (!opts?.includeUnpublished && !opts?.includeTesting) {
-    candidateSeeds = candidateSeeds.filter((s) => s.published !== false);
-  }
-
-  const missingSeeds = candidateSeeds
-    .filter((s) => !dbSlugs.has(s.slug))
-    .map(seedToCatalogMod);
-
-  return [...dbMods, ...missingSeeds].sort((a, b) => a.title.localeCompare(b.title));
+  return dbMods.sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export async function listAllMods(): Promise<
@@ -348,17 +310,7 @@ export async function listAllMods(): Promise<
   } catch (err) {
     console.error("[mods] listAllMods failed:", err);
   }
-  const dbSlugs = new Set(dbMods.map((m) => m.slug));
-  const fallbackSeeds = seedMods
-    .filter((s) => !dbSlugs.has(s.slug))
-    .map((s) => ({
-      ...seedToCatalogMod(s),
-      published: s.published,
-      status: s.published ? ("published" as const) : ("draft" as const),
-      managedBy: s.managedBy,
-      ownerUserId: null,
-    }));
-  return [...dbMods, ...fallbackSeeds];
+  return dbMods;
 }
 
 export async function getMod(
@@ -375,8 +327,7 @@ export async function getMod(
   } catch (err) {
     console.error("[mods] getMod failed:", err);
   }
-  const seed = seedMods.find((s) => s.slug === slug);
-  return seed ? seedToCatalogMod(seed) : undefined;
+  return undefined;
 }
 
 export async function modsForGame(
@@ -411,18 +362,14 @@ export async function getModAdmin(slug: string) {
     await dbConnect();
     const doc = await CatalogMod.findOne({ slug }).lean();
     if (doc) return doc;
-  } catch {
-    /* fallback to seed */
+  } catch (err) {
+    console.error("[mods] getModAdmin failed:", err);
   }
-  const seed = seedMods.find((s) => s.slug === slug);
-  return seed ? seedToCatalogMod(seed) : null;
+  return null;
 }
 
 export async function modCountsByGame(): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
-  for (const s of seedMods) {
-    counts.set(s.baseGameSlug, (counts.get(s.baseGameSlug) || 0) + 1);
-  }
   try {
     await dbConnect();
     const rows = await CatalogMod.aggregate<{ _id: string; count: number }>([
