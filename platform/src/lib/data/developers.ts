@@ -1111,6 +1111,17 @@ export const developers: Developer[] = [
     website: "https://www.brawlhalla.com/",
     artHue: 200,
   },
+  {
+    slug: "ysoccer-team",
+    name: "The YSoccer Project",
+    tagline: "Classic 16-bit retro top-down football preservation and modern continuation.",
+    about:
+      "The open-source development team led by Massimo D'Amico and Daniele Modica, dedicated to creating the definitive spiritual successor to Sensible World of Soccer (SWOS) with fluid aftertouch ball physics, deep tactical editors, and cross-platform native support.",
+    founded: 2008,
+    location: "Worldwide",
+    website: "https://ysoccer.sourceforge.io/",
+    artHue: 120,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));
