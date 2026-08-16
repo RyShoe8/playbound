@@ -4,6 +4,7 @@ import {
   enhanceSelect,
   escapeHtml,
   filterByCompatibility,
+  loadPlayingNowBySlug,
   markViewReady,
   state,
   views,
@@ -131,8 +132,11 @@ export function paintGamesGrid(catalog = state.catalogCache) {
     grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No games match your filters.</p>`;
     return;
   }
-  grid.replaceChildren(...list.map(createGameCard));
+  grid.replaceChildren(...list.map((game) => createGameCard(game, gamesPlayingNow.get(game.slug))));
 }
+
+/** One shared snapshot for the whole grid, not a request per card. */
+let gamesPlayingNow = new Map();
 
 async function renderGamesView() {
   const created = ensureGamesShell();
@@ -147,6 +151,14 @@ async function renderGamesView() {
   }
   paintGamesGrid(catalog);
   markViewReady(views.games);
+
+  // Painted without counts first so the grid is not held up by the network,
+  // then repainted once the 15-minute snapshot resolves (usually from cache).
+  const counts = await loadPlayingNowBySlug();
+  if (counts.size > 0) {
+    gamesPlayingNow = counts;
+    if (state.currentView === "games") paintGamesGrid(catalog);
+  }
 }
 
 api.renderGamesView = renderGamesView;

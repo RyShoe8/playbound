@@ -1,6 +1,13 @@
-import { api, escapeHtml, prefetchGameDetail, state } from "./shared.js";
+import {
+  api,
+  escapeHtml,
+  isGameDesktopCompatible,
+  prefetchGameDetail,
+  state,
+} from "./shared.js";
 
-function categoryChipsHtml(item, extra = []) {
+/** Mirrors CardCategoryTags: genres then tags, deduped, capped. */
+function categoryChipsHtml(item, { extra = [], max = 4 } = {}) {
   const seen = new Set();
   const chips = [];
   for (const raw of [...(item.genres || []), ...(item.tags || []), ...extra]) {
@@ -10,7 +17,7 @@ function categoryChipsHtml(item, extra = []) {
     if (seen.has(key)) continue;
     seen.add(key);
     chips.push(label);
-    if (chips.length >= 3) break;
+    if (chips.length >= max) break;
   }
   if (!chips.length) return "";
   return `<div class="card-tags">${chips
@@ -18,7 +25,45 @@ function categoryChipsHtml(item, extra = []) {
     .join("")}</div>`;
 }
 
-export function createGameCard(game) {
+const ICON_DOWNLOAD = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+const ICON_MONITOR_PLAY = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7.75a.75.75 0 0 1 1.142-.638l3.664 2.249a.75.75 0 0 1 0 1.278l-3.664 2.25a.75.75 0 0 1-1.142-.64z"/><path d="M12 17v4"/><path d="M8 21h8"/><rect x="2" y="3" width="20" height="14" rx="2"/></svg>`;
+
+/**
+ * `sizeLabel()` from the website's GameCard. The launcher catalog ships an
+ * already-formatted `approxSize` ("~1.2 GB"), so the tilde is dropped to leave
+ * the same string the site renders.
+ */
+function cardSizeLabel(game) {
+  const raw = String(game.approxSize || "").trim();
+  if (!raw || raw === "Browser") return "";
+  return raw.replace(/^~\s*/, "");
+}
+
+function isBrowserGame(game) {
+  // The catalog marks non-installable titles as external entries pointing at
+  // the game's own site — the launcher's equivalent of isBrowserGame().
+  return game.kind === "external" || Boolean(game.browserPlayable);
+}
+
+/** Top-right badge: Play for browser titles, otherwise the download size. */
+function launchBadgeHtml(game) {
+  if (isBrowserGame(game)) {
+    return `<span class="card-launch-badge card-launch-play">${ICON_MONITOR_PLAY} Play</span>`;
+  }
+  const label = cardSizeLabel(game);
+  return `<span class="card-launch-badge">${ICON_DOWNLOAD}${label ? ` ${escapeHtml(label)}` : ""}</span>`;
+}
+
+/**
+ * A card for one game, structured like the website's GameCard: portrait art
+ * carrying the title, an incompatibility corner and a launch badge over it,
+ * and a footer of category tags against the live player count.
+ *
+ * `playingNow` is optional and comes from one shared snapshot for the whole
+ * view (see loadPlayingNowBySlug). When a slug is absent from that snapshot
+ * the count is left out rather than shown as a misleading 0.
+ */
+export function createGameCard(game, playingNow) {
   const card = document.createElement("div");
   card.className = "game-card";
 
@@ -27,10 +72,14 @@ export function createGameCard(game) {
       ? `linear-gradient(135deg, ${game.art[0]}, ${game.art[1]})`
       : `linear-gradient(135deg, #312e81, #a78bfa)`;
 
-  const banner = document.createElement("div");
-  banner.className = "card-banner";
-  banner.style.background = bgGrad;
-  banner.textContent = (game.title || "?").charAt(0);
+  const art = document.createElement("div");
+  art.className = "card-art";
+  art.style.background = bgGrad;
+
+  const fallback = document.createElement("span");
+  fallback.className = "card-art-fallback";
+  fallback.textContent = (game.title || "?").charAt(0);
+  art.appendChild(fallback);
 
   if (game.coverImage) {
     const img = document.createElement("img");
@@ -38,32 +87,46 @@ export function createGameCard(game) {
     img.src = game.coverImage;
     img.alt = "";
     img.loading = "lazy";
-    img.addEventListener("error", () => {
-      img.remove();
-      banner.textContent = (game.title || "?").charAt(0);
-    });
-    banner.textContent = "";
-    banner.appendChild(img);
+    img.addEventListener("error", () => img.remove());
+    art.appendChild(img);
   }
 
-  card.appendChild(banner);
+  // The site's GameArt renders the title over the bottom of the cover, which
+  // is why the card body below carries no title of its own.
+  const titleOverlay = document.createElement("div");
+  titleOverlay.className = "card-art-title";
+  titleOverlay.innerHTML = `<span class="card-title-text">${escapeHtml(game.title)}</span>${
+    game.testing || game.status === "testing"
+      ? `<span class="badge card-testing-badge">Testing</span>`
+      : ""
+  }`;
+  art.appendChild(titleOverlay);
 
-  const body = document.createElement("div");
-  body.className = "card-body";
-  body.innerHTML = `
-      <div class="card-title"><span class="card-title-text">${escapeHtml(game.title)}</span>${
-        game.testing || game.status === "testing"
-          ? `<span class="badge card-testing-badge">Testing</span>`
-          : ""
-      }</div>
-      <div class="card-blurb">${escapeHtml(game.blurb || "")}</div>
-      ${categoryChipsHtml(game)}
-      <div class="card-footer">
-        <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml(game.approxSize || "")}</span>
-        <button class="btn-secondary btn-sm" type="button">View</button>
-      </div>
+  if (state.compatibilityFilter === "all" && !isGameDesktopCompatible(game)) {
+    const corner = document.createElement("span");
+    corner.className = "card-incompatible-corner";
+    corner.textContent = "Mobile Only";
+    art.appendChild(corner);
+  }
+
+  const badge = document.createElement("div");
+  badge.className = "card-launch-badge-slot";
+  badge.innerHTML = launchBadgeHtml(game);
+  art.appendChild(badge);
+
+  card.appendChild(art);
+
+  const footer = document.createElement("div");
+  footer.className = "card-meta";
+  footer.innerHTML = `
+    ${categoryChipsHtml(game)}
+    ${
+      typeof playingNow === "number"
+        ? `<p class="card-playing"><span class="card-playing-dot"></span>${playingNow.toLocaleString()} playing</p>`
+        : ""
+    }
   `;
-  card.appendChild(body);
+  card.appendChild(footer);
 
   card.addEventListener(
     "pointerenter",
