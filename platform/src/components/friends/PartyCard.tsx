@@ -11,9 +11,11 @@ export function PartyCard({ party }: { party: PartyPayload }) {
       <div className="flex items-start justify-between">
         <div>
           <h4 className="font-bold">{partyDisplayName(party)}</h4>
-          {party.hosted?.status === "ready" && (
+          {party.hosted?.roomCode ? (
+            <p className="text-xs text-primary font-mono font-semibold mt-0.5">Code: {party.hosted.roomCode}</p>
+          ) : party.hosted?.status === "ready" ? (
             <p className="text-xs text-primary font-semibold mt-0.5">PlayBound server ready</p>
-          )}
+          ) : null}
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Crown className="size-3.5" />
             {party.gameTitle || party.gameSlug || party.leaderUsername}

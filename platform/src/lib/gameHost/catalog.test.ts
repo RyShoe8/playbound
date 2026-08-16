@@ -17,6 +17,13 @@ describe("game host catalog", () => {
     expect(isHostableGame("freeciv")).toBe(true);
     expect(isHostableGame("bzflag")).toBe(true);
     expect(isHostableGame("supertuxkart")).toBe(true);
+    expect(isHostableGame("keeperfx")).toBe(true);
+    expect(isHostableGame("battle-for-wesnoth")).toBe(true);
+    expect(isHostableGame("0-ad")).toBe(true);
+    expect(isHostableGame("freedoom")).toBe(true);
+    expect(isHostableGame("marathon-2")).toBe(true);
+    expect(isHostableGame("aleph-one")).toBe(true);
+    expect(isHostableGame("triplea")).toBe(true);
   });
 
   it("does not host closed platforms or lobby-only titles", () => {

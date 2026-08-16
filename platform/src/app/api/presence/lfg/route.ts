@@ -8,37 +8,73 @@ import { getGame } from "@/lib/catalog";
 import { LFG_TTL_MS } from "@/lib/playTogether/types";
 import { createFriendLfgNotification } from "@/lib/playTogether/notify";
 
+/** Enough to say "any of these", short of a wishlist nobody reads. */
+const MAX_LFG_GAMES = 6;
+
 export async function POST(req: Request) {
   const userId = await getFriendsUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const body = (await req.json()) as { enabled?: boolean; gameSlug?: string | null };
+    const body = (await req.json()) as {
+      enabled?: boolean;
+      gameSlug?: string | null;
+      gameSlugs?: string[] | null;
+    };
     const enabled = Boolean(body.enabled);
     await dbConnect();
 
     if (!enabled) {
       await Presence.findOneAndUpdate(
         { userId },
-        { $set: { lookingForPlayersUntil: null, lookingForPlayersGameId: null } },
+        {
+          $set: {
+            lookingForPlayersUntil: null,
+            lookingForPlayersGameId: null,
+            lookingForPlayersGameIds: [],
+          },
+        },
         { upsert: true }
       );
-      return NextResponse.json({ active: false, expiresAt: null, gameSlug: null });
+      return NextResponse.json({ active: false, expiresAt: null, gameSlug: null, gameSlugs: [] });
     }
 
-    const gameSlug = body.gameSlug ? String(body.gameSlug).trim() : null;
-    if (gameSlug) {
-      const game = await getGame(gameSlug, { includeTesting: true });
-      if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+    /*
+     * Preferred games are a set now — "I'd play any of these" is the useful
+     * signal for finding a party. `gameSlug` is still accepted so older
+     * launcher builds keep working, and the singular field is kept in sync
+     * with the first entry for every existing reader of it.
+     */
+    const requested = Array.isArray(body.gameSlugs)
+      ? body.gameSlugs
+      : body.gameSlug
+      ? [body.gameSlug]
+      : [];
+    const gameSlugs = [
+      ...new Set(
+        requested
+          .map((s) => String(s || "").trim())
+          .filter(Boolean)
+          .slice(0, MAX_LFG_GAMES)
+      ),
+    ];
+
+    for (const slug of gameSlugs) {
+      const game = await getGame(slug, { includeTesting: true });
+      if (!game) {
+        return NextResponse.json({ error: `Game not found: ${slug}` }, { status: 404 });
+      }
     }
 
+    const primarySlug = gameSlugs[0] || null;
     const expiresAt = new Date(Date.now() + LFG_TTL_MS);
-    const presence = await Presence.findOneAndUpdate(
+    await Presence.findOneAndUpdate(
       { userId },
       {
         $set: {
           lookingForPlayersUntil: expiresAt,
-          lookingForPlayersGameId: gameSlug,
+          lookingForPlayersGameId: primarySlug,
+          lookingForPlayersGameIds: gameSlugs,
           lastHeartbeat: new Date(),
         },
         $setOnInsert: { userId, status: "online", startedAt: new Date() },
@@ -46,13 +82,15 @@ export async function POST(req: Request) {
       { upsert: true, returnDocument: "after" }
     ).lean();
 
-    // Notify friends (soft-fail).
-    void notifyFriendsLfg(userId, gameSlug).catch(() => undefined);
+    // Notify friends (soft-fail). One notification per preferred game would be
+    // spam, so friends hear about the first pick only.
+    void notifyFriendsLfg(userId, primarySlug).catch(() => undefined);
 
     return NextResponse.json({
       active: true,
       expiresAt,
-      gameSlug: presence?.lookingForPlayersGameId || gameSlug,
+      gameSlug: primarySlug,
+      gameSlugs,
     });
   } catch (err) {
     console.error("presence/lfg POST failed:", err);

@@ -1472,9 +1472,9 @@ export const editions: EditionSeed[] = [
     slug: "playbound",
     name: "HoloCure: Multiplayer (Experimental)",
     shortDescription:
-      "Community co-op multiplayer for HoloCure, installed in one click. Experimental — expect occasional crashes.",
+      "Seamless online co-op multiplayer for HoloCure with 6-character room codes. Zero Steam or VPN required. Experimental — expect occasional crashes.",
     description:
-      "Adds PippleCultist's community multiplayer mod to your Steam copy of HoloCure — Save the Fans!, so you can play co-op over LAN or with Steam friends. PlayBound installs the Aurie mod loader and the mod itself for you, and re-applies them automatically whenever Steam updates HoloCure and reverts the change.\n\nThis is experimental community software, not an official HoloCure feature. The mod's own author notes it \"will probably be buggy and have random crashes since a lot has been modified in the game to get it working\". Your saves are untouched and you can return to unmodded HoloCure at any time by uninstalling this edition, or through Steam's Verify integrity of game files.\n\nWant the plain game instead? Install the Official Vanilla Edition.",
+      "Adds PlayBound's community multiplayer runtime to HoloCure — Save the Fans!, so you can play co-op with friends online using simple 6-character room codes without requiring Steam, Hamachi/VPNs, or router port forwarding. PlayBound installs the Aurie mod loader and verified multiplayer transport for you automatically.\n\nThis is experimental community software, not an official HoloCure feature. The mod's author notes it may have occasional crashes since a lot is modified in the game to get networking working. Your saves remain completely safe in %LOCALAPPDATA%\\HoloCure and you can switch to unmodded vanilla HoloCure at any time.",
     type: "community",
     // Deliberately NOT the default. The mod is self-described as crash-prone,
     // so the vanilla edition stays the one-click path for anyone who just

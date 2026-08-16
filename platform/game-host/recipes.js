@@ -183,6 +183,57 @@ export const recipes = {
       ctx.name,
     ],
   },
+  keeperfx: {
+    portStart: 5500,
+    portEnd: 5520,
+    binaries: gameBin("keeperfx", ["keeperfx-server", "keeperfx"]),
+    args: (port) => ["-p", String(port)],
+  },
+  "marathon-2": {
+    portStart: 4226,
+    portEnd: 4246,
+    binaries: gameBin("marathon-2", ["alephone-server", "alephone"]),
+    args: (port) => ["-port", String(port)],
+  },
+  "aleph-one": {
+    portStart: 4247,
+    portEnd: 4267,
+    binaries: gameBin("aleph-one", ["alephone-server", "alephone"]),
+    args: (port) => ["-port", String(port)],
+  },
+  triplea: {
+    portStart: 3303,
+    portEnd: 3323,
+    binaries: [
+      ...gameBin("triplea", ["run-server"]),
+      "/usr/bin/java",
+    ],
+    args: (port) => {
+      const jar = firstExisting([
+        path.join(GAMES_ROOT, "triplea", "triplea.jar"),
+      ]);
+      if (jar) return ["-jar", jar, "server", `--port=${port}`];
+      return [`--port=${port}`];
+    },
+  },
+  "battle-for-wesnoth": {
+    portStart: 15000,
+    portEnd: 15020,
+    binaries: gameBin("battle-for-wesnoth", ["wesnothd", "wesnothd-1.18", "wesnothd-1.16"]),
+    args: (port) => ["-p", String(port)],
+  },
+  freedoom: {
+    portStart: 10666,
+    portEnd: 10686,
+    binaries: gameBin("freedoom", ["odamex-server", "zandronum-server"]),
+    args: (port) => ["-port", String(port)],
+  },
+  "0-ad": {
+    portStart: 20595,
+    portEnd: 20615,
+    binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
+    args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
+  },
 };
 
 export function resolveRecipe(slug) {

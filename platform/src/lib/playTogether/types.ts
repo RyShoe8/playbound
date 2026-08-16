@@ -134,6 +134,7 @@ export type PartyPayload = {
     port: number | null;
     name: string | null;
     error: string | null;
+    roomCode?: string | null;
   };
   lastActivity: string;
   createdAt: string;

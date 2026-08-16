@@ -28,6 +28,7 @@ const PartyHostedSchema = new Schema(
     port: { type: Number, default: null },
     name: { type: String, default: null },
     error: { type: String, default: null },
+    roomCode: { type: String, default: null },
     provisionedAt: { type: Date, default: null },
   },
   { _id: false }
@@ -186,6 +187,7 @@ export type PartyDoc = {
     port?: number | null;
     name?: string | null;
     error?: string | null;
+    roomCode?: string | null;
     provisionedAt?: Date | null;
   };
   lastActivity: Date;

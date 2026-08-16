@@ -1,0 +1,78 @@
+import { NextResponse } from "next/server";
+import {
+  postSessionSignal,
+  pollSessionSignals,
+} from "@/lib/multiplayer/sessionManager";
+
+interface RouteContext {
+  params: Promise<{ slug: string; id: string }>;
+}
+
+/**
+ * POST /api/multiplayer/:slug/sessions/:id/signal
+ * Pushes a new signaling message (SDP/ICE candidate blob).
+ */
+export async function POST(req: Request, context: RouteContext) {
+  try {
+    const { id: sessionId } = await context.params;
+    const body = await req.json().catch(() => ({}));
+    const { senderRole, recipientRole, senderPeerId, payload } = body;
+
+    if (!senderRole || !recipientRole || !payload) {
+      return NextResponse.json(
+        { error: "Invalid signaling payload. Required: senderRole, recipientRole, payload." },
+        { status: 400 }
+      );
+    }
+
+    const message = postSessionSignal(sessionId, {
+      senderRole,
+      recipientRole,
+      senderPeerId: senderPeerId || "anonymous",
+      payload,
+    });
+
+    if (!message) {
+      return NextResponse.json(
+        { error: "Session not found or inactive." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, messageId: message.id }, { status: 201 });
+  } catch (err) {
+    console.error("POST /api/multiplayer/[slug]/sessions/[id]/signal failed:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+/**
+ * GET /api/multiplayer/:slug/sessions/:id/signal?forRole=host&since=123456789
+ * Polls for incoming signaling messages destined for a specific role.
+ */
+export async function GET(req: Request, context: RouteContext) {
+  try {
+    const { id: sessionId } = await context.params;
+    const url = new URL(req.url);
+    const forRole = url.searchParams.get("forRole");
+    const since = parseInt(url.searchParams.get("since") || "0", 10);
+
+    if (forRole !== "host" && forRole !== "client") {
+      return NextResponse.json(
+        { error: "Invalid or missing forRole query param ('host' | 'client')." },
+        { status: 400 }
+      );
+    }
+
+    const messages = pollSessionSignals(
+      sessionId,
+      forRole as "host" | "client",
+      since
+    );
+
+    return NextResponse.json({ messages });
+  } catch (err) {
+    console.error("GET /api/multiplayer/[slug]/sessions/[id]/signal failed:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
