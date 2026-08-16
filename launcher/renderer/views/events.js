@@ -1,32 +1,57 @@
-import { createFreeOfferCard, createGameCard } from "../cards.js";
 import {
   api,
-  buildActivityPanelHtml,
-  editionsContextSlug,
-  enhanceSelect,
-  escapeHtml,
-  executableNoun,
-  filterByCompatibility,
-  gamePlayHintHtml,
-  isGameDesktopCompatible,
-  isMacOS,
-  isModDesktopCompatible,
-  selectExecutableLabel,
   CACHE_TTL,
   cacheInvalidate,
   cacheInvoke,
+  cachePeek,
+  enhanceSelect,
+  escapeHtml,
   markViewDirty,
   markViewReady,
+  prefetchEventDetail,
+  prefetchGameDetail,
   setStatus,
-  startGameSession,
   state,
   views,
 } from "../shared.js";
 
+function formatEventDate(isoStr) {
+  if (!isoStr) return "";
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return String(isoStr);
+  }
+}
+
+function eventTypeDisplay(type) {
+  const map = {
+    game_night: "Game Night",
+    tournament: "Tournament",
+    party: "Party",
+    release: "Showcase / Release",
+    meetup: "Community Meetup",
+  };
+  return map[type] || String(type || "Event").replace(/_/g, " ");
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ * 1. EVENTS LIST / OVERVIEW VIEW
+ * ═══════════════════════════════════════════════════════════════ */
+
 async function renderEventsView() {
   const container = views.events;
+  if (!container) return;
+
   container.innerHTML = `
-    <div class="section-header" style="margin-top: 0">
+    <div class="events-header-row" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Events</h1>
         <p class="view-sub" style="margin: 4px 0 0 0">Game Nights and tournaments — join, play, and host.</p>
@@ -36,8 +61,9 @@ async function renderEventsView() {
         <button class="btn-secondary btn-sm" id="btn-open-events-web" type="button">Open playbound.club/events</button>
       </div>
     </div>
+
     <div id="events-banner" class="events-banner" style="margin-top: 16px"></div>
-    <div id="events-list" class="events-list" style="margin-top: 20px"></div>
+    <div id="events-grid" class="events-grid" style="margin-top: 20px"></div>
 
     <!-- Create Event Modal -->
     <div class="modal-overlay" id="modal-create-event">
@@ -157,7 +183,6 @@ async function renderEventsView() {
   };
 
   openBtn?.addEventListener("click", () => {
-    // Set default startsAt to next full hour
     const now = new Date();
     now.setHours(now.getHours() + 1, 0, 0, 0);
     const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
@@ -233,7 +258,7 @@ async function renderEventsView() {
 
     if (res && res.ok) {
       closeModal();
-      notifyStatus(`Event "${title}" created!`);
+      setStatus(`Event "${title}" created!`);
       cacheInvalidate("events");
       markViewDirty(views.events);
       await api.renderEventsView();
@@ -250,10 +275,11 @@ async function renderEventsView() {
       events: [],
     };
   const events = res.events || [];
-  const list = document.getElementById("events-list");
+  const grid = document.getElementById("events-grid");
   const banner = document.getElementById("events-banner");
+
   if (!events.length) {
-    list.innerHTML = `<p class="view-sub">No upcoming events. Host one with + Create Event above!</p>`;
+    if (grid) grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No upcoming events. Host one with + Create Event above!</p>`;
     markViewReady(container);
     return;
   }
@@ -264,81 +290,386 @@ async function renderEventsView() {
     const ms = new Date(ev.startsAt).getTime() - Date.now();
     return ms > 0 && ms < 60 * 60 * 1000;
   });
+
   if (banner && (live || soon)) {
     const ev = live || soon;
-    const href = ev.id
-      ? `https://playbound.club/events/${encodeURIComponent(ev.id)}`
-      : "https://playbound.club/events";
     banner.innerHTML = `
-      <div class="event-row" style="border-color: var(--primary)">
+      <div class="event-row" style="border-color: var(--primary); cursor: pointer;">
         <div>
           <p class="event-when">${live ? "🔴 LIVE NOW" : "Starts within an hour"}</p>
-          <p class="event-title">${escapeHtml(ev.title)}</p>
+          <p class="event-title" style="font-size:16px; font-weight:800;">${escapeHtml(ev.title)}</p>
           <p class="event-desc">${escapeHtml(ev.gameSlug || "")}${
       ev.counts?.going != null ? ` · ${ev.counts.going} going` : ""
     }</p>
         </div>
-        <button class="btn-primary btn-sm" type="button" id="btn-event-banner">${
-          live ? "Join" : "View Event"
+        <button class="btn-primary btn-sm" type="button" id="btn-event-banner-action">${
+          live ? "Join Event" : "View Event"
         }</button>
       </div>
     `;
-    document.getElementById("btn-event-banner")?.addEventListener("click", () => {
-      window.playbound.openExternal(href);
+    banner.querySelector("#btn-event-banner-action")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      api.openEventDetail(ev.id, "events");
+    });
+    banner.addEventListener("click", () => {
+      api.openEventDetail(ev.id, "events");
     });
   }
 
-  list.replaceChildren();
-  for (const ev of events) {
-    const row = document.createElement("div");
-    row.className = "event-row";
-    const when =
-      ev.when?.dateLine && ev.when?.timeLine
-        ? `${ev.when.dateLine} · ${ev.when.timeLine}`
-        : ev.startsAt
-          ? new Date(ev.startsAt).toLocaleString()
-          : "";
-    const href = ev.id
-      ? `https://playbound.club/events/${encodeURIComponent(ev.id)}`
-      : "https://playbound.club/events";
-    row.innerHTML = `
-      <div>
-        <p class="event-when">${escapeHtml(when)}${
-      ev.status === "live" ? " · LIVE" : ""
-    }</p>
-        <p class="event-title">${escapeHtml(ev.title)}</p>
-        <p class="event-desc">${escapeHtml(ev.description || "")}</p>
-        ${
-          ev.gameSlug
-            ? `<p class="event-game">${escapeHtml(ev.gameSlug)}${
-                ev.counts?.going != null ? ` · ${ev.counts.going} going` : ""
-              }</p>`
-            : ""
+  if (grid) {
+    grid.replaceChildren();
+    for (const ev of events) {
+      const card = document.createElement("div");
+      card.className = "pb-event-card";
+
+      const isLive = ev.status === "live";
+      const going = ev.counts?.going ?? 0;
+      const whenStr = ev.when?.dateLine
+        ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
+        : formatEventDate(ev.startsAt);
+
+      card.innerHTML = `
+        <div class="pb-event-badges">
+          ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
+          <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
+          ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
+        </div>
+        <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
+        ${ev.gameSlug ? `<p class="pb-event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
+        <p class="pb-event-time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ${escapeHtml(whenStr)}
+        </p>
+        ${ev.description ? `<p class="pb-event-desc">${escapeHtml(ev.description)}</p>` : ""}
+        <div class="pb-event-footer">
+          <span class="pb-event-going">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            ${going} going${ev.maxParticipants ? ` / ${ev.maxParticipants}` : ""}
+          </span>
+          <div class="pb-event-actions">
+            ${
+              ev.discordInviteUrl
+                ? `<button class="btn-secondary btn-sm btn-ev-discord" type="button">Discord</button>`
+                : ""
+            }
+            <button class="btn-primary btn-sm btn-ev-view" type="button">View Event</button>
+          </div>
+        </div>
+      `;
+
+      card.querySelector(".btn-ev-view")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        api.openEventDetail(ev.id, "events");
+      });
+
+      card.querySelector(".btn-ev-discord")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (ev.discordInviteUrl) {
+          window.playbound.openExternal(ev.discordInviteUrl);
         }
-      </div>
-      <div style="display: flex; gap: 8px; flex-shrink: 0;">
-        ${
-          ev.discordInviteUrl
-            ? `<button class="btn-primary btn-sm" type="button" data-discord="${escapeHtml(
-                ev.discordInviteUrl
-              )}">Join Discord</button>`
-            : ""
-        }
-        <button class="btn-secondary btn-sm" type="button" data-view-event="1">View Event</button>
-      </div>
-    `;
-    row.querySelector("[data-view-event]")?.addEventListener("click", () => {
-      window.playbound.openExternal(href);
-    });
-    // Points at the event's own voice channel once the bot has provisioned it.
-    row.querySelector("[data-discord]")?.addEventListener("click", (e) => {
-      window.playbound.openExternal(e.currentTarget.dataset.discord);
-    });
-    list.appendChild(row);
+      });
+
+      card.addEventListener("pointerenter", () => prefetchEventDetail(ev.id), { once: true });
+      card.addEventListener("click", () => api.openEventDetail(ev.id, "events"));
+
+      grid.appendChild(card);
+    }
   }
+
   markViewReady(container);
 }
 
-// ── Servers (Game + Mod dropdowns) ───────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+ * 2. EVENT DETAIL VIEW (IN-LAUNCHER)
+ * ═══════════════════════════════════════════════════════════════ */
+
+async function renderEventDetailView(eventId) {
+  state.currentEventDetailId = eventId;
+  const container = views.eventDetail;
+  if (!container) return;
+
+  container.innerHTML = `<p class="view-sub">Loading event details…</p>`;
+
+  const data = await cacheInvoke(`event:${eventId}`, CACHE_TTL.eventDetail, () =>
+    window.playbound.getEventDetail(eventId)
+  );
+
+  if (!data || !data.event) {
+    container.innerHTML = `
+      <div style="padding: 24px;">
+        <button class="btn-secondary btn-sm" id="btn-event-detail-back" style="margin-bottom: 16px">← Back to Events</button>
+        <p class="view-sub">Event not found or removed.</p>
+      </div>
+    `;
+    container.querySelector("#btn-event-detail-back")?.addEventListener("click", () => {
+      api.navigateTo(state.detailReturnView || "events");
+    });
+    return;
+  }
+
+  const { event, counts = { going: 0, maybe: 0 }, presence = { online: 0, playing: 0 }, game, myRsvp, organizer, tournament } = data;
+  const isLive = event.status === "live";
+  const whenStr = event.when?.dateLine
+    ? `${event.when.dateLine} · ${event.when.timeLine || ""}`
+    : formatEventDate(event.startsAt);
+
+  const currentUser = state.accountState?.user;
+  const isOrganizer = Boolean(
+    currentUser && (organizer?.id === currentUser.id || event.organizerId === currentUser.id)
+  );
+  const isAdmin = currentUser?.role === "admin";
+  const canManage = isOrganizer || isAdmin;
+
+  container.innerHTML = `
+    <div class="event-detail-wrap">
+      <button class="btn-secondary btn-sm" id="btn-event-detail-back" style="align-self: flex-start;">
+        ← Back to ${state.detailReturnView === "games" ? "Games" : "Events"}
+      </button>
+
+      <!-- Hero Header -->
+      <section class="event-detail-hero">
+        <div class="pb-event-badges">
+          ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
+          <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(event.eventType))}</span>
+          ${event.hostType === "playbound" ? `<span class="pb-badge-type">PlayBound Hosted</span>` : ""}
+          ${event.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
+          ${event.status === "cancelled" ? `<span class="pb-badge-live" style="color:#f87171">Cancelled</span>` : ""}
+        </div>
+
+        <h1 class="event-detail-title">${escapeHtml(event.title)}</h1>
+
+        ${
+          game
+            ? `
+          <div class="event-detail-game-row">
+            <span style="color:var(--text-dim);">Game:</span>
+            <a class="event-detail-game-link" id="link-event-game" data-slug="${escapeHtml(game.slug)}">
+              ${escapeHtml(game.title)}
+            </a>
+            ${event.editionSlug ? `<span style="color:var(--text-dim); font-size:13px;">· ${escapeHtml(event.editionSlug)}</span>` : ""}
+          </div>`
+            : event.gameSlug
+              ? `<div class="event-detail-game-row"><span style="color:var(--text-dim);">Game:</span> <span>${escapeHtml(event.gameSlug)}</span></div>`
+              : ""
+        }
+
+        <p class="pb-event-time" style="font-size: 13px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ${escapeHtml(whenStr)}
+        </p>
+
+        <div class="event-detail-stats">
+          <span class="event-stat-pill">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            ${counts.going || 0} going${event.maxParticipants ? ` / ${event.maxParticipants}` : ""}
+          </span>
+          <span class="event-stat-pill online">● ${presence.online || 0} online</span>
+          <span class="event-stat-pill playing">● ${presence.playing || 0} playing</span>
+          ${counts.maybe > 0 ? `<span class="event-stat-pill">${counts.maybe} maybe</span>` : ""}
+        </div>
+      </section>
+
+      <!-- Action Toolbar -->
+      <div class="event-detail-toolbar">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          ${
+            event.discordInviteUrl
+              ? `<button class="btn-primary btn-sm" id="btn-event-detail-discord" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                  Join Discord
+                </button>`
+              : ""
+          }
+          ${
+            game
+              ? `<button class="btn-secondary btn-sm" id="btn-event-detail-play" type="button">
+                  ${isLive ? "▶ Play Now" : "View Game"}
+                </button>`
+              : ""
+          }
+        </div>
+
+        <!-- RSVP Buttons -->
+        <div class="event-rsvp-container" id="event-rsvp-group">
+          <button type="button" class="event-rsvp-btn ${myRsvp === "going" ? "active-going" : ""}" data-rsvp="going">✓ Going</button>
+          <button type="button" class="event-rsvp-btn ${myRsvp === "maybe" ? "active-maybe" : ""}" data-rsvp="maybe">? Maybe</button>
+          <button type="button" class="event-rsvp-btn ${myRsvp === "not_going" ? "active-not_going" : ""}" data-rsvp="not_going">✕ Can't Go</button>
+        </div>
+
+        ${
+          canManage
+            ? `
+          <div style="display: flex; gap: 6px; align-items: center;">
+            ${
+              event.status !== "cancelled"
+                ? `<button class="btn-secondary btn-sm" id="btn-event-cancel" style="color:var(--danger);" type="button">Cancel Event</button>`
+                : ""
+            }
+            <button class="btn-secondary btn-sm" id="btn-event-delete" style="color:var(--danger);" type="button">Delete</button>
+          </div>`
+            : ""
+        }
+      </div>
+
+      <!-- Description / About -->
+      ${
+        event.description
+          ? `
+        <section class="event-section-card">
+          <h2 class="event-section-title">About Event</h2>
+          <p style="margin: 0; line-height: 1.6; color: var(--text-dim); font-size: 14px; white-space: pre-line;">
+            ${escapeHtml(event.description)}
+          </p>
+        </section>`
+          : ""
+      }
+
+      <!-- Tournament Bracket / Matches Section (if tournament) -->
+      ${
+        tournament
+          ? `
+        <section class="event-section-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <h2 class="event-section-title">Tournament Bracket (${escapeHtml(tournament.format || "Single Elim")})</h2>
+            <button class="btn-primary btn-sm" id="btn-tournament-checkin" type="button">Check In for Tournament</button>
+          </div>
+          <div id="tournament-bracket-slot" style="margin-top: 12px;">
+            ${
+              (tournament.matches || []).length > 0
+                ? `<div class="tournament-bracket-wrap">
+                    <div class="tournament-round-col">
+                      <div class="tournament-round-header">Matches</div>
+                      ${tournament.matches
+                        .map(
+                          (m) => `
+                        <div class="tournament-match-box">
+                          <div class="tournament-slot ${m.winnerParticipantId === m.participantAId && m.winnerParticipantId ? "winner" : ""}">
+                            <span>${escapeHtml(m.participantAId || "TBD")}</span>
+                            <span>${m.scoreA != null ? m.scoreA : "-"}</span>
+                          </div>
+                          <div class="tournament-slot ${m.winnerParticipantId === m.participantBId && m.winnerParticipantId ? "winner" : ""}">
+                            <span>${escapeHtml(m.participantBId || "TBD")}</span>
+                            <span>${m.scoreB != null ? m.scoreB : "-"}</span>
+                          </div>
+                        </div>`
+                        )
+                        .join("")}
+                    </div>
+                  </div>`
+                : `<p class="view-sub" style="margin: 0;">Bracket will be generated when registration closes.</p>`
+            }
+          </div>
+        </section>`
+          : ""
+      }
+    </div>
+  `;
+
+  // Wire back button
+  container.querySelector("#btn-event-detail-back")?.addEventListener("click", () => {
+    api.navigateTo(state.detailReturnView || "events");
+  });
+
+  // Wire game link & play button
+  if (game) {
+    container.querySelector("#link-event-game")?.addEventListener("click", () => {
+      api.openGameDetail(game.slug, "eventDetail");
+    });
+    container.querySelector("#btn-event-detail-play")?.addEventListener("click", () => {
+      api.openGameDetail(game.slug, "eventDetail");
+    });
+  }
+
+  // Wire Discord button
+  container.querySelector("#btn-event-detail-discord")?.addEventListener("click", () => {
+    if (event.discordInviteUrl) {
+      window.playbound.openExternal(event.discordInviteUrl);
+    }
+  });
+
+  // Wire RSVP buttons
+  container.querySelectorAll(".event-rsvp-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const status = btn.dataset.rsvp;
+      if (!status) return;
+      try {
+        setStatus(`Setting RSVP to ${status}…`);
+        const res = await window.playbound.rsvpEvent(eventId, status);
+        if (res && res.ok) {
+          setStatus(`RSVP updated!`);
+          cacheInvalidate(`event:${eventId}`);
+          cacheInvalidate("events");
+          markViewDirty(views.events);
+          await renderEventDetailView(eventId);
+        } else {
+          setStatus(res?.error || "Failed to update RSVP. Please sign in first.", true);
+        }
+      } catch (err) {
+        setStatus(err.message || String(err), true);
+      }
+    });
+  });
+
+  // Wire Tournament Check-In
+  container.querySelector("#btn-tournament-checkin")?.addEventListener("click", async () => {
+    try {
+      setStatus("Checking in for tournament…");
+      const res = await window.playbound.tournamentAction(eventId, "check_in");
+      if (res && res.ok) {
+        setStatus("Checked in successfully!");
+        cacheInvalidate(`event:${eventId}`);
+        await renderEventDetailView(eventId);
+      } else {
+        setStatus(res?.error || "Check-in failed.", true);
+      }
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
+
+  // Wire Cancel Event
+  container.querySelector("#btn-event-cancel")?.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to cancel this event?")) return;
+    try {
+      setStatus("Cancelling event…");
+      const res = await window.playbound.cancelEvent(eventId);
+      if (res && res.ok) {
+        setStatus("Event cancelled.");
+        cacheInvalidate(`event:${eventId}`);
+        cacheInvalidate("events");
+        markViewDirty(views.events);
+        await renderEventDetailView(eventId);
+      } else {
+        setStatus(res?.error || "Failed to cancel event.", true);
+      }
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
+
+  // Wire Delete Event
+  container.querySelector("#btn-event-delete")?.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to permanently delete this event? This cannot be undone.")) return;
+    try {
+      setStatus("Deleting event…");
+      const res = await window.playbound.deleteEvent(eventId);
+      if (res && res.ok) {
+        setStatus("Event deleted.");
+        cacheInvalidate(`event:${eventId}`);
+        cacheInvalidate("events");
+        markViewDirty(views.events);
+        api.navigateTo("events");
+      } else {
+        setStatus(res?.error || "Failed to delete event.", true);
+      }
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+    }
+  });
+
+  markViewReady(container, eventId);
+}
 
 api.renderEventsView = renderEventsView;
+api.renderEventDetailView = renderEventDetailView;
+

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { userFromLauncherBearer } from "@/lib/library";
 import dbConnect from "@/lib/db";
 import { Tournament, TournamentParticipant } from "@/lib/models/Tournament";
 import PlatformEvent from "@/lib/models/PlatformEvent";
@@ -11,10 +12,22 @@ import { createTeam, joinTeam, kickFromTournament, leaveTeam } from "@/lib/event
 
 type Ctx = { params: Promise<{ id: string }> };
 
-async function requireAdmin() {
+async function getUserAndRole(req: Request) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") return null;
-  return session;
+  if (session?.user?.id) {
+    return {
+      userId: session.user.id,
+      isAdmin: session.user.role === "admin",
+    };
+  }
+  const launcherUser = await userFromLauncherBearer(req);
+  if (launcherUser?._id) {
+    return {
+      userId: launcherUser._id.toString(),
+      isAdmin: launcherUser.role === "admin",
+    };
+  }
+  return null;
 }
 
 /** POST generate bracket / check-in / complete match */
@@ -24,6 +37,7 @@ export async function POST(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const auth = await getUserAndRole(req);
   const body = await req.json().catch(() => ({}));
   const action = String(body.action || "");
 
@@ -38,7 +52,7 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "generate_bracket") {
-    if (!(await requireAdmin())) {
+    if (!auth?.isAdmin) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
     try {
@@ -54,14 +68,10 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "check_in") {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!auth?.userId) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
-    const targetUserId =
-      (await requireAdmin()) && body.userId
-        ? String(body.userId)
-        : session.user.id;
+    const targetUserId = auth.isAdmin && body.userId ? String(body.userId) : auth.userId;
     const p = await TournamentParticipant.findOneAndUpdate(
       { tournamentId: tournament._id, userId: targetUserId },
       {
@@ -79,14 +89,13 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "create_team") {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!auth?.userId) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
     try {
       const team = await createTeam({
         tournamentId: tournament._id,
-        userId: session.user.id,
+        userId: auth.userId,
         name: String(body.name || ""),
       });
       return NextResponse.json({ success: true, teamId: String(team._id) });
@@ -97,14 +106,13 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "join_team") {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!auth?.userId) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
     try {
       await joinTeam({
         tournamentId: tournament._id,
-        userId: session.user.id,
+        userId: auth.userId,
         teamId: String(body.teamId || ""),
         teamSize: tournament.teamSize || 1,
       });
@@ -116,12 +124,11 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "leave_team") {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!auth?.userId) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
     }
     try {
-      await leaveTeam({ tournamentId: tournament._id, userId: session.user.id });
+      await leaveTeam({ tournamentId: tournament._id, userId: auth.userId });
       return NextResponse.json({ success: true });
     } catch (err) {
       const status = (err as { status?: number }).status || 500;
@@ -130,7 +137,7 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "kick") {
-    if (!(await requireAdmin())) {
+    if (!auth?.isAdmin) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
     try {
@@ -148,7 +155,7 @@ export async function POST(req: Request, ctx: Ctx) {
   }
 
   if (action === "complete_match") {
-    if (!(await requireAdmin())) {
+    if (!auth?.isAdmin) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
     const schema = z.object({
