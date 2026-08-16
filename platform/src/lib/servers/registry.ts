@@ -29,6 +29,7 @@ import {
   fetchQuakeChampionsPlayers,
   fetchDota2Players,
   fetchStrikersClubPlayers,
+  fetchBrawlhallaPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
@@ -200,6 +201,10 @@ const providers: Record<string, ServerProvider> = {
   "strikers-club": {
     slug: "strikers-club",
     fetchServers: fetchStrikersClubPlayers,
+  },
+  brawlhalla: {
+    slug: "brawlhalla",
+    fetchServers: fetchBrawlhallaPlayers,
   },
 };
 

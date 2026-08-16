@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
+import { getGame } from "@/lib/catalog";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
@@ -25,14 +26,22 @@ export async function PATCH(
     const body = bodySchema.parse(await req.json());
 
     await dbConnect();
-    const doc = await CatalogGame.findOneAndUpdate(
+    let doc = await CatalogGame.findOneAndUpdate(
       { slug },
       { $set: { complete: body.complete } },
       { returnDocument: "after" }
     ).lean();
 
     if (!doc) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const existingGame = await getGame(slug, { includeUnpublished: true });
+      if (!existingGame) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+      const created = await CatalogGame.create({
+        ...existingGame,
+        complete: body.complete,
+      });
+      doc = created.toObject();
     }
 
     return NextResponse.json({

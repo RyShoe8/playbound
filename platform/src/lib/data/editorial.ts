@@ -231,6 +231,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Active open-source rally driving simulation on SourceForge with preserved Windows 64-bit portable releases and WebGL edition.",
   },
+  brawlhalla: {
+    kind: "manual",
+    url: "https://www.brawlhalla.com/",
+    checkedAt: "2026-08-15",
+    note: "Blue Mammoth Games and Ubisoft actively maintain Brawlhalla with regular balance patches, new Legends, and seasonal esports circuits.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -4684,6 +4690,80 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "What are the system requirements?",
         a: "Trigger Rally is exceptionally lightweight, running at high framerates on a 1.0 GHz CPU, 512 MB RAM, and any basic OpenGL-capable graphics chip.",
+      },
+    ],
+  },
+
+  brawlhalla: {
+    qualityBar: clearsAll(
+      "Brawlhalla clears all five: 100% free-to-play with zero pay-to-win, over 50 uniquely balanced Legends, robust cross-play rollback netcode, and an active global competitive esports circuit."
+    ),
+    longDescription:
+      "Brawlhalla is an acclaimed free-to-play 2D platform fighter developed by Blue Mammoth Games and published by Ubisoft, uniting over 100 million players across the globe in fast-paced arena combat. Drawing core inspiration from classic platform brawlers like Super Smash Bros., Brawlhalla takes the genre's aerial mobility and edge-guarding intensity and pairs it with clean, responsive mechanics engineered for competitive tournament play.\n\nCombat revolves around weapon drops that descend onto the floating battlefield. Every Legend in the game wields a distinct combination of two weapon archetypes—ranging from Swords, Blasters, Scythes, and Gauntlets to Rocket Lances, Bows, Greatswords, and Battle Boots. While light attacks share familiar combo pathways within a weapon class, each fighter features six unique, character-defining signature heavy attacks that deliver massive knockback and stage-control utility.\n\nThe game offers a deep and varied suite of game modes. Competitive players can grind the ranked 1v1 and 2v2 matchmaking ladders from Tin through Diamond and Valhallan rank. For casual play, custom lobbies accommodate up to 8 players for chaotic Free-for-All brawls, Strikeout, Brawlball, Volleybrawl, and special event arcade modes with fully customizable tournament rules and gravity modifiers.\n\nWith over 50 original mythological Legends to master and frequent blockbuster crossover events (including Adventure Time, Street Fighter, WWE, Star Wars, Halo, and SpongeBob SquarePants), roster variety is immense. Crucially, the game's economy is strictly cosmetic—all Legends can be unlocked purely with gold earned from matches, and a weekly rotating free roster ensures everyone can jump in and compete without spending a dime.\n\nEngineered with lightweight cross-platform technology and responsive rollback netcode, Brawlhalla runs at rock-solid 60+ FPS on virtually any modern PC. Full native cross-play and cross-progression unite players across PC, consoles, and mobile devices with seamless parity.",
+    whyWePickedIt:
+      "Brawlhalla is the gold standard for free-to-play platform fighters. With tight rollback netcode, a completely fair free-to-play model, massive roster depth, and cross-play across every platform, it delivers endless competitive and casual fun.",
+    bestFor: [
+      "Fans of platform fighters like Super Smash Bros. and Rivals of Aether",
+      "Players wanting fast, skill-based 1v1 and 2v2 competitive PvP",
+      "Gaming groups looking for seamless cross-play party matches across PC, console, and mobile",
+      "Fighters who love high-mobility aerial combos and weapon-based combat",
+      "Anyone seeking a fair, genuine free-to-play title with no pay-to-win mechanics",
+    ],
+    notFor: [
+      "Players seeking traditional 2D/3D lane-based footsies fighters like Street Fighter 6 or Tekken 8",
+      "Gamers looking for deep single-player story campaigns",
+      "Those who dislike floaty aerial movement and ledge-guarding ring-out mechanics",
+    ],
+    comparableTo: [
+      "Super Smash Bros. Ultimate",
+      "Rivals of Aether",
+      "MultiVersus",
+      "Nickelodeon All-Star Brawl",
+      "Flash Party",
+      "Lethal League Blaze",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Launch Steam and install Brawlhalla (App ID 291550) for free.",
+      },
+      {
+        platform: "windows",
+        text: "Connect your gamepad, keyboard, or arcade stick and configure your keybindings in the Options menu.",
+      },
+      {
+        platform: "windows",
+        text: "Complete the introductory tutorial and test weapon strings in the offline Training Room.",
+      },
+      {
+        platform: "windows",
+        text: "Queue for Ranked 1v1/2v2 or create a custom lobby with friends to start brawling.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Brawlhalla truly free to play?",
+        a: "Yes! Brawlhalla is 100% free to play. All gameplay features, ranked modes, and Legends can be unlocked using Gold earned from playing matches. Purchases are strictly cosmetic skins, podiums, and emotes.",
+      },
+      {
+        q: "Does Brawlhalla support cross-play?",
+        a: "Yes! Brawlhalla features full cross-play and cross-progression across PC (Steam), PlayStation, Xbox, Nintendo Switch, iOS, and Android.",
+      },
+      {
+        q: "Can I play Brawlhalla with a controller or keyboard?",
+        a: "Both controllers and keyboards are fully supported and competitive at the highest esports levels. You can completely remap controls in the Settings menu.",
+      },
+      {
+        q: "How does the weapon system work?",
+        a: "Each Legend possesses a unique combination of two weapons. During matches, weapon pods drop onto the stage, allowing you to cycle between your character's two weapon styles and unarmed combat.",
+      },
+      {
+        q: "How does the ranked competitive system work?",
+        a: "Brawlhalla features competitive 1v1 and 2v2 ranked seasons. Players earn ELO to climb through Tin, Bronze, Silver, Gold, Platinum, Diamond, and the top-tier Valhallan rank.",
+      },
+      {
+        q: "What are the hardware requirements for Brawlhalla?",
+        a: "Brawlhalla is extremely lightweight, requiring only a 2.0 GHz processor, 2 GB of RAM, and any basic DirectX 9.0c compatible graphics card.",
       },
     ],
   },

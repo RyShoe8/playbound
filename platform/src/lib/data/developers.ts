@@ -1100,6 +1100,17 @@ export const developers: Developer[] = [
     website: "https://trigger-rally.sourceforge.net/",
     artHue: 35,
   },
+  {
+    slug: "blue-mammoth-games",
+    name: "Blue Mammoth Games",
+    tagline: "Fast-paced free-to-play competitive 2D platform fighting games.",
+    about:
+      "Atlanta-based game studio founded in 2009 by Matt Wieteska and Lincoln Hamilton, acquired by Ubisoft in 2018. Creators of the globally celebrated 2D platform fighter Brawlhalla, known for responsive gameplay, cross-platform tournaments, and massive crossover rosters.",
+    founded: 2009,
+    location: "Atlanta, Georgia, USA",
+    website: "https://www.brawlhalla.com/",
+    artHue: 200,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

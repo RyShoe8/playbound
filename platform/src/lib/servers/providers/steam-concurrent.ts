@@ -175,5 +175,11 @@ export function fetchStrikersClubPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(1952920, { label: "Strikers Club" });
 }
 
+/** Brawlhalla — Steam app 291550. */
+export function fetchBrawlhallaPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(291550, { label: "Brawlhalla" });
+}
+
+
 
 
