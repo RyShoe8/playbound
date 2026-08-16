@@ -7,7 +7,13 @@ import {
   useFilteredGames,
 } from "@/components/compatibility/useFilteredGames";
 
-export function CompatibleCardRow({ games }: { games: Game[] }) {
+export function CompatibleCardRow({
+  games,
+  playingNowBySlug = {},
+}: {
+  games: Game[];
+  playingNowBySlug?: Record<string, number>;
+}) {
   const filtered = useFilteredGames(games);
   const animKey = filtered.map((g) => g.slug).join(",");
 
@@ -26,7 +32,7 @@ export function CompatibleCardRow({ games }: { games: Game[] }) {
                 className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
-                <GameCard game={g} />
+                <GameCard game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
               </div>
             ))}
           </CardRow>

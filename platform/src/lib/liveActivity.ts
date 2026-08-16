@@ -569,6 +569,12 @@ async function computeModLiveStats(modSlug: string): Promise<EntityLiveStats> {
   };
 }
 
+export function playingNowBySlug(stats: CatalogLiveStats): Record<string, number> {
+  const map: Record<string, number> = {};
+  for (const game of stats.byGame) map[game.slug] = game.playingNow;
+  return map;
+}
+
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
   return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v7"], {

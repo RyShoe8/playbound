@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
+import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { SearchGameResults } from "@/components/SearchGameResults";
 import { SearchEditionResults } from "@/components/SearchEditionResults";
 import { SearchFilters } from "@/components/SearchFilters";
@@ -62,7 +63,10 @@ export default async function SearchPage({
     maxSizeMB: maxSize,
   };
 
-  const games = hasAny ? await searchGames(filter, { includeTesting }) : [];
+  const [games, liveStats] = await Promise.all([
+    hasAny ? searchGames(filter, { includeTesting }) : Promise.resolve([] as Awaited<ReturnType<typeof searchGames>>),
+    getCatalogLiveStats(),
+  ]);
 
   // Also search developers and collections when there's a text query
   const otherResults = hasSearch ? await searchAll(q, { includeTesting }) : null;
@@ -112,7 +116,9 @@ export default async function SearchPage({
         </EmptyHint>
       )}
 
-      {games.length > 0 && <SearchGameResults games={games} />}
+      {games.length > 0 && (
+        <SearchGameResults games={games} playingNowBySlug={playingNowBySlug(liveStats)} />
+      )}
 
       {editionResults.length > 0 && <SearchEditionResults hits={editionResults} />}
 

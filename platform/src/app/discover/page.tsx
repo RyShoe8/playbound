@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { listGames } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
+import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -13,7 +14,10 @@ export const metadata: Metadata = pageMetadata({
 
 export default async function DiscoverPage() {
   const includeTesting = await viewerCanSeeTesting();
-  const games = await listGames({ includeTesting });
+  const [games, liveStats] = await Promise.all([
+    listGames({ includeTesting }),
+    getCatalogLiveStats(),
+  ]);
 
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
@@ -28,7 +32,7 @@ export default async function DiscoverPage() {
       </div>
 
       {/* Client-side filters + grid */}
-      <DiscoverFilters games={games} />
+      <DiscoverFilters games={games} playingNowBySlug={playingNowBySlug(liveStats)} />
 
       {/* SEO fallback: ensure crawlers see links to all games even without JS */}
       <noscript>

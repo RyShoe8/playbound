@@ -13,11 +13,13 @@ const FEATURED_GAMES_LIMIT = 12;
 export function HomeGamesSections({
   latest,
   popular,
+  playingNowBySlug = {},
 }: {
   /** Newest published games first — filtered client-side to match Discover. */
   latest: Game[];
   /** Highest overall playtime first — filtered client-side to match Discover. */
   popular: Game[];
+  playingNowBySlug?: Record<string, number>;
 }) {
   const featured = useFilteredGames(latest, { limit: FEATURED_GAMES_LIMIT });
   const filteredPopular = useFilteredGames(popular, { limit: FEATURED_GAMES_LIMIT });
@@ -39,7 +41,7 @@ export function HomeGamesSections({
                 className="h-full opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
-                <GameCard game={g} />
+                <GameCard game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
               </div>
             ))}
           </CardRow>
@@ -59,7 +61,7 @@ export function HomeGamesSections({
                   className="h-full opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
                   style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
                 >
-                  <GameCard game={g} />
+                  <GameCard game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
                 </div>
               ))}
             </CardRow>

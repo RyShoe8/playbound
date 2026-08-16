@@ -2,19 +2,14 @@
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import Link from "next/link";
 import { Search } from "lucide-react";
-import { CoverImage } from "@/components/CoverImage";
 import type { Game, Genre } from "@/lib/data/types";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
-import { CardCategoryTags } from "@/components/CardCategoryTags";
+import { GameCard } from "@/components/GameCard";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
-import {
-  filterGamesForPreference,
-  incompatibilityBadge,
-} from "@/lib/compatibility/compatibility";
+import { filterGamesForPreference } from "@/lib/compatibility/compatibility";
 import {
   CompatibleGamesFade,
 } from "@/components/compatibility/useFilteredGames";
@@ -41,73 +36,15 @@ interface SerializedGame {
   hardwareRequirements?: HardwareRequirementsBlock | null;
 }
 
-/* ── Helpers ────────────────────────────────────────────────── */
-
-function sizeLabel(sizeMB: number) {
-  return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
-}
-
-/* ── CatalogCard — matches app's game-card layout ────────── */
-
-function CatalogCard({
-  game,
-  incompatibleLabel,
-}: {
-  game: SerializedGame;
-  incompatibleLabel: string | null;
-}) {
-  const bgGrad = `linear-gradient(135deg, ${game.art.from}, ${game.art.to})`;
-
-  return (
-    <Link
-      href={`/games/${game.slug}`}
-      className="group flex flex-col overflow-hidden rounded-[14px] border border-border bg-card transition-all duration-[250ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[var(--border-focus,oklch(1_0_0/18%))] hover:bg-[var(--bg-card-hover,oklch(0.24_0.018_278))] hover:shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
-    >
-      {/* Banner */}
-      <div
-        className="relative flex h-[152px] items-center justify-center overflow-hidden text-[36px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]"
-        style={{ background: bgGrad }}
-      >
-        {(game.title || "?").charAt(0)}
-        {game.coverImage ? (
-          <CoverImage
-            src={game.coverImage}
-            alt={`${game.title} cover art`}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          />
-        ) : null}
-        {incompatibleLabel ? (
-          <span className="absolute top-2 left-2 rounded-md border border-border/80 bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
-            {incompatibleLabel}
-          </span>
-        ) : null}
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 flex-col p-4">
-        <p className="truncate text-[19px] font-bold leading-tight">
-          {game.title}
-        </p>
-        <p className="mt-1 flex-1 text-[14px] leading-relaxed text-muted-foreground line-clamp-2">
-          {game.tagline}
-        </p>
-        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-2" size="md" />
-        <div className="mt-3.5 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground/70">
-            {sizeLabel(game.sizeMB)}
-          </span>
-          <span className="rounded-full border border-border bg-secondary/50 px-3 py-1 text-[13px] font-semibold text-secondary-foreground transition-colors group-hover:border-primary/30 group-hover:bg-secondary">
-            View
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 /* ── Main component ─────────────────────────────────────────── */
 
-export function DiscoverFilters({ games }: { games: Game[] }) {
+export function DiscoverFilters({
+  games,
+  playingNowBySlug = {},
+}: {
+  games: Game[];
+  playingNowBySlug?: Record<string, number>;
+}) {
   const { track } = useTelemetry();
   const { mode, device } = useCompatibilityFilter();
   const [query, setQuery] = useState("");
@@ -156,6 +93,8 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
     }
     return [...set].sort();
   }, [games]);
+
+  const gamesBySlug = useMemo(() => new Map(games.map((g) => [g.slug, g])), [games]);
 
   /* Serialize Game → SerializedGame once (strip unneeded fields) */
   const serialized = useMemo<SerializedGame[]>(
@@ -400,20 +339,23 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
       ) : (
         <CompatibleGamesFade animKey={animKey}>
           <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(288px,1fr))] gap-5">
-            {filtered.map((g, i) => (
-              <div
-                key={g.slug}
-                className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
-                style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
-              >
-                <CatalogCard
-                  game={g}
-                  incompatibleLabel={
-                    mode === "all" ? incompatibilityBadge(g, device.type) : null
-                  }
-                />
-              </div>
-            ))}
+            {filtered.map((g, i) => {
+              const full = gamesBySlug.get(g.slug);
+              if (!full) return null;
+              return (
+                <div
+                  key={g.slug}
+                  className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
+                  style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
+                >
+                  <GameCard
+                    game={full}
+                    className="w-full sm:w-full"
+                    playingNow={playingNowBySlug[g.slug] ?? 0}
+                  />
+                </div>
+              );
+            })}
           </div>
         </CompatibleGamesFade>
       )}
