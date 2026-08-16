@@ -2974,6 +2974,65 @@ export const editions: EditionSeed[] = [
     aliases: ["Trigger Rally Web", "Trigger Rally Online"],
     verificationLevel: "playbound_verified",
   },
+  {
+    gameSlug: "brawlhalla",
+    slug: "brawlhalla-steam",
+    name: "Brawlhalla (Official Steam Edition)",
+    shortDescription: "Official Steam release with full cross-play multiplayer, ranked queues, and cloud progression.",
+    description:
+      "The complete, official Steam release of Brawlhalla. Includes access to all game modes, weekly free Legend rotation, 1v1 and 2v2 ranked matchmaking, and cross-play across all platforms.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.brawlhalla.com/",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "291550",
+      },
+    },
+    requirements: {
+      min: "2.0 GHz CPU / 2 GB RAM / 128 MB VRAM GPU / 2 GB storage",
+      recommended: "Dual-Core 2.8 GHz CPU / 4 GB RAM / Dedicated GPU / USB Gamepad",
+    },
+    features: ["Multiplayer", "Online PvP", "Cross-Play", "Ranked 1v1/2v2", "Controller Support", "Steam Achievements", "Cloud Saves"],
+    tags: ["Fighting", "Platform Fighter", "PvP", "Esports", "Free to Play"],
+    aliases: ["Brawlhalla Steam", "Brawlhalla Official"],
+    verificationLevel: "official",
+  },
+  {
+    gameSlug: "brawlhalla",
+    slug: "brawlhalla-competitive",
+    name: "Brawlhalla (Tournament & Esports Profile)",
+    shortDescription: "Optimized competitive setup with tournament stage clarity and frame-perfect controller deadzones.",
+    description:
+      "A competitive profile for Brawlhalla tailored for ranked ladder climbing and tournament play. Pre-configured for high refresh rate displays, linear input response curves, and tournament-compliant stage visibility.",
+    type: "enhanced",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://www.brawlhalla.com/esports/",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "291550",
+      },
+    },
+    requirements: {
+      min: "2.0 GHz CPU / 2 GB RAM / 128 MB VRAM GPU",
+      recommended: "144Hz+ Display / Low-latency USB Controller or Mechanical Keyboard",
+    },
+    features: ["Multiplayer", "Esports Ready", "Clean Stage Backgrounds", "Low Latency Input"],
+    tags: ["Competitive", "Esports", "Ranked", "Tournament"],
+    verificationLevel: "playbound_verified",
+  },
 ];
 
 

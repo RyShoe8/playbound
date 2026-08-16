@@ -81,7 +81,7 @@ export async function PATCH(
       publishedAt = new Date();
     }
 
-    const doc = await CatalogGame.findOneAndUpdate(
+    let doc = await CatalogGame.findOneAndUpdate(
       { slug },
       {
         $set: {
@@ -105,7 +105,21 @@ export async function PATCH(
     );
 
     if (!doc) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const created = await CatalogGame.create({
+        ...body,
+        publishedAt: body.status === "published" ? (publishedAt ?? new Date()) : null,
+        steamAppId: body.steamAppId || null,
+        githubRepo: body.githubRepo || null,
+        coverImage: body.coverImage || null,
+        screenshots: body.screenshots ?? [],
+        launcherInstall: body.launcherInstall || null,
+        serverLobbyAuth: body.serverLobbyAuth || null,
+        developerName,
+        submissionId: body.submissionId || null,
+        managedBy: body.managedBy || "admin",
+        ownerUserId: body.ownerUserId || null,
+      });
+      doc = created;
     }
 
     // Slugs are foreign keys by value, so the rename has to be carried across
