@@ -1,5 +1,6 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -640,28 +641,24 @@ export function GlobalServerBrowser({
             className="h-10 rounded-xl border border-border bg-secondary px-3 text-sm font-semibold text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/40"
           />
         </label>
-        <label
+        <div
           className={cn(
-            "flex h-10 items-center gap-2 rounded-xl border border-border bg-secondary px-3 text-sm font-semibold",
+            "flex h-10 items-center rounded-xl border border-border bg-secondary px-3.5 text-sm font-semibold",
             !signedIn && "opacity-60"
           )}
           title={!signedIn ? "Sign in and sync the launcher to use Installed only" : undefined}
         >
-          <input
-            type="checkbox"
+          <Checkbox
             checked={installedOnly}
             disabled={!signedIn}
-            onChange={(e) => setInstalledOnly(e.target.checked)}
+            onCheckedChange={setInstalledOnly}
+            label="Installed only"
           />
-          Installed only
-        </label>
-        <label className="flex h-10 items-center gap-2 rounded-xl border border-border bg-secondary px-3 text-sm font-semibold">
-          <input
-            type="checkbox"
-            className="accent-primary"
+        </div>
+        <div className="flex h-10 items-center rounded-xl border border-border bg-secondary px-3.5 text-sm font-semibold">
+          <Checkbox
             checked={withPlayersOnly}
-            onChange={(e) => {
-              const next = e.target.checked;
+            onCheckedChange={(next) => {
               setWithPlayersOnly(next);
               try {
                 localStorage.setItem(WITH_PLAYERS_PREF, String(next));
@@ -669,9 +666,9 @@ export function GlobalServerBrowser({
                 /* ignore */
               }
             }}
+            label="Servers With Players"
           />
-          Servers With Players
-        </label>
+        </div>
         <button
           type="button"
           onClick={() => {

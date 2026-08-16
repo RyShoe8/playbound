@@ -1,22 +1,21 @@
 "use client";
-import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
+import { Checkbox } from "@/components/ui/Checkbox";
 import type { Game, Genre } from "@/lib/data/types";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
-import { GameCard } from "@/components/GameCard";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { filterGamesForPreference } from "@/lib/compatibility/compatibility";
-import {
-  CompatibleGamesFade,
-} from "@/components/compatibility/useFilteredGames";
+import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
+import { GenreGameRow } from "@/components/GenreGameRow";
+import { cn } from "@/lib/utils";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-type SortOption = "name" | "size";
+type SortOption = "name" | "size" | "players";
 type HwFilter = "" | "great" | "playable";
 
 interface SerializedGame {
@@ -47,8 +46,7 @@ export function DiscoverFilters({
 }) {
   const { track } = useTelemetry();
   const { mode, device } = useCompatibilityFilter();
-  const [query, setQuery] = useState("");
-  const [genre, setGenre] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   const [installableOnly, setInstallableOnly] = useState(false);
@@ -85,15 +83,6 @@ export function DiscoverFilters({
       .catch(() => {});
   }, []);
 
-  /* Derive available genres from games list */
-  const genres = useMemo(() => {
-    const set = new Set<string>();
-    for (const g of games) {
-      for (const gen of g.genres) set.add(gen);
-    }
-    return [...set].sort();
-  }, [games]);
-
   const gamesBySlug = useMemo(() => new Map(games.map((g) => [g.slug, g])), [games]);
 
   /* Serialize Game → SerializedGame once (strip unneeded fields) */
@@ -118,29 +107,9 @@ export function DiscoverFilters({
     [games]
   );
 
-  /* Filter + sort */
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  /* Filter games based on current filter states (before genre split) */
+  const baseFiltered = useMemo(() => {
     let list = serialized.slice();
-
-    if (q) {
-      list = list.filter((g) => {
-        const blob = [
-          g.title,
-          g.tagline,
-          ...g.tags,
-          ...g.genres,
-          g.slug,
-        ]
-          .join(" ")
-          .toLowerCase();
-        return blob.includes(q);
-      });
-    }
-
-    if (genre) {
-      list = list.filter((g) => g.genres.includes(genre as Genre));
-    }
 
     if (multiplayerOnly) {
       list = list.filter(
@@ -177,6 +146,10 @@ export function DiscoverFilters({
 
     if (sort === "size") {
       list.sort((a, b) => b.sizeMB - a.sizeMB);
+    } else if (sort === "players") {
+      list.sort(
+        (a, b) => (playingNowBySlug[b.slug] ?? 0) - (playingNowBySlug[a.slug] ?? 0) || a.title.localeCompare(b.title)
+      );
     } else {
       list.sort((a, b) => a.title.localeCompare(b.title));
     }
@@ -184,16 +157,58 @@ export function DiscoverFilters({
     return list;
   }, [
     serialized,
-    query,
-    genre,
-    sort,
     multiplayerOnly,
     installableOnly,
     hwFilter,
     userHw,
     mode,
     device.type,
+    sort,
+    playingNowBySlug,
   ]);
+
+  /* Derive available genres from games matching base filters */
+  const allGenresWithCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of baseFiltered) {
+      for (const gen of g.genres) {
+        counts.set(gen, (counts.get(gen) ?? 0) + 1);
+      }
+    }
+    // Sort genres alphabetically
+    return [...counts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [baseFiltered]);
+
+  /* Group games by genre */
+  const genreSections = useMemo(() => {
+    const genresToRender = selectedGenre
+      ? allGenresWithCounts.filter((g) => g.name === selectedGenre)
+      : allGenresWithCounts;
+
+    return genresToRender
+      .map(({ name }) => {
+        const matchingGames = baseFiltered
+          .filter((g) => g.genres.includes(name as Genre))
+          .map((g) => gamesBySlug.get(g.slug)!)
+          .filter(Boolean);
+
+        return {
+          genre: name,
+          games: matchingGames,
+        };
+      })
+      .filter((section) => section.games.length > 0);
+  }, [selectedGenre, allGenresWithCounts, baseFiltered, gamesBySlug]);
+
+  /* Count total unique games currently displayed */
+  const totalDisplayCount = useMemo(() => {
+    if (!selectedGenre) {
+      return baseFiltered.length;
+    }
+    return baseFiltered.filter((g) => g.genres.includes(selectedGenre as Genre)).length;
+  }, [baseFiltered, selectedGenre]);
 
   useEffect(() => {
     if (skipFirstFilter.current) {
@@ -201,19 +216,14 @@ export function DiscoverFilters({
       return;
     }
     const handle = window.setTimeout(() => {
-      const q = query.trim();
-      if (q) {
-        void track("search", { query: q, resultsCount: filtered.length });
-      }
       void track("filter_changed", {
         surface: "discover",
         filters: {
-          genre,
+          genre: selectedGenre || undefined,
           sort,
           multiplayerOnly,
           installableOnly,
           hwFilter: hwFilter || undefined,
-          query: q || undefined,
           compatibility: mode,
         },
       });
@@ -223,67 +233,94 @@ export function DiscoverFilters({
     }, 400);
     return () => window.clearTimeout(handle);
   }, [
-    query,
-    genre,
+    selectedGenre,
     sort,
     multiplayerOnly,
     installableOnly,
     hwFilter,
-    filtered.length,
     track,
     mode,
   ]);
 
-  const animKey = `${mode}|${hwFilter}|${filtered.map((g) => g.slug).join(",")}`;
+  const animKey = `${mode}|${hwFilter}|${selectedGenre}|${sort}|${baseFiltered.map((g) => g.slug).join(",")}`;
 
   return (
-    <>
-      {/* ── Filter toolbar ──────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        {/* Search */}
-        <div className="relative min-w-0 flex-1 basis-48">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder="Search title, tagline, tags…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-9 w-full rounded-lg border border-input bg-secondary/50 pl-9 pr-3 text-sm font-medium outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring"
-          />
-        </div>
-
-        {/* Genre dropdown */}
-        <PremiumSelect
-          value={genre}
-          onChange={(e) => setGenre(e.target.value)}
-          className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
+    <div className="space-y-6">
+      {/* ── 1. Genre Quick-Select Buttons (Pills) ──────────────── */}
+      <div className="no-scrollbar -mx-1 flex snap-x items-center gap-2 overflow-x-auto px-1 py-1">
+        <button
+          type="button"
+          onClick={() => setSelectedGenre("")}
+          className={cn(
+            "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 border",
+            selectedGenre === ""
+              ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+              : "border-border/60 bg-secondary/50 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+          )}
         >
-          <option value="">All genres</option>
-          {genres.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </PremiumSelect>
+          All Genres
+          <span
+            className={cn(
+              "ml-1.5 rounded-full px-1.5 py-0.2 text-[10px] tabular-nums",
+              selectedGenre === ""
+                ? "bg-primary-foreground/20 text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            {baseFiltered.length}
+          </span>
+        </button>
 
-        {/* Sort dropdown */}
-        <PremiumSelect
-          value={sort}
-          onChange={(e) => setSort(e.target.value as SortOption)}
-          className="h-9 rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
-        >
-          <option value="name">Sort: Name</option>
-          <option value="size">Sort: Size</option>
-        </PremiumSelect>
+        {allGenresWithCounts.map(({ name, count }) => {
+          const isSelected = selectedGenre === name;
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setSelectedGenre(isSelected ? "" : name)}
+              className={cn(
+                "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 border",
+                isSelected
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+                  : "border-border/60 bg-secondary/50 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              {name}
+              <span
+                className={cn(
+                  "ml-1.5 rounded-full px-1.5 py-0.2 text-[10px] tabular-nums",
+                  isSelected
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Hardware performance + checkboxes (compact cluster) */}
-        <div className="inline-flex shrink-0 flex-wrap items-center gap-2.5">
+      {/* ── 2. Unified Filter Row (Sort, Hardware, Checkboxes, Game Count) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3.5 rounded-xl border border-border/70 bg-card/60 p-2.5 backdrop-blur-sm sm:p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Sort Dropdown */}
+          <PremiumSelect
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortOption)}
+            className="!w-auto h-9 min-w-[130px] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
+          >
+            <option value="name">Sort: Name (A-Z)</option>
+            <option value="size">Sort: Size (Largest)</option>
+            <option value="players">Sort: Most Players</option>
+          </PremiumSelect>
+
+          {/* Hardware Compatibility Dropdown */}
           <PremiumSelect
             value={hwFilter}
             onChange={(e) => {
               const v = e.target.value as HwFilter;
               if (!userHw && v) {
-                // Soft prompt — stay on discover; users open launcher via sync/cta elsewhere.
                 setHwFilter("");
                 window.alert(
                   "Open PlayBound while signed in to sync your PC, then use this filter."
@@ -292,7 +329,7 @@ export function DiscoverFilters({
               }
               setHwFilter(v);
             }}
-            className="!w-auto h-9 max-w-[15rem] rounded-lg border border-input bg-secondary/50 px-3 text-sm font-semibold outline-none transition-colors focus:border-ring"
+            className="!w-auto h-9 max-w-[15rem] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
             title={
               userHw
                 ? "Filter by performance on your synced PC"
@@ -305,60 +342,50 @@ export function DiscoverFilters({
               {userHw ? "Playable or better" : "Playable or better (needs launcher)"}
             </option>
           </PremiumSelect>
-          <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">
-            <input
-              type="checkbox"
+
+          {/* Standardized Checkboxes */}
+          <div className="flex items-center gap-3.5 pl-1">
+            <Checkbox
               checked={multiplayerOnly}
-              onChange={(e) => setMultiplayerOnly(e.target.checked)}
-              className="accent-primary"
+              onCheckedChange={setMultiplayerOnly}
+              label="Multiplayer"
             />
-            Multiplayer
-          </label>
-          <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground whitespace-nowrap select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={installableOnly}
-              onChange={(e) => setInstallableOnly(e.target.checked)}
-              className="accent-primary"
+              onCheckedChange={setInstallableOnly}
+              label="Installable"
             />
-            Installable
-          </label>
+          </div>
+        </div>
+
+        {/* Total Games Count in the same row */}
+        <div className="ml-auto pr-1 text-xs font-bold text-muted-foreground tabular-nums">
+          {totalDisplayCount} game{totalDisplayCount === 1 ? "" : "s"}
         </div>
       </div>
 
-      {/* ── Count ────────────────────────────────────────────── */}
-      <p className="mt-2.5 text-sm font-medium text-muted-foreground">
-        {filtered.length} game{filtered.length === 1 ? "" : "s"}
-      </p>
-
-      {/* ── Grid ─────────────────────────────────────────────── */}
-      {filtered.length === 0 ? (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          No games match your filters.
-        </p>
+      {/* ── 3. Genre Game Rows ─────────────────────────────────── */}
+      {genreSections.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border/80 p-12 text-center">
+          <p className="text-base font-semibold text-foreground">No games match your filters</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Try adjusting your sorting, hardware preference, or category filters.
+          </p>
+        </div>
       ) : (
         <CompatibleGamesFade animKey={animKey}>
-          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(288px,1fr))] gap-5">
-            {filtered.map((g, i) => {
-              const full = gamesBySlug.get(g.slug);
-              if (!full) return null;
-              return (
-                <div
-                  key={g.slug}
-                  className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
-                  style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
-                >
-                  <GameCard
-                    game={full}
-                    className="w-full sm:w-full"
-                    playingNow={playingNowBySlug[g.slug] ?? 0}
-                  />
-                </div>
-              );
-            })}
+          <div className="space-y-8">
+            {genreSections.map(({ genre, games: rowGames }) => (
+              <GenreGameRow
+                key={genre}
+                genre={genre}
+                games={rowGames}
+                playingNowBySlug={playingNowBySlug}
+              />
+            ))}
           </div>
         </CompatibleGamesFade>
       )}
-    </>
+    </div>
   );
 }
