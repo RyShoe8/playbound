@@ -633,7 +633,9 @@ export const editions: EditionSeed[] = [
         kind: "external",
         url: "https://www.projectquarm.com/",
         exeHint: "eqgame",
-        postInstallDiscord: "https://discord.gg/projectquarm",
+        // Deliberately no postInstallDiscord: installing should not throw the
+        // player into a chat app. The patch step is covered by `steps` below
+        // and the Discord link is on the edition page.
         postInstallEqw: true,
         note:
           "Installing here only sets up the base client. You still need a TAKP game account and the latest Quarm Discord patch before login will work.",
@@ -1516,6 +1518,24 @@ export const editions: EditionSeed[] = [
             {
               url: "https://github.com/AurieFramework/Aurie/releases/download/v2.0.2/AurieCore.dll",
               fileName: "AurieCore.dll",
+              dest: "mods/Native",
+            },
+            {
+              /*
+               * YYToolkit — the GameMaker interface every one of the mods below
+               * asks Aurie for. Without it all three abort at startup with
+               * "Failed to get YYTK Interface (AURIE_OBJECT_NOT_FOUND)" and the
+               * game opens unmodded.
+               *
+               * v5 specifically: HoloCureMultiplayerMod v1.4.1's notes say
+               * "Updated for YYTK v5 (WARNING: May become incompatible with
+               * previous versions of YYTK)". v5.0.0c is flagged prerelease
+               * upstream but is the only v5 published, so pinning it is
+               * deliberate rather than an oversight. x64 to match AurieCore.dll
+               * above — the -x86 builds pair with AurieCore-x86.dll.
+               */
+              url: "https://github.com/AurieFramework/YYToolkit/releases/download/v5.0.0c/YYToolkit.dll",
+              fileName: "YYToolkit.dll",
               dest: "mods/Native",
             },
             {
