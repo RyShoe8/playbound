@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { Avatar } from "@/components/ui/bits";
@@ -90,13 +91,42 @@ export function CatalogStatsCard({
   live: CatalogLiveStats;
   openPartyCount?: number;
 }) {
+  /*
+   * Fetched on the client rather than rendered with the page.
+   *
+   * The homepage is served from the CDN, so a count computed during render is
+   * frozen — create a public party, load the homepage, and it still reads 0
+   * until something revalidates. Partial Prerendering is not enabled, so a
+   * request-time hole would force the entire route dynamic and cost the page
+   * its cache. Fetching here keeps the page cached and the number live.
+   *
+   * Starts from the server-rendered value so there is no flash of 0, and a
+   * failed fetch simply leaves it in place.
+   */
+  const [parties, setParties] = useState(openPartyCount);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/parties/open-count")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && typeof data?.count === "number") setParties(data.count);
+      })
+      .catch(() => {
+        /* keep whatever the page rendered */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const mostPopular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
   const items = [
     { label: "Games", value: live.gameCount, href: "/discover" },
     { label: "Mods", value: live.modCount, href: "/mods" },
     { label: "Editions", value: live.editionCount, href: null },
     { label: "Gamers Playing", value: live.playingNow, href: null },
-    { label: "Open Parties", value: openPartyCount, href: "/events" },
+    { label: "Open Parties", value: parties, href: "/events" },
   ];
 
   return (
