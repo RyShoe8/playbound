@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { telemetry } from "@/lib/telemetry";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 export function InviteFriendsPanel({ gameSlug }: { gameSlug: string }) {
   const { status } = useSession();
@@ -98,21 +99,20 @@ export function InviteFriendsPanel({ gameSlug }: { gameSlug: string }) {
                 const checked = selected.has(f.id);
                 return (
                   <li key={f.id}>
-                    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary/60">
-                      <input
-                        type="checkbox"
+                    <div className="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-secondary/60 transition-colors">
+                      <Checkbox
                         checked={checked}
-                        onChange={() => {
+                        onCheckedChange={(isChecked) => {
                           setSelected((prev) => {
                             const next = new Set(prev);
-                            if (next.has(f.id)) next.delete(f.id);
-                            else next.add(f.id);
+                            if (isChecked) next.add(f.id);
+                            else next.delete(f.id);
                             return next;
                           });
                         }}
+                        label={<span className="font-semibold">{f.username}</span>}
                       />
-                      <span className="font-semibold">{f.username}</span>
-                    </label>
+                    </div>
                   </li>
                 );
               })}

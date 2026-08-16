@@ -8,6 +8,7 @@ import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { getRecaptchaToken } from "@/lib/recaptchaClient";
 import { useTelemetry } from "@/lib/telemetry";
 import { storeInviteTokenFromSearch } from "@/components/friends/FriendInviteClaim";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 export default function SignupPage() {
   const { track } = useTelemetry();
@@ -129,24 +130,22 @@ export default function SignupPage() {
           />
           <p className="mt-1 text-[11px] text-muted-foreground">At least 8 characters.</p>
         </div>
-        <label className="flex items-start gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2.5 text-sm">
-          <input
-            type="checkbox"
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <Checkbox
             checked={newsletterOptIn}
-            onChange={(e) => setNewsletterOptIn(e.target.checked)}
-            className="mt-0.5"
+            onCheckedChange={setNewsletterOptIn}
+            label={<span className="font-semibold">Email me the PlayBound Weekly newsletter</span>}
+            description={
+              <span>
+                One email Wednesdays with what&apos;s worth playing. Unsubscribe any time. See our{" "}
+                <Link href="/privacy" className="underline hover:text-foreground">
+                  privacy policy
+                </Link>
+                .
+              </span>
+            }
           />
-          <span>
-            <span className="font-semibold">Email me the PlayBound Weekly newsletter</span>
-            <span className="mt-0.5 block text-[11px] text-muted-foreground">
-              One email Wednesdays with what&apos;s worth playing. Unsubscribe any time. See our{" "}
-              <Link href="/privacy" className="underline hover:text-foreground">
-                privacy policy
-              </Link>
-              .
-            </span>
-          </span>
-        </label>
+        </div>
         {state === "error" && <p className="text-xs text-destructive">{message}</p>}
         <button
           type="submit"

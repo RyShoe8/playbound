@@ -12,6 +12,7 @@ import { telemetry } from "@/lib/telemetry";
 import { followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { isHostableGame } from "@/lib/gameHost/catalog";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: string }[] = [
   { value: "public", hint: "Anyone signed in can join. Listed on Events." },
@@ -138,20 +139,20 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         </div>
       ) : null}
 
-      <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border border-border px-3 py-2">
-        <span className="min-w-0">
+      <div className="flex items-start justify-between gap-3 rounded-lg border border-border px-3 py-2">
+        <div className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">Voice channel</span>
-          <span className="block text-xs text-muted-foreground">
+          <span className="block text-xs text-muted-foreground leading-snug">
             Open a Discord voice room for this party
           </span>
-        </span>
-        <input
-          type="checkbox"
-          className="mt-1 size-4 accent-primary"
-          checked={wantVoice}
-          onChange={(e) => setWantVoice(e.target.checked)}
-        />
-      </label>
+        </div>
+        <div className="pt-0.5">
+          <Checkbox
+            checked={wantVoice}
+            onCheckedChange={setWantVoice}
+          />
+        </div>
+      </div>
 
       <div className="space-y-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -163,20 +164,18 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
           <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
             {friends.map((f) => (
               <li key={f.id}>
-                <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-secondary/60">
-                  <input
-                    type="checkbox"
-                    className="accent-primary"
+                <div className="flex items-center rounded-md px-2 py-1 hover:bg-secondary/60 transition-colors">
+                  <Checkbox
                     checked={selectedFriends.has(f.id)}
-                    onChange={() => {
+                    onCheckedChange={(checked) => {
                       const next = new Set(selectedFriends);
-                      if (next.has(f.id)) next.delete(f.id);
-                      else next.add(f.id);
+                      if (checked) next.add(f.id);
+                      else next.delete(f.id);
                       setSelectedFriends(next);
                     }}
+                    label={<span className="text-sm font-medium">{f.username}</span>}
                   />
-                  <span className="text-sm font-medium">{f.username}</span>
-                </label>
+                </div>
               </li>
             ))}
           </ul>

@@ -18,6 +18,7 @@ import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { PopoutButton } from "@/components/friends/PopoutButton";
+import { Checkbox } from "@/components/ui/Checkbox";
 
 function PrivacyToggle({
   label,
@@ -33,19 +34,19 @@ function PrivacyToggle({
   onChange: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg px-1 py-1.5 hover:bg-secondary/40">
-      <span className="min-w-0">
-        <span className="block text-sm font-semibold">{label}</span>
-        <span className="block text-xs text-muted-foreground">{description}</span>
-      </span>
-      <input
-        type="checkbox"
-        className="mt-1 size-4 accent-primary"
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-      />
-    </label>
+    <div className="flex items-start justify-between gap-3 rounded-lg px-2 py-2 hover:bg-secondary/40 transition-colors">
+      <div className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-foreground">{label}</span>
+        <span className="block text-xs text-muted-foreground leading-snug">{description}</span>
+      </div>
+      <div className="pt-0.5">
+        <Checkbox
+          checked={checked}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      </div>
+    </div>
   );
 }
 
