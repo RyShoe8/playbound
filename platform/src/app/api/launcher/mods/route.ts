@@ -34,6 +34,7 @@ export async function GET(req: Request) {
           baseGameSlug: m.baseGameSlug,
           baseGameTitle: base?.title,
           tagline: m.tagline,
+          whatItChanges: m.whatItChanges || m.tagline || null,
           coverImage: absoluteMediaUrl(m.coverImage, origin),
           baseGameCoverImage: absoluteMediaUrl(base?.coverImage, origin),
           downloadKind: m.downloadKind,

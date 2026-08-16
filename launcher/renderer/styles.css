@@ -453,6 +453,39 @@ body {
   border-radius: 6px;
 }
 
+/* Mod Cards */
+.mod-card .card-art {
+  aspect-ratio: 16 / 10;
+  max-height: 155px;
+}
+
+.mod-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 10px 12px 12px;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.mod-fixes-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim, rgba(255, 255, 255, 0.72));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.mod-card .card-meta {
+  border-top: none;
+  padding: 0;
+}
+
 .card-playing {
   display: flex;
   flex-shrink: 0;

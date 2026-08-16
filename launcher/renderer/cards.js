@@ -187,6 +187,18 @@ export function createModCard(mod) {
 
   card.appendChild(art);
 
+  const body = document.createElement("div");
+  body.className = "mod-card-body";
+
+  const fixesText = mod.whatItChanges || mod.tagline || "";
+  if (fixesText) {
+    const fixesEl = document.createElement("p");
+    fixesEl.className = "mod-fixes-text";
+    fixesEl.textContent = fixesText;
+    fixesEl.title = fixesText;
+    body.appendChild(fixesEl);
+  }
+
   const footer = document.createElement("div");
   footer.className = "card-meta";
   const tags = [
@@ -196,7 +208,8 @@ export function createModCard(mod) {
   footer.innerHTML = `
     <div class="card-tags">${tags.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("")}</div>
   `;
-  card.appendChild(footer);
+  body.appendChild(footer);
+  card.appendChild(body);
 
   card.addEventListener(
     "pointerenter",
