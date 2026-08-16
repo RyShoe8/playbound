@@ -4,6 +4,16 @@
   --bg-dark: #0c0a12;
   --bg-card: rgba(23, 20, 33, 0.7);
   --bg-card-hover: rgba(35, 30, 50, 0.8);
+  /*
+   * Panels raised inside a card — create party, add friends, dialogs.
+   *
+   * Four places referenced this and nothing defined it, so it resolved to
+   * transparent and those panels showed --bg-dark straight through, reading as
+   * a near-black hole against the surrounding surfaces. Lighter than --bg-card
+   * on purpose: these sit on top of a card, so matching it exactly would erase
+   * the boundary the border is drawing.
+   */
+  --bg-secondary: rgba(35, 30, 50, 0.8);
   --bg-sidebar: #120f1a;
   --accent: #7c5cf0;
   --accent-light: #9b7bff;
