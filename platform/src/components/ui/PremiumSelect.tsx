@@ -46,7 +46,10 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
     .join(" ");
 
   return (
-    <div className={`relative min-w-[120px] w-full ${wrapperClass}`} ref={containerRef}>
+    <div
+      className={`relative min-w-[120px] w-full ${wrapperClass} ${open ? "z-50" : ""}`}
+      ref={containerRef}
+    >
       <select
         value={value}
         onChange={onChange}
