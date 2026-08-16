@@ -115,7 +115,7 @@ export function ModsFilters({
         </p>
       ) : (
         <CompatibleGamesFade animKey={animKey}>
-          <ul className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
+          <ul className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
             {filtered.map((mod) => {
               const game = gamesBySlug[mod.baseGameSlug];
               return (

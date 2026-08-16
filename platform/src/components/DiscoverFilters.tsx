@@ -65,7 +65,7 @@ function CatalogCard({
     >
       {/* Banner */}
       <div
-        className="relative flex h-[120px] items-center justify-center overflow-hidden text-[32px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]"
+        className="relative flex h-[138px] items-center justify-center overflow-hidden text-[32px] font-black text-white/90 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]"
         style={{ background: bgGrad }}
       >
         {game.coverImage ? (
@@ -403,7 +403,7 @@ export function DiscoverFilters({ games }: { games: Game[] }) {
         </p>
       ) : (
         <CompatibleGamesFade animKey={animKey}>
-          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
+          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
             {filtered.map((g, i) => (
               <div
                 key={g.slug}

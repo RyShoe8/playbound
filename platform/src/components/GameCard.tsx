@@ -176,7 +176,7 @@ export function GameCard({ game, className }: { game: Game; className?: string }
     <Link
       href={`/games/${game.slug}`}
       className={cn(
-        "group flex h-full w-44 shrink-0 snap-start flex-col sm:w-48",
+        "group flex h-full w-52 shrink-0 snap-start flex-col sm:w-[230px]",
         className
       )}
     >
