@@ -299,6 +299,13 @@ function allowedExecutableRoots() {
   } catch {
     roots.push(DEFAULT_GAMES_DIR);
   }
+  /*
+   * Steam libraries count as trusted roots. They are frequently on a second
+   * drive, outside every env-var root below, so without this a legitimate
+   * Steam install is refused — and the drive scan was quietly adopting those
+   * same paths anyway by calling markInstalledFromExe without checking.
+   */
+  for (const steamRoot of steamLibraryRoots()) roots.push(steamRoot);
   if (process.platform === "win32") {
     for (const key of ["LOCALAPPDATA", "APPDATA", "PROGRAMFILES", "ProgramFiles(x86)", "USERPROFILE"]) {
       if (process.env[key]) roots.push(process.env[key]);
@@ -327,6 +334,81 @@ function allowedExecutableRoots() {
     /* ignore */
   }
   return roots.filter(Boolean);
+}
+
+/**
+ * Every Steam library root on this machine, read from libraryfolders.vdf.
+ *
+ * Steam lets people put libraries on any drive, and catalog knownExePaths can
+ * only ever name the default one. HoloCure sat in D:\SteamLibrary, so all three
+ * of its known paths missed and detection fell through to the full-drive scan —
+ * 50 seconds of grace followed by a BFS across every fixed disk, for a game
+ * whose location Steam records in a text file.
+ *
+ * Cached: libraries cannot appear while the app is running without Steam
+ * restarting too.
+ */
+let _steamLibraryRoots = null;
+function steamLibraryRoots() {
+  if (_steamLibraryRoots) return _steamLibraryRoots;
+  const roots = [];
+  const bases = [];
+  try {
+    if (process.platform === "win32") {
+      for (const key of ["ProgramFiles(x86)", "PROGRAMFILES"]) {
+        if (process.env[key]) bases.push(path.join(process.env[key], "Steam"));
+      }
+    } else if (process.platform === "darwin") {
+      bases.push(path.join(app.getPath("home"), "Library", "Application Support", "Steam"));
+    } else {
+      const home = app.getPath("home");
+      bases.push(path.join(home, ".steam", "steam"), path.join(home, ".local", "share", "Steam"));
+    }
+    for (const base of bases) {
+      if (!base || !fs.existsSync(base)) continue;
+      if (!roots.includes(base)) roots.push(base);
+      try {
+        const vdf = fs.readFileSync(
+          path.join(base, "steamapps", "libraryfolders.vdf"),
+          "utf8"
+        );
+        // Entries look like:  "path"    "D:\\SteamLibrary"
+        for (const m of vdf.matchAll(/"path"\s+"([^"]+)"/gi)) {
+          const p = String(m[1] || "").replace(/\\\\/g, "\\").trim();
+          if (p && fs.existsSync(p) && !roots.includes(p)) roots.push(p);
+        }
+      } catch {
+        /* no libraryfolders.vdf — the base root alone is still useful */
+      }
+    }
+  } catch {
+    /* treat an unreadable Steam install as no libraries */
+  }
+  _steamLibraryRoots = roots;
+  return roots;
+}
+
+/**
+ * Re-resolve a catalog's Steam knownExePaths against every library on disk.
+ *
+ * Takes the `steamapps/common/…` tail off each known path and tries it under
+ * each real library root, so a game installed to a second drive is found
+ * immediately instead of by brute force.
+ */
+function findInSteamLibraries(entry) {
+  const tails = [];
+  for (const raw of entry?.knownExePaths || []) {
+    const m = String(raw).match(/steamapps[/\\]common[/\\](.+)$/i);
+    if (m) tails.push(m[1]);
+  }
+  if (!tails.length) return null;
+  for (const root of steamLibraryRoots()) {
+    for (const tail of tails) {
+      const full = path.join(root, "steamapps", "common", tail);
+      if (fs.existsSync(full)) return full;
+    }
+  }
+  return null;
 }
 
 function isAllowedExecutablePath(exePath) {
@@ -2607,6 +2689,9 @@ function findKnownPathOnly(entry) {
     const full = expandWinPath(raw);
     if (full && fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
   }
+  // Same paths, but under whichever Steam library the game actually landed in.
+  const inSteam = findInSteamLibraries(entry);
+  if (inSteam && isAllowedExecutablePath(inSteam)) return inSteam;
   return null;
 }
 
@@ -3400,6 +3485,14 @@ async function startExeScan(slug, entry, version) {
           if (skipGamesDir && normalizeFsPath(full).toLowerCase() === skipGamesDir) continue;
           queue.push(full);
         } else if (ent.isFile() && want.has(ent.name.toLowerCase())) {
+          /*
+           * The allowlist applies here too. This path adopted whatever matched
+           * the executable name anywhere on any fixed drive and handed it
+           * straight to markInstalledFromExe — every other detection route
+           * checks first, and a basename match from an arbitrary folder is the
+           * least trustworthy of them, not the most.
+           */
+          if (!isAllowedExecutablePath(full)) continue;
           if (exeScanJob === job) exeScanJob = null;
           stopInstallerPoll();
           markInstalledFromExe(slug, entry, full, version || "scanned");
