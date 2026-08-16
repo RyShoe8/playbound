@@ -336,9 +336,30 @@ async function renderFriendsView() {
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
           <button class="btn-primary btn-sm" id="btn-toggle-create-party">Start Party</button>
-          <button class="btn-secondary btn-sm" id="btn-lfg">Looking for players</button>
+          <button class="btn-secondary btn-sm" id="btn-lfg">Look for party</button>
           <button class="btn-secondary btn-sm" id="btn-appear-offline">Loading…</button>
           <button class="btn-secondary btn-sm" id="btn-toggle-add-friend">Add Friend</button>
+        </div>
+      </div>
+
+      <p class="view-sub" id="lfg-summary" style="display: none; margin: 8px 0 0; font-size: 13px;"></p>
+
+      <div id="lfg-panel" class="party-panel" style="display: none; margin-top: 16px;">
+        <div class="party-panel-body">
+          <div>
+            <h2 style="margin: 0; font-size: 16px; font-weight: bold;">What do you want to play?</h2>
+            <p class="view-sub" style="margin: 4px 0 0; font-size: 13px;">
+              Pick up to ${LFG_MAX_GAMES}, or skip it and you'll show as up for anything. Expires in 60 minutes.
+            </p>
+          </div>
+          <div id="lfg-chosen" class="card-tags" style="margin: 0;"></div>
+          <input type="text" class="input-text" id="lfg-search" placeholder="Search games…" autocomplete="off" style="width: 100%;" />
+          <div id="lfg-options" class="card-tags" style="margin: 0; max-height: 180px; overflow: auto;"></div>
+          <p class="view-sub" id="lfg-limit-note" style="display: none; margin: 0; font-size: 12px;"></p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button class="btn-primary" id="btn-lfg-confirm">Look for a party</button>
+            <button class="btn-secondary" id="btn-lfg-cancel">Cancel</button>
+          </div>
         </div>
       </div>
 
