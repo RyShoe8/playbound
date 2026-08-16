@@ -1089,6 +1089,17 @@ export const developers: Developer[] = [
     website: "https://oddshot.gg/",
     artHue: 145,
   },
+  {
+    slug: "trigger-rally-team",
+    name: "The Trigger Rally Team",
+    tagline: "Open-source 3D arcade off-road rally racing simulation.",
+    about:
+      "The open-source development team founded by Jasmine and Richard Langridge, maintaining Trigger Rally, a fast-paced 3D arcade rally driving game featuring rugged terrain physics, customizable stages, and cross-platform native gameplay.",
+    founded: 2004,
+    location: "Worldwide",
+    website: "https://trigger-rally.sourceforge.net/",
+    artHue: 35,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

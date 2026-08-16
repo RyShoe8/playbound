@@ -225,6 +225,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Oddshot Games actively maintains Strikers Club on Steam with regular updates and community playtests.",
   },
+  "trigger-rally": {
+    kind: "manual",
+    url: "https://trigger-rally.sourceforge.net/",
+    checkedAt: "2026-08-15",
+    note: "Active open-source rally driving simulation on SourceForge with preserved Windows 64-bit portable releases and WebGL edition.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -4604,6 +4610,80 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "What are the hardware requirements?",
         a: "Strikers Club runs smoothly on modest PCs, requiring an Intel Core i3 processor, 4 GB RAM, and a DirectX 11 compatible graphics card.",
+      },
+    ],
+  },
+
+  "trigger-rally": {
+    qualityBar: clearsAll(
+      "Trigger Rally clears all five: 100% free and open-source under GPL-2.0, complete with over 100 tracks, actively preserved with 64-bit builds and WebGL browser support, and delivers fast-paced 3D arcade off-road racing."
+    ),
+    longDescription:
+      "Trigger Rally is a fast-paced, open-source 3D arcade rally driving game originally created by Jasmine Langridge and Andrei Borovsky, continuously preserved and enhanced by the Trigger Rally Team. Foregoing sterile asphalt race tracks, Trigger Rally drops players into the raw, unforgiving elements, testing driving precision and drift control across rugged natural terrain.\n\nRather than competing on a crowded circuit grid against aggressive AI traffic, Trigger Rally is built around the pure thrill of the stage time trial. Tracks are demarcated by a sequence of massive pulsating neon rings acting as checkpoints. Players must navigate tight winding paths, launch over natural hill crests, and slide through mud ruts to cross each checkpoint before the ruthless stage countdown timer reaches zero.\n\nThe game features an expressive physics model where surface friction dynamically dictates vehicle handling. Blasting across compacted gravel allows crisp, controlled power slides, while drifting through loose desert sand dunes saps momentum and deep icy snow banks demand delicate throttle modulation to avoid spinning out. An integrated audio co-pilot calls out upcoming sharp turns, crests, and water hazards in real time.\n\nContent is abundant, featuring over 100 hand-crafted stage tracks spanning desert canyons, alpine mountains, snowy tundras, and lush forests. Players can progress through structured single-player rally cups or customize individual stage weather, vehicle colors, and handling characteristics. The entire engine is designed for easy customization, allowing users to create new terrain heightmaps and checkpoint paths via straightforward XML files.\n\nWeighing under 150 MB and rendering smoothly on virtually any hardware with basic OpenGL acceleration, Trigger Rally provides an instant, pure arcade racing fix across desktop PCs and modern web browsers.",
+    whyWePickedIt:
+      "Trigger Rally captures the quintessential arcade time-trial rally experience. With its snappy physics, challenging checkpoint timer countdowns, and zero installation friction, it remains one of open-source gaming's most enjoyable lightweight racers.",
+    bestFor: [
+      "Fans of classic arcade rally games like Sega Rally and Colin McRae Rally",
+      "Players who love tight time attack time-trial driving",
+      "Gamers with older laptops or low-end hardware wanting 60+ FPS 3D racing",
+      "Track creators and modders who enjoy editing XML terrain heightmaps",
+      "Anyone seeking quick-restart driving sessions without microtransactions",
+    ],
+    notFor: [
+      "Players wanting licensed real-world manufacturer cars (e.g. Ferrari or Porsche)",
+      "Those seeking modern photorealistic sim-racing graphics like Forza Horizon or Dirt Rally 2.0",
+      "Gamers looking for live online wheel-to-wheel multiplayer grid racing",
+    ],
+    comparableTo: [
+      "Colin McRae Rally",
+      "Sega Rally Championship",
+      "V-Rally",
+      "Rush Rally",
+      "Dust Racing 2D",
+      "Speed Dreams",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and extract the Trigger Rally standalone portable zip (v0.6.6.1).",
+      },
+      {
+        platform: "windows",
+        text: "Run trigger-rally.exe to launch the game with zero installation footprint.",
+      },
+      {
+        platform: "windows",
+        text: "Connect your gamepad or racing wheel and configure your analog steering bindings in the Options menu.",
+      },
+      {
+        platform: "windows",
+        text: "Select a rally car and start with the introductory Warm Up Cup to master drifting through checkpoint rings.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Trigger Rally completely free?",
+        a: "Yes! Trigger Rally is 100% free and open-source software licensed under the GNU General Public License (GPL-2.0). There are no ads, microtransactions, or locked content.",
+      },
+      {
+        q: "Can I play Trigger Rally in a web browser?",
+        a: "Yes! The community maintains 'Trigger Rally Online Edition', a WebGL port playable directly inside any modern web browser without downloading files.",
+      },
+      {
+        q: "Does Trigger Rally support gamepads and steering wheels?",
+        a: "Yes! Trigger Rally includes full analog input support for standard USB gamepads, Xbox/PlayStation controllers, and USB racing wheels with configurable deadzones.",
+      },
+      {
+        q: "How do I create custom tracks?",
+        a: "Tracks in Trigger Rally are defined using plain XML files alongside standard PNG heightmap and terrain texture images in the data/maps folder.",
+      },
+      {
+        q: "Does the game have multiplayer?",
+        a: "Trigger Rally is primarily a single-player time trial and cup championship rally game focused on beating stage target times and personal best ghost records.",
+      },
+      {
+        q: "What are the system requirements?",
+        a: "Trigger Rally is exceptionally lightweight, running at high framerates on a 1.0 GHz CPU, 512 MB RAM, and any basic OpenGL-capable graphics chip.",
       },
     ],
   },

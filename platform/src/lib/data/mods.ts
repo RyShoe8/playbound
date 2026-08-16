@@ -29,6 +29,7 @@ import { mrboomMods } from "./mrboomMods";
 import { tripleaMods } from "./tripleaMods";
 import { allegianceMods } from "./allegianceMods";
 import { strikersClubMods } from "./strikersClubMods";
+import { triggerRallyMods } from "./triggerRallyMods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -64,6 +65,7 @@ export const mods: ModSeed[] = [
   ...tripleaMods,
   ...allegianceMods,
   ...strikersClubMods,
+  ...triggerRallyMods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
