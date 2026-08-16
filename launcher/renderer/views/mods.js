@@ -1,3 +1,4 @@
+import { createModCard } from "../cards.js";
 import {
   api,
   CACHE_TTL,
@@ -90,74 +91,7 @@ export function paintModsGrid() {
     grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No mods match.</p>`;
     return;
   }
-  grid.replaceChildren(
-    ...list.map((mod) => {
-      const card = document.createElement("div");
-      card.className = "game-card";
-      const bgGrad =
-        Array.isArray(mod.art) && mod.art.length >= 2
-          ? `linear-gradient(135deg, ${mod.art[0]}, ${mod.art[1]})`
-          : `linear-gradient(135deg, #312e81, #a78bfa)`;
-      card.innerHTML = `
-          <div class="card-banner" style="background:${bgGrad}">${escapeHtml((mod.title || "?").charAt(0))}</div>
-          <div class="card-body">
-            <div class="card-title">${escapeHtml(mod.title)}</div>
-            <div class="card-blurb">${escapeHtml(mod.tagline || mod.baseGameTitle || mod.baseGameSlug || "")}</div>
-            <div class="card-tags">${[mod.license, mod.baseGameTitle]
-              .filter(Boolean)
-              .slice(0, 3)
-              .map((c) => `<span class="chip">${escapeHtml(c)}</span>`)
-              .join("")}</div>
-            <div class="card-footer">
-              <span style="font-size: 11px; color: var(--text-dim);">${escapeHtml([mod.baseGameTitle ? `For ${mod.baseGameTitle}` : (mod.baseGameSlug ? `For ${mod.baseGameSlug}` : null), mod.approxSize].filter(Boolean).join(" · "))}</span>
-              <button class="btn-primary btn-sm btn-mod-install" type="button">Install</button>
-            </div>
-          </div>
-        `;
-      const coverUrl = mod.coverImage || mod.baseGameCoverImage || "";
-      const useBaseFallback = !mod.coverImage && Boolean(mod.baseGameCoverImage);
-      if (coverUrl) {
-        const banner = card.querySelector(".card-banner");
-        banner.textContent = "";
-        const img = document.createElement("img");
-        img.className = "card-cover";
-        img.src = coverUrl;
-        img.alt = "";
-        img.loading = "lazy";
-        if (useBaseFallback) img.dataset.source = "base-game";
-        banner.appendChild(img);
-      }
-      card.addEventListener(
-        "pointerenter",
-        () => {
-          api.prefetchView?.("modDetail");
-          prefetchModDetail(mod.slug);
-        },
-        { once: true }
-      );
-      card.querySelector(".btn-mod-install")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        try {
-          setStatus(`Installing ${mod.title}…`);
-          const result = await window.playbound.installMod(mod.slug);
-          if (result?.status === "external" || result?.status === "external-opened") {
-            setStatus("Opened download page in browser.");
-          } else {
-            setStatus(`Installed ${mod.title}`);
-          }
-          setProgress(null);
-        } catch (err) {
-          setStatus(err.message || String(err), true);
-          setProgress(null);
-        }
-      });
-      card.addEventListener("click", (e) => {
-        if (e.target.closest("button")) return;
-        api.openModDetail(mod.slug, "mods");
-      });
-      return card;
-    })
-  );
+  grid.replaceChildren(...list.map((mod) => createModCard(mod)));
 }
 
 async function renderModsView() {

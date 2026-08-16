@@ -18,6 +18,7 @@ import { pageMetadata } from "@/lib/seo";
 import { EventRsvpActions } from "@/components/events/EventRsvpActions";
 import { EventFriendsAttending } from "@/components/events/EventFriendsAttending";
 import { EventActionBar } from "@/components/events/EventActionBar";
+import { EventManageActions } from "@/components/events/EventManageActions";
 import { EventViewTracker } from "@/components/events/EventViewTracker";
 import { TournamentBracket } from "@/components/events/TournamentBracket";
 import { TournamentCheckInButton } from "@/components/events/TournamentCheckInButton";
@@ -262,13 +263,21 @@ export default async function EventDetailPage({ params }: Props) {
         ) : null}
       </div>
 
-      <EventActionBar
-        eventId={event.id}
-        gameSlug={event.gameSlug}
-        discordInviteUrl={event.discordInviteUrl}
-        isLive={isLive}
-        game={game}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <EventActionBar
+          eventId={event.id}
+          gameSlug={event.gameSlug}
+          discordInviteUrl={event.discordInviteUrl}
+          isLive={isLive}
+          game={game}
+        />
+        {(isAdmin || (session?.user?.id && orgId && String(orgId) === session.user.id)) ? (
+          <EventManageActions
+            eventId={event.id}
+            isCancelled={event.status === "cancelled"}
+          />
+        ) : null}
+      </div>
 
       <section className="space-y-3">
         <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">

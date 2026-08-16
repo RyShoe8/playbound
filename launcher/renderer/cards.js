@@ -3,6 +3,7 @@ import {
   escapeHtml,
   isGameDesktopCompatible,
   prefetchGameDetail,
+  prefetchModDetail,
   state,
 } from "./shared.js";
 
@@ -137,6 +138,75 @@ export function createGameCard(game, playingNow) {
     { once: true }
   );
   card.addEventListener("click", () => api.openGameDetail?.(game.slug, state.currentView));
+  return card;
+}
+
+/**
+ * A card for one mod, structured in the standardized 3/4 portrait format
+ * matching createGameCard and web's ModCard.
+ */
+export function createModCard(mod) {
+  const card = document.createElement("div");
+  card.className = "game-card mod-card";
+
+  const bgGrad =
+    Array.isArray(mod.art) && mod.art.length >= 2
+      ? `linear-gradient(135deg, ${mod.art[0]}, ${mod.art[1]})`
+      : `linear-gradient(135deg, #312e81, #a78bfa)`;
+
+  const art = document.createElement("div");
+  art.className = "card-art";
+  art.style.background = bgGrad;
+
+  const fallback = document.createElement("span");
+  fallback.className = "card-art-fallback";
+  fallback.textContent = (mod.title || "?").charAt(0);
+  art.appendChild(fallback);
+
+  const coverUrl = mod.coverImage || mod.baseGameCoverImage || "";
+  if (coverUrl) {
+    const img = document.createElement("img");
+    img.className = "card-cover";
+    img.src = coverUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("error", () => img.remove());
+    art.appendChild(img);
+  }
+
+  const titleOverlay = document.createElement("div");
+  titleOverlay.className = "card-art-title";
+  titleOverlay.innerHTML = `<span class="card-title-text">${escapeHtml(mod.title)}</span>`;
+  art.appendChild(titleOverlay);
+
+  const badge = document.createElement("div");
+  badge.className = "card-launch-badge-slot";
+  const sizeLabel = String(mod.approxSize || "").replace(/^~\s*/, "");
+  badge.innerHTML = `<span class="card-launch-badge">${ICON_DOWNLOAD}${sizeLabel ? ` ${escapeHtml(sizeLabel)}` : " Mod"}</span>`;
+  art.appendChild(badge);
+
+  card.appendChild(art);
+
+  const footer = document.createElement("div");
+  footer.className = "card-meta";
+  const tags = [
+    mod.license,
+    mod.baseGameTitle ? `For ${mod.baseGameTitle}` : mod.baseGameSlug ? `For ${mod.baseGameSlug}` : null,
+  ].filter(Boolean);
+  footer.innerHTML = `
+    <div class="card-tags">${tags.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("")}</div>
+  `;
+  card.appendChild(footer);
+
+  card.addEventListener(
+    "pointerenter",
+    () => {
+      api.prefetchView?.("modDetail");
+      prefetchModDetail(mod.slug);
+    },
+    { once: true }
+  );
+  card.addEventListener("click", () => api.openModDetail?.(mod.slug, state.currentView));
   return card;
 }
 

@@ -7,6 +7,7 @@ import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import EventRsvp from "@/lib/models/EventRsvp";
 import User from "@/lib/models/User";
+import { userFromLauncherBearer } from "@/lib/library";
 import { getGame } from "@/lib/catalog";
 import { getRsvpCounts } from "@/lib/events/rsvpCounts";
 import { serializeEvent } from "@/lib/events/serialize";
@@ -163,20 +164,26 @@ export async function GET(_req: Request, ctx: Ctx) {
 }
 
 export async function PATCH(req: Request, ctx: Ctx) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
-    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  }
   const { id } = await ctx.params;
   if (!Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  const session = await getServerSession(authOptions);
+  const launcherUser = session?.user?.id ? null : await userFromLauncherBearer(req);
+  const currentUserId = session?.user?.id || (launcherUser?._id ? launcherUser._id.toString() : null);
+  const isAdmin = session?.user?.role === "admin" || launcherUser?.role === "admin";
 
   try {
     const body = eventUpdateSchema.parse(await req.json());
     await dbConnect();
     const event = await PlatformEvent.findById(id);
     if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const isOrganizer = currentUserId && (String(event.organizerId || event.createdBy) === currentUserId);
+    if (!isAdmin && !isOrganizer) {
+      return NextResponse.json({ error: "Admin or organizer access required" }, { status: 403 });
+    }
 
     if (body.cancel) {
       event.status = "cancelled";
@@ -250,5 +257,44 @@ export async function PATCH(req: Request, ctx: Ctx) {
     }
     console.error("Event update error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, ctx: Ctx) {
+  const { id } = await ctx.params;
+  if (!Types.ObjectId.isValid(id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const session = await getServerSession(authOptions);
+  const launcherUser = session?.user?.id ? null : await userFromLauncherBearer(req);
+  const currentUserId = session?.user?.id || (launcherUser?._id ? launcherUser._id.toString() : null);
+  const isAdmin = session?.user?.role === "admin" || launcherUser?.role === "admin";
+
+  if (!currentUserId && !isAdmin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await dbConnect();
+    const event = await PlatformEvent.findById(id);
+    if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const isOrganizer = currentUserId && (String(event.organizerId || event.createdBy) === currentUserId);
+    if (!isAdmin && !isOrganizer) {
+      return NextResponse.json(
+        { error: "Forbidden: Only the organizer or admin can delete this event" },
+        { status: 403 }
+      );
+    }
+
+    await PlatformEvent.findByIdAndDelete(id);
+    await EventRsvp.deleteMany({ eventId: event._id });
+    await Tournament.deleteMany({ eventId: event._id });
+
+    return NextResponse.json({ success: true, message: "Event removed" });
+  } catch (err) {
+    console.error("Event deletion error:", err);
+    return NextResponse.json({ error: "Failed to delete event" }, { status: 500 });
   }
 }
