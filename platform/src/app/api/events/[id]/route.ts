@@ -13,6 +13,10 @@ import { serializeEvent } from "@/lib/events/serialize";
 import { getEventPresenceAggregates } from "@/lib/events/presenceAgg";
 import { syncEventAttendance } from "@/lib/events/attendance";
 import { eventUpdateSchema, validateGameSlug } from "@/lib/events/service";
+import {
+  placeEventDiscordVoice,
+  renameEventDiscordVoice,
+} from "@/lib/events/discordEventProvision";
 import { defaultEndsAt } from "@/lib/events/time";
 import { isEventStatus } from "@/lib/events/types";
 import {
@@ -184,6 +188,15 @@ export async function PATCH(req: Request, ctx: Ctx) {
       return NextResponse.json({ error: "Unknown game" }, { status: 400 });
     }
 
+    /*
+     * Both of these have a Discord side-effect, so the previous values are
+     * captured before the assignment and acted on after the save — a rename
+     * renames the event's channel, and changing the game moves it into (or
+     * back out of) that game's area.
+     */
+    const previousTitle = event.title;
+    const previousGameSlug = event.gameSlug || null;
+
     if (body.title != null) event.title = body.title;
     if (body.description != null) event.description = body.description;
     if (body.eventType != null) event.eventType = body.eventType;
@@ -218,6 +231,17 @@ export async function PATCH(req: Request, ctx: Ctx) {
     }
 
     await event.save();
+
+    // Soft-fails inside, so a Discord outage never fails the event edit.
+    if (event.discordVoiceChannelId && !event.discordVoiceCleanedAt) {
+      if (event.title !== previousTitle) {
+        await renameEventDiscordVoice(event);
+      }
+      if ((event.gameSlug || null) !== previousGameSlug) {
+        await placeEventDiscordVoice(event);
+      }
+    }
+
     const counts = await getRsvpCounts(event._id);
     return NextResponse.json({ success: true, event: serializeEvent(event.toObject(), counts) });
   } catch (error) {
