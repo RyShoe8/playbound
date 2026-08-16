@@ -7,6 +7,7 @@
  */
 
 import type { Document } from "mongoose";
+import DiscordConnection from "@/lib/models/DiscordConnection";
 
 type PartyLike = Document & {
   _id: { toString(): string };
@@ -119,4 +120,58 @@ export async function cleanupPartyDiscordVoice(
     console.warn("discord party voice cleanup error", err);
     return false;
   }
+}
+
+export type PartyVoiceFollowup = {
+  needsDiscordLink: boolean;
+  inviteUrl: string | null;
+  moved: boolean;
+};
+
+export async function moveDiscordUsersToPartyVoice(
+  party: PartyLike,
+  discordUserIds: string[]
+): Promise<{ moved: number }> {
+  const { url, secret } = botConfig();
+  const voiceChannelId = party.discord?.voiceChannelId;
+  if (!url || !secret || !voiceChannelId || discordUserIds.length === 0) {
+    return { moved: 0 };
+  }
+  try {
+    const res = await fetch(`${url}/parties/voice/move`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ voiceChannelId, discordUserIds }),
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) {
+      console.warn("discord party voice move failed", res.status);
+      return { moved: 0 };
+    }
+    const data = (await res.json()) as { moved?: number };
+    return { moved: Number(data.moved) || 0 };
+  } catch (err) {
+    console.warn("discord party voice move error", err);
+    return { moved: 0 };
+  }
+}
+
+/** Create the party voice channel if needed, then move this member when Discord is linked. */
+export async function syncPartyVoiceForMember(
+  party: PartyLike,
+  userId: string
+): Promise<PartyVoiceFollowup> {
+  if (!party.discord?.voiceChannelId || party.discord.cleanedAt) {
+    await provisionPartyDiscordVoice(party);
+  }
+  const inviteUrl = party.discord?.inviteUrl || null;
+  const conn = await DiscordConnection.findOne({ userId }).select("discordId").lean();
+  if (!conn?.discordId) {
+    return { needsDiscordLink: true, inviteUrl, moved: false };
+  }
+  const { moved } = await moveDiscordUsersToPartyVoice(party, [String(conn.discordId)]);
+  return { needsDiscordLink: false, inviteUrl, moved: moved > 0 };
 }

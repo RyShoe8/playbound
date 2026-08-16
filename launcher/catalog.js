@@ -345,6 +345,10 @@ module.exports = [
       "%PROGRAMFILES(X86)%\\Hedgewars\\hedgewars.exe",
       "%LOCALAPPDATA%\\Programs\\Hedgewars\\hedgewars.exe"
     ],
+    "connectArgs": [
+      "--connect",
+      "{host}:{port}"
+    ],
     "status": "published",
     "testing": false,
     "platforms": [
@@ -466,6 +470,9 @@ module.exports = [
     "repo": "Anuken/Mindustry",
     "assetPattern": "^Mindustry\\.jar$",
     "note": "Requires Java 17+ (Adoptium Temurin).",
+    "connectArgs": [
+      "{host}:{port}"
+    ],
     "status": "published",
     "testing": false,
     "platforms": [
@@ -660,6 +667,10 @@ module.exports = [
     "isMultiplayer": true,
     "coverImage": "https://playbound.club/games/openttd/cover.webp",
     "exeHint": "openttd",
+    "connectArgs": [
+      "-n",
+      "{host}:{port}"
+    ],
     "status": "published",
     "testing": false,
     "platforms": [
@@ -776,6 +787,9 @@ module.exports = [
     "repo": "supertuxkart/stk-code",
     "assetPattern": "-win\\.zip$",
     "exeHint": "supertuxkart",
+    "connectArgs": [
+      "--connect-now={host}:{port}"
+    ],
     "status": "published",
     "testing": false,
     "platforms": [
@@ -1077,6 +1091,9 @@ module.exports = [
     "repo": "Warzone2100/warzone2100",
     "assetPattern": "win_x64_archive\\.zip$",
     "exeHint": "warzone2100",
+    "connectArgs": [
+      "--join={host}:{port}"
+    ],
     "status": "published",
     "testing": false,
     "platforms": [

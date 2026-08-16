@@ -27,10 +27,14 @@ type LeanGame = Record<string, unknown>;
 
 function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
   const fromDoc = doc?.launcherInstall as LauncherInstall | null | undefined;
-  if (fromDoc?.enabled && fromDoc?.kind) {
-    return { ...game, launcherInstall: fromDoc };
-  }
   const seed = seedBySlug.get(game.slug)?.launcherInstall || launcherInstallBySlug[game.slug];
+  if (fromDoc?.enabled && fromDoc?.kind) {
+    const merged: LauncherInstall = { ...fromDoc };
+    if (!merged.connectArgs?.length && seed?.connectArgs?.length) {
+      merged.connectArgs = seed.connectArgs;
+    }
+    return { ...game, launcherInstall: merged };
+  }
   if (seed) return { ...game, launcherInstall: seed };
   return game;
 }

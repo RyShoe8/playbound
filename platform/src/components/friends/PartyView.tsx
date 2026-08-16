@@ -1,10 +1,11 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { Users, Crown, Settings, LogOut, Check, X, Phone, Play } from "lucide-react";
+import { Users, Crown, LogOut, Check, X, Phone, Play } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
 import type { PartyPayload } from "@/lib/playTogether/types";
 import { PARTY_VISIBILITIES } from "@/lib/playTogether/types";
+import { launcherJoinUrl } from "@/lib/launcher";
 
 export function PartyView({ party }: { party: PartyPayload }) {
   const { data: session } = useSession();
@@ -18,6 +19,16 @@ export function PartyView({ party }: { party: PartyPayload }) {
   const isReady = me?.ready ?? false;
   const allReady = party.members.length >= 2 && party.members.every((m) => m.ready);
   const canLaunch = isLeader && allReady && party.status === "ready";
+  const hostedReady =
+    party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
+  const joinUrl = hostedReady
+    ? launcherJoinUrl(
+        party.gameSlug,
+        party.hosted.host!,
+        party.hosted.port!,
+        party.hosted.name || party.gameTitle || undefined
+      )
+    : null;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -113,7 +124,34 @@ export function PartyView({ party }: { party: PartyPayload }) {
             </button>
           )}
 
-          {party.status === "playing" && (
+          {joinUrl && (
+            <div className="flex flex-col gap-1">
+              <a
+                href={joinUrl}
+                className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
+              >
+                <Play className="size-4 fill-current" />
+                Join PlayBound Server
+              </a>
+              <p className="text-xs text-muted-foreground font-mono">
+                {party.hosted.host}:{party.hosted.port}
+              </p>
+            </div>
+          )}
+
+          {party.hosted?.enabled && party.hosted.status === "pending" && (
+            <p className="text-xs text-muted-foreground self-center">
+              Starting public server…
+            </p>
+          )}
+
+          {party.hosted?.enabled && party.hosted.status === "failed" && (
+            <p className="text-xs text-destructive self-center">
+              {party.hosted.error || "Could not start the PlayBound server."}
+            </p>
+          )}
+
+          {party.status === "playing" && !joinUrl && (
             <div className="px-4 py-2 rounded-md bg-primary/20 text-primary font-bold text-sm flex items-center gap-2">
               <Play className="size-4 fill-current" /> Playing
             </div>

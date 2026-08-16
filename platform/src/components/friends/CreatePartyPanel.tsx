@@ -6,6 +6,8 @@ import { useFriendsStore } from "@/stores/friendsStore";
 import type { PartyVisibility } from "@/lib/playTogether/types";
 import { PARTY_VISIBILITIES } from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
+import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
+import { isHostableGame } from "@/lib/gameHost/catalog";
 
 export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; onCreated?: () => void }) {
   const { createParty, inviteFriends } = usePartyStore();
@@ -15,6 +17,10 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
   
   const [visibility, setVisibility] = useState<PartyVisibility>("friends");
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
+    open: false,
+    inviteUrl: null,
+  });
 
   async function handleCreate() {
     setBusy(true);
@@ -31,7 +37,12 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
         if (selectedFriends.size > 0) {
           await inviteFriends(party.id, [...selectedFriends]);
         }
-        onCreated?.();
+        const voice = followPartyVoice(party);
+        if (voice.needsDiscordLink) {
+          setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
+        } else {
+          onCreated?.();
+        }
       } else {
         setError("Failed to create party. You might already have one active.");
       }
@@ -45,7 +56,9 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
       <div>
         <h4 className="font-bold">Create a Party</h4>
         <p className="text-sm text-muted-foreground">
-          Host a lobby, coordinate mods, and launch together.
+          {isHostableGame(gameSlug)
+            ? "PlayBound will start a public server for this game so friends can join without port forwarding."
+            : "Host a lobby, coordinate mods, and launch together."}
         </p>
       </div>
 
@@ -105,6 +118,14 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
       >
         {busy ? "Creating…" : "Create Party"}
       </button>
+      <DiscordLinkPrompt
+        open={discordPrompt.open}
+        inviteUrl={discordPrompt.inviteUrl}
+        onClose={() => {
+          setDiscordPrompt({ open: false, inviteUrl: null });
+          onCreated?.();
+        }}
+      />
     </div>
   );
 }

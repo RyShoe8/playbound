@@ -16,6 +16,23 @@ import {
  * One active party per leader at a time (unique partial index).
  */
 
+const PartyHostedSchema = new Schema(
+  {
+    roomId: { type: String, default: null },
+    status: {
+      type: String,
+      enum: ["none", "pending", "ready", "failed"],
+      default: "none",
+    },
+    host: { type: String, default: null },
+    port: { type: Number, default: null },
+    name: { type: String, default: null },
+    error: { type: String, default: null },
+    provisionedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const PartyMemberSchema = new Schema(
   {
     userId: {
@@ -94,6 +111,9 @@ const PartySchema = new Schema(
       cleanedAt: { type: Date, default: null },
     },
 
+    // Public VPS dedicated room for NAT-sensitive listen-server games.
+    hosted: { type: PartyHostedSchema, default: () => ({}) },
+
     lastActivity: { type: Date, default: Date.now, index: true },
     endedAt: { type: Date, default: null },
   },
@@ -146,6 +166,15 @@ export type PartyDoc = {
     inviteUrl?: string | null;
     provisionedAt?: Date | null;
     cleanedAt?: Date | null;
+  };
+  hosted?: {
+    roomId?: string | null;
+    status?: string;
+    host?: string | null;
+    port?: number | null;
+    name?: string | null;
+    error?: string | null;
+    provisionedAt?: Date | null;
   };
   lastActivity: Date;
   endedAt?: Date | null;

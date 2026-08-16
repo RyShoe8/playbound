@@ -27,8 +27,10 @@ interface PartyState {
     visibility?: PartyVisibility;
     maxSize?: number;
     eventId?: string | null;
-  }) => Promise<PartyPayload | null>;
-  joinParty: (partyId: string) => Promise<PartyPayload | null>;
+  }) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
+  joinParty: (
+    partyId: string
+  ) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
   leaveParty: (partyId: string) => Promise<void>;
   setReady: (partyId: string, ready: boolean) => Promise<void>;
   launchParty: (partyId: string) => Promise<void>;
@@ -83,7 +85,11 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         set({ error: data.error || "Failed to create party", loading: false });
         return null;
       }
-      const party = data.party as PartyPayload;
+      const party = {
+        ...(data.party as PartyPayload),
+        needsDiscordLink: Boolean(data.needsDiscordLink),
+        inviteUrl: data.inviteUrl || data.party?.discord?.inviteUrl || null,
+      };
       set({ activeParty: party, loading: false });
       return party;
     } catch (err) {
@@ -103,7 +109,11 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         set({ error: data.error || "Failed to join party", loading: false });
         return null;
       }
-      const party = data.party as PartyPayload;
+      const party = {
+        ...(data.party as PartyPayload),
+        needsDiscordLink: Boolean(data.needsDiscordLink),
+        inviteUrl: data.inviteUrl || data.party?.discord?.inviteUrl || null,
+      };
       set({ activeParty: party, loading: false });
       return party;
     } catch (err) {

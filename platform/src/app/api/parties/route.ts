@@ -61,7 +61,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    return NextResponse.json({ party: result.party }, { status: 201 });
+    return NextResponse.json(
+      {
+        party: result.party,
+        needsDiscordLink: result.needsDiscordLink,
+        inviteUrl: result.inviteUrl,
+        moved: result.moved,
+      },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("POST /api/parties failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

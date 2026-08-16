@@ -268,6 +268,37 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
   return presence;
 }
 
+/** Stamp or clear the party the user is in. Does not change online/playing. */
+export async function setPresenceParty(
+  userId: string,
+  opts: { partyId: string | null; gameSlug?: string | null }
+) {
+  await dbConnect();
+  const set: Record<string, unknown> = {
+    currentPartyId: opts.partyId || null,
+  };
+  if (opts.gameSlug) set.currentGameId = opts.gameSlug;
+  await Presence.findOneAndUpdate(
+    { userId },
+    {
+      $set: set,
+      $setOnInsert: {
+        userId,
+        status: "online",
+        startedAt: new Date(),
+        lastHeartbeat: new Date(),
+        platform: "web",
+      },
+    },
+    { upsert: true }
+  );
+}
+
+export async function clearPresenceForParty(partyId: string) {
+  await dbConnect();
+  await Presence.updateMany({ currentPartyId: partyId }, { $set: { currentPartyId: null } });
+}
+
 /** Close a session row consistently, whether ended by a client or the sweep. */
 function closeSessionUpdate(now: Date) {
   return [

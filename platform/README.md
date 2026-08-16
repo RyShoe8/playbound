@@ -83,6 +83,16 @@ HTTP masters (OpenRA, Luanti, SuperTuxKart) are queried directly from Vercel. **
    - `MASTER_ADAPTER_URL` — Render service URL (no trailing slash)
    - `MASTER_ADAPTER_KEY` — same secret
 
+### Party dedicated servers (Contabo VPS)
+
+Listen-server games (OpenRA, OpenTTD, Luanti, Mindustry, Hedgewars, Warzone 2100, Freeciv, BZFlag, SuperTuxKart, OpenArena, …) start a process on the public VPS when a party is created. See [`platform/game-host/README.md`](game-host/README.md).
+
+On Vercel Production:
+
+- `GAME_HOST_URL` — `http://YOUR_VPS_IP:8741`
+- `GAME_HOST_SECRET` — same secret as `/etc/playbound-game-host.env` on the VPS
+- `GAME_HOST_PUBLIC_IP` — the VPS public IPv4
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

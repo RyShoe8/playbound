@@ -97,6 +97,15 @@ export type PartyPayload = {
     voiceChannelId: string | null;
     inviteUrl: string | null;
   };
+  /** Public VPS room for games that cannot host from a home PC. */
+  hosted: {
+    enabled: boolean;
+    status: "none" | "pending" | "ready" | "failed";
+    host: string | null;
+    port: number | null;
+    name: string | null;
+    error: string | null;
+  };
   lastActivity: string;
   createdAt: string;
 };
