@@ -9,6 +9,7 @@ import {
   cachePut,
   filterByCompatibility,
   markViewReady,
+  playingNowBySlug,
   state,
   views,
 } from "./shared.js";
@@ -64,13 +65,23 @@ function ensureHomeShell() {
   return container;
 }
 
+/**
+ * One player-count snapshot shared by every card on the page, refreshed on the
+ * same 15-minute cadence the site's catalog snapshot uses.
+ */
+let homePlayingNow = new Map();
+
+function makeCard(game) {
+  return createGameCard(game, homePlayingNow.get(game.slug));
+}
+
 export function paintHomeGrids(catalog = state.catalogCache, recent = state.recentCache) {
   const recentSec = document.getElementById("home-recent-section");
   const recentGrid = document.getElementById("home-recent-grid");
   if (recentSec && recentGrid) {
     if (recent && recent.length > 0) {
       recentSec.classList.remove("hidden");
-      recentGrid.replaceChildren(...filterByCompatibility(recent).map(createGameCard));
+      recentGrid.replaceChildren(...filterByCompatibility(recent).map(makeCard));
     } else {
       recentSec.classList.add("hidden");
       recentGrid.replaceChildren();
@@ -84,7 +95,7 @@ export function paintHomeGrids(catalog = state.catalogCache, recent = state.rece
       const tb = Date.parse(b.createdAt || "") || 0;
       return tb - ta;
     });
-    newestGrid.replaceChildren(...newest.slice(0, 8).map(createGameCard));
+    newestGrid.replaceChildren(...newest.slice(0, 8).map(makeCard));
   }
 }
 
@@ -103,7 +114,7 @@ function paintCatalogStats(live, catalog) {
   const bySlug = new Map(catalog.map((g) => [g.slug, g]));
   const popular = filterByCompatibility(byGame.map((row) => bySlug.get(row.slug)).filter(Boolean)).slice(0, 8);
   if (popular.length > 0) {
-    popularGrid.replaceChildren(...popular.map(createGameCard));
+    popularGrid.replaceChildren(...popular.map(makeCard));
   } else {
     popularGrid.innerHTML = `<p class="view-sub">No popularity data yet.</p>`;
   }
@@ -113,17 +124,25 @@ function applyLiveStats(raw, catalog = state.catalogCache) {
   if (!raw || raw.ok === false || typeof raw.gameCount !== "number") return;
   state._liveStatsLastGood = raw;
   cachePut("catalogLiveStats", raw);
+  // The same payload the stats card is built from already carries the per-slug
+  // counts, so the cards get their numbers without a second request.
+  homePlayingNow = playingNowBySlug(raw);
   if (!document.getElementById("home-stats-slot")?.isConnected) return;
+  paintHomeGrids(catalog);
   paintCatalogStats(raw, catalog);
 }
 
 window.playbound?.onLiveStatsUpdated?.((raw) => applyLiveStats(raw));
 
-function loadLiveStats(catalog) {
+/** @param {boolean} repaintGrids repaint cards already on screen with the counts */
+function loadLiveStats(catalog, repaintGrids = false) {
   const statsSlot = document.getElementById("home-stats-slot");
   const peek = cachePeek("catalogLiveStats", CACHE_TTL.catalogLiveStats);
   const lastGood = peek?.data && typeof peek.data.gameCount === "number" ? peek.data : state._liveStatsLastGood;
   if (lastGood) {
+    homePlayingNow = playingNowBySlug(lastGood);
+    // The grids were painted before this ran, so they need the counts folding in.
+    if (repaintGrids) paintHomeGrids(catalog);
     paintCatalogStats(lastGood, catalog);
   } else if (statsSlot && !statsSlot.querySelector(".catalog-stats-card")) {
     statsSlot.innerHTML = buildCatalogStatsSkeletonHtml();
@@ -161,7 +180,7 @@ export async function renderHomeView() {
   const catalog = state.catalogCache;
   const recent = state.recentCache;
   paintHomeGrids(catalog, recent);
-  loadLiveStats(catalog);
+  loadLiveStats(catalog, true);
   loadFreeOffers();
   markViewReady(views.home);
 }

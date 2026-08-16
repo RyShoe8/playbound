@@ -347,12 +347,157 @@ body {
   background-position: center;
 }
 
+/*
+ * Game card art, matching the website's GameCard: a 3/4 portrait cover with
+ * the title laid over its foot, an incompatibility corner top-left and the
+ * launch badge top-right. The card itself still takes its width from the grid.
+ */
+.card-art {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+}
+
+.card-art-fallback {
+  font-size: 44px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.card-art-title {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 32px 12px 10px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4) 45%, transparent);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.card-incompatible-corner {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.card-launch-badge-slot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+}
+
+.card-launch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.card-launch-play {
+  background: rgba(52, 210, 123, 0.85);
+  border-color: transparent;
+  color: #0c2416;
+}
+
+/* Footer: category tags on the left, live player count on the right. */
+.card-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding: 8px 10px;
+}
+
+.card-meta .card-tags {
+  margin-top: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.card-meta .chip {
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.card-playing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.card-playing-dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #34d399;
+}
+
+.card-playing-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.7);
+  opacity: 0.6;
+  animation: card-playing-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes card-playing-ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-playing-dot::before { animation: none; }
+}
+
 .card-cover {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  z-index: 10;
 }
 
 .card-body {

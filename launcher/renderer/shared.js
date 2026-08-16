@@ -293,6 +293,37 @@ export function filterByCompatibility(list) {
   return list.filter(isGameDesktopCompatible);
 }
 
+/** slug → playingNow, from the catalog-wide snapshot's byGame rows. */
+export function playingNowBySlug(raw) {
+  const map = new Map();
+  for (const row of Array.isArray(raw?.byGame) ? raw.byGame : []) {
+    if (row?.slug && typeof row.playingNow === "number") {
+      map.set(row.slug, row.playingNow);
+    }
+  }
+  return map;
+}
+
+/**
+ * One shared player-count snapshot for a whole view.
+ *
+ * The site reads these from `getCatalogLiveStats()`, a 15-minute
+ * `unstable_cache`, so every viewer sees the same numbers from a single
+ * computation. Asking per card would be a request per card for values that are
+ * identical anyway, so this fetches the catalog-wide payload once and reuses
+ * the existing 15-minute renderer cache — the same key the home view fills.
+ */
+export async function loadPlayingNowBySlug() {
+  try {
+    const raw = await cacheInvoke("catalogLiveStats", CACHE_TTL.catalogLiveStats, () =>
+      window.playbound.getLiveStats?.() ?? Promise.resolve(null)
+    );
+    return playingNowBySlug(raw);
+  } catch {
+    return new Map();
+  }
+}
+
 export function syncCompatRadios() {
   document.querySelectorAll('input[name="compat-filter"]').forEach((input) => {
     input.checked = input.value === state.compatibilityFilter;
