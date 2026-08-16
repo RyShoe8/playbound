@@ -295,7 +295,7 @@ export async function joinParty(
   const voice =
     doc.voiceEnabled === false ? SKIP_VOICE : await syncPartyVoiceForMember(doc, userId);
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
@@ -369,7 +369,7 @@ export async function leaveParty(
     void cleanupPartyDiscordVoice(doc);
   }
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
@@ -408,7 +408,7 @@ export async function removeMember(
   await doc.save();
   await setPresenceParty(targetId, { partyId: null });
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
@@ -456,7 +456,7 @@ export async function transferLeadership(
   doc.lastActivity = now;
   await doc.save();
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
@@ -495,7 +495,7 @@ export async function setPartyGame(
   await doc.save();
   await provisionPartyHost(doc);
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   await Promise.all(
     memberIds.map((userId) =>
       setPresenceParty(userId, { partyId: String(doc._id), gameSlug: slug })
@@ -529,7 +529,7 @@ export async function setPartyName(
   doc.lastActivity = new Date();
   await doc.save();
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     doc.gameSlug ? getGame(doc.gameSlug, { includeTesting: true }) : null,
@@ -564,7 +564,7 @@ export async function setVisibility(
   doc.lastActivity = new Date();
   await doc.save();
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
@@ -608,7 +608,7 @@ export async function setReady(
 
   await doc.save();
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
@@ -644,7 +644,7 @@ export async function launchParty(
   doc.lastActivity = now;
   await doc.save();
 
-  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
     resolveUsernames(memberIds),
     getGame(doc.gameSlug, { includeTesting: true }),
