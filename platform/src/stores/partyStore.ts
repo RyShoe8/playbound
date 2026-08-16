@@ -38,6 +38,7 @@ interface PartyState {
   leaveParty: (partyId: string) => Promise<void>;
   setReady: (partyId: string, ready: boolean) => Promise<void>;
   launchParty: (partyId: string) => Promise<void>;
+  joinGame: (partyId: string) => Promise<void>;
   endParty: (partyId: string) => Promise<void>;
   inviteFriends: (
     partyId: string,
@@ -183,6 +184,20 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to launch party", err);
+    }
+  },
+
+  joinGame: async (partyId) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}/join-game`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+      }
+    } catch (err) {
+      console.error("Failed to join party game", err);
     }
   },
 

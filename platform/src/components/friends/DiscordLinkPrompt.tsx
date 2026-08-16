@@ -1,5 +1,7 @@
 "use client";
 
+import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
+
 export function DiscordLinkPrompt({
   open,
   inviteUrl,
@@ -31,14 +33,13 @@ export function DiscordLinkPrompt({
             Link Discord
           </a>
           {inviteUrl ? (
-            <a
-              href={inviteUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => openDiscordInvite(inviteUrl)}
               className="inline-flex rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
             >
               Open voice invite
-            </a>
+            </button>
           ) : null}
           <button
             type="button"
@@ -64,9 +65,10 @@ export function followPartyVoice(
   const inviteUrl = result?.inviteUrl || result?.discord?.inviteUrl || null;
   if (inviteUrl) {
     if (targetWindow && !targetWindow.closed) {
-      targetWindow.location.href = inviteUrl;
-    } else if (typeof window !== "undefined") {
-      window.open(inviteUrl, "_blank", "noopener,noreferrer");
+      targetWindow.close();
+    }
+    if (typeof window !== "undefined") {
+      openDiscordInvite(inviteUrl);
     }
   } else if (targetWindow && !targetWindow.closed) {
     targetWindow.close();

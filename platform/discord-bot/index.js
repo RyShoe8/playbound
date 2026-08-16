@@ -69,6 +69,18 @@ function discordChannelName(raw) {
     .slice(0, 90) || "channel";
 }
 
+/** Party voice: `party-` + sanitized display name, Discord 100-char limit. */
+function partyVoiceChannelName(raw, fallbackId) {
+  const safe = String(raw || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+  const shortId = String(fallbackId || "").replace(/[^a-z0-9]/gi, "").slice(-6) || "voice";
+  return `party-${safe && safe !== "party" ? safe : shortId}`.slice(0, 100);
+}
+
 function franchiseCategoryName(title) {
   return String(title || "Game").trim().slice(0, 100) || "Game";
 }
@@ -730,18 +742,11 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { partyId, gameSlug } = JSON.parse(body || "{}");
+      const { partyId, gameSlug, name } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
-      const title = String(gameSlug || "").trim() || "Party";
-      const safeName = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "")
-        .slice(0, 80);
-      const shortId = String(partyId || "").replace(/[^a-z0-9]/gi, "").slice(-6) || "voice";
       const category = await ensureCategory(guild, "PlayBound Parties");
       const voice = await guild.channels.create({
-        name: `party-${safeName && safeName !== "party" ? safeName : shortId}`.slice(0, 90),
+        name: partyVoiceChannelName(name || gameSlug, partyId),
         type: ChannelType.GuildVoice,
         parent: category.id,
         reason: `PlayBound party voice ${partyId || ""}`,
@@ -803,6 +808,93 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ success: true, moved, guildId: GUILD_ID }));
     } catch (err) {
       console.error("parties/voice/move", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/parties/voice/rename") {
+    if (!requireSecret(req, res)) return;
+    if (!client.isReady()) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Discord bot not ready" }));
+      return;
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { voiceChannelId, name } = JSON.parse(body || "{}");
+      if (!voiceChannelId) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "voiceChannelId required" }));
+        return;
+      }
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const channel = await guild.channels.fetch(String(voiceChannelId));
+      if (!channel || channel.type !== ChannelType.GuildVoice) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Voice channel not found" }));
+        return;
+      }
+      const nextName = partyVoiceChannelName(name, voiceChannelId);
+      await channel.setName(nextName, "PlayBound party rename");
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, name: nextName }));
+    } catch (err) {
+      console.error("parties/voice/rename", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/parties/voice/place") {
+    if (!requireSecret(req, res)) return;
+    if (!client.isReady()) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Discord bot not ready" }));
+      return;
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { voiceChannelId, gameSlug } = JSON.parse(body || "{}");
+      if (!voiceChannelId) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "voiceChannelId required" }));
+        return;
+      }
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const voice = await guild.channels.fetch(String(voiceChannelId));
+      if (!voice || voice.type !== ChannelType.GuildVoice) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Voice channel not found" }));
+        return;
+      }
+      const slug = String(gameSlug || "").trim();
+      let categoryId = null;
+      if (slug && games) {
+        const game = await games.findOne({ slug });
+        const textId = game?.communityLinks?.playboundDiscord?.channelId;
+        if (textId) {
+          try {
+            const text = await guild.channels.fetch(String(textId));
+            if (text?.parentId) categoryId = text.parentId;
+          } catch (err) {
+            console.warn("party voice place text channel", textId, err?.message || err);
+          }
+        }
+      }
+      if (!categoryId) {
+        const cat = await ensureCategory(guild, categoryNameForSlug(slug || "a"));
+        categoryId = cat.id;
+      }
+      await voice.setParent(categoryId, { reason: "PlayBound party under game category" });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, categoryId }));
+    } catch (err) {
+      console.error("parties/voice/place", err);
       res.writeHead(500);
       res.end(String(err?.message || err));
     }

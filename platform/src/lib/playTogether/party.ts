@@ -28,6 +28,8 @@ import {
 import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
 import {
   cleanupPartyDiscordVoice,
+  placePartyDiscordVoice,
+  renamePartyDiscordVoice,
   syncPartyVoiceForMember,
   type PartyVoiceFollowup,
 } from "@/lib/playTogether/discordPartyProvision";
@@ -527,6 +529,9 @@ export async function setPartyName(
   doc.name = normalizePartyName(name);
   doc.lastActivity = new Date();
   await doc.save();
+  if (doc.discord?.voiceChannelId) {
+    await renamePartyDiscordVoice(doc, doc.name);
+  }
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
@@ -606,6 +611,52 @@ export async function setReady(
   doc.status = derivePartyStatus(doc.status as PartyStatus, rp.members);
 
   await doc.save();
+
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const [nameById, game] = await Promise.all([
+    resolveUsernames(memberIds),
+    getGame(doc.gameSlug, { includeTesting: true }),
+  ]);
+
+  return {
+    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    status: 200,
+  };
+}
+
+/* ─── join game (individual, including solo) ─────────────────────────────── */
+
+export async function joinPartyGame(
+  partyId: string,
+  userId: string
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  if (!doc.gameSlug) {
+    return { error: "Pick a game before joining", status: 400 };
+  }
+
+  const member = doc.members.find(
+    (m: { userId: unknown }) => String(m.userId) === userId
+  );
+  if (!member) return { error: "Not in this party", status: 403 };
+  if (!member.ready && doc.status !== "playing" && doc.status !== "launching") {
+    return { error: "Ready up before joining the game", status: 400 };
+  }
+
+  const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
+  if (firstLaunch) {
+    await provisionPartyHost(doc);
+    doc.status = "playing";
+    doc.lastActivity = new Date();
+    await doc.save();
+    await placePartyDiscordVoice(doc);
+  } else if (doc.discord?.voiceChannelId && !doc.discord.relocatedAt) {
+    await placePartyDiscordVoice(doc);
+  }
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([

@@ -115,6 +115,7 @@ const PartySchema = new Schema(
       inviteUrl: { type: String, default: null },
       provisionedAt: { type: Date, default: null },
       cleanedAt: { type: Date, default: null },
+      relocatedAt: { type: Date, default: null },
     },
 
     // Public VPS dedicated room for NAT-sensitive listen-server games.
@@ -176,6 +177,7 @@ export type PartyDoc = {
     inviteUrl?: string | null;
     provisionedAt?: Date | null;
     cleanedAt?: Date | null;
+    relocatedAt?: Date | null;
   };
   hosted?: {
     roomId?: string | null;

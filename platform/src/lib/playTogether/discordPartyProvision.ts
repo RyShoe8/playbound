@@ -12,6 +12,7 @@ import DiscordConnection from "@/lib/models/DiscordConnection";
 type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
+  name?: string | null;
   discord?: {
     voiceChannelId?: string | null;
     textChannelId?: string | null;
@@ -19,6 +20,7 @@ type PartyLike = Document & {
     inviteUrl?: string | null;
     provisionedAt?: Date | null;
     cleanedAt?: Date | null;
+    relocatedAt?: Date | null;
   };
   save: () => Promise<unknown>;
 };
@@ -46,6 +48,7 @@ export async function provisionPartyDiscordVoice(
       body: JSON.stringify({
         partyId: String(party._id),
         gameSlug: party.gameSlug,
+        name: typeof party.name === "string" ? party.name : null,
       }),
       signal: AbortSignal.timeout(25_000),
     });
@@ -79,6 +82,74 @@ export async function provisionPartyDiscordVoice(
       timedOut ? "discord party voice provision timeout" : "discord party voice provision error",
       err
     );
+    return false;
+  }
+}
+
+export async function renamePartyDiscordVoice(
+  party: PartyLike,
+  name: string | null
+): Promise<boolean> {
+  const { url, secret } = botConfig();
+  const voiceChannelId = party.discord?.voiceChannelId;
+  if (!url || !secret || !voiceChannelId) return false;
+
+  try {
+    const res = await fetch(`${url}/parties/voice/rename`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({
+        voiceChannelId,
+        name: typeof name === "string" ? name : "",
+      }),
+      signal: AbortSignal.timeout(25_000),
+    });
+    if (!res.ok) {
+      console.warn("discord party voice rename failed", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("discord party voice rename error", err);
+    return false;
+  }
+}
+
+export async function placePartyDiscordVoice(party: PartyLike): Promise<boolean> {
+  const { url, secret } = botConfig();
+  const voiceChannelId = party.discord?.voiceChannelId;
+  const gameSlug = String(party.gameSlug || "").trim();
+  if (!url || !secret || !voiceChannelId || !gameSlug) return false;
+  if (party.discord?.relocatedAt) return true;
+
+  try {
+    const res = await fetch(`${url}/parties/voice/place`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ voiceChannelId, gameSlug }),
+      signal: AbortSignal.timeout(25_000),
+    });
+    if (!res.ok) {
+      console.warn("discord party voice place failed", res.status);
+      return false;
+    }
+    const data = (await res.json()) as { categoryId?: string };
+    if (!party.discord) {
+      (party as { discord?: PartyLike["discord"] }).discord = {};
+    }
+    const discord = party.discord!;
+    if (data.categoryId) discord.categoryId = data.categoryId;
+    discord.relocatedAt = new Date();
+    await party.save();
+    return true;
+  } catch (err) {
+    console.warn("discord party voice place error", err);
     return false;
   }
 }

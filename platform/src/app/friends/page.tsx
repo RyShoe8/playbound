@@ -14,7 +14,13 @@ export default async function FriendsPage() {
   return (
     <div className="w-full space-y-4 px-4 py-8 sm:px-6 lg:px-8">
       <FriendsView
-        games={games.map((g) => ({ slug: g.slug, title: g.title }))}
+        games={games.map((g) => ({
+          slug: g.slug,
+          title: g.title,
+          website: g.website,
+          launchMethods: g.launchMethods,
+          browserPlayable: g.browserPlayable,
+        }))}
         genres={[...GENRES]}
       />
     </div>
