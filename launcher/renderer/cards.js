@@ -248,7 +248,7 @@ function offerTypeBadgeLabel(type, store) {
 
 export function createFreeOfferCard(offer) {
   const card = document.createElement("div");
-  card.className = "free-offer-card";
+  card.className = "game-card free-offer-card";
 
   const displayTitle =
     (offer.metadata && offer.metadata.title) || offer.unmatchedTitle || offer.externalId || "Free Game";
@@ -256,55 +256,53 @@ export function createFreeOfferCard(offer) {
   const typeLabel = offerTypeBadgeLabel(offer.offerType, offer.store);
   const expiry = formatOfferExpiration(offer.endDate);
 
-  const banner = document.createElement("div");
-  banner.className = "free-offer-banner";
+  const art = document.createElement("div");
+  art.className = "card-art";
+  art.style.background = `linear-gradient(135deg, #1e1b4b, #312e81)`;
+
+  const fallback = document.createElement("span");
+  fallback.className = "card-art-fallback";
+  fallback.textContent = (displayTitle || "?").charAt(0);
+  art.appendChild(fallback);
+
   if (offer.coverImage) {
     const img = document.createElement("img");
-    img.className = "free-offer-cover";
+    img.className = "card-cover";
     img.src = offer.coverImage;
     img.alt = "";
     img.loading = "lazy";
-    img.addEventListener("error", () => {
-      img.remove();
-      banner.textContent = displayTitle.charAt(0);
-    });
-    banner.appendChild(img);
-  } else {
-    banner.textContent = displayTitle.charAt(0);
+    img.addEventListener("error", () => img.remove());
+    art.appendChild(img);
   }
 
-  const storeBadge = document.createElement("span");
-  storeBadge.className = `store-badge store-badge-${escapeHtml(offer.store)}`;
+  const titleOverlay = document.createElement("div");
+  titleOverlay.className = "card-art-title";
+  titleOverlay.innerHTML = `<span class="card-title-text">${escapeHtml(displayTitle)}</span>`;
+  art.appendChild(titleOverlay);
+
+  const storeBadge = document.createElement("div");
+  storeBadge.className = "card-incompatible-corner";
+  storeBadge.style.background = "rgba(0, 0, 0, 0.75)";
   storeBadge.textContent = storeName;
-  banner.appendChild(storeBadge);
+  art.appendChild(storeBadge);
 
-  const typeBadge = document.createElement("span");
-  typeBadge.className = "offer-type-badge";
-  typeBadge.textContent = typeLabel;
-  banner.appendChild(typeBadge);
+  const badgeSlot = document.createElement("div");
+  badgeSlot.className = "card-launch-badge-slot";
+  badgeSlot.innerHTML = `<span class="card-launch-badge card-launch-play">${escapeHtml(typeLabel)}</span>`;
+  art.appendChild(badgeSlot);
 
-  card.appendChild(banner);
+  card.appendChild(art);
 
-  const body = document.createElement("div");
-  body.className = "free-offer-body";
-  body.innerHTML = `
-    <div class="free-offer-title" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</div>
-    <div class="free-offer-meta">
-      ${offer.retailPrice ? `<span class="free-offer-price-old">${escapeHtml(offer.retailPrice)}</span>` : ""}
-      <span class="free-offer-free-label">FREE</span>
-      ${expiry ? `<span class="free-offer-expiry">⏱ ${escapeHtml(expiry)}</span>` : ""}
-    </div>
-    <div class="free-offer-actions">
-      <button class="btn-primary btn-sm btn-claim" type="button">Claim on ${escapeHtml(storeName)}</button>
+  const footer = document.createElement("div");
+  footer.className = "card-meta";
+  footer.innerHTML = `
+    <div class="card-tags">
+      ${offer.retailPrice ? `<span class="chip" style="text-decoration: line-through; opacity: 0.6;">${escapeHtml(offer.retailPrice)}</span>` : ""}
+      <span class="chip" style="color: var(--color-play, #34d27b); font-weight: 700;">FREE</span>
+      ${expiry ? `<span class="chip">⏱ ${escapeHtml(expiry)}</span>` : ""}
     </div>
   `;
-
-  body.querySelector(".btn-claim")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (offer.claimUrl) {
-      window.playbound.openExternal(offer.claimUrl);
-    }
-  });
+  card.appendChild(footer);
 
   card.addEventListener("click", () => {
     if (offer.gameSlug) {
@@ -314,6 +312,5 @@ export function createFreeOfferCard(offer) {
     }
   });
 
-  card.appendChild(body);
   return card;
 }

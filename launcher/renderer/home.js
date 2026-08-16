@@ -33,7 +33,7 @@ const HOME_SHELL_HTML = `
         <span>🎁 Free Games This Week</span>
         <button class="btn-secondary btn-sm" id="home-browse-free-games">See All on Web</button>
       </div>
-      <div id="home-free-offers-grid" class="free-offers-grid"></div>
+      <div id="home-free-offers-grid" class="game-grid"></div>
     </div>
 
     <div class="section-header">
