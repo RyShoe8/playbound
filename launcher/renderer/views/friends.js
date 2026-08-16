@@ -496,10 +496,11 @@ async function refreshFriendsData() {
   if (!content) return;
 
   try {
-    const [friendsData, requestsData, partiesData] = await Promise.all([
+    const [friendsData, requestsData, partiesData, upcomingEventsData] = await Promise.all([
       window.playbound.getFriends(),
       window.playbound.getFriendRequests(),
       window.playbound.getParties?.() ?? Promise.resolve(null),
+      window.playbound.getFriendsUpcomingEvents?.() ?? Promise.resolve({ events: [] }),
     ]);
     const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
     state._createPartyFriends = friends;
@@ -543,7 +544,7 @@ async function refreshFriendsData() {
 
     if (!friends.length && !incomingRequests.length && !outgoingRequests.length) {
       html += `
-        <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 8px;">
+        <div style="text-align: center; padding: 40px 0; border: 1px dashed var(--border); border-radius: 12px;">
           <p class="view-sub">No friends yet. Find someone above — outgoing requests will show here until they accept.</p>
           <button class="btn-primary" style="margin-top: 12px" id="btn-find-friends">Find Friends</button>
         </div>
@@ -559,50 +560,95 @@ async function refreshFriendsData() {
 
     if (incomingRequests.length > 0) {
       html += `
-        <div class="friends-section">
-          <div class="section-header" style="margin-bottom: 12px">Incoming Requests</div>
-          <div class="friends-list">
-            ${incomingRequests.map(req => `
-              <div class="friend-card">
-                <div class="friend-card-main">
-                  <div class="friend-avatar">${escapeHtml(req.user.username.charAt(0).toUpperCase())}</div>
-                  <div class="friend-info">
-                    <div class="friend-name">${escapeHtml(req.user.username)}</div>
-                    <div class="friend-status" style="color: var(--text-muted)">Wants to be friends</div>
+        <section class="friends-section" style="margin-bottom: 24px">
+          <h3 class="friends-section-title">Incoming Requests - ${incomingRequests.length}</h3>
+          <div class="friends-card-grid">
+            ${incomingRequests
+              .map(
+                (req) => `
+              <div class="pb-request-card">
+                <div class="pb-friend-user-group">
+                  <div class="pb-friend-avatar-wrap">
+                    <div class="pb-friend-avatar">${escapeHtml(req.user.username.charAt(0).toUpperCase())}</div>
+                  </div>
+                  <div class="pb-friend-info">
+                    <div class="pb-friend-name">${escapeHtml(req.user.username)}</div>
+                    <div class="pb-friend-subtitle">Wants to be friends</div>
                   </div>
                 </div>
-                <div class="friend-actions">
+                <div class="pb-friend-actions">
                   <button class="btn-primary btn-sm btn-accept" data-id="${escapeHtml(req.id)}">Accept</button>
                   <button class="btn-danger btn-sm btn-decline" data-id="${escapeHtml(req.id)}">Decline</button>
                 </div>
               </div>
-            `).join("")}
+            `
+              )
+              .join("")}
           </div>
-        </div>
+        </section>
       `;
     }
 
     if (outgoingRequests.length > 0) {
       html += `
-        <div class="friends-section">
-          <div class="section-header" style="margin-bottom: 12px">Outgoing Requests</div>
-          <div class="friends-list">
-            ${outgoingRequests.map(req => `
-              <div class="friend-card">
-                <div class="friend-card-main">
-                  <div class="friend-avatar">${escapeHtml(req.user.username.charAt(0).toUpperCase())}</div>
-                  <div class="friend-info">
-                    <div class="friend-name">${escapeHtml(req.user.username)}</div>
-                    <div class="friend-status" style="color: var(--text-muted)">Pending</div>
+        <section class="friends-section" style="margin-bottom: 24px">
+          <h3 class="friends-section-title">Outgoing Requests - ${outgoingRequests.length}</h3>
+          <div class="friends-card-grid">
+            ${outgoingRequests
+              .map(
+                (req) => `
+              <div class="pb-request-card">
+                <div class="pb-friend-user-group">
+                  <div class="pb-friend-avatar-wrap">
+                    <div class="pb-friend-avatar">${escapeHtml(req.user.username.charAt(0).toUpperCase())}</div>
+                  </div>
+                  <div class="pb-friend-info">
+                    <div class="pb-friend-name">${escapeHtml(req.user.username)}</div>
+                    <div class="pb-friend-subtitle">Pending</div>
                   </div>
                 </div>
-                <div class="friend-actions">
+                <div class="pb-friend-actions">
                   <button class="btn-secondary btn-sm btn-cancel-request" data-id="${escapeHtml(req.id)}">Cancel</button>
                 </div>
               </div>
-            `).join("")}
+            `
+              )
+              .join("")}
           </div>
-        </div>
+        </section>
+      `;
+    }
+
+    const upcomingEvents = Array.isArray(upcomingEventsData?.events) ? upcomingEventsData.events : [];
+    if (upcomingEvents.length > 0) {
+      html += `
+        <section class="pb-friends-upcoming" style="margin-top: 16px;">
+          <h2 class="pb-friends-upcoming-title">Upcoming with friends</h2>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 4px;">
+            ${upcomingEvents
+              .map(
+                (e) => `
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <a class="btn-event-link" data-id="${escapeHtml(e.id)}" style="font-weight: 700; color: var(--text-main); cursor: pointer; text-decoration: none; font-size: 14px;">
+                  ${escapeHtml(e.title)}
+                </a>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim);">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span>${escapeHtml(e.startsAt ? new Date(e.startsAt).toLocaleString() : "")}</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-dim);">
+                  ${escapeHtml(e.friendNames[0] || "Friend")}${
+                  e.friendCount > 1
+                    ? ` and ${e.friendCount - 1} other friend${e.friendCount - 1 === 1 ? "" : "s"}`
+                    : ""
+                } going
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        </section>
       `;
     }
 
@@ -613,7 +659,7 @@ async function refreshFriendsData() {
     });
 
     // Attach event listeners
-    content.querySelectorAll(".btn-accept").forEach(btn => {
+    content.querySelectorAll(".btn-accept").forEach((btn) => {
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.textContent = "Accepting...";
@@ -622,7 +668,7 @@ async function refreshFriendsData() {
       });
     });
 
-    content.querySelectorAll(".btn-decline").forEach(btn => {
+    content.querySelectorAll(".btn-decline").forEach((btn) => {
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.textContent = "Declining...";
@@ -631,7 +677,7 @@ async function refreshFriendsData() {
       });
     });
 
-    content.querySelectorAll(".btn-cancel-request").forEach(btn => {
+    content.querySelectorAll(".btn-cancel-request").forEach((btn) => {
       btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.textContent = "Cancelling...";
@@ -640,7 +686,7 @@ async function refreshFriendsData() {
       });
     });
 
-    content.querySelectorAll(".btn-remove-friend").forEach(btn => {
+    content.querySelectorAll(".btn-remove-friend").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!confirm("Are you sure you want to remove this friend?")) return;
         btn.disabled = true;
@@ -649,21 +695,32 @@ async function refreshFriendsData() {
       });
     });
 
-    content.querySelectorAll(".btn-view-game").forEach(btn => {
-      btn.addEventListener("click", () => {
+    content.querySelectorAll(".btn-view-game").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const slug = btn.dataset.slug;
-        if (slug) api.navigateTo("gameDetail", { slug });
+        if (slug) api.openGameDetail(slug, "friends");
+      });
+    });
+
+    content.querySelectorAll(".btn-event-link").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        if (id) api.openEventDetail(id, "friends");
       });
     });
 
     content.querySelectorAll(".btn-friend-discord").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         window.playbound.openExternal("https://discord.com/app");
       });
     });
 
     content.querySelectorAll(".btn-join-friend-party").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
         btn.disabled = true;
         btn.textContent = "Joining…";
         const res = await window.playbound.joinParty(btn.dataset.id);
@@ -681,8 +738,6 @@ async function refreshFriendsData() {
     const onlineCount = onlineAll.length;
     const friendsNav = document.querySelector('.nav-btn[data-view="friends"]');
     if (friendsNav) {
-      const label = friendsNav.querySelector(".nav-label") || friendsNav;
-      // Keep icon; update trailing text node if present
       friendsNav.setAttribute("data-online-count", String(onlineCount));
       const badge = friendsNav.querySelector(".friends-online-badge") || document.createElement("span");
       badge.className = "friends-online-badge";
@@ -690,9 +745,10 @@ async function refreshFriendsData() {
       badge.textContent = onlineCount > 0 ? String(onlineCount) : "";
       if (!badge.parentElement) friendsNav.appendChild(badge);
     }
-
   } catch (err) {
-    content.innerHTML = `<p class="view-sub" style="color: var(--danger)">Failed to load friends: ${escapeHtml(err.message)}</p>`;
+    content.innerHTML = `<p class="view-sub" style="color: var(--danger)">Failed to load friends: ${escapeHtml(
+      err.message
+    )}</p>`;
   }
 }
 
@@ -700,10 +756,6 @@ async function refreshFriendsData() {
  * One friend, laid out like the site's FriendCard: presence-tinted avatar dot,
  * name + Discord pip, a subtitle that states what they are doing, the single
  * most useful action, and the shared-library chips pinned to the bottom.
- *
- * The site derives everything from the friend's own presence rather than from
- * which bucket it happened to land in, so a person who is both in a party and
- * playing reads correctly either way — hence no `type` argument here.
  */
 function buildFriendCardHtml(f) {
   const presence = f.presence || {};
@@ -711,7 +763,11 @@ function buildFriendCardHtml(f) {
   const isAway = presence.status === "away";
   const isLooking = Boolean(presence.lookingForPlayers);
   const inParty = Boolean(presence.currentPartyId);
-  const offline = !isPlaying && !isAway && !isLooking && !inParty &&
+  const offline =
+    !isPlaying &&
+    !isAway &&
+    !isLooking &&
+    !inParty &&
     !["online", "browsing", "viewing_game", "installing", "launching"].includes(presence.status);
 
   const gameSlug = presence.currentGameId || "";
@@ -720,11 +776,13 @@ function buildFriendCardHtml(f) {
 
   let subtitle;
   if (inParty) {
-    subtitle = `<span style="color: var(--accent)">In a party${
+    subtitle = `<span style="color: var(--primary); font-weight: 600;">In a party${
       gameLabel ? ` · ${escapeHtml(gameLabel)}` : ""
     }</span>`;
   } else if (isPlaying) {
-    subtitle = `<span style="color: var(--accent)">Playing ${escapeHtml(gameLabel || "a game")}${
+    subtitle = `<span style="color: var(--primary); font-weight: 600;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-2px; margin-right:3px;"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+      Playing ${escapeHtml(gameLabel || "a game")}${
       isLooking ? " · Looking for players" : ""
     }</span>`;
   } else if (isLooking) {
@@ -738,9 +796,8 @@ function buildFriendCardHtml(f) {
     subtitle = "Online on PlayBound";
   }
 
-  const statusDot = offline
-    ? ""
-    : `<span class="status-dot ${isPlaying ? "dot-playing" : isAway ? "dot-away" : "dot-online"}"></span>`;
+  const dotClass = isPlaying ? "playing" : isAway ? "away" : "online";
+  const statusDot = offline ? "" : `<span class="pb-friend-status-dot ${dotClass}"></span>`;
 
   /*
    * Same precedence the site uses: a real join beats "View Game", which beats
@@ -753,76 +810,87 @@ function buildFriendCardHtml(f) {
 
   let action = "";
   if (showJoin) {
-    action = `<button class="btn-success btn-sm btn-view-game" data-slug="${escapeHtml(gameSlug)}">${escapeHtml(
-      join.label || "Join Game"
-    )}</button>`;
+    action = `<button type="button" class="pb-friend-btn-play btn-view-game" data-slug="${escapeHtml(
+      gameSlug
+    )}">${escapeHtml(join.label || "Join Game")}</button>`;
   } else if (isPlaying && gameSlug) {
-    action = `<button class="btn-primary btn-sm btn-view-game" data-slug="${escapeHtml(gameSlug)}">View Game</button>`;
+    action = `<button type="button" class="pb-friend-btn-view btn-view-game" data-slug="${escapeHtml(
+      gameSlug
+    )}">View Game</button>`;
   } else if (inParty) {
-    action = `<button class="btn-success btn-sm btn-join-friend-party" data-id="${escapeHtml(
+    action = `<button type="button" class="pb-friend-btn-play btn-join-friend-party" data-id="${escapeHtml(
       presence.currentPartyId
     )}">Join Party</button>`;
   } else if (lfgSlug) {
-    action = `<button class="btn-success btn-sm btn-view-game" data-slug="${escapeHtml(lfgSlug)}">Join</button>`;
+    action = `<button type="button" class="pb-friend-btn-play btn-view-game" data-slug="${escapeHtml(
+      lfgSlug
+    )}">Join</button>`;
   }
 
   const shared = Array.isArray(f.sharedGames) ? f.sharedGames : [];
   const shownShared = shared.slice(0, 8);
   const extraShared = shared.length - shownShared.length;
   const sharedHtml = shownShared.length
-    ? `<div class="friend-shared">
+    ? `<div class="pb-friend-chips-wrap">
         ${shownShared
           .map(
             (g) =>
-              `<button type="button" class="friend-shared-chip btn-view-game" data-slug="${escapeHtml(
+              `<button type="button" class="pb-friend-game-chip btn-view-game" data-slug="${escapeHtml(
                 g.slug
               )}">${escapeHtml(g.title || g.slug)}</button>`
           )
           .join("")}
-        ${extraShared > 0 ? `<span class="friend-shared-chip friend-shared-more">+${extraShared} more</span>` : ""}
+        ${
+          extraShared > 0
+            ? `<span class="pb-friend-game-chip" style="cursor:default; opacity:0.7;">+${extraShared} more</span>`
+            : ""
+        }
       </div>`
     : `<p class="view-sub" style="font-size: 12px; margin: 0;">No shared installs yet</p>`;
 
   return `
-    <div class="friend-card ${offline ? "friend-offline" : ""}">
-      <div class="friend-card-top">
-        <div class="friend-card-main">
-          <div class="friend-avatar-wrap">
-            <div class="friend-avatar">${escapeHtml(f.username.charAt(0).toUpperCase())}</div>
+    <div class="pb-friend-card ${offline ? "offline" : ""}">
+      <div class="pb-friend-card-top">
+        <div class="pb-friend-user-group">
+          <div class="pb-friend-avatar-wrap">
+            <div class="pb-friend-avatar">${escapeHtml(f.username.charAt(0).toUpperCase())}</div>
             ${statusDot}
           </div>
-          <div class="friend-info">
-            <div class="friend-name">${escapeHtml(f.username)}${
-              f.discordLinked ? ' <span class="discord-badge" title="Discord linked"></span>' : ""
-            }</div>
-            <div class="friend-status">${subtitle}</div>
+          <div class="pb-friend-info">
+            <div class="pb-friend-name">
+              <span>${escapeHtml(f.username)}</span>
+              ${f.discordLinked ? '<span class="pb-friend-discord-pip" title="Discord linked"></span>' : ""}
+            </div>
+            <div class="pb-friend-subtitle">${subtitle}</div>
           </div>
         </div>
-        <div class="friend-actions">
+        <div class="pb-friend-actions">
           ${action}
           ${
             f.discordLinked && isPlaying
-              ? `<button class="btn-secondary btn-sm btn-friend-discord">Discord</button>`
+              ? `<button type="button" class="pb-friend-btn-discord btn-friend-discord">Discord</button>`
               : ""
           }
-          <button class="btn-secondary btn-sm btn-remove-friend" data-id="${escapeHtml(f.id)}" title="Remove friend">
+          <button type="button" class="pb-friend-btn-remove btn-remove-friend" data-id="${escapeHtml(
+            f.id
+          )}" title="Remove friend">
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
           </button>
         </div>
       </div>
-      <div class="friend-card-bottom">${sharedHtml}</div>
+      <div class="pb-friend-card-bottom">${sharedHtml}</div>
     </div>
   `;
 }
 
 function buildFriendsSectionHtml(title, list) {
   return `
-    <div class="friends-section" style="margin-bottom: 24px">
-      <div class="section-header" style="margin-bottom: 12px">${escapeHtml(title)} - ${list.length}</div>
-      <div class="friends-grid">
+    <section class="friends-section" style="margin-bottom: 24px">
+      <h3 class="friends-section-title">${escapeHtml(title)} - ${list.length}</h3>
+      <div class="friends-card-grid">
         ${list.map((f) => buildFriendCardHtml(f)).join("")}
       </div>
-    </div>
+    </section>
   `;
 }
 // ─────────────────────────────────────────────────────────────────
