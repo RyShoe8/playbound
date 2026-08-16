@@ -618,6 +618,7 @@ async function validateLauncherToken(token) {
     const data = await res.json();
     return {
       valid: data.valid !== false,
+      userId: data.userId || null,
       email: data.email || null,
       username: data.username || null,
       canUseAdminChannel: Boolean(data.canUseAdminChannel === true || data.isAdmin === true || data.isTester === true || data.role === "admin"),
@@ -5993,6 +5994,7 @@ ipcMain.handle("get-account", async () => {
   return {
     connected: true,
     apiBase: getApiBase(),
+    userId: check.userId || null,
     email: check.email || null,
     username: check.username || null,
     canUseAdminChannel: linkedCanUseAdminChannel,
@@ -6767,6 +6769,83 @@ ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
   }
 });
 
+/*
+ * The rest of the party surface, one handler per call the website's partyStore
+ * makes. Without these the launcher could only create/join/leave, which is why
+ * its party panel could not show the same controls as the site.
+ */
+ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, {
+      method: "PATCH",
+      body: patch,
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("end-party", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, { method: "DELETE" });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("set-party-ready", async (_event, partyId, ready) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/ready`, {
+      method: "POST",
+      body: { ready: Boolean(ready) },
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("party-join-game", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/join-game`, {
+      method: "POST",
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("remove-party-member", async (_event, partyId, userId) => {
+  try {
+    return await launcherJson(
+      `/api/parties/${encodeURIComponent(partyId)}/members/${encodeURIComponent(userId)}`,
+      { method: "DELETE" }
+    );
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("transfer-party-leadership", async (_event, partyId, userId) => {
+  try {
+    return await launcherJson(
+      `/api/parties/${encodeURIComponent(partyId)}/members/${encodeURIComponent(userId)}`,
+      { method: "POST", body: { role: "leader" } }
+    );
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("provision-party-discord", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/discord`, {
+      method: "POST",
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 ipcMain.handle("get-discord-status", async () => {
   try {
     return await launcherJson("/api/account/discord");
@@ -7046,6 +7125,50 @@ ipcMain.handle("set-appear-offline", async (_event, appearOffline) => {
     });
     if (!res.ok) throw new Error("Failed to update visibility");
     return await res.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+/*
+ * The other three activity-privacy switches the site's Friends page exposes.
+ * `get-appear-offline` already returns all four values, so only the write side
+ * was missing. Keys are allow-listed because the route 400s on an empty patch.
+ */
+const VISIBILITY_KEYS = [
+  "appearOffline",
+  "hideActivityFromFriends",
+  "allowPlayInvites",
+  "notifyFriendActivity",
+];
+
+ipcMain.handle("set-presence-visibility", async (_event, patch = {}) => {
+  try {
+    const body = {};
+    for (const key of VISIBILITY_KEYS) {
+      if (patch[key] !== undefined) body[key] = Boolean(patch[key]);
+    }
+    if (Object.keys(body).length === 0) return { error: "No fields to update" };
+    return await launcherJson("/api/presence/visibility", { method: "PATCH", body });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("get-lfg", async () => {
+  try {
+    return await launcherJson("/api/play-together");
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("set-lfg", async (_event, enabled, gameSlug) => {
+  try {
+    return await launcherJson("/api/presence/lfg", {
+      method: "POST",
+      body: { enabled: Boolean(enabled), gameSlug: enabled ? gameSlug || null : null },
+    });
   } catch (err) {
     return { error: err.message };
   }
