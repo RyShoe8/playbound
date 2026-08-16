@@ -1010,6 +1010,32 @@ body {
   color: #c4b5fd;
 }
 
+/*
+ * Looking-to-party picker chips. `.chip` is written for a span, so as buttons
+ * they need the font and cursor resetting to match the rest of the row.
+ */
+.lfg-chip,
+.lfg-chip-selected {
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+.lfg-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+}
+.lfg-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.lfg-chip-selected {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.lfg-chip-selected:hover {
+  background: var(--accent-light);
+}
+
 .detail-section {
   margin-bottom: 32px;
 }
