@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { authOptions } from "@/lib/auth";
+import { userFromLauncherBearer } from "@/lib/library";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import EventRsvp from "@/lib/models/EventRsvp";
@@ -10,21 +11,23 @@ import User from "@/lib/models/User";
 import { serializeEvent } from "@/lib/events/serialize";
 import { PUBLIC_LISTABLE_STATUSES } from "@/lib/events/types";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const launcherUser = session?.user?.id ? null : await userFromLauncherBearer(req);
+  const userId = session?.user?.id || (launcherUser?._id ? launcherUser._id.toString() : null);
+  if (!userId) {
     return NextResponse.json({ events: [] });
   }
 
   try {
     await dbConnect();
-    const uid = new Types.ObjectId(session.user.id);
+    const uid = new Types.ObjectId(userId);
     const friendships = await Friend.find({
       status: "accepted",
       $or: [{ requesterId: uid }, { recipientId: uid }],
     }).lean();
     const friendIds = friendships.map((f) =>
-      String(f.requesterId) === session.user.id ? f.recipientId : f.requesterId
+      String(f.requesterId) === userId ? f.recipientId : f.requesterId
     );
     if (!friendIds.length) return NextResponse.json({ events: [] });
 

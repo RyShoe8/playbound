@@ -6160,6 +6160,17 @@ ipcMain.handle("get-events", async () => {
     return { events: [] };
   }
 });
+ipcMain.handle("get-friends-upcoming-events", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events/friends-upcoming`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) return { events: [] };
+    return await res.json();
+  } catch {
+    return { events: [] };
+  }
+});
 ipcMain.handle("get-event-detail", async (_event, eventId) => {
   try {
     const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
