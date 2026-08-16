@@ -34,6 +34,23 @@ const SLUG_ACTIONS = [
 /** Actions that may carry ?edition=. */
 const EDITION_ACTIONS = new Set(["install", "play", "uninstall"]);
 
+/** Actions that may carry repeated ?mod= slugs to install alongside the game. */
+const MOD_LIST_ACTIONS = new Set(["install"]);
+
+/**
+ * Upper bound on ?mod= entries.
+ *
+ * A deep link is attacker-reachable, and each slug becomes a download plus an
+ * extraction into the game folder. Without a cap a single link could queue an
+ * unbounded amount of work. Well past any real party's mod list.
+ */
+const MAX_MOD_SLUGS = 25;
+
+/** Same shape a catalog slug must have — no separators, no traversal. */
+function isCleanSlug(value) {
+  return /^[a-z0-9][a-z0-9-]*$/.test(value) && value.length <= 80;
+}
+
 /**
  * @param {string} protocol Scheme name without "://", e.g. "playbound".
  */
@@ -43,7 +60,7 @@ function createDeepLinks(protocol) {
   /**
    * Parse a deep link into an action, or null if it is not one we handle.
    *
-   *   playbound://install/openra[?edition=…]
+   *   playbound://install/openra[?edition=…][&mod=…&mod=…]
    *   playbound://play/warzone-2100
    *   playbound://uninstall/openra
    *   playbound://install-mod/my-mod
@@ -99,7 +116,7 @@ function createDeepLinks(protocol) {
        */
       if (slug.includes("/")) return null;
 
-      /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string, editionSlug?: string }} */
+      /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string, editionSlug?: string, modSlugs?: string[] }} */
       const parsed = { action, slug };
       if (action === "join") {
         parsed.host = u.searchParams.get("host") || "";
@@ -111,6 +128,24 @@ function createDeepLinks(protocol) {
       if (EDITION_ACTIONS.has(action)) {
         const edition = u.searchParams.get("edition");
         if (edition) parsed.editionSlug = edition;
+      }
+      /*
+       * Repeated ?mod= entries, as the site's party-compatibility install
+       * button emits. Each is validated to the same shape as a catalog slug
+       * rather than trusted: these are used to build filesystem paths and
+       * download URLs downstream, so a slug carrying "../" or a separator must
+       * never reach them. Anything malformed is dropped rather than failing the
+       * whole link — the game install is still worth performing.
+       */
+      if (MOD_LIST_ACTIONS.has(action)) {
+        const seen = new Set();
+        for (const raw of u.searchParams.getAll("mod")) {
+          const slug = String(raw || "").trim().toLowerCase();
+          if (!slug || !isCleanSlug(slug) || seen.has(slug)) continue;
+          seen.add(slug);
+          if (seen.size >= MAX_MOD_SLUGS) break;
+        }
+        if (seen.size) parsed.modSlugs = [...seen];
       }
       return parsed;
     } catch {

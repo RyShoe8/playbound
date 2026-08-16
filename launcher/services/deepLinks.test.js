@@ -49,6 +49,63 @@ eq("edition is carried on install", parseDeepLink("playbound://install/holocure?
   editionSlug: "multiplayer",
 });
 
+/* ── ?mod= list on install ────────────────────────────────────────────── */
+
+eq(
+  "mods are carried on install",
+  parseDeepLink("playbound://install/openra?edition=ra&mod=alpha&mod=beta"),
+  { action: "install", slug: "openra", editionSlug: "ra", modSlugs: ["alpha", "beta"] }
+);
+eq("a single mod parses", parseDeepLink("playbound://install/openra?mod=alpha"), {
+  action: "install",
+  slug: "openra",
+  modSlugs: ["alpha"],
+});
+eq("no mod param yields no modSlugs field", parseDeepLink("playbound://install/openra"), {
+  action: "install",
+  slug: "openra",
+});
+eq("mods are lowercased", parseDeepLink("playbound://install/openra?mod=Alpha"), {
+  action: "install",
+  slug: "openra",
+  modSlugs: ["alpha"],
+});
+eq("duplicate mods collapse", parseDeepLink("playbound://install/openra?mod=a&mod=a&mod=b"), {
+  action: "install",
+  slug: "openra",
+  modSlugs: ["a", "b"],
+});
+// The whole point of validating: these become paths and URLs downstream.
+eq(
+  "a traversal mod slug is dropped, the good one survives",
+  parseDeepLink("playbound://install/openra?mod=../../etc/passwd&mod=good"),
+  { action: "install", slug: "openra", modSlugs: ["good"] }
+);
+eq(
+  "a mod slug with a separator is dropped",
+  parseDeepLink("playbound://install/openra?mod=a/b"),
+  { action: "install", slug: "openra" }
+);
+eq(
+  "an absolute-path mod slug is dropped",
+  parseDeepLink("playbound://install/openra?mod=%2Fetc%2Fpasswd"),
+  { action: "install", slug: "openra" }
+);
+eq(
+  "mods are not attached to actions that do not take them",
+  parseDeepLink("playbound://play/openra?mod=alpha"),
+  { action: "play", slug: "openra" }
+);
+
+{
+  const many = Array.from({ length: 40 }, (_, i) => `mod=m${i}`).join("&");
+  const parsed = parseDeepLink(`playbound://install/openra?${many}`);
+  check(
+    "the mod list is capped at 25",
+    Array.isArray(parsed.modSlugs) && parsed.modSlugs.length === 25
+  );
+}
+
 /* ── credentials must never survive parsing ──────────────────────────── */
 
 {

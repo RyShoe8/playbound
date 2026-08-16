@@ -1643,6 +1643,12 @@ function buildContextPayload() {
     slug: entry.slug,
     entry,
     editionSlug: context.editionSlug || null,
+    /*
+     * Mods the link asked for alongside the game — the site's party
+     * compatibility button sends the host's mod list this way so a member can
+     * match their setup in one click. Already validated by parseDeepLink.
+     */
+    modSlugs: Array.isArray(context.modSlugs) ? context.modSlugs : [],
     installed: Boolean(installed),
     installedPath: installed?.dir ?? null,
     defaultDir: path.join(gamesRoot(), entry.slug),
