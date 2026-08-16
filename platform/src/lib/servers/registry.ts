@@ -28,6 +28,7 @@ import {
   fetchAllegiancePlayers,
   fetchQuakeChampionsPlayers,
   fetchDota2Players,
+  fetchStrikersClubPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
@@ -195,6 +196,10 @@ const providers: Record<string, ServerProvider> = {
   triplea: {
     slug: "triplea",
     fetchServers: fetchTripleAServers,
+  },
+  "strikers-club": {
+    slug: "strikers-club",
+    fetchServers: fetchStrikersClubPlayers,
   },
 };
 

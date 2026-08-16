@@ -2850,6 +2850,65 @@ export const editions: EditionSeed[] = [
     tags: ["Portable", "Cross-Platform", "Java", "Open Source"],
     verificationLevel: "playbound_verified",
   },
+  {
+    gameSlug: "strikers-club",
+    slug: "strikers-club-steam",
+    name: "Strikers Club (Official Steam Edition)",
+    shortDescription: "Official free-to-play release on Steam with dedicated servers and club matchmaking.",
+    description:
+      "The complete, official release of Strikers Club on Steam. Features dedicated low-latency match servers, seasonal club leagues, stadium customization, and full controller support.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://oddshot.gg/",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "1952920",
+      },
+    },
+    requirements: {
+      min: "Intel Core i3-4160 / 4 GB RAM / NVIDIA GTX 660 / DirectX 11 / 5 GB storage",
+      recommended: "Intel Core i5-6600K / 8 GB RAM / NVIDIA GTX 1060 / SSD / USB Gamepad",
+    },
+    features: ["Multiplayer", "Online Co-Op", "PvP", "Dedicated Servers", "Club Seasons", "Controller Support"],
+    tags: ["Sports", "Soccer", "Physics", "Multiplayer", "Free to Play"],
+    aliases: ["Strikers Club Steam", "Strikers Club Official"],
+    verificationLevel: "official",
+  },
+  {
+    gameSlug: "strikers-club",
+    slug: "strikers-club-pro",
+    name: "Strikers Club (Competitive & League Profile)",
+    shortDescription: "Optimized esports profile with custom tournament deadzones and wide broadcast tactical view.",
+    description:
+      "A competitive-focused setup for Strikers Club tailored for squad tournament play. Configures enhanced wide-angle tactical camera presets, linear analog stick deadzones, and high-contrast pitch markers.",
+    type: "enhanced",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://oddshot.gg/",
+    },
+    installMethod: "steam",
+    installConfig: {
+      steam: {
+        appId: "1952920",
+      },
+    },
+    requirements: {
+      min: "Intel Core i3-4160 / 4 GB RAM / NVIDIA GTX 660",
+      recommended: "Intel Core i5-6600K / 8 GB RAM / 144Hz Monitor / USB Gamepad",
+    },
+    features: ["Multiplayer", "Esports Ready", "Custom Controller Mapping", "Tactical Camera Preset"],
+    tags: ["Competitive", "Esports", "Tournament", "Gamepad"],
+    verificationLevel: "playbound_verified",
+  },
 ];
 
 

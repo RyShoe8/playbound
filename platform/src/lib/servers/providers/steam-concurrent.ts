@@ -170,5 +170,10 @@ export function fetchDota2Players(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(570, { label: "Dota 2" });
 }
 
+/** Strikers Club — Steam app 1952920. */
+export function fetchStrikersClubPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1952920, { label: "Strikers Club" });
+}
+
 
 

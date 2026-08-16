@@ -39,7 +39,7 @@ const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
  * number that is the sum of forty games. One game contributing zero on a slow
  * poll is a rounding error in that sum. A twelve-second homepage is not.
  */
-const MULTIPLAYER_FANOUT_MS = 4500;
+const MULTIPLAYER_FANOUT_MS = 6000;
 
 export type CatalogPopularGame = {
   slug: string;
