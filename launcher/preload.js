@@ -99,6 +99,8 @@ contextBridge.exposeInMainWorld("playbound", {
   transferPartyLeadership: (partyId, userId) =>
     ipcRenderer.invoke("transfer-party-leadership", partyId, userId),
   provisionPartyDiscord: (partyId) => ipcRenderer.invoke("provision-party-discord", partyId),
+  /** Prefers the Discord desktop app, falls back to the browser. */
+  openDiscordInvite: (inviteUrl) => ipcRenderer.invoke("open-discord-invite", inviteUrl),
   setPresenceVisibility: (patch) => ipcRenderer.invoke("set-presence-visibility", patch || {}),
   getLfg: () => ipcRenderer.invoke("get-lfg"),
   setLfg: (enabled, gameSlug) => ipcRenderer.invoke("set-lfg", enabled, gameSlug || null),

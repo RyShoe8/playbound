@@ -714,7 +714,9 @@ async function refreshFriendsData() {
     content.querySelectorAll(".btn-friend-discord").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        window.playbound.openExternal("https://discord.com/app");
+        // Prefers the desktop app when it is installed.
+        void (window.playbound.openDiscordInvite?.("https://discord.com/app") ??
+          window.playbound.openExternal("https://discord.com/app"));
       });
     });
 
@@ -1582,12 +1584,7 @@ function wirePartyView(slot, party) {
 
   const voiceBtn = slot.querySelector("#btn-party-voice");
   if (voiceBtn) {
-    voiceBtn.addEventListener("click", () => {
-      if (voiceBtn.dataset.url) {
-        window.playbound.openExternal(voiceBtn.dataset.url);
-        setStatus("Opening party voice…");
-      }
-    });
+    voiceBtn.addEventListener("click", () => openPartyVoice(voiceBtn.dataset.url));
   }
 
   const enableVoiceBtn = slot.querySelector("#btn-party-enable-voice");
@@ -1830,10 +1827,26 @@ async function fillCreatePartyPanel() {
       if (friendIds.length && res.party.id) {
         await window.playbound.inviteToParty(res.party.id, friendIds);
       }
-      if (wantVoice) submit.textContent = "Starting voice…";
       document.getElementById("create-party-panel").style.display = "none";
       if (nameInput) nameInput.value = "";
-      handlePartyVoice(res);
+
+      /*
+       * Creating a party only records that it wants voice — the channel itself
+       * is provisioned by a second call, which the site makes and this did not.
+       * Without it there was never an invite to open, so "voice enabled" did
+       * nothing at all on create.
+       */
+      if (wantVoice) {
+        submit.textContent = "Starting voice…";
+        const voice = await window.playbound.provisionPartyDiscord(res.party.id);
+        if (voice?.error && !voice?.inviteUrl) {
+          setStatus(voice.error, true);
+        } else {
+          handlePartyVoice(voice);
+        }
+      } else {
+        handlePartyVoice(res);
+      }
       const slot = document.getElementById("friends-party-area");
       if (slot) slot.dataset.sig = "";
       api.refreshFriendsData();
@@ -1850,16 +1863,21 @@ async function fillCreatePartyPanel() {
   };
 }
 
+function openPartyVoice(inviteUrl) {
+  if (!inviteUrl) return;
+  // Desktop Discord first — openExternal would always land in web Discord.
+  void (window.playbound.openDiscordInvite?.(inviteUrl) ??
+    window.playbound.openExternal(inviteUrl));
+  setStatus("Opening party voice…");
+}
+
 function handlePartyVoice(res) {
   const inviteUrl = res?.inviteUrl || res?.party?.discord?.inviteUrl || null;
   if (res?.needsDiscordLink) {
     showDiscordLinkPrompt(inviteUrl);
     return;
   }
-  if (inviteUrl) {
-    window.playbound.openExternal(inviteUrl);
-    setStatus("Opening party voice…");
-  }
+  openPartyVoice(inviteUrl);
 }
 
 function showDiscordLinkPrompt(inviteUrl) {
@@ -1888,7 +1906,7 @@ function showDiscordLinkPrompt(inviteUrl) {
     overlay.style.display = "none";
   });
   document.getElementById("discord-link-invite")?.addEventListener("click", () => {
-    if (inviteUrl) window.playbound.openExternal(inviteUrl);
+    openPartyVoice(inviteUrl);
     overlay.style.display = "none";
   });
   document.getElementById("discord-link-close")?.addEventListener("click", () => {
