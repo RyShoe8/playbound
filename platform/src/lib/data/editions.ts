@@ -454,11 +454,22 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-zip",
-        repo: "etlegacy/etlegacy",
-        assetPattern: "etlegacy-.*-x86_64\\.zip$|etlegacy-.*-win32\\.zip$|\\.zip$",
+        /*
+         * Hand-off, not a one-click install. etlegacy/etlegacy publishes no
+         * GitHub releases at all — the repo exists but the releases API returns
+         * an empty list — so the github-zip recipe here could never resolve an
+         * asset and Install failed outright.
+         *
+         * Their own site does serve the builds, but only behind per-file ids
+         * (/download/file/722 is currently etlegacy-v2.84.0-x64.exe) that turn
+         * over with each release. Pinning one would work today and 404 quietly
+         * at the next version, which is worse than sending people to the page
+         * that is always right. Revisit if upstream publishes a stable URL.
+         */
+        kind: "external",
+        url: "https://www.etlegacy.com/download",
         exeHint: "etl",
-        note: "Installs complete ET: Legacy client.",
+        note: "Download the Windows x64 build from the ET: Legacy site, then run it.",
       },
     },
     features: ["Multiplayer", "Dedicated Servers", "Mod Support", "Open Source", "Controller Support"],
@@ -1256,14 +1267,21 @@ export const editions: EditionSeed[] = [
     sortOrder: 10,
     links: {
       website: "https://dunelegacy.sourceforge.net/",
-      github: "https://github.com/dunelegacy/dunelegacy",
+      github: "https://github.com/henricj/dunelegacy",
     },
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
         kind: "github-zip",
-        repo: "dunelegacy/dunelegacy",
-        assetPattern: "dunelegacy-.*-win64\\.zip$",
+        // dunelegacy/dunelegacy 404s; henricj's fork is the maintained one and
+        // is what the SourceForge project page points at for Windows builds.
+        repo: "henricj/dunelegacy",
+        /*
+         * Plain x64 rather than the -avx2 build beside it: AVX2 needs CPU
+         * support the launcher cannot check before installing, and the plain
+         * build runs everywhere. "-win64" never existed in this repo's names.
+         */
+        assetPattern: "^dunelegacy-x64-v.*\\.zip$",
         exeHint: "dunelegacy",
         note: "Installs Dune Legacy modern engine with full campaign and skirmish support.",
       },
@@ -1352,14 +1370,20 @@ export const editions: EditionSeed[] = [
     sortOrder: 10,
     links: {
       website: "https://openmohaa.org",
-      github: "https://github.com/openmohaa/openmohaa",
+      github: "https://github.com/openmoh/openmohaa",
     },
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
         kind: "locate-then-zip",
-        repo: "openmohaa/openmohaa",
-        assetPattern: "openmohaa-.*-win64\\.zip$",
+        // openmohaa/openmohaa 404s — the project lives under the openmoh org.
+        repo: "openmoh/openmohaa",
+        /*
+         * Upstream names these "windows-x64", not "win64", so the old pattern
+         * matched nothing even once the repo was right. Anchored to .zip so the
+         * -pdb.zip symbol bundle and the .msi installer are both skipped.
+         */
+        assetPattern: "openmohaa-.*-windows-x64\\.zip$",
         exeHint: "openmohaa",
         note: "Requires base MOHAA game assets (Main/pak*.pk3), then overlays modern 64-bit OpenMOHAA binaries.",
       },
@@ -2310,10 +2334,17 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-installer",
-        repo: "ShieldBattery/ShieldBattery",
-        assetPattern: ".*\\.exe$",
+        /*
+         * Hand-off, not a one-click install. The ShieldBattery repo exists but
+         * publishes no GitHub releases, so this recipe could never find an
+         * installer and Install failed outright. Their installer is served from
+         * their own site through a client-rendered page, so there is no static
+         * URL to point a direct recipe at.
+         */
+        kind: "external",
+        url: "https://shieldbattery.net/download",
         exeHint: "ShieldBattery.exe",
+        note: "Download and run the ShieldBattery installer from their site, then sign in.",
       },
     },
     features: ["Rollback Netcode", "60fps Interpolation", "Ranked Ladder", "Cloud Replays"],
