@@ -147,13 +147,36 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
 }
 
 export function LaunchBadge({ game }: { game: Game }) {
-  if (isBrowserGame(game) || game.browserPlayable) {
+  const { track } = useTelemetry();
+
+  if (isBrowserGame(game)) {
+    const href = withOutboundUtm(game.website, {
+      campaign: "game_card",
+      content: game.slug,
+    });
     return (
-      <Badge tone="play">
-        <MonitorPlay className="size-3" /> Instant
-      </Badge>
+      <button
+        type="button"
+        className="relative z-20"
+        title={`Play ${game.title}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void track("official_download_clicked", {
+            gameSlug: game.slug,
+            url: href,
+            source: "card_play",
+          });
+          window.open(href, "_blank", "noopener,noreferrer");
+        }}
+      >
+        <Badge tone="play">
+          <MonitorPlay className="size-3" /> Play
+        </Badge>
+      </button>
     );
   }
+
   return (
     <Badge tone="neutral">
       <Download className="size-3" /> {sizeLabel(game.sizeMB)}
@@ -171,7 +194,16 @@ function IncompatibleCorner({ game }: { game: Game }) {
   );
 }
 
-export function GameCard({ game, className }: { game: Game; className?: string }) {
+export function GameCard({
+  game,
+  className,
+  playingNow,
+}: {
+  game: Game;
+  className?: string;
+  playingNow?: number;
+}) {
+  const count = playingNow ?? 0;
   return (
     <Link
       href={`/games/${game.slug}`}
@@ -183,13 +215,13 @@ export function GameCard({ game, className }: { game: Game; className?: string }
       <div className="relative shrink-0 overflow-hidden rounded-xl border border-border transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]">
         <GameArt game={game} className="aspect-[3/4]" />
         <IncompatibleCorner game={game} />
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 z-20">
           <LaunchBadge game={game} />
         </div>
       </div>
-      <div className="mt-2 flex min-h-[4.75rem] flex-1 flex-col gap-0.5 px-0.5">
-        <p className="truncate text-base font-semibold">{game.title}</p>
-        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-auto" size="md" />
+      <div className="mt-2 flex min-h-[3.5rem] flex-1 flex-col gap-0.5 px-0.5">
+        <CardCategoryTags genres={game.genres} tags={game.tags} size="md" />
+        <p className="text-xs text-muted-foreground">{count.toLocaleString()} playing</p>
       </div>
     </Link>
   );

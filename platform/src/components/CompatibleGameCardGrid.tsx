@@ -12,10 +12,12 @@ export function CompatibleGameCardGrid({
   games,
   className,
   soft = false,
+  playingNowBySlug = {},
 }: {
   games: Game[];
   className?: string;
   soft?: boolean;
+  playingNowBySlug?: Record<string, number>;
 }) {
   const filtered = useFilteredGames(games, soft ? { soft: true, limit: games.length } : undefined);
   const animKey = `${filtered.map((g) => g.slug).join(",")}|${filtered.length}`;
@@ -42,7 +44,11 @@ export function CompatibleGameCardGrid({
             className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
             style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}
           >
-            <GameCard game={g} className="w-full sm:w-full" />
+            <GameCard
+              game={g}
+              className="w-full sm:w-full"
+              playingNow={playingNowBySlug[g.slug] ?? 0}
+            />
           </div>
         ))}
       </div>
@@ -50,7 +56,13 @@ export function CompatibleGameCardGrid({
   );
 }
 
-export function CompatibleMoreLikeThis({ games }: { games: Game[] }) {
+export function CompatibleMoreLikeThis({
+  games,
+  playingNowBySlug = {},
+}: {
+  games: Game[];
+  playingNowBySlug?: Record<string, number>;
+}) {
   const ordered = useFilteredGames(games, { soft: true, limit: 6, ratio: 0.9 });
   if (!ordered.length) return null;
   return (
@@ -62,7 +74,7 @@ export function CompatibleMoreLikeThis({ games }: { games: Game[] }) {
             className="opacity-0 animate-[fadeIn_0.35s_ease_forwards]"
             style={{ animationDelay: `${i * 40}ms` }}
           >
-            <GameCard game={g} />
+            <GameCard game={g} playingNow={playingNowBySlug[g.slug] ?? 0} />
           </div>
         ))}
       </div>

@@ -4,6 +4,7 @@ import { getDeveloper } from "@/lib/developers";
 import { gamesByDeveloper } from "@/lib/catalog";
 import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
+import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
 import { withOutboundUtm } from "@/lib/utm";
 import { pageMetadata } from "@/lib/seo";
@@ -49,7 +50,10 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
   const dev = await getDeveloper(slug);
   if (!dev) notFound();
 
-  const devGames = await gamesByDeveloper(dev.slug);
+  const [devGames, liveStats] = await Promise.all([
+    gamesByDeveloper(dev.slug),
+    getCatalogLiveStats(),
+  ]);
   const repo = devGames.find((g) => g.githubRepo)?.githubRepo;
   const releases = repo ? await fetchGithubReleases(repo, 3) : [];
 
@@ -98,7 +102,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
 
       <section>
         <SectionHeader title="Games" subtitle={`Everything by ${dev.name} on PlayBound`} />
-        <CompatibleCardRow games={devGames} />
+        <CompatibleCardRow games={devGames} playingNowBySlug={playingNowBySlug(liveStats)} />
       </section>
 
       {releases.length > 0 && (

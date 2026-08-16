@@ -18,7 +18,7 @@ import {
   type HomeServerPreview,
 } from "@/components/HomeServerPreviews";
 import { Badge, SectionHeader } from "@/components/ui/bits";
-import { getCatalogLiveStats } from "@/lib/liveActivity";
+import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { countOpenPublicParties } from "@/lib/playTogether/party";
 
 const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
@@ -129,7 +129,11 @@ export default async function HomePage() {
       </section>
 
       {/* ── Latest + Most popular (client-filtered for compatibility) */}
-      <HomeGamesSections latest={gamesNewestFirst} popular={popular} />
+      <HomeGamesSections
+        latest={gamesNewestFirst}
+        popular={popular}
+        playingNowBySlug={playingNowBySlug(liveStats)}
+      />
 
       <section>
         <PlayWithFriends surface="homepage" compact />
