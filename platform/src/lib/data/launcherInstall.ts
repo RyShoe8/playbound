@@ -11,7 +11,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "OpenRA/OpenRA",
     assetPattern: "x64-winportable\\.zip$",
     exeHint: "RedAlert|OpenRA",
-    connectArgs: ["Game.Connect={host}:{port}"],
+    // OpenRA's join setting is Launch.Connect. `Game.Connect` is not a setting
+    // it defines, so it was ignored and the game opened on the main menu.
+    connectArgs: ["Launch.Connect={host}:{port}"],
   },
   "endless-sky": {
     enabled: true,

@@ -102,6 +102,55 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 28010,
     protocol: "udp",
   },
+  keeperfx: {
+    slug: "keeperfx",
+    title: "KeeperFX",
+    defaultPort: 5500,
+    portEnd: 5520,
+    protocol: "both",
+  },
+  "marathon-2": {
+    slug: "marathon-2",
+    title: "Marathon 2",
+    defaultPort: 4226,
+    portEnd: 4246,
+    protocol: "udp",
+  },
+  "aleph-one": {
+    slug: "aleph-one",
+    title: "Aleph One",
+    defaultPort: 4247,
+    portEnd: 4267,
+    protocol: "udp",
+  },
+  triplea: {
+    slug: "triplea",
+    title: "TripleA",
+    defaultPort: 3303,
+    portEnd: 3323,
+    protocol: "tcp",
+  },
+  "battle-for-wesnoth": {
+    slug: "battle-for-wesnoth",
+    title: "Battle for Wesnoth",
+    defaultPort: 15000,
+    portEnd: 15020,
+    protocol: "tcp",
+  },
+  freedoom: {
+    slug: "freedoom",
+    title: "Freedoom",
+    defaultPort: 10666,
+    portEnd: 10686,
+    protocol: "udp",
+  },
+  "0-ad": {
+    slug: "0-ad",
+    title: "0 A.D.",
+    defaultPort: 20595,
+    portEnd: 20615,
+    protocol: "udp",
+  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
@@ -121,6 +170,7 @@ export type PartyHostedPayload = {
   port: number | null;
   name: string | null;
   error: string | null;
+  roomCode?: string | null;
 };
 
 export function emptyHostedPayload(slug: string): PartyHostedPayload {
@@ -131,5 +181,6 @@ export function emptyHostedPayload(slug: string): PartyHostedPayload {
     port: null,
     name: null,
     error: null,
+    roomCode: null,
   };
 }

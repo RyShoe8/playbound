@@ -34,7 +34,7 @@ echo "==> packages"
 apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates curl wget unzip tar xz-utils \
-  ufw jq \
+  ufw jq coturn \
   openjdk-17-jre-headless \
   openttd \
   hedgewars \
@@ -42,7 +42,9 @@ apt-get install -y --no-install-recommends \
   freeciv-server \
   bzflag-server \
   supertuxkart \
-  openarena-server
+  openarena-server \
+  wesnoth-server \
+  0ad
 
 # Luanti was still Minetest on Ubuntu 24.04.
 if apt-cache show luanti-server >/dev/null 2>&1; then
@@ -169,15 +171,52 @@ ufw allow 5556:5576/tcp comment "freeciv" || true
 ufw allow 5154:5174/tcp comment "bzflag" || true
 ufw allow 5154:5174/udp comment "bzflag" || true
 ufw allow 2759:2779/tcp comment "stk" || true
-ufw allow 2759:2779/udp comment "stk" || true
 ufw allow 26000:26020/udp comment "xonotic" || true
 ufw allow 27960:27980/udp comment "openarena" || true
-ufw allow 27990:28010/udp comment "unvanquished" || true
+ufw allow 5500:5520/tcp comment "keeperfx" || true
+ufw allow 5500:5520/udp comment "keeperfx" || true
+ufw allow 4226:4267/udp comment "alephone-marathon" || true
+ufw allow 3303:3323/tcp comment "triplea" || true
+ufw allow 15000:15020/tcp comment "wesnoth" || true
+ufw allow 10666:10686/udp comment "freedoom" || true
+ufw allow 20595:20615/udp comment "0ad" || true
+ufw allow 3478/udp comment "coturn-stun" || true
+ufw allow 3478/tcp comment "coturn-turn" || true
+ufw allow 49152:50152/udp comment "coturn-relay" || true
 ufw --force enable || true
+
+echo "==> coturn STUN/TURN configuration"
+cat <<'EOF' > /etc/turnserver.conf
+listening-port=3478
+tls-listening-port=5349
+min-port=49152
+max-port=50152
+fingerprint
+lt-cred-mech
+user=playbound_guest:guest_session_token
+realm=playbound.club
+total-quota=100
+max-bps=0
+no-cli
+log-file=/var/log/turnserver.log
+simple-log
+EOF
+
+mkdir -p /etc/systemd/system/coturn.service.d
+cat <<'EOF' > /etc/systemd/system/coturn.service.d/override.conf
+[Service]
+MemoryMax=512M
+MemoryHigh=400M
+CPUQuota=100%
+EOF
+
+sed -i 's/TURNSERVER_ENABLED=0/TURNSERVER_ENABLED=1/' /etc/default/coturn || true
 
 echo "==> systemd"
 cp -f "$AGENT_SRC/playbound-game-host.service" /etc/systemd/system/playbound-game-host.service
 systemctl daemon-reload
+systemctl enable --now coturn || true
+systemctl restart coturn || true
 systemctl enable --now playbound-game-host
 
 sleep 1

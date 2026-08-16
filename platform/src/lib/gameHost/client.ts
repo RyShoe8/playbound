@@ -11,6 +11,7 @@ export type GameHostRoom = {
   port: number;
   gameSlug: string;
   name?: string;
+  roomCode?: string | null;
 };
 
 function hostConfig(): { base: string; secret: string; publicIp: string } | null {

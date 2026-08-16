@@ -26,6 +26,11 @@ const {
   resolveGameDir,
 } = require("./openciv3Display");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
+const {
+  clientConnectArgs,
+  hasClientConnectArgs,
+  joinsFromInGameMenu,
+} = require("./services/connectArgs");
 
 function loadHardwareModule() {
   try {
@@ -4647,6 +4652,17 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   let connectArgs = Array.isArray(info.connectArgs) ? info.connectArgs : null;
   const entry = catalog.find((e) => e.slug === slug);
   if (!connectArgs && Array.isArray(entry?.connectArgs)) connectArgs = entry.connectArgs;
+
+  /*
+   * Games we host dedicated servers for take their connect syntax from
+   * services/connectArgs.js instead. The install record captures connectArgs at
+   * install time, so a catalog fix would never reach an existing install, and a
+   * wrong template here means "Join Game" on a party lands the player on the
+   * main menu with no indication why.
+   */
+  if (hasClientConnectArgs(slug)) {
+    connectArgs = clientConnectArgs(slug);
+  }
 
   // Edition recipe may not be on the base catalog — refresh from launcher editions API.
   if (!connectArgs && editionSlug) {

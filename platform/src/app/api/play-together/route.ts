@@ -135,9 +135,16 @@ export async function GET(req: Request) {
         ? {
             active: true,
             gameSlug: mePresence?.lookingForPlayersGameId || mePresence?.currentGameId || null,
+            // Preferred games are a set; the singular field above stays for
+            // callers that only ever wanted one.
+            gameSlugs: Array.isArray(mePresence?.lookingForPlayersGameIds)
+              ? mePresence.lookingForPlayersGameIds
+              : mePresence?.lookingForPlayersGameId
+              ? [mePresence.lookingForPlayersGameId]
+              : [],
             expiresAt: mePresence?.lookingForPlayersUntil,
           }
-        : { active: false, gameSlug: null, expiresAt: null };
+        : { active: false, gameSlug: null, gameSlugs: [], expiresAt: null };
 
     return NextResponse.json({
       friendsPlaying,

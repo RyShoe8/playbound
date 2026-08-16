@@ -81,35 +81,177 @@ function wireFriendsAppearOfflineButton() {
   });
 }
 
-/** Mirrors the site's "Looking for players" button, incl. the 60-minute TTL copy. */
+/** Cap matches MAX_LFG_GAMES on /api/presence/lfg. */
+const LFG_MAX_GAMES = 6;
+
+let lfgActive = false;
+let lfgGames = [];
+let lfgSelection = [];
+
+function paintLfgSummary() {
+  const summary = document.getElementById("lfg-summary");
+  if (!summary) return;
+  if (!lfgActive) {
+    summary.style.display = "none";
+    return;
+  }
+  const titles = lfgGames.map((slug) => {
+    const match = (partyGamesCache || []).find((g) => g.slug === slug);
+    return match?.title || slug;
+  });
+  summary.style.display = "block";
+  summary.textContent = `You're looking to party${
+    titles.length ? ` · ${titles.join(", ")}` : " · up for anything"
+  }`;
+}
+
+/**
+ * "Look for party", with the preferred-game picker the site uses: turning it
+ * off is one click, turning it on opens the picker first so the games can be
+ * chosen up front rather than edited afterwards.
+ */
 function wireLfgButton() {
   const btn = document.getElementById("btn-lfg");
+  const panel = document.getElementById("lfg-panel");
   if (!btn || !window.playbound.getLfg) {
     if (btn) btn.style.display = "none";
     return;
   }
-  let active = false;
-  btn.title = "Let friends know you want people to play with (expires in 60 minutes)";
+  btn.title = "Let people know you want a game (expires in 60 minutes)";
+
   const paint = () => {
-    btn.textContent = active ? "Stop looking" : "Looking for players";
+    const open = panel && panel.style.display !== "none";
+    btn.textContent = lfgActive ? "Stop looking" : open ? "Close" : "Look for party";
+    paintLfgSummary();
   };
   paint();
+
   void window.playbound
     .getLfg()
     .then((data) => {
-      if (data?.myLfg) active = Boolean(data.myLfg.active);
+      if (data?.myLfg) {
+        lfgActive = Boolean(data.myLfg.active);
+        lfgGames = Array.isArray(data.myLfg.gameSlugs)
+          ? data.myLfg.gameSlugs
+          : data.myLfg.gameSlug
+          ? [data.myLfg.gameSlug]
+          : [];
+      }
       paint();
     })
     .catch(() => {});
+
   btn.onclick = async () => {
+    if (!lfgActive) {
+      if (!panel) return;
+      const open = panel.style.display !== "none";
+      panel.style.display = open ? "none" : "block";
+      if (!open) {
+        lfgSelection = [];
+        await ensurePartyGames();
+        renderLfgPicker();
+      }
+      paint();
+      return;
+    }
     btn.disabled = true;
     btn.textContent = "Saving…";
-    const res = await window.playbound.setLfg(!active, null);
-    if (!res?.error) active = !active;
-    else setStatus(res.error, true);
-    paint();
+    const res = await window.playbound.setLfg(false, null);
+    if (res?.error) setStatus(res.error, true);
+    else {
+      lfgActive = false;
+      lfgGames = [];
+    }
     btn.disabled = false;
+    paint();
   };
+
+  document.getElementById("btn-lfg-cancel")?.addEventListener("click", () => {
+    if (panel) panel.style.display = "none";
+    paint();
+  });
+
+  document.getElementById("lfg-search")?.addEventListener("input", () => renderLfgPicker());
+
+  document.getElementById("btn-lfg-confirm")?.addEventListener("click", async () => {
+    const confirmBtn = document.getElementById("btn-lfg-confirm");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Saving…";
+    const res = await window.playbound.setLfg(true, lfgSelection);
+    if (res?.error) {
+      setStatus(res.error, true);
+    } else {
+      lfgActive = true;
+      lfgGames = [...lfgSelection];
+      if (panel) panel.style.display = "none";
+    }
+    confirmBtn.disabled = false;
+    paint();
+    renderLfgPicker();
+  });
+}
+
+/** Selected picks pinned above a type-to-filter list of the catalog. */
+function renderLfgPicker() {
+  const chosenBox = document.getElementById("lfg-chosen");
+  const optionsBox = document.getElementById("lfg-options");
+  const confirmBtn = document.getElementById("btn-lfg-confirm");
+  const limitNote = document.getElementById("lfg-limit-note");
+  if (!chosenBox || !optionsBox) return;
+
+  const games = partyGamesCache || [];
+  const titleOf = (slug) => games.find((g) => g.slug === slug)?.title || slug;
+  const atLimit = lfgSelection.length >= LFG_MAX_GAMES;
+
+  chosenBox.innerHTML = lfgSelection
+    .map(
+      (slug) =>
+        `<button type="button" class="chip lfg-chip-selected" data-remove="${escapeHtml(
+          slug
+        )}" title="Remove">${escapeHtml(titleOf(slug))} ✕</button>`
+    )
+    .join("");
+
+  const needle = (document.getElementById("lfg-search")?.value || "").trim().toLowerCase();
+  const matches = games
+    .filter((g) => !lfgSelection.includes(g.slug))
+    .filter((g) => (needle ? g.title.toLowerCase().includes(needle) : true))
+    .slice(0, needle ? 24 : 12);
+
+  optionsBox.innerHTML = matches.length
+    ? matches
+        .map(
+          (g) =>
+            `<button type="button" class="chip lfg-chip" data-add="${escapeHtml(g.slug)}"${
+              atLimit ? " disabled" : ""
+            }>${escapeHtml(g.title)}</button>`
+        )
+        .join("")
+    : `<p class="view-sub" style="margin:0;font-size:12px;">No games match that.</p>`;
+
+  if (limitNote) {
+    limitNote.style.display = atLimit ? "block" : "none";
+    limitNote.textContent = `That's ${LFG_MAX_GAMES} — remove one to swap it out.`;
+  }
+  if (confirmBtn) {
+    confirmBtn.textContent = lfgSelection.length
+      ? `Look for a party (${lfgSelection.length})`
+      : "Look for a party";
+  }
+
+  chosenBox.querySelectorAll("[data-remove]").forEach((el) => {
+    el.addEventListener("click", () => {
+      lfgSelection = lfgSelection.filter((s) => s !== el.dataset.remove);
+      renderLfgPicker();
+    });
+  });
+  optionsBox.querySelectorAll("[data-add]").forEach((el) => {
+    el.addEventListener("click", () => {
+      if (lfgSelection.length >= LFG_MAX_GAMES) return;
+      lfgSelection = [...lfgSelection, el.dataset.add];
+      renderLfgPicker();
+    });
+  });
 }
 
 function syncPrivacyToggles(values) {
@@ -1004,14 +1146,18 @@ function buildPartyViewHtml(party) {
            placeholder="${escapeHtml(partyDisplayName(party))}" value="${escapeHtml(party.name || "")}" autocomplete="off" />`
       : `<h3 class="party-title">${escapeHtml(partyDisplayName(party))}</h3>`;
 
-  const gameHtml =
-    isLeader && !ended && !inFlight
-      ? `<select class="input-text party-game-select" id="party-game-select" aria-label="Party game" style="max-width: 380px;">
-           ${partyGameOptionsHtml(party.gameSlug || "", party)}
-         </select>`
-      : hasGame
-      ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>`
-      : "";
+  /*
+   * The leader can re-pick at any time short of the party ending. Locking this
+   * once play started meant a party that finished a game had no way to move on
+   * to another one without disbanding.
+   */
+  const gameHtml = isLeader && !ended
+    ? `<select class="input-text party-game-select" id="party-game-select" aria-label="Party game" style="max-width: 380px;">
+         ${partyGameOptionsHtml(party.gameSlug || "", party)}
+       </select>`
+    : hasGame
+    ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>`
+    : "";
 
   const visibilityHtml =
     isLeader && !ended
@@ -1352,7 +1498,13 @@ function wirePartyView(slot, party) {
       joinGameBtn.disabled = true;
       const res = await window.playbound.partyJoinGame(partyId);
       if (res?.error) setStatus(res.error, true);
-      await launchPartyGame(party);
+      /*
+       * Join-game is what provisions the dedicated server on first launch, so
+       * the response carries the host and port. Launching from the party we
+       * rendered from would use a payload captured before that happened and
+       * start the game unconnected.
+       */
+      await launchPartyGame(res?.party || party);
       joinGameBtn.disabled = false;
       const areaSlot = document.getElementById("friends-party-area");
       if (areaSlot) areaSlot.dataset.sig = "";
@@ -1426,17 +1578,44 @@ async function launchPartyGame(party) {
   if (!slug) return;
   const hosted = party.hosted || {};
   if (hosted.status === "ready" && hosted.host && hosted.port) {
+    const address = `${hosted.host}:${hosted.port}`;
     try {
-      setStatus(`Joining ${hosted.host}:${hosted.port}…`);
-      await window.playbound.play(slug, {
+      setStatus(`Joining ${address}…`);
+      const res = await window.playbound.play(slug, {
         host: hosted.host,
         port: Number(hosted.port),
         name: hosted.name || party.gameTitle || "",
       });
       startGameSession(slug, party.gameTitle || slug);
+      /*
+       * A few clients have no command-line join and only take an address from
+       * their own menu. Launching and saying nothing looks identical to a
+       * failed auto-connect, so hand the player the address instead.
+       */
+      if (res?.manualConnect) {
+        void window.playbound.clipboardWrite?.(address);
+        setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
+      } else {
+        setStatus(`Joining ${party.gameTitle || slug} at ${address}…`);
+      }
     } catch (err) {
       setStatus(err.message || String(err), true);
     }
+    return;
+  }
+
+  /*
+   * PlayBound hosts this game but the room is not up yet. Launching now would
+   * drop the player on the main menu with no server to join, which reads as a
+   * broken button — better to say what is happening and let them retry.
+   */
+  if (hosted.enabled && hosted.status !== "ready") {
+    setStatus(
+      hosted.status === "failed"
+        ? hosted.error || "Could not start the PlayBound server. Try Join Game again."
+        : "Starting the PlayBound server — try Join Game again in a moment.",
+      hosted.status === "failed"
+    );
     return;
   }
 

@@ -18,6 +18,7 @@ export type PartyHostFields = {
   port?: number | null;
   name?: string | null;
   error?: string | null;
+  roomCode?: string | null;
   provisionedAt?: Date | null;
 };
 
@@ -73,6 +74,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.host = result.host;
   hosted.port = result.port;
   hosted.name = result.name || name;
+  hosted.roomCode = result.roomCode || null;
   hosted.error = null;
   hosted.provisionedAt = new Date();
   await party.save();
@@ -87,6 +89,7 @@ export async function releasePartyHost(party: PartyLike): Promise<void> {
       hosted.host = null;
       hosted.port = null;
       hosted.error = null;
+      hosted.roomCode = null;
     }
     return;
   }
@@ -98,6 +101,7 @@ export async function releasePartyHost(party: PartyLike): Promise<void> {
   hosted.port = null;
   hosted.name = null;
   hosted.error = null;
+  hosted.roomCode = null;
 }
 
 export function hostedPayloadFromDoc(
@@ -113,5 +117,6 @@ export function hostedPayloadFromDoc(
     port: typeof hosted.port === "number" ? hosted.port : null,
     name: hosted.name || null,
     error: hosted.error || null,
+    roomCode: hosted.roomCode || null,
   };
 }

@@ -318,11 +318,22 @@ function wireMainEvents() {
     } else {
       setStatus("Installs updated.");
     }
-    markViewDirty(views.library, views.gameDetail);
+    markViewDirty(views.library, views.gameDetail, views.editionDetail);
     if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
     else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {
       api.renderGameDetailView?.(data.slug);
+    } else if (
+      // Installing an edition now leaves you on the edition page, so that page
+      // has to pick the finished install up itself and swap Install for Play.
+      state.currentView === "editionDetail" &&
+      data?.slug &&
+      state.currentEditionDetail?.gameSlug === data.slug
+    ) {
+      api.renderEditionDetailView?.(
+        state.currentEditionDetail.gameSlug,
+        state.currentEditionDetail.editionSlug
+      );
     }
   });
 

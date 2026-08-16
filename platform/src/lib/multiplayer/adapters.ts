@@ -1,0 +1,503 @@
+/**
+ * PlayBound Multiplayer Adapter Framework.
+ *
+ * Rather than forcing every game onto a single networking stack, PlayBound
+ * uses declarative adapters tailored to each game's architecture:
+ *
+ *   1. `playbound-native` — Custom P2P mod / transport with room codes (e.g. HoloCure).
+ *   2. `managed-server`  — Automatic dedicated server process spawned on the PlayBound VPS (e.g. OpenRA, OpenTTD).
+ *   3. `direct-ip`       — Direct peer connection with CLI argument join (e.g. KeeperFX, Marathon 2).
+ *   4. `official`        — Unmodified proprietary/official network layer; PlayBound provides party launch & presence only.
+ */
+
+export type MultiplayerAdapterType =
+  | "playbound-native"
+  | "managed-server"
+  | "direct-ip"
+  | "official";
+
+export type MultiplayerTier =
+  | "tier1_improved"          // PlayBound Multiplayer Editions (Material UX enhancement)
+  | "tier2_automated_server"  // Automated server infrastructure & discovery
+  | "tier3_official";         // Party orchestration only (leave networking alone)
+
+export interface HostLaunchConfig {
+  launch?: boolean;
+  port?: number;
+  protocol?: "udp" | "tcp" | "both";
+  binaryHint?: string;
+  argsTemplate?: string[];
+}
+
+export interface ClientLaunchConfig {
+  launchArguments?: string[];
+  inGameJoinPrompt?: boolean;
+  requiresRoomCode?: boolean;
+}
+
+export interface GameMultiplayerAdapter {
+  gameSlug: string;
+  title: string;
+  tier: MultiplayerTier;
+  adapterType: MultiplayerAdapterType;
+  protocol?: "enet" | "gns" | "udp" | "tcp" | "quake" | "doom" | "custom" | "official";
+  host?: HostLaunchConfig;
+  client?: ClientLaunchConfig;
+  notes?: string;
+}
+
+export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
+  // ─── TIER 1: PlayBound Multiplayer Editions ───────────────────────────────
+  holocure: {
+    gameSlug: "holocure",
+    title: "HoloCure - Save the Fans!",
+    tier: "tier1_improved",
+    adapterType: "playbound-native",
+    protocol: "gns",
+    client: {
+      requiresRoomCode: true,
+      inGameJoinPrompt: true,
+    },
+    notes: "Forked mod with zero-Steam standalone GNS P2P transport + 6-character room codes.",
+  },
+
+  keeperfx: {
+    gameSlug: "keeperfx",
+    title: "KeeperFX",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "enet",
+    host: {
+      port: 5500,
+      protocol: "both",
+    },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    notes: "Direct ENET/UDP and TCP/IP with automatic CLI session argument join.",
+  },
+
+  "warzone-2100": {
+    gameSlug: "warzone-2100",
+    title: "Warzone 2100",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 2100,
+      protocol: "both",
+      binaryHint: "warzone2100",
+      argsTemplate: ["--dedicated", "--port={port}"],
+    },
+    client: {
+      launchArguments: ["--connect={host}:{port}"],
+    },
+    notes: "Native IP hosting and automated VPS dedicated server.",
+  },
+
+  mindustry: {
+    gameSlug: "mindustry",
+    title: "Mindustry",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 6567,
+      protocol: "both",
+      binaryHint: "server-release.jar",
+    },
+    client: {
+      inGameJoinPrompt: true,
+    },
+    notes: "Java headless server on VPS with direct IP in-game client connect.",
+  },
+
+  "marathon-2": {
+    gameSlug: "marathon-2",
+    title: "Marathon 2 / Aleph One",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    host: {
+      port: 4226,
+      protocol: "udp",
+    },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    notes: "Open-source Aleph One UDP engine with CLI connect join.",
+  },
+
+  "aleph-one": {
+    gameSlug: "aleph-one",
+    title: "Aleph One",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    host: {
+      port: 4247,
+      protocol: "udp",
+    },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    notes: "Aleph One engine UDP multiplayer.",
+  },
+
+  hedgewars: {
+    gameSlug: "hedgewars",
+    title: "Hedgewars",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 46631,
+      protocol: "both",
+      binaryHint: "hedgewars-server",
+      argsTemplate: ["-p", "{port}"],
+    },
+    client: {
+      inGameJoinPrompt: true,
+    },
+    notes: "Automated VPS hedgewars-server daemon.",
+  },
+
+  triplea: {
+    gameSlug: "triplea",
+    title: "TripleA",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "tcp",
+    host: {
+      port: 3303,
+      protocol: "tcp",
+      binaryHint: "triplea.jar",
+    },
+    client: {
+      launchArguments: ["-Dserver.address={host}", "-Dserver.port={port}"],
+    },
+    notes: "Turn-based Java network engine with CLI server parameters.",
+  },
+
+  openttd: {
+    gameSlug: "openttd",
+    title: "OpenTTD",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 3979,
+      protocol: "both",
+      binaryHint: "openttd",
+      argsTemplate: ["-D", "0.0.0.0:{port}"],
+    },
+    client: {
+      launchArguments: ["-n", "{host}:{port}"],
+    },
+    notes: "Automated dedicated server instance with -n CLI connect.",
+  },
+
+  openra: {
+    gameSlug: "openra",
+    title: "OpenRA",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 1234,
+      protocol: "udp",
+      binaryHint: "OpenRA.Server",
+      argsTemplate: ["Server.ListenPort={port}"],
+    },
+    client: {
+      launchArguments: ["Launch.Connect={host}:{port}"],
+    },
+    notes: "Dedicated C&C server engine with settings argv CLI connect.",
+  },
+
+  "0-ad": {
+    gameSlug: "0-ad",
+    title: "0 A.D.",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 20595,
+      protocol: "udp",
+      binaryHint: "pyrogenesis",
+      argsTemplate: ["-autostart-nonrandom=1", "--port={port}"],
+    },
+    client: {
+      launchArguments: ["-autostart={host}:{port}"],
+    },
+    notes: "Pyrogenesis headless host with -autostart CLI connection.",
+  },
+
+  "battle-for-wesnoth": {
+    gameSlug: "battle-for-wesnoth",
+    title: "Battle for Wesnoth",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "tcp",
+    host: {
+      port: 15000,
+      protocol: "tcp",
+      binaryHint: "wesnothd",
+      argsTemplate: ["-p", "{port}"],
+    },
+    client: {
+      launchArguments: ["--host", "{host}:{port}"],
+    },
+    notes: "Automated wesnothd daemon with --host CLI connect.",
+  },
+
+  openarena: {
+    gameSlug: "openarena",
+    title: "OpenArena",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "quake",
+    host: {
+      port: 27960,
+      protocol: "udp",
+      binaryHint: "openarena-server",
+      argsTemplate: ["+set", "dedicated", "1", "+set", "net_port", "{port}"],
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes: "Quake III dedicated server with +connect CLI argument.",
+  },
+
+  xonotic: {
+    gameSlug: "xonotic",
+    title: "Xonotic",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "quake",
+    host: {
+      port: 26000,
+      protocol: "udp",
+      binaryHint: "xonotic-linux64-dedicated",
+      argsTemplate: ["+port", "{port}"],
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes: "DarkPlaces dedicated server with +connect CLI argument.",
+  },
+
+  unvanquished: {
+    gameSlug: "unvanquished",
+    title: "Unvanquished",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "quake",
+    host: {
+      port: 27990,
+      protocol: "udp",
+      binaryHint: "daemon",
+      argsTemplate: ["+set", "dedicated", "2", "+set", "net_port", "{port}"],
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes: "Daemon engine dedicated server with +connect CLI argument.",
+  },
+
+  luanti: {
+    gameSlug: "luanti",
+    title: "Luanti",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 30000,
+      protocol: "udp",
+      binaryHint: "luantiserver",
+      argsTemplate: ["--port", "{port}"],
+    },
+    client: {
+      launchArguments: ["--go", "--address", "{host}", "--port", "{port}"],
+    },
+    notes: "Minetest server engine with --go direct connect arguments.",
+  },
+
+  freedoom: {
+    gameSlug: "freedoom",
+    title: "Freedoom",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "doom",
+    host: {
+      port: 10666,
+      protocol: "udp",
+      binaryHint: "odamex-server",
+      argsTemplate: ["-port", "{port}"],
+    },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    notes: "Doom engine dedicated server (Odamex / Zandronum).",
+  },
+
+  freeciv: {
+    gameSlug: "freeciv",
+    title: "Freeciv",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "tcp",
+    host: {
+      port: 5556,
+      protocol: "tcp",
+      binaryHint: "freeciv-server",
+      argsTemplate: ["-p", "{port}"],
+    },
+    client: {
+      launchArguments: ["--server", "{host}", "--port", "{port}"],
+    },
+    notes: "Freeciv dedicated server with --server CLI connect.",
+  },
+
+  // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
+  "space-station-14": {
+    gameSlug: "space-station-14",
+    title: "Space Station 14",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["--connect-address", "ss14://{host}:{port}"],
+    },
+    notes: "Community server orchestration with ss14:// connect URI.",
+  },
+
+  veloren: {
+    gameSlug: "veloren",
+    title: "Veloren",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["--connect", "{host}:{port}"],
+    },
+    notes: "Rust voxel RPG server connect.",
+  },
+
+  "wolfenstein-enemy-territory": {
+    gameSlug: "wolfenstein-enemy-territory",
+    title: "Wolfenstein: Enemy Territory",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "quake",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes: "Legacy idTech 3 multiplayer connect.",
+  },
+
+  // ─── TIER 3: Official / Proprietary (Party Orchestration Only) ───────────
+  brawlhalla: {
+    gameSlug: "brawlhalla",
+    title: "Brawlhalla",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official online lobbies & matchmaking. PlayBound orchestrates party & presence.",
+  },
+
+  "counter-strike-2": {
+    gameSlug: "counter-strike-2",
+    title: "Counter-Strike 2",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Steam matchmaking & servers.",
+  },
+
+  valorant: {
+    gameSlug: "valorant",
+    title: "Valorant",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Riot Games official matchmaking & servers.",
+  },
+
+  "league-of-legends": {
+    gameSlug: "league-of-legends",
+    title: "League of Legends",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Riot Games official matchmaking.",
+  },
+
+  "dota-2": {
+    gameSlug: "dota-2",
+    title: "Dota 2",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Valve official matchmaking.",
+  },
+
+  warframe: {
+    gameSlug: "warframe",
+    title: "Warframe",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Digital Extremes matchmaking & squad invites.",
+  },
+
+  "apex-legends": {
+    gameSlug: "apex-legends",
+    title: "Apex Legends",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "EA / Respawn matchmaking.",
+  },
+
+  "genshin-impact": {
+    gameSlug: "genshin-impact",
+    title: "Genshin Impact",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "HoYoverse co-op world join.",
+  },
+};
+
+/**
+ * Returns the multiplayer adapter definition for a game slug, or an official fallback.
+ */
+export function getMultiplayerAdapter(gameSlug: string): GameMultiplayerAdapter {
+  const key = String(gameSlug || "").toLowerCase();
+  if (MULTIPLAYER_ADAPTERS[key]) {
+    return MULTIPLAYER_ADAPTERS[key];
+  }
+  return {
+    gameSlug: key,
+    title: key,
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+  };
+}
+
+/**
+ * Returns true if PlayBound actively provisions, connects, or hosts multiplayer for this game.
+ */
+export function isPlayBoundManagedMultiplayer(gameSlug: string): boolean {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  return adapter.adapterType !== "official";
+}
+
+/**
+ * Returns the tier classification of the title.
+ */
+export function getMultiplayerTier(gameSlug: string): MultiplayerTier {
+  return getMultiplayerAdapter(gameSlug).tier;
+}

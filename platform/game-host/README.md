@@ -47,6 +47,8 @@ If Contabo shows a network firewall, allow:
 
 - `22/tcp` SSH
 - `8741/tcp` agent
+- `3478/udp` and `3478/tcp` coturn STUN/TURN
+- `49152:50152/udp` coturn TURN relay fallback range
 - UDP/TCP ranges printed at the end of `install.sh` (OpenRA 1234–1250/udp, etc.)
 
 ## Check

@@ -1642,9 +1642,15 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
         setProgress(null);
         api.renderEditionDetailView(gameSlug, editionSlug);
       } else if (res.status === "installer-opened") {
-        setStatus("Installer opened — waiting for installer to finish…");
+        /*
+         * Stay put. This used to jump to the parent game page, which threw the
+         * player off the edition they were installing — and for a store
+         * hand-off like HoloCure's, the wait happens off in Steam, so the jump
+         * landed them somewhere unrelated with no explanation. The edition view
+         * now refreshes itself when the install is detected (see boot.js).
+         */
+        setStatus("Installer opened — waiting for the install to finish…");
         setProgress(null);
-        api.openGameDetail(gameSlug, "editionDetail");
       } else if (res.status === "external") {
         setStatus("Opened download page.");
         setProgress(null);

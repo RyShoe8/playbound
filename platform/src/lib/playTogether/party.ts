@@ -488,8 +488,27 @@ export async function setPartyGame(
   if (String(doc.leaderId) !== leaderId) {
     return { error: "Only the leader can change the game", status: 403 };
   }
-  if (doc.status === "ended" || doc.status === "launching" || doc.status === "playing") {
-    return { error: "Cannot change the game now", status: 400 };
+  if (doc.status === "ended") {
+    return { error: "Party has ended", status: 400 };
+  }
+
+  /*
+   * Switching games mid-session is the normal way a party moves on: play one
+   * game, finish, pick another. That means winding the party back to forming —
+   * the old dedicated server is released so it is not left running for a game
+   * nobody is in, and everyone re-readies for the new pick rather than being
+   * carried into it by a stale ready flag.
+   */
+  const previousSlug = String(doc.gameSlug || "");
+  const switchingGame = previousSlug !== slug;
+  const wasInSession = doc.status === "playing" || doc.status === "launching";
+
+  if (switchingGame && (wasInSession || doc.hosted?.roomId)) {
+    await releasePartyHost(doc);
+  }
+  if (switchingGame && wasInSession) {
+    doc.status = "forming";
+    for (const member of doc.members) member.ready = false;
   }
 
   doc.gameSlug = slug;

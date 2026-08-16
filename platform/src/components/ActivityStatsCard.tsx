@@ -104,6 +104,7 @@ export function CatalogStatsCard({
    * failed fetch simply leaves it in place.
    */
   const [parties, setParties] = useState(openPartyCount);
+  const [looking, setLooking] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +115,15 @@ export function CatalogStatsCard({
       })
       .catch(() => {
         /* keep whatever the page rendered */
+      });
+    // Same client-fetch reasoning as the party count above.
+    fetch("/api/presence/lfg/count")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && typeof data?.count === "number") setLooking(data.count);
+      })
+      .catch(() => {
+        /* leave at 0 */
       });
     return () => {
       cancelled = true;
@@ -127,6 +137,7 @@ export function CatalogStatsCard({
     { label: "Editions", value: live.editionCount, href: null },
     { label: "Gamers Playing", value: live.playingNow, href: null },
     { label: "Open Parties", value: parties, href: "/events" },
+    { label: "Looking to Party", value: looking, href: "/looking-to-party" },
   ];
 
   return (

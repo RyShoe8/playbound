@@ -147,7 +147,13 @@ export function PartyView({
           ) : (
             <h3 className="text-lg font-bold">{partyDisplayName(party)}</h3>
           )}
-          {isLeader && party.status !== "ended" && party.status !== "launching" && party.status !== "playing" ? (
+          {/*
+            * Available for as long as the party is alive, including while it is
+            * playing: finishing one game and picking another is how a party
+            * carries on, and changing the pick winds the party back to forming
+            * server-side.
+            */}
+          {isLeader && party.status !== "ended" ? (
             <label className="block max-w-md">
               <span className="sr-only">Party game</span>
               <PremiumSelect
@@ -263,9 +269,13 @@ export function PartyView({
                 <Play className="size-4 fill-current" />
                 Join Game
               </button>
-              {joinUrl ? (
+              {party.hosted?.roomCode ? (
+                <p className="text-xs text-primary font-mono font-bold">
+                  Room Code: {party.hosted.roomCode}
+                </p>
+              ) : joinUrl ? (
                 <p className="text-xs text-muted-foreground font-mono">
-                  {party.hosted.host}:{party.hosted.port}
+                  {party.hosted?.host}:{party.hosted?.port}
                 </p>
               ) : null}
             </div>

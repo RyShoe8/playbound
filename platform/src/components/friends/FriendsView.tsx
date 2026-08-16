@@ -7,7 +7,7 @@ import { AddFriends } from "@/components/friends/AddFriends";
 import { FriendInviteClaim } from "@/components/friends/FriendInviteClaim";
 import { FriendsUpcomingEvents } from "@/components/events/FriendsUpcomingEvents";
 import { Avatar } from "@/components/ui/bits";
-import { Gamepad2, LogIn, UserMinus } from "lucide-react";
+import { Gamepad2, LogIn, UserMinus, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { telemetry } from "@/lib/telemetry";
@@ -224,6 +224,134 @@ function FriendCard({
   );
 }
 
+/** Cap matches MAX_LFG_GAMES in /api/presence/lfg. */
+const LFG_MAX_GAMES = 6;
+
+/**
+ * Picking preferred games when you raise your hand.
+ *
+ * Type-to-filter over the catalog with the picks pinned above it, so choosing
+ * several is a few keystrokes rather than a scroll through everything — and
+ * choosing none is a valid, one-click answer ("up for anything") rather than a
+ * dead end.
+ */
+function LfgGamePicker({
+  games,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  games: PartyGameOption[];
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (slugs: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const titleOf = (slug: string) => games.find((g) => g.slug === slug)?.title || slug;
+  const atLimit = selected.length >= LFG_MAX_GAMES;
+
+  const needle = query.trim().toLowerCase();
+  const matches = games
+    .filter((g) => !selected.includes(g.slug))
+    .filter((g) => (needle ? g.title.toLowerCase().includes(needle) : true))
+    .slice(0, needle ? 24 : 12);
+
+  function toggle(slug: string) {
+    setSelected((prev) =>
+      prev.includes(slug)
+        ? prev.filter((s) => s !== slug)
+        : prev.length >= LFG_MAX_GAMES
+        ? prev
+        : [...prev, slug]
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <div>
+        <h4 className="font-bold">What do you want to play?</h4>
+        <p className="text-sm text-muted-foreground">
+          Pick up to {LFG_MAX_GAMES}, or skip it and you&apos;ll show as up for anything. Expires
+          in 60 minutes.
+        </p>
+      </div>
+
+      {selected.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((slug) => (
+            <button
+              key={slug}
+              type="button"
+              onClick={() => toggle(slug)}
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground hover:brightness-110"
+              title="Remove"
+            >
+              {titleOf(slug)}
+              <X className="size-3" />
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search games…"
+        className="h-10 w-full rounded-lg border border-border bg-secondary/50 px-3 text-sm shadow-sm backdrop-blur"
+        autoComplete="off"
+      />
+
+      <div className="flex flex-wrap gap-1.5">
+        {matches.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No games match that.</p>
+        ) : (
+          matches.map((game) => (
+            <button
+              key={game.slug}
+              type="button"
+              disabled={atLimit}
+              onClick={() => toggle(game.slug)}
+              className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40"
+            >
+              {game.title}
+            </button>
+          ))
+        )}
+      </div>
+      {atLimit ? (
+        <p className="text-xs text-muted-foreground">
+          That&apos;s {LFG_MAX_GAMES} — remove one to swap it out.
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onConfirm(selected)}
+          className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:brightness-110 disabled:opacity-50"
+        >
+          {busy
+            ? "Saving…"
+            : selected.length > 0
+            ? `Look for a party (${selected.length})`
+            : "Look for a party"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-semibold hover:bg-secondary/80"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function FriendsSection({
   title,
   count,
@@ -260,6 +388,8 @@ export function FriendsView({
   const [appearBusy, setAppearBusy] = useState(false);
   const [lfgBusy, setLfgBusy] = useState(false);
   const [lfgActive, setLfgActive] = useState(false);
+  const [lfgGames, setLfgGames] = useState<string[]>([]);
+  const [lfgPickerOpen, setLfgPickerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
     open: false,
@@ -311,7 +441,11 @@ export function FriendsView({
       void fetch("/api/play-together")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (data?.myLfg) setLfgActive(Boolean(data.myLfg.active));
+          if (data?.myLfg) {
+            setLfgActive(Boolean(data.myLfg.active));
+            if (Array.isArray(data.myLfg.gameSlugs)) setLfgGames(data.myLfg.gameSlugs);
+            else if (data.myLfg.gameSlug) setLfgGames([data.myLfg.gameSlug]);
+          }
         })
         .catch(() => {});
         
@@ -363,19 +497,46 @@ export function FriendsView({
     await patchVisibility({ appearOffline: !appearOffline });
   }
 
+  /**
+   * Turning it off is one click. Turning it on opens the picker first so the
+   * preferred games can be chosen — sending "looking, for anything" and making
+   * people edit it afterwards is the worse default.
+   */
   async function toggleLfg() {
-    const next = !lfgActive;
+    if (!lfgActive) {
+      setLfgPickerOpen((v) => !v);
+      return;
+    }
     setLfgBusy(true);
     try {
-      const gameSlug = playingFriends[0]?.presence.currentGameId || undefined;
       const res = await fetch("/api/presence/lfg", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ enabled: next, gameSlug: next ? gameSlug : null }),
+        body: JSON.stringify({ enabled: false }),
       });
       if (res.ok) {
-        setLfgActive(next);
-        telemetry.track(next ? "lfg_enabled" : "lfg_disabled", next ? { gameSlug } : {});
+        setLfgActive(false);
+        setLfgGames([]);
+        telemetry.track("lfg_disabled", {});
+      }
+    } finally {
+      setLfgBusy(false);
+    }
+  }
+
+  async function startLfg(gameSlugs: string[]) {
+    setLfgBusy(true);
+    try {
+      const res = await fetch("/api/presence/lfg", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: true, gameSlugs }),
+      });
+      if (res.ok) {
+        setLfgActive(true);
+        setLfgGames(gameSlugs);
+        setLfgPickerOpen(false);
+        telemetry.track("lfg_enabled", { gameCount: gameSlugs.length });
       }
     } finally {
       setLfgBusy(false);
@@ -456,9 +617,15 @@ export function FriendsView({
             disabled={lfgBusy}
             onClick={() => void toggleLfg()}
             className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80 disabled:opacity-60"
-            title="Let friends know you want people to play with (expires in 60 minutes)"
+            title="Let people know you want a game (expires in 60 minutes)"
           >
-            {lfgBusy ? "Saving…" : lfgActive ? "Stop looking" : "Looking for players"}
+            {lfgBusy
+              ? "Saving…"
+              : lfgActive
+              ? "Stop looking"
+              : lfgPickerOpen
+              ? "Close"
+              : "Look for party"}
           </button>
           <button
             type="button"
@@ -485,6 +652,28 @@ export function FriendsView({
       {addOpen ? <AddFriends games={games} genres={genres} /> : null}
       {createOpen ? (
         <CreatePartyPanel onCreated={() => setCreateOpen(false)} />
+      ) : null}
+      {lfgPickerOpen && !lfgActive ? (
+        <LfgGamePicker
+          games={games}
+          busy={lfgBusy}
+          onCancel={() => setLfgPickerOpen(false)}
+          onConfirm={(slugs) => void startLfg(slugs)}
+        />
+      ) : null}
+      {lfgActive ? (
+        <p className="text-sm text-muted-foreground">
+          You&apos;re looking to party
+          {lfgGames.length > 0
+            ? ` · ${lfgGames
+                .map((slug) => games.find((g) => g.slug === slug)?.title || slug)
+                .join(", ")}`
+            : " · up for anything"}
+          {" — "}
+          <Link href="/looking-to-party" className="font-semibold text-primary hover:underline">
+            see who else is
+          </Link>
+        </p>
       ) : null}
 
       <div className="rounded-xl border border-border bg-card/40 px-3 py-2">

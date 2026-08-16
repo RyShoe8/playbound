@@ -45,11 +45,16 @@ const PresenceSchema = new Schema(
     currentPage: { type: String, default: null },
 
     /**
-     * Looking for players (Phase 3). Cleared when expired by sweep or user toggle.
+     * Looking to party. Cleared when expired by sweep or user toggle.
      * `lookingForPlayersGameId` optional — null means "any / current game".
+     *
+     * `lookingForPlayersGameIds` holds the full set of games someone would like
+     * to play; the singular field mirrors its first entry so every existing
+     * reader (friends list, shared-games ranking) keeps working untouched.
      */
     lookingForPlayersUntil: { type: Date, default: null, index: true },
     lookingForPlayersGameId: { type: String, default: null },
+    lookingForPlayersGameIds: { type: [String], default: [] },
 
     /** Phase 4: current party the user is in. Cleared when party ends or user leaves. */
     currentPartyId: {
@@ -92,6 +97,7 @@ export type PresenceDoc = {
   currentPage?: string | null;
   lookingForPlayersUntil?: Date | null;
   lookingForPlayersGameId?: string | null;
+  lookingForPlayersGameIds?: string[];
   currentPartyId?: string | null;
   startedAt: Date;
   lastHeartbeat: Date;
