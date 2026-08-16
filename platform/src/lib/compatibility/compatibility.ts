@@ -15,6 +15,7 @@ export type GameLike = {
 
 /** Editions inherit the parent game; they may optionally override platforms. */
 export type EditionLike = {
+  slug?: string;
   platforms?: string[];
 };
 
