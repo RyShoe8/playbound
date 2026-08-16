@@ -310,6 +310,39 @@ export interface Edition {
   updatedAt?: string;
 }
 
+/** True when the player has a real choice between multiple editions. */
+export function hasChoosableEditions(editions: Edition[]): boolean {
+  return Array.isArray(editions) && editions.length > 1;
+}
+
+/**
+ * The identity every edition-scoped analytics event carries.
+ *
+ * Built in one place so each call site cannot drift, and so a virtual edition
+ * still reports a stable id (`virtual:<gameSlug>`) rather than dropping out of
+ * the funnel for games that predate editions.
+ */
+export function editionTelemetryProps(
+  game: { slug: string; title: string },
+  edition: Edition
+): {
+  gameSlug: string;
+  gameTitle: string;
+  editionId: string;
+  editionSlug: string;
+  editionName: string;
+  editionType: string;
+} {
+  return {
+    gameSlug: game.slug,
+    gameTitle: game.title,
+    editionId: edition.id,
+    editionSlug: edition.slug,
+    editionName: edition.name,
+    editionType: edition.type,
+  };
+}
+
 /** Editions visible to the public, in display order. */
 export function isPubliclyVisible(edition: Edition): boolean {
   return edition.visibility === "public";

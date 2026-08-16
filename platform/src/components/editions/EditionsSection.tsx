@@ -1,8 +1,7 @@
 "use client";
 
 import type { Game } from "@/lib/data/types";
-import type { Edition } from "@/lib/editionTypes";
-import { hasChoosableEditions } from "@/lib/editions";
+import { hasChoosableEditions, type Edition } from "@/lib/editionTypes";
 import { EditionCard } from "./EditionCard";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import {

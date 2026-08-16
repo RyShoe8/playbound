@@ -2,9 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MessagesSquare } from "lucide-react";
 import type { Game } from "@/lib/data/types";
-import type { Edition } from "@/lib/editionTypes";
+import { editionTelemetryProps, type Edition } from "@/lib/editionTypes";
 import { resolveInstallAction } from "@/lib/editionInstall";
-import { editionTelemetryProps } from "@/lib/editions";
 import { GameArt } from "@/components/GameArt";
 import { EditionInstallButton } from "./EditionInstallButton";
 import {

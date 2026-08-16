@@ -18,6 +18,7 @@ import {
 } from "@/lib/editionTypes";
 
 export type { Edition };
+export { editionTelemetryProps, hasChoosableEditions } from "@/lib/editionTypes";
 
 type LeanEdition = Record<string, unknown>;
 
@@ -360,11 +361,6 @@ export async function listPublicEditionsForGame(game: Game): Promise<Edition[]> 
   return publicOnly.length > 0 ? publicOnly : all.slice(0, 1);
 }
 
-/** True when the player has a real choice between multiple editions. */
-export function hasChoosableEditions(editions: Edition[]): boolean {
-  return Array.isArray(editions) && editions.length > 1;
-}
-
 /** The edition to treat as "the" way to play, for install buttons and the launcher. */
 export async function defaultEditionForGame(game: Game): Promise<Edition> {
   const editions = await listEditionsForGame(game);
@@ -501,34 +497,6 @@ export async function searchEditions(query: string, limit = 20): Promise<Edition
     console.error("[editions] search failed:", err);
     return [];
   }
-}
-
-/**
- * The identity every edition-scoped analytics event carries.
- *
- * Built in one place so each call site cannot drift, and so a virtual edition
- * still reports a stable id (`virtual:<gameSlug>`) rather than dropping out of
- * the funnel for games that predate editions.
- */
-export function editionTelemetryProps(
-  game: Pick<Game, "slug" | "title">,
-  edition: Edition
-): {
-  gameSlug: string;
-  gameTitle: string;
-  editionId: string;
-  editionSlug: string;
-  editionName: string;
-  editionType: string;
-} {
-  return {
-    gameSlug: game.slug,
-    gameTitle: game.title,
-    editionId: edition.id,
-    editionSlug: edition.slug,
-    editionName: edition.name,
-    editionType: edition.type,
-  };
 }
 
 /**
