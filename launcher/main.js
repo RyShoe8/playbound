@@ -6200,6 +6200,32 @@ ipcMain.handle("create-event", async (_event, payload) => {
     return { ok: false, error: err?.message || "Network error while creating event" };
   }
 });
+ipcMain.handle("upload-event-cover", async (_event, fileBuffer, fileName, mimeType) => {
+  try {
+    const boundary = "----WebKitFormBoundary" + Math.random().toString(36).substring(2);
+    const buf = Buffer.from(fileBuffer);
+    const head = Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName || "cover.png"}"\r\nContent-Type: ${mimeType || "image/png"}\r\n\r\n`
+    );
+    const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+    const body = Buffer.concat([head, buf, tail]);
+
+    const res = await fetch(`${getApiBase()}/api/events/upload`, {
+      method: "POST",
+      headers: launcherApiHeaders({
+        "content-type": `multipart/form-data; boundary=${boundary}`,
+      }),
+      body,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Upload failed (${res.status})` };
+    }
+    return { ok: true, url: data.url };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Upload failed" };
+  }
+});
 ipcMain.handle("rsvp-event", async (_event, eventId, status) => {
   try {
     const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/rsvp`, {

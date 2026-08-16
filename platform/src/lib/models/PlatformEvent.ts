@@ -21,6 +21,7 @@ const PlatformEventSchema = new Schema(
       },
     },
     gameSlug: { type: String, default: null, index: true },
+    coverImage: { type: String, default: null, maxlength: 1000 },
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
     recommendedModSlugs: { type: [String], default: [] },

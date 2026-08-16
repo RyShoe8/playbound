@@ -114,6 +114,8 @@ contextBridge.exposeInMainWorld("playbound", {
   getEvents: () => ipcRenderer.invoke("get-events"),
   getEventDetail: (id) => ipcRenderer.invoke("get-event-detail", id),
   createEvent: (data) => ipcRenderer.invoke("create-event", data),
+  uploadEventCover: (fileBuffer, fileName, mimeType) =>
+    ipcRenderer.invoke("upload-event-cover", fileBuffer, fileName, mimeType),
   rsvpEvent: (id, status) => ipcRenderer.invoke("rsvp-event", id, status),
   cancelEvent: (id) => ipcRenderer.invoke("cancel-event", id),
   deleteEvent: (id) => ipcRenderer.invoke("delete-event", id),
