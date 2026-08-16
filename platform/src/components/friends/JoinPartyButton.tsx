@@ -30,7 +30,7 @@ export function JoinPartyButton({
   if (status !== "authenticated") {
     return (
       <Link
-        href={`/login?callbackUrl=${encodeURIComponent("/parties")}`}
+        href={`/login?callbackUrl=${encodeURIComponent("/events")}`}
         className={className ?? "rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90"}
       >
         Sign in to join

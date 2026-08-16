@@ -5,24 +5,27 @@ import { Plus } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { getGame } from "@/lib/catalog";
 import { listPublicEvents } from "@/lib/events/service";
+import { listOpenPublicParties } from "@/lib/playTogether/party";
 import { EmptyHint } from "@/components/ui/bits";
 import { EventCard } from "@/components/events/EventCard";
+import { OpenPartiesSection } from "@/components/events/OpenPartiesSection";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Game Nights & Tournaments",
+  title: "Events, Game Nights & Parties",
   description:
-    "Find PlayBound Game Nights and tournaments — see who's going, join Discord, and play together.",
+    "Find PlayBound Game Nights, tournaments, and open parties — see who's going, join Discord, and play together.",
   path: "/events",
 });
 
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
-  const [events, session, past] = await Promise.all([
+  const [events, session, past, openParties] = await Promise.all([
     listPublicEvents({ limit: 80 }),
     getServerSession(authOptions),
     listPublicEvents({ includePast: true, limit: 20 }),
+    listOpenPublicParties(100),
   ]);
   const isAdmin = session?.user?.role === "admin";
 
@@ -33,6 +36,7 @@ export default async function EventsPage() {
   });
   const gameNights = events.filter((e) => e.eventType === "game_night");
   const tournaments = events.filter((e) => e.eventType === "tournament");
+  const scheduledParties = events.filter((e) => e.eventType === "party");
   const featured = events.filter((e) => e.featured);
   const pastOnly = past.filter(
     (e) => e.status === "completed" || new Date(e.endsAt).getTime() < now
@@ -78,8 +82,8 @@ export default async function EventsPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Events</h1>
           <p className="mt-1 max-w-xl text-muted-foreground">
-            Game Nights and tournaments so you can actually play together — not a
-            calendar of lectures.
+            Game Nights, tournaments, and open parties so you can actually play
+            together — not a calendar of lectures.
           </p>
         </div>
         {isAdmin && (
@@ -92,14 +96,17 @@ export default async function EventsPage() {
         )}
       </div>
 
+      <OpenPartiesSection parties={openParties} />
+
       {events.length === 0 ? (
-        <EmptyHint>No upcoming events yet. Check back soon.</EmptyHint>
+        <EmptyHint>No upcoming scheduled events yet. Check back soon.</EmptyHint>
       ) : (
         <>
           <Section title="Featured" items={featured} />
           <Section title="Happening soon" items={soon} />
           <Section title="Game Nights" items={gameNights} />
           <Section title="Tournaments" items={tournaments} />
+          <Section title="Parties" items={scheduledParties} />
           <Section title="Upcoming" items={events} />
           <Section title="Past events" items={pastOnly.slice(0, 6)} />
         </>

@@ -1,16 +1,56 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Users, Crown, LogOut, Check, X, Phone, Play } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
 import type { PartyPayload } from "@/lib/playTogether/types";
-import { PARTY_VISIBILITIES } from "@/lib/playTogether/types";
+import {
+  PARTY_NAME_MAX,
+  PARTY_VISIBILITIES,
+  PARTY_VISIBILITY_LABELS,
+  partyDisplayName,
+} from "@/lib/playTogether/types";
 import { launcherJoinUrl } from "@/lib/launcher";
+import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-export function PartyView({ party }: { party: PartyPayload }) {
+export function PartyView({
+  party,
+  games = [],
+}: {
+  party: PartyPayload;
+  games?: { slug: string; title: string }[];
+}) {
   const { data: session } = useSession();
   const userId = session?.user?.id;
-  const { leaveParty, removeMember, transferLeadership, setVisibility, setReady, launchParty, endParty, provisionDiscord } = usePartyStore();
+  const {
+    leaveParty,
+    removeMember,
+    transferLeadership,
+    setVisibility,
+    setReady,
+    launchParty,
+    endParty,
+    provisionDiscord,
+    setGame,
+    setName,
+  } = usePartyStore();
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
+    open: false,
+    inviteUrl: null,
+  });
+  const linkPrompted = useRef(false);
+
+  useEffect(() => {
+    const needsLink = Boolean((party as PartyPayload & { needsDiscordLink?: boolean }).needsDiscordLink);
+    if (needsLink && !linkPrompted.current) {
+      linkPrompted.current = true;
+      setDiscordPrompt({ open: true, inviteUrl: party.discord.inviteUrl });
+    }
+  }, [party]);
 
   if (!userId) return null;
 
@@ -18,7 +58,8 @@ export function PartyView({ party }: { party: PartyPayload }) {
   const me = party.members.find((m) => m.userId === userId);
   const isReady = me?.ready ?? false;
   const allReady = party.members.length >= 2 && party.members.every((m) => m.ready);
-  const canLaunch = isLeader && allReady && party.status === "ready";
+  const hasGame = Boolean(party.gameSlug);
+  const canLaunch = isLeader && hasGame && allReady && party.status === "ready";
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
   const joinUrl = hostedReady
@@ -34,9 +75,49 @@ export function PartyView({ party }: { party: PartyPayload }) {
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
       <div className="bg-muted p-4 flex items-center justify-between border-b border-border">
-        <div>
-          <h3 className="text-lg font-bold">{party.gameTitle || party.gameSlug} Party</h3>
-          <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+        <div className="min-w-0 flex-1 space-y-2">
+          {isLeader && party.status !== "ended" ? (
+            <input
+              type="text"
+              defaultValue={party.name || ""}
+              key={party.name || "unnamed"}
+              maxLength={PARTY_NAME_MAX}
+              placeholder={partyDisplayName(party)}
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                if (next !== (party.name || "")) void setName(party.id, next || null);
+              }}
+              className="h-10 w-full max-w-md rounded-lg border border-border bg-secondary/50 px-3 text-sm font-bold shadow-sm backdrop-blur"
+            />
+          ) : (
+            <h3 className="text-lg font-bold">{partyDisplayName(party)}</h3>
+          )}
+          {isLeader && party.status !== "ended" && party.status !== "launching" && party.status !== "playing" ? (
+            <label className="block max-w-md">
+              <span className="sr-only">Party game</span>
+              <PremiumSelect
+                value={party.gameSlug}
+                onChange={(e) => {
+                  if (e.target.value) void setGame(party.id, e.target.value);
+                }}
+              >
+                <option value="">Select a game</option>
+                {games.map((g) => (
+                  <option key={g.slug} value={g.slug}>
+                    {g.title}
+                  </option>
+                ))}
+                {party.gameSlug && !games.some((g) => g.slug === party.gameSlug) ? (
+                  <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
+                ) : null}
+              </PremiumSelect>
+            </label>
+          ) : hasGame ? (
+            <p className="text-sm font-semibold text-muted-foreground">
+              {party.gameTitle || party.gameSlug}
+            </p>
+          ) : null}
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
             <span className="capitalize">{party.status.replace("_", " ")}</span>
             <span>·</span>
             <span className="flex items-center gap-1">
@@ -46,16 +127,17 @@ export function PartyView({ party }: { party: PartyPayload }) {
         </div>
         
         {isLeader && party.status !== "ended" && (
-          <div className="flex items-center gap-2">
-            <select
+          <div className="w-44 shrink-0">
+            <PremiumSelect
               value={party.visibility}
-              onChange={(e) => void setVisibility(party.id, e.target.value as any)}
-              className="text-xs rounded-md border-border bg-background px-2 py-1"
+              onChange={(e) => void setVisibility(party.id, e.target.value as PartyPayload["visibility"])}
             >
-              {PARTY_VISIBILITIES.filter(v => v !== "event").map((v) => (
-                <option key={v} value={v}>{v.replace("_", " ")}</option>
+              {PARTY_VISIBILITIES.filter((v) => v !== "event").map((v) => (
+                <option key={v} value={v}>
+                  {PARTY_VISIBILITY_LABELS[v]}
+                </option>
               ))}
-            </select>
+            </PremiumSelect>
           </div>
         )}
       </div>
@@ -102,12 +184,14 @@ export function PartyView({ party }: { party: PartyPayload }) {
         <div className="flex gap-3">
           {party.status !== "ended" && party.status !== "launching" && party.status !== "playing" && (
             <button
+              disabled={!hasGame}
               onClick={() => void setReady(party.id, !isReady)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors disabled:opacity-50 ${
                 isReady 
                   ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
                   : 'bg-green-600 text-white hover:bg-green-700'
               }`}
+              title={hasGame ? undefined : "Pick a game first"}
             >
               {isReady ? <X className="size-4" /> : <Check className="size-4" />}
               {isReady ? "Cancel Ready" : "Ready Up"}
@@ -159,21 +243,39 @@ export function PartyView({ party }: { party: PartyPayload }) {
         </div>
 
         <div className="flex items-center gap-3">
-          {party.discord.inviteUrl ? (
+          {party.discord.inviteUrl || party.discord.voiceChannelId ? (
             <a 
-              href={party.discord.inviteUrl} 
+              href={party.discord.inviteUrl || "https://discord.com/app"} 
               target="_blank" 
               rel="noreferrer"
               className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors"
             >
-              <Phone className="size-3.5" /> Voice
+              <Phone className="size-3.5" /> Voice enabled
             </a>
           ) : isLeader && (
             <button
-              onClick={() => void provisionDiscord(party.id)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border hover:bg-secondary text-sm font-medium transition-colors"
+              type="button"
+              disabled={voiceBusy}
+              onClick={() => {
+                void (async () => {
+                  setVoiceBusy(true);
+                  setVoiceError(null);
+                  const result = await provisionDiscord(party.id);
+                  if (result.error && !result.inviteUrl) {
+                    setVoiceError(result.error);
+                    setVoiceBusy(false);
+                    return;
+                  }
+                  const voice = followPartyVoice(result);
+                  if (voice.needsDiscordLink) {
+                    setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
+                  }
+                  setVoiceBusy(false);
+                })();
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border hover:bg-secondary text-sm font-medium transition-colors disabled:opacity-50"
             >
-              <Phone className="size-3.5" /> Enable Voice
+              <Phone className="size-3.5" /> {voiceBusy ? "Enabling…" : "Enable Voice"}
             </button>
           )}
 
@@ -188,7 +290,15 @@ export function PartyView({ party }: { party: PartyPayload }) {
             {isLeader && party.members.length === 1 ? "End Party" : "Leave"}
           </button>
         </div>
+        {voiceError ? (
+          <p className="w-full text-xs text-destructive">{voiceError}</p>
+        ) : null}
       </div>
+      <DiscordLinkPrompt
+        open={discordPrompt.open}
+        inviteUrl={discordPrompt.inviteUrl}
+        onClose={() => setDiscordPrompt({ open: false, inviteUrl: null })}
+      />
     </div>
   );
 }

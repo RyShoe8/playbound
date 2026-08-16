@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Users, Crown } from "lucide-react";
-import type { PartyPayload } from "@/lib/playTogether/types";
+import { partyDisplayName, type PartyPayload } from "@/lib/playTogether/types";
 
 export function PartyCard({ party }: { party: PartyPayload }) {
   const isForming = party.status === "forming";
@@ -10,13 +10,13 @@ export function PartyCard({ party }: { party: PartyPayload }) {
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30">
       <div className="flex items-start justify-between">
         <div>
-          <h4 className="font-bold">{party.gameTitle || party.gameSlug}</h4>
+          <h4 className="font-bold">{partyDisplayName(party)}</h4>
           {party.hosted?.status === "ready" && (
             <p className="text-xs text-primary font-semibold mt-0.5">PlayBound server ready</p>
           )}
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Crown className="size-3.5" />
-            {party.leaderUsername}&apos;s party
+            {party.gameTitle || party.gameSlug || party.leaderUsername}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold">

@@ -35,10 +35,10 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice } = body;
+    const { name, gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice } = body;
 
-    if (!gameSlug || typeof gameSlug !== "string") {
-      return NextResponse.json({ error: "gameSlug is required" }, { status: 400 });
+    if (gameSlug != null && typeof gameSlug !== "string") {
+      return NextResponse.json({ error: "Invalid gameSlug" }, { status: 400 });
     }
     if (
       visibility &&
@@ -49,7 +49,8 @@ export async function POST(req: Request) {
 
     const result = await createParty({
       userId,
-      gameSlug,
+      name: typeof name === "string" ? name : null,
+      gameSlug: gameSlug || null,
       editionSlug: editionSlug || null,
       modSlugs: Array.isArray(modSlugs) ? modSlugs : [],
       visibility: (visibility as PartyVisibility) || "friends",

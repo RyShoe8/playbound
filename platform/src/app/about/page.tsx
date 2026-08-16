@@ -191,8 +191,8 @@ export default async function AboutPage() {
             <h2 className="text-xl font-bold text-foreground">The PlayBound Standard</h2>
             <p className="text-sm text-muted-foreground">
               Every game is tested and played before it is added, and must clear our 4-point
-              evaluation: genuinely free, finished enough to enjoy, plays reliably, and high quality
-              or showing good potential.
+              evaluation: genuinely free, ready to play, curated through thorough testing, and high
+              quality or showing strong potential.
             </p>
           </div>
           <Link

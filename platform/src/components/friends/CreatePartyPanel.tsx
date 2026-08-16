@@ -3,32 +3,34 @@
 import { useState } from "react";
 import { usePartyStore } from "@/stores/partyStore";
 import { useFriendsStore } from "@/stores/friendsStore";
-import type { PartyVisibility } from "@/lib/playTogether/types";
+import {
+  PARTY_NAME_MAX,
+  PARTY_VISIBILITY_LABELS,
+  type PartyVisibility,
+} from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
-import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
+import { followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { isHostableGame } from "@/lib/gameHost/catalog";
+import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
-const VISIBILITY_OPTIONS: { value: PartyVisibility; label: string; hint: string }[] = [
-  { value: "public", label: "Public", hint: "Anyone signed in can join. Listed on Parties." },
-  { value: "friends", label: "Friends only", hint: "Only your friends can join." },
-  { value: "password", label: "Password", hint: "Anyone with the password can join. Not listed publicly." },
-  { value: "invite_only", label: "Invite only", hint: "People you invite can join." },
+const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: string }[] = [
+  { value: "public", hint: "Anyone signed in can join. Listed on Events." },
+  { value: "friends", hint: "Only your friends can join." },
+  { value: "password", hint: "Anyone with the password can join. Not listed publicly." },
+  { value: "invite_only", hint: "People you invite can join." },
 ];
 
-export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; onCreated?: () => void }) {
+export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; onCreated?: () => void }) {
   const { createParty, inviteFriends } = usePartyStore();
   const { friends } = useFriendsStore();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [visibility, setVisibility] = useState<PartyVisibility>("friends");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [wantVoice, setWantVoice] = useState(true);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
-  const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
-    open: false,
-    inviteUrl: null,
-  });
 
   async function handleCreate() {
     if (visibility === "password" && password.trim().length < 4) {
@@ -37,10 +39,15 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
     }
     setBusy(true);
     setError(null);
+    const voiceWindow =
+      wantVoice && typeof window !== "undefined"
+        ? window.open("about:blank", "playbound-party-voice")
+        : null;
     try {
-      telemetry.track("party_create_clicked", { gameSlug, visibility, wantVoice });
+      telemetry.track("party_create_clicked", { gameSlug: gameSlug || "", visibility, wantVoice });
       const party = await createParty({
-        gameSlug,
+        name: name.trim() || null,
+        gameSlug: gameSlug || null,
         visibility,
         maxSize: 8,
         password: visibility === "password" ? password.trim() : null,
@@ -51,13 +58,10 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
         if (selectedFriends.size > 0) {
           await inviteFriends(party.id, [...selectedFriends]);
         }
-        const voice = followPartyVoice(party);
-        if (voice.needsDiscordLink) {
-          setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
-        } else {
-          onCreated?.();
-        }
+        followPartyVoice(party, voiceWindow);
+        onCreated?.();
       } else {
+        if (voiceWindow && !voiceWindow.closed) voiceWindow.close();
         setError("Failed to create party. You might already have one active.");
       }
     } finally {
@@ -70,27 +74,41 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
       <div>
         <h4 className="font-bold">Create a Party</h4>
         <p className="text-sm text-muted-foreground">
-          {isHostableGame(gameSlug)
+          {gameSlug && isHostableGame(gameSlug)
             ? "PlayBound will start a public server for this game so friends can join without port forwarding."
-            : "Host a lobby, coordinate mods, and launch together."}
+            : "Host a lobby, invite friends, then pick a game in the party window."}
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Party name <span className="font-normal normal-case">(optional)</span>
+        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={PARTY_NAME_MAX}
+          placeholder="Friday raid, OpenRA night…"
+          className="h-10 w-full rounded-lg border border-border bg-secondary/50 px-3 text-sm shadow-sm backdrop-blur"
+          autoComplete="off"
+        />
       </div>
 
       <div className="space-y-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Who can join
         </label>
-        <select
+        <PremiumSelect
           value={visibility}
           onChange={(e) => setVisibility(e.target.value as PartyVisibility)}
-          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm"
         >
           {VISIBILITY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
-              {opt.label}
+              {PARTY_VISIBILITY_LABELS[opt.value]}
             </option>
           ))}
-        </select>
+        </PremiumSelect>
         <p className="text-xs text-muted-foreground">
           {VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.hint}
         </p>
@@ -167,14 +185,6 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug: string; on
       >
         {busy ? "Creating…" : "Create Party"}
       </button>
-      <DiscordLinkPrompt
-        open={discordPrompt.open}
-        inviteUrl={discordPrompt.inviteUrl}
-        onClose={() => {
-          setDiscordPrompt({ open: false, inviteUrl: null });
-          onCreated?.();
-        }}
-      />
     </div>
   );
 }

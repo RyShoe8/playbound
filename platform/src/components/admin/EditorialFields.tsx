@@ -283,7 +283,7 @@ export function QualityBarEditor({
         <p className="text-[11px] text-muted-foreground">
           This is the line that gets quoted. Write it so it stands alone with no
           surrounding context, e.g. &ldquo;X clears the PlayBound Bar: genuinely free,
-          plays reliably, and high quality or showing good potential.&rdquo;
+          ready to play, curated, and high quality or showing strong potential.&rdquo;
         </p>
         <textarea
           rows={3}

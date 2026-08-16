@@ -23,6 +23,7 @@ import {
   type PartyVisibility,
   type PartyPayload,
   type PartyMemberPayload,
+  normalizePartyName,
 } from "@/lib/playTogether/types";
 import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
 import {
@@ -117,6 +118,7 @@ function serializeParty(
     id: String(doc._id),
     leaderId,
     leaderUsername: nameById.get(leaderId) || "Player",
+    name: normalizePartyName(doc.name),
     members: members.map(
       (m): PartyMemberPayload => ({
         userId: String(m.userId),
@@ -126,7 +128,7 @@ function serializeParty(
         joinedAt: (m.joinedAt as Date)?.toISOString() || new Date().toISOString(),
       })
     ),
-    gameSlug: String(doc.gameSlug),
+    gameSlug: String(doc.gameSlug || ""),
     gameTitle,
     editionSlug: (doc.editionSlug as string) || null,
     modSlugs: (doc.modSlugs as string[]) || [],
@@ -141,7 +143,7 @@ function serializeParty(
       inviteUrl: (discord.inviteUrl as string) || null,
     },
     hosted: hostedPayloadFromDoc(
-      String(doc.gameSlug),
+      String(doc.gameSlug || ""),
       (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[1]) || null
     ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
@@ -153,7 +155,8 @@ function serializeParty(
 
 export async function createParty(opts: {
   userId: string;
-  gameSlug: string;
+  name?: string | null;
+  gameSlug?: string | null;
   editionSlug?: string | null;
   modSlugs?: string[];
   visibility?: PartyVisibility;
@@ -167,8 +170,9 @@ export async function createParty(opts: {
 > {
   await dbConnect();
 
-  const game = await getGame(opts.gameSlug, { includeTesting: true });
-  if (!game) return { error: "Game not found", status: 404 };
+  const gameSlug = typeof opts.gameSlug === "string" ? opts.gameSlug.trim() : "";
+  const game = gameSlug ? await getGame(gameSlug, { includeTesting: true }) : null;
+  if (gameSlug && !game) return { error: "Game not found", status: 404 };
 
   // One active party per leader.
   const existing = await Party.findOne({
@@ -203,7 +207,8 @@ export async function createParty(opts: {
         joinedAt: now,
       },
     ],
-    gameSlug: opts.gameSlug,
+    name: normalizePartyName(opts.name),
+    gameSlug,
     editionSlug: opts.editionSlug || null,
     modSlugs: opts.modSlugs || [],
     status: "forming",
@@ -216,15 +221,18 @@ export async function createParty(opts: {
     lastActivity: now,
   });
 
-  await setPresenceParty(opts.userId, { partyId: String(doc._id), gameSlug: opts.gameSlug });
-  await provisionPartyHost(doc);
+  await setPresenceParty(opts.userId, {
+    partyId: String(doc._id),
+    gameSlug: gameSlug || null,
+  });
+  if (gameSlug) await provisionPartyHost(doc);
   const voice = wantVoice ? await syncPartyVoiceForMember(doc, opts.userId) : SKIP_VOICE;
   const nameById = await resolveUsernames([opts.userId]);
   return {
     party: serializeParty(
       doc.toObject ? doc.toObject() : doc,
       nameById,
-      game.title
+      game?.title || null
     ),
     status: 201,
     ...voice,
@@ -460,6 +468,79 @@ export async function transferLeadership(
   };
 }
 
+/* ─── game (picked after create) ─────────────────────────────────────────── */
+
+export async function setPartyGame(
+  partyId: string,
+  leaderId: string,
+  gameSlug: string
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const slug = gameSlug.trim();
+  const game = slug ? await getGame(slug, { includeTesting: true }) : null;
+  if (!game) return { error: "Game not found", status: 404 };
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can change the game", status: 403 };
+  }
+  if (doc.status === "ended" || doc.status === "launching" || doc.status === "playing") {
+    return { error: "Cannot change the game now", status: 400 };
+  }
+
+  doc.gameSlug = slug;
+  doc.lastActivity = new Date();
+  await doc.save();
+  await provisionPartyHost(doc);
+
+  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  await Promise.all(
+    memberIds.map((userId) =>
+      setPresenceParty(userId, { partyId: String(doc._id), gameSlug: slug })
+    )
+  );
+  const nameById = await resolveUsernames(memberIds);
+
+  return {
+    party: serializeParty(doc.toObject(), nameById, game.title),
+    status: 200,
+  };
+}
+
+export async function setPartyName(
+  partyId: string,
+  leaderId: string,
+  name: string | null
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can rename the party", status: 403 };
+  }
+  if (doc.status === "ended") {
+    return { error: "Party has ended", status: 400 };
+  }
+
+  doc.name = normalizePartyName(name);
+  doc.lastActivity = new Date();
+  await doc.save();
+
+  const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const [nameById, game] = await Promise.all([
+    resolveUsernames(memberIds),
+    doc.gameSlug ? getGame(doc.gameSlug, { includeTesting: true }) : null,
+  ]);
+
+  return {
+    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    status: 200,
+  };
+}
+
 /* ─── visibility (4F) ────────────────────────────────────────────────────── */
 
 export async function setVisibility(
@@ -506,6 +587,9 @@ export async function setReady(
 
   const doc = await Party.findById(partyId);
   if (!doc) return { error: "Party not found", status: 404 };
+  if (!doc.gameSlug) {
+    return { error: "Pick a game before ready-up", status: 400 };
+  }
   if (doc.status === "ended" || doc.status === "launching" || doc.status === "playing") {
     return { error: "Cannot change ready state now", status: 400 };
   }
@@ -546,6 +630,9 @@ export async function launchParty(
 
   const doc = await Party.findById(partyId);
   if (!doc) return { error: "Party not found", status: 404 };
+  if (!doc.gameSlug) {
+    return { error: "Pick a game before launching", status: 400 };
+  }
 
   const rp = toRuleParty(doc.toObject());
   const check = canLaunch(rp, leaderId);
@@ -646,7 +733,7 @@ export async function listPartiesForUser(
     for (const m of d.members as Array<{ userId: unknown }>) {
       allMemberIds.add(String(m.userId));
     }
-    slugs.add(String(d.gameSlug));
+    if (d.gameSlug) slugs.add(String(d.gameSlug));
   }
 
   const [nameById, games] = await Promise.all([
@@ -704,7 +791,7 @@ export async function listDiscoverableParties(
     for (const m of d.members as Array<{ userId: unknown }>) {
       allMemberIds.add(String(m.userId));
     }
-    slugs.add(String(d.gameSlug));
+    if (d.gameSlug) slugs.add(String(d.gameSlug));
   }
 
   const [nameById, games] = await Promise.all([
@@ -736,7 +823,7 @@ async function serializePartyDocs(
     for (const m of (d.members as Array<{ userId: unknown }>) || []) {
       allMemberIds.add(String(m.userId));
     }
-    slugs.add(String(d.gameSlug));
+    if (d.gameSlug) slugs.add(String(d.gameSlug));
   }
   const [nameById, games] = await Promise.all([
     resolveUsernames([...allMemberIds]),
@@ -760,6 +847,7 @@ export async function listOpenPublicParties(limit = 50): Promise<PartyPayload[]>
     const docs = await Party.find({
       visibility: "public",
       status: { $in: [...OPEN_PARTY_STATUSES] },
+      gameSlug: { $nin: [null, ""] },
     })
       .sort({ lastActivity: -1 })
       .limit(Math.min(Math.max(limit, 1), 200) * 2)
@@ -783,6 +871,7 @@ export async function countOpenPublicParties(): Promise<number> {
     const docs = await Party.find({
       visibility: "public",
       status: { $in: [...OPEN_PARTY_STATUSES] },
+      gameSlug: { $nin: [null, ""] },
     })
       .select("members maxSize")
       .lean();

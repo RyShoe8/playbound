@@ -21,7 +21,8 @@ interface PartyState {
 
   fetchParties: () => Promise<void>;
   createParty: (opts: {
-    gameSlug: string;
+    name?: string | null;
+    gameSlug?: string | null;
     editionSlug?: string | null;
     modSlugs?: string[];
     visibility?: PartyVisibility;
@@ -42,7 +43,13 @@ interface PartyState {
     partyId: string,
     friendIds: string[]
   ) => Promise<{ results: { recipientId: string; status: number }[] }>;
-  provisionDiscord: (partyId: string) => Promise<{ inviteUrl: string | null }>;
+  provisionDiscord: (partyId: string) => Promise<{
+    inviteUrl: string | null;
+    needsDiscordLink?: boolean;
+    error?: string | null;
+  }>;
+  setGame: (partyId: string, gameSlug: string) => Promise<void>;
+  setName: (partyId: string, name: string | null) => Promise<void>;
   removeMember: (partyId: string, userId: string) => Promise<void>;
   transferLeadership: (partyId: string, userId: string) => Promise<void>;
   setVisibility: (partyId: string, visibility: PartyVisibility) => Promise<void>;
@@ -88,10 +95,16 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         set({ error: data.error || "Failed to create party", loading: false });
         return null;
       }
+      const inviteUrl = data.inviteUrl || data.party?.discord?.inviteUrl || null;
       const party = {
         ...(data.party as PartyPayload),
+        voiceEnabled: Boolean(data.party?.voiceEnabled) || Boolean(inviteUrl),
+        discord: {
+          voiceChannelId: data.party?.discord?.voiceChannelId || null,
+          inviteUrl,
+        },
         needsDiscordLink: Boolean(data.needsDiscordLink),
-        inviteUrl: data.inviteUrl || data.party?.discord?.inviteUrl || null,
+        inviteUrl,
       };
       set({ activeParty: party, loading: false });
       return party;
@@ -114,10 +127,16 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         set({ error: data.error || "Failed to join party", loading: false });
         return null;
       }
+      const inviteUrl = data.inviteUrl || data.party?.discord?.inviteUrl || null;
       const party = {
         ...(data.party as PartyPayload),
+        voiceEnabled: Boolean(data.party?.voiceEnabled) || Boolean(inviteUrl),
+        discord: {
+          voiceChannelId: data.party?.discord?.voiceChannelId || null,
+          inviteUrl,
+        },
         needsDiscordLink: Boolean(data.needsDiscordLink),
-        inviteUrl: data.inviteUrl || data.party?.discord?.inviteUrl || null,
+        inviteUrl,
       };
       set({ activeParty: party, loading: false });
       return party;
@@ -197,13 +216,47 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       const data = await res.json();
       if (res.ok && data.party?.discord) {
-        // Refresh party state with Discord info.
         await get().fetchParties();
-        return { inviteUrl: data.party.discord.inviteUrl || null };
+        return {
+          inviteUrl: data.inviteUrl || data.party.discord.inviteUrl || null,
+          needsDiscordLink: Boolean(data.needsDiscordLink),
+        };
       }
-      return { inviteUrl: null };
+      return { inviteUrl: null, error: data.error || "Could not enable voice" };
     } catch {
-      return { inviteUrl: null };
+      return { inviteUrl: null, error: "Could not enable voice" };
+    }
+  },
+
+  setGame: async (partyId, gameSlug) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ gameSlug }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+      }
+    } catch (err) {
+      console.error("Failed to set party game", err);
+    }
+  },
+
+  setName: async (partyId, name) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+      }
+    } catch (err) {
+      console.error("Failed to set party name", err);
     }
   },
 

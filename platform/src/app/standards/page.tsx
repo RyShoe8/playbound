@@ -9,7 +9,7 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata = pageMetadata({
   title: "The PlayBound Bar — Our Standard for Free Games",
   description:
-    "Four criteria every game must clear to make the PlayBound catalog: genuinely free, finished enough to enjoy, plays reliably, and high quality or showing good potential. Every game is tested and played before it is added.",
+    "Four criteria every game must clear to make the PlayBound catalog: genuinely free, ready to play, curated through thorough testing, and high quality or showing strong potential. Every game is tested and played before it is added.",
   path: "/standards",
 });
 
@@ -24,14 +24,14 @@ const FAQ = [
   },
   {
     q: "Do you actually play the games before listing them?",
-    a: "Yes. Every game is tested and played before it is added to the platform. Criterion three — plays reliably — means we launched it ourselves, not that we copied a store page. If we cannot get a real session going, it does not ship.",
+    a: "Yes. Every game is tested and played thoroughly before it is added to the platform. Criterion three — curated — means we installed it, launched it, and played it ourselves, not that we copied a store page. If we cannot get a real session going, it does not ship.",
   },
   {
     q: "How often is the standard re-checked?",
     a: "Each game carries a last-verified date shown on its page. If a game stops meeting the bar, that is recorded rather than hidden.",
   },
   {
-    q: "What does 'high quality or shows good potential' mean?",
+    q: "What does 'high quality or strong potential' mean?",
     a: "There are tens of thousands of free games. Most are not worth your evening. Criterion four is catalog selectivity: the game is already excellent, or it is clearly becoming something worth your time. Volume is not a goal, and we do not list games we have not played.",
   },
   {
@@ -49,7 +49,7 @@ export default async function StandardsPage() {
   const verified = games.filter((g) => g.qualityBar).length;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="px-4 py-12 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
           {
@@ -74,19 +74,19 @@ export default async function StandardsPage() {
       <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
         The PlayBound Bar
       </h1>
-      <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+      <p className="mt-4 max-w-3xl text-lg leading-relaxed text-muted-foreground">
         Free games are not scarce. There are tens of thousands of them, and most are
         not worth your evening. What is scarce is a trustworthy answer to which ones
         are actually good.
       </p>
-      <p className="mt-4 leading-relaxed text-muted-foreground">
+      <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">
         So {SITE_NAME} is deliberately small. Every game is tested and played
         before it is added. A title earns a place here only if it clears all four
         criteria below — and we publish them so you can check our judgement
         against a stated standard rather than taking it on trust.
       </p>
 
-      <ol className="mt-10 space-y-5">
+      <ol className="mt-10 grid gap-5 sm:grid-cols-2">
         {QUALITY_BAR.map((criterion, i) => (
           <li
             key={criterion.key}

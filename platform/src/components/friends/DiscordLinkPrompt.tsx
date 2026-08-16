@@ -53,17 +53,23 @@ export function DiscordLinkPrompt({
   );
 }
 
-export function followPartyVoice(result: {
-  needsDiscordLink?: boolean;
-  inviteUrl?: string | null;
-  discord?: { inviteUrl?: string | null };
-} | null): { needsDiscordLink: boolean; inviteUrl: string | null } {
+export function followPartyVoice(
+  result: {
+    needsDiscordLink?: boolean;
+    inviteUrl?: string | null;
+    discord?: { inviteUrl?: string | null };
+  } | null,
+  targetWindow?: Window | null
+): { needsDiscordLink: boolean; inviteUrl: string | null } {
   const inviteUrl = result?.inviteUrl || result?.discord?.inviteUrl || null;
-  if (result?.needsDiscordLink) {
-    return { needsDiscordLink: true, inviteUrl };
+  if (inviteUrl) {
+    if (targetWindow && !targetWindow.closed) {
+      targetWindow.location.href = inviteUrl;
+    } else if (typeof window !== "undefined") {
+      window.open(inviteUrl, "_blank", "noopener,noreferrer");
+    }
+  } else if (targetWindow && !targetWindow.closed) {
+    targetWindow.close();
   }
-  if (inviteUrl && typeof window !== "undefined") {
-    window.open(inviteUrl, "_blank", "noopener,noreferrer");
-  }
-  return { needsDiscordLink: false, inviteUrl };
+  return { needsDiscordLink: Boolean(result?.needsDiscordLink), inviteUrl };
 }

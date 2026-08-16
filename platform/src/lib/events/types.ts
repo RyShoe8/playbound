@@ -3,8 +3,14 @@
  * Extend eventType with new string values later without restructuring.
  */
 
-export const EVENT_TYPES = ["game_night", "tournament"] as const;
+export const EVENT_TYPES = ["game_night", "tournament", "party"] as const;
 export type EventType = (typeof EVENT_TYPES)[number] | (string & {});
+
+export function eventTypeLabel(type: string): string {
+  if (type === "tournament") return "Tournament";
+  if (type === "party") return "Party";
+  return "Game Night";
+}
 
 export const EVENT_STATUSES = [
   "draft",

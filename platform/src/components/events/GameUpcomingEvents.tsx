@@ -19,7 +19,7 @@ export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
                 href={`/events/${e.id}`}
                 className="font-semibold hover:text-primary hover:underline"
               >
-                {e.eventType === "tournament" ? "🏆 " : "🎉 "}
+                {e.eventType === "tournament" ? "🏆 " : e.eventType === "party" ? "🎉 " : "🎉 "}
                 {e.title}
               </Link>
               <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -29,7 +29,11 @@ export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
               <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                 <Users className="size-3" />
                 {e.counts?.going ?? 0} going
-                {e.eventType === "tournament" ? " · Tournament" : ""}
+                {e.eventType === "tournament"
+                  ? " · Tournament"
+                  : e.eventType === "party"
+                    ? " · Party"
+                    : ""}
               </p>
             </div>
             <Link

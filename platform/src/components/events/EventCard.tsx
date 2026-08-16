@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { CalendarDays, Gamepad2, Trophy, Users } from "lucide-react";
+import { CalendarDays, Gamepad2, PartyPopper, Trophy, Users } from "lucide-react";
 import type { SerializedEvent } from "@/lib/events/serialize";
+import { eventTypeLabel } from "@/lib/events/types";
 
 export function EventCard({
   event,
@@ -11,7 +12,9 @@ export function EventCard({
 }) {
   const isLive = event.status === "live";
   const isTournament = event.eventType === "tournament";
+  const isParty = event.eventType === "party";
   const going = event.counts?.going ?? 0;
+  const TypeIcon = isTournament ? Trophy : isParty ? PartyPopper : Gamepad2;
 
   return (
     <Link
@@ -23,8 +26,8 @@ export function EventCard({
           <span className="rounded-md bg-red-500/15 px-1.5 py-0.5 text-red-400">Live now</span>
         ) : null}
         <span className="inline-flex items-center gap-1">
-          {isTournament ? <Trophy className="size-3" /> : <Gamepad2 className="size-3" />}
-          {isTournament ? "Tournament" : "Game Night"}
+          <TypeIcon className="size-3" />
+          {eventTypeLabel(String(event.eventType))}
         </span>
         {event.featured ? (
           <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-primary">Featured</span>

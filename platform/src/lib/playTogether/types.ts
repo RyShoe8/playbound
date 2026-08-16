@@ -69,6 +69,28 @@ export type PartyMemberRole = (typeof PARTY_MEMBER_ROLES)[number];
 /** Default cap per party — overridable at creation. */
 export const PARTY_MAX_SIZE = 8;
 
+export const PARTY_NAME_MAX = 60;
+
+export const PARTY_VISIBILITY_LABELS: Record<Exclude<PartyVisibility, "event">, string> = {
+  public: "Public",
+  friends: "Friends only",
+  password: "Password",
+  invite_only: "Invite only",
+};
+
+export function normalizePartyName(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const name = raw.trim().slice(0, PARTY_NAME_MAX);
+  return name || null;
+}
+
+export function partyDisplayName(party: {
+  name?: string | null;
+  leaderUsername: string;
+}): string {
+  return party.name?.trim() || `${party.leaderUsername}'s party`;
+}
+
 /** Auto-end parties with no heartbeat/activity older than this. */
 export const PARTY_IDLE_TIMEOUT_MS = 4 * 60 * 60 * 1000;
 
@@ -86,6 +108,7 @@ export type PartyPayload = {
   id: string;
   leaderId: string;
   leaderUsername: string;
+  name: string | null;
   members: PartyMemberPayload[];
   gameSlug: string;
   gameTitle: string | null;
