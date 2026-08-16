@@ -6,6 +6,7 @@ import { getGame } from "@/lib/catalog";
 import { listAllEditionsForGame, deriveVirtualEdition } from "@/lib/editions";
 import { EDITION_STATUS_LABELS, EDITION_TYPE_LABELS, VERIFICATION_LABELS } from "@/lib/editionTypes";
 import { EditionReorderList } from "@/components/admin/EditionReorderList";
+import { MaterializeEditionsButton } from "@/components/admin/MaterializeEditionsButton";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -39,12 +40,15 @@ export default async function AdminGameEditionsPage({
             Different ways to play {game.title} — official client, community servers, remasters.
           </p>
         </div>
-        <Link
-          href={`/admin/games/${game.slug}/editions/new`}
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
-        >
-          <Plus className="size-4" /> New edition
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <MaterializeEditionsButton gameSlug={game.slug} />
+          <Link
+            href={`/admin/games/${game.slug}/editions/new`}
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
+          >
+            <Plus className="size-4" /> New edition
+          </Link>
+        </div>
       </div>
 
       {virtual && (
