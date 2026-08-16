@@ -176,6 +176,74 @@ function isSteamInstalled() {
   return _steamInstalled;
 }
 
+/**
+ * Whether the Discord desktop app is installed.
+ *
+ * Same reasoning as isSteamInstalled: `discord://` is only worth handing to the
+ * OS when something is registered to answer it, otherwise the user gets a "no
+ * app associated with this link" dialog instead of their party's voice channel.
+ * Cached — this cannot change while the launcher is running.
+ */
+let _discordInstalled = null;
+function isDiscordInstalled() {
+  if (_discordInstalled !== null) return _discordInstalled;
+  _discordInstalled = false;
+  try {
+    if (process.platform === "win32") {
+      const local = process.env.LOCALAPPDATA || "";
+      // Discord, PTB and Canary all register the discord:// scheme.
+      _discordInstalled = ["Discord", "DiscordPTB", "DiscordCanary"].some(
+        (dir) => local && fs.existsSync(path.join(local, dir, "Update.exe"))
+      );
+    } else if (process.platform === "darwin") {
+      _discordInstalled = [
+        "/Applications/Discord.app",
+        "/Applications/Discord PTB.app",
+        "/Applications/Discord Canary.app",
+      ].some((p) => fs.existsSync(p));
+    } else {
+      const home = process.env.HOME || "";
+      _discordInstalled = [
+        "/usr/bin/discord",
+        "/usr/share/discord",
+        "/snap/bin/discord",
+        "/var/lib/flatpak/app/com.discordapp.Discord",
+        path.join(home, ".local", "share", "flatpak", "app", "com.discordapp.Discord"),
+      ].some((p) => p && fs.existsSync(p));
+    }
+  } catch {
+    _discordInstalled = false;
+  }
+  return _discordInstalled;
+}
+
+/** True for Discord's own web hosts, so "open Discord" can prefer the app. */
+function isDiscordUrl(raw) {
+  try {
+    const host = new URL(String(raw || "")).hostname.replace(/^www\./, "").toLowerCase();
+    return host === "discord.com" || host === "discord.gg" || host === "discordapp.com";
+  } catch {
+    return false;
+  }
+}
+
+/** Invite code out of a discord.gg / discord.com/invite URL. */
+function parseDiscordInviteCode(inviteUrl) {
+  try {
+    const u = new URL(String(inviteUrl || ""));
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    const parts = u.pathname.split("/").filter(Boolean);
+    let code = null;
+    if (host === "discord.gg" || host === "discordapp.com") code = parts[0] || null;
+    else if (host === "discord.com" && parts[0] === "invite") code = parts[1] || null;
+    // Only ever build a deep link from a plain invite code, so nothing from a
+    // URL can smuggle its way into the discord:// we hand the OS.
+    return code && /^[A-Za-z0-9_-]{1,32}$/.test(code) ? code : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Steam's own install directory, or null. */
 function steamBaseDir() {
   try {
@@ -5970,6 +6038,45 @@ ipcMain.handle("open-folder", async (_event, dir) => {
   return true;
 });
 ipcMain.handle("clear-context", () => clearContext());
+/**
+ * Open a Discord invite in the desktop app when it is installed, falling back
+ * to the browser otherwise.
+ *
+ * Handing the raw https invite to the browser — which is what this used to do —
+ * always landed people in web Discord even with the app open, so party voice
+ * never actually joined the channel they were already signed into.
+ *
+ * The discord:// URL is rebuilt here from a validated invite code rather than
+ * forwarded, so the security allowlist stays https-only and no caller can push
+ * an arbitrary protocol URL through this path.
+ */
+ipcMain.handle("open-discord-invite", async (_event, inviteUrl) => {
+  const httpsUrl = String(inviteUrl || "");
+  const code = parseDiscordInviteCode(httpsUrl);
+
+  if (isDiscordInstalled()) {
+    // With an invite, join that channel; without one (the plain "open Discord"
+    // buttons), just bring the app up rather than a browser tab.
+    const deepLink = code ? `discord://-/invite/${code}` : isDiscordUrl(httpsUrl) ? "discord://" : null;
+    if (deepLink) {
+      try {
+        await shell.openExternal(deepLink);
+        return { ok: true, openedApp: true };
+      } catch (err) {
+        console.warn("discord app handoff failed, falling back to web:", err?.message || err);
+      }
+    }
+  }
+
+  try {
+    await safeOpenExternal(httpsUrl, { campaign: "launcher_party_voice" });
+    return { ok: true, openedApp: false };
+  } catch (err) {
+    console.warn("open-discord-invite blocked:", err?.message || err);
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
 ipcMain.handle("open-external", async (_event, url, opts) => {
   try {
     const options =
