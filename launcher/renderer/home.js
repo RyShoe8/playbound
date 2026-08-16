@@ -109,6 +109,16 @@ function paintCatalogStats(live, catalog) {
   }
 }
 
+function applyLiveStats(raw, catalog = state.catalogCache) {
+  if (!raw || raw.ok === false || typeof raw.gameCount !== "number") return;
+  state._liveStatsLastGood = raw;
+  cachePut("catalogLiveStats", raw);
+  if (!document.getElementById("home-stats-slot")?.isConnected) return;
+  paintCatalogStats(raw, catalog);
+}
+
+window.playbound?.onLiveStatsUpdated?.((raw) => applyLiveStats(raw));
+
 function loadLiveStats(catalog) {
   const statsSlot = document.getElementById("home-stats-slot");
   const peek = cachePeek("catalogLiveStats", CACHE_TTL.catalogLiveStats);
@@ -123,11 +133,7 @@ function loadLiveStats(catalog) {
 
   void (async () => {
     const raw = await (window.playbound.getLiveStats?.() ?? Promise.resolve(null));
-    if (!raw || raw.ok === false || typeof raw.gameCount !== "number") return;
-    state._liveStatsLastGood = raw;
-    cachePut("catalogLiveStats", raw);
-    if (!document.getElementById("home-stats-slot")?.isConnected) return;
-    paintCatalogStats(raw, catalog);
+    applyLiveStats(raw, catalog);
   })();
 }
 

@@ -46,17 +46,19 @@ const signing = resolveSigningConfig();
 // release fails here rather than shipping an unsigned installer.
 const signingActive = reportSigningConfig(signing, { label: "signing" });
 
-/** Windows options applied only when signing is switched on. */
+/*
+ * signAndEditExecutable must stay true even for unsigned builds. That flag
+ * also runs rcedit, which embeds assets/icon.ico into PlayBound.exe. When it
+ * is false, Windows title-bar and taskbar keep Electron's logo.
+ */
 const windowsSigningOptions = signingActive
   ? {
-      // Must be true to sign the main executable. It is false in the unsigned
-      // path below to preserve the exact pre-existing build behaviour.
       signAndEditExecutable: true,
       signtoolOptions: signing.signtoolOptions,
       ...(signing.signAllBinaries ? { signExts: EXTRA_SIGN_EXTS } : {}),
     }
   : {
-      signAndEditExecutable: false,
+      signAndEditExecutable: true,
     };
 
 module.exports = {

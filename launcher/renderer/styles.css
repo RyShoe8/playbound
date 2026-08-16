@@ -288,6 +288,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 220px;
 }
 
 /* Cards & Grids */
@@ -888,12 +895,29 @@ body {
 .library-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 14px;
   align-items: start;
 }
 
-/* Two across once there is genuinely room for two full rows. */
-@media (min-width: 1180px) {
+#view-library .view-title {
+  font-size: 32px;
+}
+
+#view-library .view-sub {
+  font-size: 16px;
+}
+
+#view-library .btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+/*
+ * Two across only when each card is still wide enough for title + actions.
+ * The default 1200px window used to trip the old 1180px breakpoint, which
+ * squeezed Select .exe / Dismiss over the game title.
+ */
+@media (min-width: 1540px) {
   .library-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -906,8 +930,16 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  overflow: hidden;
+  /* Visible so the ⋯ menu can paint past the card; thumbs clip themselves. */
+  overflow: visible;
   transition: border-color 0.2s ease, background 0.2s ease;
+  container-type: inline-size;
+  container-name: library-card;
+}
+
+.library-game-block:has(.action-menu-panel:not(.hidden)) {
+  position: relative;
+  z-index: 6;
 }
 
 .library-game-block:hover {
@@ -929,14 +961,15 @@ body {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
-  gap: 12px;
-  padding: 12px;
-  min-height: 76px;
+  gap: 14px;
+  padding: 16px;
+  min-height: 96px;
+  min-width: 0;
 }
 
 .library-thumb {
-  width: 88px;
-  height: 58px;
+  width: 108px;
+  height: 72px;
   flex-shrink: 0;
   border-radius: 8px;
   overflow: hidden;
@@ -960,7 +993,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: 5px;
 }
 
 /* Its own line under the title, sized to its content up to the column width. */
@@ -978,11 +1011,13 @@ body {
 }
 
 .library-card-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
 }
 
 .library-card-title.linkish {
@@ -994,7 +1029,7 @@ body {
 }
 
 .library-card-sub {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1007,8 +1042,10 @@ body {
  */
 .library-card-extra {
   border-top: 1px solid var(--border);
-  padding: 8px 12px 10px;
+  padding: 10px 16px 12px;
   background: rgba(0, 0, 0, 0.12);
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
 }
 
 /* A game whose install we have not located yet reads as provisional. */
@@ -1040,7 +1077,22 @@ body {
 .library-add-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  width: 100%;
+}
+
+.library-add-manual {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .library-add-search {
@@ -1051,7 +1103,7 @@ body {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .library-add-list {
@@ -1083,19 +1135,19 @@ body {
 }
 
 .library-add-row-title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 
 .library-add-row-hint {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   flex-shrink: 0;
 }
 
 /*
- * Sits in the third column of the head row. No wrapping: the whole point of
- * the wide layout is that Play and the overflow menu stay on the title's line.
+ * Sits in the third column of the head row. Stays on one line when the card
+ * is wide; the container query below stacks it under the title when it is not.
  */
 .library-card-actions {
   display: flex;
@@ -1103,6 +1155,17 @@ body {
   gap: 8px;
   align-items: center;
   justify-self: end;
+}
+
+@container library-card (max-width: 640px) {
+  .library-card-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .library-card-actions {
+    grid-column: 1 / -1;
+    justify-self: start;
+    flex-wrap: wrap;
+  }
 }
 
 .library-card-actions > .btn-sm,
@@ -1135,7 +1198,7 @@ body {
 
 .library-edition-label {
   min-width: 0;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
   /* Truncate rather than wrap: a long edition name must not reflow the row. */
@@ -1300,7 +1363,7 @@ body {
   border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1353,7 +1416,7 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px 10px;
-  padding: 5px 6px 5px 10px;
+  padding: 7px 8px 7px 12px;
   border-radius: 8px;
 }
 
@@ -1363,7 +1426,7 @@ body {
 
 .mod-row-title,
 .library-mod-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -1389,7 +1452,7 @@ button.library-mod-title:hover {
 }
 
 .library-mods-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
   margin-bottom: 4px;
@@ -2878,7 +2941,7 @@ textarea.input-text {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  z-index: 40;
+  z-index: 80;
   min-width: 168px;
   padding: 4px;
   display: flex;
@@ -2926,8 +2989,8 @@ textarea.input-text {
 .library-edition-select {
   min-width: 0;
   max-width: 100%;
-  padding: 5px 8px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
   background: var(--bg-card, rgba(23, 20, 33, 0.7));

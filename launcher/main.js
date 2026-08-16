@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage } = require("electron");
-const { spawn, execFileSync } = require("child_process");
+const { spawn, execFile, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const fsp = require("fs/promises");
@@ -41,6 +41,7 @@ const DEFAULT_GAMES_DIR = Platform.getInstallDirectory("");
 const STATE_FILE = path.join(app.getPath("userData"), "installed.json");
 const SETTINGS_FILE = path.join(app.getPath("userData"), "settings.json");
 const CATALOG_CACHE_FILE = path.join(app.getPath("userData"), "catalog-cache.json");
+const LIVE_STATS_CACHE_FILE = path.join(app.getPath("userData"), "live-stats-cache.json");
 const DEFAULT_API_BASE = "https://playbound.club";
 /** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
@@ -2594,11 +2595,39 @@ function findExeUnderGamesDir(entry) {
   return null;
 }
 
-function findKnownExecutable(entry) {
+/** existsSync on catalog knownExePaths only — no registry, no directory walk. */
+function findKnownPathOnly(entry) {
   for (const raw of entry.knownExePaths || []) {
     const full = expandWinPath(raw);
     if (full && fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
   }
+  return null;
+}
+
+/** Cheap check of Settings → gamesDir/<slug> without walking the whole tree. */
+function findExeInSlugGamesDir(entry) {
+  const settings = loadSettings();
+  const gamesDir = settings.gamesDir || DEFAULT_GAMES_DIR;
+  if (!gamesDir || !entry?.slug) return null;
+  const slugDir = path.join(gamesDir, entry.slug);
+  if (!fs.existsSync(slugDir)) return null;
+  for (const base of expectedExeBasenames(entry)) {
+    const candidates = [
+      path.join(slugDir, base),
+      path.join(slugDir, "binaries", "system", base),
+    ];
+    for (const c of candidates) {
+      if (c && fs.existsSync(c) && isAllowedExecutablePath(c)) return c;
+    }
+  }
+  return null;
+}
+
+function findKnownExecutable(entry) {
+  const known = findKnownPathOnly(entry);
+  if (known) return known;
+  const inSlugDir = findExeInSlugGamesDir(entry);
+  if (inSlugDir) return inSlugDir;
   /*
    * Never claim a store-installed edition from our own games directory.
    *
@@ -2774,20 +2803,112 @@ function resumePendingInstallerPoll() {
   }
 }
 
-function listLibraryScanCandidates() {
+function matchUninstallDump(entry, dump) {
+  if (!Array.isArray(dump) || dump.length === 0) return null;
+  const titles = [
+    String(entry.title || "").trim().toLowerCase(),
+    ...((entry.registryTitles || []).map((t) => String(t || "").trim().toLowerCase())),
+  ].filter(Boolean);
+  const bases = (entry.knownExePaths || [])
+    .map((p) => path.basename(expandWinPath(p)).toLowerCase())
+    .filter(Boolean);
+  for (const row of dump) {
+    const name = String(row.DisplayName || "").toLowerCase();
+    const icon = stripRegQuotes(row.DisplayIcon);
+    const loc = stripRegQuotes(row.InstallLocation);
+    const titleHit = titles.some((t) => name === t || (t && name.startsWith(t)));
+    const baseHit = bases.some(
+      (b) =>
+        (icon && icon.toLowerCase().includes(b)) ||
+        (loc && fs.existsSync(path.join(loc, b)))
+    );
+    if (!titleHit && !baseHit) continue;
+    if (icon && /\.exe$/i.test(icon) && fs.existsSync(icon) && isAllowedExecutablePath(icon)) {
+      return icon;
+    }
+    if (loc && fs.existsSync(loc)) {
+      for (const raw of entry.knownExePaths || []) {
+        const base = path.basename(expandWinPath(raw));
+        const c = path.join(loc, base);
+        if (fs.existsSync(c) && isAllowedExecutablePath(c)) return c;
+      }
+    }
+  }
+  return null;
+}
+
+function listUninstallRegistryDump() {
+  if (process.platform !== "win32") return Promise.resolve([]);
+  const ps = `
+$ErrorActionPreference = 'SilentlyContinue'
+$paths = @(
+  'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+  'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+  'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+)
+Get-ItemProperty $paths |
+  Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation } |
+  Select-Object DisplayName, InstallLocation, DisplayIcon |
+  ConvertTo-Json -Compress
+`;
+  return new Promise((resolve) => {
+    execFile(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", ps],
+      { encoding: "utf8", timeout: 12_000, windowsHide: true, maxBuffer: 4 * 1024 * 1024 },
+      (err, stdout) => {
+        if (err) {
+          console.warn("[install] uninstall dump failed:", err.message || err);
+          resolve([]);
+          return;
+        }
+        try {
+          const out = String(stdout || "").trim();
+          if (!out) {
+            resolve([]);
+            return;
+          }
+          const parsed = JSON.parse(out);
+          resolve(Array.isArray(parsed) ? parsed : [parsed]);
+        } catch {
+          resolve([]);
+        }
+      }
+    );
+  });
+}
+
+async function listLibraryScanCandidates() {
   const installed = loadState();
   const found = [];
+  const remaining = [];
   for (const entry of catalog) {
     if (!entry?.slug) continue;
     const existing = installed[entry.slug];
     if (existing?.exe && fs.existsSync(existing.exe)) continue;
-    const known = findKnownExecutable(entry);
-    if (!known) continue;
-    found.push({
-      slug: entry.slug,
-      title: entry.title || entry.slug,
-      exe: known,
-    });
+    const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry);
+    if (known) {
+      found.push({
+        slug: entry.slug,
+        title: entry.title || entry.slug,
+        exe: known,
+      });
+    } else {
+      remaining.push(entry);
+    }
+  }
+  if (remaining.length > 0) {
+    await new Promise((r) => setImmediate(r));
+    const dump = await listUninstallRegistryDump();
+    for (const entry of remaining) {
+      const fromReg = matchUninstallDump(entry, dump);
+      if (!fromReg) continue;
+      found.push({
+        slug: entry.slug,
+        title: entry.title || entry.slug,
+        exe: fromReg,
+      });
+    }
   }
   return found;
 }
@@ -2800,7 +2921,8 @@ function addScannedLibraryGames(slugs) {
     if (!entry) continue;
     const existing = installed[slug];
     if (existing?.exe && fs.existsSync(existing.exe)) continue;
-    const known = findKnownExecutable(entry);
+    const known =
+      findKnownPathOnly(entry) || findExeInSlugGamesDir(entry) || findKnownExecutable(entry);
     if (!known) continue;
     markInstalledFromExe(slug, entry, known, existing?.version || "detected");
     added.push({ slug, title: entry.title || slug });
@@ -2811,23 +2933,29 @@ function addScannedLibraryGames(slugs) {
   return { added };
 }
 
-/** One-shot: pick up games already installed via knownExePaths but missing from state. */
-function scanKnownInstalls() {
+/**
+ * One-shot: pick up games already installed via knownExePaths but missing from state.
+ * Known paths and gamesDir/<slug> only — registry walks belong on Add Game, not startup.
+ */
+async function scanKnownInstalls() {
   const state = loadState();
   let found = 0;
+  let checked = 0;
   for (const entry of catalog) {
     if (!entry?.slug || !entry.knownExePaths?.length) continue;
     const existing = state[entry.slug];
     if (existing?.exe && fs.existsSync(existing.exe)) continue;
-    invalidateUninstallCache(entry);
-    const known = findKnownExecutable(entry);
-    if (!known) continue;
-    markInstalled(entry.slug, {
-      version: existing?.version || "detected",
-      exe: known,
-      dir: resolveInstallDir(entry, known),
-    });
-    found += 1;
+    const known = findKnownPathOnly(entry) || findExeInSlugGamesDir(entry);
+    if (known) {
+      markInstalled(entry.slug, {
+        version: existing?.version || "detected",
+        exe: known,
+        dir: resolveInstallDir(entry, known),
+      });
+      found += 1;
+    }
+    checked += 1;
+    if (checked % 6 === 0) await new Promise((r) => setImmediate(r));
   }
   if (found > 0 && win && !win.isDestroyed()) {
     win.webContents.send("install-detected", { slug: null, scanned: found });
@@ -6275,8 +6403,86 @@ ipcMain.handle("save-settings", (_event, patch) => {
 });
 
 const CATALOG_LIVE_STATS_TTL_MS = 15 * 60 * 1000;
-/** Shared homepage snapshot — same JSON for every launcher until TTL. */
-let catalogLiveStatsCache = { at: 0, data: null, inflight: null };
+
+function loadLiveStatsDiskCache() {
+  try {
+    if (!fs.existsSync(LIVE_STATS_CACHE_FILE)) return { at: 0, data: null };
+    const parsed = JSON.parse(fs.readFileSync(LIVE_STATS_CACHE_FILE, "utf-8"));
+    if (parsed?.data && typeof parsed.data.gameCount === "number") {
+      return { at: Number(parsed.at) || 0, data: parsed.data };
+    }
+  } catch (err) {
+    console.warn("[live-stats] disk cache read failed:", err instanceof Error ? err.message : err);
+  }
+  return { at: 0, data: null };
+}
+
+function saveLiveStatsDiskCache(data) {
+  try {
+    fs.writeFileSync(LIVE_STATS_CACHE_FILE, JSON.stringify({ at: Date.now(), data }), "utf-8");
+  } catch (err) {
+    console.warn("[live-stats] disk cache write failed:", err instanceof Error ? err.message : err);
+  }
+}
+
+/** Shared homepage snapshot — memory first, then last-good on disk. */
+const liveStatsDisk = loadLiveStatsDiskCache();
+let catalogLiveStatsCache = { at: liveStatsDisk.at, data: liveStatsDisk.data, inflight: null };
+
+async function fetchCatalogLiveStats() {
+  const res = await fetch(`${getApiBase()}/api/launcher/live-stats`, {
+    headers: {
+      "user-agent": "playbound-launcher",
+      accept: "application/json",
+    },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+  }
+  return await res.json();
+}
+
+function rememberCatalogLiveStats(data) {
+  if (!data || typeof data.gameCount !== "number") return catalogLiveStatsCache.data;
+  catalogLiveStatsCache = { at: Date.now(), data, inflight: null };
+  saveLiveStatsDiskCache(data);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("live-stats-updated", data);
+  }
+  return data;
+}
+
+/** Stale-while-revalidate: return last-good immediately, refresh in the background. */
+function getOrRefreshCatalogLiveStats() {
+  const now = Date.now();
+  if (
+    catalogLiveStatsCache.data &&
+    now - catalogLiveStatsCache.at < CATALOG_LIVE_STATS_TTL_MS
+  ) {
+    return Promise.resolve(catalogLiveStatsCache.data);
+  }
+  if (!catalogLiveStatsCache.inflight) {
+    catalogLiveStatsCache.inflight = (async () => {
+      try {
+        const data = await fetchCatalogLiveStats();
+        return rememberCatalogLiveStats(data) || catalogLiveStatsCache.data;
+      } catch (err) {
+        console.warn("[live-stats] catalog snapshot failed:", err instanceof Error ? err.message : err);
+        return catalogLiveStatsCache.data;
+      } finally {
+        catalogLiveStatsCache.inflight = null;
+      }
+    })();
+  }
+  if (catalogLiveStatsCache.data) return Promise.resolve(catalogLiveStatsCache.data);
+  return catalogLiveStatsCache.inflight;
+}
+
+function prefetchCatalogLiveStats() {
+  void getOrRefreshCatalogLiveStats();
+}
 
 ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
   const params = new URLSearchParams();
@@ -6290,10 +6496,7 @@ ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
   async function attempt(headers) {
     const res = await fetch(url, {
       headers,
-      // Cold catalog compute can fan out to master servers (12–18s ceilings).
-      // Keep below maxDuration on the API; high enough to usually get a warm or
-      // deadline-bounded response.
-      signal: AbortSignal.timeout(scoped ? 30_000 : 12_000),
+      signal: AbortSignal.timeout(scoped ? 30_000 : 20_000),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -6303,37 +6506,7 @@ ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
   }
 
   if (!scoped) {
-    const now = Date.now();
-    if (
-      catalogLiveStatsCache.data &&
-      now - catalogLiveStatsCache.at < CATALOG_LIVE_STATS_TTL_MS
-    ) {
-      return catalogLiveStatsCache.data;
-    }
-    if (catalogLiveStatsCache.inflight) {
-      return catalogLiveStatsCache.data || catalogLiveStatsCache.inflight;
-    }
-    catalogLiveStatsCache.inflight = (async () => {
-      try {
-        // No bearer — this payload is identical for every user and must be CDN-cacheable.
-        const data = await attempt({
-          "user-agent": "playbound-launcher",
-          accept: "application/json",
-        });
-        if (data && typeof data.gameCount === "number") {
-          catalogLiveStatsCache = { at: Date.now(), data, inflight: null };
-          return data;
-        }
-        catalogLiveStatsCache.inflight = null;
-        return catalogLiveStatsCache.data;
-      } catch (err) {
-        catalogLiveStatsCache.inflight = null;
-        console.warn("[live-stats] catalog snapshot failed:", err instanceof Error ? err.message : err);
-        return catalogLiveStatsCache.data;
-      }
-    })();
-    if (catalogLiveStatsCache.data) return catalogLiveStatsCache.data;
-    return catalogLiveStatsCache.inflight;
+    return getOrRefreshCatalogLiveStats();
   }
 
   try {
@@ -7176,18 +7349,18 @@ function createWindow() {
   const minWidth = Math.min(900, workWidth);
   const minHeight = Math.min(600, workHeight);
 
-  const appIconPath = resolveAssetPath("icon.png");
-  let appIcon = null;
-  try {
-    if (fs.existsSync(appIconPath)) {
-      const buf = fs.readFileSync(appIconPath);
-      appIcon = nativeImage.createFromBuffer(buf);
+  const appIconPath = resolveAssetPath(process.platform === "win32" ? "icon.ico" : "icon.png");
+  let appIcon = nativeImage.createFromPath(appIconPath);
+  if (appIcon.isEmpty()) {
+    const pngPath = resolveAssetPath("icon.png");
+    try {
+      if (fs.existsSync(pngPath)) {
+        appIcon = nativeImage.createFromBuffer(fs.readFileSync(pngPath));
+      }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* ignore */
-  }
-  if (!appIcon || appIcon.isEmpty()) {
-    appIcon = nativeImage.createFromPath(appIconPath);
+    if (appIcon.isEmpty()) appIcon = nativeImage.createFromPath(pngPath);
   }
 
   win = new BrowserWindow({
@@ -7207,6 +7380,8 @@ function createWindow() {
       sandbox: true,
     },
   });
+  if (!appIcon.isEmpty()) win.setIcon(appIcon);
+  else if (fs.existsSync(appIconPath)) win.setIcon(appIconPath);
 
   win.webContents.setWindowOpenHandler(({ url, features }) => {
     if (url.includes("popout=true")) {
@@ -7441,6 +7616,8 @@ if (gotLock) {
      * by sending "install-detected" to win, which did not exist yet at this
      * point in startup, so the result of the very first scan was dropped.
      */
+    prefetchCatalogLiveStats();
+    void scanKnownInstalls();
     void (async () => {
       await refreshRemoteCatalog();
       for (const entry of catalog) {
@@ -7451,7 +7628,7 @@ if (gotLock) {
           console.warn(`[catalog] installer ${entry.slug} is missing knownExePaths`);
         }
       }
-      scanKnownInstalls();
+      void scanKnownInstalls();
     })();
 
     setupAutoUpdater();
