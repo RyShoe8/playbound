@@ -5,6 +5,10 @@
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/discord-channels",
+      "schedule": "20 3 * * *"
+    },
+    {
       "path": "/api/cron/free-offers",
       "schedule": "0 */6 * * *"
     },
