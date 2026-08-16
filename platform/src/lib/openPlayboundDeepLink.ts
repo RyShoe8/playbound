@@ -32,6 +32,84 @@ export function firePlayboundDeepLink(deepLink: string): void {
   a.remove();
 }
 
+export const DISCORD_HANDOFF_MS = 1200;
+
+/** Invite code from discord.gg / discord.com/invite URLs. */
+export function parseDiscordInviteCode(inviteUrl: string): string | null {
+  try {
+    const u = new URL(inviteUrl);
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (host === "discord.gg" || host === "discordapp.com") {
+      return parts[0] || null;
+    }
+    if (host === "discord.com" && parts[0] === "invite" && parts[1]) {
+      return parts[1];
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/**
+ * Prefer the Discord desktop app via discord://, then fall back to https
+ * if the tab stays visible (app not installed / protocol ignored).
+ */
+export function openDiscordInvite(
+  inviteUrl: string,
+  opts?: { timeoutMs?: number }
+): () => void {
+  const httpsUrl = inviteUrl;
+  const code = parseDiscordInviteCode(inviteUrl);
+  if (!code) {
+    window.open(httpsUrl, "_blank", "noopener,noreferrer");
+    return () => {};
+  }
+
+  const timeoutMs = opts?.timeoutMs ?? DISCORD_HANDOFF_MS;
+  let settled = false;
+  let sawHandoff = false;
+
+  const finish = (openedApp: boolean) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    if (!openedApp) {
+      window.open(httpsUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const onBlur = () => {
+    sawHandoff = true;
+  };
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") sawHandoff = true;
+  };
+
+  const cleanup = () => {
+    window.removeEventListener("blur", onBlur);
+    document.removeEventListener("visibilitychange", onVisibility);
+    window.clearTimeout(timer);
+  };
+
+  window.addEventListener("blur", onBlur);
+  document.addEventListener("visibilitychange", onVisibility);
+
+  firePlayboundDeepLink(`discord://-/invite/${code}`);
+
+  const timer = window.setTimeout(() => {
+    finish(sawHandoff);
+  }, timeoutMs);
+
+  return () => {
+    if (!settled) {
+      settled = true;
+      cleanup();
+    }
+  };
+}
+
 /** Trigger a file download (or open the download page) in a new gesture-safe way. */
 export function startLauncherDownload(downloadUrl: string): void {
   const a = document.createElement("a");

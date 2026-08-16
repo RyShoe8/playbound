@@ -11,16 +11,28 @@ import {
   PARTY_VISIBILITY_LABELS,
   partyDisplayName,
 } from "@/lib/playTogether/types";
-import { launcherJoinUrl } from "@/lib/launcher";
+import type { LaunchMethod } from "@/lib/data/types";
+import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
+import { isBrowserGame } from "@/lib/gameLaunch";
+import { openDiscordInvite, openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
+import { withOutboundUtm } from "@/lib/utm";
 import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
+
+export type PartyGameOption = {
+  slug: string;
+  title: string;
+  website?: string;
+  launchMethods?: LaunchMethod[];
+  browserPlayable?: boolean;
+};
 
 export function PartyView({
   party,
   games = [],
 }: {
   party: PartyPayload;
-  games?: { slug: string; title: string }[];
+  games?: PartyGameOption[];
 }) {
   const { data: session } = useSession();
   const userId = session?.user?.id;
@@ -30,7 +42,7 @@ export function PartyView({
     transferLeadership,
     setVisibility,
     setReady,
-    launchParty,
+    joinGame,
     endParty,
     provisionDiscord,
     setGame,
@@ -66,9 +78,12 @@ export function PartyView({
   const isLeader = party.leaderId === userId;
   const me = party.members.find((m) => m.userId === userId);
   const isReady = me?.ready ?? false;
-  const allReady = party.members.length >= 2 && party.members.every((m) => m.ready);
   const hasGame = Boolean(party.gameSlug);
-  const canLaunch = isLeader && hasGame && allReady && party.status === "ready";
+  const canJoinGame =
+    hasGame &&
+    party.status !== "ended" &&
+    (isReady || party.status === "playing" || party.status === "launching");
+  const catalogGame = games.find((g) => g.slug === party.gameSlug);
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
   const joinUrl = hostedReady
@@ -79,6 +94,37 @@ export function PartyView({
         party.hosted.name || party.gameTitle || undefined
       )
     : null;
+
+  function launchLocalGame() {
+    if (joinUrl) {
+      openPlayboundDeepLink(joinUrl);
+      return;
+    }
+    if (
+      catalogGame &&
+      isBrowserGame({
+        browserPlayable: Boolean(catalogGame.browserPlayable),
+        launchMethods: catalogGame.launchMethods ?? [],
+      }) &&
+      catalogGame.website
+    ) {
+      window.open(
+        withOutboundUtm(catalogGame.website, {
+          campaign: "party_join_game",
+          content: party.gameSlug,
+        }),
+        "_blank",
+        "noopener,noreferrer"
+      );
+      return;
+    }
+    openPlayboundDeepLink(launcherPlayUrl(party.gameSlug));
+  }
+
+  function handleJoinGame() {
+    void joinGame(party.id);
+    launchLocalGame();
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -207,28 +253,21 @@ export function PartyView({
             </button>
           )}
 
-          {canLaunch && (
-            <button
-              onClick={() => void launchParty(party.id)}
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
-            >
-              <Play className="size-4 fill-current" />
-              Launch Game
-            </button>
-          )}
-
-          {joinUrl && (
+          {canJoinGame && (
             <div className="flex flex-col gap-1">
-              <a
-                href={joinUrl}
+              <button
+                type="button"
+                onClick={handleJoinGame}
                 className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
               >
                 <Play className="size-4 fill-current" />
-                Join PlayBound Server
-              </a>
-              <p className="text-xs text-muted-foreground font-mono">
-                {party.hosted.host}:{party.hosted.port}
-              </p>
+                Join Game
+              </button>
+              {joinUrl ? (
+                <p className="text-xs text-muted-foreground font-mono">
+                  {party.hosted.host}:{party.hosted.port}
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -244,7 +283,7 @@ export function PartyView({
             </p>
           )}
 
-          {party.status === "playing" && !joinUrl && (
+          {party.status === "playing" && !canJoinGame && (
             <div className="px-4 py-2 rounded-md bg-primary/20 text-primary font-bold text-sm flex items-center gap-2">
               <Play className="size-4 fill-current" /> Playing
             </div>
@@ -253,14 +292,15 @@ export function PartyView({
 
         <div className="flex items-center gap-3">
           {party.discord.inviteUrl || party.discord.voiceChannelId ? (
-            <a 
-              href={party.discord.inviteUrl || "https://discord.com/app"} 
-              target="_blank" 
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => {
+                if (party.discord.inviteUrl) openDiscordInvite(party.discord.inviteUrl);
+              }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors"
             >
-              <Phone className="size-3.5" /> Voice enabled
-            </a>
+              <Phone className="size-3.5" /> Launch Voice
+            </button>
           ) : isLeader && (
             <button
               type="button"

@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { telemetry } from "@/lib/telemetry";
 import { usePartyStore } from "@/stores/partyStore";
-import { PartyView } from "@/components/friends/PartyView";
+import { PartyView, type PartyGameOption } from "@/components/friends/PartyView";
 import { PartyDiscovery } from "@/components/friends/PartyDiscovery";
 import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
@@ -247,7 +247,7 @@ export function FriendsView({
   games,
   genres,
 }: {
-  games: { slug: string; title: string }[];
+  games: PartyGameOption[];
   genres: string[];
 }) {
   const { data: session, status } = useSession();

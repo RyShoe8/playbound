@@ -24,6 +24,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
   const { createParty, inviteFriends, provisionDiscord } = usePartyStore();
   const { friends } = useFriendsStore();
   const [busy, setBusy] = useState(false);
+  const [voicePhase, setVoicePhase] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [visibility, setVisibility] = useState<PartyVisibility>("friends");
@@ -38,7 +39,9 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
       return;
     }
     setBusy(true);
+    setVoicePhase(false);
     setError(null);
+    let closed = false;
     try {
       telemetry.track("party_create_clicked", { gameSlug: gameSlug || "", visibility, wantVoice });
       const party = await createParty({
@@ -54,20 +57,23 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         if (selectedFriends.size > 0) {
           await inviteFriends(party.id, [...selectedFriends]);
         }
+        if (wantVoice) setVoicePhase(true);
+        onCreated?.();
+        closed = true;
         if (wantVoice) {
           const voice = await provisionDiscord(party.id);
-          if (voice.error && !voice.inviteUrl) {
-            setError("Couldn't start Discord voice. Try Enable Voice again.");
-          } else {
+          if (!voice.error || voice.inviteUrl) {
             followPartyVoice(voice);
           }
         }
-        onCreated?.();
       } else {
         setError("Failed to create party. You might already have one active.");
       }
     } finally {
-      setBusy(false);
+      if (!closed) {
+        setBusy(false);
+        setVoicePhase(false);
+      }
     }
   }
 
@@ -185,7 +191,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         onClick={() => void handleCreate()}
         className="w-full rounded-md bg-primary px-4 py-2 font-bold text-primary-foreground disabled:opacity-50"
       >
-        {busy ? "Creating…" : "Create Party"}
+        {busy ? (voicePhase ? "Starting voice…" : "Creating…") : "Create Party"}
       </button>
     </div>
   );
