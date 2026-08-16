@@ -49,7 +49,6 @@ export function DiscoverFilters({
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
-  const [installableOnly, setInstallableOnly] = useState(false);
   const [hwFilter, setHwFilter] = useState<HwFilter>("");
   const [userHw, setUserHw] = useState<{
     cpuTier?: string;
@@ -119,10 +118,6 @@ export function DiscoverFilters({
       );
     }
 
-    if (installableOnly) {
-      list = list.filter((g) => g.launchMethods.includes("install"));
-    }
-
     if (hwFilter && userHw) {
       list = list.filter((g) => {
         const r = evaluateCompatibility(
@@ -158,7 +153,6 @@ export function DiscoverFilters({
   }, [
     serialized,
     multiplayerOnly,
-    installableOnly,
     hwFilter,
     userHw,
     mode,
@@ -222,7 +216,6 @@ export function DiscoverFilters({
           genre: selectedGenre || undefined,
           sort,
           multiplayerOnly,
-          installableOnly,
           hwFilter: hwFilter || undefined,
           compatibility: mode,
         },
@@ -236,7 +229,6 @@ export function DiscoverFilters({
     selectedGenre,
     sort,
     multiplayerOnly,
-    installableOnly,
     hwFilter,
     track,
     mode,
@@ -245,23 +237,23 @@ export function DiscoverFilters({
   const animKey = `${mode}|${hwFilter}|${selectedGenre}|${sort}|${baseFiltered.map((g) => g.slug).join(",")}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* ── 1. Genre Quick-Select Buttons (Pills with count below) ──── */}
-      <div className="no-scrollbar -mx-1 flex snap-x items-center gap-2.5 overflow-x-auto px-1 py-1.5">
+      <div className="no-scrollbar -mx-1 flex snap-x items-center gap-2 overflow-x-auto px-1 py-1">
         <button
           type="button"
           onClick={() => setSelectedGenre("")}
           className={cn(
-            "shrink-0 flex flex-col items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-150 border leading-tight min-w-[76px]",
+            "shrink-0 flex flex-col items-center justify-center rounded-xl px-4 py-2 text-sm font-bold transition-all duration-150 border leading-tight min-w-[70px]",
             selectedGenre === ""
               ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25"
               : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
           )}
         >
-          <span>All Genres</span>
+          <span>All</span>
           <span
             className={cn(
-              "text-xs font-semibold tabular-nums mt-0.5",
+              "text-[11px] font-semibold tabular-nums mt-0.5",
               selectedGenre === ""
                 ? "text-primary-foreground/80"
                 : "text-muted-foreground"
@@ -279,7 +271,7 @@ export function DiscoverFilters({
               type="button"
               onClick={() => setSelectedGenre(isSelected ? "" : name)}
               className={cn(
-                "shrink-0 flex flex-col items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-150 border leading-tight min-w-[76px]",
+                "shrink-0 flex flex-col items-center justify-center rounded-xl px-4 py-2 text-sm font-bold transition-all duration-150 border leading-tight min-w-[70px]",
                 isSelected
                   ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25"
                   : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
@@ -288,7 +280,7 @@ export function DiscoverFilters({
               <span>{name}</span>
               <span
                 className={cn(
-                  "text-xs font-semibold tabular-nums mt-0.5",
+                  "text-[11px] font-semibold tabular-nums mt-0.5",
                   isSelected
                     ? "text-primary-foreground/80"
                     : "text-muted-foreground"
@@ -301,71 +293,74 @@ export function DiscoverFilters({
         })}
       </div>
 
-      {/* ── 2. Unified Filter Row (Sort, Hardware, Checkboxes, Game Count) ── */}
-      <div className="relative z-30 flex flex-wrap items-center justify-between gap-3.5 rounded-xl border border-border/70 bg-card/60 p-2.5 backdrop-blur-sm sm:p-3">
-        <div className="flex flex-wrap items-center gap-3.5">
-          {/* Sort Dropdown */}
-          <PremiumSelect
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-            className="!w-auto h-9 min-w-[130px] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
-          >
-            <option value="name">Sort: Name (A-Z)</option>
-            <option value="size">Sort: Size (Largest)</option>
-            <option value="players">Sort: Most Players</option>
-          </PremiumSelect>
+      {/* ── 2. Unified Filter Rows (Stacked in 2 Rows) ── */}
+      <div className="relative z-30 flex flex-col gap-2.5 rounded-xl border border-border/70 bg-card/60 p-3 backdrop-blur-sm">
+        {/* Row 1: Sort + Performance + Game Count */}
+        <div className="flex flex-wrap items-center justify-between gap-3.5">
+          <div className="flex flex-wrap items-center gap-3.5">
+            {/* Sort Dropdown with separate label */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
+                Sort:
+              </span>
+              <PremiumSelect
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOption)}
+                className="!w-auto h-8 min-w-[130px] rounded-lg border border-border/80 bg-secondary/50 px-2.5 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
+              >
+                <option value="name">Name (A-Z)</option>
+                <option value="size">Size (Largest)</option>
+                <option value="players">Most Players</option>
+              </PremiumSelect>
+            </div>
 
-          {/* Performance on my PC (Separated Label and Dropdown) */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
-              Performance on my PC:
-            </span>
-            <PremiumSelect
-              value={hwFilter}
-              onChange={(e) => {
-                const v = e.target.value as HwFilter;
-                if (!userHw && v) {
-                  setHwFilter("");
-                  window.alert(
-                    "Open PlayBound while signed in to sync your PC, then use this filter."
-                  );
-                  return;
+            {/* Performance on my PC Dropdown with separate label */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
+                Performance on my PC:
+              </span>
+              <PremiumSelect
+                value={hwFilter}
+                onChange={(e) => {
+                  const v = e.target.value as HwFilter;
+                  if (!userHw && v) {
+                    setHwFilter("");
+                    window.alert(
+                      "Open PlayBound while signed in to sync your PC, then use this filter."
+                    );
+                    return;
+                  }
+                  setHwFilter(v);
+                }}
+                className="!w-auto h-8 min-w-[110px] rounded-lg border border-border/80 bg-secondary/50 px-2.5 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
+                title={
+                  userHw
+                    ? "Filter by performance on your synced PC"
+                    : "Filter by performance on your synced PC (open the launcher while signed in)"
                 }
-                setHwFilter(v);
-              }}
-              className="!w-auto h-9 min-w-[110px] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
-              title={
-                userHw
-                  ? "Filter by performance on your synced PC"
-                  : "Filter by performance on your synced PC (open the launcher while signed in)"
-              }
-            >
-              <option value="">Any</option>
-              <option value="great">{userHw ? "Great" : "Great (needs launcher)"}</option>
-              <option value="playable">
-                {userHw ? "Playable or better" : "Playable or better (needs launcher)"}
-              </option>
-            </PremiumSelect>
+              >
+                <option value="">Any</option>
+                <option value="great">{userHw ? "Great" : "Great (needs launcher)"}</option>
+                <option value="playable">
+                  {userHw ? "Playable or better" : "Playable or better (needs launcher)"}
+                </option>
+              </PremiumSelect>
+            </div>
           </div>
 
-          {/* Standardized Checkboxes */}
-          <div className="flex items-center gap-3.5 pl-1">
-            <Checkbox
-              checked={multiplayerOnly}
-              onCheckedChange={setMultiplayerOnly}
-              label="Multiplayer"
-            />
-            <Checkbox
-              checked={installableOnly}
-              onCheckedChange={setInstallableOnly}
-              label="Installable"
-            />
+          {/* Total Games Count */}
+          <div className="ml-auto pr-1 text-xs font-bold text-muted-foreground tabular-nums">
+            {totalDisplayCount} game{totalDisplayCount === 1 ? "" : "s"}
           </div>
         </div>
 
-        {/* Total Games Count in the same row */}
-        <div className="ml-auto pr-1 text-xs font-bold text-muted-foreground tabular-nums">
-          {totalDisplayCount} game{totalDisplayCount === 1 ? "" : "s"}
+        {/* Row 2: Secondary Checkbox Filters */}
+        <div className="flex items-center gap-3.5 border-t border-border/40 pt-2 pl-0.5">
+          <Checkbox
+            checked={multiplayerOnly}
+            onCheckedChange={setMultiplayerOnly}
+            label="Multiplayer"
+          />
         </div>
       </div>
 

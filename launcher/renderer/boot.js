@@ -259,12 +259,13 @@ function wireMainEvents() {
   window.playbound.onUpdateStatus?.((data) => {
     state.updateStatus = data || { phase: "idle" };
     const phase = data?.phase;
-    const refreshSettings = () => {
-      if (state.currentView === "settings") api.renderSettingsView?.();
-    };
-    const patchSettingsHint = (text) => {
-      const el = document.getElementById("set-update-hint");
-      if (el) el.textContent = text;
+    const patchSettingsControls = (hintText, isReady) => {
+      const hintEl = document.getElementById("set-update-hint");
+      if (hintEl && hintText) hintEl.textContent = hintText;
+      const installBtn = document.getElementById("set-btn-install-update");
+      if (installBtn) installBtn.disabled = !isReady;
+      const checkBtn = document.getElementById("set-btn-check-update");
+      if (checkBtn) checkBtn.disabled = false;
     };
 
     if (phase === "checking") {
@@ -278,12 +279,12 @@ function wireMainEvents() {
       }
       setStatusAction("check-updates");
       setProgress(null);
-      patchSettingsHint(`Update ${data.version} available.`);
+      patchSettingsControls(`Update ${data.version} available.`, false);
     } else if (phase === "downloading") {
       const pct = Math.max(0, Math.min(100, Number(data.percent) || 0));
       setStatus(`Downloading update… ${pct}%`);
       setProgress(pct);
-      patchSettingsHint(`Downloading… ${pct}%`);
+      patchSettingsControls(`Downloading… ${pct}%`, false);
     } else if (phase === "ready") {
       const el = document.getElementById("statusbar-msg");
       if (el) {
@@ -292,15 +293,15 @@ function wireMainEvents() {
       }
       setStatusAction("install-update");
       setProgress(null);
-      refreshSettings();
+      patchSettingsControls(`Version ${data.version} downloaded.`, true);
     } else if (phase === "none") {
       setStatus(data.version ? `You're up to date (v${data.version}).` : "You're up to date.");
       setProgress(null);
-      refreshSettings();
+      patchSettingsControls("You're on the latest build (or check to confirm).", false);
     } else if (phase === "error") {
       setStatus(data.message || "Update error", true);
       setProgress(null);
-      refreshSettings();
+      patchSettingsControls(data.message || "Update error", false);
     }
   });
 
