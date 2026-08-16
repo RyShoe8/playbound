@@ -3695,13 +3695,19 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     if (fallback) entry = fallback;
   }
 
-  if (!entry) throw new Error(`Unknown game: ${slug}`);
+  if (entry.url && String(entry.url).includes("sahaquiel.us")) {
+    entry.kind = "external";
+    entry.url = "https://www.projectquarm.com/";
+  }
 
   if (entry.kind === "external") {
     await safeOpenExternal(steamDeepLinkFor(entry.url) || entry.url, {
       campaign: "launcher_install_external",
       content: slug,
     });
+    if (entry.postInstallDiscord) {
+      await maybeOpenEditionPostInstallHandoff(entry, null);
+    }
     // A plain external entry is a hand-off and we are done. One that also
     // carries a mod loader is not: PlayBound still has to place the mod files
     // once the store finishes installing, so watch for the executable the same
@@ -3722,7 +3728,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       startInstallerPoll(slug, externalEntry, "external");
       return { status: "installer-opened", editionSlug: externalEntry.editionSlug };
     }
-    return { status: "external" };
+    return { status: "external", editionSlug: entry.editionSlug || editionMeta?.editionSlug };
   }
 
   const editionExtra = {

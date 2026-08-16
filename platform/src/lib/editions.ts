@@ -92,39 +92,58 @@ function toEdition(doc: LeanEdition): Edition {
   const links = (doc.links as Record<string, unknown>) ?? {};
   const requirements = doc.requirements as Record<string, unknown> | null;
 
-  return {
-    id: String(doc._id),
-    gameId: doc.gameId ? String(doc.gameId) : undefined,
-    gameSlug: str(doc.gameSlug),
-    slug: str(doc.slug),
-    name: str(doc.name),
-    shortDescription: str(doc.shortDescription),
-    description: str(doc.description),
+    let installMethod = (doc.installMethod as InstallMethod) ?? "manual";
+    let installConfig = (doc.installConfig as EditionInstallConfig) ?? {};
 
-    type: (doc.type as EditionType) ?? "community",
-    status: (doc.status as EditionStatus) ?? "active",
-    visibility: (doc.visibility as EditionVisibility) ?? "public",
+    // If a legacy database record contains a dead/broken upstream URL (e.g. sahaquiel.us),
+    // override with the latest curated seed edition config so launcher installs don't fail.
+    const gameSlugStr = str(doc.gameSlug);
+    const editionSlugStr = str(doc.slug);
+    const seedMatch = seedEditions.find(
+      (s) => s.gameSlug === gameSlugStr && s.slug === editionSlugStr
+    );
+    if (
+      seedMatch &&
+      (JSON.stringify(installConfig).includes("sahaquiel.us") ||
+        (gameSlugStr === "everquest" && editionSlugStr === "project-quarm"))
+    ) {
+      installConfig = seedMatch.installConfig ?? installConfig;
+      installMethod = seedMatch.installMethod ?? installMethod;
+    }
 
-    sortOrder: Number(doc.sortOrder) || 0,
-    isDefault: Boolean(doc.isDefault),
+    return {
+      id: String(doc._id),
+      gameId: doc.gameId ? String(doc.gameId) : undefined,
+      gameSlug: gameSlugStr,
+      slug: editionSlugStr,
+      name: str(doc.name),
+      shortDescription: str(doc.shortDescription),
+      description: str(doc.description),
 
-    branding: {
-      logo: (branding.logo as string) || undefined,
-      heroImage: (branding.heroImage as string) || undefined,
-      screenshots: (branding.screenshots as string[]) ?? [],
-      videos: (branding.videos as string[]) ?? [],
-      artHue: branding.artHue == null ? undefined : Number(branding.artHue),
-    },
-    links: {
-      website: (links.website as string) || undefined,
-      discord: (links.discord as string) || undefined,
-      wiki: (links.wiki as string) || undefined,
-      github: (links.github as string) || undefined,
-      forum: (links.forum as string) || undefined,
-    },
+      type: (doc.type as EditionType) ?? "community",
+      status: (doc.status as EditionStatus) ?? "active",
+      visibility: (doc.visibility as EditionVisibility) ?? "public",
 
-    installMethod: (doc.installMethod as InstallMethod) ?? "manual",
-    installConfig: (doc.installConfig as EditionInstallConfig) ?? {},
+      sortOrder: Number(doc.sortOrder) || 0,
+      isDefault: Boolean(doc.isDefault),
+
+      branding: {
+        logo: (branding.logo as string) || undefined,
+        heroImage: (branding.heroImage as string) || undefined,
+        screenshots: (branding.screenshots as string[]) ?? [],
+        videos: (branding.videos as string[]) ?? [],
+        artHue: branding.artHue == null ? undefined : Number(branding.artHue),
+      },
+      links: {
+        website: (links.website as string) || seedMatch?.links?.website || undefined,
+        discord: (links.discord as string) || seedMatch?.links?.discord || undefined,
+        wiki: (links.wiki as string) || seedMatch?.links?.wiki || undefined,
+        github: (links.github as string) || seedMatch?.links?.github || undefined,
+        forum: (links.forum as string) || seedMatch?.links?.forum || undefined,
+      },
+
+      installMethod,
+      installConfig,
 
     requirements: requirements
       ? {
