@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { FriendsView } from "@/components/friends/FriendsView";
-import { PopoutButton } from "@/components/friends/PopoutButton";
 import { listGames } from "@/lib/catalog";
 import { GENRES } from "@/lib/gamePayload";
 
@@ -13,10 +12,7 @@ export default async function FriendsPage() {
   // Fetched here so the picker lists the real catalog rather than a hardcoded set.
   const games = await listGames();
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex justify-end">
-        <PopoutButton />
-      </div>
+    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-8 sm:px-6 lg:px-8">
       <FriendsView
         games={games.map((g) => ({ slug: g.slug, title: g.title }))}
         genres={[...GENRES]}
