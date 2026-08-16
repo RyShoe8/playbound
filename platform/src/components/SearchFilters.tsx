@@ -1,5 +1,4 @@
 "use client";
-import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
@@ -9,15 +8,6 @@ import { useTelemetry } from "@/lib/telemetry";
 
 type SortOption = "title" | "releaseYear" | "sizeMB";
 type SortDir = "asc" | "desc";
-
-const SIZE_OPTIONS = [
-  { label: "Any size", value: "" },
-  { label: "Under 200 MB", value: "200" },
-  { label: "Under 500 MB", value: "500" },
-  { label: "Under 1 GB", value: "1000" },
-  { label: "Under 5 GB", value: "5000" },
-  { label: "Under 10 GB", value: "10000" },
-] as const;
 
 const SORT_OPTIONS: { label: string; value: SortOption }[] = [
   { label: "Title", value: "title" },
@@ -38,7 +28,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${
+      className={`rounded-full px-6 py-2 text-sm font-semibold transition-all duration-200 ${
         active
           ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
           : "border border-border bg-secondary/50 text-secondary-foreground hover:border-primary/30 hover:bg-secondary"
@@ -49,27 +39,31 @@ function FilterChip({
   );
 }
 
-export function SearchFilters() {
+export function SearchFilters({
+  query = "",
+  resultCount = null,
+}: {
+  query?: string;
+  resultCount?: number | null;
+}) {
   const router = useRouter();
   const sp = useSearchParams();
   const { track } = useTelemetry();
 
-  const q = sp.get("q") ?? "";
+  const q = sp.get("q") ?? query;
   const genres = useMemo(() => sp.getAll("genre"), [sp]);
   const tags = useMemo(() => sp.getAll("tag"), [sp]);
   const platforms = useMemo(() => sp.getAll("platform"), [sp]);
   const features = useMemo(() => sp.getAll("feature"), [sp]);
   const sort = (sp.get("sort") ?? "title") as SortOption;
   const sortDir = (sp.get("sortDir") ?? "asc") as SortDir;
-  const maxSize = sp.get("maxSize") ?? "";
 
   const genreSet = useMemo(() => new Set(genres), [genres]);
   const tagSet = useMemo(() => new Set(tags), [tags]);
   const platformSet = useMemo(() => new Set(platforms), [platforms]);
   const featureSet = useMemo(() => new Set(features), [features]);
 
-  const activeFilterCount =
-    genres.length + tags.length + platforms.length + features.length + (maxSize ? 1 : 0);
+  const activeFilterCount = genres.length + tags.length + platforms.length + features.length;
 
   const buildUrl = useCallback(
     (overrides: Record<string, string | string[] | null>) => {
@@ -82,7 +76,6 @@ export function SearchFilters() {
         feature: features,
         sort,
         sortDir,
-        maxSize,
         ...overrides,
       };
       for (const [key, val] of Object.entries(values)) {
@@ -95,12 +88,11 @@ export function SearchFilters() {
           params.set(key, val);
         }
       }
-      // Remove defaults
       if (params.get("sort") === "title") params.delete("sort");
       if (params.get("sortDir") === "asc") params.delete("sortDir");
       return `/search?${params.toString()}`;
     },
-    [q, genres, tags, platforms, features, sort, sortDir, maxSize]
+    [q, genres, tags, platforms, features, sort, sortDir]
   );
 
   function toggleInArray(arr: string[], val: string): string[] {
@@ -136,16 +128,17 @@ export function SearchFilters() {
     void track("filter_changed", { surface: "search", filters: { sortDir: next } });
     router.push(buildUrl({ sortDir: next }));
   }
-  function setMaxSize(v: string) {
-    void track("filter_changed", { surface: "search", filters: { maxSize: v || null } });
-    router.push(buildUrl({ maxSize: v || null }));
-  }
   function clearFilters() {
     void track("filter_changed", { surface: "search", filters: { cleared: true } });
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     router.push(`/search?${params.toString()}`);
   }
+
+  const resultLabel =
+    resultCount == null
+      ? "Search games, developers, and collections — or use the filters above."
+      : `${resultCount} result${resultCount === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}`;
 
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-card/50 p-4 backdrop-blur-sm sm:p-5">
@@ -170,43 +163,39 @@ export function SearchFilters() {
         )}
       </div>
 
-      {/* Genres */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Genres
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-3">
           {GENRES.map((g) => (
             <FilterChip key={g} label={g} active={genreSet.has(g)} onClick={() => toggleGenre(g)} />
           ))}
         </div>
       </div>
 
-      {/* Tags */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Tags
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-3">
           {TAGS.map((t) => (
             <FilterChip key={t} label={t} active={tagSet.has(t)} onClick={() => toggleTag(t)} />
           ))}
         </div>
       </div>
 
-      {/* Platforms */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Platforms
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-3">
           {PLATFORMS.map((p) => (
             <FilterChip key={p} label={p} active={platformSet.has(p)} onClick={() => togglePlatform(p)} />
           ))}
         </div>
       </div>
 
-      {/* Features */}
       <details className="group">
         <summary className="mb-2 flex cursor-pointer list-none items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
@@ -217,7 +206,7 @@ export function SearchFilters() {
             </span>
           )}
         </summary>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-3">
           {FEATURES.map((f) => (
             <FilterChip
               key={f}
@@ -229,50 +218,30 @@ export function SearchFilters() {
         </div>
       </details>
 
-      {/* Sort & Size */}
-      <div className="flex flex-wrap items-end gap-4 border-t border-border/50 pt-4">
-        <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex flex-col gap-4 border-t border-border/50 pt-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Sort by
           </p>
-          <div className="flex items-center gap-1">
-            <PremiumSelect
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="h-8 rounded-lg border border-input bg-secondary/50 px-2.5 text-xs font-semibold outline-none focus:border-ring"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </PremiumSelect>
-            <button
-              type="button"
+          <div className="flex flex-wrap items-center gap-3">
+            {SORT_OPTIONS.map((o) => (
+              <FilterChip
+                key={o.value}
+                label={o.label}
+                active={sort === o.value}
+                onClick={() => setSort(o.value)}
+              />
+            ))}
+            <FilterChip
+              label={sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
+              active
               onClick={toggleSortDir}
-              className="flex h-8 items-center rounded-lg border border-input bg-secondary/50 px-2 text-xs font-semibold transition-colors hover:bg-secondary"
-              title={sortDir === "asc" ? "Ascending" : "Descending"}
-            >
-              {sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
-            </button>
+            />
           </div>
         </div>
-
-        <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Max size
-          </p>
-          <PremiumSelect
-            value={maxSize}
-            onChange={(e) => setMaxSize(e.target.value)}
-            className="h-8 rounded-lg border border-input bg-secondary/50 px-2.5 text-xs font-semibold outline-none focus:border-ring"
-          >
-            {SIZE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </PremiumSelect>
+        <div className="shrink-0 text-right">
+          <h1 className="text-2xl font-extrabold tracking-tight">Search</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{resultLabel}</p>
         </div>
       </div>
     </div>
