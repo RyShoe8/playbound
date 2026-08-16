@@ -1,0 +1,111 @@
+/**
+ * HTTP client for the PlayBound game-host agent on the public VPS.
+ * Soft-fails when GAME_HOST_URL / GAME_HOST_SECRET are unset.
+ */
+
+const TIMEOUT_MS = 12_000;
+
+export type GameHostRoom = {
+  roomId: string;
+  host: string;
+  port: number;
+  gameSlug: string;
+  name?: string;
+};
+
+function hostConfig(): { base: string; secret: string; publicIp: string } | null {
+  const base = process.env.GAME_HOST_URL?.replace(/\/$/, "");
+  const secret = process.env.GAME_HOST_SECRET;
+  if (!base || !secret) return null;
+  return {
+    base,
+    secret,
+    publicIp: process.env.GAME_HOST_PUBLIC_IP?.trim() || "",
+  };
+}
+
+export function isGameHostConfigured(): boolean {
+  return hostConfig() !== null;
+}
+
+async function hostFetch(
+  path: string,
+  init: RequestInit
+): Promise<Response | null> {
+  const cfg = hostConfig();
+  if (!cfg) return null;
+  return fetch(`${cfg.base}${path}`, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${cfg.secret}`,
+      ...(init.headers || {}),
+    },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+}
+
+export async function createHostRoom(opts: {
+  gameSlug: string;
+  partyId: string;
+  name?: string;
+  maxPlayers?: number;
+  editionSlug?: string | null;
+}): Promise<GameHostRoom | { error: string }> {
+  const cfg = hostConfig();
+  if (!cfg) return { error: "Game host is not configured" };
+
+  try {
+    const res = await hostFetch("/rooms", {
+      method: "POST",
+      body: JSON.stringify({
+        gameSlug: opts.gameSlug,
+        partyId: opts.partyId,
+        name: opts.name,
+        maxPlayers: opts.maxPlayers,
+        editionSlug: opts.editionSlug || null,
+      }),
+    });
+    if (!res) return { error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as GameHostRoom & {
+      error?: string;
+    };
+    if (!res.ok) {
+      return { error: data.error || `Game host returned ${res.status}` };
+    }
+    if (!data.roomId || !data.port) {
+      return { error: "Game host returned an incomplete room" };
+    }
+    const host = data.host || cfg.publicIp;
+    if (!host) return { error: "Game host did not return a public IP" };
+    return {
+      roomId: data.roomId,
+      host,
+      port: Number(data.port),
+      gameSlug: data.gameSlug || opts.gameSlug,
+      name: data.name,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Game host unreachable";
+    console.warn("[gameHost] create room failed:", message);
+    return { error: message };
+  }
+}
+
+export async function deleteHostRoom(roomId: string): Promise<boolean> {
+  if (!roomId) return false;
+  try {
+    const res = await hostFetch(`/rooms/${encodeURIComponent(roomId)}`, {
+      method: "DELETE",
+    });
+    if (!res) return false;
+    if (!res.ok && res.status !== 404) {
+      console.warn("[gameHost] delete room failed:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[gameHost] delete room error:", err);
+    return false;
+  }
+}

@@ -1,0 +1,18 @@
+[Unit]
+Description=PlayBound game-host agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=playbound
+Group=playbound
+WorkingDirectory=/opt/playbound-host/agent
+EnvironmentFile=/etc/playbound-game-host.env
+ExecStart=/usr/bin/node /opt/playbound-host/agent/index.js
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target
