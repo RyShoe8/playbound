@@ -81,6 +81,76 @@ function partyVoiceChannelName(raw, fallbackId) {
   return `party-${safe && safe !== "party" ? safe : shortId}`.slice(0, 100);
 }
 
+/**
+ * Event channel names. Same shape parties use, kept as helpers so the create
+ * and rename paths cannot drift apart.
+ */
+function eventNameSlug(raw, fallbackId) {
+  const safe = String(raw || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+  if (safe) return safe;
+  return String(fallbackId || "").replace(/[^a-z0-9]/gi, "").slice(-6) || "event";
+}
+
+function eventVoiceChannelName(raw, fallbackId) {
+  return `voice-${eventNameSlug(raw, fallbackId)}`.slice(0, 90);
+}
+
+function eventTextChannelName(raw, fallbackId) {
+  return `event-${eventNameSlug(raw, fallbackId)}`.slice(0, 90);
+}
+
+/** Category a temporary channel belongs under: the game's area, or Events. */
+const EVENTS_CATEGORY_NAME = "Events";
+
+async function resolveGameCategoryId(guild, gameSlug) {
+  const slug = String(gameSlug || "").trim();
+  if (!slug) return null;
+  if (games) {
+    const game = await games.findOne({ slug });
+    const textId = game?.communityLinks?.playboundDiscord?.channelId;
+    if (textId) {
+      try {
+        const text = await guild.channels.fetch(String(textId));
+        if (text?.parentId) return text.parentId;
+      } catch (err) {
+        console.warn("resolve game category", textId, err?.message || err);
+      }
+    }
+  }
+  const cat = await ensureCategory(guild, categoryNameForSlug(slug));
+  return cat.id;
+}
+
+/**
+ * Where an event's channels live: under its game's area once a game is picked,
+ * otherwise in one shared Events category. Mirrors how a party channel is
+ * placed by /parties/voice/place.
+ */
+async function resolveEventCategoryId(guild, gameSlug) {
+  const fromGame = await resolveGameCategoryId(guild, gameSlug);
+  if (fromGame) return fromGame;
+  const cat = await ensureCategory(guild, EVENTS_CATEGORY_NAME);
+  return cat.id;
+}
+
+/**
+ * Shared categories are reused by every event and game, so cleanup must never
+ * delete one — only the per-event categories the old provisioning flow made.
+ */
+function isSharedCategoryName(name) {
+  const n = String(name || "");
+  return (
+    n === EVENTS_CATEGORY_NAME ||
+    n.startsWith("GAME CHANNELS") ||
+    n === "PlayBound Parties"
+  );
+}
+
 function franchiseCategoryName(title) {
   return String(title || "Game").trim().slice(0, 100) || "Game";
 }
@@ -812,28 +882,22 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { eventId, title } = JSON.parse(body || "{}");
+      const { eventId, title, gameSlug } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
-      const safeName = String(title || "PlayBound Event")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "")
-        .slice(0, 80);
-      const category = await guild.channels.create({
-        name: `Event — ${(title || "PlayBound").slice(0, 80)}`,
-        type: ChannelType.GuildCategory,
-        reason: `PlayBound event ${eventId || ""}`,
-      });
+      // No dedicated category per event any more: an event with no game sits
+      // in the shared Events category, and one with a game sits in that game's
+      // area, the same way party channels are placed.
+      const categoryId = await resolveEventCategoryId(guild, gameSlug);
       const voice = await guild.channels.create({
-        name: `voice-${safeName || "event"}`.slice(0, 90),
+        name: eventVoiceChannelName(title, eventId),
         type: ChannelType.GuildVoice,
-        parent: category.id,
+        parent: categoryId,
         reason: `PlayBound event voice ${eventId || ""}`,
       });
       const text = await guild.channels.create({
-        name: `event-${safeName || "chat"}`.slice(0, 90),
+        name: eventTextChannelName(title, eventId),
         type: ChannelType.GuildText,
-        parent: category.id,
+        parent: categoryId,
         reason: `PlayBound event text ${eventId || ""}`,
       });
       const invite = await voice.createInvite({
@@ -851,7 +915,7 @@ const server = http.createServer(async (req, res) => {
           inviteUrl: invite.url,
           voiceChannelId: voice.id,
           textChannelId: text.id,
-          categoryId: category.id,
+          categoryId,
         })
       );
     } catch (err) {
@@ -869,7 +933,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const { voiceChannelId, textChannelId, categoryId } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
-      for (const id of [voiceChannelId, textChannelId, categoryId]) {
+      for (const id of [voiceChannelId, textChannelId]) {
         if (!id) continue;
         try {
           const ch = await guild.channels.fetch(id);
@@ -878,10 +942,105 @@ const server = http.createServer(async (req, res) => {
           console.warn("cleanup channel", id, err?.message || err);
         }
       }
+      /*
+       * Events now share the Events category and game categories with
+       * everything else, so deleting the recorded category would take other
+       * events' channels with it. Only the per-event categories the old flow
+       * created are removed, and only once they are empty.
+       */
+      if (categoryId) {
+        try {
+          const cat = await guild.channels.fetch(String(categoryId));
+          const stillUsed = cat?.children?.cache?.size > 0;
+          if (cat && !stillUsed && !isSharedCategoryName(cat.name)) {
+            await cat.delete("PlayBound event cleanup");
+          }
+        } catch (err) {
+          console.warn("cleanup category", categoryId, err?.message || err);
+        }
+      }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ success: true }));
     } catch (err) {
       console.error("events/voice/cleanup", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  // Renaming an event renames its channels, the same way a party rename does.
+  if (req.method === "POST" && req.url === "/events/voice/rename") {
+    if (!requireSecret(req, res)) return;
+    if (!client.isReady()) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Discord bot not ready" }));
+      return;
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { eventId, title, voiceChannelId, textChannelId } = JSON.parse(body || "{}");
+      if (!voiceChannelId && !textChannelId) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "voiceChannelId or textChannelId required" }));
+        return;
+      }
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const renamed = {};
+      if (voiceChannelId) {
+        const voice = await guild.channels.fetch(String(voiceChannelId)).catch(() => null);
+        if (voice?.type === ChannelType.GuildVoice) {
+          renamed.voice = eventVoiceChannelName(title, eventId);
+          await voice.setName(renamed.voice, "PlayBound event rename");
+        }
+      }
+      if (textChannelId) {
+        const text = await guild.channels.fetch(String(textChannelId)).catch(() => null);
+        if (text?.type === ChannelType.GuildText) {
+          renamed.text = eventTextChannelName(title, eventId);
+          await text.setName(renamed.text, "PlayBound event rename");
+        }
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, ...renamed }));
+    } catch (err) {
+      console.error("events/voice/rename", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  // Picking (or clearing) an event's game moves its channels to that area.
+  if (req.method === "POST" && req.url === "/events/voice/place") {
+    if (!requireSecret(req, res)) return;
+    if (!client.isReady()) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Discord bot not ready" }));
+      return;
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { gameSlug, voiceChannelId, textChannelId } = JSON.parse(body || "{}");
+      if (!voiceChannelId && !textChannelId) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "voiceChannelId or textChannelId required" }));
+        return;
+      }
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const categoryId = await resolveEventCategoryId(guild, gameSlug);
+      for (const id of [voiceChannelId, textChannelId]) {
+        if (!id) continue;
+        const ch = await guild.channels.fetch(String(id)).catch(() => null);
+        if (!ch || ch.parentId === categoryId) continue;
+        await ch.setParent(categoryId, { reason: "PlayBound event moved to game area" });
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, categoryId }));
+    } catch (err) {
+      console.error("events/voice/place", err);
       res.writeHead(500);
       res.end(String(err?.message || err));
     }
@@ -1030,23 +1189,9 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const slug = String(gameSlug || "").trim();
-      let categoryId = null;
-      if (slug && games) {
-        const game = await games.findOne({ slug });
-        const textId = game?.communityLinks?.playboundDiscord?.channelId;
-        if (textId) {
-          try {
-            const text = await guild.channels.fetch(String(textId));
-            if (text?.parentId) categoryId = text.parentId;
-          } catch (err) {
-            console.warn("party voice place text channel", textId, err?.message || err);
-          }
-        }
-      }
-      if (!categoryId) {
-        const cat = await ensureCategory(guild, categoryNameForSlug(slug || "a"));
-        categoryId = cat.id;
-      }
+      const categoryId =
+        (await resolveGameCategoryId(guild, slug)) ||
+        (await ensureCategory(guild, categoryNameForSlug(slug || "a"))).id;
       await voice.setParent(categoryId, { reason: "PlayBound party under game category" });
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ success: true, categoryId }));

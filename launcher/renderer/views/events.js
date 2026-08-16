@@ -316,10 +316,23 @@ async function renderEventsView() {
             : ""
         }
       </div>
-      <button class="btn-secondary btn-sm" type="button">View Event</button>
+      <div style="display: flex; gap: 8px; flex-shrink: 0;">
+        ${
+          ev.discordInviteUrl
+            ? `<button class="btn-primary btn-sm" type="button" data-discord="${escapeHtml(
+                ev.discordInviteUrl
+              )}">Join Discord</button>`
+            : ""
+        }
+        <button class="btn-secondary btn-sm" type="button" data-view-event="1">View Event</button>
+      </div>
     `;
-    row.querySelector("button")?.addEventListener("click", () => {
+    row.querySelector("[data-view-event]")?.addEventListener("click", () => {
       window.playbound.openExternal(href);
+    });
+    // Points at the event's own voice channel once the bot has provisioned it.
+    row.querySelector("[data-discord]")?.addEventListener("click", (e) => {
+      window.playbound.openExternal(e.currentTarget.dataset.discord);
     });
     list.appendChild(row);
   }
