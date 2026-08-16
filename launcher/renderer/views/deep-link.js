@@ -72,6 +72,44 @@ function renderDeepLinkView(ctx) {
       <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
     `;
 
+    /*
+     * Mods the link asked for, installed after the game rather than with it.
+     *
+     * They go through the same install-mod path the Mods tab uses, which needs
+     * the base game present to place files into — so this can only run once
+     * the game install has reported "installed". A hand-off that ends in
+     * "installer-opened" (Steam and other external stores) has no game on disk
+     * yet, so nothing is attempted there.
+     *
+     * One failing mod does not fail the rest, and none of them fail the game
+     * install that already succeeded: the point of the link was to get the
+     * player into the party, and a missing mod is worth reporting rather than
+     * unwinding a good install over.
+     */
+    const installLinkedMods = async () => {
+      const mods = Array.isArray(ctx.modSlugs) ? ctx.modSlugs : [];
+      if (mods.length === 0) return;
+      const failed = [];
+      for (let i = 0; i < mods.length; i++) {
+        setStatus(`Installing mod ${i + 1} of ${mods.length}…`);
+        try {
+          await window.playbound.installMod(mods[i], null);
+        } catch (err) {
+          failed.push(mods[i]);
+          console.warn(`install-mod ${mods[i]} failed:`, err?.message || err);
+        }
+      }
+      setProgress(null);
+      if (failed.length) {
+        setStatus(
+          `Game installed. ${failed.length} mod${failed.length === 1 ? "" : "s"} could not be installed: ${failed.join(", ")}`,
+          true
+        );
+      } else {
+        setStatus(`Install complete — ${mods.length} mod${mods.length === 1 ? "" : "s"} added.`);
+      }
+    };
+
     const startInstall = async () => {
       setStatus(`Installing ${title}…`);
       try {
@@ -87,6 +125,7 @@ function renderDeepLinkView(ctx) {
         if (res.status === "installed") {
           setStatus("Install complete!");
           setProgress(null);
+          await installLinkedMods();
         }
         api.navigateTo("library");
       } catch (err) {
