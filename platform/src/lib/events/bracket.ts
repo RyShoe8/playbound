@@ -6,6 +6,7 @@ import {
   Tournament,
   TournamentMatch,
   TournamentParticipant,
+  TournamentTeam,
 } from "@/lib/models/Tournament";
 import { nextPowerOfTwoForTest } from "@/lib/events/bracketHelpers";
 
@@ -20,10 +21,39 @@ export async function generateSingleElimBracket(tournamentId: string): Promise<{
   const tournament = await Tournament.findById(tournamentId);
   if (!tournament) throw Object.assign(new Error("Tournament not found"), { status: 404 });
 
-  const participants = await TournamentParticipant.find({
-    tournamentId: tournament._id,
-    state: { $in: ["registered", "checked_in", "active"] },
-  }).lean();
+  let participants;
+  if (tournament.teamSize > 1) {
+    const teams = await TournamentTeam.find({ tournamentId: tournament._id }).lean();
+    const full = teams.filter(
+      (t) => (t.memberUserIds || []).length >= tournament.teamSize
+    );
+    if (full.length < 2) {
+      throw Object.assign(new Error("Need at least 2 full teams"), { status: 400 });
+    }
+    const entries = [];
+    for (const team of full) {
+      const p = await TournamentParticipant.findOneAndUpdate(
+        { tournamentId: tournament._id, teamId: team._id, userId: null },
+        {
+          $setOnInsert: {
+            tournamentId: tournament._id,
+            teamId: team._id,
+            userId: null,
+            state: "registered",
+          },
+        },
+        { upsert: true, returnDocument: "after" }
+      );
+      if (p) entries.push(p.toObject ? p.toObject() : p);
+    }
+    participants = entries;
+  } else {
+    participants = await TournamentParticipant.find({
+      tournamentId: tournament._id,
+      state: { $in: ["registered", "checked_in", "active"] },
+      userId: { $ne: null },
+    }).lean();
+  }
 
   if (participants.length < 2) {
     throw Object.assign(new Error("Need at least 2 participants"), { status: 400 });

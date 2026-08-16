@@ -571,20 +571,70 @@ export async function searchAll(
   };
 }
 
+/**
+ * Completed play sessions per slug, all time.
+ *
+ * Counts `game_finished` events rather than summing their durationMs: the
+ * question "plays" answers is how many times a game got played, which a
+ * handful of marathon sessions should not be able to dominate — that is what
+ * mostPopularGames already ranks by. Cached on the same cadence as the rest of
+ * the activity figures.
+ */
+export function playCountsBySlug(): Promise<Record<string, number>> {
+  return unstable_cache(computePlayCountsBySlug, ["catalog-play-counts"], {
+    revalidate: 900,
+    tags: ["catalog", "live-activity"],
+  })();
+}
+
+async function computePlayCountsBySlug(): Promise<Record<string, number>> {
+  try {
+    await dbConnect();
+    const rows = await TelemetryEvent.aggregate<{ _id: string; plays: number }>([
+      {
+        $match: {
+          event: "game_finished",
+          "properties.gameSlug": { $type: "string", $ne: "" },
+        },
+      },
+      { $group: { _id: "$properties.gameSlug", plays: { $sum: 1 } } },
+    ]);
+    const out: Record<string, number> = {};
+    for (const row of rows) out[String(row._id)] = Number(row.plays) || 0;
+    return out;
+  } catch (err) {
+    console.error("[catalog] playCountsBySlug failed:", err);
+    return {};
+  }
+}
+
 export interface GameFilter {
   q?: string;
   genres?: string[];
   tags?: string[];
   platforms?: string[];
   features?: string[];
-  sort?: "title" | "releaseYear" | "sizeMB";
+  /*
+   * No "sizeMB". Size survives as the maxSizeMB *filter*, which is the real
+   * question ("what fits on my disk"); ordering the whole catalog by megabytes
+   * ranks games by something nobody is shopping for.
+   */
+  sort?: "title" | "releaseYear" | "players" | "plays";
   sortDir?: "asc" | "desc";
   maxSizeMB?: number;
 }
 
 export async function searchGames(
   filter: GameFilter,
-  opts?: { includeTesting?: boolean }
+  opts?: {
+    includeTesting?: boolean;
+    /**
+     * Live concurrent players per slug, for sort=players. Passed in rather
+     * than imported because liveActivity imports this module — reaching back
+     * the other way would close an import cycle.
+     */
+    playingNow?: Record<string, number>;
+  }
 ): Promise<Game[]> {
   let games = await listGames({ includeTesting: opts?.includeTesting });
 
@@ -632,16 +682,33 @@ export async function searchGames(
 
   const sortKey = filter.sort ?? "title";
   const dir = filter.sortDir ?? "asc";
+
+  const players = sortKey === "players" ? opts?.playingNow ?? {} : null;
+  const plays = sortKey === "plays" ? await playCountsBySlug() : null;
+
+  const byTitle = (a: Game, b: Game) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+
   games.sort((a, b) => {
     let cmp = 0;
     if (sortKey === "title") {
-      cmp = a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+      cmp = byTitle(a, b);
     } else if (sortKey === "releaseYear") {
       cmp = a.releaseYear - b.releaseYear;
-    } else if (sortKey === "sizeMB") {
-      cmp = a.sizeMB - b.sizeMB;
+    } else if (players) {
+      cmp = (players[a.slug] ?? 0) - (players[b.slug] ?? 0);
+    } else if (plays) {
+      cmp = (plays[a.slug] ?? 0) - (plays[b.slug] ?? 0);
     }
-    return dir === "desc" ? -cmp : cmp;
+    if (cmp !== 0) return dir === "desc" ? -cmp : cmp;
+    /*
+     * Most games share a count of zero on both activity sorts, so without a
+     * tiebreak their order is whatever listGames happened to return and shifts
+     * between requests. Title breaks the tie, and deliberately outside the
+     * direction flip: on "most players first" the inactive tail should still
+     * read A–Z rather than Z–A.
+     */
+    return sortKey === "title" ? 0 : byTitle(a, b);
   });
 
   return games;

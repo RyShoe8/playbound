@@ -60,10 +60,18 @@ export default async function SearchPage({
     sortDir,
   };
 
-  const [games, liveStats] = await Promise.all([
-    hasAny ? searchGames(filter, { includeTesting }) : Promise.resolve([] as Awaited<ReturnType<typeof searchGames>>),
-    getCatalogLiveStats(),
-  ]);
+  /*
+   * Both start together; sort=players is the only path that has to await the
+   * stats before searching, so every other sort keeps the parallel fetch.
+   */
+  const liveStatsPromise = getCatalogLiveStats();
+  const games = hasAny
+    ? await searchGames(filter, {
+        includeTesting,
+        playingNow: sort === "players" ? playingNowBySlug(await liveStatsPromise) : undefined,
+      })
+    : ([] as Awaited<ReturnType<typeof searchGames>>);
+  const liveStats = await liveStatsPromise;
 
   // Also search developers and collections when there's a text query
   const otherResults = hasSearch ? await searchAll(q, { includeTesting }) : null;

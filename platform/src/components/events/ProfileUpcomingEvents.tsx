@@ -5,6 +5,7 @@ import EventRsvp from "@/lib/models/EventRsvp";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { serializeEvent } from "@/lib/events/serialize";
 import { PUBLIC_LISTABLE_STATUSES } from "@/lib/events/types";
+import { EventLocalWhen } from "@/components/LocalTime";
 
 /** Upcoming events the user RSVP'd going/maybe to (self profile only). */
 export async function ProfileUpcomingEvents({ userId }: { userId: string }) {
@@ -47,7 +48,9 @@ export async function ProfileUpcomingEvents({ userId }: { userId: string }) {
                   {s.title}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {s.when.dateLine} · {statusByEvent.get(s.id)}
+                  <EventLocalWhen startsAt={s.startsAt} endsAt={s.endsAt} />
+                  {" · "}
+                  {statusByEvent.get(s.id)}
                 </p>
               </div>
               <Link

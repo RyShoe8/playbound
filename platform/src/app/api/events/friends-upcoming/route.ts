@@ -62,7 +62,8 @@ export async function GET() {
       return {
         id: serialized.id,
         title: serialized.title,
-        when: serialized.when,
+        startsAt: serialized.startsAt,
+        endsAt: serialized.endsAt,
         friendCount: goingFriends.length,
         friendNames: names,
       };

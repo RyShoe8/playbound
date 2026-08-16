@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SerializedEvent } from "@/lib/events/serialize";
+import { EventLocalWhen } from "@/components/LocalTime";
 
 export function AdminEventsTable({
   events,
@@ -70,9 +71,7 @@ export function AdminEventsTable({
                 </p>
               </td>
               <td className="px-3 py-2 text-xs text-muted-foreground">
-                {e.when.dateLine}
-                <br />
-                {e.when.timeLine}
+                <EventLocalWhen startsAt={e.startsAt} endsAt={e.endsAt} />
               </td>
               <td className="px-3 py-2 text-xs capitalize">{e.status}</td>
               <td className="px-3 py-2">{e.counts?.going ?? 0}</td>

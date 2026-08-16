@@ -21,10 +21,14 @@ import { EventActionBar } from "@/components/events/EventActionBar";
 import { EventViewTracker } from "@/components/events/EventViewTracker";
 import { TournamentBracket } from "@/components/events/TournamentBracket";
 import { TournamentCheckInButton } from "@/components/events/TournamentCheckInButton";
+import { EventRoster } from "@/components/events/EventRoster";
+import { EventLocalWhen } from "@/components/LocalTime";
+import { teamSizeLabel } from "@/lib/events/types";
 import {
   Tournament,
   TournamentMatch,
   TournamentParticipant,
+  TournamentTeam,
 } from "@/lib/models/Tournament";
 
 type Props = { params: Promise<{ id: string }> };
@@ -76,9 +80,41 @@ export default async function EventDetailPage({ params }: Props) {
     organizerName = u?.username || null;
   }
 
+  const goingRsvps = await EventRsvp.find({
+    eventId: eventDoc._id,
+    status: "going",
+  })
+    .select({ userId: 1 })
+    .lean();
+  const goingIds = goingRsvps.map((r) => r.userId);
+  const goingUsers = goingIds.length
+    ? await User.find({ _id: { $in: goingIds } }).select({ username: 1 }).lean()
+    : [];
+  const nameById = new Map(
+    goingUsers.map((u) => [String(u._id), u.username || "Player"])
+  );
+  const registeredPeople = goingRsvps.map((r) => ({
+    userId: String(r.userId),
+    username: nameById.get(String(r.userId)) || "Player",
+  }));
+
   let tournamentPayload: {
     format: string;
-    participants: { id: string; userId: string | null; state: string; seed: number | null }[];
+    teamSize: number;
+    teams: {
+      id: string;
+      name: string;
+      captainUserId: string;
+      members: { userId: string; username: string }[];
+    }[];
+    participants: {
+      id: string;
+      userId: string | null;
+      teamId: string | null;
+      label: string;
+      state: string;
+      seed: number | null;
+    }[];
     matches: {
       id: string;
       round: number;
@@ -95,20 +131,53 @@ export default async function EventDetailPage({ params }: Props) {
   if (event.eventType === "tournament") {
     const t = await Tournament.findOne({ eventId: eventDoc._id }).lean();
     if (t) {
-      const [participants, matches] = await Promise.all([
+      const [participants, matches, teams] = await Promise.all([
         TournamentParticipant.find({ tournamentId: t._id }).lean(),
         TournamentMatch.find({ tournamentId: t._id })
           .sort({ round: 1, matchNumber: 1 })
           .lean(),
+        TournamentTeam.find({ tournamentId: t._id }).lean(),
       ]);
+      const extraIds = [
+        ...participants.map((p) => p.userId).filter(Boolean),
+        ...teams.flatMap((team) => [team.captainUserId, ...(team.memberUserIds || [])]),
+      ];
+      const extraUsers = extraIds.length
+        ? await User.find({ _id: { $in: extraIds } }).select({ username: 1 }).lean()
+        : [];
+      for (const u of extraUsers) {
+        nameById.set(String(u._id), u.username || "Player");
+      }
+      const teamNameById = new Map(teams.map((team) => [String(team._id), team.name]));
       tournamentPayload = {
         format: t.format,
-        participants: participants.map((p) => ({
-          id: String(p._id),
-          userId: p.userId ? String(p.userId) : null,
-          state: p.state,
-          seed: p.seed,
+        teamSize: t.teamSize || 1,
+        teams: teams.map((team) => ({
+          id: String(team._id),
+          name: team.name,
+          captainUserId: String(team.captainUserId),
+          members: (team.memberUserIds || []).map((id: unknown) => ({
+            userId: String(id),
+            username: nameById.get(String(id)) || "Player",
+          })),
         })),
+        participants: participants.map((p) => {
+          const teamId = p.teamId ? String(p.teamId) : null;
+          const userId = p.userId ? String(p.userId) : null;
+          const label = teamId
+            ? teamNameById.get(teamId) || "Team"
+            : userId
+              ? nameById.get(userId) || "Player"
+              : "TBD";
+          return {
+            id: String(p._id),
+            userId,
+            teamId,
+            label,
+            state: p.state,
+            seed: p.seed,
+          };
+        }),
         matches: matches.map((m) => ({
           id: String(m._id),
           round: m.round,
@@ -125,6 +194,8 @@ export default async function EventDetailPage({ params }: Props) {
       };
     }
   }
+
+  const isAdmin = session?.user?.role === "admin";
 
   const isLive = event.status === "live";
   const rsvpOpen = canRsvp(event.status);
@@ -170,12 +241,13 @@ export default async function EventDetailPage({ params }: Props) {
         ) : null}
         <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <CalendarDays className="size-4" />
-          <span>
-            {event.when.dateLine}
-            <br />
-            {event.when.rangeLine}
-          </span>
+          <EventLocalWhen startsAt={event.startsAt} endsAt={event.endsAt} />
         </p>
+        {tournamentPayload ? (
+          <p className="text-sm font-semibold text-muted-foreground">
+            {teamSizeLabel(tournamentPayload.teamSize)}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-4 text-sm font-semibold">
@@ -200,24 +272,37 @@ export default async function EventDetailPage({ params }: Props) {
 
       <section className="space-y-3">
         <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
-          Join the fun
+          {event.eventType === "tournament" ? "Register" : "Join the fun"}
         </h2>
         <EventRsvpActions
           eventId={event.id}
           gameSlug={event.gameSlug}
           initialStatus={myRsvp}
           disabled={!rsvpOpen}
+          mode={event.eventType === "tournament" ? "register" : "rsvp"}
         />
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-5">
-        <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
-          About
-        </h2>
-        <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-          {event.description}
-        </p>
-      </section>
+      <EventRoster
+        eventId={event.id}
+        eventType={event.eventType}
+        people={registeredPeople}
+        teams={tournamentPayload?.teams || []}
+        teamSize={tournamentPayload?.teamSize || 1}
+        isAdmin={isAdmin}
+        registered={myRsvp === "going"}
+      />
+
+      {event.description.trim() ? (
+        <section className="rounded-xl border border-border bg-card p-5">
+          <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
+            About
+          </h2>
+          <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+            {event.description}
+          </p>
+        </section>
+      ) : null}
 
       <EventFriendsAttending eventId={event.id} />
 
@@ -225,9 +310,12 @@ export default async function EventDetailPage({ params }: Props) {
         <>
           <TournamentCheckInButton eventId={event.id} />
           <TournamentBracket
+            eventId={event.id}
             format={tournamentPayload.format}
+            teamSize={tournamentPayload.teamSize}
             participants={tournamentPayload.participants}
             matches={tournamentPayload.matches}
+            isAdmin={isAdmin}
           />
         </>
       ) : null}

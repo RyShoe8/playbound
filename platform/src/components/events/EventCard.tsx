@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Gamepad2, PartyPopper, Trophy, Users } from "lucide-react";
 import type { SerializedEvent } from "@/lib/events/serialize";
 import { eventTypeLabel } from "@/lib/events/types";
+import { EventLocalWhen } from "@/components/LocalTime";
 
 export function EventCard({
   event,
@@ -41,9 +42,13 @@ export function EventCard({
       )}
       <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
         <CalendarDays className="size-3" />
-        {event.when.dateLine} · {event.when.rangeLine}
+        <EventLocalWhen startsAt={event.startsAt} endsAt={event.endsAt} />
       </p>
-      <p className="mt-2 line-clamp-2 flex-1 text-sm text-muted-foreground">{event.description}</p>
+      {event.description.trim() ? (
+        <p className="mt-2 line-clamp-2 flex-1 text-sm text-muted-foreground">{event.description}</p>
+      ) : (
+        <div className="mt-2 flex-1" />
+      )}
       <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground/80">
         <Users className="size-3.5" />
         {going} going

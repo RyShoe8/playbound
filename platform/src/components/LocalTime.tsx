@@ -24,8 +24,8 @@ export function LocalTime({
   /** ISO 8601 string or Date. */
   value: string | Date | null | undefined;
   className?: string;
-  /** `datetime` (default) or `date` only. */
-  mode?: "datetime" | "date";
+  /** `datetime` (default), `date` only, or event wall-clock with short TZ. */
+  mode?: "datetime" | "date" | "event";
 }) {
   const [local, setLocal] = useState<string | null>(null);
   const iso =
@@ -44,7 +44,20 @@ export function LocalTime({
     // the server's and the second the viewer's. Formatting during render
     // instead would produce a hydration mismatch rather than avoid one.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocal(mode === "date" ? d.toLocaleDateString() : d.toLocaleString());
+    setLocal(
+      mode === "date"
+        ? d.toLocaleDateString()
+        : mode === "event"
+          ? d.toLocaleString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              timeZoneName: "short",
+            })
+          : d.toLocaleString()
+    );
   }, [iso, mode]);
 
   if (!iso) return <span className={className}>—</span>;
@@ -60,6 +73,57 @@ export function LocalTime({
   return (
     <time dateTime={iso} className={className} suppressHydrationWarning>
       {local ?? fallback}
+    </time>
+  );
+}
+
+/** Start (and optional end) in the viewer's timezone, with a short zone name. */
+export function EventLocalWhen({
+  startsAt,
+  endsAt,
+  className,
+}: {
+  startsAt: string;
+  endsAt?: string | null;
+  className?: string;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    const start = new Date(startsAt);
+    if (Number.isNaN(start.getTime())) return;
+    // Same client-only format as LocalTime — first paint is UTC, then viewer TZ.
+    const dateLine = start.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
+    const startTime = start.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+    const end = endsAt ? new Date(endsAt) : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (end && !Number.isNaN(end.getTime())) {
+      const endTime = end.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+      setText(`${dateLine} · ${start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} – ${endTime}`);
+    } else {
+      setText(`${dateLine} · ${startTime}`);
+    }
+  }, [startsAt, endsAt]);
+
+  const start = new Date(startsAt);
+  const fallback = Number.isNaN(start.getTime())
+    ? "—"
+    : `${start.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+
+  return (
+    <time dateTime={startsAt} className={className} suppressHydrationWarning>
+      {text ?? fallback}
     </time>
   );
 }

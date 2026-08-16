@@ -26,11 +26,22 @@ async function acceptedFriendIds(userId: string): Promise<string[]> {
   })
     .select("requesterId recipientId")
     .lean();
-  return friendships.map((f) => {
-    const a = String(f.requesterId);
-    const b = String(f.recipientId);
-    return a === userId ? b : a;
-  });
+  /*
+   * The viewer can never be their own friend. Picking "the other side" of the
+   * pair relies on one side matching userId exactly; if that comparison ever
+   * fails — an id that stringifies differently, or a self-referential row that
+   * predates the guard in sendFriendRequestBetween — the ternary hands back the
+   * viewer's own id and they appear in their own friends list, which is what
+   * the homepage was showing. Filtering here holds the invariant no matter
+   * which of those is true.
+   */
+  return friendships
+    .map((f) => {
+      const a = String(f.requesterId);
+      const b = String(f.recipientId);
+      return a === userId ? b : a;
+    })
+    .filter((id) => id !== userId);
 }
 
 /** Games both you and ≥1 friend have in library, preferring multiplayer + live activity. */

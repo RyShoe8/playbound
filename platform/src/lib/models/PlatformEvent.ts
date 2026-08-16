@@ -9,7 +9,7 @@ import {
 const PlatformEventSchema = new Schema(
   {
     title: { type: String, required: true, maxlength: 150 },
-    description: { type: String, required: true, maxlength: 4000 },
+    description: { type: String, default: "", maxlength: 4000 },
     eventType: {
       type: String,
       default: "game_night",
