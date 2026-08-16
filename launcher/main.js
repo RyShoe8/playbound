@@ -3659,6 +3659,7 @@ async function ensureEditionMods(slug, entry, gameDir, exePath) {
     if (!fs.existsSync(patcher) || !fs.existsSync(nativeDll)) {
       throw new Error("Mod loader files are missing — reinstall the edition.");
     }
+    await waitForWritableExecutable(exePath, entry?.title || entry?.gameTitle);
     sendProgress({ phase: "installer-ready", addon: "Enabling mods" });
     await runAuriePatcher(patcher, exePath, nativeDll, "install");
     // Trust the executable, not the patcher's exit code.
@@ -3693,6 +3694,71 @@ async function removeEditionModPatch(entry, gameDir, exePath) {
 }
 
 /**
+ * Whether the executable is currently locked against writing.
+ *
+ * Windows maps a running image with FILE_SHARE_READ and no write sharing, so
+ * asking for write access to a game that is on screen fails with a sharing
+ * violation, which Node surfaces as EBUSY. Anything else — missing file, an
+ * unexpected errno — is reported as "not locked" so the caller's real error
+ * path handles it rather than this probe inventing a diagnosis.
+ */
+function isExecutableLocked(exePath) {
+  let fd;
+  try {
+    fd = fs.openSync(exePath, "r+");
+    return false;
+  } catch (err) {
+    const code = err?.code;
+    return code === "EBUSY" || code === "EPERM" || code === "EACCES";
+  } finally {
+    if (fd !== undefined) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        /* nothing useful to do */
+      }
+    }
+  }
+}
+
+/**
+ * Block until the game executable can be written, or give up with an
+ * instruction the player can act on.
+ *
+ * AuriePatcher rewrites the executable in place and exits 5
+ * (ERROR_ACCESS_DENIED) when it cannot, saying nothing about why. That is the
+ * common case rather than an edge one: Steam's button for an unclaimed
+ * free-to-play title reads "Play Game", so the click that installs the game
+ * also launches it, and our installer poll notices the new executable while it
+ * is still running. Writing *new* files into the game folder keeps working
+ * throughout, which is why the mod payload lands and only the patch step
+ * fails — a shape that reads as a permissions problem but is not one.
+ *
+ * Waiting rather than failing means the ordinary path (player alt-tabs out and
+ * quits) needs nothing explained to them at all.
+ */
+async function waitForWritableExecutable(exePath, title, timeoutMs = 90_000) {
+  if (!isExecutableLocked(exePath)) return;
+  const name = title || path.basename(exePath);
+  sendProgress({ phase: "installer-ready", addon: `Waiting for ${name} to close` });
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", {
+      slug: null,
+      phase: "waiting",
+      message: `${name} is running — close it to finish enabling mods.`,
+    });
+  }
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 2000));
+    if (!isExecutableLocked(exePath)) return;
+  }
+  throw new Error(
+    `${name} is still running, so the mod loader can't modify it. Close the game, then press Install again.`
+  );
+}
+
+/**
  * Run AuriePatcher headlessly.
  *
  * With four argv entries the patcher takes the non-interactive path and every
@@ -3710,8 +3776,25 @@ function runAuriePatcher(patcherPath, exePath, nativeDllPath, action) {
     child.stderr?.on("data", (d) => (out += d));
     child.on("error", reject);
     child.on("close", (code) => {
-      if (code === 0) resolve(out);
-      else reject(new Error(`AuriePatcher ${action} failed (exit ${code}): ${out.trim().slice(0, 300)}`));
+      if (code === 0) {
+        resolve(out);
+        return;
+      }
+      /*
+       * Exit 5 is ERROR_ACCESS_DENIED, which here almost always means the game
+       * was launched between the writability check and this call rather than
+       * anything to do with file permissions — the patcher rewrites the
+       * executable in place and Windows refuses while it is running.
+       */
+      const hint =
+        code === 5
+          ? " The game appears to be running — close it and press Install again."
+          : "";
+      reject(
+        new Error(
+          `AuriePatcher ${action} failed (exit ${code}).${hint} ${out.trim().slice(0, 300)}`
+        )
+      );
     });
   });
 }
