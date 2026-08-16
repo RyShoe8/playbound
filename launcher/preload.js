@@ -86,6 +86,21 @@ contextBridge.exposeInMainWorld("playbound", {
   joinParty: (partyId, password) => ipcRenderer.invoke("join-party", partyId, password),
   leaveParty: (partyId) => ipcRenderer.invoke("leave-party", partyId),
   inviteToParty: (partyId, friendIds) => ipcRenderer.invoke("invite-to-party", partyId, friendIds || []),
+  setPartyGame: (partyId, gameSlug) => ipcRenderer.invoke("update-party", partyId, { gameSlug }),
+  setPartyName: (partyId, name) => ipcRenderer.invoke("update-party", partyId, { name }),
+  setPartyVisibility: (partyId, visibility) =>
+    ipcRenderer.invoke("update-party", partyId, { visibility }),
+  setPartyReady: (partyId, ready) => ipcRenderer.invoke("set-party-ready", partyId, ready),
+  partyJoinGame: (partyId) => ipcRenderer.invoke("party-join-game", partyId),
+  endParty: (partyId) => ipcRenderer.invoke("end-party", partyId),
+  removePartyMember: (partyId, userId) =>
+    ipcRenderer.invoke("remove-party-member", partyId, userId),
+  transferPartyLeadership: (partyId, userId) =>
+    ipcRenderer.invoke("transfer-party-leadership", partyId, userId),
+  provisionPartyDiscord: (partyId) => ipcRenderer.invoke("provision-party-discord", partyId),
+  setPresenceVisibility: (patch) => ipcRenderer.invoke("set-presence-visibility", patch || {}),
+  getLfg: () => ipcRenderer.invoke("get-lfg"),
+  setLfg: (enabled, gameSlug) => ipcRenderer.invoke("set-lfg", enabled, gameSlug || null),
   getDiscordStatus: () => ipcRenderer.invoke("get-discord-status"),
   linkDiscord: () => ipcRenderer.invoke("link-discord"),
   // Catalog / servers / mods

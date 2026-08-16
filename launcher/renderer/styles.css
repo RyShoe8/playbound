@@ -2227,10 +2227,326 @@ textarea.input-text {
 .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 6px; border: 2px solid var(--bg-card); }  
 .dot-online { background: #10b981; }  
 .dot-playing { background: #8b5cf6; }  
-.friend-info { display: flex; flex-direction: column; gap: 2px; }  
-.friend-name { font-weight: 600; display: flex; align-items: center; gap: 4px; }  
-.friend-status { font-size: 13px; color: var(--text-muted); }  
+.friend-info { display: flex; flex-direction: column; gap: 2px; }
+.friend-name { font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.friend-status { font-size: 13px; color: var(--text-muted); }
 .friend-actions { display: flex; gap: 8px; }
+.dot-away { background: #fbbf24; }
+
+/*
+ * Friends + parties, structured to match platform/src/components/friends/.
+ * The site lays friends out as a responsive card grid rather than a stack, and
+ * each card reserves a bottom row for the shared-library chips so cards in a
+ * row line up regardless of how much any one person has installed.
+ */
+.friends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.friends-grid .friend-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 16px;
+}
+.friend-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.friend-card-bottom { margin-top: auto; }
+.friend-shared { display: flex; flex-wrap: wrap; gap: 6px; }
+.friend-shared-chip {
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+.friend-shared-chip:hover { background: rgba(255, 255, 255, 0.12); }
+.friend-shared-more { color: var(--text-muted); cursor: default; }
+.friend-shared-more:hover { background: rgba(255, 255, 255, 0.06); }
+.discord-badge {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #5865f2;
+}
+
+/* Party window — mirrors PartyView.tsx */
+.party-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.party-panel-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.party-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.party-header-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.party-header-side { width: 176px; flex-shrink: 0; }
+.party-title { font-size: 18px; font-weight: 700; margin: 0; }
+.party-name-input { max-width: 380px; font-weight: 700; }
+.party-game-select { max-width: 380px; }
+.party-game-label { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.party-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.party-meta-count { display: inline-flex; align-items: center; gap: 4px; }
+.party-members { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.party-section-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.party-member-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.party-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 6px;
+}
+.party-member:hover { background: rgba(255, 255, 255, 0.04); }
+.party-member-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.party-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+.party-member-avatar.is-ready { background: rgba(52, 210, 123, 0.2); color: var(--success); }
+.party-member-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.party-crown { display: inline-flex; color: var(--accent-light); }
+.party-member-you { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.party-member-sub { margin: 0; font-size: 12px; color: var(--text-muted); }
+.party-member-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.party-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.party-icon-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text-main); }
+.party-icon-danger:hover { background: rgba(240, 113, 120, 0.18); color: var(--danger); }
+.party-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.15);
+}
+.party-actions-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+/*
+ * Layout only. The button chrome itself stays with the launcher's own
+ * btn-primary / btn-success / btn-secondary classes, which are pill-shaped
+ * throughout the app — matching the site's structure and controls is the goal,
+ * not importing a second button shape into a window that has one already.
+ */
+.party-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+.party-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; filter: none; }
+.party-voice-btn {
+  background: rgba(88, 101, 242, 0.14);
+  color: #8b94ff;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.party-voice-btn:hover { background: rgba(88, 101, 242, 0.24); }
+.party-leave-btn {
+  background: transparent;
+  color: var(--danger);
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.party-leave-btn:hover { background: rgba(240, 113, 120, 0.12); }
+.party-join-wrap { display: flex; flex-direction: column; gap: 4px; }
+.party-host-line { margin: 0; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+.party-inline-note { margin: 0; font-size: 12px; align-self: center; }
+.party-playing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(124, 92, 240, 0.2);
+  color: var(--accent-light);
+}
+.party-voice-error { width: 100%; margin: 0; font-size: 12px; color: var(--danger); }
+.party-field { display: flex; flex-direction: column; gap: 8px; }
+.party-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.party-switch {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.party-switch input { margin-top: 4px; accent-color: var(--accent); }
+
+/* Party discovery — mirrors PartyCard.tsx / PartyDiscovery.tsx */
+.party-discovery-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 700;
+  color: var(--accent-light);
+}
+.party-discovery-header h3 { margin: 0; font-size: 16px; }
+.party-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.party-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  padding: 16px;
+}
+.party-card:hover { border-color: rgba(155, 123, 255, 0.3); }
+.party-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.party-card-title { margin: 0; font-weight: 700; }
+.party-card-server { margin: 2px 0 0; font-size: 12px; font-weight: 600; color: var(--accent-light); }
+.party-card-sub {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.party-card-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.party-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.party-card-avatars { display: flex; }
+.party-card-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid var(--bg-card);
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: -8px;
+}
+.party-card-avatar-more { background: rgba(255, 255, 255, 0.18); }
+.party-card-join {
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+.party-card-join:hover { background: var(--accent-light); }
+.party-card-join:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Activity privacy block */
+.privacy-panel {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(23, 20, 33, 0.4);
+  padding: 8px 12px;
+}
+.privacy-panel-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  padding: 4px 0;
+  cursor: pointer;
+}
+#privacy-panel-body { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.privacy-row { border: none; padding: 6px 4px; }
+.privacy-row:hover { background: rgba(255, 255, 255, 0.04); border-radius: 8px; }
 
 /* Gear directory (mirrors site /gear cards) */
 .gear-category-section { margin-bottom: 40px; }

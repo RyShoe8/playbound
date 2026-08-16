@@ -96,6 +96,11 @@ export async function GET(req: Request) {
       return NextResponse.json({
         connected: true,
         valid: true,
+        // The launcher needs this to tell "me" apart from the other members of
+        // a party — leader checks, the (You) marker, and hiding kick/promote on
+        // your own row. Username would mostly work but the party payload keys
+        // members by id, so matching on anything else is guesswork.
+        userId: String(user._id),
         email: user.email || null,
         username: user.username || null,
         role: user.role || "user",
