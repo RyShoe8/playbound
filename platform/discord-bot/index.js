@@ -434,6 +434,146 @@ async function provisionMissing() {
   return { provisioned, skipped, failed };
 }
 
+const ARCHIVE_CATEGORY_NAME = "ARCHIVE — UNPUBLISHED";
+let reconcileRunning = false;
+
+/** The name and category a game's primary channel should currently have. */
+async function expectedPlacement(game) {
+  const publicEds = await listPublicEditions(game.slug);
+  const franchise = publicEds.length >= 2;
+  return {
+    name: franchise ? "general" : discordChannelName(game.slug),
+    category: franchise
+      ? franchiseCategoryName(game.title)
+      : categoryNameForSlug(game.slug),
+  };
+}
+
+/**
+ * Daily drift repair: names, categories, and archiving.
+ *
+ * Distinct from provisionMissing, which only ever touches games that lack a
+ * channel. Once a channel exists nothing revisits it, so renaming a game or
+ * changing its slug leaves the Discord side stranded under the old name —
+ * which is what this reconciles.
+ *
+ * Deliberately narrow. It renames, re-parents, and moves the channels of
+ * unpublished games into an archive category where @everyone loses
+ * SendMessages but keeps ViewChannel. It never deletes a channel and never
+ * creates one: message history is not ours to destroy, and provisioning new
+ * channels is provisionMissing's job. Every effect is reversible by hand.
+ */
+async function reconcileChannels(opts = {}) {
+  const dryRun = Boolean(opts.dryRun);
+  if (reconcileRunning) {
+    return { note: "already running", renamed: [], moved: [], archived: [], failed: [] };
+  }
+  reconcileRunning = true;
+
+  const renamed = [];
+  const moved = [];
+  const archived = [];
+  const unprovisioned = [];
+  const failed = [];
+
+  try {
+    const guild = await client.guilds.fetch(GUILD_ID);
+    await guild.channels.fetch();
+
+    /* ── published games: correct name + category ── */
+    const published = await games
+      .find({ published: true })
+      .project({ slug: 1, title: 1, communityLinks: 1 })
+      .toArray();
+
+    for (const game of published) {
+      try {
+        const channelId = game.communityLinks?.playboundDiscord?.channelId;
+        const channel = channelId ? guild.channels.cache.get(channelId) : null;
+        // No channel yet is provisionMissing's business, not ours.
+        if (!channel || channel.type !== ChannelType.GuildText) {
+          unprovisioned.push(game.slug);
+          continue;
+        }
+
+        const want = await expectedPlacement(game);
+
+        if (channel.name !== want.name) {
+          renamed.push({ slug: game.slug, from: channel.name, to: want.name });
+          if (!dryRun) {
+            await channel.setName(want.name, "PlayBound daily reconcile");
+            await sleep(PROVISION_DELAY_MS);
+          }
+        }
+
+        const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
+        if (!parent || parent.name !== want.category) {
+          moved.push({
+            slug: game.slug,
+            from: parent?.name || "(none)",
+            to: want.category,
+          });
+          if (!dryRun) {
+            const cat = await ensureCategory(guild, want.category);
+            await channel.setParent(cat.id, { lockPermissions: false });
+            await sleep(PROVISION_DELAY_MS);
+          }
+        }
+      } catch (err) {
+        failed.push({ slug: game.slug, error: String(err?.message || err) });
+      }
+    }
+
+    /* ── unpublished games that still hold a channel: archive, never delete ── */
+    const retired = await games
+      .find({
+        published: { $ne: true },
+        "communityLinks.playboundDiscord.channelId": { $nin: [null, ""] },
+      })
+      .project({ slug: 1, title: 1, communityLinks: 1 })
+      .toArray();
+
+    for (const game of retired) {
+      try {
+        const channelId = game.communityLinks?.playboundDiscord?.channelId;
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel || channel.type !== ChannelType.GuildText) continue;
+
+        const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
+        if (parent?.name === ARCHIVE_CATEGORY_NAME) continue; // already archived
+
+        archived.push({ slug: game.slug, channel: channel.name });
+        if (!dryRun) {
+          const cat = await ensureCategory(guild, ARCHIVE_CATEGORY_NAME);
+          await channel.setParent(cat.id, { lockPermissions: false });
+          /*
+           * Readable forever, writable no longer. ViewChannel is deliberately
+           * not mentioned: leaving it untouched keeps whatever visibility the
+           * channel already had, so archiving never hides history from people
+           * who could previously read it.
+           */
+          await channel.permissionOverwrites.edit(guild.roles.everyone, {
+            SendMessages: false,
+            SendMessagesInThreads: false,
+            CreatePublicThreads: false,
+            CreatePrivateThreads: false,
+          });
+          await sleep(PROVISION_DELAY_MS);
+        }
+      } catch (err) {
+        failed.push({ slug: game.slug, error: String(err?.message || err) });
+      }
+    }
+  } finally {
+    reconcileRunning = false;
+  }
+
+  console.log(
+    `Discord reconcile${dryRun ? " (dry run)" : ""}: renamed=${renamed.length} moved=${moved.length} archived=${archived.length} unprovisioned=${unprovisioned.length} failed=${failed.length}`
+  );
+  return { dryRun, renamed, moved, archived, unprovisioned, failed };
+}
+
 async function postGameOfTheWeek() {
   const gotw = await games.findOne({ published: true, gameOfWeek: true });
   if (!gotw) return;
@@ -617,6 +757,23 @@ const server = http.createServer(async (req, res) => {
     if (!requireSecret(req, res)) return;
     try {
       const result = await provisionMissing();
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, ...result }));
+    } catch (err) {
+      console.error(err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/reconcile") {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { dryRun } = JSON.parse(body || "{}");
+      const result = await reconcileChannels({ dryRun: Boolean(dryRun) });
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ success: true, ...result }));
     } catch (err) {

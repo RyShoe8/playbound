@@ -67,6 +67,19 @@ export async function requestDiscordProvisionAll(): Promise<unknown> {
   return postBot("/provision-all", {});
 }
 
+/**
+ * Repair drift between game slugs/titles and existing Discord channels.
+ *
+ * Renames and re-parents channels, and moves unpublished games' channels into
+ * an archive category. Never deletes and never creates — pass dryRun to get
+ * the same report with nothing applied.
+ */
+export async function requestDiscordReconcile(
+  opts?: { dryRun?: boolean }
+): Promise<unknown> {
+  return postBot("/reconcile", { dryRun: Boolean(opts?.dryRun) });
+}
+
 /** True when the game already has a PlayBound Discord channel id stored. */
 export function hasPlayboundDiscordChannel(doc: {
   communityLinks?: { playboundDiscord?: { channelId?: string | null } | null } | null;
