@@ -152,12 +152,12 @@ async function toggleLibraryAddPanel(forceOpen = false) {
         <button type="button" class="btn-primary btn-sm" id="btn-add-scanned" ${candidates.length ? "" : "disabled"}>Add selected</button>
       </div>
     </div>
-    <div style="margin: 12px 0; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+    <div class="library-add-manual">
       <div>
         <strong style="display: block; font-size: 13px; color: var(--text, #fff);">Or locate a ${executableNoun()} manually</strong>
         <span class="view-sub" style="font-size: 11px; margin: 0;">Browse for any installed game, including Steam, Epic, or a custom folder.</span>
       </div>
-      <button type="button" class="btn-secondary btn-sm" id="btn-add-custom-exe" style="white-space: nowrap;">Browse ${executableNoun()}</button>
+      <button type="button" class="btn-secondary btn-sm" id="btn-add-custom-exe">Browse ${executableNoun()}</button>
     </div>
     <input type="search" id="library-add-search" class="library-add-search" placeholder="Search catalog games to locate…" autocomplete="off" />
     <p class="view-sub" style="margin:8px 0">Pick a catalog game if the scanner missed it:</p>
