@@ -246,25 +246,25 @@ export function DiscoverFilters({
 
   return (
     <div className="space-y-6">
-      {/* ── 1. Genre Quick-Select Buttons (Pills) ──────────────── */}
-      <div className="no-scrollbar -mx-1 flex snap-x items-center gap-2 overflow-x-auto px-1 py-1">
+      {/* ── 1. Genre Quick-Select Buttons (Pills with count below) ──── */}
+      <div className="no-scrollbar -mx-1 flex snap-x items-center gap-2.5 overflow-x-auto px-1 py-1.5">
         <button
           type="button"
           onClick={() => setSelectedGenre("")}
           className={cn(
-            "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 border",
+            "shrink-0 flex flex-col items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-150 border leading-tight min-w-[76px]",
             selectedGenre === ""
-              ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25"
-              : "border-border/60 bg-secondary/50 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+              ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25"
+              : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
           )}
         >
-          All Genres
+          <span>All Genres</span>
           <span
             className={cn(
-              "ml-1.5 rounded-full px-1.5 py-0.2 text-[10px] tabular-nums",
+              "text-xs font-semibold tabular-nums mt-0.5",
               selectedGenre === ""
-                ? "bg-primary-foreground/20 text-primary-foreground"
-                : "bg-muted text-muted-foreground"
+                ? "text-primary-foreground/80"
+                : "text-muted-foreground"
             )}
           >
             {baseFiltered.length}
@@ -279,19 +279,19 @@ export function DiscoverFilters({
               type="button"
               onClick={() => setSelectedGenre(isSelected ? "" : name)}
               className={cn(
-                "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-150 border",
+                "shrink-0 flex flex-col items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-150 border leading-tight min-w-[76px]",
                 isSelected
-                  ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25"
-                  : "border-border/60 bg-secondary/50 text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+                  ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                  : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
               )}
             >
-              {name}
+              <span>{name}</span>
               <span
                 className={cn(
-                  "ml-1.5 rounded-full px-1.5 py-0.2 text-[10px] tabular-nums",
+                  "text-xs font-semibold tabular-nums mt-0.5",
                   isSelected
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "text-primary-foreground/80"
+                    : "text-muted-foreground"
                 )}
               >
                 {count}
