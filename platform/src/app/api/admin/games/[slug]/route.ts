@@ -75,13 +75,18 @@ export async function PATCH(
     const developerName =
       body.developerName || developersBySlug.get(body.developerSlug)?.name || null;
 
-    const previous = await CatalogGame.findOne({ slug }).select("published").lean();
+    const previous = await CatalogGame.findOne({ slug }).select("published publishedAt status").lean();
+    let publishedAt = (previous as { publishedAt?: Date | null })?.publishedAt;
+    if (body.status === "published" && (!publishedAt || (previous as { status?: string })?.status !== "published")) {
+      publishedAt = new Date();
+    }
 
     const doc = await CatalogGame.findOneAndUpdate(
       { slug },
       {
         $set: {
           ...body,
+          publishedAt: body.status === "published" ? (publishedAt ?? new Date()) : null,
           steamAppId: body.steamAppId || null,
           githubRepo: body.githubRepo || null,
           coverImage: body.coverImage || null,

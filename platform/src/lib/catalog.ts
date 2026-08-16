@@ -107,6 +107,9 @@ function toGame(doc: LeanGame): Game {
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,
+    publishedAt: (doc as { publishedAt?: Date | null }).publishedAt
+      ? new Date((doc as { publishedAt: Date }).publishedAt).toISOString()
+      : undefined,
     createdAt: (doc as { createdAt?: Date }).createdAt
       ? new Date((doc as { createdAt: Date }).createdAt).toISOString()
       : undefined,
@@ -403,8 +406,8 @@ export async function listGamesNewestFirst(): Promise<Game[]> {
 }
 
 function compareNewestFirst(a: Game, b: Game): number {
-  const ta = Date.parse(a.createdAt || a.updatedAt || "") || 0;
-  const tb = Date.parse(b.createdAt || b.updatedAt || "") || 0;
+  const ta = Date.parse(a.publishedAt || a.createdAt || a.updatedAt || "") || 0;
+  const tb = Date.parse(b.publishedAt || b.createdAt || b.updatedAt || "") || 0;
   if (tb !== ta) return tb - ta;
   return a.title.localeCompare(b.title);
 }

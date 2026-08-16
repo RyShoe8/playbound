@@ -159,9 +159,8 @@ export function AdminGamesTable({
           bVal = Number(Boolean(b.complete));
           break;
         case "Published":
-          // Same fallback as the cell, so sorting matches what is displayed.
-          aVal = a.status === "published" ? new Date(a.publishedAt || a.createdAt || 0).getTime() : 0;
-          bVal = b.status === "published" ? new Date(b.publishedAt || b.createdAt || 0).getTime() : 0;
+          aVal = a.status === "published" && a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+          bVal = b.status === "published" && b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
           break;
         case "Updated":
         default:
@@ -329,14 +328,9 @@ export function AdminGamesTable({
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      {currentStatus === "published" && (g.publishedAt || g.createdAt) ? (
-                        /*
-                         * publishedAt is the real answer. createdAt is kept as a
-                         * fallback only for rows published before that field
-                         * existed — otherwise they would all blank out at once.
-                         */
+                      {currentStatus === "published" && g.publishedAt ? (
                         <LocalTime
-                          value={new Date(g.publishedAt || g.createdAt!).toISOString()}
+                          value={new Date(g.publishedAt).toISOString()}
                         />
                       ) : (
                         <span className="text-muted-foreground/40">—</span>
