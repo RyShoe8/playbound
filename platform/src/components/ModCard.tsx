@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ModCardMod } from "@/lib/mods";
 import { cn } from "@/lib/utils";
 import { ModArt } from "@/components/ModArt";
+import { CardCategoryTags } from "@/components/CardCategoryTags";
 
 type BaseGameInfo = {
   slug?: string;
@@ -51,6 +52,12 @@ export function ModCard({
         <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
           {mod.tagline}
         </p>
+        <CardCategoryTags
+          genres={mod.license ? [mod.license] : []}
+          tags={mod.tags}
+          className="mt-2"
+          max={3}
+        />
         <div className="mt-3.5 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[11px] text-muted-foreground/70">
             {footer || "\u00a0"}

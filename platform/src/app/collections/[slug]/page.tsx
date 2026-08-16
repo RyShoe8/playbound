@@ -44,7 +44,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
     },
     {
       q: `Are all ${games.length} of these games free?`,
-      a: "Yes. Every game in this collection is genuinely free — no trials, no paywalled content, no pay-to-win purchases — and each has been assessed against PlayBound's five published criteria.",
+      a: "Yes. Every game in this collection is genuinely free — no trials, no paywalled content, no pay-to-win purchases — and each has been tested, played, and assessed against PlayBound's four published criteria.",
     },
   ];
 

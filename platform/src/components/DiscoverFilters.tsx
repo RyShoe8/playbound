@@ -9,7 +9,7 @@ import type { Game, Genre } from "@/lib/data/types";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
-import { GamePlatformBadges } from "@/components/GamePlatformBadges";
+import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import {
   filterGamesForPreference,
@@ -95,7 +95,7 @@ function CatalogCard({
         <p className="mt-1 flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
           {game.tagline}
         </p>
-        <GamePlatformBadges game={game} compact className="mt-2" />
+        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-2" />
         <div className="mt-3.5 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground/70">
             {sizeLabel(game.sizeMB)}

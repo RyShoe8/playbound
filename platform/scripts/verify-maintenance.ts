@@ -1,10 +1,10 @@
 /**
  * Verifies the `activelyMaintained` criterion against upstream repositories.
  *
- * "Actively maintained as of <date>" is the one PlayBound Bar claim with a
- * shelf life, and it is also the claim most likely to earn a citation — a fact
- * that must be re-fetched rather than recalled is exactly what a model will
- * cite a live source for. So it has to actually be true.
+ * Upstream activity is an internal signal for the "plays reliably" criterion
+ * (still stored as `activelyMaintained`). The published bar is now about a
+ * real play session, not a twelve-month commit rule — this script still flags
+ * stale repos so editors can re-play and re-verify.
  *
  * Usage:
  *   npm run verify:maintenance

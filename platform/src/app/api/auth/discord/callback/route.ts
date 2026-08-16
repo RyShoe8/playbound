@@ -13,7 +13,11 @@ export async function GET(req: Request) {
   const userId = jar.get("pb_discord_oauth_uid")?.value;
   // Resolved against the incoming request so the user stays on the host they
   // are actually browsing, rather than wherever NEXTAUTH_URL happens to point.
-  const back = (query: string) => new URL(`/profile?${query}`, req.url);
+  const from = jar.get("pb_discord_oauth_from")?.value;
+  const back = (query: string) =>
+    from === "launcher"
+      ? new URL(`/launcher/discord-linked?${query}`, req.url)
+      : new URL(`/profile?${query}`, req.url);
 
   if (!code || !state || !expected || state !== expected || !userId) {
     return NextResponse.redirect(back("discord=error"));
@@ -88,5 +92,6 @@ export async function GET(req: Request) {
   const res = NextResponse.redirect(back("discord=linked"));
   res.cookies.delete("pb_discord_oauth_state");
   res.cookies.delete("pb_discord_oauth_uid");
+  res.cookies.delete("pb_discord_oauth_from");
   return res;
 }

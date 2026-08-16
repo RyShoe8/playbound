@@ -27,9 +27,12 @@ interface PartyState {
     visibility?: PartyVisibility;
     maxSize?: number;
     eventId?: string | null;
+    password?: string | null;
+    wantVoice?: boolean;
   }) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
   joinParty: (
-    partyId: string
+    partyId: string,
+    password?: string
   ) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
   leaveParty: (partyId: string) => Promise<void>;
   setReady: (partyId: string, ready: boolean) => Promise<void>;
@@ -98,11 +101,13 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     }
   },
 
-  joinParty: async (partyId) => {
+  joinParty: async (partyId, password) => {
     set({ loading: true, error: null });
     try {
       const res = await fetch(`/api/parties/${partyId}/join`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(password ? { password } : {}),
       });
       const data = await res.json();
       if (!res.ok) {

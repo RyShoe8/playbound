@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
-import { GamePlatformBadges } from "@/components/GamePlatformBadges";
+import { CardCategoryTags } from "@/components/CardCategoryTags";
 import {
   CompatibleGamesFade,
   useFilteredGames,
@@ -40,7 +40,7 @@ function CollectionGameRow({ game, index }: { game: Game; index: number }) {
           <LaunchBadge game={game} />
           <span className="text-muted-foreground">{game.genres.join(" · ")}</span>
         </div>
-        <GamePlatformBadges game={game} compact />
+        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-1.5" />
       </div>
       <PlayCta game={game} size="sm" />
     </div>

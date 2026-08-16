@@ -9,6 +9,7 @@
  * reliable indicator of whether a party is still alive.
  */
 
+import { createHash, randomBytes } from "crypto";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import Friend from "@/lib/models/Friend";
@@ -94,6 +95,16 @@ async function resolveUsernames(
   );
 }
 
+const SKIP_VOICE: PartyVoiceFollowup = {
+  needsDiscordLink: false,
+  inviteUrl: null,
+  moved: false,
+};
+
+function hashPartyPassword(password: string, salt: string): string {
+  return createHash("sha256").update(`${salt}:${password}`).digest("hex");
+}
+
 function serializeParty(
   doc: Record<string, unknown>,
   nameById: Map<string, string>,
@@ -121,6 +132,8 @@ function serializeParty(
     modSlugs: (doc.modSlugs as string[]) || [],
     status: (doc.status as PartyStatus) || "forming",
     visibility: (doc.visibility as PartyVisibility) || "friends",
+    hasPassword: Boolean(doc.passwordHash),
+    voiceEnabled: doc.voiceEnabled !== false,
     maxSize: (doc.maxSize as number) || PARTY_MAX_SIZE,
     eventId: doc.eventId ? String(doc.eventId) : null,
     discord: {
@@ -146,6 +159,8 @@ export async function createParty(opts: {
   visibility?: PartyVisibility;
   maxSize?: number;
   eventId?: string | null;
+  password?: string | null;
+  wantVoice?: boolean;
 }): Promise<
   | ({ party: PartyPayload; status: 201 } & PartyVoiceFollowup)
   | { error: string; status: 400 | 409 | 404 }
@@ -164,6 +179,19 @@ export async function createParty(opts: {
     return { error: "You already have an active party", status: 409 };
   }
 
+  const visibility = opts.visibility || "friends";
+  const wantVoice = opts.wantVoice !== false;
+  let passwordSalt: string | null = null;
+  let passwordHash: string | null = null;
+  if (visibility === "password") {
+    const password = String(opts.password || "");
+    if (password.length < 4) {
+      return { error: "Password must be at least 4 characters", status: 400 };
+    }
+    passwordSalt = randomBytes(16).toString("hex");
+    passwordHash = hashPartyPassword(password, passwordSalt);
+  }
+
   const now = new Date();
   const doc = await Party.create({
     leaderId: opts.userId,
@@ -179,7 +207,10 @@ export async function createParty(opts: {
     editionSlug: opts.editionSlug || null,
     modSlugs: opts.modSlugs || [],
     status: "forming",
-    visibility: opts.visibility || "friends",
+    visibility,
+    passwordSalt,
+    passwordHash,
+    voiceEnabled: wantVoice,
     maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), 20),
     eventId: opts.eventId || null,
     lastActivity: now,
@@ -187,7 +218,7 @@ export async function createParty(opts: {
 
   await setPresenceParty(opts.userId, { partyId: String(doc._id), gameSlug: opts.gameSlug });
   await provisionPartyHost(doc);
-  const voice = await syncPartyVoiceForMember(doc, opts.userId);
+  const voice = wantVoice ? await syncPartyVoiceForMember(doc, opts.userId) : SKIP_VOICE;
   const nameById = await resolveUsernames([opts.userId]);
   return {
     party: serializeParty(
@@ -204,7 +235,8 @@ export async function createParty(opts: {
 
 export async function joinParty(
   partyId: string,
-  userId: string
+  userId: string,
+  password?: string
 ): Promise<
   | ({ party: PartyPayload; status: 200 } & PartyVoiceFollowup)
   | { error: string; status: 400 | 403 | 404 }
@@ -219,7 +251,21 @@ export async function joinParty(
   const isFriend = friendIds.includes(rp.leaderId) ||
     rp.members.some((m) => friendIds.includes(m.userId));
 
-  const check = canJoinParty(rp, userId, isFriend);
+  let passwordOk = false;
+  if (doc.visibility === "password") {
+    const salt = String(doc.passwordSalt || "");
+    const stored = String(doc.passwordHash || "");
+    const incoming = String(password || "");
+    if (!incoming) {
+      return { error: "Password required", status: 403 };
+    }
+    if (!salt || !stored || hashPartyPassword(incoming, salt) !== stored) {
+      return { error: "Incorrect password", status: 403 };
+    }
+    passwordOk = true;
+  }
+
+  const check = canJoinParty(rp, userId, isFriend, passwordOk);
   if (!check.ok) return { error: check.reason || "Cannot join", status: 403 };
 
   const now = new Date();
@@ -238,7 +284,8 @@ export async function joinParty(
   await doc.save();
 
   await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
-  const voice = await syncPartyVoiceForMember(doc, userId);
+  const voice =
+    doc.voiceEnabled === false ? SKIP_VOICE : await syncPartyVoiceForMember(doc, userId);
 
   const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
@@ -674,6 +721,80 @@ export async function listDiscoverableParties(
   return filtered.map((d) =>
     serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
   );
+}
+
+const OPEN_PARTY_STATUSES = ["forming", "ready", "playing"] as const;
+
+async function serializePartyDocs(
+  docs: Array<Record<string, unknown>>
+): Promise<PartyPayload[]> {
+  if (docs.length === 0) return [];
+  const allMemberIds = new Set<string>();
+  const slugs = new Set<string>();
+  for (const d of docs) {
+    allMemberIds.add(String(d.leaderId));
+    for (const m of (d.members as Array<{ userId: unknown }>) || []) {
+      allMemberIds.add(String(m.userId));
+    }
+    slugs.add(String(d.gameSlug));
+  }
+  const [nameById, games] = await Promise.all([
+    resolveUsernames([...allMemberIds]),
+    Promise.all(
+      [...slugs].map(async (s) => {
+        const g = await getGame(s, { includeTesting: true });
+        return [s, g?.title || null] as const;
+      })
+    ),
+  ]);
+  const titleBySlug = new Map(games);
+  return docs.map((d) =>
+    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
+  );
+}
+
+/** Public, joinable parties — waiting for players or in-progress with space. */
+export async function listOpenPublicParties(limit = 50): Promise<PartyPayload[]> {
+  try {
+    await dbConnect();
+    const docs = await Party.find({
+      visibility: "public",
+      status: { $in: [...OPEN_PARTY_STATUSES] },
+    })
+      .sort({ lastActivity: -1 })
+      .limit(Math.min(Math.max(limit, 1), 200) * 2)
+      .lean();
+
+    const open = docs.filter((d) => {
+      const members = (d.members as unknown[]) || [];
+      const maxSize = (d.maxSize as number) || PARTY_MAX_SIZE;
+      return members.length < maxSize;
+    });
+    return serializePartyDocs(open.slice(0, limit) as Array<Record<string, unknown>>);
+  } catch (err) {
+    console.error("listOpenPublicParties failed:", err);
+    return [];
+  }
+}
+
+export async function countOpenPublicParties(): Promise<number> {
+  try {
+    await dbConnect();
+    const docs = await Party.find({
+      visibility: "public",
+      status: { $in: [...OPEN_PARTY_STATUSES] },
+    })
+      .select("members maxSize")
+      .lean();
+    return docs.filter((d) => {
+      const members = (d.members as unknown[]) || [];
+      const maxSize = (d.maxSize as number) || PARTY_MAX_SIZE;
+      return members.length < maxSize;
+    }).length;
+  } catch (err) {
+    console.error("countOpenPublicParties failed:", err);
+    return 0;
+  }
 }
 
 /* ─── config sync (4H, 4I) ──────────────────────────────────────────────── */

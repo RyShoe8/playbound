@@ -14,12 +14,15 @@ contextBridge.exposeInMainWorld("playbound", {
       process.platform === "darwin" ? "Select App" : "Select .exe",
   },
   // Existing
+  getBootstrapState: () => ipcRenderer.invoke("get-bootstrap-state"),
   getContext: () => ipcRenderer.invoke("get-context"),
   chooseDirectory: (defaultPath) => ipcRenderer.invoke("choose-directory", defaultPath),
   install: (slug, targetDir, editionSlug, addons) =>
     ipcRenderer.invoke("install", slug, targetDir, editionSlug || null, addons),
   installMod: (slug, baseDir) => ipcRenderer.invoke("install-mod", slug, baseDir || null),
   locateExe: (slug) => ipcRenderer.invoke("locate-exe", slug),
+  scanLibraryCandidates: () => ipcRenderer.invoke("scan-library-candidates"),
+  addScannedGames: (slugs) => ipcRenderer.invoke("add-scanned-games", slugs || []),
   addCustomGame: (customTitle) => ipcRenderer.invoke("add-custom-game", customTitle || null),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
   play: (slug, join, editionSlug) =>
@@ -77,6 +80,13 @@ contextBridge.exposeInMainWorld("playbound", {
   discoverPlayers: (params) => ipcRenderer.invoke("discover-players", params),
   sendFriendRequest: (targetUserId) => ipcRenderer.invoke("send-friend-request", targetUserId),
   inviteFriendByEmail: (email) => ipcRenderer.invoke("invite-friend-by-email", email),
+  getParties: () => ipcRenderer.invoke("get-parties"),
+  createParty: (opts) => ipcRenderer.invoke("create-party", opts || {}),
+  joinParty: (partyId, password) => ipcRenderer.invoke("join-party", partyId, password),
+  leaveParty: (partyId) => ipcRenderer.invoke("leave-party", partyId),
+  inviteToParty: (partyId, friendIds) => ipcRenderer.invoke("invite-to-party", partyId, friendIds || []),
+  getDiscordStatus: () => ipcRenderer.invoke("get-discord-status"),
+  linkDiscord: () => ipcRenderer.invoke("link-discord"),
   // Catalog / servers / mods
   getCatalog: (opts) => ipcRenderer.invoke("get-catalog", opts || {}),
   refreshCatalog: () => ipcRenderer.invoke("get-catalog", { refresh: true }),
@@ -108,6 +118,7 @@ contextBridge.exposeInMainWorld("playbound", {
   setOpenCiv3Display: (payload) => ipcRenderer.invoke("set-openciv3-display", payload || {}),
 
   // Events
+  onCatalogUpdated: (cb) => ipcRenderer.on("catalog-updated", (_event, data) => cb(data || [])),
   onContext: (cb) => ipcRenderer.on("context", (_event, data) => cb(data)),
   onProgress: (cb) => ipcRenderer.on("progress", (_event, data) => cb(data)),
   onAccount: (cb) => ipcRenderer.on("account", (_event, data) => cb(data || {})),

@@ -6,7 +6,7 @@ import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
 import { listGames } from "@/lib/catalog";
-import { maskPresenceForOthers } from "@/lib/friends/presenceMask";
+import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 
 type PopulatedFriendUser = {
@@ -76,18 +76,22 @@ export async function GET(req: Request) {
         ? new Date(p.lookingForPlayersUntil).getTime()
         : 0;
       const lookingForPlayers = Boolean(lfgUntil && lfgUntil > now);
-      const raw = {
-        status: String(p.status || "offline"),
-        currentGameId: p.currentGameId || null,
-        currentGameTitle: p.currentGameId
-          ? titleBySlug.get(String(p.currentGameId)) || p.currentGameId
-          : null,
-        currentEditionId: p.currentEditionId || null,
-        lookingForPlayers,
-        lookingForPlayersGameId: lookingForPlayers
-          ? p.lookingForPlayersGameId || p.currentGameId || null
-          : null,
-      };
+      const raw = applyPresenceFreshness(
+        {
+          status: String(p.status || "offline"),
+          lastHeartbeat: p.lastHeartbeat,
+          currentGameId: p.currentGameId || null,
+          currentGameTitle: p.currentGameId
+            ? titleBySlug.get(String(p.currentGameId)) || p.currentGameId
+            : null,
+          currentEditionId: p.currentEditionId || null,
+          lookingForPlayers,
+          lookingForPlayersGameId: lookingForPlayers
+            ? p.lookingForPlayersGameId || p.currentGameId || null
+            : null,
+        },
+        now
+      );
       const presence = maskPresenceForOthers(raw, user.appearOffline, user.hideActivity);
       const game = presence.currentGameId
         ? gameBySlug.get(String(presence.currentGameId))

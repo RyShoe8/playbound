@@ -15,6 +15,18 @@ import { telemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 
+const WITH_PLAYERS_PREF = "playbound_servers_with_players";
+
+function readWithPlayersPref(): boolean {
+  try {
+    const v = localStorage.getItem(WITH_PLAYERS_PREF);
+    if (v === null) return true;
+    return v === "true";
+  } catch {
+    return true;
+  }
+}
+
 type IndexGame = {
   slug: string;
   title: string;
@@ -147,7 +159,11 @@ export function GlobalServerBrowser({
   const [modSlug, setModSlug] = useState(queryMod);
   const [editionSlug, setEditionSlug] = useState(queryEdition);
   const [installedOnly, setInstalledOnly] = useState(false);
-  const [withPlayersOnly, setWithPlayersOnly] = useState(false);
+  const [withPlayersOnly, setWithPlayersOnly] = useState(true);
+
+  useEffect(() => {
+    setWithPlayersOnly(readWithPlayersPref());
+  }, []);
   const [search, setSearch] = useState("");
   const [data, setData] = useState<ApiResponse | null>(null);
   const [viewer, setViewer] = useState<ViewerGeo | null>(null);
@@ -642,8 +658,17 @@ export function GlobalServerBrowser({
         <label className="flex h-10 items-center gap-2 rounded-xl border border-border bg-secondary px-3 text-sm font-semibold">
           <input
             type="checkbox"
+            className="accent-primary"
             checked={withPlayersOnly}
-            onChange={(e) => setWithPlayersOnly(e.target.checked)}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setWithPlayersOnly(next);
+              try {
+                localStorage.setItem(WITH_PLAYERS_PREF, String(next));
+              } catch {
+                /* ignore */
+              }
+            }}
           />
           Servers With Players
         </label>
@@ -684,6 +709,13 @@ export function GlobalServerBrowser({
         <p className="text-sm font-semibold text-muted-foreground">
           {totalPlayers} player{totalPlayers === 1 ? "" : "s"} · {rows.length} server
           {rows.length === 1 ? "" : "s"}
+        </p>
+      ) : null}
+      {effectiveGameSlug === "openra" ? (
+        <p className="text-xs text-muted-foreground">
+          Joining a listed server never needs port forwarding. Hosting from your PC does —
+          PlayBound turns on OpenRA&apos;s UPnP so most home routers open UDP 1234 automatically.
+          Campus Wi-Fi and CGNAT still block hosting; use a public server in that case.
         </p>
       ) : null}
 

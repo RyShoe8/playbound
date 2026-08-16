@@ -49,6 +49,7 @@ type FriendsState = {
   onlineFriends: FriendUser[];
   offlineFriends: FriendUser[];
   lookingFriends: FriendUser[];
+  inPartyFriends: FriendUser[];
   incomingRequests: FriendRequest[];
   outgoingRequests: FriendRequest[];
   blockedUsers: FriendUser[]; // If we decide to fetch blocks
@@ -79,6 +80,7 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
   onlineFriends: [],
   offlineFriends: [],
   lookingFriends: [],
+  inPartyFriends: [],
   incomingRequests: [],
   outgoingRequests: [],
   blockedUsers: [],
@@ -100,6 +102,7 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
           )
         );
         const looking = friends.filter((f) => Boolean(f.presence.lookingForPlayers));
+        const inParty = friends.filter((f) => Boolean(f.presence.currentPartyId));
         const offline = friends.filter(
           (f) =>
             f.presence.status === "offline" ||
@@ -121,6 +124,7 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
           onlineFriends: online,
           offlineFriends: offline,
           lookingFriends: looking,
+          inPartyFriends: inParty,
         });
       }
     } catch (err) {

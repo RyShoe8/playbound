@@ -25,6 +25,7 @@ const {
   writeDisplaySettings,
   resolveGameDir,
 } = require("./openciv3Display");
+const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
 
 function loadHardwareModule() {
   try {
@@ -526,6 +527,7 @@ async function validateLauncherToken(token) {
         authorization: `Bearer ${token}`,
         "user-agent": "playbound-launcher",
       },
+      signal: AbortSignal.timeout(10_000),
     });
     if (res.status === 401) return { valid: false, canUseAdminChannel: false };
     // Don't wipe token (or admin channel) on transient errors.
@@ -750,6 +752,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
   }
 
   setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
+  startLauncherPresenceLoop();
 
   if (!quiet) {
     notifyAccount({
@@ -803,7 +806,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
 }
 
 async function startupLibrarySync() {
-  await syncLibraryNow({ quiet: false });
+  await syncLibraryNow({ quiet: true });
   void syncHardwareProfile({ quiet: true, force: false });
 }
 
@@ -828,8 +831,8 @@ function clearAuthWindowSecrets() {
   }
 }
 
-function openAuthWindow() {
-  const authUrl = `${getApiBase()}/launcher/auth?from=app`;
+function openAuthWindow(targetUrl) {
+  const authUrl = targetUrl || `${getApiBase()}/launcher/auth?from=app`;
   try {
     if (authWin && !authWin.isDestroyed()) {
       authWin.focus();
@@ -1411,6 +1414,91 @@ function launcherApiHeaders(extra = {}) {
 let lastCatalogRefreshTime = 0;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 
+/** List-view catalog rows — no install URLs, exe paths, or registry keys. */
+function mapCatalogList(entries = catalog) {
+  return (Array.isArray(entries) ? entries : []).map((e) => ({
+    slug: e.slug,
+    title: e.title,
+    blurb: e.blurb,
+    kind: e.kind,
+    approxSize: e.approxSize || "",
+    art: e.art,
+    coverImage: resolveMediaUrl(e.coverImage) || null,
+    genres: Array.isArray(e.genres) ? e.genres : [],
+    tags: Array.isArray(e.tags) ? e.tags : [],
+    multiplayer: Boolean(e.multiplayer),
+    isMultiplayer: e.isMultiplayer ?? Boolean(e.multiplayer),
+    platforms: Array.isArray(e.platforms) ? e.platforms : [],
+    browserPlayable: Boolean(e.browserPlayable),
+    steamDeck: Boolean(e.steamDeck),
+    createdAt: e.createdAt || null,
+    testing: Boolean(e.testing),
+    status: e.status || null,
+  }));
+}
+
+function broadcastCatalogUpdated() {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("catalog-updated", mapCatalogList());
+  }
+}
+
+function listRecentlyPlayed() {
+  const settings = loadSettings();
+  const recent = settings.recentlyPlayed || {};
+  const state = loadState();
+  const games = [];
+  for (const [slug, data] of Object.entries(recent)) {
+    const info = state[slug];
+    if (!info || !info.exe || !fs.existsSync(info.exe)) continue;
+    const entry = catalog.find((e) => e.slug === slug);
+    games.push({
+      slug,
+      title: entry?.title || slug,
+      blurb: entry?.blurb || "",
+      art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
+      coverImage: resolveMediaUrl(entry?.coverImage) || null,
+      platforms: Array.isArray(entry?.platforms) ? entry.platforms : [],
+      browserPlayable: Boolean(entry?.browserPlayable),
+      steamDeck: Boolean(entry?.steamDeck),
+      lastPlayed: data.lastPlayed || null,
+    });
+  }
+  games.sort((a, b) => (b.lastPlayed || "").localeCompare(a.lastPlayed || ""));
+  return games;
+}
+
+function buildSettingsPayload() {
+  const settings = loadSettings();
+  const updateChannel = getEffectiveUpdateChannel();
+  const updateChannelPref =
+    settings.updateChannel === "latest" || settings.updateChannel === "admin"
+      ? settings.updateChannel
+      : "admin";
+  return {
+    apiBase: settings.apiBase || DEFAULT_API_BASE,
+    gamesDir: settings.gamesDir || DEFAULT_GAMES_DIR,
+    connected: Boolean(settings.launcherToken),
+    version: app.getVersion(),
+    packaged: app.isPackaged,
+    compatibilityFilter:
+      settings.compatibilityFilter === "all" ? "all" : "compatible",
+    canUseAdminChannel: linkedCanUseAdminChannel,
+    updateChannel,
+    updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
+    javaRuntime: managedJava.status(),
+  };
+}
+
+function buildBootstrapAccount() {
+  const settings = loadSettings();
+  return {
+    connected: Boolean(settings.launcherToken),
+    apiBase: getApiBase(),
+    canUseAdminChannel: linkedCanUseAdminChannel,
+  };
+}
+
 async function refreshRemoteCatalog(force = false) {
   if (!force && Date.now() - lastCatalogRefreshTime < 15_000) {
     return;
@@ -1447,6 +1535,7 @@ async function refreshRemoteCatalog(force = false) {
     lastCatalogRefreshTime = Date.now();
     saveCatalogCache(catalog);
     console.log(`Remote catalog: ${remote.length} game(s) merged (${catalog.length} total).`);
+    broadcastCatalogUpdated();
   } catch (err) {
     console.warn("Remote catalog refresh failed:", err.message || err);
   }
@@ -2683,6 +2772,43 @@ function resumePendingInstallerPoll() {
       startInstallerPoll(pending.slug, entry, pending.version);
     }
   }
+}
+
+function listLibraryScanCandidates() {
+  const installed = loadState();
+  const found = [];
+  for (const entry of catalog) {
+    if (!entry?.slug) continue;
+    const existing = installed[entry.slug];
+    if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    const known = findKnownExecutable(entry);
+    if (!known) continue;
+    found.push({
+      slug: entry.slug,
+      title: entry.title || entry.slug,
+      exe: known,
+    });
+  }
+  return found;
+}
+
+function addScannedLibraryGames(slugs) {
+  const installed = loadState();
+  const added = [];
+  for (const slug of slugs || []) {
+    const entry = catalog.find((e) => e.slug === slug);
+    if (!entry) continue;
+    const existing = installed[slug];
+    if (existing?.exe && fs.existsSync(existing.exe)) continue;
+    const known = findKnownExecutable(entry);
+    if (!known) continue;
+    markInstalledFromExe(slug, entry, known, existing?.version || "detected");
+    added.push({ slug, title: entry.title || slug });
+  }
+  if (added.length > 0 && win && !win.isDestroyed()) {
+    win.webContents.send("install-detected", { slug: added[0]?.slug || null, scanned: added.length });
+  }
+  return { added };
 }
 
 /** One-shot: pick up games already installed via knownExePaths but missing from state. */
@@ -4281,6 +4407,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  if (isOpenRaFamily(slug, catalog.find((e) => e.slug === slug))) {
+    try {
+      await prepareOpenRaNetwork({ exePath: info.exe });
+    } catch (err) {
+      console.warn("[openra-nat] prepare skipped:", err?.message || err);
+    }
+  }
+
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.
   let connectArgs = Array.isArray(info.connectArgs) ? info.connectArgs : null;
   const entry = catalog.find((e) => e.slug === slug);
@@ -5359,6 +5493,8 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   );
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
+ipcMain.handle("scan-library-candidates", () => listLibraryScanCandidates());
+ipcMain.handle("add-scanned-games", (_event, slugs) => addScannedLibraryGames(slugs));
 ipcMain.handle("add-custom-game", (_event, customTitle) =>
   addCustomGameExecutable(customTitle || null)
 );
@@ -5626,6 +5762,7 @@ ipcMain.handle("get-account", async () => {
     return { connected: false, apiBase: getApiBase(), canUseAdminChannel: false };
   }
   setLinkedCanUseAdminChannel(Boolean(check.canUseAdminChannel));
+  startLauncherPresenceLoop();
   return {
     connected: true,
     apiBase: getApiBase(),
@@ -5708,26 +5845,21 @@ ipcMain.handle("report-bug", async (_event, payload = {}) => {
 });
 ipcMain.handle("get-catalog", async (_event, opts = {}) => {
   const forceRefresh = Boolean(opts && opts.refresh);
-  if (forceRefresh || Date.now() - lastCatalogRefreshTime > CATALOG_TTL_MS) {
-    await refreshRemoteCatalog(forceRefresh);
+  if (forceRefresh) {
+    await refreshRemoteCatalog(true);
+  } else if (Date.now() - lastCatalogRefreshTime > CATALOG_TTL_MS) {
+    void refreshRemoteCatalog(false);
   }
-  return catalog.map((e) => ({
-    slug: e.slug,
-    title: e.title,
-    blurb: e.blurb,
-    kind: e.kind,
-    approxSize: e.approxSize || "",
-    art: e.art,
-    coverImage: resolveMediaUrl(e.coverImage) || null,
-    genres: Array.isArray(e.genres) ? e.genres : [],
-    tags: Array.isArray(e.tags) ? e.tags : [],
-    multiplayer: Boolean(e.multiplayer),
-    platforms: Array.isArray(e.platforms) ? e.platforms : [],
-    browserPlayable: Boolean(e.browserPlayable),
-    steamDeck: Boolean(e.steamDeck),
-    createdAt: e.createdAt || null,
-  }));
+  return mapCatalogList();
 });
+ipcMain.handle("get-bootstrap-state", () => ({
+  catalog: mapCatalogList(),
+  recent: listRecentlyPlayed(),
+  account: buildBootstrapAccount(),
+  settings: buildSettingsPayload(),
+  context: buildContextPayload(),
+  version: app.getVersion(),
+}));
 ipcMain.handle("get-servers", async (_event, slug) => {
   try {
     const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
@@ -6003,27 +6135,7 @@ ipcMain.handle("ping-hosts", async (_event, hosts) => {
     return { id, ms: hostMs.has(host) ? hostMs.get(host) : null };
   });
 });
-ipcMain.handle("get-settings", () => {
-  const settings = loadSettings();
-  const updateChannel = getEffectiveUpdateChannel();
-  const updateChannelPref =
-    settings.updateChannel === "latest" || settings.updateChannel === "admin"
-      ? settings.updateChannel
-      : "admin";
-  return {
-    apiBase: settings.apiBase || DEFAULT_API_BASE,
-    gamesDir: settings.gamesDir || DEFAULT_GAMES_DIR,
-    connected: Boolean(settings.launcherToken),
-    version: app.getVersion(),
-    packaged: app.isPackaged,
-    compatibilityFilter:
-      settings.compatibilityFilter === "all" ? "all" : "compatible",
-    canUseAdminChannel: linkedCanUseAdminChannel,
-    updateChannel,
-    updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
-    javaRuntime: managedJava.status(),
-  };
-});
+ipcMain.handle("get-settings", () => buildSettingsPayload());
 ipcMain.handle("ensure-managed-java", async (_event, opts) => {
   try {
     const force = Boolean(opts?.force);
@@ -6162,21 +6274,26 @@ ipcMain.handle("save-settings", (_event, patch) => {
   };
 });
 
+const CATALOG_LIVE_STATS_TTL_MS = 15 * 60 * 1000;
+/** Shared homepage snapshot — same JSON for every launcher until TTL. */
+let catalogLiveStatsCache = { at: 0, data: null, inflight: null };
+
 ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
   const params = new URLSearchParams();
   if (opts?.game) params.set("game", opts.game);
   if (opts?.mod) params.set("mod", opts.mod);
   if (opts?.edition) params.set("edition", opts.edition);
+  const scoped = Boolean(opts?.game || opts?.mod || opts?.edition);
   const qs = params.toString();
   const url = `${getApiBase()}/api/launcher/live-stats${qs ? `?${qs}` : ""}`;
 
-  async function attempt() {
+  async function attempt(headers) {
     const res = await fetch(url, {
-      headers: launcherApiHeaders(),
+      headers,
       // Cold catalog compute can fan out to master servers (12–18s ceilings).
       // Keep below maxDuration on the API; high enough to usually get a warm or
       // deadline-bounded response.
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(scoped ? 30_000 : 12_000),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -6185,13 +6302,47 @@ ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
     return await res.json();
   }
 
+  if (!scoped) {
+    const now = Date.now();
+    if (
+      catalogLiveStatsCache.data &&
+      now - catalogLiveStatsCache.at < CATALOG_LIVE_STATS_TTL_MS
+    ) {
+      return catalogLiveStatsCache.data;
+    }
+    if (catalogLiveStatsCache.inflight) {
+      return catalogLiveStatsCache.data || catalogLiveStatsCache.inflight;
+    }
+    catalogLiveStatsCache.inflight = (async () => {
+      try {
+        // No bearer — this payload is identical for every user and must be CDN-cacheable.
+        const data = await attempt({
+          "user-agent": "playbound-launcher",
+          accept: "application/json",
+        });
+        if (data && typeof data.gameCount === "number") {
+          catalogLiveStatsCache = { at: Date.now(), data, inflight: null };
+          return data;
+        }
+        catalogLiveStatsCache.inflight = null;
+        return catalogLiveStatsCache.data;
+      } catch (err) {
+        catalogLiveStatsCache.inflight = null;
+        console.warn("[live-stats] catalog snapshot failed:", err instanceof Error ? err.message : err);
+        return catalogLiveStatsCache.data;
+      }
+    })();
+    if (catalogLiveStatsCache.data) return catalogLiveStatsCache.data;
+    return catalogLiveStatsCache.inflight;
+  }
+
   try {
-    return await attempt();
+    return await attempt(launcherApiHeaders());
   } catch (err) {
     const first = err instanceof Error ? err.message : String(err);
     console.warn("[live-stats] first attempt failed:", first);
     try {
-      return await attempt();
+      return await attempt(launcherApiHeaders());
     } catch (err2) {
       const second = err2 instanceof Error ? err2.message : String(err2);
       console.warn("[live-stats] retry failed:", second);
@@ -6283,6 +6434,78 @@ ipcMain.handle("get-friends", async () => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+async function launcherJson(path, { method = "GET", body } = {}) {
+  const res = await fetch(`${getApiBase()}${path}`, {
+    method,
+    headers: launcherApiHeaders(body != null ? { "content-type": "application/json" } : {}),
+    body: body != null ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { error: data.error || `HTTP ${res.status}` };
+  }
+  return data;
+}
+
+ipcMain.handle("get-parties", async () => {
+  try {
+    return await launcherJson("/api/parties");
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("create-party", async (_event, opts = {}) => {
+  try {
+    return await launcherJson("/api/parties", { method: "POST", body: opts });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("join-party", async (_event, partyId, password) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/join`, {
+      method: "POST",
+      body: password ? { password } : {},
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("leave-party", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/leave`, { method: "POST" });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/invite`, {
+      method: "POST",
+      body: { friendIds },
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("get-discord-status", async () => {
+  try {
+    return await launcherJson("/api/account/discord");
+  } catch (err) {
+    return { error: err.message, linked: false };
+  }
+});
+
+ipcMain.handle("link-discord", () => {
+  openAuthWindow(`${getApiBase()}/api/auth/discord/start?from=launcher`);
+  return { ok: true };
 });
 
 ipcMain.handle("get-friend-requests", async () => {
@@ -6524,6 +6747,15 @@ ipcMain.handle("set-appear-offline", async (_event, appearOffline) => {
 
 let presenceSessionId = null;
 let presenceTimer = null;
+let presenceRetryTimer = null;
+
+function schedulePresenceRetry() {
+  if (presenceRetryTimer) return;
+  presenceRetryTimer = setTimeout(() => {
+    presenceRetryTimer = null;
+    void beatLauncherPresence();
+  }, 15_000);
+}
 
 async function beatLauncherPresence() {
   const settings = loadSettings();
@@ -6542,24 +6774,34 @@ async function beatLauncherPresence() {
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(body),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn("[presence] beat failed:", res.status);
+      schedulePresenceRetry();
+      return;
+    }
     const data = await res.json().catch(() => ({}));
     if (data.sessionId) presenceSessionId = data.sessionId;
-  } catch {
-    /* ignore */
+  } catch (err) {
+    console.warn("[presence] beat error:", err instanceof Error ? err.message : err);
+    schedulePresenceRetry();
   }
 }
 
 function startLauncherPresenceLoop() {
-  if (presenceTimer) return;
+  if (!presenceTimer) {
+    presenceTimer = setInterval(() => void beatLauncherPresence(), 60_000);
+  }
   void beatLauncherPresence();
-  presenceTimer = setInterval(() => void beatLauncherPresence(), 60_000);
 }
 
 function stopLauncherPresenceLoop() {
   if (presenceTimer) {
     clearInterval(presenceTimer);
     presenceTimer = null;
+  }
+  if (presenceRetryTimer) {
+    clearTimeout(presenceRetryTimer);
+    presenceRetryTimer = null;
   }
   const settings = loadSettings();
   if (settings.launcherToken && presenceSessionId) {
@@ -6671,30 +6913,7 @@ ipcMain.handle("invite-friend-by-email", async (_event, email) => {
   }
 });
 // ----------------------------
-ipcMain.handle("get-recently-played", () => {
-  const settings = loadSettings();
-  const recent = settings.recentlyPlayed || {};
-  const state = loadState();
-  const games = [];
-  for (const [slug, data] of Object.entries(recent)) {
-    const info = state[slug];
-    if (!info || !info.exe || !fs.existsSync(info.exe)) continue;
-    const entry = catalog.find((e) => e.slug === slug);
-    games.push({
-      slug,
-      title: entry?.title || slug,
-      blurb: entry?.blurb || "",
-      art: Array.isArray(entry?.art) && entry.art.length >= 2 ? entry.art : ["#312e81", "#a78bfa"],
-      coverImage: resolveMediaUrl(entry?.coverImage) || null,
-      platforms: Array.isArray(entry?.platforms) ? entry.platforms : [],
-      browserPlayable: Boolean(entry?.browserPlayable),
-      steamDeck: Boolean(entry?.steamDeck),
-      lastPlayed: data.lastPlayed || null,
-    });
-  }
-  games.sort((a, b) => (b.lastPlayed || "").localeCompare(a.lastPlayed || ""));
-  return games;
-});
+ipcMain.handle("get-recently-played", () => listRecentlyPlayed());
 ipcMain.handle("get-game-detail", async (_event, slug) => {
   const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
   if (!entry) return null;
@@ -7031,12 +7250,8 @@ function createWindow() {
     }
   });
   win.webContents.once("did-finish-load", () => {
-    const n = scanKnownInstalls();
     resumePendingInstallerPoll();
     win.webContents.send("context", buildContextPayload());
-    if (n > 0) {
-      win.webContents.send("install-detected", { slug: null, scanned: n });
-    }
   });
 }
 
@@ -7208,6 +7423,9 @@ if (gotLock) {
     }
     
     createWindow();
+    if (loadSettings().launcherToken) {
+      startLauncherPresenceLoop();
+    }
 
     /*
      * Everything below used to run before createWindow(), which meant the
@@ -7242,7 +7460,7 @@ if (gotLock) {
       handleDeepLink(parsedLaunch);
     }
     if (!parsedLaunch || parsedLaunch.action !== "sync") {
-      void startupLibrarySync();
+      setTimeout(() => void startupLibrarySync(), 2_000);
     }
     app.on("activate", () => {
       showMainWindow();

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { CatalogModPublic } from "@/lib/mods";
 import type { GameLike } from "@/lib/compatibility/compatibility";
-import { isGameCompatible } from "@/lib/compatibility/compatibility";
+import { isModCompatible } from "@/lib/compatibility/compatibility";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { ModCard } from "@/components/ModCard";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
@@ -28,12 +28,16 @@ export function ModsCatalog({
 }) {
   const { mode, device } = useCompatibilityFilter();
 
-  const visible = sections.filter((section) => {
-    if (mode === "all") return true;
-    const game = gamesBySlug[section.gameSlug];
-    if (!game) return false;
-    return isGameCompatible(game, device.type);
-  });
+  const visible = sections
+    .map((section) => {
+      const game = gamesBySlug[section.gameSlug];
+      const mods =
+        mode === "all"
+          ? section.mods
+          : section.mods.filter((mod) => isModCompatible(mod, game, device.type));
+      return { ...section, mods };
+    })
+    .filter((section) => section.mods.length > 0);
 
   const visibleModCount = visible.reduce((n, s) => n + s.mods.length, 0);
   const animKey = `${mode}|${visible.map((s) => s.gameSlug).join(",")}`;

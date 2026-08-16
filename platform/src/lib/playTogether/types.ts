@@ -55,8 +55,10 @@ export const PARTY_STATUSES = [
 export type PartyStatus = (typeof PARTY_STATUSES)[number];
 
 export const PARTY_VISIBILITIES = [
-  "invite_only",
+  "public",
   "friends",
+  "password",
+  "invite_only",
   "event",
 ] as const;
 export type PartyVisibility = (typeof PARTY_VISIBILITIES)[number];
@@ -93,6 +95,10 @@ export type PartyPayload = {
   visibility: PartyVisibility;
   maxSize: number;
   eventId: string | null;
+  /** True when a password is required; the hash is never returned. */
+  hasPassword: boolean;
+  /** Host opted into a Discord voice channel. */
+  voiceEnabled: boolean;
   discord: {
     voiceChannelId: string | null;
     inviteUrl: string | null;

@@ -94,8 +94,8 @@ export type CatalogModPublic = {
  */
 export type ModCardMod = Pick<
   CatalogModPublic,
-  "slug" | "title" | "tagline" | "baseGameSlug" | "sizeMB" | "license" | "coverImage" | "art"
->;
+  "slug" | "title" | "tagline" | "baseGameSlug" | "sizeMB" | "license" | "coverImage" | "art" | "platforms"
+> & { tags?: string[] };
 
 /** Narrow a mod down to just the card fields, for passing to client components. */
 export function toModCard(mod: ModCardMod): ModCardMod {
@@ -108,6 +108,8 @@ export function toModCard(mod: ModCardMod): ModCardMod {
     license: mod.license,
     coverImage: mod.coverImage,
     art: mod.art,
+    platforms: mod.platforms,
+    tags: "tags" in mod && Array.isArray(mod.tags) ? mod.tags : undefined,
   };
 }
 

@@ -15,7 +15,7 @@ export const SITE_NAME = "PlayBound";
 export const SITE_TAGLINE = "High-quality free games, actually worth your time";
 
 export const SITE_DESCRIPTION =
-  "A deliberately small catalog of free games that are genuinely good. Every title clears the PlayBound Bar: genuinely free, finished, actively maintained, good on its own merits, and high quality only. One editor's pick every Wednesday.";
+  "A deliberately small catalog of free games that are genuinely good. Every title is tested and played before it is added, and clears the PlayBound Bar: genuinely free, finished enough to enjoy, plays reliably, and high quality or showing good potential. One editor's pick every Wednesday.";
 
 /** Public Discord invite (sidebar + Organization.sameAs). */
 export const SITE_DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
@@ -57,21 +57,15 @@ export const QUALITY_BAR = [
   },
   {
     key: "activelyMaintained" as const,
-    title: "Actively maintained",
+    title: "Plays reliably",
     description:
-      "A release or meaningful commit within the last twelve months. Someone is still looking after it.",
-  },
-  {
-    key: "standsAlone" as const,
-    title: "Stands on its own merits",
-    description:
-      "Good enough that we would recommend it even if it cost money. Free is not the reason it is here.",
+      "We install it, launch it, and play it before it is listed. The game runs and the session holds up — not a crash-on-boot curiosity.",
   },
   {
     key: "highQuality" as const,
-    title: "High quality only",
+    title: "High quality or shows good potential",
     description:
-      "We cut through free-game noise and only platform games that are actually good. Volume is not a goal.",
+      "Either already excellent, or clearly becoming something worth your time. We do not list filler, shovelware, or games we have not played.",
   },
 ];
 

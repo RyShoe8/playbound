@@ -73,7 +73,7 @@ export default async function AlternativesPage({
     },
     {
       q: `Are these ${page.commercialGame} alternatives really free?`,
-      a: "Yes. Every game listed here is free with no trial, no paywalled content and no pay-to-win purchases. Each has been assessed against PlayBound's five published criteria — including high quality only.",
+      a: "Yes. Every game listed here is free with no trial, no paywalled content and no pay-to-win purchases. Each has been tested and played, then assessed against PlayBound's four published criteria — including high quality or showing good potential.",
     },
     {
       q: `Do I need to pay for multiplayer in these ${page.commercialGame} alternatives?`,
@@ -266,7 +266,8 @@ export default async function AlternativesPage({
         <Link href="/standards" className="font-semibold text-primary hover:underline">
           the PlayBound Bar
         </Link>{" "}
-        — five published criteria for whether a free game is actually worth your time.
+        — four published criteria for whether a free game is actually worth your time.
+        Every title is tested and played before it is added.
       </p>
     </div>
   );

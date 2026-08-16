@@ -86,6 +86,10 @@ const PartySchema = new Schema(
       default: "friends",
     },
 
+    passwordSalt: { type: String, default: null },
+    passwordHash: { type: String, default: null },
+    voiceEnabled: { type: Boolean, default: true },
+
     maxSize: {
       type: Number,
       default: PARTY_MAX_SIZE,
@@ -157,6 +161,9 @@ export type PartyDoc = {
   modSlugs: string[];
   status: string;
   visibility: string;
+  passwordSalt?: string | null;
+  passwordHash?: string | null;
+  voiceEnabled?: boolean;
   maxSize: number;
   eventId?: Types.ObjectId | null;
   discord: {

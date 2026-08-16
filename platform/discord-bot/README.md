@@ -9,7 +9,7 @@ Long-lived worker for channel provisioning, welcome pins, slash commands, and Ga
 3. Start command: `npm start`
 
 Invite the bot with scopes `bot` **and** `applications.commands`, plus permissions:
-Manage Channels, Manage Messages, Create Instant Invite, Send Messages, Embed Links.
+Manage Channels, Manage Messages, Create Instant Invite, Send Messages, Embed Links, Move Members.
 
 Example invite URL (replace CLIENT_ID and GUILD_ID):
 

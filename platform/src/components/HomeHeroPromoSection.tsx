@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   X,
@@ -20,29 +21,35 @@ import { PlayCta } from "@/components/GameCard";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
-import { CatalogStatsCard, type CatalogStatsGame, type CatalogStatsMod } from "@/components/ActivityStatsCard";
+import { CatalogStatsCard } from "@/components/ActivityStatsCard";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
 
 interface HomeHeroPromoSectionProps {
   gamesNewestFirst: Game[];
-  games: CatalogStatsGame[];
-  mods: CatalogStatsMod[];
+  games: Array<{ slug: string }>;
   live: CatalogLiveStats;
+  openPartyCount?: number;
 }
 
 export function HomeHeroPromoSection({
   gamesNewestFirst,
   games,
-  mods,
   live,
+  openPartyCount = 0,
 }: HomeHeroPromoSectionProps) {
+  const { data: session, status } = useSession();
   const { mode, device } = useCompatibilityFilter();
   const [showPromo, setShowPromo] = useState<boolean>(true);
-  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const admin = session?.user?.role === "admin";
 
   useEffect(() => {
-    setIsMounted(true);
+    if (status === "loading") return;
     try {
+      if (admin) {
+        setShowPromo(sessionStorage.getItem("playbound_promo_session_dismissed") !== "true");
+        return;
+      }
+
       const dismissed = localStorage.getItem("playbound_promo_dismissed");
       if (dismissed === "true") {
         setShowPromo(false);
@@ -64,15 +71,18 @@ export function HomeHeroPromoSection({
         setShowPromo(true);
       }
     } catch {
-      // localStorage disabled / private browsing
-      setShowPromo(false);
+      setShowPromo(admin);
     }
-  }, []);
+  }, [status, admin]);
 
   const handleDismiss = () => {
     setShowPromo(false);
     try {
-      localStorage.setItem("playbound_promo_dismissed", "true");
+      if (admin) {
+        sessionStorage.setItem("playbound_promo_session_dismissed", "true");
+      } else {
+        localStorage.setItem("playbound_promo_dismissed", "true");
+      }
     } catch {
       // ignore
     }
@@ -87,8 +97,8 @@ export function HomeHeroPromoSection({
     {
       icon: ShieldCheck,
       title: "Curated Free-to-Play",
-      tagline: "Strict 5-point quality standards",
-      desc: "Every title is genuinely free, finished, actively maintained, and 100% free of predatory pay-to-win mechanics.",
+      tagline: "Four-point quality standard",
+      desc: "Every title is tested and played before it is added: genuinely free, finished enough to enjoy, plays reliably, and high quality or showing good potential.",
       color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     },
     {
@@ -163,13 +173,13 @@ export function HomeHeroPromoSection({
               </h1>
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                PlayBound is the curated platform built exclusively for PC gamers: hand-picked
-                titles that clear{" "}
+                PlayBound is the curated platform built exclusively for PC gamers: every game is
+                tested and played before it is added, and every title clears{" "}
                 <Link
                   href="/standards"
                   className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
                 >
-                  five strict quality standards
+                  four strict quality standards
                 </Link>
                 , seamless 1-click launcher installation for games and mods, intelligent hardware
                 performance grading, live multiplayer lobbies, and cross-device cloud saves.
@@ -245,10 +255,10 @@ export function HomeHeroPromoSection({
       {/* When promo is visible: HomeHero is full width and CatalogStatsCard is placed neatly,
           OR when promo is dismissed/closed: HomeHero and CatalogStatsCard are in the SAME TOP ROW! */}
       {showPromo ? (
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
           <div className="min-w-0 flex-1">
             {hero && (
-              <section className="relative overflow-hidden rounded-2xl border border-border shadow-md">
+              <section className="relative h-full overflow-hidden rounded-2xl border border-border shadow-md">
                 <GameArt game={hero} showTitle={false} className="absolute inset-0" iconSize="lg" />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
                 <div className="relative flex min-h-[340px] flex-col justify-end gap-3.5 p-6 sm:p-8 lg:max-w-2xl">
@@ -277,8 +287,8 @@ export function HomeHeroPromoSection({
               </section>
             )}
           </div>
-          <div className="w-full shrink-0 lg:w-80">
-            <CatalogStatsCard live={live} games={games} mods={mods} />
+          <div className="flex w-full shrink-0 lg:w-80">
+            <CatalogStatsCard live={live} openPartyCount={openPartyCount} />
           </div>
         </div>
       ) : (
@@ -320,8 +330,8 @@ export function HomeHeroPromoSection({
               </section>
             )}
           </div>
-          <div className="w-full shrink-0 lg:w-80">
-            <CatalogStatsCard live={live} games={games} mods={mods} />
+          <div className="flex w-full shrink-0 lg:w-80">
+            <CatalogStatsCard live={live} openPartyCount={openPartyCount} />
           </div>
         </div>
       )}

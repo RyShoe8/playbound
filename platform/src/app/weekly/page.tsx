@@ -61,7 +61,8 @@ export default async function WeeklyIndexPage() {
         <Link href="/standards" className="font-semibold text-primary hover:underline">
           PlayBound Bar
         </Link>{" "}
-        — genuinely free, finished, maintained, good on its own merits, and high quality only.
+        — genuinely free, finished enough to enjoy, plays reliably, and high quality or showing good
+        potential. Every pick is tested and played before it is added.
         Here is every issue.
       </p>
 

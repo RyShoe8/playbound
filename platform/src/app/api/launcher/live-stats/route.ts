@@ -19,15 +19,17 @@ export const maxDuration = 60;
  *
  * Thin wrapper over the shared 15-minute liveActivity snapshots.
  */
+const CATALOG_CACHE = "public, s-maxage=900, stale-while-revalidate=1800";
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const gameSlug = url.searchParams.get("game")?.trim() || "";
     const editionSlug = url.searchParams.get("edition")?.trim() || "";
     const modSlug = url.searchParams.get("mod")?.trim() || "";
-    const includeTesting = await requestIncludesTesting(req);
 
     if (modSlug) {
+      const includeTesting = await requestIncludesTesting(req);
       const mod = await getMod(modSlug, { includeTesting });
       if (!mod) {
         return NextResponse.json({ error: "Mod not found" }, { status: 404 });
@@ -37,6 +39,7 @@ export async function GET(req: Request) {
     }
 
     if (gameSlug && editionSlug) {
+      const includeTesting = await requestIncludesTesting(req);
       const game = await getGame(gameSlug, { includeTesting });
       if (!game) {
         return NextResponse.json({ error: "Game not found" }, { status: 404 });
@@ -51,6 +54,7 @@ export async function GET(req: Request) {
     }
 
     if (gameSlug) {
+      const includeTesting = await requestIncludesTesting(req);
       const game = await getGame(gameSlug, { includeTesting });
       if (!game) {
         return NextResponse.json({ error: "Game not found" }, { status: 404 });
@@ -60,7 +64,10 @@ export async function GET(req: Request) {
     }
 
     const stats = await getCatalogLiveStats();
-    return NextResponse.json({ scope: "catalog", ...stats });
+    return NextResponse.json(
+      { scope: "catalog", ...stats },
+      { headers: { "Cache-Control": CATALOG_CACHE } }
+    );
   } catch (err) {
     console.error("launcher live-stats error:", err);
     return NextResponse.json({ error: "Failed to load live stats" }, { status: 500 });

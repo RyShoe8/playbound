@@ -21,7 +21,7 @@ import { Badge } from "./ui/bits";
 import { cn } from "@/lib/utils";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
-import { GamePlatformBadges } from "@/components/GamePlatformBadges";
+import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import {
@@ -189,8 +189,7 @@ export function GameCard({ game, className }: { game: Game; className?: string }
       </div>
       <div className="mt-2 flex min-h-[4.75rem] flex-1 flex-col gap-0.5 px-0.5">
         <p className="truncate text-sm font-semibold">{game.title}</p>
-        <p className="truncate text-xs text-muted-foreground">{game.genres.join(" · ")}</p>
-        <GamePlatformBadges game={game} compact singleLine className="mt-auto" />
+        <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-auto" />
       </div>
     </Link>
   );

@@ -44,7 +44,7 @@ export default async function AboutPage() {
       icon: Sparkles,
       title: "Hand-Curated Standards",
       description:
-        "We don't inflate our library with thousands of shovelware titles. Every single game is tested and evaluated against the 5-point PlayBound Bar.",
+        "We don't inflate our library with thousands of shovelware titles. Every single game is tested and played before it is added, then evaluated against the 4-point PlayBound Bar.",
     },
     {
       icon: Download,
@@ -190,8 +190,9 @@ export default async function AboutPage() {
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-foreground">The PlayBound Standard</h2>
             <p className="text-sm text-muted-foreground">
-              Every game must clear our strict 5-point evaluation: Genuinely Free, Finished, Actively
-              Maintained, High Quality, and Free from dark patterns.
+              Every game is tested and played before it is added, and must clear our 4-point
+              evaluation: genuinely free, finished enough to enjoy, plays reliably, and high quality
+              or showing good potential.
             </p>
           </div>
           <Link

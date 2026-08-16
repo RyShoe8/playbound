@@ -46,7 +46,7 @@ export interface GameArt {
 }
 
 /**
- * A game's score against the five published PlayBound Bar criteria.
+ * A game's score against the published PlayBound Bar criteria.
  *
  * Rendered as a visible, dated checklist on every game page. This is the
  * site's most citable asset: it proves the standard is applied rather than
@@ -57,11 +57,11 @@ export interface QualityBar {
   genuinelyFree: boolean;
   /** Playable and satisfying start to finish today. */
   finished: boolean;
-  /** A release or meaningful commit within the last twelve months. */
+  /** Tested in-house: installs, launches, and plays reliably. */
   activelyMaintained: boolean;
-  /** Good enough that we would recommend it even if it cost money. */
+  /** Kept for older assessments; no longer a published criterion. */
   standsAlone: boolean;
-  /** Selective enough to earn a place — not free-game noise or shovelware. */
+  /** High quality already, or clearly showing good potential. */
   highQuality: boolean;
   /** Self-contained quotable sentence summarising the assessment. */
   verdict: string;
@@ -151,7 +151,7 @@ export interface Game {
   // Optional so existing catalog entries and DB documents stay valid while
   // content is backfilled. Pages degrade gracefully when absent.
 
-  /** Score against the five published criteria. The centrepiece. */
+  /** Score against the published criteria. The centrepiece. */
   qualityBar?: QualityBar;
   /** 400–600 words of unique editorial. Replaces the ~44-word description. */
   longDescription?: string;

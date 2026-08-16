@@ -17,6 +17,7 @@ import {
   Shield,
   ShieldCheck,
   Users,
+  PartyPopper,
 } from "lucide-react";
 import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { withOutboundUtm } from "@/lib/utm";
@@ -32,6 +33,7 @@ const nav = [
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/friends", label: "Friends", icon: Users },
+  { href: "/parties", label: "Parties", icon: PartyPopper },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/gear", label: "Gear", icon: Mouse },
   { href: "/weekly", label: "Weekly", icon: Mail },

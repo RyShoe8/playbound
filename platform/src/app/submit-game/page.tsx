@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Submit a Free Game",
   description:
-    "Know a free game that clears the PlayBound Bar? Submit it for assessment against our five published criteria.",
+    "Know a free game that clears the PlayBound Bar? Submit it for assessment against our four published criteria. Every game is tested and played before it is added.",
   path: "/submit-game",
 });
 

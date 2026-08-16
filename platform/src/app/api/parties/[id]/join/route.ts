@@ -13,7 +13,9 @@ export async function POST(req: Request, ctx: RouteContext) {
 
   try {
     const { id } = await ctx.params;
-    const result = await joinParty(id, userId);
+    const body = await req.json().catch(() => ({}));
+    const password = typeof body?.password === "string" ? body.password : undefined;
+    const result = await joinParty(id, userId, password);
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

@@ -28,7 +28,7 @@ export async function GET() {
     "> Free games are not scarce; good ones are. Every title listed here has been"
   );
   lines.push(
-    "> assessed against five published criteria (the PlayBound Bar). One editor's"
+    "> tested, played, and assessed against four published criteria (the PlayBound Bar). One editor's"
   );
   lines.push("> pick is published every Wednesday.");
   lines.push("");
@@ -39,7 +39,7 @@ export async function GET() {
   lines.push("## The PlayBound Bar");
   lines.push("");
   lines.push(
-    "A game is listed only if it clears all five criteria. Each game page shows"
+    "A game is listed only if it is tested and played first, then clears all four criteria. Each game page shows"
   );
   lines.push("which criteria were met and the date last verified.");
   lines.push("");

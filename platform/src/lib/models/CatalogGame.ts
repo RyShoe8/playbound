@@ -51,7 +51,7 @@ const LauncherInstallSchema = new Schema(
   { _id: false }
 );
 
-/** Score against the five published PlayBound Bar criteria. */
+/** Score against the published PlayBound Bar criteria. */
 const QualityBarSchema = new Schema(
   {
     genuinelyFree: { type: Boolean, default: false },
