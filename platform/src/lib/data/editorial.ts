@@ -237,6 +237,12 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Blue Mammoth Games and Ubisoft actively maintain Brawlhalla with regular balance patches, new Legends, and seasonal esports circuits.",
   },
+  ysoccer: {
+    kind: "manual",
+    url: "https://ysoccer.sourceforge.io/",
+    checkedAt: "2026-08-15",
+    note: "Active open-source retro football simulation on SourceForge with preserved Windows 64-bit releases and community tournament databases.",
+  },
 };
 
 /** All five criteria met — the common case, since failing one means exclusion. */
@@ -4764,6 +4770,80 @@ export const editorial: Record<string, GameEditorial> = {
       {
         q: "What are the hardware requirements for Brawlhalla?",
         a: "Brawlhalla is extremely lightweight, requiring only a 2.0 GHz processor, 2 GB of RAM, and any basic DirectX 9.0c compatible graphics card.",
+      },
+    ],
+  },
+
+  ysoccer: {
+    qualityBar: clearsAll(
+      "YSoccer clears all five: 100% free and open-source under GPL-3.0, completely finished with dozens of international leagues, actively maintained with modern 64-bit builds, stands independently without commercial assets, and delivers the definitive top-down retro football experience."
+    ),
+    longDescription:
+      "Born out of the legendary 16-bit golden era of European sports games, YSoccer is the open-source community's love letter to Sensible World of Soccer (SWOS) and Kick Off. While modern corporate football titles have drifted toward sluggish 3D animation prioritisation and predatory card-collecting modes, YSoccer preserves the pure, immediate rush of top-down arcade football where matches are won on instinctive reflexes, sharp spatial vision, and lightning-fast passing lanes.\n\nAt the heart of YSoccer is its legendary 'aftertouch' ball physics engine. Unlike contemporary simulations where the ball is glued to player sprites through artificial suction, the ball in YSoccer exists as a completely independent, bouncing object. Tapping the pass or shoot button unleashes a strike, while pushing the analog stick or directional pad in mid-air immediately curls the trajectory—letting you bend audacious 30-yard screamers around defenders, execute dipping bicycle kicks, or loop deft chipped lobs over onrushing goalkeepers.\n\nTactical depth runs far deeper than its retro pixel-art presentation suggests. Managers can design custom tactical formations via an interactive pitch grid, dictating precise player positioning during defensive stands, midfield transitions, and offensive overloads. Furthermore, diverse pitch surfaces—from lush wet grass and baked hard dirt to mud-soaked quagmires and frozen snow—drastically affect ball friction, bounce height, and slide tackle distances, with dynamic wind and rain altering crosses in real time.\n\nContent and community customization are front and centre. YSoccer features an expansive built-in database of international tournaments, custom leagues, and domestic cups. A comprehensive visual editor empowers players to customize team kits, shirt patterns, shorts, player skin tones, and individual skill parameters (such as top speed, shot power, heading precision, and passing vision). The entire team structure is saved in clean, transparent JSON files for effortless modding and sharing.\n\nEngineered on a lightweight Java/LibGDX framework, YSoccer runs at buttery-smooth 60+ FPS on virtually any hardware with zero installation friction. Supporting 1 to 4 local players on USB gamepads or keyboards, it provides instantaneous local tournament action, full match replay scrubbers with slow-motion controls, and the unmatched joy of competitive couch multiplayer football.",
+    whyWePickedIt:
+      "YSoccer captures the joyful, unadulterated essence of 1990s Amiga football. With its lightning pace, authentic aftertouch curving ball physics, and rich open-source team editing, it delivers pure sports gameplay without microtransactions or corporate bloat.",
+    bestFor: [
+      "Fans of Sensible World of Soccer (SWOS), Kick Off, and classic 16-bit arcade football",
+      "Players who appreciate physics-based ball control and manual aftertouch shot curving",
+      "Couch multiplayer groups looking for fast-paced 1v1 and 2v2 tournament action",
+      "Database and tactics tinkerers who enjoy customizing teams, kits, and player stats",
+      "Gamers with low-spec laptops seeking a deep, zero-overhead sports title",
+    ],
+    notFor: [
+      "Players seeking 3D photorealistic broadcast simulations like EA Sports FC or eFootball",
+      "Those who prefer modern dual-stick trick controls and magnetic ball-dribbling assists",
+      "Gamers looking for deep narrative-driven RPG manager career modes",
+    ],
+    comparableTo: [
+      "Sensible World of Soccer (SWOS)",
+      "Kick Off 2",
+      "Super Arcade Football",
+      "Dino Dini's Goal!",
+      "Tiki-Taka Soccer",
+      "Natural Soccer",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and extract the standalone YSoccer portable zip (v19) to any folder.",
+      },
+      {
+        platform: "windows",
+        text: "Run ysoccer19.exe to start playing instantly with zero installation overhead.",
+      },
+      {
+        platform: "windows",
+        text: "Connect your USB gamepads and configure one-button or two-button action layouts in the Controls menu.",
+      },
+      {
+        platform: "windows",
+        text: "Select Friendly Match, Custom League, or DIY Cup and choose your favorite club or national team.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is YSoccer completely free?",
+        a: "Yes! YSoccer is 100% free and open-source software licensed under the GNU General Public License (GPL-3.0). There are no ads, subscriptions, or microtransactions.",
+      },
+      {
+        q: "How does the 'aftertouch' shooting mechanic work?",
+        a: "When you strike the ball, holding a directional input immediately after pressing the button applies spin in mid-air, allowing you to curl shots around goalkeepers or swerve crosses.",
+      },
+      {
+        q: "Does YSoccer support modern gamepads?",
+        a: "Yes! YSoccer features plug-and-play support for standard USB controllers, Xbox gamepads, DualShock/DualSense controllers, and keyboards, accommodating up to 4 simultaneous players.",
+      },
+      {
+        q: "Can I edit teams, kits, and player stats?",
+        a: "Yes! YSoccer includes full in-game visual editors for team kits, player appearances, and individual skill ratings, saved in human-readable JSON files.",
+      },
+      {
+        q: "Do weather and pitch conditions affect gameplay?",
+        a: "Yes! Wet grass increases ball skid speed, muddy pitches create drag, frozen turf causes unpredictable bounces, and strong winds noticeably alter aerial ball flight.",
+      },
+      {
+        q: "What are the system requirements?",
+        a: "YSoccer is extremely lightweight, requiring only a 1.5 GHz processor, 1 GB RAM, and any basic OpenGL-compatible graphics card.",
       },
     ],
   },

@@ -171,11 +171,8 @@ export async function DELETE(
     const { slug } = await params;
     await dbConnect();
     const doc = await CatalogGame.findOneAndDelete({ slug });
-    if (!doc) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
     revalidateTag("catalog", { expire: 0 });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deleted: Boolean(doc) });
   } catch (err) {
     console.error("Admin delete game error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

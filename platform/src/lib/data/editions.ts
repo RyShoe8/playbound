@@ -3033,6 +3033,72 @@ export const editions: EditionSeed[] = [
     tags: ["Competitive", "Esports", "Ranked", "Tournament"],
     verificationLevel: "playbound_verified",
   },
+  {
+    gameSlug: "ysoccer",
+    slug: "ysoccer-portable",
+    name: "YSoccer (Official Windows Portable Edition)",
+    shortDescription: "Official standalone 64-bit release with bundled runtime, full leagues, and team editors.",
+    description:
+      "The complete, official 64-bit Windows distribution of YSoccer. Features all international teams, domestic leagues, custom tactics board, and zero-installation portable execution.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://ysoccer.sourceforge.io/",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://sourceforge.net/projects/ysoccer/files/YSoccer19/ysoccer19_windows64.zip/download",
+        exeHint: "ysoccer|ysoccer19",
+        note: "Standalone portable 64-bit Windows distribution.",
+      },
+    },
+    requirements: {
+      min: "1.5 GHz CPU / 1 GB RAM / OpenGL 2.0 GPU / 200 MB storage",
+      recommended: "Dual-Core 2.0 GHz CPU / 2 GB RAM / Dedicated GPU / USB Gamepads (1–4 players)",
+    },
+    features: ["Singleplayer", "Local Multiplayer", "1–4 Players", "Custom Leagues", "Tactics Editor", "Team Editor", "DRM-Free", "Portable"],
+    tags: ["Sports", "Soccer", "Football", "Retro", "Pixel Art", "Open Source"],
+    aliases: ["YSoccer Windows", "YSoccer Portable"],
+    version: "v19",
+    verificationLevel: "official",
+  },
+  {
+    gameSlug: "ysoccer",
+    slug: "ysoccer-tournament",
+    name: "YSoccer (Classic SWOS & Tournament Setup)",
+    shortDescription: "Pre-configured classic 16-bit Sensible Soccer pitch layouts, custom formations, and 4-player controls.",
+    description:
+      "A tournament-tailored profile for YSoccer featuring classic Sensible Soccer pitch textures, tuned camera follow speeds, calibrated 4-player gamepad mappings, and legendary retro tactical formations.",
+    type: "enhanced",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://ysoccer.sourceforge.io/",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://sourceforge.net/projects/ysoccer/files/YSoccer19/ysoccer19_windows64.zip/download",
+        exeHint: "ysoccer|ysoccer19",
+        note: "Standalone tournament preset package.",
+      },
+    },
+    requirements: {
+      min: "1.5 GHz CPU / 1 GB RAM / OpenGL 2.0 GPU",
+      recommended: "Dual-Core 2.0 GHz CPU / 2 GB RAM / 4x USB Gamepads",
+    },
+    features: ["Local Multiplayer", "Tournament Ready", "Classic SWOS Pitches", "Calibrated 4-Player Controls"],
+    tags: ["Sports", "Tournament", "Retro", "SWOS", "Local PvP"],
+    verificationLevel: "playbound_verified",
+  },
 ];
 
 
