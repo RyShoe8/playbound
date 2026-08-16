@@ -2909,6 +2909,71 @@ export const editions: EditionSeed[] = [
     tags: ["Competitive", "Esports", "Tournament", "Gamepad"],
     verificationLevel: "playbound_verified",
   },
+  {
+    gameSlug: "trigger-rally",
+    slug: "trigger-rally-portable",
+    name: "Trigger Rally (Official Windows Portable Edition)",
+    shortDescription: "Official 64-bit standalone package with all tracks, cars, and copilot audio.",
+    description:
+      "The complete, official 64-bit Windows release of Trigger Rally. Includes all 100+ championship stages, vehicle tuning profiles, and zero-installation portable execution.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://trigger-rally.sourceforge.net/",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://sourceforge.net/projects/trigger-rally/files/trigger-0.6.6.1/trigger-rally-0.6.6.1-win64.zip/download",
+        exeHint: "trigger-rally|trigger",
+        note: "Standalone portable 64-bit Windows release.",
+      },
+    },
+    requirements: {
+      min: "1.0 GHz CPU / 512 MB RAM / OpenGL 1.4 GPU / 200 MB storage",
+      recommended: "Dual-Core 2.0 GHz / 2 GB RAM / Dedicated GPU / USB Gamepad",
+    },
+    features: ["Singleplayer", "Time Attack", "Championship Cups", "Controller Support", "Track Editor", "Portable", "DRM-Free"],
+    tags: ["Racing", "Rally", "Arcade", "Open Source", "Portable"],
+    aliases: ["Trigger Rally Windows", "Trigger Rally Portable"],
+    version: "v0.6.6.1",
+    verificationLevel: "official",
+  },
+  {
+    gameSlug: "trigger-rally",
+    slug: "trigger-rally-web",
+    name: "Trigger Rally (Online WebGL Edition)",
+    shortDescription: "Instant browser-playable WebGL port running directly in any modern web browser.",
+    description:
+      "A modern WebGL conversion of Trigger Rally by CodeArtemis. Race classic off-road circuits directly in your browser with zero downloads required.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://codeartemis.github.io/TriggerRally/",
+      github: "https://github.com/CodeArtemis/TriggerRally",
+    },
+    installMethod: "browser",
+    installConfig: {
+      browser: {
+        playUrl: "https://codeartemis.github.io/TriggerRally/",
+      },
+    },
+    requirements: {
+      min: "WebGL-compatible web browser (Chrome, Firefox, Edge, Safari)",
+      recommended: "Hardware-accelerated WebGL GPU",
+    },
+    features: ["Browser Playable", "Zero Install", "Instant Play", "Cross-Platform"],
+    tags: ["Browser", "WebGL", "Instant Play", "Open Source"],
+    aliases: ["Trigger Rally Web", "Trigger Rally Online"],
+    verificationLevel: "playbound_verified",
+  },
 ];
 
 
