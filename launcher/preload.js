@@ -68,7 +68,8 @@ contextBridge.exposeInMainWorld("playbound", {
   blockUser: (targetUserId) => ipcRenderer.invoke("block-user", targetUserId),
   getAppearOffline: () => ipcRenderer.invoke("get-appear-offline"),
   setAppearOffline: (appearOffline) => ipcRenderer.invoke("set-appear-offline", appearOffline),
-  getHardwareProfile: () => ipcRenderer.invoke("get-hardware-profile"),
+  /** Reads the hourly cache unless { force: true } — see main.js. */
+  getHardwareProfile: (opts) => ipcRenderer.invoke("get-hardware-profile", opts || {}),
   syncHardwareProfile: () => ipcRenderer.invoke("sync-hardware-profile"),
   getHardwareCompatibility: (gameSlug, opts) =>
     ipcRenderer.invoke("get-hardware-compatibility", gameSlug, opts || {}),
