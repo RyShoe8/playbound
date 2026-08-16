@@ -7,6 +7,7 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listGames } from "@/lib/catalog";
 import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
+import { listSharedLibraryByFriend } from "@/lib/playTogether/sharedGames";
 
 type PopulatedFriendUser = {
   _id: { toString(): string };
@@ -57,10 +58,12 @@ export async function GET(req: Request) {
     });
 
     const friendIds = friendUsers.map((u) => u.id);
-    const [presences, discordConnections, games] = await Promise.all([
+    const friendIdStrings = friendIds.map((id) => String(id));
+    const [presences, discordConnections, games, sharedByFriend] = await Promise.all([
       Presence.find({ userId: { $in: friendIds } }).lean(),
       DiscordConnection.find({ userId: { $in: friendIds } }).select("userId").lean(),
       listGames({ includeTesting: true }),
+      listSharedLibraryByFriend(userId, friendIdStrings),
     ]);
 
     const titleBySlug = new Map(games.map((g) => [g.slug, g.title]));
@@ -127,6 +130,7 @@ export async function GET(req: Request) {
         discordLinked: discordLinkedSet.has(user.id.toString()),
         presence,
         join,
+        sharedGames: sharedByFriend[user.id.toString()] || [],
       };
     });
 

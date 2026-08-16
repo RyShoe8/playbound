@@ -6,7 +6,6 @@ import { useFriendsStore, type FriendUser } from "@/stores/friendsStore";
 import { AddFriends } from "@/components/friends/AddFriends";
 import { FriendInviteClaim } from "@/components/friends/FriendInviteClaim";
 import { FriendsUpcomingEvents } from "@/components/events/FriendsUpcomingEvents";
-import { PlayWithFriends } from "@/components/friends/PlayWithFriends";
 import { Avatar } from "@/components/ui/bits";
 import { Gamepad2, LogIn, UserMinus } from "lucide-react";
 import Link from "next/link";
@@ -18,6 +17,7 @@ import { PartyDiscovery } from "@/components/friends/PartyDiscovery";
 import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
 import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
+import { PopoutButton } from "@/components/friends/PopoutButton";
 
 function PrivacyToggle({
   label,
@@ -84,44 +84,49 @@ function FriendCard({
     join?.href &&
     (join.capability === "supported" || join.capability === "requiresManualJoin");
 
+  const shared = friend.sharedGames || [];
+  const shownShared = shared.slice(0, 8);
+  const extraShared = shared.length - shownShared.length;
+
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 ${
-        offline ? "opacity-60" : ""
+      className={`flex h-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 ${
+        offline ? "opacity-70" : ""
       }`}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="relative shrink-0">
-          <Avatar name={friend.username} hue={265} size="md" />
-          {playing || away || !offline ? (
-            <span className="absolute -right-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full bg-card">
-              <span
-                className={`size-2.5 rounded-full ${
-                  playing ? "bg-violet-500" : away ? "bg-amber-400" : "bg-emerald-500"
-                }`}
-              />
-            </span>
-          ) : null}
-        </div>
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 truncate text-sm font-bold">
-            <Link
-              href={`/users/${encodeURIComponent(friend.username)}`}
-              className="hover:underline"
-            >
-              {friend.username}
-            </Link>
-            {friend.discordLinked ? (
-              <span
-                className="inline-block size-2 rounded-full bg-[#5865F2]"
-                title="Discord linked"
-              />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="relative shrink-0">
+            <Avatar name={friend.username} hue={265} size="lg" />
+            {playing || away || !offline ? (
+              <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-card">
+                <span
+                  className={`size-2.5 rounded-full ${
+                    playing ? "bg-violet-500" : away ? "bg-amber-400" : "bg-emerald-500"
+                  }`}
+                />
+              </span>
             ) : null}
-          </p>
-          <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
+          </div>
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-lg font-extrabold tracking-tight">
+              <Link
+                href={`/users/${encodeURIComponent(friend.username)}`}
+                className="hover:underline"
+              >
+                {friend.username}
+              </Link>
+              {friend.discordLinked ? (
+                <span
+                  className="inline-block size-2.5 rounded-full bg-[#5865F2]"
+                  title="Discord linked"
+                />
+              ) : null}
+            </p>
+            <div className="mt-0.5 text-sm text-muted-foreground">{subtitle}</div>
+          </div>
         </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
         {showJoin ? (
           <Link
             href={join.href!}
@@ -191,6 +196,29 @@ function FriendCard({
         >
           <UserMinus className="size-3.5" />
         </button>
+        </div>
+      </div>
+      <div className="mt-auto">
+        {shownShared.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {shownShared.map((game) => (
+              <Link
+                key={game.slug}
+                href={`/games/${encodeURIComponent(game.slug)}`}
+                className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground hover:bg-secondary/80"
+              >
+                {game.title}
+              </Link>
+            ))}
+            {extraShared > 0 ? (
+              <span className="rounded-full bg-secondary/70 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                +{extraShared} more
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No shared installs yet</p>
+        )}
       </div>
     </div>
   );
@@ -210,7 +238,7 @@ function FriendsSection({
       <h3 className="text-base font-bold">
         {title} - {count}
       </h3>
-      <div className="flex flex-col gap-2">{children}</div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
   );
 }
@@ -382,19 +410,48 @@ export function FriendsView({
       offlineFriends.length >
     0;
   const lookingOnly = lookingFriends.filter((f) => f.presence.status !== "playing");
+  const offlineIds = new Set(offlineFriends.map((f) => f.id));
+  const onlineAll: FriendUser[] = [];
+  const seenOnline = new Set<string>();
+  for (const f of [
+    ...inPartyFriends,
+    ...playingFriends,
+    ...lookingOnly,
+    ...onlineFriends,
+    ...awayFriends,
+  ]) {
+    if (offlineIds.has(f.id) || seenOnline.has(f.id)) continue;
+    seenOnline.add(f.id);
+    onlineAll.push(f);
+  }
 
   return (
     <div className="space-y-5">
       <FriendInviteClaim />
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            See who&apos;s playing and jump in together.
-          </p>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              See who&apos;s playing and jump in together.
+            </p>
+          </div>
+          <PopoutButton />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!activeParty ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCreateOpen((v) => !v);
+                if (!createOpen) setAddOpen(false);
+              }}
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:brightness-110"
+            >
+              {createOpen ? "Close" : "Start Party"}
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={lfgBusy}
@@ -415,14 +472,10 @@ export function FriendsView({
           </button>
           <button
             type="button"
-            onClick={() => setCreateOpen((v) => !v)}
-            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:brightness-110"
-          >
-            {createOpen ? "Close" : "Create Party"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setAddOpen((v) => !v)}
+            onClick={() => {
+              setAddOpen((v) => !v);
+              if (!addOpen) setCreateOpen(false);
+            }}
             className="rounded-lg border border-border bg-secondary px-3 py-1.5 text-sm font-semibold hover:bg-secondary/80"
           >
             {addOpen ? "Close" : "Add Friend"}
@@ -498,7 +551,21 @@ export function FriendsView({
         ) : null}
       </div>
 
-      <PlayWithFriends surface="friends_page" />
+      {!activeParty && !createOpen ? (
+        <button
+          type="button"
+          onClick={() => {
+            setCreateOpen(true);
+            setAddOpen(false);
+          }}
+          className="flex w-full flex-col items-start gap-1 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-4 text-left transition-colors hover:border-primary/70 hover:bg-primary/10"
+        >
+          <span className="text-sm font-bold text-primary">Start a party</span>
+          <span className="text-xs text-muted-foreground">
+            Host a lobby, invite friends, and play together.
+          </span>
+        </button>
+      ) : null}
 
       {activeParty && (
         <div className="space-y-3">
@@ -511,26 +578,111 @@ export function FriendsView({
       
       {!activeParty && <PartyDiscovery />}
 
-      <FriendsUpcomingEvents />
+      <div className="space-y-8">
+        {!hasFriends && !hasPending ? (
+          <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              No friends yet. Find someone above — outgoing requests will show here until they
+              accept.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="mt-3 inline-flex rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
+            >
+              Find Friends
+            </button>
+          </div>
+        ) : null}
 
-      <div className="space-y-6">
+        {onlineAll.length > 0 ? (
+          <FriendsSection title="Online" count={onlineAll.length}>
+            {onlineAll.map((f) => {
+              const inParty = Boolean(f.presence.currentPartyId);
+              const isPlaying = f.presence.status === "playing";
+              const isAway = f.presence.status === "away";
+              const isLooking = Boolean(f.presence.lookingForPlayers);
+              return (
+                <FriendCard
+                  key={f.id}
+                  friend={f}
+                  playing={isPlaying}
+                  away={isAway}
+                  onRemove={removeFriend}
+                  partyId={inParty ? f.presence.currentPartyId : null}
+                  lfgJoinSlug={!isPlaying && isLooking ? f.presence.lookingForPlayersGameId ?? null : null}
+                  onJoinParty={(id) => {
+                    void joinParty(id).then((party) => {
+                      const voice = followPartyVoice(party);
+                      if (voice.needsDiscordLink) {
+                        setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
+                      }
+                    });
+                  }}
+                  subtitle={
+                    inParty ? (
+                      <span className="text-primary">
+                        In a party
+                        {f.presence.currentGameTitle || f.presence.currentGameId
+                          ? ` · ${f.presence.currentGameTitle || f.presence.currentGameId}`
+                          : ""}
+                      </span>
+                    ) : isPlaying ? (
+                      <span className="flex items-center gap-1 text-primary">
+                        <Gamepad2 className="size-3.5" />
+                        Playing {f.presence.currentGameTitle || f.presence.currentGameId}
+                        {isLooking ? " · Looking for players" : ""}
+                      </span>
+                    ) : isLooking ? (
+                      <span>
+                        Looking for players
+                        {f.presence.lookingForPlayersGameTitle
+                          ? ` · ${f.presence.lookingForPlayersGameTitle}`
+                          : ""}
+                      </span>
+                    ) : isAway ? (
+                      "Away"
+                    ) : (
+                      "Online on PlayBound"
+                    )
+                  }
+                />
+              );
+            })}
+          </FriendsSection>
+        ) : null}
+
+        {offlineFriends.length > 0 ? (
+          <FriendsSection title="Offline" count={offlineFriends.length}>
+            {offlineFriends.map((f) => (
+              <FriendCard
+                key={f.id}
+                friend={f}
+                offline
+                onRemove={removeFriend}
+                subtitle="Offline"
+              />
+            ))}
+          </FriendsSection>
+        ) : null}
+
         {incomingRequests.length > 0 ? (
           <FriendsSection title="Incoming Requests" count={incomingRequests.length}>
             {incomingRequests.map((req) => (
               <div
                 key={req.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar name={req.user.username} hue={265} size="md" />
+                <div className="flex min-w-0 items-center gap-4">
+                  <Avatar name={req.user.username} hue={265} size="lg" />
                   <div className="min-w-0">
                     <Link
                       href={`/users/${encodeURIComponent(req.user.username)}`}
-                      className="truncate text-sm font-semibold hover:underline"
+                      className="text-lg font-extrabold hover:underline"
                     >
                       {req.user.username}
                     </Link>
-                    <p className="text-xs text-muted-foreground">Wants to be friends</p>
+                    <p className="text-sm text-muted-foreground">Wants to be friends</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
@@ -559,18 +711,18 @@ export function FriendsView({
             {outgoingRequests.map((req) => (
               <div
                 key={req.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar name={req.user.username} hue={265} size="md" />
+                <div className="flex min-w-0 items-center gap-4">
+                  <Avatar name={req.user.username} hue={265} size="lg" />
                   <div className="min-w-0">
                     <Link
                       href={`/users/${encodeURIComponent(req.user.username)}`}
-                      className="truncate text-sm font-semibold hover:underline"
+                      className="text-lg font-extrabold hover:underline"
                     >
                       {req.user.username}
                     </Link>
-                    <p className="text-xs text-muted-foreground">Pending</p>
+                    <p className="text-sm text-muted-foreground">Pending</p>
                   </div>
                 </div>
                 <button
@@ -584,128 +736,9 @@ export function FriendsView({
             ))}
           </FriendsSection>
         ) : null}
-
-        {!hasFriends && !hasPending ? (
-          <div className="rounded-lg border border-dashed border-border px-4 py-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              No friends yet. Find someone above — outgoing requests will show here until they
-              accept.
-            </p>
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="mt-3 inline-flex rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground hover:brightness-110"
-            >
-              Find Friends
-            </button>
-          </div>
-        ) : null}
-
-        {inPartyFriends.length > 0 ? (
-          <FriendsSection title="In a Party" count={inPartyFriends.length}>
-            {inPartyFriends.map((f) => (
-              <FriendCard
-                key={`party-${f.id}`}
-                friend={f}
-                onRemove={removeFriend}
-                partyId={f.presence.currentPartyId}
-                onJoinParty={(id) => {
-                  void joinParty(id).then((party) => {
-                    const voice = followPartyVoice(party);
-                    if (voice.needsDiscordLink) {
-                      setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
-                    }
-                  });
-                }}
-                subtitle={
-                  <span className="text-primary">
-                    In a party
-                    {f.presence.currentGameTitle || f.presence.currentGameId
-                      ? ` · ${f.presence.currentGameTitle || f.presence.currentGameId}`
-                      : ""}
-                  </span>
-                }
-              />
-            ))}
-          </FriendsSection>
-        ) : null}
-
-        {playingFriends.length > 0 ? (
-          <FriendsSection title="Playing Now" count={playingFriends.length}>
-            {playingFriends.map((f) => (
-              <FriendCard
-                key={f.id}
-                friend={f}
-                playing
-                onRemove={removeFriend}
-                subtitle={
-                  <span className="flex items-center gap-1 text-primary">
-                    <Gamepad2 className="size-3" />
-                    Playing {f.presence.currentGameTitle || f.presence.currentGameId}
-                    {f.presence.lookingForPlayers ? " · Looking for players" : ""}
-                  </span>
-                }
-              />
-            ))}
-          </FriendsSection>
-        ) : null}
-
-        {lookingOnly.length > 0 ? (
-          <FriendsSection title="Looking for Players" count={lookingOnly.length}>
-            {lookingOnly.map((f) => (
-              <FriendCard
-                key={f.id}
-                friend={f}
-                onRemove={removeFriend}
-                lfgJoinSlug={f.presence.lookingForPlayersGameId ?? null}
-                subtitle={
-                  <span>
-                    Looking for players
-                    {f.presence.lookingForPlayersGameTitle
-                      ? ` · ${f.presence.lookingForPlayersGameTitle}`
-                      : ""}
-                  </span>
-                }
-              />
-            ))}
-          </FriendsSection>
-        ) : null}
-
-        {onlineFriends.length > 0 ? (
-          <FriendsSection title="Online" count={onlineFriends.length}>
-            {onlineFriends.map((f) => (
-              <FriendCard
-                key={f.id}
-                friend={f}
-                onRemove={removeFriend}
-                subtitle="Online on PlayBound"
-              />
-            ))}
-          </FriendsSection>
-        ) : null}
-
-        {awayFriends.length > 0 ? (
-          <FriendsSection title="Away" count={awayFriends.length}>
-            {awayFriends.map((f) => (
-              <FriendCard key={f.id} friend={f} away onRemove={removeFriend} subtitle="Away" />
-            ))}
-          </FriendsSection>
-        ) : null}
-
-        {offlineFriends.length > 0 ? (
-          <FriendsSection title="Offline" count={offlineFriends.length}>
-            {offlineFriends.map((f) => (
-              <FriendCard
-                key={f.id}
-                friend={f}
-                offline
-                onRemove={removeFriend}
-                subtitle="Offline"
-              />
-            ))}
-          </FriendsSection>
-        ) : null}
       </div>
+
+      <FriendsUpcomingEvents />
       <DiscordLinkPrompt
         open={discordPrompt.open}
         inviteUrl={discordPrompt.inviteUrl}

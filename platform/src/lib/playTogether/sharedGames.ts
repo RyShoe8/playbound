@@ -171,3 +171,44 @@ export async function listSharedPlayGames(userId: string, limit = 12): Promise<S
   out.sort((a, b) => b.rank - a.rank || a.title.localeCompare(b.title));
   return out.slice(0, limit);
 }
+
+export type SharedLibraryGame = { slug: string; title: string };
+
+/** Installed games you and each friend both have, keyed by friend user id. */
+export async function listSharedLibraryByFriend(
+  userId: string,
+  friendIds: string[]
+): Promise<Record<string, SharedLibraryGame[]>> {
+  const out: Record<string, SharedLibraryGame[]> = {};
+  if (friendIds.length === 0) return out;
+
+  await dbConnect();
+  const [myLib, friendLib, games] = await Promise.all([
+    LibraryEntry.find({ userId, installed: true }).select("gameSlug").lean(),
+    LibraryEntry.find({ userId: { $in: friendIds }, installed: true })
+      .select("userId gameSlug")
+      .lean(),
+    listGames({ includeTesting: true }),
+  ]);
+
+  const mySlugs = new Set(myLib.map((r) => String(r.gameSlug)));
+  const titleBySlug = new Map(games.map((g) => [g.slug, g.title]));
+  const byFriend = new Map<string, SharedLibraryGame[]>();
+
+  for (const row of friendLib) {
+    const slug = String(row.gameSlug);
+    if (!mySlugs.has(slug)) continue;
+    const title = titleBySlug.get(slug);
+    if (!title) continue;
+    const uid = String(row.userId);
+    const list = byFriend.get(uid) || [];
+    if (!list.some((g) => g.slug === slug)) list.push({ slug, title });
+    byFriend.set(uid, list);
+  }
+
+  for (const [id, gamesForFriend] of byFriend) {
+    gamesForFriend.sort((a, b) => a.title.localeCompare(b.title));
+    out[id] = gamesForFriend;
+  }
+  return out;
+}

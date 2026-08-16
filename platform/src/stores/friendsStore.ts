@@ -27,6 +27,7 @@ export type FriendUser = {
     href: string | null;
     reason?: string;
   };
+  sharedGames?: { slug: string; title: string }[];
 };
 
 export type FriendRequestUser = {
