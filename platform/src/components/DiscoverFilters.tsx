@@ -302,8 +302,8 @@ export function DiscoverFilters({
       </div>
 
       {/* ── 2. Unified Filter Row (Sort, Hardware, Checkboxes, Game Count) ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3.5 rounded-xl border border-border/70 bg-card/60 p-2.5 backdrop-blur-sm sm:p-3">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="relative z-30 flex flex-wrap items-center justify-between gap-3.5 rounded-xl border border-border/70 bg-card/60 p-2.5 backdrop-blur-sm sm:p-3">
+        <div className="flex flex-wrap items-center gap-3.5">
           {/* Sort Dropdown */}
           <PremiumSelect
             value={sort}
@@ -315,33 +315,38 @@ export function DiscoverFilters({
             <option value="players">Sort: Most Players</option>
           </PremiumSelect>
 
-          {/* Hardware Compatibility Dropdown */}
-          <PremiumSelect
-            value={hwFilter}
-            onChange={(e) => {
-              const v = e.target.value as HwFilter;
-              if (!userHw && v) {
-                setHwFilter("");
-                window.alert(
-                  "Open PlayBound while signed in to sync your PC, then use this filter."
-                );
-                return;
+          {/* Performance on my PC (Separated Label and Dropdown) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
+              Performance on my PC:
+            </span>
+            <PremiumSelect
+              value={hwFilter}
+              onChange={(e) => {
+                const v = e.target.value as HwFilter;
+                if (!userHw && v) {
+                  setHwFilter("");
+                  window.alert(
+                    "Open PlayBound while signed in to sync your PC, then use this filter."
+                  );
+                  return;
+                }
+                setHwFilter(v);
+              }}
+              className="!w-auto h-9 min-w-[110px] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
+              title={
+                userHw
+                  ? "Filter by performance on your synced PC"
+                  : "Filter by performance on your synced PC (open the launcher while signed in)"
               }
-              setHwFilter(v);
-            }}
-            className="!w-auto h-9 max-w-[15rem] rounded-lg border border-border/80 bg-secondary/50 px-3 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
-            title={
-              userHw
-                ? "Filter by performance on your synced PC"
-                : "Filter by performance on your synced PC (open the launcher while signed in)"
-            }
-          >
-            <option value="">How well on my PC: any</option>
-            <option value="great">{userHw ? "Great" : "Great (needs launcher)"}</option>
-            <option value="playable">
-              {userHw ? "Playable or better" : "Playable or better (needs launcher)"}
-            </option>
-          </PremiumSelect>
+            >
+              <option value="">Any</option>
+              <option value="great">{userHw ? "Great" : "Great (needs launcher)"}</option>
+              <option value="playable">
+                {userHw ? "Playable or better" : "Playable or better (needs launcher)"}
+              </option>
+            </PremiumSelect>
+          </div>
 
           {/* Standardized Checkboxes */}
           <div className="flex items-center gap-3.5 pl-1">

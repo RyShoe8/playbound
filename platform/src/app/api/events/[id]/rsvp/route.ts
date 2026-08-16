@@ -42,7 +42,7 @@ export async function POST(req: Request, ctx: Ctx) {
     const event = await PlatformEvent.findById(id).select({ title: 1, gameSlug: 1 }).lean();
     if (event && (body.status === "going" || body.status === "maybe")) {
       void createEventRsvpNotification({
-        userId: session.user.id,
+        userId,
         eventId: id,
         eventTitle: event.title,
         status: body.status,
