@@ -15,6 +15,7 @@ import Party from "@/lib/models/Party";
 import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
+import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { getGame } from "@/lib/catalog";
 import {
   PARTY_MAX_SIZE,
@@ -938,12 +939,24 @@ export async function countOpenPublicParties(): Promise<number> {
 
 /* ─── config sync (4H, 4I) ──────────────────────────────────────────────── */
 
+/**
+ * Stands in for "the game, no particular edition" in the installed-edition
+ * sets. A LibraryEntry with no editionSlug still means the game is installed,
+ * and without a placeholder those rows would vanish from a Set and read as
+ * "not installed".
+ */
+const BASE_EDITION_KEY = "__base__";
+
 export type ConfigSyncMember = {
   userId: string;
   username: string;
   hasGame: boolean;
   hasEdition: boolean;
   missingMods: string[];
+  /** The host measures itself; nobody is warned about not matching themselves. */
+  isHost: boolean;
+  /** Which edition this member actually has installed, when they have one. */
+  installedEditionSlug: string | null;
 };
 
 export type ConfigSyncResult = {
@@ -952,6 +965,18 @@ export type ConfigSyncResult = {
   modSlugs: string[];
   members: ConfigSyncMember[];
   allReady: boolean;
+  /**
+   * Where the reference config came from.
+   *
+   * "host" means it was read off the party leader's actual library — the case
+   * the feature exists for, since what matters is matching the person who
+   * picked the game, not a field someone typed. "party" means the leader has
+   * nothing installed yet, so the party's declared editionSlug/modSlugs stand
+   * in and nobody gets told they are incompatible with an empty install.
+   */
+  referenceSource: "host" | "party";
+  hostUserId: string | null;
+  hostUsername: string | null;
 };
 
 export async function checkConfigSync(
@@ -965,13 +990,22 @@ export async function checkConfigSync(
   const memberIds = (doc.members as Array<{ userId: unknown }>).map((m) =>
     String(m.userId)
   );
-  const [nameById, libraryEntries] = await Promise.all([
+  const hostId = doc.leaderId ? String(doc.leaderId) : null;
+
+  const [nameById, libraryEntries, modEntries] = await Promise.all([
     resolveUsernames(memberIds),
     LibraryEntry.find({
       userId: { $in: memberIds },
       gameSlug: doc.gameSlug,
     })
       .select("userId gameSlug editionSlug installed")
+      .lean(),
+    LibraryModEntry.find({
+      userId: { $in: memberIds },
+      baseGameSlug: doc.gameSlug,
+      installed: true,
+    })
+      .select("userId modSlug")
       .lean(),
   ]);
 
@@ -981,28 +1015,67 @@ export async function checkConfigSync(
     const uid = String(entry.userId);
     if (!installedByUser.has(uid)) installedByUser.set(uid, new Set());
     if (entry.installed) {
-      installedByUser.get(uid)!.add(entry.editionSlug || "__base__");
+      installedByUser.get(uid)!.add(entry.editionSlug || BASE_EDITION_KEY);
     }
   }
 
-  const editionSlug = (doc.editionSlug as string) || null;
-  const modSlugs = (doc.modSlugs as string[]) || [];
+  // userId → set of installed mod slugs for this game.
+  const modsByUser = new Map<string, Set<string>>();
+  for (const entry of modEntries) {
+    const uid = String(entry.userId);
+    if (!modsByUser.has(uid)) modsByUser.set(uid, new Set());
+    modsByUser.get(uid)!.add(String(entry.modSlug));
+  }
+
+  /*
+   * The host's actual install is the reference, not the party's declared
+   * fields. Someone who picks a game and launches a heavily modded copy of it
+   * is what everyone else has to match; the declared editionSlug is only a
+   * label and is frequently empty.
+   *
+   * When the host has nothing installed there is nothing to match, so the
+   * declared fields stand in. Without that fallback a host who has not
+   * installed yet would mark every other member incompatible with an empty
+   * config.
+   */
+  const hostEditions = hostId ? installedByUser.get(hostId) : undefined;
+  const hostHasGame = Boolean(hostEditions && hostEditions.size > 0);
+  const referenceSource: "host" | "party" = hostHasGame ? "host" : "party";
+
+  const declaredEdition = (doc.editionSlug as string) || null;
+  const declaredMods = (doc.modSlugs as string[]) || [];
+
+  const hostEdition =
+    hostHasGame && hostEditions
+      ? [...hostEditions].find((e) => e !== BASE_EDITION_KEY) ?? BASE_EDITION_KEY
+      : null;
+
+  const editionSlug = hostHasGame
+    ? hostEdition === BASE_EDITION_KEY
+      ? null
+      : hostEdition
+    : declaredEdition;
+
+  const modSlugs = hostHasGame
+    ? [...(hostId ? modsByUser.get(hostId) ?? new Set<string>() : new Set<string>())].sort()
+    : declaredMods;
 
   const members: ConfigSyncMember[] = memberIds.map((uid) => {
     const editions = installedByUser.get(uid) || new Set<string>();
     const hasGame = editions.size > 0;
-    const hasEdition = editionSlug
-      ? editions.has(editionSlug)
-      : hasGame;
-    // Mod install check is a future enhancement (requires mod library tracking).
-    // For now, mark all mods as missing if the user doesn't have the game at all.
-    const missingMods = hasGame ? [] : modSlugs;
+    const isHost = uid === hostId;
+    const theirMods = modsByUser.get(uid) || new Set<string>();
     return {
       userId: uid,
       username: nameById.get(uid) || "Player",
       hasGame,
-      hasEdition,
-      missingMods,
+      hasEdition: editionSlug ? editions.has(editionSlug) : hasGame,
+      // Only meaningful once they have the game; otherwise the game is the ask.
+      missingMods: hasGame ? modSlugs.filter((slug) => !theirMods.has(slug)) : modSlugs,
+      isHost,
+      installedEditionSlug:
+        [...editions].find((e) => e !== BASE_EDITION_KEY) ??
+        (hasGame ? BASE_EDITION_KEY : null),
     };
   });
 
@@ -1012,7 +1085,12 @@ export async function checkConfigSync(
       editionSlug,
       modSlugs,
       members,
-      allReady: members.every((m) => m.hasGame && m.hasEdition && m.missingMods.length === 0),
+      allReady: members.every(
+        (m) => m.hasGame && m.hasEdition && m.missingMods.length === 0
+      ),
+      referenceSource,
+      hostUserId: hostId,
+      hostUsername: hostId ? nameById.get(hostId) || "Host" : null,
     },
     status: 200,
   };
