@@ -27,7 +27,6 @@ export default async function SearchPage({
     feature?: string | string[];
     sort?: string;
     sortDir?: string;
-    maxSize?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -44,9 +43,8 @@ export default async function SearchPage({
   const features = toArray(params.feature);
   const sort = (params.sort ?? "title") as GameFilter["sort"];
   const sortDir = (params.sortDir ?? "asc") as GameFilter["sortDir"];
-  const maxSize = params.maxSize ? parseInt(params.maxSize, 10) : undefined;
 
-  const hasFilters = genres.length > 0 || tags.length > 0 || platforms.length > 0 || features.length > 0 || !!maxSize;
+  const hasFilters = genres.length > 0 || tags.length > 0 || platforms.length > 0 || features.length > 0;
   const hasSearch = !!q;
   const hasAny = hasSearch || hasFilters;
   const includeTesting = await viewerCanSeeTesting();
@@ -60,7 +58,6 @@ export default async function SearchPage({
     features: features.length ? features : undefined,
     sort,
     sortDir,
-    maxSizeMB: maxSize,
   };
 
   const [games, liveStats] = await Promise.all([
@@ -79,27 +76,10 @@ export default async function SearchPage({
   const total =
     games.length + developerResults.length + collectionResults.length + editionResults.length;
 
-  // Build a readable description of active filters
-  const filterParts: string[] = [];
-  if (genres.length) filterParts.push(`genres: ${genres.join(", ")}`);
-  if (tags.length) filterParts.push(`tags: ${tags.join(", ")}`);
-  if (platforms.length) filterParts.push(`platforms: ${platforms.join(", ")}`);
-  if (features.length) filterParts.push(`features: ${features.join(", ")}`);
-  if (maxSize) filterParts.push(`under ${maxSize >= 1000 ? `${maxSize / 1000} GB` : `${maxSize} MB`}`);
-
   return (
-    <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Search</h1>
-        <p className="mt-1 text-muted-foreground">
-          {hasAny
-            ? `${total} result${total === 1 ? "" : "s"}${q ? ` for "${q}"` : ""}${filterParts.length ? ` · ${filterParts.join(" · ")}` : ""}`
-            : "Search games, developers, and collections — or use the filters below."}
-        </p>
-      </div>
-
+    <div className="space-y-4 px-4 pt-2 pb-6 sm:px-6 lg:px-8">
       <Suspense fallback={null}>
-        <SearchFilters />
+        <SearchFilters query={q} resultCount={hasAny ? total : null} />
       </Suspense>
 
       {!hasAny && (

@@ -208,20 +208,31 @@ export function GameCard({
     <Link
       href={`/games/${game.slug}`}
       className={cn(
-        "group flex h-full w-[250px] shrink-0 snap-start flex-col sm:w-[276px]",
+        "group flex h-full w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)] sm:w-[276px]",
         className
       )}
     >
-      <div className="relative shrink-0 overflow-hidden rounded-xl border border-border transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]">
+      <div className="relative shrink-0 overflow-hidden">
         <GameArt game={game} className="aspect-[3/4]" />
         <IncompatibleCorner game={game} />
         <div className="absolute top-2 right-2 z-20">
           <LaunchBadge game={game} />
         </div>
       </div>
-      <div className="mt-2 flex min-h-[3.5rem] flex-1 flex-col gap-0.5 px-0.5">
-        <CardCategoryTags genres={game.genres} tags={game.tags} size="md" />
-        <p className="text-xs text-muted-foreground">{count.toLocaleString()} playing</p>
+      <div className="flex items-start justify-between gap-2 border-t border-border/70 bg-card/90 px-2.5 py-2">
+        <CardCategoryTags
+          genres={game.genres}
+          tags={game.tags}
+          size="md"
+          className="min-w-0 flex-1"
+        />
+        <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-[11px] font-semibold text-muted-foreground">
+          <span className="relative flex size-1.5">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+          </span>
+          {count.toLocaleString()} playing
+        </p>
       </div>
     </Link>
   );
