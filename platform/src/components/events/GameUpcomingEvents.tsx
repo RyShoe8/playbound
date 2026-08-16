@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listPublicEvents } from "@/lib/events/service";
 import { CalendarDays, Users } from "lucide-react";
+import { EventLocalWhen } from "@/components/LocalTime";
 
 export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
   const events = await listPublicEvents({ gameSlug, limit: 5 });
@@ -24,7 +25,7 @@ export async function GameUpcomingEvents({ gameSlug }: { gameSlug: string }) {
               </Link>
               <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                 <CalendarDays className="size-3" />
-                {e.when.dateLine} · {e.when.timeLine}
+                <EventLocalWhen startsAt={e.startsAt} endsAt={e.endsAt} />
               </p>
               <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                 <Users className="size-3" />

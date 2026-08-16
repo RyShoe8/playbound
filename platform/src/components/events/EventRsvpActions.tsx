@@ -10,11 +10,13 @@ export function EventRsvpActions({
   gameSlug,
   initialStatus,
   disabled,
+  mode = "rsvp",
 }: {
   eventId: string;
   gameSlug?: string | null;
   initialStatus: string | null;
   disabled?: boolean;
+  mode?: "rsvp" | "register";
 }) {
   const { status: authStatus } = useSession();
   const router = useRouter();
@@ -58,7 +60,31 @@ export function EventRsvpActions({
 
   if (disabled) {
     return (
-      <p className="text-sm text-muted-foreground">RSVPs are closed for this event.</p>
+      <p className="text-sm text-muted-foreground">
+        {mode === "register" ? "Registration is closed for this event." : "RSVPs are closed for this event."}
+      </p>
+    );
+  }
+
+  if (mode === "register") {
+    return (
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void setRsvp(status === "going" ? "not_going" : "going")}
+            className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+              status === "going"
+                ? "bg-play text-play-foreground"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            }`}
+          >
+            {status === "going" ? "Registered — Unregister" : "Register"}
+          </button>
+        </div>
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      </div>
     );
   }
 

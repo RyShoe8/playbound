@@ -17,9 +17,7 @@ export function NewEventForm({
   const [editionSlug, setEditionSlug] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
-  const [timezone, setTimezone] = useState("America/New_York");
   const [maxParticipants, setMaxParticipants] = useState("");
-  const [featured, setFeatured] = useState(false);
   const [discordInviteUrl, setDiscordInviteUrl] = useState("");
   const [tournamentFormat, setTournamentFormat] = useState("single_elim");
   const [teamSize, setTeamSize] = useState("1");
@@ -30,20 +28,28 @@ export function NewEventForm({
     e.preventDefault();
     setState("busy");
     try {
+      const timezone =
+        typeof Intl !== "undefined"
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : undefined;
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title,
-          description,
+          description: description.trim(),
           eventType,
           gameSlug: gameSlug || null,
           editionSlug: editionSlug || null,
           startsAt: new Date(startsAt).toISOString(),
           endsAt: endsAt ? new Date(endsAt).toISOString() : null,
           timezone,
-          maxParticipants: maxParticipants ? Number(maxParticipants) : null,
-          featured,
+          maxParticipants:
+            eventType === "tournament"
+              ? null
+              : maxParticipants
+                ? Number(maxParticipants)
+                : null,
           discordInviteUrl: discordInviteUrl || null,
           status: "registration_open",
           ...(eventType === "tournament"
@@ -93,9 +99,10 @@ export function NewEventForm({
         />
       </label>
       <label className="block space-y-1 text-sm">
-        <span className="font-semibold">Description</span>
+        <span className="font-semibold">
+          Description <span className="font-normal text-muted-foreground">(optional)</span>
+        </span>
         <textarea
-          required
           rows={4}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -147,24 +154,21 @@ export function NewEventForm({
           />
         </label>
       </div>
-      <label className="block space-y-1 text-sm">
-        <span className="font-semibold">Timezone</span>
-        <input
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
-        />
-      </label>
-      <label className="block space-y-1 text-sm">
-        <span className="font-semibold">Capacity (optional)</span>
-        <input
-          type="number"
-          min={1}
-          value={maxParticipants}
-          onChange={(e) => setMaxParticipants(e.target.value)}
-          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
-        />
-      </label>
+      <p className="text-xs text-muted-foreground">
+        Times are in your local timezone. Everyone else sees them in theirs.
+      </p>
+      {eventType !== "tournament" ? (
+        <label className="block space-y-1 text-sm">
+          <span className="font-semibold">Capacity (optional)</span>
+          <input
+            type="number"
+            min={1}
+            value={maxParticipants}
+            onChange={(e) => setMaxParticipants(e.target.value)}
+            className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
+          />
+        </label>
+      ) : null}
       <label className="block space-y-1 text-sm">
         <span className="font-semibold">Discord invite override (optional)</span>
         <input
@@ -202,14 +206,6 @@ export function NewEventForm({
           </label>
         </div>
       ) : null}
-      <label className="inline-flex items-center gap-2 text-sm font-semibold">
-        <input
-          type="checkbox"
-          checked={featured}
-          onChange={(e) => setFeatured(e.target.checked)}
-        />
-        Featured
-      </label>
       {state === "error" ? (
         <p className="text-sm text-destructive">{message}</p>
       ) : null}

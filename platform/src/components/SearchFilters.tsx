@@ -6,13 +6,20 @@ import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { GENRES, TAGS, PLATFORMS, FEATURES } from "@/lib/gamePayload";
 import { useTelemetry } from "@/lib/telemetry";
 
-type SortOption = "title" | "releaseYear" | "sizeMB";
+type SortOption = "title" | "releaseYear" | "players" | "plays";
 type SortDir = "asc" | "desc";
 
+/*
+ * Size is deliberately absent. It remains a *filter* (maxSizeMB), which is the
+ * question people actually ask of it — "what fits on my disk" — whereas
+ * ordering the catalog by megabytes ranks games by a property nobody is
+ * shopping for.
+ */
 const SORT_OPTIONS: { label: string; value: SortOption }[] = [
   { label: "Title", value: "title" },
   { label: "Release Year", value: "releaseYear" },
-  { label: "Size", value: "sizeMB" },
+  { label: "Players", value: "players" },
+  { label: "Plays", value: "plays" },
 ];
 
 function FilterChip({

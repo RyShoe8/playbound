@@ -69,13 +69,13 @@ export function serializeEvent(
       ? new Date(e.registrationDeadline)
       : null,
   });
-  const timezone = e.timezone || "America/New_York";
-  const when = formatEventWhen(startsAt, { timezone, endsAt });
+  const timezone = e.timezone || "";
+  const when = formatEventWhen(startsAt, { endsAt });
 
   return {
     id: String(e._id),
     title: e.title,
-    description: e.description,
+    description: e.description || "",
     eventType: (e.eventType || "game_night") as EventType,
     gameSlug: e.gameSlug || null,
     editionSlug: e.editionSlug || null,

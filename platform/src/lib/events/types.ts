@@ -12,6 +12,12 @@ export function eventTypeLabel(type: string): string {
   return "Game Night";
 }
 
+export function teamSizeLabel(size: number): string {
+  if (size <= 1) return "Solo";
+  if (size === 2) return "2v2";
+  return `${size}-player teams`;
+}
+
 export const EVENT_STATUSES = [
   "draft",
   "published",

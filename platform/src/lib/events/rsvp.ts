@@ -96,6 +96,10 @@ export async function setEventRsvp(opts: {
           { upsert: true }
         );
       } else {
+        const { leaveTeam } = await import("@/lib/events/teams");
+        await leaveTeam({ tournamentId: tournament._id, userId: opts.userId }).catch(
+          () => null
+        );
         await TournamentParticipant.deleteOne({
           tournamentId: tournament._id,
           userId: opts.userId,

@@ -7,6 +7,7 @@ import dbConnect from "@/lib/db";
 import { Tournament, TournamentParticipant } from "@/lib/models/Tournament";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { completeMatch, generateSingleElimBracket } from "@/lib/events/bracket";
+import { createTeam, joinTeam, kickFromTournament, leaveTeam } from "@/lib/events/teams";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -75,6 +76,75 @@ export async function POST(req: Request, ctx: Ctx) {
       );
     }
     return NextResponse.json({ success: true, state: p.state });
+  }
+
+  if (action === "create_team") {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+    try {
+      const team = await createTeam({
+        tournamentId: tournament._id,
+        userId: session.user.id,
+        name: String(body.name || ""),
+      });
+      return NextResponse.json({ success: true, teamId: String(team._id) });
+    } catch (err) {
+      const status = (err as { status?: number }).status || 500;
+      return NextResponse.json({ error: (err as Error).message }, { status });
+    }
+  }
+
+  if (action === "join_team") {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+    try {
+      await joinTeam({
+        tournamentId: tournament._id,
+        userId: session.user.id,
+        teamId: String(body.teamId || ""),
+        teamSize: tournament.teamSize || 1,
+      });
+      return NextResponse.json({ success: true });
+    } catch (err) {
+      const status = (err as { status?: number }).status || 500;
+      return NextResponse.json({ error: (err as Error).message }, { status });
+    }
+  }
+
+  if (action === "leave_team") {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+    try {
+      await leaveTeam({ tournamentId: tournament._id, userId: session.user.id });
+      return NextResponse.json({ success: true });
+    } catch (err) {
+      const status = (err as { status?: number }).status || 500;
+      return NextResponse.json({ error: (err as Error).message }, { status });
+    }
+  }
+
+  if (action === "kick") {
+    if (!(await requireAdmin())) {
+      return NextResponse.json({ error: "Admin only" }, { status: 403 });
+    }
+    try {
+      await kickFromTournament({
+        tournamentId: tournament._id,
+        eventId: event._id,
+        userId: body.userId ? String(body.userId) : undefined,
+        teamId: body.teamId ? String(body.teamId) : undefined,
+      });
+      return NextResponse.json({ success: true });
+    } catch (err) {
+      const status = (err as { status?: number }).status || 500;
+      return NextResponse.json({ error: (err as Error).message }, { status });
+    }
   }
 
   if (action === "complete_match") {

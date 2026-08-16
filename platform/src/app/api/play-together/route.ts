@@ -40,16 +40,19 @@ export async function GET(req: Request) {
       .populate({ path: "recipientId", select: "username preferences" })
       .lean()) as unknown as FriendshipLean[];
 
-    const friendUsers = friendships.map((doc) => {
-      const isRequester = String(doc.requesterId._id) === userId;
-      const friendUser = isRequester ? doc.recipientId : doc.requesterId;
-      return {
-        id: String(friendUser._id),
-        username: String(friendUser.username || "Player"),
-        appearOffline: Boolean(friendUser.preferences?.appearOffline),
-        hideActivity: Boolean(friendUser.preferences?.hideActivityFromFriends),
-      };
-    });
+    const friendUsers = friendships
+      .map((doc) => {
+        const isRequester = String(doc.requesterId._id) === userId;
+        const friendUser = isRequester ? doc.recipientId : doc.requesterId;
+        return {
+          id: String(friendUser._id),
+          username: String(friendUser.username || "Player"),
+          appearOffline: Boolean(friendUser.preferences?.appearOffline),
+          hideActivity: Boolean(friendUser.preferences?.hideActivityFromFriends),
+        };
+      })
+      // Never the viewer — see the matching note in sharedGames.acceptedFriendIds.
+      .filter((f) => f.id !== userId);
 
     const ids = friendUsers.map((f) => f.id);
     const [presences, games, sharedGames, mePresence, activeParties, discoverableParties] = await Promise.all([

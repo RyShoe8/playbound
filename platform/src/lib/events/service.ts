@@ -16,7 +16,7 @@ import { serializeEvent } from "@/lib/events/serialize";
 
 export const eventCreateSchema = z.object({
   title: z.string().min(3).max(150),
-  description: z.string().min(10).max(4000),
+  description: z.string().max(4000).optional().default(""),
   eventType: z.string().min(1).max(40).default("game_night"),
   gameSlug: z.string().nullable().optional(),
   editionSlug: z.string().nullable().optional(),
@@ -104,7 +104,7 @@ export async function createPlatformEvent(
   await dbConnect();
   const doc = await PlatformEvent.create({
     title: body.title,
-    description: body.description,
+    description: body.description || "",
     eventType: body.eventType || EVENT_TYPES[0],
     gameSlug: body.gameSlug || null,
     editionSlug: body.editionSlug || null,

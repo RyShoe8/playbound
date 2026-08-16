@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
+import { EventLocalWhen } from "@/components/LocalTime";
 
 type Row = {
   id: string;
   title: string;
-  when: { dateLine: string; timeLine: string };
+  startsAt: string;
+  endsAt?: string | null;
   friendCount: number;
   friendNames: string[];
 };
@@ -45,7 +47,7 @@ export function FriendsUpcomingEvents() {
             </Link>
             <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarDays className="size-3" />
-              {e.when.dateLine} · {e.when.timeLine}
+              <EventLocalWhen startsAt={e.startsAt} endsAt={e.endsAt} />
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {e.friendNames[0]}
