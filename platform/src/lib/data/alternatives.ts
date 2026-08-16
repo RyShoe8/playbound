@@ -298,6 +298,13 @@ export const alternativePages: AlternativePage[] = [
           "Movement is faster and more technical than Quake III's, with its own mechanics to learn. Player numbers are far below commercial shooters, though servers are consistently populated.",
       },
       {
+        slug: "quake-champions",
+        pitch:
+          "Quake Champions is id Software's official free-to-play evolution of Quake III Arena, combining classic rocket jumps, railguns, and lightning guns with distinct champion abilities.",
+        differences:
+          "Modern hero shooter champion passives and active abilities layered onto traditional arena movement. Officially maintained on Steam with active ranked matchmaking.",
+      },
+      {
         slug: "unvanquished",
         pitch:
           "Unvanquished pairs first-person shooting with real-time strategy — one team builds a base while the other plays as aliens. Nothing commercial does this.",
@@ -305,7 +312,7 @@ export const alternativePages: AlternativePage[] = [
       },
     ],
     verdict:
-      "Xonotic is the best free alternative to Quake and Unreal Tournament: a free, open-source arena shooter with fast movement, classic weapon balance, bot support and active public servers, on Windows, macOS and Linux.",
+      "Xonotic is the best free alternative to Quake and Unreal Tournament: a free, open-source arena shooter with fast movement, classic weapon balance, bot support and active public servers, on Windows, macOS and Linux. Quake Champions provides the official modern evolution with active ranked matchmaking.",
   },
   {
     slug: "diablo",
@@ -610,6 +617,223 @@ export const alternativePages: AlternativePage[] = [
     ],
     verdict:
       "Mega Man Unlimited is the best free alternative to Mega Man: a complete, free fangame with eight original Robot Masters, their weapons, a full fortress finale and production values close to the official series — though it is markedly harder than Capcom's own entries.",
+  },
+  {
+    slug: "super-smash-bros",
+    commercialGame: "Super Smash Bros.",
+    aliases: ["Super Smash Bros. Ultimate", "Smash Bros", "Melee", "platform fighter", "MultiVersus"],
+    title: "Free Alternatives to Super Smash Bros.",
+    intro:
+      "Nintendo's platform fighting formula — ring-outs, aerial juggles, stage knockbacks, and chaotic party brawling — has a premier free-to-play counterpart with over 50 characters, rollback netcode, and complete cross-play across every platform.",
+    topPick: "brawlhalla",
+    picks: [
+      {
+        slug: "brawlhalla",
+        pitch:
+          "Brawlhalla is a fast-paced 2D platform fighter with over 50 unique Legends, tight rollback netcode, cross-play across all platforms, and an active competitive esports circuit.",
+        differences:
+          "Weapon-pickup mechanics where each Legend commands two weapon styles rather than a static single-character kit. Free weekly rotation system with purely cosmetic purchases.",
+      },
+      {
+        slug: "hedgewars",
+        pitch:
+          "If what you want is the zany party chaos with friends, Hedgewars provides explosive physics-driven team destruction.",
+        differences:
+          "Turn-based artillery trajectory battles rather than real-time platform fighting.",
+      },
+      {
+        slug: "supertuxkart",
+        pitch:
+          "For couch party competition with Nintendo-style item brawling, SuperTuxKart offers battle arenas alongside racing.",
+        differences:
+          "Kart racing and vehicular arena battle rather than platform fighting.",
+      },
+    ],
+    verdict:
+      "Brawlhalla is the best free alternative to Super Smash Bros.: a polished, highly competitive 2D platform fighter with full cross-platform multiplayer, rollback netcode, frequent balance updates, and zero pay-to-win mechanics.",
+  },
+  {
+    slug: "sensible-soccer",
+    commercialGame: "FIFA & Sensible Soccer",
+    aliases: ["FIFA", "EA Sports FC", "Sensible World of Soccer", "SWOS", "Kick Off", "arcade soccer"],
+    title: "Free Alternatives to FIFA & Sensible Soccer",
+    intro:
+      "Modern corporate soccer titles demand full annual purchases and push aggressive card packs. Free alternatives deliver both the instant, legendary 16-bit arcade aftertouch football of the Amiga era and tactical physics-driven squad matches.",
+    topPick: "ysoccer",
+    picks: [
+      {
+        slug: "ysoccer",
+        pitch:
+          "YSoccer is the definitive open-source spiritual successor to Sensible World of Soccer (SWOS), featuring fluid aftertouch curve physics, dynamic weather, custom tactics, and a complete team editor.",
+        differences:
+          "Retro 2D top-down perspective and fast-paced one-touch controls rather than photorealistic 3D broadcast simulations.",
+      },
+      {
+        slug: "strikers-club",
+        pitch:
+          "Strikers Club brings third-person physics-based street football with customizable clubs, 11v11 online team formations, and direct manual ball control.",
+        differences:
+          "Third-person behind-the-player camera and full physics control over each touch rather than top-down bird's-eye management.",
+      },
+    ],
+    verdict:
+      "YSoccer is the best free alternative to Sensible Soccer and classic arcade football: an open-source top-down masterpiece with authentic aftertouch ball physics, complete league customization, and 4-player local multiplayer.",
+  },
+  {
+    slug: "bomberman",
+    commercialGame: "Super Bomberman",
+    aliases: ["Bomberman", "Super Bomberman R", "party game", "grid bomber"],
+    title: "Free Alternatives to Super Bomberman",
+    intro:
+      "Grid-based bomb-dropping multiplayer is one of gaming's greatest couch party experiences. The free option captures the classic 16-bit SNES multiplayer perfection with support for up to 8 simultaneous players.",
+    topPick: "mrboom",
+    picks: [
+      {
+        slug: "mrboom",
+        pitch:
+          "Mr. Boom is an authentic 8-player retro Bomberman tribute featuring explosive power-ups, pushable bombs, jumping mechanics, and full multi-gamepad local and netplay support.",
+        differences:
+          "Strictly dedicated to classic 2D party battles with zero cash shops, season passes, or 3D camera distractions.",
+      },
+      {
+        slug: "hedgewars",
+        pitch:
+          "Hedgewars delivers similar turn-based explosive demolition and hilarious player eliminations on destructible 2D terrain.",
+        differences:
+          "Turn-based artillery aiming rather than real-time grid maze navigation.",
+      },
+    ],
+    verdict:
+      "Mr. Boom is the best free alternative to Super Bomberman: an unadulterated 8-player open-source party brawler with native controller support, vibrant pixel art, and classic competitive bomb mechanics.",
+  },
+  {
+    slug: "axis-and-allies",
+    commercialGame: "Axis & Allies",
+    aliases: ["Hearts of Iron IV", "Risk", "global strategy board game", "turn-based grand strategy"],
+    title: "Free Alternatives to Axis & Allies & Hearts of Iron",
+    intro:
+      "Tabletop grand strategy — moving plastic infantry divisions across continental territories, rolling dice for combat, and coordinating global war production — has an open-source titan with hundreds of community maps.",
+    topPick: "triplea",
+    picks: [
+      {
+        slug: "triplea",
+        pitch:
+          "TripleA is a full-featured turn-based grand strategy engine that faithfully replicates the rules, production economies, and combat dice of Axis & Allies, complete with an in-game downloader offering over 400 historical and fantasy maps.",
+        differences:
+          "Pure strategy board game mechanics and territory maps rather than real-time 3D simulation.",
+      },
+      {
+        slug: "0ad",
+        pitch:
+          "0 A.D. lets you command historical civilizations with deep economic management and massive battlefield clashes in real time.",
+        differences:
+          "Real-time RTS strategy rather than turn-based global theatre management.",
+      },
+      {
+        slug: "mindustry",
+        pitch:
+          "Mindustry scratches the logistics and supply chain optimization itch across interlocking tactical sectors.",
+        differences:
+          "Tower defence and automated conveyor resource routing rather than military territorial conquest.",
+      },
+    ],
+    verdict:
+      "TripleA is the best free alternative to Axis & Allies: a comprehensive, open-source grand strategy engine with online multiplayer, PBEM play-by-email support, and hundreds of downloadable historical campaigns.",
+  },
+  {
+    slug: "wing-commander-privateer",
+    commercialGame: "Wing Commander & Freelancer",
+    aliases: ["Privateer", "Star Citizen", "Freelancer", "space trading sim", "space combat sim", "Elite"],
+    title: "Free Alternatives to Wing Commander & Freelancer",
+    intro:
+      "The gritty fantasy of starting with an old scout ship, a handful of credits, and the freedom to trade, hunt bounties, or pirate across a hostile galaxy has a complete, modern 3D open-source remake.",
+    topPick: "privateer-gemini-gold",
+    picks: [
+      {
+        slug: "privateer-gemini-gold",
+        pitch:
+          "Privateer Gemini Gold rebuilds the legendary 1993 Origin Systems classic on the Vega Strike 3D engine with high-resolution graphics, native widescreen support, full base concourses, and the complete Righteous Fire expansion campaign.",
+        differences:
+          "Faithful preservation of vintage 1990s flight-sim mechanics and storyline progression rather than a modern multiplayer live service.",
+      },
+      {
+        slug: "microsoft-allegiance",
+        pitch:
+          "Microsoft Allegiance combines direct 3D space dogfighting with real-time fleet strategy, where player pilots take orders from a team commander in tactical multiplayer battles.",
+        differences:
+          "Team-based competitive multiplayer space combat and base conquest rather than open-ended single-player merchant RPG trading.",
+      },
+      {
+        slug: "endless-sky",
+        pitch:
+          "Endless Sky provides top-down 2D open-world space trading, fleet building, and branching interstellar political campaigns.",
+        differences:
+          "Top-down 2D combat rather than first-person 3D cockpit flight.",
+      },
+      {
+        slug: "naev",
+        pitch:
+          "Naev offers deep top-down 2D space exploration with semi-Newtonian physics, rich lore factions, and complex ship customization.",
+        differences:
+          "2D top-down perspective rather than 3D cockpit dogfighting.",
+      },
+    ],
+    verdict:
+      "Privateer Gemini Gold is the best free alternative to Wing Commander and classic space trading sims: a complete, standalone 3D space adventure with deep ship customization, bounty hunting, merchant contracts, and zero purchase requirement.",
+  },
+  {
+    slug: "sega-rally-colin-mcrae",
+    commercialGame: "Sega Rally & Colin McRae",
+    aliases: ["Colin McRae Rally", "Sega Rally", "Dirt Rally", "WRC", "time trial rally"],
+    title: "Free Alternatives to Sega Rally & Colin McRae",
+    intro:
+      "Arcade rally driving — sliding across gravel, snow, and sand against strict stage countdown timers with a co-pilot calling sharp turns — is kept alive by lightweight open-source racing engines.",
+    topPick: "trigger-rally",
+    picks: [
+      {
+        slug: "trigger-rally",
+        pitch:
+          "Trigger Rally delivers pure 3D arcade off-road racing with over 100 challenging stages, responsive drift handling across dynamic terrain surfaces, and real-time audio co-pilot calls.",
+        differences:
+          "Focused purely on checkpoint time-trial challenges and cup events without licensed commercial manufacturer car brands.",
+      },
+      {
+        slug: "supertuxkart",
+        pitch:
+          "SuperTuxKart offers arcade vehicular drifting across imaginative fantasy tracks with split-screen and online racing.",
+        differences:
+          "Item-based kart racing rather than natural off-road rally stage driving.",
+      },
+    ],
+    verdict:
+      "Trigger Rally is the best free alternative to classic arcade rally racers: a lightweight, 3D off-road time-trial racer with over 100 tracks, authentic terrain friction physics, and zero monetization.",
+  },
+  {
+    slug: "gradius-arcade-shmups",
+    commercialGame: "Gradius & R-Type",
+    aliases: ["Gradius", "R-Type", "arcade shmup", "side-scrolling shooter", "bullet hell", "Salamander"],
+    title: "Free Alternatives to Gradius & Classic Arcade Shoot 'em Ups",
+    intro:
+      "The golden era of side-scrolling arcade space shooters — collecting power-up capsules, building laser beams, dodging dense bullet curtains, and destroying giant core bosses — is celebrated in faithful modern remakes.",
+    topPick: "gradius-remake",
+    picks: [
+      {
+        slug: "gradius-remake",
+        pitch:
+          "Gradius Remake by Game Endeavor delivers a gorgeous modern 60 FPS tribute with the iconic power-up selection gauge, Vic Viper weaponry, responsive gamepad controls, and explosive retro boss battles.",
+        differences:
+          "A pure retro arcade experience that requires precision dodging and memorization; does not feature modern rogue-lite progression.",
+      },
+      {
+        slug: "mindustry",
+        pitch:
+          "Mindustry incorporates intense top-down shooting action against waves of enemy air and ground units alongside base construction.",
+        differences:
+          "Factory automation and tower defense rather than a linear side-scrolling shoot 'em up stage.",
+      },
+    ],
+    verdict:
+      "Gradius Remake is the best free alternative to classic arcade shoot 'em ups: a pristine, responsive side-scrolling shooter with authentic weapon upgrade gauges and thrilling retro boss encounters.",
   },
 ];
 
