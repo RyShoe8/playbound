@@ -9,6 +9,7 @@ export type SerializedEvent = {
   description: string;
   eventType: EventType;
   gameSlug: string | null;
+  coverImage: string | null;
   editionSlug: string | null;
   modSlugs: string[];
   recommendedModSlugs: string[];
@@ -35,6 +36,7 @@ type EventLike = {
   description: string;
   eventType?: string | null;
   gameSlug?: string | null;
+  coverImage?: string | null;
   editionSlug?: string | null;
   modSlugs?: string[] | null;
   recommendedModSlugs?: string[] | null;
@@ -56,7 +58,8 @@ type EventLike = {
 
 export function serializeEvent(
   e: EventLike,
-  counts?: RsvpCounts
+  counts?: RsvpCounts,
+  fallbackCover?: string | null
 ): SerializedEvent {
   const startsAt = new Date(e.startsAt);
   const endsAt = e.endsAt ? new Date(e.endsAt) : defaultEndsAt(startsAt);
@@ -78,6 +81,7 @@ export function serializeEvent(
     description: e.description || "",
     eventType: (e.eventType || "game_night") as EventType,
     gameSlug: e.gameSlug || null,
+    coverImage: e.coverImage || fallbackCover || null,
     editionSlug: e.editionSlug || null,
     modSlugs: e.modSlugs || [],
     recommendedModSlugs: e.recommendedModSlugs || [],

@@ -19,6 +19,7 @@ export const eventCreateSchema = z.object({
   description: z.string().max(4000).optional().default(""),
   eventType: z.string().min(1).max(40).default("game_night"),
   gameSlug: z.string().nullable().optional(),
+  coverImage: z.string().url().nullable().optional().or(z.literal("")),
   editionSlug: z.string().nullable().optional(),
   modSlugs: z.array(z.string()).optional(),
   recommendedModSlugs: z.array(z.string()).optional(),
@@ -83,7 +84,31 @@ export async function listPublicEvents(opts?: {
 
   const ids = events.map((e) => e._id as Types.ObjectId);
   const counts = await getRsvpCountsForEvents(ids);
-  return events.map((e) => serializeEvent(e, counts.get(String(e._id))));
+
+  const gameCoverMap = new Map<string, string | null>();
+  const neededSlugs = [
+    ...new Set(
+      events
+        .filter((e) => !e.coverImage && e.gameSlug)
+        .map((e) => e.gameSlug!)
+    ),
+  ];
+  if (neededSlugs.length > 0) {
+    await Promise.all(
+      neededSlugs.map(async (slug) => {
+        const g = await getGame(slug);
+        if (g?.coverImage) gameCoverMap.set(slug, g.coverImage);
+      })
+    );
+  }
+
+  return events.map((e) =>
+    serializeEvent(
+      e,
+      counts.get(String(e._id)),
+      e.gameSlug ? gameCoverMap.get(e.gameSlug) || null : null
+    )
+  );
 }
 
 export async function createPlatformEvent(
@@ -107,6 +132,7 @@ export async function createPlatformEvent(
     description: body.description || "",
     eventType: body.eventType || EVENT_TYPES[0],
     gameSlug: body.gameSlug || null,
+    coverImage: body.coverImage || null,
     editionSlug: body.editionSlug || null,
     modSlugs: body.modSlugs || [],
     recommendedModSlugs: body.recommendedModSlugs || [],

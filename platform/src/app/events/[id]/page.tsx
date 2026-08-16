@@ -64,7 +64,7 @@ export default async function EventDetailPage({ params }: Props) {
     getServerSession(authOptions),
   ]);
 
-  const event = serializeEvent(eventDoc, counts);
+  const event = serializeEvent(eventDoc, counts, game?.coverImage || null);
   let myRsvp: string | null = null;
   if (session?.user?.id) {
     const r = await EventRsvp.findOne({
@@ -139,46 +139,27 @@ export default async function EventDetailPage({ params }: Props) {
           .lean(),
         TournamentTeam.find({ tournamentId: t._id }).lean(),
       ]);
-      const extraIds = [
-        ...participants.map((p) => p.userId).filter(Boolean),
-        ...teams.flatMap((team) => [team.captainUserId, ...(team.memberUserIds || [])]),
-      ];
-      const extraUsers = extraIds.length
-        ? await User.find({ _id: { $in: extraIds } }).select({ username: 1 }).lean()
-        : [];
-      for (const u of extraUsers) {
-        nameById.set(String(u._id), u.username || "Player");
-      }
-      const teamNameById = new Map(teams.map((team) => [String(team._id), team.name]));
+      const teamMap = new Map(teams.map((tm) => [String(tm._id), tm]));
       tournamentPayload = {
         format: t.format,
         teamSize: t.teamSize || 1,
-        teams: teams.map((team) => ({
-          id: String(team._id),
-          name: team.name,
-          captainUserId: String(team.captainUserId),
-          members: (team.memberUserIds || []).map((id: unknown) => ({
+        teams: teams.map((tm) => ({
+          id: String(tm._id),
+          name: tm.name,
+          captainUserId: String(tm.captainUserId),
+          members: (tm.memberUserIds || []).map((id: unknown) => ({
             userId: String(id),
             username: nameById.get(String(id)) || "Player",
           })),
         })),
-        participants: participants.map((p) => {
-          const teamId = p.teamId ? String(p.teamId) : null;
-          const userId = p.userId ? String(p.userId) : null;
-          const label = teamId
-            ? teamNameById.get(teamId) || "Team"
-            : userId
-              ? nameById.get(userId) || "Player"
-              : "TBD";
-          return {
-            id: String(p._id),
-            userId,
-            teamId,
-            label,
-            state: p.state,
-            seed: p.seed,
-          };
-        }),
+        participants: participants.map((p) => ({
+          id: String(p._id),
+          userId: p.userId ? String(p.userId) : null,
+          teamId: p.teamId ? String(p.teamId) : null,
+          label: p.label || (p.userId ? nameById.get(String(p.userId)) : null) || (p.teamId ? teamMap.get(String(p.teamId))?.name : null) || "Participant",
+          state: p.state,
+          seed: p.seed,
+        })),
         matches: matches.map((m) => ({
           id: String(m._id),
           round: m.round,
@@ -208,6 +189,17 @@ export default async function EventDetailPage({ params }: Props) {
         eventType={String(event.eventType)}
         gameSlug={event.gameSlug}
       />
+
+      {event.coverImage ? (
+        <div className="relative h-48 sm:h-64 w-full overflow-hidden rounded-2xl border border-border/80 bg-card/60 shadow-lg shadow-black/20">
+          <img
+            src={event.coverImage}
+            alt={event.title}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        </div>
+      ) : null}
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">

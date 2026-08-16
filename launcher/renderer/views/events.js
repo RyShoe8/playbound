@@ -108,6 +108,23 @@ async function renderEventsView() {
             <label for="event-description">Description *</label>
             <textarea class="input-text" id="event-description" rows="3" required placeholder="Details about this match, rules, voice chat channels, or schedule…"></textarea>
           </div>
+
+          <!-- Cover Photo Picker & Preview -->
+          <div class="form-group">
+            <label>Cover Photo (optional)</label>
+            <div id="event-cover-preview-wrap" style="display:none; position:relative; width:100%; height:130px; border-radius:10px; overflow:hidden; margin-bottom:8px; border:1px solid var(--border); background:var(--bg-surface);">
+              <img id="event-cover-preview-img" style="width:100%; height:100%; object-fit:cover;" />
+              <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);"></div>
+              <span id="event-cover-preview-label" style="position:absolute; bottom:6px; left:8px; font-size:11px; font-weight:700; color:#fff;"></span>
+              <button type="button" id="btn-remove-event-cover" style="position:absolute; top:6px; right:6px; background:rgba(239,68,68,0.85); color:#fff; border:none; border-radius:5px; padding:3px 8px; font-size:11px; cursor:pointer; font-weight:700;">✕ Remove</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="file" id="event-cover-file" accept="image/*" style="display:none;" />
+              <button type="button" class="btn-secondary btn-sm" id="btn-choose-event-cover">Upload Cover Photo</button>
+              <span id="event-cover-hint" class="view-sub" style="font-size:11px; margin:0;">Defaults to game cover if not provided</span>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="event-discord">Discord Invite / Voice Link (optional)</label>
             <input type="url" class="input-text" id="event-discord" placeholder="https://discord.gg/..." />
@@ -160,10 +177,90 @@ async function renderEventsView() {
   const form = document.getElementById("form-create-event");
   const errorMsg = document.getElementById("create-event-error");
 
+  const coverFileInput = document.getElementById("event-cover-file");
+  const chooseCoverBtn = document.getElementById("btn-choose-event-cover");
+  const removeCoverBtn = document.getElementById("btn-remove-event-cover");
+  const coverPreviewWrap = document.getElementById("event-cover-preview-wrap");
+  const coverPreviewImg = document.getElementById("event-cover-preview-img");
+  const coverPreviewLabel = document.getElementById("event-cover-preview-label");
+
+  let uploadedCustomCoverUrl = null;
+  const gameCatalogMap = new Map();
+
+  function updateCoverPreview() {
+    if (uploadedCustomCoverUrl) {
+      if (coverPreviewWrap && coverPreviewImg && coverPreviewLabel) {
+        coverPreviewWrap.style.display = "block";
+        coverPreviewImg.src = uploadedCustomCoverUrl;
+        coverPreviewLabel.textContent = "Custom cover photo uploaded";
+        if (removeCoverBtn) removeCoverBtn.style.display = "block";
+      }
+      return;
+    }
+    const selectedSlug = gameSelect?.value;
+    const game = selectedSlug ? gameCatalogMap.get(selectedSlug) : null;
+    if (game?.coverImage) {
+      if (coverPreviewWrap && coverPreviewImg && coverPreviewLabel) {
+        coverPreviewWrap.style.display = "block";
+        coverPreviewImg.src = game.coverImage;
+        coverPreviewLabel.textContent = `Using ${game.title || "game"} cover photo`;
+        if (removeCoverBtn) removeCoverBtn.style.display = "none";
+      }
+    } else {
+      if (coverPreviewWrap) coverPreviewWrap.style.display = "none";
+    }
+  }
+
+  chooseCoverBtn?.addEventListener("click", () => {
+    coverFileInput?.click();
+  });
+
+  coverFileInput?.addEventListener("change", async () => {
+    const file = coverFileInput.files?.[0];
+    if (!file) return;
+    if (chooseCoverBtn) {
+      chooseCoverBtn.disabled = true;
+      chooseCoverBtn.textContent = "Uploading…";
+    }
+    if (errorMsg) errorMsg.style.display = "none";
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const res = await window.playbound.uploadEventCover(buffer, file.name, file.type);
+      if (res && res.ok && res.url) {
+        uploadedCustomCoverUrl = res.url;
+        updateCoverPreview();
+      } else {
+        if (errorMsg) {
+          errorMsg.textContent = res?.error || "Failed to upload cover photo.";
+          errorMsg.style.display = "block";
+        }
+      }
+    } catch {
+      if (errorMsg) {
+        errorMsg.textContent = "Failed to upload cover photo.";
+        errorMsg.style.display = "block";
+      }
+    } finally {
+      if (chooseCoverBtn) {
+        chooseCoverBtn.disabled = false;
+        chooseCoverBtn.textContent = uploadedCustomCoverUrl ? "Change Cover Photo" : "Upload Cover Photo";
+      }
+      coverFileInput.value = "";
+    }
+  });
+
+  removeCoverBtn?.addEventListener("click", () => {
+    uploadedCustomCoverUrl = null;
+    if (chooseCoverBtn) chooseCoverBtn.textContent = "Upload Cover Photo";
+    updateCoverPreview();
+  });
+
   // Populate games dropdown
   try {
     const catalog = await window.playbound.getCatalog();
     (catalog || []).forEach((g) => {
+      gameCatalogMap.set(g.slug, g);
       const opt = document.createElement("option");
       opt.value = g.slug;
       opt.textContent = g.title;
@@ -176,6 +273,10 @@ async function renderEventsView() {
   enhanceSelect(typeSelect);
   enhanceSelect(document.getElementById("event-tournament-format"));
   enhanceSelect(document.getElementById("event-team-size"));
+
+  gameSelect?.addEventListener("change", () => {
+    updateCoverPreview();
+  });
 
   const closeModal = () => {
     modal.classList.remove("open");
@@ -190,6 +291,7 @@ async function renderEventsView() {
       .slice(0, 16);
     const startsInput = document.getElementById("event-starts-at");
     if (startsInput && !startsInput.value) startsInput.value = localIso;
+    updateCoverPreview();
     modal.classList.add("open");
   });
 
@@ -237,6 +339,7 @@ async function renderEventsView() {
       description,
       eventType,
       gameSlug,
+      coverImage: uploadedCustomCoverUrl || null,
       startsAt: startsAtIso,
       endsAt: endsAtIso,
       discordInviteUrl: discord || null,
@@ -327,32 +430,51 @@ async function renderEventsView() {
       const whenStr = ev.when?.dateLine
         ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
         : formatEventDate(ev.startsAt);
+      const coverUrl = ev.coverImage || null;
 
       card.innerHTML = `
-        <div class="pb-event-badges">
-          ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
-          <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
-          ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
-        </div>
-        <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
-        ${ev.gameSlug ? `<p class="pb-event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
-        <p class="pb-event-time">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          ${escapeHtml(whenStr)}
-        </p>
-        ${ev.description ? `<p class="pb-event-desc">${escapeHtml(ev.description)}</p>` : ""}
-        <div class="pb-event-footer">
-          <span class="pb-event-going">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            ${going} going${ev.maxParticipants ? ` / ${ev.maxParticipants}` : ""}
-          </span>
-          <div class="pb-event-actions">
-            ${
-              ev.discordInviteUrl
-                ? `<button class="btn-secondary btn-sm btn-ev-discord" type="button">Discord</button>`
-                : ""
-            }
-            <button class="btn-primary btn-sm btn-ev-view" type="button">View Event</button>
+        ${
+          coverUrl
+            ? `
+          <div class="pb-event-card-cover-wrap">
+            <img src="${escapeHtml(coverUrl)}" class="pb-event-card-cover-img" alt="${escapeHtml(ev.title)}" />
+            <div class="pb-event-card-cover-overlay"></div>
+            <div class="pb-event-badges" style="position: absolute; top: 10px; left: 10px; z-index: 2;">
+              ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
+              <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
+              ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
+            </div>
+          </div>
+        `
+            : `
+          <div class="pb-event-badges" style="padding: 16px 16px 0;">
+            ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
+            <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
+            ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
+          </div>
+        `
+        }
+        <div class="pb-event-card-body">
+          <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
+          ${ev.gameSlug ? `<p class="pb-event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
+          <p class="pb-event-time">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            ${escapeHtml(whenStr)}
+          </p>
+          ${ev.description ? `<p class="pb-event-desc">${escapeHtml(ev.description)}</p>` : ""}
+          <div class="pb-event-footer">
+            <span class="pb-event-going">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              ${going} going${ev.maxParticipants ? ` / ${ev.maxParticipants}` : ""}
+            </span>
+            <div class="pb-event-actions">
+              ${
+                ev.discordInviteUrl
+                  ? `<button class="btn-secondary btn-sm btn-ev-discord" type="button">Discord</button>`
+                  : ""
+              }
+              <button class="btn-primary btn-sm btn-ev-view" type="button">View Event</button>
+            </div>
           </div>
         </div>
       `;
@@ -412,6 +534,7 @@ async function renderEventDetailView(eventId) {
   const whenStr = event.when?.dateLine
     ? `${event.when.dateLine} · ${event.when.timeLine || ""}`
     : formatEventDate(event.startsAt);
+  const coverUrl = event.coverImage || game?.coverImage || null;
 
   const currentUser = state.accountState?.user;
   const isOrganizer = Boolean(
@@ -425,6 +548,16 @@ async function renderEventDetailView(eventId) {
       <button class="btn-secondary btn-sm" id="btn-event-detail-back" style="align-self: flex-start;">
         ← Back to ${state.detailReturnView === "games" ? "Games" : "Events"}
       </button>
+
+      ${
+        coverUrl
+          ? `
+        <div class="event-detail-cover-wrap">
+          <img src="${escapeHtml(coverUrl)}" class="event-detail-cover-img" alt="${escapeHtml(event.title)}" />
+          <div class="event-detail-cover-overlay"></div>
+        </div>`
+          : ""
+      }
 
       <!-- Hero Header -->
       <section class="event-detail-hero">

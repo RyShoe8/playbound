@@ -13,7 +13,13 @@ export default async function NewEventPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 py-8">
       <h1 className="text-2xl font-extrabold">New Event</h1>
-      <NewEventForm gameOptions={games.map((g) => ({ slug: g.slug, title: g.title }))} />
+      <NewEventForm
+        gameOptions={games.map((g) => ({
+          slug: g.slug,
+          title: g.title,
+          coverImage: g.coverImage || null,
+        }))}
+      />
     </div>
   );
 }

@@ -140,7 +140,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     });
 
     return NextResponse.json({
-      event: serializeEvent(event, counts),
+      event: serializeEvent(event, counts, game?.coverImage || null),
       game: game
         ? { slug: game.slug, title: game.title, coverImage: game.coverImage || null }
         : null,
@@ -208,6 +208,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (body.description != null) event.description = body.description;
     if (body.eventType != null) event.eventType = body.eventType;
     if (body.gameSlug !== undefined) event.gameSlug = body.gameSlug;
+    if (body.coverImage !== undefined) event.coverImage = body.coverImage || null;
     if (body.editionSlug !== undefined) event.editionSlug = body.editionSlug;
     if (body.modSlugs) event.modSlugs = body.modSlugs;
     if (body.recommendedModSlugs) event.recommendedModSlugs = body.recommendedModSlugs;
