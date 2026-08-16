@@ -1609,7 +1609,16 @@ function listRecentlyPlayed() {
     const info = state[slug];
     if (!info || !info.exe || !fs.existsSync(info.exe)) continue;
     const entry = catalog.find((e) => e.slug === slug);
+    /*
+     * Spread the whole catalog entry rather than hand-picking fields. The old
+     * list left out genres, tags, approxSize and kind, so Recently Played cards
+     * on the home view rendered with no category chips, no size on the download
+     * badge, and no Play badge for browser titles — visibly different from the
+     * identical-in-every-other-respect cards on the Games page. Any field the
+     * card learns to use in future is carried automatically now.
+     */
     games.push({
+      ...(entry || {}),
       slug,
       title: entry?.title || slug,
       blurb: entry?.blurb || "",
