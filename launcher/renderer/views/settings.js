@@ -19,6 +19,8 @@ import {
   views,
 } from "../shared.js";
 
+let cachedHwHtml = null;
+
 async function renderSettingsView() {
   const container = views.settings;
   try {
@@ -159,6 +161,9 @@ async function renderSettingsView() {
 
   const hwSummary = document.getElementById("set-hw-summary");
   const hwRefresh = document.getElementById("set-btn-hw-refresh");
+  if (cachedHwHtml && hwSummary) {
+    hwSummary.innerHTML = cachedHwHtml;
+  }
   async function fillHwSummary() {
     if (!hwSummary || !window.playbound.getHardwareProfile) {
       if (hwSummary) hwSummary.textContent = "Hardware detection unavailable in this build.";
@@ -168,7 +173,7 @@ async function renderSettingsView() {
       const res = await window.playbound.getHardwareProfile();
       const p = res?.profile || res?.cached;
       if (!p) {
-        hwSummary.textContent = "Could not detect hardware.";
+        if (!cachedHwHtml) hwSummary.textContent = "Could not detect hardware.";
         return;
       }
       const gpu =
@@ -184,7 +189,7 @@ async function renderSettingsView() {
             : `${p.memory.totalMB} MB`
           : "Unknown";
       const errs = Array.isArray(p.detectionErrors) ? p.detectionErrors.filter(Boolean) : [];
-      hwSummary.innerHTML = `
+      cachedHwHtml = `
         <div><strong>CPU</strong> ${escapeHtml(cpuLabel)}</div>
         <div><strong>GPU</strong> ${escapeHtml(gpuLabel)}</div>
         <div><strong>Memory</strong> ${escapeHtml(ram)}</div>
@@ -196,8 +201,9 @@ async function renderSettingsView() {
             : ""
         }
       `;
+      hwSummary.innerHTML = cachedHwHtml;
     } catch (err) {
-      hwSummary.textContent = err?.message || "Detection failed.";
+      if (!cachedHwHtml) hwSummary.textContent = err?.message || "Detection failed.";
     }
   }
   void fillHwSummary();
@@ -267,30 +273,36 @@ async function renderSettingsView() {
   }
 
   document.getElementById("set-btn-check-update")?.addEventListener("click", async () => {
+    const checkBtn = document.getElementById("set-btn-check-update");
+    const hintEl = document.getElementById("set-update-hint");
+    const installBtn = document.getElementById("set-btn-install-update");
+    if (checkBtn) checkBtn.disabled = true;
     setStatus("Checking for updates…");
     const res = await window.playbound.checkForUpdates();
+    if (checkBtn) checkBtn.disabled = false;
     if (!res.ok) {
       setStatus(res.message || "Update check failed", true);
+      if (hintEl) hintEl.textContent = res.message || "Update check failed.";
       return;
     }
     if (res.updateAvailable) {
       setStatus(`Update ${res.version} available — downloading…`);
       state.updateStatus = { phase: "available", version: res.version };
+      if (hintEl) hintEl.textContent = `Update ${res.version} available — downloading…`;
     } else if (res.behindChannel) {
-      // Running ahead of the channel is not the same as being current, and
-      // saying "up to date" here hides the fact that no update can ever
-      // arrive — which is exactly how a tester ends up stranded.
       setStatus(res.message || "This build is newer than its update channel.", true);
       state.updateStatus = { phase: "none", version: res.version };
+      if (hintEl) hintEl.textContent = res.message || "This build is newer than its update channel.";
     } else {
-      setStatus(
+      const msg =
         res.channel === "admin"
           ? "You're up to date on the unsigned channel."
-          : "You're up to date."
-      );
+          : "You're up to date.";
+      setStatus(msg);
       state.updateStatus = { phase: "none", version: res.version };
+      if (hintEl) hintEl.textContent = msg;
     }
-    api.renderSettingsView();
+    if (installBtn) installBtn.disabled = state.updateStatus.phase !== "ready";
   });
   document.getElementById("set-btn-install-update")?.addEventListener("click", async () => {
     setStatus("Installing update and restarting…");
