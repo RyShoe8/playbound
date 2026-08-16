@@ -8,6 +8,7 @@
 import { unstable_cache } from "next/cache";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
+import { editions as seedEditions } from "@/lib/data/editions";
 import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
 import { fetchHoloCurePlayers } from "@/lib/servers/providers/steam-concurrent";
 import dbConnect from "@/lib/db";
@@ -157,6 +158,12 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
  * number the other way and hid how far short it fell.
  */
 async function publicEditionCountsByGame(): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const s of seedEditions) {
+    if ((s.visibility ?? "public") !== "hidden" && s.status !== "archived") {
+      out[s.gameSlug] = (out[s.gameSlug] || 0) + 1;
+    }
+  }
   try {
     await dbConnect();
     const rows = await EditionModel.aggregate<{ _id: string; count: number }>([
@@ -168,13 +175,11 @@ async function publicEditionCountsByGame(): Promise<Record<string, number>> {
       },
       { $group: { _id: "$gameSlug", count: { $sum: 1 } } },
     ]);
-    const out: Record<string, number> = {};
     for (const row of rows) out[row._id] = row.count;
-    return out;
   } catch (err) {
     console.error("[liveActivity] edition counts failed:", err);
-    return {};
   }
+  return out;
 }
 
 async function countActivePlatformPlayers(scope: Scope = {}): Promise<number> {
@@ -452,7 +457,7 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
 
   let editionCount = 0;
   for (const g of games) {
-    editionCount += Number(editionCountBySlug[g.slug]) || 0;
+    editionCount += Math.max(1, Number(editionCountBySlug[g.slug]) || 0);
   }
 
   const byGame = [...games]

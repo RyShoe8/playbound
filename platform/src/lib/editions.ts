@@ -299,9 +299,11 @@ async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]
 const loadStoredForGame = cache(async (gameSlug: string): Promise<Edition[]> => {
   try {
     const fromDb = await fetchEditions({ gameSlug });
-    if (fromDb.length > 0) return fromDb;
-    const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug);
-    return seeds.map(seedToEdition);
+    const dbSlugs = new Set(fromDb.map((e) => e.slug));
+    const seeds = seedEditions
+      .filter((s) => s.gameSlug === gameSlug && !dbSlugs.has(s.slug))
+      .map(seedToEdition);
+    return [...fromDb, ...seeds];
   } catch (err) {
     console.error("[editions] read failed:", err);
     const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug);
@@ -426,13 +428,13 @@ export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[
 export async function listAllPublicEditions(): Promise<Edition[]> {
   try {
     const fromDb = await fetchEditions({ visibility: "public", status: { $ne: "archived" } });
-    const dbGameSlugs = new Set(fromDb.map((e) => e.gameSlug));
+    const dbKeys = new Set(fromDb.map((e) => `${e.gameSlug}:${e.slug}`));
     const seeds = seedEditions
       .filter(
         (s) =>
           (s.visibility ?? "public") === "public" &&
           s.status !== "archived" &&
-          !dbGameSlugs.has(s.gameSlug)
+          !dbKeys.has(`${s.gameSlug}:${s.slug}`)
       )
       .map(seedToEdition);
     return [...fromDb, ...seeds];

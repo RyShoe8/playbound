@@ -120,7 +120,7 @@ export function CatalogStatsCard({
     gameCount = compatibleGames.length;
     modCount = mods.filter((m) => compatibleSlugs.has(m.baseGameSlug)).length;
     editionCount = [...compatibleSlugs].reduce(
-      (sum, slug) => sum + (Number(editionCountBySlug[slug]) || 0),
+      (sum, slug) => sum + Math.max(1, Number(editionCountBySlug[slug]) || 0),
       0
     );
     playingNow = byGame
