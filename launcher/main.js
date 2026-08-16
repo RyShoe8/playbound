@@ -3834,6 +3834,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
 
   await processAddons(entry, gameDir, selectedAddons);
   await maybeApplyEditionPostInstall(entry, gameDir);
+  if (entry?.modLoader) {
+    await ensureEditionMods(slug, entry, gameDir, exe);
+  }
   if (slug === OPENCIV3_SLUG) {
     try {
       // Fresh wipe — write default windowed 1080p beside the exe.
