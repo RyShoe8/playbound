@@ -244,13 +244,23 @@ function steamCommonDirs() {
 }
 
 /**
- * Turn a Steam *store page* URL into an install deep link.
+ * Turn a Steam *store page* URL into a Steam client deep link.
  *
  * Steam depots can only be fetched by the Steam client, so these titles can
  * never be a true PlayBound one-click install. The next best thing is to skip
- * the web store page entirely and open Steam's own install dialog — one click
- * from the launcher to an install prompt, rather than launcher → browser →
- * store page → find the install button.
+ * the web browser entirely and land the user inside Steam.
+ *
+ * The verb is "store", not "install", because steam://install/<appid> requires
+ * an existing license: Steam looks the app up in the user's library and, when
+ * it isn't there, does nothing at all — no dialog, no error. Every Steam title
+ * PlayBound lists is free-to-play, and a free game confers no license until it
+ * has been added to the library, so for the common case (player has never
+ * claimed it) the install verb is silently inert. HoloCure's multiplayer
+ * edition is where this surfaced: the button appeared to do nothing.
+ *
+ * steam://store/<appid> works either way — it opens the in-client store page,
+ * whose button reads "Play Game" for an unclaimed free title (which claims and
+ * installs it) and "Install" for one already owned.
  *
  * Returns null when Steam is absent or the URL is not a Steam store link, in
  * which case the caller falls back to opening the page normally.
@@ -262,7 +272,7 @@ function steamDeepLinkFor(rawUrl) {
     if (!/(^|\.)steampowered\.com$/i.test(u.hostname)) return null;
     const m = u.pathname.match(/\/app\/(\d+)/);
     if (!m) return null;
-    return `steam://install/${m[1]}`;
+    return `steam://store/${m[1]}`;
   } catch {
     return null;
   }
@@ -2500,8 +2510,23 @@ function findKnownExecutable(entry) {
     const full = expandWinPath(raw);
     if (full && fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
   }
-  const underGames = findExeUnderGamesDir(entry);
-  if (underGames && isAllowedExecutablePath(underGames)) return underGames;
+  /*
+   * Never claim a store-installed edition from our own games directory.
+   *
+   * findExeUnderGamesDir matches on executable basename across the whole games
+   * folder, with no notion of which edition a hit belongs to. An "external"
+   * entry is by definition installed by Steam or another store, somewhere
+   * outside that folder — so any match inside it is a *different edition of the
+   * same game*, and accepting it marks the store edition installed against its
+   * sibling's files. For a modded edition that is destructive: ensureEditionMods
+   * then writes the mod loader into the vanilla install the player expected to
+   * stay unmodified. HoloCure has exactly this shape (vanilla from itch.io,
+   * multiplayer from Steam) and is where it was caught.
+   */
+  if (entry?.kind !== "external") {
+    const underGames = findExeUnderGamesDir(entry);
+    if (underGames && isAllowedExecutablePath(underGames)) return underGames;
+  }
   const fromReg = findExeFromUninstallRegistry(entry);
   if (fromReg && isAllowedExecutablePath(fromReg)) return fromReg;
   return null;
@@ -3063,9 +3088,18 @@ async function startExeScan(slug, entry, version) {
   const roots = listFixedDriveRoots();
   const settings = loadSettings();
   const gamesDir = settings.gamesDir || DEFAULT_GAMES_DIR;
+  /*
+   * Store-installed editions are never under our games directory, so a basename
+   * hit there is a sibling edition's copy — the same trap findKnownExecutable
+   * avoids. Cut the directory out of the walk rather than merely deprioritising
+   * it, or the full-drive pass wanders back in and adopts the wrong install.
+   */
+  const isExternal = entry?.kind === "external";
+  const skipGamesDir =
+    isExternal && gamesDir ? normalizeFsPath(gamesDir).toLowerCase() : null;
   /** Prefer games directory roots so managed installs are found before full-drive BFS. */
   const preferred = [];
-  if (gamesDir && fs.existsSync(gamesDir)) {
+  if (!isExternal && gamesDir && fs.existsSync(gamesDir)) {
     if (entry?.slug) {
       const slugDir = path.join(gamesDir, entry.slug);
       if (fs.existsSync(slugDir)) preferred.push(slugDir);
@@ -3102,7 +3136,9 @@ async function startExeScan(slug, entry, version) {
         if (job.abort) return;
         const full = path.join(dir, ent.name);
         if (ent.isDirectory()) {
-          if (!shouldSkipScanDir(ent.name)) queue.push(full);
+          if (shouldSkipScanDir(ent.name)) continue;
+          if (skipGamesDir && normalizeFsPath(full).toLowerCase() === skipGamesDir) continue;
+          queue.push(full);
         } else if (ent.isFile() && want.has(ent.name.toLowerCase())) {
           if (exeScanJob === job) exeScanJob = null;
           stopInstallerPoll();
