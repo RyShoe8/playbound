@@ -45,6 +45,25 @@ describe("game host catalog", () => {
     }
   });
 
+  /*
+   * The VPS firewall is generated from recipes.js while the site reasons about
+   * hosting from this catalog. When the two disagreed on OpenRA — udp here, tcp
+   * in reality — the dedicated server ran perfectly and every client's
+   * handshake was dropped at the firewall, which is invisible from either file
+   * alone. So they are asserted equal.
+   */
+  it("agrees with the host agent's recipes on ports and protocol", async () => {
+    const { recipes } = await import("../../../game-host/recipes.js");
+
+    for (const [slug, game] of Object.entries(HOSTABLE_GAMES)) {
+      const recipe = (recipes as Record<string, { portStart: number; portEnd: number; protocol: string }>)[slug];
+      expect(recipe, `no recipe for hostable game ${slug}`).toBeDefined();
+      expect(recipe.portStart, `${slug} portStart`).toBe(game.defaultPort);
+      expect(recipe.portEnd, `${slug} portEnd`).toBe(game.portEnd);
+      expect(recipe.protocol, `${slug} protocol`).toBe(game.protocol);
+    }
+  });
+
   it("returns an empty hosted payload with enabled=true for hostable slugs", () => {
     const p = emptyHostedPayload("openra");
     expect(p.enabled).toBe(true);

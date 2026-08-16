@@ -43,6 +43,7 @@ export const recipes = {
   openra: {
     portStart: 1234,
     portEnd: 1250,
+    protocol: "tcp",
     binaries: gameBin("openra", ["OpenRA.Server", "openra-server"]),
     args: (port, ctx) => [
       `Game.Mod=${openRaMod(ctx.editionSlug)}`,
@@ -55,12 +56,14 @@ export const recipes = {
   openttd: {
     portStart: 3979,
     portEnd: 3999,
+    protocol: "both",
     binaries: gameBin("openttd", ["openttd"]),
     args: (port) => ["-D", `0.0.0.0:${port}`],
   },
   luanti: {
     portStart: 30000,
     portEnd: 30020,
+    protocol: "udp",
     binaries: gameBin("luanti", ["luantiserver", "minetestserver"]),
     args: (port, ctx) => [
       "--port",
@@ -74,6 +77,7 @@ export const recipes = {
   mindustry: {
     portStart: 6567,
     portEnd: 6587,
+    protocol: "both",
     binaries: [
       ...gameBin("mindustry", ["run-server"]),
       "/usr/bin/java",
@@ -101,30 +105,35 @@ export const recipes = {
   hedgewars: {
     portStart: 46631,
     portEnd: 46650,
+    protocol: "both",
     binaries: gameBin("hedgewars", ["hedgewars-server"]),
     args: (port) => ["-p", String(port)],
   },
   "warzone-2100": {
     portStart: 2100,
     portEnd: 2120,
+    protocol: "both",
     binaries: gameBin("warzone-2100", ["warzone2100"]),
     args: (port) => ["--dedicated", `--port=${port}`],
   },
   freeciv: {
     portStart: 5556,
     portEnd: 5576,
+    protocol: "tcp",
     binaries: gameBin("freeciv", ["freeciv-server"]),
     args: (port) => ["-p", String(port)],
   },
   bzflag: {
     portStart: 5154,
     portEnd: 5174,
+    protocol: "both",
     binaries: gameBin("bzflag", ["bzfs"]),
     args: (port) => ["-p", String(port), "-g", "-noTeamKills"],
   },
   supertuxkart: {
     portStart: 2759,
     portEnd: 2779,
+    protocol: "both",
     binaries: gameBin("supertuxkart", ["supertuxkart"]),
     args: (port, ctx) => [
       `--lan-server=${ctx.name}`,
@@ -135,6 +144,7 @@ export const recipes = {
   xonotic: {
     portStart: 26000,
     portEnd: 26020,
+    protocol: "udp",
     binaries: gameBin("xonotic", [
       "xonotic-linux64-dedicated",
       "xonotic-dedicated",
@@ -151,6 +161,7 @@ export const recipes = {
   openarena: {
     portStart: 27960,
     portEnd: 27980,
+    protocol: "udp",
     binaries: gameBin("openarena", ["openarena-server"]),
     args: (port, ctx) => [
       "+set",
@@ -170,6 +181,7 @@ export const recipes = {
   unvanquished: {
     portStart: 27990,
     portEnd: 28010,
+    protocol: "udp",
     binaries: gameBin("unvanquished", ["daemon", "unvanquished-server"]),
     args: (port, ctx) => [
       "+set",
@@ -186,24 +198,28 @@ export const recipes = {
   keeperfx: {
     portStart: 5500,
     portEnd: 5520,
+    protocol: "both",
     binaries: gameBin("keeperfx", ["keeperfx-server", "keeperfx"]),
     args: (port) => ["-p", String(port)],
   },
   "marathon-2": {
     portStart: 4226,
     portEnd: 4246,
+    protocol: "udp",
     binaries: gameBin("marathon-2", ["alephone-server", "alephone"]),
     args: (port) => ["-port", String(port)],
   },
   "aleph-one": {
     portStart: 4247,
     portEnd: 4267,
+    protocol: "udp",
     binaries: gameBin("aleph-one", ["alephone-server", "alephone"]),
     args: (port) => ["-port", String(port)],
   },
   triplea: {
     portStart: 3303,
     portEnd: 3323,
+    protocol: "tcp",
     binaries: [
       ...gameBin("triplea", ["run-server"]),
       "/usr/bin/java",
@@ -219,18 +235,21 @@ export const recipes = {
   "battle-for-wesnoth": {
     portStart: 15000,
     portEnd: 15020,
+    protocol: "tcp",
     binaries: gameBin("battle-for-wesnoth", ["wesnothd", "wesnothd-1.18", "wesnothd-1.16"]),
     args: (port) => ["-p", String(port)],
   },
   freedoom: {
     portStart: 10666,
     portEnd: 10686,
+    protocol: "udp",
     binaries: gameBin("freedoom", ["odamex-server", "zandronum-server"]),
     args: (port) => ["-port", String(port)],
   },
   "0-ad": {
     portStart: 20595,
     portEnd: 20615,
+    protocol: "udp",
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
     args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
   },
