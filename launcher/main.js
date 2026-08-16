@@ -6160,6 +6160,17 @@ ipcMain.handle("get-events", async () => {
     return { events: [] };
   }
 });
+ipcMain.handle("get-event-detail", async (_event, eventId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
 ipcMain.handle("create-event", async (_event, payload) => {
   try {
     const res = await fetch(`${getApiBase()}/api/events`, {
@@ -6176,6 +6187,69 @@ ipcMain.handle("create-event", async (_event, payload) => {
     return { ok: true, event: data?.event };
   } catch (err) {
     return { ok: false, error: err?.message || "Network error while creating event" };
+  }
+});
+ipcMain.handle("rsvp-event", async (_event, eventId, status) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/rsvp`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Failed to RSVP (HTTP ${res.status})` };
+    }
+    return { ok: true, ...data };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error while setting RSVP" };
+  }
+});
+ipcMain.handle("cancel-event", async (_event, eventId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
+      method: "PATCH",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ cancel: true }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Failed to cancel event (HTTP ${res.status})` };
+    }
+    return { ok: true, ...data };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error while cancelling event" };
+  }
+});
+ipcMain.handle("delete-event", async (_event, eventId) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {
+      method: "DELETE",
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Failed to delete event (HTTP ${res.status})` };
+    }
+    return { ok: true, ...data };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error while deleting event" };
+  }
+});
+ipcMain.handle("tournament-action", async (_event, eventId, action, payload) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}/tournament`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ action, ...(payload || {}) }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `Tournament action failed (HTTP ${res.status})` };
+    }
+    return { ok: true, ...data };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error while performing tournament action" };
   }
 });
 ipcMain.handle("get-free-offers", async () => {

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { userFromLauncherBearer } from "@/lib/library";
 import { setEventRsvp } from "@/lib/events/rsvp";
 import { createEventRsvpNotification } from "@/lib/events/notifications";
 import dbConnect from "@/lib/db";
@@ -16,7 +17,9 @@ const schema = z.object({
 
 export async function POST(req: Request, ctx: Ctx) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const launcherUser = session?.user?.id ? null : await userFromLauncherBearer(req);
+  const userId = session?.user?.id || (launcherUser?._id ? launcherUser._id.toString() : null);
+  if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
   const { id } = await ctx.params;
@@ -28,7 +31,7 @@ export async function POST(req: Request, ctx: Ctx) {
     const body = schema.parse(await req.json());
     const result = await setEventRsvp({
       eventId: id,
-      userId: session.user.id,
+      userId,
       status: body.status,
     });
     if (!result.ok) {

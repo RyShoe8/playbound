@@ -47,6 +47,7 @@ const viewLoaders = {
   editions: () => import("./views/editions.js"),
   mods: () => import("./views/mods.js"),
   events: () => import("./views/events.js"),
+  eventDetail: () => import("./views/events.js"),
   servers: () => import("./views/servers.js"),
   settings: () => import("./views/settings.js"),
   gameDetail: () => import("./views/detail.js"),
@@ -61,7 +62,9 @@ async function ensureViewModule(viewName) {
   const key =
     viewName === "gameDetail" || viewName === "modDetail" || viewName === "editionDetail"
       ? "detail"
-      : viewName;
+      : viewName === "eventDetail"
+        ? "events"
+        : viewName;
   if (loadedViews.has(key)) return;
   const load = viewLoaders[viewName];
   if (!load) return;
@@ -76,11 +79,15 @@ function applyNavChrome(viewName) {
       ? null
       : viewName === "editions"
         ? "editions"
-        : viewName;
+        : viewName === "eventDetail"
+          ? "events"
+          : viewName;
   navBtns.forEach((btn) => {
     const isGamesParent = btn.dataset.view === "games" && !btn.classList.contains("sub-nav-btn");
+    const isEventsParent = btn.dataset.view === "events";
     const active =
       (Boolean(navKey) && btn.dataset.view === navKey) ||
+      (isEventsParent && (viewName === "events" || viewName === "eventDetail")) ||
       (isGamesParent &&
         (viewName === "games" ||
           viewName === "mods" ||
@@ -122,6 +129,10 @@ export async function navigateTo(viewName, params = {}) {
   if (viewName === "mods") return api.renderModsView?.();
   if (viewName === "servers") return api.renderServersView?.();
   if (viewName === "events") return api.renderEventsView?.();
+  if (viewName === "eventDetail") {
+    if (!force && isViewReady(views.eventDetail, params.eventId)) return;
+    return api.renderEventDetailView?.(params.eventId);
+  }
   if (viewName === "library") return api.renderLibraryView?.();
   if (viewName === "friends") return api.renderFriendsView?.();
   if (viewName === "gear") return api.renderGearView?.();
@@ -159,10 +170,17 @@ export async function openEditionDetail(gameSlug, editionSlug) {
   return navigateTo("editionDetail", { gameSlug, editionSlug });
 }
 
+export async function openEventDetail(eventId, fromView) {
+  state.detailReturnView = fromView || "events";
+  state.currentEventDetailId = eventId;
+  return navigateTo("eventDetail", { eventId });
+}
+
 api.navigateTo = navigateTo;
 api.openGameDetail = openGameDetail;
 api.openModDetail = openModDetail;
 api.openEditionDetail = openEditionDetail;
+api.openEventDetail = openEventDetail;
 api.renderHomeView = renderHomeView;
 api.prefetchView = (name) => void ensureViewModule(name);
 api.prefetchGameDetail = prefetchGameDetail;

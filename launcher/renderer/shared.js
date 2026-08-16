@@ -20,6 +20,7 @@ export const state = {
   deepLinkCtx: null,
   currentDetailSlug: null,
   currentModDetailSlug: null,
+  currentEventDetailId: null,
   detailReturnView: "games",
   modDetailActiveTab: "overview",
   detailActiveTab: "overview",
@@ -82,6 +83,7 @@ export const CACHE_TTL = {
   mods: 60_000,
   gear: 60_000,
   events: 30_000,
+  eventDetail: 60_000,
   friends: 15_000,
   installed: 8_000,
   gameDetail: 90_000,
@@ -145,6 +147,11 @@ export function prefetchModDetail(slug) {
   void cacheInvoke(`mod:${slug}`, CACHE_TTL.modDetail, () => window.playbound.getModDetail(slug));
 }
 
+export function prefetchEventDetail(id) {
+  if (!id || !window.playbound?.getEventDetail) return;
+  void cacheInvoke(`event:${id}`, CACHE_TTL.eventDetail, () => window.playbound.getEventDetail(id));
+}
+
 export function markViewReady(el, token = "1") {
   if (el) el.dataset.ready = String(token);
 }
@@ -174,6 +181,7 @@ export function bindViews() {
   views.modDetail = document.getElementById("view-mod-detail");
   views.editionDetail = document.getElementById("view-edition-detail");
   views.deepLink = document.getElementById("view-deep-link");
+  views.eventDetail = document.getElementById("view-event-detail");
 }
 
 export function setCatalogCache(list) {
