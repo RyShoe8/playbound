@@ -535,8 +535,20 @@ export function FriendsView({
       {activeParty && (
         <div className="space-y-3">
           <PartyView party={activeParty} games={games} />
-          {activeParty.status === "ready" && session?.user && activeParty.leaderId === session.user.id && activeParty.gameSlug && (
-            <PartyConfigSync partyId={activeParty.id} gameSlug={activeParty.gameSlug} />
+          {/*
+            * Shown to every member, not just the leader. The warning exists for
+            * the people who need to change something, and the leader is the one
+            * person who by definition already matches. It was also gated on
+            * status "ready", which is too late to be useful — a mismatch is
+            * worth surfacing while the party is still forming, so there is time
+            * to fix it. The component renders nothing when everyone is in sync.
+            */}
+          {session?.user && activeParty.gameSlug && (
+            <PartyConfigSync
+              partyId={activeParty.id}
+              gameSlug={activeParty.gameSlug}
+              currentUserId={session.user.id}
+            />
           )}
         </div>
       )}
