@@ -226,13 +226,15 @@ export function GameCard({
           size="md"
           className="min-w-0 flex-1"
         />
-        <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-[11px] font-semibold text-muted-foreground">
-          <span className="relative flex size-1.5">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
-          </span>
-          {count.toLocaleString()} playing
-        </p>
+        {count > 0 ? (
+          <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-[11px] font-semibold text-muted-foreground">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+            </span>
+            {count.toLocaleString()} playing
+          </p>
+        ) : null}
       </div>
     </Link>
   );
