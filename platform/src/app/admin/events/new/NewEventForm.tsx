@@ -14,7 +14,6 @@ export function NewEventForm({
   const [description, setDescription] = useState("");
   const [eventType, setEventType] = useState("game_night");
   const [gameSlug, setGameSlug] = useState("");
-  const [editionSlug, setEditionSlug] = useState("");
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
@@ -40,7 +39,10 @@ export function NewEventForm({
           description: description.trim(),
           eventType,
           gameSlug: gameSlug || null,
-          editionSlug: editionSlug || null,
+          // Not collected here: an event is tied to a game, and members bring
+          // whichever edition they have. The field remains on the model for
+          // events created through other paths.
+          editionSlug: null,
           startsAt: new Date(startsAt).toISOString(),
           endsAt: endsAt ? new Date(endsAt).toISOString() : null,
           timezone,
@@ -123,15 +125,6 @@ export function NewEventForm({
             </option>
           ))}
         </PremiumSelect>
-      </label>
-      <label className="block space-y-1 text-sm">
-        <span className="font-semibold">Edition slug (optional)</span>
-        <input
-          value={editionSlug}
-          onChange={(e) => setEditionSlug(e.target.value)}
-          placeholder="official"
-          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2"
-        />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1 text-sm">

@@ -6919,7 +6919,9 @@ async function syncHardwareProfile({ quiet = false, force = false } = {}) {
     return { success: true, skipped: true, profile: settings.hardwareProfile || null };
   }
   try {
-    const profile = await collectHardwareProfile();
+    // Forces a fresh read and refreshes the shared hourly cache, so the panel
+    // cannot keep showing a profile older than the one just synced.
+    const profile = await cachedHardwareProfile({ force: true });
     const next = { ...settings, hardwareProfile: profile, hardwareProfileCollectedAt: profile.collectedAt };
     saveSettings(next);
     const res = await fetch(`${getApiBase()}/api/hardware/profile`, {
@@ -6947,10 +6949,42 @@ async function syncHardwareProfile({ quiet = false, force = false } = {}) {
   }
 }
 
-ipcMain.handle("get-hardware-profile", async () => {
+/**
+ * Hardware detection, memoised for an hour.
+ *
+ * collectHardwareProfile enumerates CPU, GPU and memory through
+ * systeminformation, which takes long enough to be visible. Every render of a
+ * view that shows the profile was re-running it from scratch, so the panel
+ * flipped between "loading" and a result as the user moved around — detecting,
+ * repeatedly and at cost, facts that do not change while the app is open.
+ *
+ * An hour is arbitrary but far longer than any session's worth of re-renders
+ * and far shorter than a hardware change matters over. "Sync now" forces a
+ * fresh read, which is the one moment the user is actually asking to re-detect.
+ *
+ * In memory rather than on disk on purpose: a restart is a free way to pick up
+ * a genuinely new GPU, and the settings file already stores the last profile
+ * that was synced to the account.
+ */
+const HARDWARE_PROFILE_TTL_MS = 60 * 60 * 1000;
+let _hardwareProfile = null;
+let _hardwareProfileAt = 0;
+
+async function cachedHardwareProfile({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && _hardwareProfile && now - _hardwareProfileAt < HARDWARE_PROFILE_TTL_MS) {
+    return _hardwareProfile;
+  }
+  const profile = await collectHardwareProfile();
+  _hardwareProfile = profile;
+  _hardwareProfileAt = Date.now();
+  return profile;
+}
+
+ipcMain.handle("get-hardware-profile", async (_event, opts = {}) => {
   try {
     const settings = loadSettings();
-    const profile = await collectHardwareProfile();
+    const profile = await cachedHardwareProfile({ force: Boolean(opts?.force) });
     return {
       profile,
       cached: settings.hardwareProfile || null,
