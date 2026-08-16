@@ -6149,6 +6149,17 @@ ipcMain.handle("get-gear-catalog", async () => {
     return { items: [], categories: [], grouped: {} };
   }
 });
+ipcMain.handle("get-gear-detail", async (_event, slug) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/launcher/gear/${encodeURIComponent(slug)}`, {
+      headers: launcherApiHeaders(),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+});
 ipcMain.handle("get-events", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/events`, {

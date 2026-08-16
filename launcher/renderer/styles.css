@@ -4436,5 +4436,487 @@ textarea.input-text {
   background: linear-gradient(to top, rgba(11, 15, 25, 0.9) 0%, rgba(11, 15, 25, 0.2) 60%, transparent 100%);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   GEAR DIRECTORY & IN-APP GEAR ITEM DETAIL VIEW
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gear-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.gear-header-copy {
+  max-width: 600px;
+}
+
+.gear-header-copy .view-title {
+  margin: 0;
+}
+
+.gear-header-copy .view-sub {
+  margin: 6px 0 0 0;
+}
+
+.gear-directory {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.gear-category-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gear-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gear-category-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.gear-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.gear-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gear-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-focus);
+  background: var(--bg-card-hover);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.gear-card-img-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.gear-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.gear-card:hover .gear-card-img {
+  transform: scale(1.04);
+}
+
+.gear-card-img-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--text-muted);
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+}
+
+.gear-card-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.gear-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gear-card-title-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.gear-card-title-btn:hover {
+  color: var(--color-play, #34d27b);
+}
+
+.gear-card-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+  flex: 1;
+}
+
+.gear-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ── GEAR DETAIL VIEW ────────────────────────────────────────── */
+
+.gear-detail-view {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-bottom: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gear-detail-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gear-detail-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.gear-breadcrumb-link {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.gear-breadcrumb-link:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+.gear-breadcrumb-sep {
+  opacity: 0.5;
+}
+
+.gear-breadcrumb-current {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.gear-detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gear-detail-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.gear-detail-by {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.gear-manufacturer {
+  color: var(--text-main);
+}
+
+.gear-detail-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.gear-detail-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gear-rating-stars {
+  color: #f59e0b;
+  letter-spacing: 1px;
+}
+
+.gear-detail-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 32px;
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .gear-detail-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gear-detail-media-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gear-detail-cover-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.gear-detail-cover {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.gear-detail-cover-fallback {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.gear-detail-thumbs-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gear-detail-thumb {
+  width: 68px;
+  height: 52px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.gear-detail-thumb:hover {
+  opacity: 0.8;
+  border-color: var(--border-focus);
+}
+
+.gear-detail-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gear-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gear-info-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.gear-info-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gear-detail-desc {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  padding: 8px 0;
+}
+
+.gear-detail-buy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.gear-buy-section-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.gear-buy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gear-buy-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.gear-buy-card:hover {
+  border-color: var(--color-play, #34d27b);
+  background: var(--bg-card-hover);
+}
+
+.gear-buy-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gear-buy-retailer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.gear-buy-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-play, #34d27b);
+}
+
+.gear-buy-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-play, #34d27b);
+}
+
+.gear-buy-shipping {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.gear-detail-rec-section {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.gear-detail-section-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.gear-rec-game-card {
+  cursor: pointer;
+}
+
+.gear-detail-videos-section {
+  margin-top: 24px;
+}
+
+.gear-videos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.gear-video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.gear-video-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.gear-reviews-list,
+.gear-discussions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.gear-discussion-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.gear-disc-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.gear-disc-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+
 
 

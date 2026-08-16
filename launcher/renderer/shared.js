@@ -182,6 +182,7 @@ export function bindViews() {
   views.editionDetail = document.getElementById("view-edition-detail");
   views.deepLink = document.getElementById("view-deep-link");
   views.eventDetail = document.getElementById("view-event-detail");
+  views.gearDetail = document.getElementById("view-gear-detail");
 }
 
 export function setCatalogCache(list) {

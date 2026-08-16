@@ -44,6 +44,7 @@ const viewLoaders = {
   library: () => import("./views/library.js"),
   friends: () => import("./views/friends.js"),
   gear: () => import("./views/gear.js"),
+  gearDetail: () => import("./views/gear.js"),
   editions: () => import("./views/editions.js"),
   mods: () => import("./views/mods.js"),
   events: () => import("./views/events.js"),
@@ -64,7 +65,9 @@ async function ensureViewModule(viewName) {
       ? "detail"
       : viewName === "eventDetail"
         ? "events"
-        : viewName;
+        : viewName === "gearDetail"
+          ? "gear"
+          : viewName;
   if (loadedViews.has(key)) return;
   const load = viewLoaders[viewName];
   if (!load) return;
@@ -81,13 +84,17 @@ function applyNavChrome(viewName) {
         ? "editions"
         : viewName === "eventDetail"
           ? "events"
-          : viewName;
+          : viewName === "gearDetail"
+            ? "gear"
+            : viewName;
   navBtns.forEach((btn) => {
     const isGamesParent = btn.dataset.view === "games" && !btn.classList.contains("sub-nav-btn");
     const isEventsParent = btn.dataset.view === "events";
+    const isGearParent = btn.dataset.view === "gear";
     const active =
       (Boolean(navKey) && btn.dataset.view === navKey) ||
       (isEventsParent && (viewName === "events" || viewName === "eventDetail")) ||
+      (isGearParent && (viewName === "gear" || viewName === "gearDetail")) ||
       (isGamesParent &&
         (viewName === "games" ||
           viewName === "mods" ||
@@ -136,6 +143,10 @@ export async function navigateTo(viewName, params = {}) {
   if (viewName === "library") return api.renderLibraryView?.();
   if (viewName === "friends") return api.renderFriendsView?.();
   if (viewName === "gear") return api.renderGearView?.();
+  if (viewName === "gearDetail") {
+    if (!force && isViewReady(views.gearDetail, params.slug)) return;
+    return api.renderGearDetailView?.(params.slug);
+  }
   if (viewName === "settings") return api.renderSettingsView?.();
   if (viewName === "gameDetail") {
     if (!force && isViewReady(views.gameDetail, params.slug)) return;
@@ -163,6 +174,11 @@ export async function openModDetail(slug, fromView) {
   state.detailReturnView = fromView || "mods";
   state.currentModDetailSlug = slug;
   return navigateTo("modDetail", { slug });
+}
+
+export async function openGearDetail(slug, fromView) {
+  state.detailReturnView = fromView || "gear";
+  return navigateTo("gearDetail", { slug });
 }
 
 export async function openEditionDetail(gameSlug, editionSlug) {
