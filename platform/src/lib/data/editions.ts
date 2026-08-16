@@ -1493,20 +1493,19 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        // HoloCure itself is free on Steam and is not redistributable, so this
-        // edition never ships the game — it opens Steam's install for appid
-        // 2420510, waits for the executable to appear (knownExePaths first,
-        // then the launcher's drive scan, which is what finds libraries on a
-        // second drive), and then applies the mod loader below.
-        kind: "external",
-        url: "https://store.steampowered.com/app/2420510/HoloCure__Save_the_Fans/",
+        kind: "itch-zip",
+        url: "https://kay-yu.itch.io/holocure",
+        fileName: "HoloCure.zip",
         exeHint: "HoloCure|holocure",
         knownExePaths: [
-          "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
-          "%PROGRAMFILES%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
           "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES%\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+          "~/PlayBound/Games/holocure/HoloCure.exe",
+          "~/.local/share/HoloCure/HoloCure.exe",
+          "~/.steam/steam/steamapps/common/HoloCure/HoloCure.exe",
         ],
-        note: "Installs HoloCure through Steam, then adds the community multiplayer mod automatically.",
+        note: "Downloads and extracts official HoloCure standalone build and configures PlayBound multiplayer automatically in 1 click.",
         // Layout is upstream's and is not negotiable — Aurie only loads DLLs
         // from mods/Aurie, and the mod only finds emotes at
         // MultiplayerMod/Emotes with no folder in between.
