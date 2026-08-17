@@ -78,7 +78,14 @@ const ArtifactSchema = new Schema<IArtifact>(
     filename: { type: String, required: true },
     relativePath: { type: String, required: true },
     sizeBytes: { type: Number, required: true, default: 0 },
-    sha256: { type: String, required: true, index: true },
+    /*
+     * Not required: an artifact discovered from a download often has no
+     * verified checksum yet, and Mongoose treats "" as failing `required` —
+     * which meant every on-demand registration threw a ValidationError, the
+     * telemetry route 500'd, and the launcher swallowed it. Empty means
+     * "unknown", which is the truth until something verifies the file.
+     */
+    sha256: { type: String, default: "", index: true },
     licenseStatus: { type: String, default: "redistributable" },
     mirrorEnabled: { type: Boolean, default: true, index: true },
     redistributionAllowed: { type: Boolean, default: true },
