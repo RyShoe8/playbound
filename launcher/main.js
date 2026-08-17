@@ -2767,6 +2767,65 @@ function findExeUnderGamesDir(entry) {
 }
 
 /** existsSync on catalog knownExePaths only — no registry, no directory walk. */
+/**
+ * Bundle names a game might plausibly install as, e.g. "OpenRA.app".
+ *
+ * Exported shape is deliberately generous: a bundle is named for the product,
+ * not the slug, and the two rarely match exactly ("tes-arena" → "OpenTESArena").
+ */
+function macAppCandidateNames(entry) {
+  const names = new Set();
+  const add = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return;
+    const base = raw.replace(/\.(exe|cmd|bat|app)$/i, "").trim();
+    if (base) names.add(`${base}.app`);
+  };
+  add(entry?.title);
+  add(entry?.slug);
+  // "Aleph One" also ships as "AlephOne.app".
+  if (entry?.title) add(String(entry.title).replace(/\s+/g, ""));
+  // A hint with alternation ("ysoccer|ysoccer19") is a pattern, not a name.
+  if (entry?.exeHint && !/[|\\/]/.test(entry.exeHint)) add(entry.exeHint);
+  for (const raw of entry?.knownExePaths || []) {
+    const base = path.basename(String(raw));
+    if (/\.app$/i.test(base)) names.add(base);
+  }
+  return [...names];
+}
+
+/** The installed .app for this game under /Applications, or null. macOS only. */
+function findMacApplication(entry) {
+  if (process.platform !== "darwin") return null;
+  const wanted = macAppCandidateNames(entry).map((n) => n.toLowerCase());
+  if (wanted.length === 0) return null;
+
+  let roots;
+  try {
+    roots = ["/Applications", path.join(app.getPath("home"), "Applications")];
+  } catch {
+    roots = ["/Applications"];
+  }
+
+  for (const root of roots) {
+    let names;
+    try {
+      names = fs.readdirSync(root);
+    } catch {
+      continue;
+    }
+    // Case-insensitive: the filesystem usually is, but the recipe's casing and
+    // the vendor's rarely agree, so never rely on an exact hit.
+    for (const name of names) {
+      if (!/\.app$/i.test(name)) continue;
+      if (!wanted.includes(name.toLowerCase())) continue;
+      const full = path.join(root, name);
+      if (isAllowedExecutablePath(full)) return full;
+    }
+  }
+  return null;
+}
+
 function findKnownPathOnly(entry) {
   for (const raw of entry.knownExePaths || []) {
     const full = expandWinPath(raw);
@@ -2800,6 +2859,18 @@ function findExeInSlugGamesDir(entry) {
 function findKnownExecutable(entry) {
   const known = findKnownPathOnly(entry);
   if (known) return known;
+  /*
+   * macOS installs land in /Applications, and almost no recipe carries a mac
+   * knownExePath — 28 of the 33 that define any are Windows-only. Every other
+   * detection path below is Windows-shaped too: expectedExeBasenames only ever
+   * emits .exe/.cmd/.bat, and the registry lookup does not exist here. So a
+   * player could install a game, run it perfectly from Finder, and the launcher
+   * would still show no Play button because nothing ever resolved an
+   * executable. Looking in the Applications folders closes that gap without
+   * needing a mac path added to every recipe.
+   */
+  const macApp = findMacApplication(entry);
+  if (macApp) return macApp;
   const inSlugDir = findExeInSlugGamesDir(entry);
   if (inSlugDir) return inSlugDir;
   /*
@@ -3412,6 +3483,14 @@ function expectedExeBasenames(entry) {
     // Skip slug.exe when known/hint names already point at a different launcher
     // binary (e.g. veloren → airshipper.exe).
     if (bases.size === 0 || bases.has(slugExe)) bases.add(slugExe);
+  }
+  /*
+   * These names are matched against files in the games directory, and on macOS
+   * the thing sitting there is a .app bundle — an .exe name can never hit one.
+   * Added last so Windows keeps the exact list it had.
+   */
+  if (process.platform === "darwin") {
+    for (const name of macAppCandidateNames(entry)) bases.add(name.toLowerCase());
   }
   return [...bases];
 }
