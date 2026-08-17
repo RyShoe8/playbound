@@ -185,16 +185,24 @@ export function DownloadMirrorsManager() {
   const [minRetentionHours, setMinRetentionHours] = useState("24");
   const [autoPromotion, setAutoPromotion] = useState(true);
   const [autoEviction, setAutoEviction] = useState(true);
+  /** How many demo rows from the old seeder are still present; 0 hides the button. */
+  const [seededCount, setSeededCount] = useState(0);
 
   async function loadData() {
     try {
       setLoading(true);
-      const [ovRes, cacheRes, srcRes, evtRes] = await Promise.all([
+      const [ovRes, cacheRes, srcRes, evtRes, seededRes] = await Promise.all([
         fetch("/api/admin/download-mirrors/overview"),
         fetch("/api/admin/download-mirrors/cache"),
         fetch("/api/admin/download-mirrors/sources"),
         fetch("/api/admin/download-mirrors/events"),
+        fetch("/api/admin/download-mirrors/cache/clear-seeded"),
       ]);
+
+      if (seededRes.ok) {
+        const seeded = await seededRes.json();
+        setSeededCount(Array.isArray(seeded.artifacts) ? seeded.artifacts.length : 0);
+      }
 
       if (ovRes.ok) {
         const ovData = await ovRes.json();
@@ -281,6 +289,42 @@ export function DownloadMirrorsManager() {
       await loadData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Promotion failed";
+      setMessage({ text: msg, type: "error" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  /**
+   * One-time cleanup of the rows the old demo seeder wrote.
+   *
+   * Lives here rather than only in a script because the cleanup has to be
+   * runnable without a dev environment. The button hides itself once there is
+   * nothing left to clear, so it does not become permanent furniture.
+   */
+  async function handleClearSeeded() {
+    if (
+      !confirm(
+        "Remove the demo artifacts the old seeder created?\n\n" +
+          "These carry invented download counts (842, 620, 512…) that are mixed in " +
+          "with real ones. Artifacts registered by real downloads are not affected.\n\n" +
+          "This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setBusyAction("clear-seeded");
+    try {
+      const res = await fetch("/api/admin/download-mirrors/cache/clear-seeded", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not clear demo rows");
+      setMessage({ text: data.message, type: "success" });
+      setSeededCount(0);
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not clear demo rows";
       setMessage({ text: msg, type: "error" });
     } finally {
       setBusyAction(null);
@@ -907,6 +951,40 @@ export function DownloadMirrorsManager() {
             {busyAction === "settings" ? "Saving & Rebalancing…" : "Save Budget & Rebalance Cache"}
           </button>
         </form>
+      )}
+
+      {/*
+        One-time cleanup, shown only while there is something to clean. The old
+        seeder inserted five artifacts with invented download counts that sit
+        indistinguishably beside real ones; this removes exactly those.
+      */}
+      {activeTab === "config" && seededCount > 0 && (
+        <div className="mt-6 max-w-2xl rounded-xl border border-amber-500/40 bg-amber-500/5 p-6">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
+            <AlertTriangle className="size-5 text-amber-500" /> Demo data present
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {seededCount} artifact{seededCount === 1 ? "" : "s"} in this table came from the old
+            seeder, not from real downloads. Their counts were invented — 842 for HoloCure, 620 for
+            Warzone 2100 — and real downloads have been adding to those baselines, so the numbers
+            cannot be read either way.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            The seeder is gone, so this cannot come back. Artifacts registered by real downloads are
+            not affected.
+          </p>
+          <button
+            type="button"
+            onClick={handleClearSeeded}
+            disabled={busyAction === "clear-seeded"}
+            className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-bold text-black transition-all hover:brightness-110 disabled:opacity-50"
+          >
+            <Trash2 className="size-4" />
+            {busyAction === "clear-seeded"
+              ? "Clearing…"
+              : `Clear ${seededCount} demo row${seededCount === 1 ? "" : "s"}`}
+          </button>
+        </div>
       )}
 
       {/* TAB 4: Audit Log */}
