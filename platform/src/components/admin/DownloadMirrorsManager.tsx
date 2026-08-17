@@ -769,17 +769,27 @@ export function DownloadMirrorsManager() {
                             >
                               <Eye className="w-3.5 h-3.5" /> Details
                             </button>
+                            <button
+                              onClick={() => void handleArchive(item.id)}
+                              disabled={
+                                item.r2Status !== "cached" ||
+                                busyAction === `archive-${item.id}` ||
+                                item.vpsStatus === "verified"
+                              }
+                              className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+                              title={
+                                item.vpsStatus === "verified"
+                                  ? "Already archived on VPS"
+                                  : item.r2Status !== "cached"
+                                  ? "Promote this artifact to R2 hot cache before copying it to the VPS archive"
+                                  : "Copy to VPS archive"
+                              }
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                              {item.vpsStatus === "verified" ? "On VPS" : "Archive to VPS"}
+                            </button>
                             {item.r2Status === "cached" ? (
                               <>
-                                <button
-                                  onClick={() => void handleArchive(item.id)}
-                                  disabled={busyAction === `archive-${item.id}` || item.vpsStatus === "verified"}
-                                  className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
-                                  title={item.vpsStatus === "verified" ? "Already archived on VPS" : "Copy to VPS archive"}
-                                >
-                                  <Archive className="w-3.5 h-3.5" />
-                                  {item.vpsStatus === "verified" ? "On VPS" : "Archive to VPS"}
-                                </button>
                                 <button
                                   onClick={() => void handleToggleProtect(item.id, item.r2Protected)}
                                   disabled={busyAction === `protect-${item.id}`}
