@@ -128,18 +128,13 @@ const CatalogGameSchema = new Schema(
     hiddenGem: { type: Boolean, default: false },
     /** Admin checklist: catalog info for this title is fully entered. */
     complete: { type: Boolean, default: false },
-    opsHealth: {
-      install: {
-        type: String,
-        enum: ["green", "yellow", "red"],
-        default: "green",
-      },
-      party: {
-        type: String,
-        enum: ["green", "yellow", "red"],
-        default: "green",
-      },
-    },
+    /*
+     * `opsHealth` used to live here — a stored triage light that failures set
+     * to yellow and only a human click cleared. The admin lights are derived
+     * from telemetry now (lib/admin/gameOpsHealth.ts), so the field is gone
+     * from the schema. Existing documents keep theirs harmlessly; nothing
+     * reads it.
+     */
     art: { type: GameArtSchema, required: true },
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },

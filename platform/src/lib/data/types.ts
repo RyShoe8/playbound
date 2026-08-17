@@ -134,11 +134,6 @@ export interface Game {
    * Optional on seed objects; missing means incomplete.
    */
   complete?: boolean;
-  /** Admin triage lights for launcher install vs party play. Unset = green. */
-  opsHealth?: {
-    install?: "green" | "yellow" | "red";
-    party?: "green" | "yellow" | "red";
-  };
   art: GameArt;
   /** Local cover under /public, e.g. /games/openra/cover.webp */
   coverImage?: string;

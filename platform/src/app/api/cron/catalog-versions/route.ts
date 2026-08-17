@@ -100,10 +100,6 @@ async function run(req: Request) {
     tally(summary.games, result.status, patched);
 
     await CatalogGame.updateOne({ slug: row.slug }, { $set: set });
-    if (result.status === "broken" || result.status === "stale") {
-      const { markGameHealthYellow } = await import("@/lib/admin/gameHealth");
-      void markGameHealthYellow(row.slug, "install");
-    }
   }
 
   const mods = await CatalogMod.find({ published: true })

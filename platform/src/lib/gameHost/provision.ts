@@ -11,7 +11,6 @@ import {
   type HostedStatus,
 } from "./catalog";
 import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
-import { markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 export type PartyHostFields = {
   roomId?: string | null;
@@ -73,7 +72,6 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
       gameSlug: slug,
       message: result.error,
     });
-    void markGameHealthYellow(slug, "party");
     return false;
   }
 

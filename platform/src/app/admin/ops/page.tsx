@@ -9,9 +9,9 @@ import { getFailureRates } from "@/lib/admin/failureRates";
 
 export const metadata: Metadata = { title: "Admin · Ops" };
 
-async function FailureRateSection() {
-  const rates = await getFailureRates();
-  return <FailureRateCard rates={rates} />;
+async function FailureRateSection({ gameSlug }: { gameSlug: string }) {
+  const rates = await getFailureRates({ gameSlug });
+  return <FailureRateCard rates={rates} gameSlug={gameSlug} />;
 }
 
 export default async function AdminOpsPage({
@@ -41,9 +41,14 @@ export default async function AdminOpsPage({
           Live launcher and party events. Failures also land on Bugs; health lights on Games are the triage signal.
         </p>
       </div>
-      {/* Aggregates 30 days of telemetry, so it must not hold up the live feed. */}
-      <Suspense fallback={<div className="h-40 animate-pulse rounded-xl border border-border bg-card/40" />}>
-        <FailureRateSection />
+      {/* Aggregates 30 days of telemetry, so it must not hold up the live feed.
+          Keyed on the game so switching filters refetches rather than showing
+          the previous game's numbers. */}
+      <Suspense
+        key={params.game || "all"}
+        fallback={<div className="h-40 animate-pulse rounded-xl border border-border bg-card/40" />}
+      >
+        <FailureRateSection gameSlug={params.game || ""} />
       </Suspense>
 
       <AdminOpsConsole initialFamily={family} initialGame={params.game || ""} />

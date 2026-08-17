@@ -9,7 +9,6 @@ import {
   syncPartyVoiceForMember,
 } from "@/lib/playTogether/discordPartyProvision";
 import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
-import { markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -110,7 +109,6 @@ export async function POST(req: Request, ctx: RouteContext) {
         userId,
         message: result.error,
       });
-      void markGameHealthYellow(String(loaded.party.gameSlug || ""), "party");
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
     return NextResponse.json({ message: result.message });

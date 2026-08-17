@@ -2,7 +2,6 @@ import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import BugReport from "@/lib/models/BugReport";
 import type { BugReportSource } from "@/lib/bugReports";
-import { healthAreaForBug, markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 export type AutoBugInput = {
   event: string;
@@ -61,9 +60,6 @@ export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
       if (input.launcherVersion) existing.launcherVersion = input.launcherVersion.slice(0, 40);
       if (input.platform) existing.platform = input.platform.slice(0, 40);
       await existing.save();
-      if (input.gameSlug) {
-        void markGameHealthYellow(input.gameSlug, healthAreaForBug(input));
-      }
       return;
     }
 
@@ -100,9 +96,6 @@ export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
       submitterName: "Auto",
       status: "open",
     });
-    if (input.gameSlug) {
-      void markGameHealthYellow(input.gameSlug, healthAreaForBug(input));
-    }
   } catch (err) {
     console.error("upsertAutoBugReport failed:", err);
   }

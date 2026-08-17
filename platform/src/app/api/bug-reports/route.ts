@@ -10,7 +10,6 @@ import { sendMail } from "@/lib/mailer";
 import { userFromLauncherBearer } from "@/lib/library";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import { recaptchaErrorMessage, verifyRecaptcha } from "@/lib/recaptcha";
-import { healthAreaForBug, markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 const createSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -73,14 +72,6 @@ export async function POST(req: Request) {
       userAgent: data.userAgent || req.headers.get("user-agent")?.slice(0, 500) || null,
       status: "open",
     });
-
-    const slugFromPage = String(data.pageUrl || "").match(/\/games\/([a-z0-9-]+)/i)?.[1];
-    if (slugFromPage) {
-      void markGameHealthYellow(
-        slugFromPage,
-        healthAreaForBug({ title: data.title, description: data.description })
-      );
-    }
 
     const founder = "ryanschumacher@themediashop.co";
     if (isFounderAdminEmail(founder)) {

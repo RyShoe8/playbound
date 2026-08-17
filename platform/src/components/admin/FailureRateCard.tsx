@@ -94,8 +94,16 @@ function Row({
   );
 }
 
-export function FailureRateCard({ rates }: { rates: FailureRates }) {
+export function FailureRateCard({
+  rates,
+  gameSlug,
+}: {
+  rates: FailureRates;
+  /** Empty for the whole catalog; a slug when the console is filtered. */
+  gameSlug?: string;
+}) {
   const anyData = WINDOWS.some((w) => rates[w].overall.rate !== null);
+  const scope = gameSlug ? gameSlug : "all games";
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
@@ -103,6 +111,11 @@ export function FailureRateCard({ rates }: { rates: FailureRates }) {
         <div>
           <h2 className="flex items-center gap-2 text-base font-bold">
             <AlertTriangle className="size-4 text-primary" /> Failure rate
+            {/* Say what is being counted — the card follows the game filter,
+                and an unlabelled number is easy to read as catalog-wide. */}
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+              {scope}
+            </span>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Share of finished installs and launches that failed. Counts are failed/total.

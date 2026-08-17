@@ -102,19 +102,27 @@ export function buildFailureRates(rows: EventCounts[]): FailureRates {
  * falls inside. Three separate range queries would read the most recent day
  * three times over; this reads it once and uses the {event, createdAt} index.
  */
-export async function getFailureRates(now = new Date()): Promise<FailureRates> {
+export async function getFailureRates(
+  opts: { gameSlug?: string | null; now?: Date } = {}
+): Promise<FailureRates> {
   try {
     await dbConnect();
+    const now = opts.now ?? new Date();
     const day = 24 * 60 * 60 * 1000;
     const since30 = new Date(now.getTime() - 30 * day);
     const since7 = new Date(now.getTime() - 7 * day);
     const since1 = new Date(now.getTime() - day);
+
+    // Scoped to one game when the console is filtered to one, so drilling in
+    // from a health light does not show the whole catalog's numbers.
+    const gameSlug = String(opts.gameSlug || "").trim();
 
     const rows = await TelemetryEvent.aggregate<EventCounts>([
       {
         $match: {
           event: { $in: Object.values(FAILURE_RATE_EVENTS) },
           createdAt: { $gte: since30 },
+          ...(gameSlug ? { "properties.gameSlug": gameSlug } : {}),
         },
       },
       {
