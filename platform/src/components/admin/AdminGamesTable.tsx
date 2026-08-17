@@ -6,6 +6,7 @@ import { Search, X, ArrowUp, ArrowDown } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { CATALOG_STATUSES, type CatalogStatus } from "@/lib/catalogStatus";
 import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
+import type { AreaHealth, GameHealth } from "@/lib/admin/gameOpsHealth";
 import { GameArt } from "@/components/GameArt";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -15,7 +16,12 @@ export type AdminGameRow = Game & {
   /** Set when the game was last moved to published; absent on older rows. */
   publishedAt?: string | null;
   installCount?: number;
+  /** Derived from telemetry on the server; absent means nothing recorded. */
+  health?: GameHealth;
 };
+
+/** Worst first when sorting — a red light is what you came to the table for. */
+const HEALTH_RANK: Record<GameHealthStatus, number> = { green: 0, yellow: 1, red: 2 };
 
 /**
  * The admin games table, with search, status filtering, and inline status editing.
@@ -24,11 +30,14 @@ export function AdminGamesTable({
   games,
   editionCounts,
   modCounts,
+  healthWindowDays = 7,
 }: {
   games: AdminGameRow[];
   /** Plain object rather than a Map — this crosses the server/client boundary. */
   editionCounts: Record<string, number>;
   modCounts?: Record<string, number>;
+  /** Window the health lights were computed over, for the tooltips. */
+  healthWindowDays?: number;
 }) {
   const [rows, setRows] = useState(games);
   const [query, setQuery] = useState("");
@@ -37,17 +46,19 @@ export function AdminGamesTable({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [statusPendingSlug, setStatusPendingSlug] = useState<string | null>(null);
-  const [healthPending, setHealthPending] = useState<string | null>(null);
+  /**
+   * Health comes from telemetry now, computed on the server over a rolling
+   * window. Games with no events in that window simply have no entry, which
+   * reads as green — nothing has gone wrong lately.
+   */
+  function healthOf(g: AdminGameRow, area: GameHealthArea): AreaHealth {
+    return g.health?.[area] ?? { status: "green", failed: 0, attempts: 0 };
+  }
 
-  const HEALTH_NEXT: Record<GameHealthStatus, GameHealthStatus> = {
-    green: "yellow",
-    yellow: "red",
-    red: "green",
-  };
-
-  function healthOf(g: AdminGameRow, area: GameHealthArea): GameHealthStatus {
-    const value = g.opsHealth?.[area];
-    return value === "yellow" || value === "red" ? value : "green";
+  function healthTitle(label: string, health: AreaHealth): string {
+    if (health.attempts === 0) return `${label}: nothing recorded in the last ${healthWindowDays} days`;
+    const pct = Math.round((health.failed / health.attempts) * 100);
+    return `${label}: ${health.failed} of ${health.attempts} failed (${pct}%) in the last ${healthWindowDays} days. Click for the log.`;
   }
 
   function handleSort(col: string) {
@@ -114,44 +125,6 @@ export function AdminGamesTable({
     }
   }
 
-  async function cycleHealth(slug: string, area: GameHealthArea) {
-    const row = rows.find((g) => g.slug === slug);
-    if (!row) return;
-    const prev = healthOf(row, area);
-    const next = HEALTH_NEXT[prev];
-    const key = `${slug}:${area}`;
-    setHealthPending(key);
-    setRows((list) =>
-      list.map((g) =>
-        g.slug === slug
-          ? { ...g, opsHealth: { install: healthOf(g, "install"), party: healthOf(g, "party"), [area]: next } }
-          : g
-      )
-    );
-    try {
-      const res = await fetch(`/api/admin/games/${encodeURIComponent(slug)}/health`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ area, status: next }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || `Failed (${res.status})`);
-      }
-    } catch (err) {
-      setRows((list) =>
-        list.map((g) =>
-          g.slug === slug
-            ? { ...g, opsHealth: { install: healthOf(g, "install"), party: healthOf(g, "party"), [area]: prev } }
-            : g
-        )
-      );
-      console.error(err);
-      alert(err instanceof Error ? err.message : "Could not update health");
-    } finally {
-      setHealthPending(null);
-    }
-  }
 
   const filtered = useMemo(() => {
     let result = rows;
@@ -199,12 +172,12 @@ export function AdminGamesTable({
           bVal = (b.launcherInstall?.detectedVersion || b.launcherInstall?.versionLabel || "").toLowerCase();
           break;
         case "Install":
-          aVal = healthOf(a, "install");
-          bVal = healthOf(b, "install");
+          aVal = HEALTH_RANK[healthOf(a, "install").status];
+          bVal = HEALTH_RANK[healthOf(b, "install").status];
           break;
-        case "Party":
-          aVal = healthOf(a, "party");
-          bVal = healthOf(b, "party");
+        case "Join":
+          aVal = HEALTH_RANK[healthOf(a, "party").status];
+          bVal = HEALTH_RANK[healthOf(b, "party").status];
           break;
         case "Status":
           aVal = (a.status || "").toLowerCase();
@@ -310,7 +283,7 @@ export function AdminGamesTable({
               <SortableHeader label="Installs" />
               <SortableHeader label="Version" />
               <SortableHeader label="Install" />
-              <SortableHeader label="Party" />
+              <SortableHeader label="Join" />
               <SortableHeader label="Status" />
               <SortableHeader label="Complete" />
               <SortableHeader label="Published" />
@@ -352,32 +325,32 @@ export function AdminGamesTable({
                       {g.launcherInstall?.detectedVersion || g.launcherInstall?.versionLabel || "—"}
                     </td>
                     {(["install", "party"] as const).map((area) => {
-                      const color = healthOf(g, area);
-                      const pending = healthPending === `${g.slug}:${area}`;
+                      const health = healthOf(g, area);
+                      const label = area === "party" ? "Join" : "Install";
                       return (
                         <td key={area} className="px-4 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={pending}
-                              onClick={() => void cycleHealth(g.slug, area)}
-                              title={`${area} health: ${color}. Click to cycle.`}
-                              aria-label={`${area} health ${color} for ${g.title}`}
-                              className={`size-4 rounded-full border border-black/10 disabled:opacity-50 ${
-                                color === "green"
+                          {/*
+                            The dot is the link now — it used to be a click-to-
+                            cycle button with the word "log" beside it, and the
+                            colour is read from telemetry rather than set by
+                            hand, so there is nothing left to cycle.
+                          */}
+                          <Link
+                            href={`/admin/ops?game=${encodeURIComponent(g.slug)}&area=${area}`}
+                            title={healthTitle(label, health)}
+                            aria-label={`${label} health ${health.status} for ${g.title}. ${healthTitle(label, health)}`}
+                            className="inline-flex items-center rounded-full p-1 transition-colors hover:bg-secondary"
+                          >
+                            <span
+                              className={`size-3.5 rounded-full border border-black/10 ${
+                                health.status === "green"
                                   ? "bg-emerald-500"
-                                  : color === "yellow"
+                                  : health.status === "yellow"
                                     ? "bg-amber-400"
                                     : "bg-red-500"
                               }`}
                             />
-                            <Link
-                              href={`/admin/ops?game=${encodeURIComponent(g.slug)}&area=${area}`}
-                              className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
-                            >
-                              log
-                            </Link>
-                          </div>
+                          </Link>
                         </td>
                       );
                     })}

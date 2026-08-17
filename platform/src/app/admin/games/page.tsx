@@ -6,11 +6,21 @@ import { editionCountsByGame } from "@/lib/editions";
 import { modCountsByGame } from "@/lib/mods";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
 import { AdminGamesTable } from "@/components/admin/AdminGamesTable";
+import { getGameHealth, HEALTH_WINDOW_DAYS } from "@/lib/admin/gameOpsHealth";
 
 export const metadata: Metadata = { title: "Admin · Games" };
 
 export default async function AdminGamesPage() {
-  const [games, editionCounts, modCounts] = await Promise.all([listAllGames(), editionCountsByGame(), modCountsByGame()]);
+  const [games, editionCounts, modCounts, health] = await Promise.all([
+    listAllGames(),
+    editionCountsByGame(),
+    modCountsByGame(),
+    getGameHealth(),
+  ]);
+
+  // Attached per row rather than passed as a second map: a Map cannot cross
+  // the server/client boundary, and the table already carries the game.
+  const rows = games.map((g) => ({ ...g, health: health.get(g.slug) }));
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -33,7 +43,12 @@ export default async function AdminGamesPage() {
       {/* Rows and search live in a client component so filtering is instant.
           A Map cannot cross the server/client boundary, so counts are passed
           as a plain object. */}
-      <AdminGamesTable games={games} editionCounts={Object.fromEntries(editionCounts)} modCounts={Object.fromEntries(modCounts)} />
+      <AdminGamesTable
+        games={rows}
+        editionCounts={Object.fromEntries(editionCounts)}
+        modCounts={Object.fromEntries(modCounts)}
+        healthWindowDays={HEALTH_WINDOW_DAYS}
+      />
     </div>
   );
 }
