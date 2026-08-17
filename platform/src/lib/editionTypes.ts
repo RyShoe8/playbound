@@ -174,6 +174,8 @@ export interface EditionInstallConfig {
     /** Overlay zip URL for locate-then-zip (P99Files). */
     overlayUrl?: string | null;
     overlayFileName?: string | null;
+    /** Relative directory inside the installed game where the overlay is extracted. */
+    overlayDest?: string | null;
     /** Prompt user to pick an existing base client folder first. */
     requiresBaseDir?: boolean;
     /** Numbered get-to-playing steps shown on the edition page + launcher. */

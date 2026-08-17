@@ -50,6 +50,7 @@ import {
 } from "@/components/admin/EditorialFields";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import { SizeInput } from "@/components/admin/SizeInput";
+import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
 
 /** Games with a live PlayBound server list provider (keep in sync with registry). */
 const WIRED_SERVER_PROVIDERS = new Set([
@@ -1726,6 +1727,21 @@ export function GameEditorForm({
               </button>
             </>
           )}
+          {mode === "edit" ? (
+            <div className="mt-3">
+              <LauncherPackageUploader
+                gameSlug={form.slug}
+                onInstalled={(installed) =>
+                  patchLauncher({
+                    enabled: true,
+                    kind: installed.kind,
+                    url: installed.url,
+                    fileName: installed.fileName,
+                  })
+                }
+              />
+            </div>
+          ) : null}
           {Boolean(form.launcherInstall?.kind) && (
             <details className="rounded-lg border border-border bg-background/40 p-3">
               <summary className="cursor-pointer text-xs font-bold">Customize install recipe</summary>
@@ -1789,6 +1805,7 @@ export function GameEditorForm({
                   </div>
                 )}
                 {(form.launcherInstall?.kind === "direct-zip" ||
+                  form.launcherInstall?.kind === "direct-7z" ||
                   form.launcherInstall?.kind === "direct-installer" ||
                   form.launcherInstall?.kind === "direct-exe" ||
                   form.launcherInstall?.kind === "external") && (
@@ -1873,6 +1890,7 @@ export function GameEditorForm({
                 </div>
                 {(form.launcherInstall?.kind === "github-zip" ||
                   form.launcherInstall?.kind === "direct-zip" ||
+                  form.launcherInstall?.kind === "direct-7z" ||
                   form.launcherInstall?.kind === "openttd-zip") && (
                   <div>
                     <label className={label}>Exe hint (optional regex)</label>

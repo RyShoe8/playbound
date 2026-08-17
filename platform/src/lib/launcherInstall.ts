@@ -72,6 +72,8 @@ export type LauncherInstall = {
   addons?: LauncherInstallAddon[];
   overlayUrl?: string | null;
   overlayFileName?: string | null;
+  /** Relative destination inside the game's own install folder for an overlay archive. */
+  overlayDest?: string | null;
   /**
    * Prompt for an existing install before doing anything else.
    *
@@ -121,6 +123,7 @@ export type LauncherCatalogEntry = {
   addons?: LauncherInstallAddon[];
   overlayUrl?: string;
   overlayFileName?: string;
+  overlayDest?: string;
   /** Ask the player to locate a copy they own before installing anything. */
   requiresBaseDir?: boolean;
 };
@@ -301,6 +304,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.addons?.length) entry.addons = li.addons;
   if (li.overlayUrl) entry.overlayUrl = li.overlayUrl;
   if (li.overlayFileName) entry.overlayFileName = li.overlayFileName;
+  if (li.overlayDest) entry.overlayDest = li.overlayDest;
   /*
    * Without this the launcher never learns it must ask for an existing copy,
    * so an owner-supplied game would fall through to a normal install and fail

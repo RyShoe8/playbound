@@ -74,7 +74,10 @@ export const editions: EditionSeed[] = [
         repo: "Interkarma/daggerfall-unity",
         assetPattern: "DaggerfallUnity.*Windows.*\\.zip$|dfu_windows.*\\.zip$|\\.zip$",
         exeHint: "DaggerfallUnity",
-        note: "Requires original Daggerfall game files.",
+        overlayUrl: "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1",
+        overlayFileName: "DaggerfallGameFiles.zip",
+        overlayDest: "DaggerfallUnity_Data/StreamingAssets/GameFiles",
+        note: "Includes the free Daggerfall game data — ready to play without locating files.",
       },
     },
     requirements: {

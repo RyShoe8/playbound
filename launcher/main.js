@@ -1608,6 +1608,7 @@ function catalogEntryFromEdition(edition) {
       postInstallEqw: Boolean(cfg.postInstallEqw),
       overlayUrl: cfg.overlayUrl || undefined,
       overlayFileName: cfg.overlayFileName || undefined,
+      overlayDest: cfg.overlayDest || undefined,
       requiresBaseDir: Boolean(cfg.requiresBaseDir),
       checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
       modLoader: cfg.modLoader || undefined,
@@ -4358,7 +4359,10 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const overlayPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
     await downloadTo(entry.overlayUrl, overlayPath);
     sendProgress({ phase: "extracting" });
-    await extractArchive(overlayPath, gameDir);
+    const overlayDir = resolveInsideGameDir(gameDir, entry.overlayDest || "");
+    if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
+    await fsp.mkdir(overlayDir, { recursive: true });
+    await extractArchive(overlayPath, overlayDir);
     await fsp.rm(overlayPath, { force: true });
     await flattenWadFiles(gameDir);
   }
