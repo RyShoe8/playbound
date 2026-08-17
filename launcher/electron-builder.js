@@ -83,10 +83,21 @@ module.exports = {
     "services/**/*",
     "renderer/**/*",
     "assets/**/*",
+    /*
+     * 7zip-bin ships binaries for every platform (~12 MB); a Windows build only
+     * ever runs the Windows one. Dropping the others keeps the installer close
+     * to its previous size.
+     */
+    "!**/node_modules/7zip-bin/{mac,linux}/**",
   ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
   // assets is unpacked so Linux D-Bus/AppIndicator can read tray icons from real disk files.
-  asarUnpack: ["**/node_modules/systeminformation/**", "assets/**/*"],
+  // 7zip-bin is an executable — it cannot be run from inside the asar.
+  asarUnpack: [
+    "**/node_modules/systeminformation/**",
+    "**/node_modules/7zip-bin/**",
+    "assets/**/*",
+  ],
   protocols: {
     name: "PlayBound Deep Link",
     schemes: ["playbound"],

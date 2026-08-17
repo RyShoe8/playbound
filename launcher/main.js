@@ -2465,11 +2465,88 @@ function extractDmg(dmgPath, destDir) {
   });
 }
 
+/**
+ * Resolve the bundled 7-Zip binary.
+ *
+ * Windows' own tar.exe is libarchive and does read the 7z container, but it is
+ * built without the LZMA codec — it fails with "LZMA codec is unsupported" on
+ * real archives, RetroArch's included. There is no other 7z reader guaranteed
+ * to be present, so one is shipped.
+ *
+ * 7zip-bin is already in the tree as an electron-builder dependency and carries
+ * per-platform binaries. Packaged builds must keep it outside the asar, since a
+ * binary inside an archive cannot be executed — see asarUnpack in
+ * electron-builder.js. app.asar.unpacked is where it lands there.
+ */
+function sevenZipBinary() {
+  const platformDir =
+    process.platform === "win32" ? "win" : process.platform === "darwin" ? "mac" : "linux";
+  const archDir = process.arch === "arm64" ? "arm64" : process.arch === "ia32" ? "ia32" : "x64";
+  const exe = process.platform === "win32" ? "7za.exe" : "7za";
+
+  const roots = [
+    path.join(__dirname, "node_modules", "7zip-bin"),
+    // Packaged: asar-relative path rewritten to the unpacked copy.
+    path.join(__dirname.replace(/app\.asar([\\/]|$)/, "app.asar.unpacked$1"), "node_modules", "7zip-bin"),
+    path.join(process.resourcesPath || "", "app.asar.unpacked", "node_modules", "7zip-bin"),
+  ];
+
+  for (const root of roots) {
+    if (!root) continue;
+    for (const candidate of [
+      path.join(root, platformDir, archDir, exe),
+      // mac/linux builds are not always arch-nested.
+      path.join(root, platformDir, exe),
+    ]) {
+      try {
+        if (fs.existsSync(candidate)) return candidate;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  return null;
+}
+
+/** Extract a .7z. Mirrors extractZip: shell out, no extraction library. */
+function extract7z(archivePath, destDir) {
+  return new Promise((resolve, reject) => {
+    const bin = sevenZipBinary();
+    if (!bin) {
+      reject(
+        new Error(
+          "This game ships a .7z archive and the bundled 7-Zip helper is missing. Reinstall PlayBound."
+        )
+      );
+      return;
+    }
+    // -bso0/-bse0/-bsp0 silence progress chatter; -y accepts overwrite prompts,
+    // which a detached process could never answer.
+    const child = spawn(
+      bin,
+      ["x", String(archivePath), `-o${String(destDir)}`, "-y", "-bso0", "-bsp0"],
+      { windowsHide: true }
+    );
+    let err = "";
+    child.stderr?.on("data", (d) => (err += d));
+    child.on("error", (spawnErr) =>
+      reject(new Error(`7z extract failed to start (${spawnErr.code || spawnErr.message}).`))
+    );
+    child.on("close", (code) =>
+      code === 0 ? resolve() : reject(new Error(`7z extract failed: ${err.trim() || code}`))
+    );
+  });
+}
+
 async function extractArchive(archivePath, destDir) {
   const lower = String(archivePath || "").toLowerCase();
   await fsp.mkdir(destDir, { recursive: true });
   if (lower.endsWith(".dmg")) {
     await extractDmg(archivePath, destDir);
+    return;
+  }
+  if (lower.endsWith(".7z")) {
+    await extract7z(archivePath, destDir);
     return;
   }
   if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
