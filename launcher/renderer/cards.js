@@ -40,10 +40,18 @@ function cardSizeLabel(game) {
   return raw.replace(/^~\s*/, "");
 }
 
+/**
+ * Mirrors isBrowserGame() in platform/src/lib/gameLaunch.ts.
+ *
+ * This used to treat every `kind: "external"` entry as a browser game, but
+ * external only means "PlayBound hands off rather than downloading" — which is
+ * equally true of a live-service game that ships its own installer. Those were
+ * getting a "Play" badge and no download size, hiding that some are very large.
+ */
 function isBrowserGame(game) {
-  // The catalog marks non-installable titles as external entries pointing at
-  // the game's own site — the launcher's equivalent of isBrowserGame().
-  return game.kind === "external" || Boolean(game.browserPlayable);
+  if (game.browserPlayable) return true;
+  const methods = Array.isArray(game.launchMethods) ? game.launchMethods : [];
+  return methods.includes("browser") && !methods.includes("install");
 }
 
 /** Top-right badge: Play for browser titles, otherwise the download size. */
