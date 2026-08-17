@@ -19,6 +19,8 @@ export const state = {
   accountState: { connected: false },
   deepLinkCtx: null,
   currentDetailSlug: null,
+  /** Editions on the game in context — drives whether the Editions nav shows. */
+  currentDetailEditionCount: 0,
   currentModDetailSlug: null,
   currentEventDetailId: null,
   detailReturnView: "games",
@@ -526,8 +528,16 @@ export function editionsContextSlug() {
 
 export function updateGamesFamilyNav() {
   const editionsBtn = document.getElementById("nav-editions");
+  /*
+   * Only offer Editions when the game in context actually has a choice to
+   * make. It used to appear on every game page, so most of the catalog — the
+   * games with a single official build — showed a nav entry that led to a list
+   * of one. Matches the game page itself, which shows its Editions section on
+   * the same "more than one" rule.
+   */
   const showEditions =
     Boolean(editionsContextSlug()) &&
+    state.currentDetailEditionCount > 1 &&
     (state.currentView === "gameDetail" ||
       state.currentView === "editionDetail" ||
       state.currentView === "editions");
