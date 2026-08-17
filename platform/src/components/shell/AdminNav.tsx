@@ -55,7 +55,6 @@ export const links: NavItem[] = [
     icon: Gamepad2,
     family: ["/admin/games", "/admin/mods", "/admin/collections"],
   },
-  { href: "/admin/download-mirrors", label: "Download Mirrors", icon: DownloadCloud },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
   { href: "/admin/developers", label: "Developers", icon: Building2 },
@@ -67,7 +66,7 @@ export const links: NavItem[] = [
     href: "/admin/ops",
     label: "Ops",
     icon: Activity,
-    family: ["/admin/ops", "/admin/bugs", "/admin/version-issues"],
+    family: ["/admin/ops", "/admin/bugs", "/admin/version-issues", "/admin/download-mirrors"],
   },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
@@ -165,6 +164,12 @@ const OPS_CHILDREN: NavChild[] = [
     href: "/admin/version-issues",
     match: (p) => p.startsWith("/admin/version-issues"),
   },
+  {
+    label: "Download Mirrors",
+    icon: DownloadCloud,
+    href: "/admin/download-mirrors",
+    match: (p) => p.startsWith("/admin/download-mirrors"),
+  },
 ];
 
 export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] {
@@ -173,31 +178,53 @@ export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] 
   return [];
 }
 
+/** True when this route belongs to the item's section, children included. */
+export function inSection(pathname: string, item: NavItem): boolean {
+  const roots = item.family ?? [item.href];
+  return roots.some((root) => linkActive(pathname, root, item.exact));
+}
+
+/**
+ * The section owning this route, if it has a subnav.
+ *
+ * First match wins: sections never overlap, and resolving one owner is what
+ * lets the second row show a single section's children rather than every
+ * section's at once.
+ */
+export function activeSection(pathname: string, gameSlug: string | null) {
+  for (const item of links) {
+    const children = childrenFor(item, gameSlug);
+    if (children.length > 0 && inSection(pathname, item)) {
+      return { item, children };
+    }
+  }
+  return null;
+}
+
 function NavPill({
   href,
   label,
   icon: Icon,
   active,
-  nested,
+  sub,
 }: {
   href: string;
   label: string;
   icon: LucideIcon;
   active: boolean;
-  nested?: boolean;
+  sub?: boolean;
 }) {
+  const base = sub
+    ? "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-semibold transition-colors"
+    : "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors";
+  const tone = active
+    ? sub
+      ? "bg-secondary text-foreground"
+      : "bg-primary text-primary-foreground"
+    : "text-muted-foreground hover:bg-secondary hover:text-foreground";
   return (
-    <Link
-      href={href}
-      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
-        nested ? "ml-1" : ""
-      } ${
-        active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-      }`}
-    >
-      <Icon className="size-3.5" />
+    <Link href={href} className={`${base} ${tone}`}>
+      <Icon className={sub ? "size-3" : "size-3.5"} />
       {label}
     </Link>
   );
@@ -206,43 +233,43 @@ function NavPill({
 export function AdminNav() {
   const pathname = usePathname();
   const gameSlug = gameSlugFromPath(pathname);
+  const section = activeSection(pathname, gameSlug);
 
   return (
     <nav className="border-b border-border bg-card/40">
       <div className="flex gap-1 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
-        {links.map((item) => {
-          const children = childrenFor(item, gameSlug);
-          const roots = item.family ?? [item.href];
-          const inSection = roots.some((root) => linkActive(pathname, root));
-          const onChild = children.some((child) => child.match(pathname));
-          // The parent reads as active only when you are on the parent itself.
-          // Landing on a child lights the child instead, so exactly one pill
-          // in the section is ever highlighted.
-          const parentActive = linkActive(pathname, item.href, item.exact) && !onChild;
-
-          return (
-            <div key={item.href + item.label} className="flex shrink-0 items-center gap-1">
-              <NavPill
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                active={parentActive}
-              />
-              {inSection &&
-                children.map((child) => (
-                  <NavPill
-                    key={`${item.href}-${child.label}`}
-                    href={child.href}
-                    label={child.label}
-                    icon={child.icon}
-                    active={child.match(pathname)}
-                    nested
-                  />
-                ))}
-            </div>
-          );
-        })}
+        {links.map((item) => (
+          <NavPill
+            key={item.href + item.label}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            // The section stays lit while you are anywhere inside it; the row
+            // below says which page.
+            active={inSection(pathname, item)}
+          />
+        ))}
       </div>
+
+      {/*
+        Second row, not more pills on the first. Children of the section you
+        are in only, so the top row stays a stable list of sections rather
+        than growing and reordering as you navigate.
+      */}
+      {section && (
+        <div className="flex gap-1 overflow-x-auto border-t border-border/60 bg-background/40 px-4 py-1.5 sm:px-6 lg:px-8">
+          {section.children.map((child) => (
+            <NavPill
+              key={`${section.item.href}-${child.label}`}
+              href={child.href}
+              label={child.label}
+              icon={child.icon}
+              active={child.match(pathname)}
+              sub
+            />
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

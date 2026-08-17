@@ -1,10 +1,18 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Activity } from "lucide-react";
 import { AdminOpsConsole } from "@/components/admin/AdminOpsConsole";
+import { FailureRateCard } from "@/components/admin/FailureRateCard";
 import { familyForArea, type OpsFamily } from "@/lib/admin/opsEvents";
+import { getFailureRates } from "@/lib/admin/failureRates";
 
 export const metadata: Metadata = { title: "Admin · Ops" };
+
+async function FailureRateSection() {
+  const rates = await getFailureRates();
+  return <FailureRateCard rates={rates} />;
+}
 
 export default async function AdminOpsPage({
   searchParams,
@@ -33,6 +41,11 @@ export default async function AdminOpsPage({
           Live launcher and party events. Failures also land on Bugs; health lights on Games are the triage signal.
         </p>
       </div>
+      {/* Aggregates 30 days of telemetry, so it must not hold up the live feed. */}
+      <Suspense fallback={<div className="h-40 animate-pulse rounded-xl border border-border bg-card/40" />}>
+        <FailureRateSection />
+      </Suspense>
+
       <AdminOpsConsole initialFamily={family} initialGame={params.game || ""} />
     </div>
   );
