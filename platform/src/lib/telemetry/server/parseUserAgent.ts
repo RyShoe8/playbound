@@ -8,19 +8,63 @@ export interface ParsedUserAgent {
   device: string;
 }
 
+/** Display names for the platform tokens the launcher reports. */
+const LAUNCHER_OS: Record<string, string> = {
+  windows: "Windows",
+  win32: "Windows",
+  macos: "macOS",
+  darwin: "macOS",
+  linux: "Linux",
+};
+
+/**
+ * The desktop app's own User-Agent, e.g.
+ * `playbound-launcher/0.2.12 (windows; x64)`.
+ *
+ * It carries no browser token and spells the platform in lowercase without
+ * "Windows NT", so the browser rules below all miss and the OS rules only ever
+ * matched Linux, by accident. Every launcher event was landing as
+ * "unknown · unknown · desktop". Parsed here instead, before the browser
+ * heuristics get a chance to guess.
+ */
+/** Display name for a launcher `platform` value, or null if unrecognised. */
+export function launcherOsLabel(platform: unknown): string | null {
+  if (typeof platform !== "string" || !platform.trim()) return null;
+  const token = platform.trim().toLowerCase();
+  return LAUNCHER_OS[token] || token;
+}
+
+export function parseLauncherUserAgent(raw: string): ParsedUserAgent | null {
+  const match = raw.match(/^playbound-launcher\/\S+\s*\(([^;)]+)/i);
+  if (!match) return null;
+  const token = match[1].trim().toLowerCase();
+  return {
+    browser: "Launcher",
+    os: LAUNCHER_OS[token] || token || "unknown",
+    device: "desktop",
+  };
+}
+
 export function parseUserAgent(ua: string | null | undefined): ParsedUserAgent {
   const raw = (ua || "").trim();
   if (!raw) {
     return { browser: "unknown", os: "unknown", device: "unknown" };
   }
 
+  const launcher = parseLauncherUserAgent(raw);
+  if (launcher) return launcher;
+
   let os = "unknown";
   if (/Windows NT/i.test(raw)) os = "Windows";
-  else if (/Mac OS X|Macintosh/i.test(raw)) os = "macOS";
-  else if (/Android/i.test(raw)) os = "Android";
+  // iOS before macOS: an iPhone's agent says "like Mac OS X", so the macOS
+  // rule matched first and every iPhone was recorded as a Mac. (An iPad on
+  // iPadOS 13+ genuinely claims "Macintosh" and is not distinguishable here.)
   else if (/iPhone|iPad|iPod/i.test(raw)) os = "iOS";
-  else if (/Linux/i.test(raw)) os = "Linux";
+  // Android before Linux for the same reason — Android agents say "Linux".
+  else if (/Android/i.test(raw)) os = "Android";
+  else if (/Mac OS X|Macintosh/i.test(raw)) os = "macOS";
   else if (/CrOS/i.test(raw)) os = "Chrome OS";
+  else if (/Linux/i.test(raw)) os = "Linux";
 
   let browser = "unknown";
   if (/Edg\//i.test(raw)) browser = "Edge";
