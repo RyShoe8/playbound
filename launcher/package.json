@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
@@ -18,7 +18,8 @@
     "dist:mac": "electron-builder --mac --universal",
     "verify:signatures": "node scripts/verify-signatures.js",
     "signing:status": "node scripts/signing-status.js",
-    "dist:linux": "electron-builder --linux AppImage"
+    "dist:linux": "electron-builder --linux AppImage",
+    "test:cache": "node renderer/cache.test.mjs"
   },
   "author": "PlayBound",
   "license": "MIT",
