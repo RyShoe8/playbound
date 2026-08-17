@@ -322,10 +322,36 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
     }
   }
   if (!sourceUrl) {
-    const source = await MirrorSource.findOne({
+    let source = await MirrorSource.findOne({
       artifactId: artifact.artifactId,
       sourceType: "public",
+      url: { $regex: "^https://", $options: "i" },
     }).sort({ priority: 1, createdAt: 1 });
+
+    /*
+     * Early launcher telemetry used a shared source id. The source table can
+     * therefore hold the right public URL under a historic artifact id while
+     * the artifact table has already been corrected to the actual file id.
+     * Recover only within the same game and exact filename: no mirror record
+     * is written, and a different game's source can never be selected.
+     */
+    if (!source && artifact.gameSlug && artifact.filename) {
+      const siblings = await Artifact.find({
+        gameSlug: artifact.gameSlug,
+        filename: artifact.filename,
+      }).select("artifactId").lean();
+      const siblingIds = siblings
+        .map((item) => String(item.artifactId || ""))
+        .filter(Boolean);
+      if (siblingIds.length > 0) {
+        source = await MirrorSource.findOne({
+          artifactId: { $in: siblingIds },
+          sourceType: "public",
+          url: { $regex: "^https://", $options: "i" },
+        }).sort({ priority: 1, createdAt: 1 });
+        if (source) sourceLabel = "recorded public source";
+      }
+    }
     const candidate = String(source?.url || "").trim();
     if (!candidate.startsWith("https://")) {
       return { success: false, message: "There is no file available to move: this artifact is not physically in R2 and no direct HTTPS download source was recorded." };
