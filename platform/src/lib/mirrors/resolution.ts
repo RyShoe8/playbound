@@ -37,14 +37,15 @@ export interface ResolvedDownloadResponse {
  * If public mirror is failing/offline (priority 0), it is demoted to last.
  */
 export async function resolveDownloadSources(
-  artifactIdOrSlug: string
+  artifactIdOrSlug: string,
+  options: { allowGameSlugFallback?: boolean } = {}
 ): Promise<ResolvedDownloadResponse | null> {
   await dbConnect();
   const settings = await getMirrorSettings();
 
   // Find artifact by ID, or fallback by gameSlug / filename
   let artifact = await Artifact.findOne({ artifactId: artifactIdOrSlug });
-  if (!artifact) {
+  if (!artifact && options.allowGameSlugFallback !== false) {
     artifact = await Artifact.findOne({ gameSlug: artifactIdOrSlug }).sort({ createdAt: -1 });
   }
 

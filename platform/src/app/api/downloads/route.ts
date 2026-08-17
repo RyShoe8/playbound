@@ -13,7 +13,12 @@ export async function GET(req: Request) {
 
     if (artifactId || slug) {
       const target = artifactId || slug!;
-      const result = await resolveDownloadSources(target);
+      // An artifact ID names one exact file. Falling back to its game slug here
+      // can substitute a different edition's cached archive for the selected
+      // edition.
+      const result = await resolveDownloadSources(target, {
+        allowGameSlugFallback: !artifactId,
+      });
       if (!result) {
         return NextResponse.json({ error: "Download artifact not found" }, { status: 404 });
       }
