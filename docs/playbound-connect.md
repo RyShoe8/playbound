@@ -13,7 +13,7 @@ Declared per game in [`platform/src/lib/multiplayer/adapters.ts`](../platform/sr
 | Adapter | What happens |
 |---|---|
 | `managed-server` | Party Join Game provisions a dedicated process on the VPS. Launcher applies CLI connect args. |
-| `virtual-lan` | LAN-discovery-only games (HoloCure). Party shares one ZeroTier segment; the game finds its own peers. |
+| `virtual-lan` | LAN-discovery-only games (HoloCure). Party shares one self-hosted NetBird segment; the game finds its own peers. |
 | `playbound-native` | Custom P2P transport with room codes + STUN/TURN on the VPS. In-game join. No game ships on this today. |
 | `direct-ip` | CLI join to an address PlayBound already knows. Not auto-provisioned unless the slug is also in `HOSTABLE_GAMES`. |
 | `official` | Party presence and launch only. The game's own network stays theirs (CS2, Valorant, LoL, …). |
@@ -37,40 +37,73 @@ If `connectArgs` is `null` (Hedgewars), the launcher sets `manualConnect` and co
 ## Join Game → virtual LAN
 
 A `virtual-lan` game has no server to spawn and no address to pass. It finds peers by
-broadcasting on the local network, so Connect supplies the network instead.
+broadcasting on the local network, so Connect supplies the network instead. NetBird,
+self-hosted on our own VPS — no per-device cost, no account limits, and the setup keys
+stay ours.
+
+One party maps onto three NetBird objects: a **group** holding the party's peers, a
+**policy** letting that group talk to itself and nothing else, and an **ephemeral,
+usage-limited setup key** that enrols a machine straight into the group. Ephemeral
+matters: NetBird drops those peers itself when they go offline, so a party that ends
+badly cannot strand machines on a segment.
 
 ```
 POST /api/parties/:id/join-game
-  → provisionPartyLan()  — ZeroTier Central creates a private per-party network
-  → party.lan = { networkId, status }
+  → provisionPartyLan()  — creates group + policy + setup key
+  → party.lan = { groupId, policyId, setupKeyId, setupKey, status }
   → launcher prepare-virtual-lan:
-      zerotier-cli info        → this machine's node id
-      zerotier-cli join <nwid>
-      POST /api/parties/:id/lan { nodeId }   → controller authorizes the node
+      netbird status                → installed? connected? elevated?
+      POST /api/parties/:id/lan     → { managementUrl, setupKey }
+      netbird up --management-url … --setup-key …
       wait for the adapter, resolve its Windows friendly name
       write that name into the game's adapterFile
   → player: Play → Multiplayer → use saved adapter → Host/Join LAN Session
 ```
 
-Why ZeroTier and not WireGuard/Tailscale: discovery here is UDP broadcast, and only an L2
-overlay carries broadcast. That is what `virtualLan.requiresBroadcast` records.
+The setup key never rides along on the party payload. It enrols a machine, so it goes
+out through one authenticated call to a confirmed member — which is why
+`lanPayloadFromDoc` deliberately omits it.
 
 The last step stays manual on purpose — the mod has no CLI and no config for
 host/join, so the launcher gets the player as far as the adapter and stops.
 
+### The broadcast gap — read before trusting this end to end
+
+HoloCure's discovery, read from the mod's own source (`Button.cpp`, `CodeEvents.cpp`):
+
+- both ends `bind(INADDR_ANY:27015)` UDP, so they receive regardless of destination
+- the client sends `"From1"` to the **subnet-directed** broadcast of the chosen
+  adapter, computed as `ip | ~mask` from that interface's own prefix
+- the host answers `"From2"` to its own subnet broadcast
+- the client takes the **source address** of that reply as the host, and connects
+
+Everything after the handshake is unicast. Broadcast is only ever used to exchange
+addresses. But NetBird is WireGuard — it routes, it does not replicate — so a packet
+to `100.x.255.255` reaches nobody and neither side ever learns the other's address.
+`virtualLan.requiresBroadcast` on the adapter row records this requirement.
+
+Closing that gap needs one more piece: a reflector on the VPS that receives the 5-byte
+discovery packets and re-emits them to the party's other peers **with the original
+source address preserved** — the client identifies the host by that source, so a
+reflector that rewrote it would point everyone at the VPS instead. The VPS is Linux,
+so a raw socket can do it. **Not built yet.**
+
+Run the two-machine test before assuming any of this works end to end.
+
 Key files:
 
-- [`platform/src/lib/virtualLan/client.ts`](../platform/src/lib/virtualLan/client.ts) — ZeroTier Central API
-- [`platform/src/lib/virtualLan/provision.ts`](../platform/src/lib/virtualLan/provision.ts) — attach/release, authorize a node
-- [`platform/src/app/api/parties/[id]/lan/route.ts`](../platform/src/app/api/parties/[id]/lan/route.ts) — node authorization
-- [`launcher/services/virtualLan.js`](../launcher/services/virtualLan.js) — CLI, join, adapter name, adapter file
+- [`platform/src/lib/virtualLan/client.ts`](../platform/src/lib/virtualLan/client.ts) — NetBird management API
+- [`platform/src/lib/virtualLan/provision.ts`](../platform/src/lib/virtualLan/provision.ts) — attach/release, enrolment details
+- [`platform/src/app/api/parties/[id]/lan/route.ts`](../platform/src/app/api/parties/[id]/lan/route.ts) — hands a member the setup key
+- [`launcher/services/virtualLan.js`](../launcher/services/virtualLan.js) — CLI, enrol, adapter name, adapter file
 
-Needs `ZEROTIER_API_TOKEN`. Without it `provisionPartyLan` no-ops and the party still
-forms — same soft-fail contract as a down VPS.
+Needs `NETBIRD_API_URL` (management API, e.g. `https://netbird.playbound.club/api`) and
+`NETBIRD_API_TOKEN` (service-user PAT). Without them `provisionPartyLan` no-ops and the
+party still forms — same soft-fail contract as a down VPS.
 
-On the player's machine the ZeroTier client must be installed, and its CLI reads a
-secret only an administrator can open, so an unelevated launcher gets
-`needsElevation` back rather than a network.
+On the player's machine the NetBird client must be installed, and its CLI talks to a
+privileged service, so an unelevated launcher gets `needsElevation` back rather than a
+network.
 
 Key files:
 

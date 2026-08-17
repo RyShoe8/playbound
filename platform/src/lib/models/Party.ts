@@ -35,20 +35,29 @@ const PartyHostedSchema = new Schema(
 );
 
 /**
- * Overlay network for `virtual-lan` games, which have no address to connect
- * to and find each other by broadcast instead. Node IDs are the members'
- * machines that have been let onto the segment.
+ * Overlay segment for `virtual-lan` games, which have no address to connect to
+ * and find each other by broadcast instead.
+ *
+ * One NetBird group per party, one policy scoping traffic to that group, and
+ * an ephemeral setup key that enrols a member's machine straight into it. The
+ * key is a credential — it is handed out through an authenticated per-member
+ * call, never through the party payload.
  */
 const PartyLanSchema = new Schema(
   {
-    networkId: { type: String, default: null },
+    groupId: { type: String, default: null },
+    policyId: { type: String, default: null },
+    setupKeyId: { type: String, default: null },
+    // Not `select: false` — provisioning, enrolment and release all read it,
+    // and a silently-absent field there fails as "no virtual LAN". It is kept
+    // out of responses by `lanPayloadFromDoc` omitting it instead.
+    setupKey: { type: String, default: null },
     status: {
       type: String,
       enum: ["none", "pending", "ready", "failed"],
       default: "none",
     },
     error: { type: String, default: null },
-    authorizedNodeIds: { type: [String], default: [] },
     provisionedAt: { type: Date, default: null },
   },
   { _id: false }
@@ -214,10 +223,12 @@ export type PartyDoc = {
     provisionedAt?: Date | null;
   };
   lan?: {
-    networkId?: string | null;
+    groupId?: string | null;
+    policyId?: string | null;
+    setupKeyId?: string | null;
+    setupKey?: string | null;
     status?: string;
     error?: string | null;
-    authorizedNodeIds?: string[];
     provisionedAt?: Date | null;
   };
   lastActivity: Date;

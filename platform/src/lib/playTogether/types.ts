@@ -183,7 +183,6 @@ export type PartyPayload = {
   lan: {
     enabled: boolean;
     status: "none" | "pending" | "ready" | "failed";
-    networkId: string | null;
     adapterFile: string | null;
     steps: string[];
     error: string | null;

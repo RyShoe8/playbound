@@ -7504,39 +7504,42 @@ function resolveGameDirForSlug(slug, editionSlug = null) {
  * Put this machine on a party's overlay segment and point the game at it.
  *
  * The whole sequence lives in one handler because every step is useless
- * without the next: joining without authorization never brings the adapter
- * up, and an adapter nobody wrote into the game's saved-adapter file leaves
- * the player picking from a dropdown anyway. Each failure returns a reason
- * the party window can show verbatim rather than a bare false.
+ * without the next: enrolling without the party's setup key lands the machine
+ * on no segment, and an adapter nobody wrote into the game's saved-adapter
+ * file leaves the player picking from a dropdown anyway. Each failure returns
+ * a reason the party window can show verbatim rather than a bare false.
  */
 ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
-  const { partyId, networkId, slug, adapterFile } = opts || {};
+  const { partyId, slug, adapterFile } = opts || {};
   try {
     const status = await virtualLan.overlayStatus();
     if (!status.installed) {
       return {
-        error: "PlayBound Connect needs the ZeroTier network client for this game.",
+        error: "PlayBound Connect needs the NetBird network client for this game.",
         needsInstall: true,
         downloadUrl: status.downloadUrl,
       };
     }
-    if (!status.ready) {
+    if (status.error) {
       return {
-        error: status.error || "The network client is not responding.",
+        error: status.error,
         needsElevation: Boolean(status.needsElevation),
         downloadUrl: status.downloadUrl,
       };
     }
 
-    const joined = await virtualLan.joinNetwork(networkId);
-    if (joined.error) return { error: joined.error };
-
-    // The site authorizes this node; until it does, the adapter stays down.
-    const authorized = await launcherJson(
+    /*
+     * The setup key is fetched rather than carried in the party payload — it
+     * enrols a machine, so it only ever travels to a confirmed member.
+     */
+    const enrollment = await launcherJson(
       `/api/parties/${encodeURIComponent(partyId)}/lan`,
-      { method: "POST", body: { nodeId: status.nodeId } }
+      { method: "POST" }
     );
-    if (authorized?.error) return { error: authorized.error };
+    if (enrollment?.error) return { error: enrollment.error };
+
+    const joined = await virtualLan.joinNetwork(enrollment);
+    if (joined.error) return { error: joined.error };
 
     const adapterName = await virtualLan.waitForAdapter();
     if (!adapterName) {

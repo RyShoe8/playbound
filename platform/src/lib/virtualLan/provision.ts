@@ -1,5 +1,5 @@
 /**
- * Attach / release a party's overlay network.
+ * Attach / release a party's overlay segment.
  *
  * Mirrors `gameHost/provision.ts` deliberately: same soft-fail contract, same
  * status vocabulary, so Join Game treats "the VPS is down" and "the overlay is
@@ -9,11 +9,11 @@
 
 import type { Document } from "mongoose";
 import {
-  authorizeLanMember,
-  createLanNetwork,
-  deleteLanNetwork,
-  isValidNodeId,
+  createPartyNetwork,
+  deletePartyNetwork,
   isVirtualLanConfigured,
+  managementUrl,
+  type NetBirdParty,
 } from "./client";
 import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
@@ -21,18 +21,16 @@ import { markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
 
-export type PartyLanFields = {
-  networkId?: string | null;
+export type PartyLanFields = Partial<NetBirdParty> & {
   status?: PartyLanStatus;
   error?: string | null;
-  /** Node IDs already let onto the segment, so re-joins are cheap. */
-  authorizedNodeIds?: string[];
   provisionedAt?: Date | null;
 };
 
 type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
+  maxSize?: number;
   lan?: PartyLanFields;
   save: () => Promise<unknown>;
 };
@@ -49,16 +47,17 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   if (!isVirtualLanGame(slug)) return false;
 
   const lan = ensureLan(party);
-  if (lan.status === "ready" && lan.networkId) return true;
+  if (lan.status === "ready" && lan.setupKey) return true;
   if (!isVirtualLanConfigured()) return false;
 
   lan.status = "pending";
   lan.error = null;
   await party.save();
 
-  const result = await createLanNetwork({
-    name: `PlayBound ${slug}`.slice(0, 40),
+  const result = await createPartyNetwork({
     partyId: String(party._id),
+    name: `PlayBound ${slug}`.slice(0, 40),
+    maxPeers: Number(party.maxSize) || 8,
   });
 
   if ("error" in result) {
@@ -75,52 +74,43 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   }
 
   lan.status = "ready";
-  lan.networkId = result.networkId;
-  lan.authorizedNodeIds = [];
+  lan.groupId = result.groupId;
+  lan.policyId = result.policyId;
+  lan.setupKeyId = result.setupKeyId;
+  lan.setupKey = result.setupKey;
   lan.error = null;
   lan.provisionedAt = new Date();
   await party.save();
   trackPartyEvent("party_lan_ready", {
     partyId: String(party._id),
     gameSlug: slug,
-    networkId: result.networkId,
+    groupId: result.groupId,
   });
   return true;
 }
 
 /**
- * Let a member's machine onto the party's segment.
+ * The credentials a member's launcher needs to enrol.
  *
- * The launcher calls this once it knows its own node ID, which it only learns
- * after the overlay client is installed and running — so this is a separate
- * step from provisioning rather than part of it.
+ * Deliberately not part of the party payload: the setup key enrols a machine
+ * onto the segment, so it goes out through one authenticated call to a
+ * confirmed member rather than riding along on every party read.
  */
-export async function authorizePartyLanNode(
-  party: PartyLike,
-  nodeId: string
-): Promise<{ networkId: string } | { error: string }> {
+export function partyLanEnrollment(
+  party: PartyLike
+): { managementUrl: string; setupKey: string } | { error: string } {
   const lan = party.lan;
-  if (!lan?.networkId || lan.status !== "ready") {
+  if (!lan?.setupKey || lan.status !== "ready") {
     return { error: "This party has no virtual LAN" };
   }
-  if (!isValidNodeId(nodeId)) {
-    return { error: "That does not look like a network node ID" };
-  }
-
-  const already = (lan.authorizedNodeIds || []).includes(nodeId);
-  if (already) return { networkId: lan.networkId };
-
-  const res = await authorizeLanMember(lan.networkId, nodeId);
-  if ("error" in res) return { error: res.error };
-
-  lan.authorizedNodeIds = [...(lan.authorizedNodeIds || []), nodeId];
-  await party.save();
-  return { networkId: lan.networkId };
+  const url = managementUrl();
+  if (!url) return { error: "Virtual LAN is not configured" };
+  return { managementUrl: url, setupKey: lan.setupKey };
 }
 
 export async function releasePartyLan(party: PartyLike): Promise<void> {
   const lan = party.lan;
-  if (!lan?.networkId) {
+  if (!lan?.groupId && !lan?.setupKeyId) {
     if (lan) {
       lan.status = "none";
       lan.error = null;
@@ -128,10 +118,12 @@ export async function releasePartyLan(party: PartyLike): Promise<void> {
     return;
   }
 
-  await deleteLanNetwork(lan.networkId);
-  lan.networkId = null;
+  await deletePartyNetwork(lan);
+  lan.groupId = null as unknown as undefined;
+  lan.policyId = null as unknown as undefined;
+  lan.setupKeyId = null as unknown as undefined;
+  lan.setupKey = null as unknown as undefined;
   lan.status = "none";
-  lan.authorizedNodeIds = [];
   lan.error = null;
 }
 
@@ -139,6 +131,8 @@ export async function releasePartyLan(party: PartyLike): Promise<void> {
  * What the launcher and the party window need to show. Carries the in-game
  * steps with it, because on a virtual-LAN game the player always has some
  * clicking left to do and hiding that makes it look broken.
+ *
+ * No setup key here — see `partyLanEnrollment`.
  */
 export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null) {
   const config = getVirtualLanConfig(gameSlug);
@@ -146,7 +140,6 @@ export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null)
     return {
       enabled: false,
       status: "none" as PartyLanStatus,
-      networkId: null,
       adapterFile: null,
       steps: [],
       error: null,
@@ -155,7 +148,6 @@ export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null)
   return {
     enabled: true,
     status: (lan?.status as PartyLanStatus) || "none",
-    networkId: lan?.networkId || null,
     // The launcher writes the overlay adapter's name here so the player can
     // take the "use saved adapter" path instead of hunting a dropdown.
     adapterFile: config.adapterFile || null,
