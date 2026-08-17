@@ -3,6 +3,7 @@ import {
   api,
   buildActivityPanelHtml,
   CACHE_TTL,
+  cacheInvalidate,
   cacheInvoke,
   cachePeek,
   editionsContextSlug,
@@ -154,9 +155,170 @@ function classifyMediaUrl(src) {
   return { kind: "direct", src: url };
 }
 
-async function renderGameDetailView(slug) {
+const QUALITY_BAR = [
+  { key: "noPayToWin", label: "No Pay-to-Win", desc: "No microtransactions affecting balance" },
+  { key: "nativeBuild", label: "Native PC Build", desc: "Native desktop build without emulation" },
+  { key: "activeMultiplayer", label: "Active Community", desc: "Active servers or online community" },
+  { key: "noDrm", label: "No DRM", desc: "No restrictive DRM or telemetry" },
+  { key: "steamDeckFriendly", label: "Linux / Steam Deck", desc: "Runs on Steam Deck or Linux" },
+  { key: "cleanInstall", label: "Clean Install", desc: "No bloatware, adware, or account gates" },
+];
+
+function buildQualityBarHtml(bar) {
+  if (!bar || typeof bar !== "object") return "";
+  const passedCount = QUALITY_BAR.filter((c) => bar[c.key]).length;
+  const total = QUALITY_BAR.length;
+  return `
+    <section class="quality-bar-panel">
+      <div class="quality-bar-header">
+        <div class="quality-bar-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>The PlayBound Bar</span>
+        </div>
+        <span class="quality-bar-badge">${passedCount} of ${total} met</span>
+      </div>
+      <div class="quality-bar-grid">
+        ${QUALITY_BAR.map((c) => {
+          const pass = Boolean(bar[c.key]);
+          return `
+            <div class="quality-bar-item ${pass ? "passed" : ""}" title="${escapeHtml(c.desc)}">
+              <span class="${pass ? "quality-bar-icon-pass" : "quality-bar-icon-fail"}">${pass ? "✓" : "✕"}</span>
+              <span>${escapeHtml(c.label)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function buildOverviewSidebarHtml(detail, slug) {
+  const dev = detail.developer || detail.developerName || "Independent";
+  const pub = detail.publisher || "—";
+  const release = detail.releaseYear || detail.releaseDate || "—";
+  const license = detail.license || "Free";
+  const platforms = Array.isArray(detail.platforms)
+    ? detail.platforms.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(", ")
+    : "Windows";
+  const mp = (detail.isMultiplayer ?? detail.multiplayer) ? "Yes (Multiplayer)" : "Singleplayer";
+  const controller = detail.controllerSupport || "Supported";
+  const cloudSaves = detail.cloudSaves ? "Supported" : "Local Backup";
+
+  return `
+    <aside class="detail-overview-sidebar">
+      <div class="detail-sidebar-card">
+        <div class="detail-sidebar-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
+          <span>Game Details</span>
+        </div>
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Developer</span>
+          <span class="detail-sidebar-val">${escapeHtml(dev)}</span>
+        </div>
+        ${pub !== "—" ? `
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Publisher</span>
+          <span class="detail-sidebar-val">${escapeHtml(pub)}</span>
+        </div>` : ""}
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Release</span>
+          <span class="detail-sidebar-val">${escapeHtml(String(release))}</span>
+        </div>
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">License</span>
+          <span class="detail-sidebar-val">${escapeHtml(license)}</span>
+        </div>
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Platforms</span>
+          <span class="detail-sidebar-val">${escapeHtml(platforms)}</span>
+        </div>
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Multiplayer</span>
+          <span class="detail-sidebar-val">${escapeHtml(mp)}</span>
+        </div>
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Controller</span>
+          <span class="detail-sidebar-val">${escapeHtml(controller)}</span>
+        </div>
+        <div class="detail-sidebar-row">
+          <span class="detail-sidebar-label">Save Backups</span>
+          <span class="detail-sidebar-val">${escapeHtml(cloudSaves)}</span>
+        </div>
+      </div>
+
+      <div class="detail-sidebar-card">
+        <div class="detail-sidebar-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span>Links & Community</span>
+        </div>
+        <div class="detail-sidebar-links">
+          ${detail.website ? `
+          <button class="detail-sidebar-link-btn" type="button" id="sidebar-link-website">
+            <span>🌐 Official Website</span>
+            <span>↗</span>
+          </button>` : ""}
+          ${detail.discord || detail.discordInvite ? `
+          <button class="detail-sidebar-link-btn" type="button" id="sidebar-link-discord">
+            <span>💬 Discord Community</span>
+            <span>↗</span>
+          </button>` : ""}
+          ${detail.githubRepo ? `
+          <button class="detail-sidebar-link-btn" type="button" id="sidebar-link-github">
+            <span>💻 GitHub Repository</span>
+            <span>↗</span>
+          </button>` : ""}
+          <button class="detail-sidebar-link-btn" type="button" id="sidebar-link-playbound">
+            <span>🚀 View on playbound.club</span>
+            <span>↗</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  `;
+}
+
+function buildInstallStepsHtml(detail) {
+  let steps = Array.isArray(detail.installSteps) && detail.installSteps.length > 0 ? detail.installSteps : null;
+  if (!steps) {
+    steps = [
+      {
+        platform: "all",
+        text: `Click "Install Game" in the PlayBound Launcher to automatically download and verify all required packages for ${detail.title || "this title"}.`,
+      },
+      {
+        platform: "all",
+        text: `PlayBound will safely extract and configure the installation folder in your chosen games directory.`,
+      },
+      {
+        platform: "all",
+        text: `Once setup finishes, the button switches to "Play Now" so you can jump straight into the game.`,
+      },
+    ];
+  }
+  return `
+    <div class="install-steps-list">
+      ${steps.map((step, i) => `
+        <div class="install-step-card">
+          <div class="install-step-num">${i + 1}</div>
+          <div class="install-step-content">
+            ${step.platform && step.platform !== "all" ? `<div class="install-step-platform">${escapeHtml(step.platform)}</div>` : ""}
+            <div class="install-step-text">${escapeHtml(step.text || "")}</div>
+            ${step.command ? `<pre class="install-step-cmd"><code>${escapeHtml(step.command)}</code></pre>` : ""}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+async function renderGameDetailView(slug, opts = {}) {
   state.currentDetailSlug = slug;
   const container = views.gameDetail;
+  const force = Boolean(opts?.force);
+  if (force) {
+    cacheInvalidate(`game:${slug}`);
+    cacheInvalidate(`editions:${slug}`);
+  }
   if (!cachePeek(`game:${slug}`, CACHE_TTL.gameDetail)) {
     container.innerHTML = `<p class="view-sub">Loading game details...</p>`;
   }
@@ -216,8 +378,10 @@ async function renderGameDetailView(slug) {
 
   const whyHtml = detail.whyWePickedIt
     ? `<section class="detail-section">
-        <h2 class="detail-section-title">Why we picked it</h2>
-        <p class="detail-prose">${escapeHtml(detail.whyWePickedIt)}</p>
+        <div class="detail-why-card">
+          <div class="detail-why-title">Why we picked it</div>
+          <p class="detail-prose">${escapeHtml(detail.whyWePickedIt)}</p>
+        </div>
       </section>`
     : "";
 
@@ -230,30 +394,22 @@ async function renderGameDetailView(slug) {
   const fitHtml =
     bestForItems || notForItems
       ? `<section class="detail-section">
-          <h2 class="detail-section-title">Best for</h2>
+          <h2 class="detail-section-title">Who it's for</h2>
           <div class="fit-grid">
             ${
               bestForItems
-                ? `<div><div class="req-label">Great when…</div><ul class="feature-list">${bestForItems}</ul></div>`
+                ? `<div class="fit-card great"><div class="fit-card-label">✓ Great when…</div><ul>${bestForItems}</ul></div>`
                 : ""
             }
             ${
               notForItems
-                ? `<div><div class="req-label">Skip if…</div><ul class="feature-list">${notForItems}</ul></div>`
+                ? `<div class="fit-card skip"><div class="fit-card-label">✕ Skip if…</div><ul>${notForItems}</ul></div>`
                 : ""
             }
           </div>
         </section>`
       : "";
 
-  /*
-   * No pre-selected edition when there is a real choice.
-   *
-   * Editions are not cosmetic — Project Quarm and EverQuest Live are different
-   * servers, vanilla and Rat King Adventure are different games. Defaulting the
-   * picker meant Install silently committed to whichever happened to be marked
-   * default, which is the wrong call to make on someone's behalf.
-   */
   const editionPickerOptions = [
     `<option value="" selected>Choose an edition…</option>`,
     ...editions.map(
@@ -264,15 +420,33 @@ async function renderGameDetailView(slug) {
     ),
   ].join("");
 
-  container.innerHTML = `
-    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 12px">← Back</button>
+  const genreFirst = (detail.genres || ["game"])[0]?.toLowerCase() || "game";
+  const reqGridHtml = detail.systemRequirements
+    ? `<div class="req-grid">
+        <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
+        <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
+      </div>`
+    : "";
 
-    <section class="detail-hero">
-      ${coverHtml}
-      <div class="detail-hero-copy">
-        <div class="chip-row">${genreChips}${(detail.isMultiplayer ?? detail.multiplayer) ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
-        <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
-        <p class="view-sub detail-hero-sub">${escapeHtml(detail.blurb)} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+  container.innerHTML = `
+    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 14px">← Back</button>
+
+    <!--
+      Mirrors the website's game hero: the art fills the band, a scrim keeps
+      the type readable over it, and the copy sits bottom-left with the
+      actions bottom-right. Kept structurally identical to the web page so
+      the two can be changed together rather than drifting apart.
+    -->
+    <section class="detail-hero" style="${
+      coverUrl ? `background-image:url('${escapeHtml(coverUrl)}')` : `background:${bgGrad}`
+    }">
+      <div class="detail-hero-scrim"></div>
+      <div class="detail-hero-inner">
+        <div class="detail-hero-copy">
+          <div class="chip-row">${genreChips}${(detail.isMultiplayer ?? detail.multiplayer) ? '<span class="chip chip-accent">Multiplayer</span>' : ""}${detail.testing ? '<span class="chip chip-accent">Testing</span>' : ""}${playingChip}</div>
+          <h1 class="detail-hero-title">${escapeHtml(detail.title)}</h1>
+          <p class="detail-hero-sub">${escapeHtml(detail.blurb || "")} · ${escapeHtml(detail.approxSize || "")}${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+        </div>
         <div class="detail-hero-actions" id="detail-actions"></div>
       </div>
     </section>
@@ -291,64 +465,84 @@ async function renderGameDetailView(slug) {
     </nav>
 
     <div class="detail-tab-panels">
+      <!-- ── Overview Tab ────────────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
         ${buildActivityPanelHtml(liveStats)}
-        ${
-          editions.length > 1
-            ? `<section class="detail-section" id="detail-editions-sec">
-                 <h2 class="detail-section-title">Editions</h2>
-                 <div class="editions-list" id="detail-editions-list"></div>
-               </section>`
-            : ""
-        }
-        <section class="detail-section">
-          <h2 class="detail-section-title">About</h2>
-          <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
-        </section>
-        ${whyHtml}
-        ${fitHtml}
-        ${
-          featureItems
-            ? `<section class="detail-section"><h2 class="detail-section-title">Features</h2><ul class="feature-list">${featureItems}</ul></section>`
-            : ""
-        }
-        <section class="detail-section" id="detail-hw-compat">
-          <h2 class="detail-section-title">Will this run on your PC?</h2>
-          <p class="view-sub" id="detail-hw-compat-body">Checking…</p>
-        </section>
-        ${
-          detail.systemRequirements
-            ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
-            <div class="req-grid">
-              <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
-              <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
-            </div></section>`
-            : ""
-        }
-        ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
-        <p class="view-sub"><a href="#" id="detail-open-site">Open full page on playbound.club</a></p>
+        
+        <div class="detail-overview-grid">
+          <div class="detail-overview-main">
+            ${buildQualityBarHtml(detail.qualityBar)}
+
+            ${
+              editions.length > 1
+                ? `<section class="detail-section" id="detail-editions-sec">
+                     <h2 class="detail-section-title">Available Editions</h2>
+                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">${editions.length} ways to play ${escapeHtml(detail.title)}. Each has its own install and community.</p>
+                     <div class="detail-editions-grid" id="detail-editions-list"></div>
+                   </section>`
+                : ""
+            }
+
+            <section class="detail-section">
+              <h2 class="detail-section-title">About ${escapeHtml(detail.title)}</h2>
+              <p class="detail-prose">${escapeHtml(detail.description || detail.blurb || "")}</p>
+            </section>
+
+            ${whyHtml}
+            ${fitHtml}
+
+            ${
+              featureItems
+                ? `<section class="detail-section"><h2 class="detail-section-title">Key Features</h2><ul class="feature-list">${featureItems}</ul></section>`
+                : ""
+            }
+
+            <section class="detail-section" id="detail-hw-compat">
+              <h2 class="detail-section-title">Will this run on your PC?</h2>
+              <p class="view-sub" id="detail-hw-compat-body">Checking compatibility with your hardware…</p>
+            </section>
+
+            ${
+              reqGridHtml
+                ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>${reqGridHtml}</section>`
+                : ""
+            }
+
+            ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
+          </div>
+
+          ${buildOverviewSidebarHtml(detail, slug)}
+        </div>
       </div>
+
+      <!-- ── Install Tab ─────────────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "install" ? "active" : ""}" data-panel="install">
-        <section class="detail-section">
-          <h2 class="detail-section-title">Install</h2>
+        <div class="tab-panel-header"><h2>How to install ${escapeHtml(detail.title)} for free</h2></div>
+        <div class="install-header-card">
+          <p class="install-header-prose">
+            ${escapeHtml(detail.title)} is a free ${escapeHtml(genreFirst)} game released under ${escapeHtml(detail.license || "an open license")}. It runs on ${escapeHtml((detail.platforms || ["Windows"]).join(", "))}, needs about ${escapeHtml(detail.approxSize || "disk space")}, and requires no account or payment.
+          </p>
+        </div>
+
+        <div class="detail-sidebar-card" style="margin-bottom:24px">
           ${
             editions.length > 1
-              ? `<label class="view-sub" for="detail-edition-pick">Edition</label>
-                 <select class="input-text" id="detail-edition-pick" style="max-width:320px;margin:8px 0 6px">${editionPickerOptions}</select>
+              ? `<label class="view-sub" for="detail-edition-pick" style="font-weight:700;color:var(--text-main);display:block;margin-bottom:6px">Select Edition to Install</label>
+                 <select class="input-text" id="detail-edition-pick" style="max-width:360px;margin-bottom:8px">${editionPickerOptions}</select>
                  <p class="view-sub edition-gate-hint" id="detail-edition-hint" style="margin:0 0 14px">This game has ${editions.length} editions — pick one to install.</p>`
               : ""
           }
           ${
             detail.addons && detail.addons.length > 0
-              ? `<div class="detail-addons-picker" style="margin: 0.75rem 0;">
-                 <p style="font-weight:600; margin-bottom:0.5rem; font-size:13px; color:#a1a1aa;">Optional Downloads</p>
+              ? `<div class="detail-addons-picker" style="margin: 12px 0 16px;">
+                 <p style="font-weight:700; margin-bottom:0.5rem; font-size:13px; color:var(--text-main);">Optional Downloads & Addons</p>
                  ${detail.addons
                    .map(
                      (a) =>
-                       `<label style="display:block; font-size:13px; margin-bottom:0.25rem; color:#e2e8f0; display:flex; align-items:flex-start; gap:0.5rem; cursor:pointer;">
-                          <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked style="margin-top:2px;" />
+                       `<label style="display:block; font-size:13px; margin-bottom:0.35rem; color:#e2e8f0; display:flex; align-items:flex-start; gap:0.6rem; cursor:pointer;">
+                          <input type="checkbox" class="addon-checkbox" value="${escapeHtml(a.id)}" checked style="margin-top:3px;" />
                           <div>
-                            <div>${escapeHtml(a.name)}</div>
+                            <div style="font-weight:600">${escapeHtml(a.name)}</div>
                             <div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.description || "")}</div>
                           </div>
                         </label>`
@@ -357,80 +551,161 @@ async function renderGameDetailView(slug) {
                </div>`
               : ""
           }
-          <div class="detail-hero-actions" style="margin-bottom:16px">
-            <button class="btn-primary" type="button" id="install-tab-install">${editions.length > 1 ? "Install selected edition" : "Install Game"}</button>
+          <div class="detail-hero-actions" style="margin:0">
+            <button class="btn-primary" type="button" id="install-tab-install">${editions.length > 1 ? "Install Selected Edition" : "Install Game"}</button>
+            <button class="btn-secondary" type="button" id="install-tab-locate">Already installed? Add to Library</button>
             ${detail.website ? `<button class="btn-secondary" type="button" id="install-tab-website">Official website</button>` : ""}
           </div>
           ${gamePlayHintHtml(slug)}
-          ${
-            detail.systemRequirements
-              ? `<div class="req-grid" style="margin-bottom:16px;margin-top:16px">
-              <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
-              <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
-            </div>`
-              : ""
-          }
-          ${faqHtml ? `<h3 class="detail-section-title">FAQ</h3><div class="faq-list">${faqHtml}</div>` : `<p class="view-sub">No FAQ yet for this title.</p>`}
+        </div>
+
+        <section class="detail-section">
+          <h3 class="detail-section-title">Installation Steps</h3>
+          ${buildInstallStepsHtml(detail)}
+        </section>
+
+        ${
+          reqGridHtml
+            ? `<section class="detail-section"><h3 class="detail-section-title">System Requirements</h3>${reqGridHtml}</section>`
+            : ""
+        }
+
+        <section class="detail-section">
+          <h3 class="detail-section-title">Frequently Asked Questions</h3>
+          ${faqHtml ? `<div class="faq-list">${faqHtml}</div>` : `<p class="view-sub">No FAQ yet for this title.</p>`}
         </section>
       </div>
+
+      <!-- ── Dynamic Subnav Tabs ─────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="detail-servers-sec"></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="detail-mods-sec"></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="detail-guides-sec"><p class="view-sub">Loading guides…</p></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "achievements" ? "active" : ""}" data-panel="achievements" id="detail-achievements-sec">
-        <p class="view-sub">Platform-wide achievements are planned but not tracked yet.</p>
-        <p class="view-sub"><a href="#" id="achievements-open-site">Open on playbound.club</a></p>
+        <div class="tab-panel-header">
+          <h2>Achievements</h2>
+          <button class="btn-secondary btn-sm" id="achievements-open-site">View on playbound.club</button>
+        </div>
+        <!--
+          The website says plainly that these are not tracked yet. Four cards
+          with no state behind them read as a working feature, so the status
+          leads and the list is labelled as what it is.
+        -->
+        <div class="tab-empty">
+          <div class="tab-empty-icon">🏆</div>
+          <h3>Not tracked yet</h3>
+          <p>Platform-wide achievements are planned but not tracked yet.</p>
+        </div>
+        <p class="tab-panel-subhead">Planned milestones</p>
+        <div class="achievements-grid">
+          <div class="achievement-card"><div class="achievement-icon">🎮</div><div><div class="achievement-name">First Launch</div><div class="achievement-desc">Launch the game from PlayBound</div></div></div>
+          <div class="achievement-card"><div class="achievement-icon">⏱️</div><div><div class="achievement-name">Time Well Spent</div><div class="achievement-desc">Log 5+ hours of playtime</div></div></div>
+          <div class="achievement-card"><div class="achievement-icon">⚔️</div><div><div class="achievement-name">Community Hero</div><div class="achievement-desc">Join an online community match</div></div></div>
+          <div class="achievement-card"><div class="achievement-icon">💾</div><div><div class="achievement-name">Safekeeper</div><div class="achievement-desc">Sync or back up your save files</div></div></div>
+        </div>
       </div>
       <div class="detail-tab-panel ${state.detailActiveTab === "news" ? "active" : ""}" data-panel="news" id="detail-news-sec"><p class="view-sub">Loading releases…</p></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "discussion" ? "active" : ""}" data-panel="discussion" id="detail-discussion-sec"><p class="view-sub">Loading discussion…</p></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "reviews" ? "active" : ""}" data-panel="reviews" id="detail-reviews-sec"><p class="view-sub">Loading reviews…</p></div>
       <div class="detail-tab-panel ${state.detailActiveTab === "media" ? "active" : ""}" data-panel="media" id="detail-media-sec"></div>
     </div>
+
+    ${
+      editions.length > 1
+        ? `<!--
+             Edition chooser. The hero's install button opens this rather than
+             bouncing the player to the Install tab with an error, which is
+             what it used to do: the button says install, so it should lead to
+             installing something.
+           -->
+           <div class="modal-overlay" id="modal-edition-pick">
+             <div class="modal-card">
+               <div class="modal-header">
+                 <h2 class="modal-title">Choose an edition</h2>
+                 <button type="button" class="modal-close" id="btn-close-edition-pick">✕</button>
+               </div>
+               <div class="modal-body">
+                 <p class="view-sub" style="margin:0 0 14px">
+                   ${editions.length} ways to play ${escapeHtml(detail.title)}. Each installs separately, so you can keep more than one.
+                 </p>
+                 <div class="edition-choice-list">
+                   ${editions
+                     .map(
+                       (ed) => `
+                     <div class="edition-choice" data-edition="${escapeHtml(ed.editionSlug)}">
+                       <div class="edition-choice-main">
+                         <div class="edition-choice-head">
+                           <span class="edition-choice-title">${escapeHtml(ed.editionName)}</span>
+                           ${ed.isDefault ? `<span class="chip chip-accent edition-choice-chip">Recommended</span>` : ""}
+                         </div>
+                         ${
+                           ed.shortDescription || ed.description
+                             ? `<p class="edition-choice-desc">${escapeHtml(ed.shortDescription || ed.description)}</p>`
+                             : ""
+                         }
+                       </div>
+                       <div class="edition-choice-actions">
+                         <button type="button" class="btn-secondary btn-sm" data-edition-details="${escapeHtml(ed.editionSlug)}">Details</button>
+                         <button type="button" class="btn-primary btn-sm" data-edition-install="${escapeHtml(ed.editionSlug)}">Install</button>
+                       </div>
+                     </div>`
+                     )
+                     .join("")}
+                 </div>
+               </div>
+             </div>
+           </div>`
+        : ""
+    }
   `;
 
   const editionsList = document.getElementById("detail-editions-list");
   if (editionsList && editions.length > 1) {
     for (const ed of editions) {
-      const row = document.createElement("div");
-      row.className = "edition-row";
-      const cover = ed.coverImage || ed.heroImage || "";
-      row.innerHTML = `
-        <div class="edition-row-thumb">${
-          cover ? "" : escapeHtml((ed.editionName || "?").charAt(0))
-        }</div>
-        <div class="edition-row-copy">
-          <strong>${escapeHtml(ed.editionName)}${
-            ed.isDefault ? ` <span class="edition-row-tag">Default</span>` : ""
-          }</strong>
-          <span>${escapeHtml(ed.editionType || "")}${ed.shortDescription ? ` · ${escapeHtml(ed.shortDescription)}` : ""}</span>
+      const card = document.createElement("div");
+      card.className = "detail-edition-card";
+      const cover = ed.coverImage || ed.heroImage || detail.coverImage || "";
+      const banner = cover
+        ? `<img src="${escapeHtml(cover)}" alt="" loading="lazy" />`
+        : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:32px;font-weight:900;color:rgba(255,255,255,0.8)">${escapeHtml((ed.editionName || "?").charAt(0))}</div>`;
+      
+      card.innerHTML = `
+        <div class="detail-edition-card-banner">${banner}</div>
+        <div class="detail-edition-card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span class="detail-edition-card-title">${escapeHtml(ed.editionName)}</span>
+            ${ed.isDefault ? `<span class="chip chip-accent" style="font-size:10px;padding:2px 8px">Default</span>` : ""}
+          </div>
+          <div class="detail-edition-card-desc">${escapeHtml(ed.shortDescription || ed.description || "")}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px">
+            <span class="chip" style="font-size:11px">${escapeHtml(ed.editionType || "edition")}</span>
+            <button type="button" class="btn-secondary btn-sm">View Edition</button>
+          </div>
         </div>
-        <button type="button" class="btn-secondary btn-sm">View</button>
       `;
-      if (cover) {
-        // Set via DOM rather than markup so a broken URL cannot inject, and so
-        // a failed load falls back to the initial rather than an empty box.
-        const thumb = row.querySelector(".edition-row-thumb");
-        const img = document.createElement("img");
-        img.src = cover;
-        img.alt = "";
-        img.loading = "lazy";
-        img.addEventListener("error", () => {
-          img.remove();
-          thumb.textContent = (ed.editionName || "?").charAt(0);
-        });
-        thumb.appendChild(img);
-      }
-      row.querySelector("button")?.addEventListener("click", () => {
+      card.addEventListener("click", () => {
         api.openEditionDetail(slug, ed.editionSlug);
       });
-      editionsList.appendChild(row);
+      editionsList.appendChild(card);
     }
   }
 
+  // Sidebar link handlers
+  document.getElementById("sidebar-link-website")?.addEventListener("click", () => {
+    if (detail.website) window.playbound.openExternal(detail.website, { campaign: "launcher_sidebar", content: slug });
+  });
+  document.getElementById("sidebar-link-discord")?.addEventListener("click", () => {
+    const d = detail.discord || detail.discordInvite;
+    if (d) window.playbound.openExternal(d, { campaign: "launcher_sidebar", content: slug });
+  });
+  document.getElementById("sidebar-link-github")?.addEventListener("click", () => {
+    if (detail.githubRepo) window.playbound.openExternal(`https://github.com/${detail.githubRepo}`, { campaign: "launcher_sidebar", content: slug });
+  });
+  document.getElementById("sidebar-link-playbound")?.addEventListener("click", () => {
+    window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}`);
+  });
+
   /**
    * Which edition to install, or null when the player has not chosen yet.
-   *
-   * Only falls back to a default when there is no real choice to make — with
-   * one edition (or none) the picker is not shown, so there is nothing to ask.
    */
   function selectedEditionSlug() {
     const pick = document.getElementById("detail-edition-pick");
@@ -459,16 +734,20 @@ async function renderGameDetailView(slug) {
   async function runInstall(editionSlug) {
     setStatus("Starting install...");
     try {
+      cacheInvalidate(`game:${slug}`);
+      cacheInvalidate(`editions:${slug}`);
       const addons = selectedAddons();
       const res = await window.playbound.install(slug, null, editionSlug || null, addons);
+      cacheInvalidate(`game:${slug}`);
+      cacheInvalidate(`editions:${slug}`);
       if (res.status === "installed") {
         setStatus("Install complete!");
         setProgress(null);
-        api.renderGameDetailView(slug);
+        api.renderGameDetailView(slug, { force: true });
       } else if (res.status === "installer-opened") {
         setStatus("Installer opened — waiting for installer to finish…");
         setProgress(null);
-        api.renderGameDetailView(slug);
+        api.renderGameDetailView(slug, { force: true });
       } else if (res.status === "external") {
         setStatus("Opened download page.");
         setProgress(null);
@@ -479,22 +758,28 @@ async function renderGameDetailView(slug) {
     }
   }
 
+  function openEditionPicker() {
+    document.getElementById("modal-edition-pick")?.classList.add("open");
+  }
+
+  function closeEditionPicker() {
+    document.getElementById("modal-edition-pick")?.classList.remove("open");
+  }
+
   /**
-   * Install, but never without an explicit edition when one is owed.
+   * Install, asking which edition first when there is a real choice.
    *
-   * Shared by every install entry point on this page so the rule cannot be
-   * bypassed by whichever button happens to be on screen.
+   * `fromPicker` is how the modal's own buttons skip the prompt they just
+   * answered — without it, choosing an edition would reopen the chooser.
    */
-  async function runInstallGated() {
+  async function runInstallGated(editionSlug = null, fromPicker = false) {
+    if (editionSlug) {
+      await runInstall(editionSlug);
+      return;
+    }
     const ed = selectedEditionSlug();
-    if (editions.length > 1 && !ed) {
-      setStatus("Choose which edition you want before installing.", true);
-      const pick = document.getElementById("detail-edition-pick");
-      if (pick) {
-        // Send the player to the tab that actually holds the picker.
-        document.getElementById("install-tab-install")?.click();
-        pick.focus();
-      }
+    if (editions.length > 1 && !ed && !fromPicker) {
+      openEditionPicker();
       return;
     }
     await runInstall(ed);
@@ -503,8 +788,38 @@ async function renderGameDetailView(slug) {
   document.getElementById("detail-edition-pick")?.addEventListener("change", syncInstallGate);
   syncInstallGate();
 
+  // ── Edition chooser ──────────────────────────────────────────────────────
+  document.getElementById("btn-close-edition-pick")?.addEventListener("click", closeEditionPicker);
+  document.getElementById("modal-edition-pick")?.addEventListener("click", (e) => {
+    // Backdrop only — a click inside the card must not dismiss it.
+    if (e.target.id === "modal-edition-pick") closeEditionPicker();
+  });
+  document.querySelectorAll("[data-edition-install]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const ed = btn.dataset.editionInstall;
+      closeEditionPicker();
+      // Keep the Install tab's picker in step, so the two never disagree
+      // about which edition the player chose.
+      const pick = document.getElementById("detail-edition-pick");
+      if (pick) {
+        pick.value = ed;
+        syncInstallGate();
+      }
+      await runInstallGated(ed, true);
+    });
+  });
+  document.querySelectorAll("[data-edition-details]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      closeEditionPicker();
+      api.openEditionDetail(slug, btn.dataset.editionDetails);
+    });
+  });
+
   document.getElementById("install-tab-install")?.addEventListener("click", () => {
     void runInstallGated();
+  });
+  document.getElementById("install-tab-locate")?.addEventListener("click", () => {
+    document.getElementById("act-locate")?.click();
   });
   document.getElementById("install-tab-website")?.addEventListener("click", () => {
     if (detail.website) {
@@ -537,7 +852,15 @@ async function renderGameDetailView(slug) {
     const guides = guidesRes?.guides || [];
     if (guidesSec) {
       if (!guides.length) {
-        guidesSec.innerHTML = `<p class="view-sub">No guides yet. <a href="#" id="guides-open-site">Write one on playbound.club</a></p>`;
+        guidesSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Guides</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">📖</div>
+            <h3>No guides published yet</h3>
+            <p>Share your tips, walkthroughs, and strategies with the PlayBound community.</p>
+            <button class="btn-primary btn-sm" id="guides-open-site">Write a guide on playbound.club</button>
+          </div>
+        `;
         document.getElementById("guides-open-site")?.addEventListener("click", (e) => {
           e.preventDefault();
           window.playbound.openExternal(
@@ -545,31 +868,51 @@ async function renderGameDetailView(slug) {
           );
         });
       } else {
-        guidesSec.innerHTML = `<div class="guide-list">${guides
-          .map(
-            (g) =>
-              `<button type="button" class="guide-card" data-url="${escapeHtml(g.url)}" style="text-align:left;cursor:pointer;width:100%;color:inherit;background:rgba(255,255,255,0.02)">
-                <h3>${escapeHtml(g.title)}</h3>
-                <p>${escapeHtml(g.excerpt || "")}</p>
-                <p style="margin-top:6px;font-size:11px">${escapeHtml(g.username || "")} · ${escapeHtml(
-                g.createdAt ? new Date(g.createdAt).toLocaleDateString() : ""
-              )}</p>
-              </button>`
-          )
-          .join("")}</div>`;
+        guidesSec.innerHTML = `
+          <div class="tab-panel-header">
+            <h2>Community Guides</h2>
+            <button class="btn-secondary btn-sm" id="guides-top-open-site">Write a Guide ↗</button>
+          </div>
+          <div class="guide-cards-grid">${guides
+            .map(
+              (g) =>
+                `<div class="guide-full-card" data-url="${escapeHtml(g.url)}">
+                  <div class="guide-card-title">📖 ${escapeHtml(g.title)}</div>
+                  <div class="guide-card-excerpt">${escapeHtml(g.excerpt || "")}</div>
+                  <div class="guide-card-footer">
+                    <span>${escapeHtml(g.username || "Community")} · ${escapeHtml(
+                  g.createdAt ? new Date(g.createdAt).toLocaleDateString() : ""
+                )}</span>
+                    <span style="color:var(--accent-light);font-weight:600">Read guide ↗</span>
+                  </div>
+                </div>`
+            )
+            .join("")}</div>`;
         guidesSec.querySelectorAll("[data-url]").forEach((el) => {
           el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+        document.getElementById("guides-top-open-site")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}?tab=guides`);
         });
       }
     }
     const releases = releasesRes?.releases || [];
     if (newsSec) {
       if (!releases.length) {
-        newsSec.innerHTML = `<p class="view-sub">No GitHub release notes available${
-          detail.website
-            ? `. <a href="#" id="news-website">Check the official site</a>`
-            : "."
-        }</p>`;
+        newsSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Updates &amp; Changelogs</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">📰</div>
+            <h3>No GitHub release notes found</h3>
+            <p>Check the official project website for development news and update history.</p>
+            ${
+              detail.website
+                ? `<button class="btn-secondary btn-sm" id="news-website">Visit official site ↗</button>`
+                : ""
+            }
+          </div>
+        `;
         document.getElementById("news-website")?.addEventListener("click", (e) => {
           e.preventDefault();
           window.playbound.openExternal(detail.website, {
@@ -578,18 +921,31 @@ async function renderGameDetailView(slug) {
           });
         });
       } else {
-        newsSec.innerHTML = `<div class="release-list">${releases
-          .map(
-            (r) =>
-              `<a class="release-card" href="${escapeHtml(r.url)}" data-ext="${escapeHtml(r.url)}" style="display:block;text-decoration:none;color:inherit">
-                <h3>${escapeHtml(r.name || r.tagName)}</h3>
-                <p>${escapeHtml(r.body || "")}</p>
-                <p style="margin-top:6px;font-size:11px">${
-                  r.publishedAt ? escapeHtml(new Date(r.publishedAt).toLocaleDateString()) : ""
-                }</p>
-              </a>`
-          )
-          .join("")}</div>`;
+        newsSec.innerHTML = `
+          <div class="tab-panel-header">
+            <h2>Updates &amp; Changelogs</h2>
+            ${detail.website ? `<button class="btn-secondary btn-sm" id="news-website">Official Site ↗</button>` : ""}
+          </div>
+          <div class="releases-feed">${releases
+            .map(
+              (r) =>
+                `<div class="release-full-card">
+                  <div class="release-header">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="chip chip-accent">${escapeHtml(r.tagName || "update")}</span>
+                      <span class="release-title">${escapeHtml(r.name || r.tagName)}</span>
+                    </div>
+                    <span class="release-date">${
+                      r.publishedAt ? escapeHtml(new Date(r.publishedAt).toLocaleDateString()) : ""
+                    }</span>
+                  </div>
+                  <div class="release-body">${escapeHtml(r.body || "No changelog text provided.")}</div>
+                  <div style="margin-top:auto;padding-top:10px">
+                    <button class="btn-secondary btn-sm" data-ext="${escapeHtml(r.url)}" type="button">View Release on GitHub ↗</button>
+                  </div>
+                </div>`
+            )
+            .join("")}</div>`;
         newsSec.querySelectorAll("[data-ext]").forEach((a) => {
           a.addEventListener("click", (e) => {
             e.preventDefault();
@@ -597,6 +953,13 @@ async function renderGameDetailView(slug) {
               campaign: "launcher_github",
               content: slug,
             });
+          });
+        });
+        document.getElementById("news-website")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(detail.website, {
+            campaign: "launcher_game_website",
+            content: slug,
           });
         });
       }
@@ -607,23 +970,48 @@ async function renderGameDetailView(slug) {
         discussionsRes?.boardUrl ||
         `https://playbound.club/games/${encodeURIComponent(slug)}?tab=discussion`;
       if (!topics.length) {
-        discussionSec.innerHTML = `<p class="view-sub">No discussions yet. <a href="#" id="discussion-open-site">Start one on playbound.club</a></p>`;
+        discussionSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Discussion</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">💬</div>
+            <h3>No discussions yet</h3>
+            <p>Start the conversation with other players on the PlayBound discussion board.</p>
+            <button class="btn-primary btn-sm" id="discussion-open-site">Start a discussion on playbound.club</button>
+          </div>
+        `;
       } else {
-        discussionSec.innerHTML = `<div class="guide-list">${topics
-          .map(
-            (t) =>
-              `<button type="button" class="guide-card" data-url="${escapeHtml(t.url)}" style="text-align:left;cursor:pointer;width:100%;color:inherit;background:rgba(255,255,255,0.02)">
-                <h3>${t.isPinned ? "📌 " : ""}${escapeHtml(t.title)}</h3>
-                <p style="margin-top:6px;font-size:11px">${escapeHtml(t.category || "")}${
-                t.username ? ` · ${escapeHtml(t.username)}` : ""
-              } · ${Number(t.replyCount) || 0} replies${t.isSolved ? " · Solved" : ""}</p>
-              </button>`
-          )
-          .join(
-            ""
-          )}</div><p class="view-sub" style="margin-top:12px"><a href="#" id="discussion-open-site">Open discussion board on playbound.club</a></p>`;
+        discussionSec.innerHTML = `
+          <div class="tab-panel-header">
+            <h2>Community Discussion</h2>
+            <button class="btn-secondary btn-sm" id="discussion-top-open-site">Start Discussion ↗</button>
+          </div>
+          <div class="discussions-list">${topics
+            .map(
+              (t) =>
+                `<div class="discussion-full-card" data-url="${escapeHtml(t.url)}">
+                  <div class="discussion-main">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      ${t.isPinned ? '<span style="font-size:12px">📌</span>' : ""}
+                      ${t.category ? `<span class="chip" style="font-size:10px;padding:2px 6px">${escapeHtml(t.category)}</span>` : ""}
+                      <span class="discussion-title">${escapeHtml(t.title)}</span>
+                    </div>
+                    <div class="discussion-meta">
+                      <span>${escapeHtml(t.username || "Player")}</span>
+                      ${t.isSolved ? `<span style="color:#34d27b;font-weight:700">· Solved</span>` : ""}
+                    </div>
+                  </div>
+                  <div class="chip" style="flex-shrink:0">💬 ${Number(t.replyCount) || 0}</div>
+                </div>`
+            )
+            .join(
+              ""
+            )}</div>`;
         discussionSec.querySelectorAll("[data-url]").forEach((el) => {
           el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+        document.getElementById("discussion-top-open-site")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(boardUrl);
         });
       }
       document.getElementById("discussion-open-site")?.addEventListener("click", (e) => {
@@ -634,26 +1022,59 @@ async function renderGameDetailView(slug) {
     if (reviewsSec) {
       const reviews = reviewsRes?.reviews || [];
       if (!reviews.length) {
-        reviewsSec.innerHTML = `<p class="view-sub">No reviews yet. <a href="#" id="reviews-open-site">Write one on playbound.club</a></p>`;
+        reviewsSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Player Reviews</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">⭐</div>
+            <h3>No reviews written yet</h3>
+            <p>Be the first to review ${escapeHtml(detail.title || "this game")} and let other players know what you think.</p>
+            <button class="btn-primary btn-sm" id="reviews-open-site">Write a review on playbound.club</button>
+          </div>
+        `;
       } else {
-        reviewsSec.innerHTML = `<div class="guide-list">${reviews
-          .map(
-            (r) =>
-              `<button type="button" class="guide-card" data-url="${escapeHtml(r.url)}" style="text-align:left;cursor:pointer;width:100%;color:inherit;background:rgba(255,255,255,0.02)">
-                <h3>${"★".repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}${"☆".repeat(
-                Math.max(0, 5 - (Number(r.rating) || 0))
-              )} · ${escapeHtml(r.title || "Review")}</h3>
-                <p>${escapeHtml(r.body || "")}</p>
-                <p style="margin-top:6px;font-size:11px">${escapeHtml(r.username || "")}${
-                r.createdAt ? ` · ${escapeHtml(new Date(r.createdAt).toLocaleDateString())}` : ""
-              }</p>
-              </button>`
-          )
-          .join(
-            ""
-          )}</div><p class="view-sub" style="margin-top:12px"><a href="#" id="reviews-open-site">Write or manage reviews on playbound.club</a></p>`;
+        const avgScore = (reviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0) / reviews.length).toFixed(1);
+        reviewsSec.innerHTML = `
+          <div class="tab-panel-header">
+            <h2>Player Reviews</h2>
+            <button class="btn-secondary btn-sm" id="reviews-top-open-site">Write a Review ↗</button>
+          </div>
+          <div class="reviews-summary-card">
+            <div class="reviews-summary-score">
+              <span>★ ${avgScore}</span>
+              <span class="reviews-summary-outof">/ 5.0 (${reviews.length} ${reviews.length === 1 ? "review" : "reviews"})</span>
+            </div>
+          </div>
+          <div class="reviews-list">${reviews
+            .map(
+              (r) =>
+                `<div class="review-full-card" data-url="${escapeHtml(r.url)}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="review-rating-stars">${"★".repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}${"☆".repeat(
+                        Math.max(0, 5 - (Number(r.rating) || 0))
+                      )}</span>
+                      <strong style="font-size:15px">${escapeHtml(r.title || "Review")}</strong>
+                    </div>
+                    <span style="font-size:11.5px;color:var(--text-dim)">${
+                      r.createdAt ? escapeHtml(new Date(r.createdAt).toLocaleDateString()) : ""
+                    }</span>
+                  </div>
+                  <p class="detail-prose" style="font-size:13.5px">${escapeHtml(r.body || "")}</p>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;font-size:12px;color:var(--text-muted)">
+                    <span>${escapeHtml(r.username || "Verified Player")}</span>
+                    <span style="color:var(--accent-light);font-weight:600">Read on site ↗</span>
+                  </div>
+                </div>`
+            )
+            .join(
+              ""
+            )}</div>`;
         reviewsSec.querySelectorAll("[data-url]").forEach((el) => {
           el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+        document.getElementById("reviews-top-open-site")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}?tab=reviews`);
         });
       }
       document.getElementById("reviews-open-site")?.addEventListener("click", (e) => {
@@ -736,7 +1157,11 @@ async function renderGameDetailView(slug) {
         `;
       } else if (vids.length === 0) {
         screenshotsHtml = `
-          <p class="view-sub">No screenshots uploaded for ${escapeHtml(detail.title || "this game")} yet.</p>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">🖼️</div>
+            <h3>No media yet</h3>
+            <p>No screenshots or trailers have been uploaded for ${escapeHtml(detail.title || "this game")}.</p>
+          </div>
         `;
       }
 
@@ -751,9 +1176,9 @@ async function renderGameDetailView(slug) {
       `;
 
       mediaSec.innerHTML = `
-        <div class="media-header">
+        <div class="tab-panel-header">
           <h2>Media</h2>
-          <span class="media-header-count">${escapeHtml(countText)}</span>
+          <span class="tab-panel-meta">${escapeHtml(countText)}</span>
         </div>
         ${videosHtml}
         ${screenshotsHtml}
@@ -841,10 +1266,14 @@ async function renderGameDetailView(slug) {
       if (!confirm(`Uninstall ${detail.title}? This also removes PlayBound mods for this game.`)) return;
       setStatus("Uninstalling...");
       try {
+        cacheInvalidate(`game:${slug}`);
+        cacheInvalidate(`editions:${slug}`);
         const res = await window.playbound.uninstall(slug);
+        cacheInvalidate(`game:${slug}`);
+        cacheInvalidate(`editions:${slug}`);
         if (res?.warning) setStatus(`Removed ${detail.title || slug} from your library. ${res.warning}`, true);
         else setStatus(`Uninstalled ${detail.title || slug}`);
-        api.renderGameDetailView(slug);
+        api.renderGameDetailView(slug, { force: true });
       } catch (err) {
         setStatus(err.message || String(err), true);
       }
@@ -865,14 +1294,18 @@ async function renderGameDetailView(slug) {
     document.getElementById("act-locate").addEventListener("click", async () => {
       setStatus("Looking for install…");
       try {
+        cacheInvalidate(`game:${slug}`);
+        cacheInvalidate(`editions:${slug}`);
         const res = await window.playbound.locateExe(slug);
+        cacheInvalidate(`game:${slug}`);
+        cacheInvalidate(`editions:${slug}`);
         if (res?.status === "cancelled") {
           setStatus("Locate cancelled.");
           return;
         }
         setStatus("Install located — added to library.");
         setProgress(null);
-        api.renderGameDetailView(slug);
+        api.renderGameDetailView(slug, { force: true });
         if (state.currentView === "library") api.renderLibraryView();
       } catch (err) {
         setStatus(err.message || String(err), true);
@@ -881,19 +1314,27 @@ async function renderGameDetailView(slug) {
     });
     document.getElementById("act-dismiss-pending").addEventListener("click", async () => {
       if (!confirm(`Remove ${detail.title} from Library? (Does not delete game files.)`)) return;
+      cacheInvalidate(`game:${slug}`);
+      cacheInvalidate(`editions:${slug}`);
       await window.playbound.dismissPendingInstall?.(slug);
-      api.renderGameDetailView(slug);
+      cacheInvalidate(`game:${slug}`);
+      cacheInvalidate(`editions:${slug}`);
+      api.renderGameDetailView(slug, { force: true });
       if (state.currentView === "library") api.renderLibraryView();
     });
     document.getElementById("act-install").addEventListener("click", async () => {
       await runInstallGated();
     });
   } else {
-    const showLocate =
-      detail.isInstallerKind || Boolean(detail.knownExePaths?.length);
+    /*
+     * Label matches the website's hero for the same condition. There it links
+     * to the editions section; here the button can do the whole job, so it
+     * opens the chooser and installs from it.
+     */
+    const choosable = editions.length > 1;
     actions.innerHTML = `
-      <button class="btn-primary" id="act-install">Install Game</button>
-      ${showLocate ? `<button class="btn-secondary" id="act-locate">I've finished installing</button>` : ""}
+      <button class="btn-primary" id="act-install">${choosable ? "Choose an edition" : "Install Game"}</button>
+      <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `;
     document.getElementById("act-install").addEventListener("click", async () => {
@@ -902,14 +1343,18 @@ async function renderGameDetailView(slug) {
     document.getElementById("act-locate")?.addEventListener("click", async () => {
       setStatus("Looking for install…");
       try {
+        cacheInvalidate(`game:${slug}`);
+        cacheInvalidate(`editions:${slug}`);
         const res = await window.playbound.locateExe(slug);
+        cacheInvalidate(`game:${slug}`);
+        cacheInvalidate(`editions:${slug}`);
         if (res?.status === "cancelled") {
           setStatus("Locate cancelled.");
           return;
         }
         setStatus("Install located — added to library.");
         setProgress(null);
-        api.renderGameDetailView(slug);
+        api.renderGameDetailView(slug, { force: true });
         if (state.currentView === "library") api.renderLibraryView();
       } catch (err) {
         setStatus(err.message || String(err), true);
@@ -945,126 +1390,123 @@ async function renderGameDetailView(slug) {
     state.compatibilityFilter === "compatible" ? isModDesktopCompatible(m) : true
   );
   if (mods.length) {
-    modsSec.innerHTML = `<div class="mods-list"></div>`;
-    const modsList = modsSec.querySelector(".mods-list");
+    modsSec.innerHTML = `
+      <div class="tab-panel-header">
+        <h2>Available Mods &amp; Addons</h2>
+        <span class="tab-panel-meta">${mods.length} ${mods.length === 1 ? "mod" : "mods"}</span>
+      </div>
+      <div class="mod-cards-grid"></div>
+    `;
+    const modsList = modsSec.querySelector(".mod-cards-grid");
     for (const mod of mods) {
-      const row = document.createElement("div");
-      row.className = "mod-row";
+      const card = document.createElement("div");
+      card.className = "mod-full-card";
       const external = mod.downloadKind === "external";
-      if (mod.installed && !external) {
-        row.innerHTML = `
-          <div>
-            <div class="mod-row-title">${escapeHtml(mod.title)}</div>
-            <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
+      const modCover = mod.coverImage || detail.coverImage || "";
+      const modBanner = modCover
+        ? `<img src="${escapeHtml(modCover)}" alt="" loading="lazy" />`
+        : `<span style="font-size:32px;font-weight:900;color:rgba(255,255,255,0.8)">${escapeHtml((mod.title || "?").charAt(0))}</span>`;
+      
+      const meta = [
+        mod.approxSize || (mod.sizeMB ? `~${mod.sizeMB} MB` : null),
+        mod.version ? `v${mod.version}` : null,
+      ].filter(Boolean).join(" · ");
+
+      card.innerHTML = `
+        <div class="mod-card-banner">${modBanner}</div>
+        <div class="mod-card-body">
+          <div class="mod-card-title">${escapeHtml(mod.title)}</div>
+          <div class="mod-card-tagline">${escapeHtml(mod.tagline || mod.description || "")}</div>
+          <div class="card-tags">
+            ${mod.category ? `<span class="chip">${escapeHtml(mod.category)}</span>` : ""}
+            ${mod.tags?.slice(0, 2).map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("") || ""}
+            ${meta ? `<span class="chip chip-accent">${escapeHtml(meta)}</span>` : ""}
           </div>
-          <div class="library-mod-actions">
-            <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
-            ${
-              mod.installedPath
-                ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>`
-                : ""
-            }
-            <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
-          </div>
-        `;
-        row.querySelector(".btn-mod-play")?.addEventListener("click", async () => {
-          try {
-            setStatus(`Launching ${mod.title}…`);
-            await window.playbound.playMod(mod.slug);
-            setStatus(`Launched ${mod.title}`);
-          } catch (err) {
-            setStatus(err.message || String(err), true);
-          }
-        });
-        row.querySelector(".btn-mod-folder")?.addEventListener("click", () => {
-          window.playbound.openFolder(mod.installedPath);
-        });
-        row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async () => {
-          if (!confirm(`Uninstall ${mod.title}? This removes the mod from this PC.`)) return;
-          try {
-            setStatus(`Removing ${mod.title}…`);
-            await window.playbound.uninstallMod(mod.slug);
-            setStatus(`Removed ${mod.title}`);
-            api.renderGameDetailView(slug);
-          } catch (err) {
-            setStatus(err.message || String(err), true);
-          }
-        });
-      } else {
-        row.innerHTML = `
-          <div>
-            <div class="mod-row-title">${escapeHtml(mod.title)}</div>
-            <div class="view-sub" style="margin:0">${escapeHtml(mod.tagline || "")}</div>
-          </div>
+        </div>
+        <div class="mod-card-actions">
           ${
-            mod.installed && mod.installedPath
-              ? `<div class="library-mod-actions">
-            <button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>
-            <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
-          </div>`
-              : `<button class="btn-sm ${mod.installed ? "btn-secondary" : "btn-primary"}" type="button">
-            ${
-              mod.installed
-                ? "Installed"
-                : external
-                  ? "Open download page"
-                  : "Install"
-            }
-          </button>`
+            mod.installed && !external
+              ? `
+                <div style="display:flex;gap:6px;width:100%;align-items:center;justify-content:space-between">
+                  <div style="display:flex;gap:6px">
+                    <button class="btn-primary btn-sm btn-mod-play" type="button">Play</button>
+                    ${mod.installedPath ? `<button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>` : ""}
+                  </div>
+                  <div style="display:flex;gap:6px">
+                    <button class="btn-secondary btn-sm btn-mod-details" type="button">Details</button>
+                    <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
+                  </div>
+                </div>
+              `
+              : mod.installed && mod.installedPath
+              ? `
+                <div style="display:flex;gap:6px;width:100%;align-items:center;justify-content:space-between">
+                  <div style="display:flex;gap:6px">
+                    <button class="btn-secondary btn-sm btn-mod-folder" type="button">Folder</button>
+                    <button class="btn-danger btn-sm btn-mod-uninstall" type="button">Remove</button>
+                  </div>
+                  <button class="btn-secondary btn-sm btn-mod-details" type="button">Details</button>
+                </div>
+              `
+              : `
+                <div style="display:flex;gap:6px;width:100%;align-items:center;justify-content:space-between">
+                  <button class="btn-primary btn-sm btn-mod-install" type="button">${external ? "Download" : "Install"}</button>
+                  <button class="btn-secondary btn-sm btn-mod-details" type="button">Details</button>
+                </div>
+              `
           }
-        `;
-        if (mod.installed && mod.installedPath) {
-          row.querySelector(".btn-mod-folder")?.addEventListener("click", () => {
-            window.playbound.openFolder(mod.installedPath);
-          });
-          row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async () => {
-            if (!confirm(`Uninstall ${mod.title}? This removes the mod from this PC.`)) return;
-            try {
-              setStatus(`Removing ${mod.title}…`);
-              await window.playbound.uninstallMod(mod.slug);
-              setStatus(`Removed ${mod.title}`);
-              api.renderGameDetailView(slug);
-            } catch (err) {
-              setStatus(err.message || String(err), true);
-            }
-          });
-        } else {
-          const btn = row.querySelector("button");
-          if (!mod.installed) {
-            btn.addEventListener("click", async () => {
-              setStatus(external ? `Opening download page for ${mod.title}…` : `Installing ${mod.title}…`);
-              try {
-                const res = await window.playbound.installMod(mod.slug);
-                if (res?.status === "external") {
-                  setStatus("Opened download page in browser.");
-                  setProgress(null);
-                } else if (res?.status === "waiting-base") {
-                  setStatus("Installing base game first — finish the setup wizard…");
-                  setProgress(null);
-                } else {
-                  setStatus("Mod install complete");
-                  setProgress(null);
-                  api.renderGameDetailView(slug);
-                }
-              } catch (err) {
-                setStatus(err.message || String(err), true);
-                setProgress(null);
-              }
-            });
-          } else {
-            btn.disabled = true;
-          }
+        </div>
+      `;
+
+      card.querySelector(".mod-card-title")?.addEventListener("click", () => api.openModDetail(mod.slug, "gameDetail"));
+      card.querySelector(".btn-mod-details")?.addEventListener("click", () => api.openModDetail(mod.slug, "gameDetail"));
+      card.querySelector(".btn-mod-play")?.addEventListener("click", async () => {
+        try {
+          setStatus(`Launching ${mod.title}…`);
+          await window.playbound.playMod(mod.slug);
+          setStatus(`Launched ${mod.title}`);
+        } catch (err) {
+          setStatus(err.message || String(err), true);
         }
-      }
-      modsList.appendChild(row);
-      const titleEl = row.querySelector(".mod-row-title");
-      if (titleEl) {
-        titleEl.style.cursor = "pointer";
-        titleEl.addEventListener("click", () => api.openModDetail(mod.slug, "gameDetail"));
-      }
+      });
+      card.querySelector(".btn-mod-folder")?.addEventListener("click", () => {
+        window.playbound.openFolder(mod.installedPath);
+      });
+      card.querySelector(".btn-mod-uninstall")?.addEventListener("click", async () => {
+        if (!confirm(`Uninstall ${mod.title}? This removes the mod from this PC.`)) return;
+        try {
+          setStatus(`Removing ${mod.title}…`);
+          await window.playbound.uninstallMod(mod.slug);
+          setStatus(`Removed ${mod.title}`);
+          api.renderGameDetailView(slug, { force: true });
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+        }
+      });
+      card.querySelector(".btn-mod-install")?.addEventListener("click", async () => {
+        setStatus(external ? `Opening download page for ${mod.title}…` : `Installing ${mod.title}…`);
+        try {
+          const res = await window.playbound.installMod(mod.slug);
+          if (res?.status === "external") {
+            setStatus("Opened download page in browser.");
+            setProgress(null);
+          } else if (res?.status === "waiting-base") {
+            setStatus("Installing base game first — finish the setup wizard…");
+            setProgress(null);
+          } else {
+            setStatus("Mod install complete");
+            setProgress(null);
+            api.renderGameDetailView(slug, { force: true });
+          }
+        } catch (err) {
+          setStatus(err.message || String(err), true);
+          setProgress(null);
+        }
+      });
+
       void window.playbound.getLiveStats?.({ mod: mod.slug }).then((stats) => {
-        if (!stats || !row.isConnected) return;
-        const titleNode = row.querySelector(".mod-row-title");
+        if (!stats || !card.isConnected) return;
+        const titleNode = card.querySelector(".mod-card-title");
         if (!titleNode) return;
         const chip = document.createElement("span");
         chip.className = "playing-now-chip";
@@ -1072,9 +1514,23 @@ async function renderGameDetailView(slug) {
         chip.textContent = `${formatStatNumber(stats.playingNow)} playing now`;
         titleNode.appendChild(chip);
       });
+
+      modsList.appendChild(card);
     }
   } else {
-    modsSec.innerHTML = `<p class="view-sub">No catalog mods for this title yet.</p>`;
+    modsSec.innerHTML = `
+      <div class="tab-panel-header"><h2>Available Mods &amp; Addons</h2></div>
+      <div class="tab-empty">
+        <div class="tab-empty-icon">🔧</div>
+        <h3>No mods listed yet</h3>
+        <p>Community mods, maps, and texture packs for ${escapeHtml(detail.title || "this game")} will appear here.</p>
+        <button class="btn-secondary btn-sm" id="mods-empty-site">Check playbound.club</button>
+      </div>
+    `;
+    document.getElementById("mods-empty-site")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}?tab=mods`);
+    });
   }
 
   async function loadDetailServers() {
@@ -1103,8 +1559,11 @@ async function renderGameDetailView(slug) {
           return `<th class="sortable${active ? " sorted" : ""}" data-sort="${key}">${escapeHtml(label)}${arrow}</th>`;
         };
         sSec.innerHTML = `
+          <div class="tab-panel-header">
+            <h2>Live Servers</h2>
+            <span class="tab-panel-meta">${totalPlayers} player${totalPlayers === 1 ? "" : "s"} · ${sorted.length} server${sorted.length === 1 ? "" : "s"}</span>
+          </div>
           <div class="detail-servers-header">
-            <p class="servers-stats">${totalPlayers} player${totalPlayers === 1 ? "" : "s"} · ${sorted.length} server${sorted.length === 1 ? "" : "s"}</p>
             <button class="btn-secondary btn-sm" id="detail-servers-refresh" type="button">Refresh</button>
           </div>
           <table class="server-table">
@@ -1160,9 +1619,14 @@ async function renderGameDetailView(slug) {
       paintDetailServers();
     } else if (detail.hasServerBrowser ?? detail.multiplayer) {
       sSec.innerHTML = `
-        <div class="detail-servers-header">
-          <p class="view-sub" style="margin:0">No live servers listed right now.</p>
+        <div class="tab-panel-header">
+          <h2>Live Servers</h2>
           <button class="btn-secondary btn-sm" id="detail-servers-refresh" type="button">Refresh</button>
+        </div>
+        <div class="tab-empty">
+          <div class="tab-empty-icon">🛰️</div>
+          <h3>No live servers listed right now</h3>
+          <p>Community servers come and go. Refresh in a moment, or start a party and let PlayBound host one.</p>
         </div>
       `;
       document.getElementById("detail-servers-refresh")?.addEventListener("click", () => {
@@ -1477,9 +1941,14 @@ async function renderModDetailView(slug) {
   markViewReady(container, slug);
 }
 
-async function renderEditionDetailView(gameSlug, editionSlug) {
+async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   const container = views.editionDetail;
   if (!container) return;
+  const force = Boolean(opts?.force);
+  if (force) {
+    cacheInvalidate(`game:${gameSlug}`);
+    cacheInvalidate(`editions:${gameSlug}`);
+  }
   container.innerHTML = `<p class="view-sub">Loading edition…</p>`;
 
   const [editionsRes, liveStats, gameDetail] = await Promise.all([
@@ -1585,7 +2054,7 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
               ? `<button class="btn-success" id="edition-play">Play</button>
                  <button class="btn-danger" id="edition-uninstall">Uninstall</button>
                  ${gamePlayHintHtml(gameSlug)}`
-              : ""
+              : `<button class="btn-secondary" id="edition-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>`
           }
         </div>
       </div>
@@ -1637,19 +2106,16 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
   document.getElementById("edition-install")?.addEventListener("click", async () => {
     setStatus("Starting install...");
     try {
+      cacheInvalidate(`game:${gameSlug}`);
+      cacheInvalidate(`editions:${gameSlug}`);
       const res = await window.playbound.install(gameSlug, null, editionSlug);
+      cacheInvalidate(`game:${gameSlug}`);
+      cacheInvalidate(`editions:${gameSlug}`);
       if (res.status === "installed") {
         setStatus(res.note || "Install complete!");
         setProgress(null);
-        api.renderEditionDetailView(gameSlug, editionSlug);
+        api.renderEditionDetailView(gameSlug, editionSlug, { force: true });
       } else if (res.status === "installer-opened") {
-        /*
-         * Stay put. This used to jump to the parent game page, which threw the
-         * player off the edition they were installing — and for a store
-         * hand-off like HoloCure's, the wait happens off in Steam, so the jump
-         * landed them somewhere unrelated with no explanation. The edition view
-         * now refreshes itself when the install is detected (see boot.js).
-         */
         setStatus("Installer opened — waiting for the install to finish…");
         setProgress(null);
       } else if (res.status === "external") {
@@ -1659,6 +2125,27 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
         setStatus(res.note || "Install cancelled.");
         setProgress(null);
       }
+    } catch (err) {
+      setStatus(err.message || String(err), true);
+      setProgress(null);
+    }
+  });
+  document.getElementById("edition-locate")?.addEventListener("click", async () => {
+    setStatus("Looking for install…");
+    try {
+      cacheInvalidate(`game:${gameSlug}`);
+      cacheInvalidate(`editions:${gameSlug}`);
+      const res = await window.playbound.locateExe(gameSlug);
+      cacheInvalidate(`game:${gameSlug}`);
+      cacheInvalidate(`editions:${gameSlug}`);
+      if (res?.status === "cancelled") {
+        setStatus("Locate cancelled.");
+        return;
+      }
+      setStatus("Install located — added to library.");
+      setProgress(null);
+      api.renderEditionDetailView(gameSlug, editionSlug, { force: true });
+      if (state.currentView === "library") api.renderLibraryView();
     } catch (err) {
       setStatus(err.message || String(err), true);
       setProgress(null);
@@ -1677,10 +2164,14 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
   document.getElementById("edition-uninstall")?.addEventListener("click", async () => {
     if (!confirm(`Uninstall ${edition.editionName}? Other editions stay installed. Mods for this game will also be removed.`)) return;
     try {
+      cacheInvalidate(`game:${gameSlug}`);
+      cacheInvalidate(`editions:${gameSlug}`);
       const res = await window.playbound.uninstall(gameSlug, editionSlug);
+      cacheInvalidate(`game:${gameSlug}`);
+      cacheInvalidate(`editions:${gameSlug}`);
       if (res?.warning) setStatus(`Removed ${edition.editionName} from your library. ${res.warning}`, true);
       else setStatus(`Uninstalled ${edition.editionName}`);
-      api.renderEditionDetailView(gameSlug, editionSlug);
+      api.renderEditionDetailView(gameSlug, editionSlug, { force: true });
     } catch (err) {
       setStatus(err.message || String(err), true);
     }

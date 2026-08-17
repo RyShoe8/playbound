@@ -999,43 +999,52 @@ body {
   border-radius: 20px;
 }
 
-.detail-bleed-hero {
-  margin: 0 -28px 0;
-  min-height: 220px;
+
+/*
+ * Game hero — the website's, ported.
+ *
+ * Full-bleed art band with a bottom-weighted scrim, copy bottom-left and
+ * actions bottom-right. Bleeds by the view's own 36px/24px padding so the art
+ * reaches the window edges the way it does on the web.
+ */
+.detail-hero {
+  position: relative;
+  margin: 0 -36px 0;
+  min-height: 260px;
+  display: flex;
+  align-items: flex-end;
   background-size: cover;
   background-position: center;
   border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: flex-end;
 }
 
-.detail-bleed-inner {
+/* Bottom-weighted so the title stays legible whatever the art is doing. */
+.detail-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    var(--bg-dark) 0%,
+    rgba(12, 10, 18, 0.82) 45%,
+    rgba(12, 10, 18, 0.35) 100%
+  );
+  pointer-events: none;
+}
+
+.detail-hero-inner {
+  position: relative;
   width: 100%;
-  padding: 28px 28px 20px;
-}
-
-.detail-bleed-title {
-  margin: 10px 0 0;
-  text-shadow: 0 2px 18px rgba(0,0,0,0.55);
-}
-
-.detail-bleed-sub {
-  margin: 8px 0 0;
-  max-width: 640px;
-}
-
-.detail-bleed-actions {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  margin-top: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 96px 36px 24px;
 }
 
-.detail-hero {
-  display: flex;
-  align-items: flex-end;
-  gap: 20px;
-  margin: 0 0 8px;
+.detail-hero-copy {
+  min-width: 0;
+  max-width: 640px;
 }
 
 .detail-cover {
@@ -1065,42 +1074,42 @@ body {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.detail-hero-copy {
-  flex: 1;
-  min-width: 0;
-  padding-bottom: 4px;
-}
-
-.detail-hero-title,
-.detail-bleed-title {
-  font-size: 36px;
+.detail-hero-title {
+  font-size: 40px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin: 10px 0 0;
+  line-height: 1.12;
+  margin: 12px 0 0;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
-.detail-hero-sub,
-.detail-bleed-sub {
+.detail-hero-sub {
   font-size: 16px;
   line-height: 1.5;
   color: var(--text-muted);
   margin: 8px 0 0;
-  max-width: 680px;
 }
 
+/* Bottom-aligned with the copy, matching the web's justify-between hero. */
 .detail-hero-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 16px;
 }
 
 @media (max-width: 720px) {
   .detail-hero {
-    flex-direction: column;
-    align-items: stretch;
+    margin-inline: -20px;
+    min-height: 200px;
+  }
+
+  .detail-hero-inner {
+    padding: 64px 20px 20px;
+  }
+
+  .detail-hero-title {
+    font-size: 30px;
   }
 
   .detail-cover {
@@ -1145,11 +1154,167 @@ body {
 
 .detail-tab-panel {
   display: none;
-  padding-top: 20px;
+  padding-top: 24px;
 }
 
 .detail-tab-panel.active {
   display: block;
+}
+
+/*
+ * Shared subnav-panel furniture, mirroring the website's game page.
+ *
+ * Every tab there is a `space-y-6` stack with one `text-lg font-bold` heading,
+ * cards on the same border/radius, and a single dashed empty state. Before
+ * this each launcher panel invented its own heading size, padding and empty
+ * card, which is why only Media looked right — it happened to match. Keeping
+ * the furniture in one place is what stops them drifting again.
+ */
+.tab-panel-header,
+.media-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.tab-panel-header h2,
+.media-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.tab-panel-meta,
+.media-header-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* The website's EmptyHint: dashed, centred, quiet. */
+.tab-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.tab-empty-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.tab-empty h3 {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.tab-empty p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 420px;
+}
+
+.tab-empty .btn-primary,
+.tab-empty .btn-secondary {
+  margin-top: 4px;
+}
+
+.install-header-prose {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Edition chooser ─────────────────────────────────────────────────────── */
+
+.edition-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edition-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: border-color 0.2s ease;
+}
+
+.edition-choice:hover {
+  border-color: var(--border-focus);
+}
+
+.edition-choice-main {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.edition-choice-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.edition-choice-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.edition-choice-chip {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
+.edition-choice-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 6px 0 0;
+}
+
+.edition-choice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Secondary heading inside a panel, below the one .tab-panel-header h2. */
+.tab-panel-subhead {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 24px 0 12px;
+}
+
+.achievement-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.achievement-desc {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .fit-grid {
@@ -1216,8 +1381,12 @@ body {
   margin-bottom: 32px;
 }
 
+/*
+ * Matches the website's in-tab `h2` (text-lg). It was 20px, which outranked
+ * the panel's own heading and inverted the hierarchy on every tab.
+ */
 .detail-section-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.01em;
   margin: 0 0 12px 0;
@@ -1250,9 +1419,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  font-size: 14.5px;
-}
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text-muted);
 }
 
@@ -1263,6 +1430,712 @@ body {
   letter-spacing: 0.04em;
   color: var(--text-dim);
   margin-bottom: 6px;
+}
+
+/* ── Detail Content Overview Layout & Sidebar ──────────────── */
+.detail-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .detail-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-overview-main {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.detail-overview-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-sidebar-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.detail-sidebar-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-sidebar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+}
+
+.detail-sidebar-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-sidebar-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detail-sidebar-val {
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: right;
+}
+
+.detail-sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-sidebar-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.detail-sidebar-link-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border-focus);
+}
+
+/* Quality Bar Panel */
+.quality-bar-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.quality-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quality-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.quality-bar-badge {
+  background: rgba(52, 210, 123, 0.12);
+  color: #34d27b;
+  border: 1px solid rgba(52, 210, 123, 0.3);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quality-bar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.quality-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.quality-bar-item.passed {
+  color: var(--text-main);
+}
+
+.quality-bar-icon-pass {
+  color: #34d27b;
+  font-weight: 800;
+}
+
+.quality-bar-icon-fail {
+  color: var(--text-dim);
+}
+
+/* Available Editions Grid */
+.detail-editions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.detail-edition-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.detail-edition-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-focus);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.detail-edition-card-banner {
+  height: 120px;
+  width: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  overflow: hidden;
+}
+
+.detail-edition-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-edition-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+}
+
+.detail-edition-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.detail-edition-card-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Why Picked / Callout */
+.detail-why-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.detail-why-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+/* Who it's for (Fit Cards) */
+.fit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.fit-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.fit-card-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fit-card.great {
+  border-top: 3px solid rgba(52, 210, 123, 0.7);
+}
+
+.fit-card.great .fit-card-label {
+  color: #34d27b;
+}
+
+.fit-card.skip {
+  border-top: 3px solid rgba(240, 113, 120, 0.7);
+}
+
+.fit-card.skip .fit-card-label {
+  color: var(--danger);
+}
+
+.fit-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* ── Install Tab Step Cards ────────────────────────────────── */
+.install-header-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 24px;
+}
+
+.install-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.install-step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.install-step-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(124, 92, 240, 0.15);
+  color: var(--accent-light);
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(124, 92, 240, 0.3);
+}
+
+.install-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-step-platform {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-light);
+  margin-bottom: 4px;
+}
+
+.install-step-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.install-step-cmd {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #c4b5fd;
+  overflow-x: auto;
+}
+
+/* FAQ Cards */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.faq-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.faq-card h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.faq-card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* ── Mods Grid ─────────────────────────────────────────────── */
+.mod-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.mod-full-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.mod-full-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-focus);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.mod-card-banner {
+  height: 130px;
+  position: relative;
+  width: 100%;
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  overflow: hidden;
+}
+
+.mod-card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mod-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+.mod-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.mod-card-tagline {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mod-card-actions {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* ── Guides Grid ───────────────────────────────────────────── */
+.guide-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.guide-full-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+}
+
+.guide-full-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-focus);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.guide-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.guide-card-excerpt {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.guide-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+/* ── Achievements ──────────────────────────────────────────── */
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.achievement-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.achievement-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* ── News / Releases Feed ──────────────────────────────────── */
+.releases-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.release-full-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.release-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.release-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.release-date {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.release-body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* ── Discussion List ───────────────────────────────────────── */
+.discussions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.discussion-full-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.discussion-full-card:hover {
+  transform: translateX(4px);
+  border-color: var(--border-focus);
+  background: var(--bg-card-hover);
+}
+
+.discussion-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.discussion-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.discussion-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Reviews Tab ───────────────────────────────────────────── */
+.reviews-summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.reviews-summary-score {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fbbf24;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.reviews-summary-outof {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.review-full-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.review-full-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-focus);
+}
+
+.review-rating-stars {
+  color: #fbbf24;
+  font-size: 14px;
+  letter-spacing: 1px;
 }
 
 .shot-row {
@@ -3797,24 +4670,7 @@ textarea.input-text {
 }
 
 /* Media Tab (Website format) */
-.media-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.media-header h2 {
-  font-size: 18px;
-  font-weight: 800;
-  margin: 0;
-}
-
-.media-header-count {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
+/* Media's header now comes from the shared .tab-panel-header block above. */
 
 .media-details-group {
   border: 1px solid var(--border);

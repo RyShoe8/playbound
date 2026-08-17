@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage } = require("electron");
-const { spawn, execFile, execFileSync } = require("child_process");
+const { spawn, exec, execFile, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const fsp = require("fs/promises");
@@ -470,18 +470,89 @@ function steamLibraryRoots() {
  * immediately instead of by brute force.
  */
 function findInSteamLibraries(entry) {
+  const libraryRoots = steamLibraryRoots();
+  if (!libraryRoots.length) return null;
+
+  // 1. Re-resolve knownExePaths matching steamapps/common/...
   const tails = [];
   for (const raw of entry?.knownExePaths || []) {
     const m = String(raw).match(/steamapps[/\\]common[/\\](.+)$/i);
     if (m) tails.push(m[1]);
   }
-  if (!tails.length) return null;
-  for (const root of steamLibraryRoots()) {
+  for (const root of libraryRoots) {
     for (const tail of tails) {
       const full = path.join(root, "steamapps", "common", tail);
       if (fs.existsSync(full)) return full;
     }
   }
+
+  // 2. Extract Steam App ID (from entry.steamAppId or entry.url or entry.links?.steam)
+  let appId = entry?.steamAppId || null;
+  if (!appId) {
+    const url = entry?.url || entry?.links?.steam || entry?.editionLinks?.steam || "";
+    const m = String(url).match(/store\.steampowered\.com\/app\/(\d+)/i) || String(url).match(/steam:\/\/install\/(\d+)/i);
+    if (m) appId = m[1];
+  }
+
+  // 3. If Steam App ID is known, check appmanifest_<appId>.acf across all library roots
+  if (appId) {
+    for (const root of libraryRoots) {
+      const manifestPath = path.join(root, "steamapps", `appmanifest_${appId}.acf`);
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const content = fs.readFileSync(manifestPath, "utf8");
+          const m = content.match(/"installdir"\s+"([^"]+)"/i);
+          if (m && m[1]) {
+            const installDir = path.join(root, "steamapps", "common", m[1]);
+            if (fs.existsSync(installDir)) {
+              const exe = findExecutable(installDir, entry?.exeHint);
+              if (exe) return exe;
+            }
+          }
+        } catch {
+          /* ignore unreadable manifest */
+        }
+      }
+    }
+  }
+
+  // 4. Search common folders matching entry title / slug / aliases
+  const candidateFolderNames = new Set([
+    entry?.slug,
+    entry?.title,
+    ...(entry?.aliases || []),
+  ].filter(Boolean).map((s) => String(s).trim()));
+
+  for (const root of libraryRoots) {
+    const commonDir = path.join(root, "steamapps", "common");
+    if (!fs.existsSync(commonDir)) continue;
+
+    let subfolders;
+    try {
+      subfolders = fs.readdirSync(commonDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const folder of subfolders) {
+      if (!folder.isDirectory()) continue;
+      const folderName = folder.name;
+      const folderLower = folderName.toLowerCase();
+
+      // Check if folder matches title, slug, or aliases
+      const matches = [...candidateFolderNames].some((name) => {
+        const nLower = name.toLowerCase();
+        return folderLower === nLower || folderLower.replace(/[^a-z0-9]/g, "") === nLower.replace(/[^a-z0-9]/g, "");
+      });
+
+      if (matches) {
+        const fullDir = path.join(commonDir, folderName);
+        const exe = findExecutable(fullDir, entry?.exeHint);
+        if (exe) return exe;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -2713,9 +2784,11 @@ async function extractArchive(archivePath, destDir) {
 /* ── executable discovery ──────────────────────────────────── */
 
 function findExecutable(dir, exeHint) {
+  if (!dir || !fs.existsSync(dir)) return null;
   const candidates = [];
-  const skip = /unins|setup|install|crash|report|vcredist|dxsetup|server/i;
-  const walk = (d, depth = 0) => {
+  const skip = /unins|setup|install|crash|report|vcredist|dxsetup/i;
+
+  const walk = (d, depth = 0, ignoreSkip = false) => {
     if (depth > 10) return;
     let names;
     try {
@@ -2733,20 +2806,20 @@ function findExecutable(dir, exeHint) {
       }
       if (stat.isSymbolicLink()) continue;
       if (stat.isDirectory()) {
-        if (process.platform === "darwin" && name.endsWith(".app") && !skip.test(name)) {
+        if (process.platform === "darwin" && name.endsWith(".app") && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 300 });
           continue;
         }
-        walk(full, depth + 1);
+        walk(full, depth + 1, ignoreSkip);
         continue;
       }
       const lower = name.toLowerCase();
-      if (lower.endsWith(".jar") && !skip.test(name)) {
+      if (lower.endsWith(".jar") && (ignoreSkip || !skip.test(name))) {
         candidates.push({ full, name, size: stat.size, rank: 200 });
         continue;
       }
       if (process.platform === "win32") {
-        if (lower.endsWith(".exe") && !skip.test(name)) {
+        if (lower.endsWith(".exe") && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 100 });
         }
         continue;
@@ -2755,7 +2828,7 @@ function findExecutable(dir, exeHint) {
       if (/\.(zip|dmg|txt|md|html|json|xml|png|jpg|jpeg|gif|ico|pak|dat|cfg|ini)$/i.test(lower)) {
         continue;
       }
-      if (!skip.test(name)) {
+      if (ignoreSkip || !skip.test(name)) {
         const mode = stat.mode || 0;
         const executableBit = Boolean(mode & 0o111);
         candidates.push({
@@ -2767,10 +2840,17 @@ function findExecutable(dir, exeHint) {
       }
     }
   };
-  walk(dir);
+
+  walk(dir, 0, false);
+  if (candidates.length === 0) {
+    walk(dir, 0, true);
+  }
+
   if (candidates.length === 0) return null;
+
   if (exeHint) {
-    const hint = new RegExp(exeHint, "i");
+    const hintClean = String(exeHint).replace(/\.exe$/i, "");
+    const hint = new RegExp(hintClean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const hinted = candidates.filter((e) => hint.test(e.name));
     if (hinted.length > 0) {
       return hinted.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
@@ -3236,7 +3316,7 @@ function startInstallerPoll(slug, entry, version) {
       return;
     }
     tryKnownPath();
-  }, 3000);
+  }, 1500);
 }
 
 /** Resume watching pending installs after app restart. */
@@ -5981,10 +6061,19 @@ function isPlayBoundManagedInstallDir(slug, dir) {
   if (sameFsPath(resolved, root)) return false;
   if (sameFsPath(resolved, slugRoot)) return true;
   if (process.platform === "win32") {
-    const rel = path.relative(slugRoot.toLowerCase(), resolved.toLowerCase());
-    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    const relToSlug = path.relative(slugRoot.toLowerCase(), resolved.toLowerCase());
+    if (relToSlug === "" || (!relToSlug.startsWith("..") && !path.isAbsolute(relToSlug))) {
+      return true;
+    }
+    // Any folder under gamesRoot is managed by PlayBound
+    const relToGames = path.relative(root.toLowerCase(), resolved.toLowerCase());
+    if (relToGames !== "" && !relToGames.startsWith("..") && !path.isAbsolute(relToGames)) {
+      return true;
+    }
+  } else {
+    if (pathUnderRoot(resolved, slugRoot) || pathUnderRoot(resolved, root)) return true;
   }
-  return pathUnderRoot(resolved, slugRoot);
+  return false;
 }
 
 function isUnsafeUninstallDir(dir) {
@@ -6005,24 +6094,174 @@ function isUnsafeUninstallDir(dir) {
   return sameFsPath(resolved, path.resolve(gamesRoot()));
 }
 
+function findUninstallStringFromRegistry(entry) {
+  if (process.platform !== "win32" || !entry) return null;
+  const titles = [
+    String(entry.title || "").trim(),
+    ...((entry.registryTitles || []).map((t) => String(t || "").trim())),
+    entry.slug,
+  ].filter(Boolean);
+
+  const seenTitles = new Set();
+  const titleList = titles.filter((t) => {
+    const k = t.toLowerCase();
+    if (seenTitles.has(k)) return false;
+    seenTitles.add(k);
+    return true;
+  });
+
+  const knownBases = (entry.knownExePaths || [])
+    .map((p) => path.basename(expandWinPath(p)).toLowerCase())
+    .filter(Boolean);
+
+  if (titleList.length === 0 && knownBases.length === 0) return null;
+
+  try {
+    const ps = `
+$ErrorActionPreference = 'SilentlyContinue'
+$titles = @(${titleList.map((t) => JSON.stringify(t)).join(",")})
+$bases = @(${knownBases.map((b) => JSON.stringify(b)).join(",")})
+$paths = @(
+  'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+  'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',
+  'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+)
+$items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation -or $_.UninstallString }
+$hit = $null
+foreach ($title in $titles) {
+  if (-not $title) { continue }
+  $hit = $items |
+    Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
+    Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
+  if ($hit) { break }
+}
+if (-not $hit -and $bases.Count -gt 0) {
+  $hit = $items | Where-Object {
+    $icon = [string]$_.DisplayIcon
+    $loc = [string]$_.InstallLocation
+    $un = [string]$_.UninstallString
+    foreach ($b in $bases) {
+      if ($icon -and ($icon.ToLower().Contains($b))) { return $true }
+      if ($loc -and (Test-Path (Join-Path $loc $b))) { return $true }
+      if ($un -and ($un.ToLower().Contains($b))) { return $true }
+    }
+    $false
+  } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
+}
+if (-not $hit) { return }
+@{
+  UninstallString = [string]$hit.UninstallString
+  QuietUninstallString = [string]$hit.QuietUninstallString
+} | ConvertTo-Json -Compress
+`;
+    const out = execFileSync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", ps],
+      { encoding: "utf8", timeout: 10_000, windowsHide: true, maxBuffer: 1024 * 1024 }
+    ).trim();
+    if (out) {
+      const hit = JSON.parse(out);
+      return hit.QuietUninstallString || hit.UninstallString || null;
+    }
+  } catch (err) {
+    console.warn(`[uninstall] registry lookup failed for ${entry.slug}:`, err?.message);
+  }
+  return null;
+}
+
+async function runGameUninstaller(slug, entry, dir) {
+  if (process.platform === "win32") {
+    // 1. Look for uninstaller binary in the game's directory
+    if (dir && fs.existsSync(dir)) {
+      try {
+        const files = fs.readdirSync(dir);
+        const uninstallerFile = files.find((f) =>
+          /^unins.*\.exe$/i.test(f) ||
+          /^uninstall.*\.exe$/i.test(f)
+        );
+        if (uninstallerFile) {
+          const uninstallerPath = path.join(dir, uninstallerFile);
+          console.log(`[uninstall] executing uninstaller binary: ${uninstallerPath}`);
+          await new Promise((resolve) => {
+            const child = spawn(uninstallerPath, ["/S", "/SILENT"], {
+              detached: true,
+              stdio: "ignore",
+              windowsHide: false,
+            });
+            child.on("error", (e) => {
+              console.warn(`[uninstall] uninstaller spawn error:`, e?.message);
+              resolve(false);
+            });
+            child.on("exit", (code) => {
+              console.log(`[uninstall] uninstaller exited with code:`, code);
+              resolve(true);
+            });
+            setTimeout(() => resolve(true), 12000);
+          });
+          return true;
+        }
+      } catch (err) {
+        console.warn(`[uninstall] readdir failed for ${dir}:`, err?.message);
+      }
+    }
+
+    // 2. Look for UninstallString in Windows Registry
+    const uninstallCmd = findUninstallStringFromRegistry(entry || { slug });
+    if (uninstallCmd) {
+      console.log(`[uninstall] executing registry uninstall command: ${uninstallCmd}`);
+      await new Promise((resolve) => {
+        exec(uninstallCmd, { timeout: 25000, windowsHide: false }, (err) => {
+          if (err) console.warn(`[uninstall] registry uninstall error:`, err?.message);
+          resolve(true);
+        });
+      });
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
- * Delete a folder only when it lives under PlayBound's games/<slug> tree.
- * Steam / MSI / located installs are never deleted — we only drop tracking.
+ * Delete or uninstall a game directory.
+ * Runs official uninstaller for installer games, and cleanly deletes PlayBound managed folders.
  */
-async function tryRemovePlayBoundInstallDir(slug, dir) {
-  if (!dir || !fs.existsSync(dir)) return null;
-  if (!isPlayBoundManagedInstallDir(slug, dir) || isUnsafeUninstallDir(dir) || isProtectedSaveDirectory(dir)) {
+async function tryRemovePlayBoundInstallDir(slug, dir, entry = null) {
+  if (!dir) return null;
+
+  if (entry) {
+    try {
+      await runGameUninstaller(slug, entry, dir);
+    } catch (err) {
+      console.warn(`[uninstall] runGameUninstaller error:`, err?.message);
+    }
+  }
+
+  // Small delay to let uninstaller finish releasing locks / deleting files
+  await new Promise((r) => setTimeout(r, 1200));
+
+  if (!fs.existsSync(dir)) return null;
+
+  const isManaged = isPlayBoundManagedInstallDir(slug, dir);
+  const isDedicatedProgramDir = Boolean(
+    process.platform === "win32" &&
+    process.env.LOCALAPPDATA &&
+    pathUnderRoot(path.resolve(dir), path.join(process.env.LOCALAPPDATA, "Programs")) &&
+    !sameFsPath(path.resolve(dir), path.join(process.env.LOCALAPPDATA, "Programs"))
+  );
+
+  if ((isManaged || isDedicatedProgramDir) && !isUnsafeUninstallDir(dir) && !isProtectedSaveDirectory(dir)) {
+    try {
+      prepareDirRemoval(slug, [{ dir }]);
+      await removeDirWithRetries(dir);
+      return null;
+    } catch (err) {
+      const message = err?.message || String(err);
+      console.warn(`[uninstall] could not delete ${dir}:`, message);
+      return message;
+    }
+  } else {
     console.warn(`[uninstall] skipping folder PlayBound does not own: ${dir}`);
     return null;
-  }
-  try {
-    prepareDirRemoval(slug, [{ dir }]);
-    await removeDirWithRetries(dir);
-    return null;
-  } catch (err) {
-    const message = err?.message || String(err);
-    console.warn(`[uninstall] could not delete ${dir}:`, message);
-    return message;
   }
 }
 
@@ -6048,6 +6287,8 @@ async function uninstallGame(slug, editionSlug = null) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   if (!state[slug]) return { status: "not-installed" };
+
+  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug) || { slug };
 
   // A modded edition patches an executable PlayBound does not own — the game
   // belongs to Steam. Restore it before dropping our records, so uninstalling
@@ -6080,7 +6321,7 @@ async function uninstallGame(slug, editionSlug = null) {
       delete game.editions[editionSlug];
     } else {
       if (info.dir) {
-        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir);
+        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir, entry);
         if (warning) warnings.push(warning);
       }
       delete game.editions[editionSlug];
@@ -6110,7 +6351,7 @@ async function uninstallGame(slug, editionSlug = null) {
     const key = process.platform === "win32" ? path.resolve(dir).toLowerCase() : path.resolve(dir);
     if (seen.has(key)) continue;
     seen.add(key);
-    const warning = await tryRemovePlayBoundInstallDir(slug, dir);
+    const warning = await tryRemovePlayBoundInstallDir(slug, dir, entry);
     if (warning) warnings.push(warning);
   }
   delete state[slug];
