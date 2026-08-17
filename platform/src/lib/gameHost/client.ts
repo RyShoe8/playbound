@@ -110,3 +110,39 @@ export async function deleteHostRoom(roomId: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function archiveArtifactOnHost(input: {
+  url: string;
+  relativePath: string;
+  sizeBytes: number;
+  sha256?: string | null;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await hostFetch("/mirror/archive", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (!res) return { success: false, message: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    return res.ok
+      ? { success: true }
+      : { success: false, message: data.error || `Game host returned ${res.status}` };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+export async function deleteArchivedArtifactOnHost(relativePath: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await hostFetch(`/mirror/archive/${encodeURIComponent(relativePath)}`, {
+      method: "DELETE",
+    });
+    if (!res) return { success: false, message: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    return res.ok || res.status === 404
+      ? { success: true }
+      : { success: false, message: data.error || `Game host returned ${res.status}` };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}

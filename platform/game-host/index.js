@@ -13,6 +13,11 @@
 import http from "node:http";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
+import path from "node:path";
+import { createWriteStream } from "node:fs";
+import { mkdir, rename, rm, stat } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
 import { resolveRecipe, listInstalled } from "./recipes.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
@@ -20,6 +25,8 @@ const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
 const PORT = Number(process.env.GAME_HOST_PORT || 8741);
 const MAX_ROOMS = Number(process.env.GAME_HOST_MAX_ROOMS || 8);
 const IDLE_MS = Number(process.env.GAME_HOST_IDLE_MS || 4 * 60 * 60 * 1000);
+const MIRROR_ARCHIVE_DIR = process.env.MIRROR_ARCHIVE_DIR || "/opt/playbound-host/archive";
+const MIRROR_ARCHIVE_MAX_BYTES = Number(process.env.MIRROR_ARCHIVE_MAX_BYTES || 20 * 1024 * 1024 * 1024);
 
 if (!SECRET) {
   console.error("GAME_HOST_SECRET is required");
@@ -89,6 +96,74 @@ function readBody(req) {
     });
     req.on("error", reject);
   });
+}
+
+function archivePath(relativePath) {
+  const raw = String(relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!raw || raw.split("/").some((part) => !part || part === "." || part === "..")) return null;
+  const root = path.resolve(MIRROR_ARCHIVE_DIR);
+  const target = path.resolve(root, raw);
+  return target.startsWith(`${root}${path.sep}`) ? target : null;
+}
+
+async function sha256File(file) {
+  const hash = crypto.createHash("sha256");
+  const stream = Readable.toWeb((await import("node:fs")).createReadStream(file));
+  const reader = stream.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    hash.update(value);
+  }
+  return hash.digest("hex");
+}
+
+async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }) {
+  const target = archivePath(relativePath);
+  if (!target) return { error: "Invalid archive path" };
+  let source;
+  try {
+    source = new URL(String(url || ""));
+  } catch {
+    return { error: "Invalid archive URL" };
+  }
+  if (source.protocol !== "https:") return { error: "Archive URL must use HTTPS" };
+  if (!Number.isFinite(Number(sizeBytes)) || Number(sizeBytes) <= 0 || Number(sizeBytes) > MIRROR_ARCHIVE_MAX_BYTES) {
+    return { error: "Archive size is invalid or exceeds the host limit" };
+  }
+
+  const temp = `${target}.partial-${crypto.randomBytes(6).toString("hex")}`;
+  try {
+    await mkdir(path.dirname(target), { recursive: true });
+    const res = await fetch(source, { signal: AbortSignal.timeout(60 * 60 * 1000) });
+    if (!res.ok || !res.body) return { error: `Archive download failed (${res.status})` };
+    const contentLength = Number(res.headers.get("content-length") || 0);
+    if (contentLength && contentLength > MIRROR_ARCHIVE_MAX_BYTES) return { error: "Archive exceeds the host limit" };
+    await pipeline(Readable.fromWeb(res.body), createWriteStream(temp, { flags: "wx" }));
+    const file = await stat(temp);
+    if (file.size !== Number(sizeBytes)) return { error: `Archive size mismatch (expected ${sizeBytes}, got ${file.size})` };
+    if (sha256) {
+      const actual = await sha256File(temp);
+      if (actual.toLowerCase() !== String(sha256).toLowerCase()) return { error: "Archive checksum mismatch" };
+    }
+    await rename(temp, target);
+    return { ok: true, sizeBytes: file.size };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not archive artifact" };
+  } finally {
+    await rm(temp, { force: true }).catch(() => {});
+  }
+}
+
+async function deleteArchivedFile(relativePath) {
+  const target = archivePath(relativePath);
+  if (!target) return { error: "Invalid archive path" };
+  try {
+    await rm(target, { force: true });
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not delete archived file" };
+  }
 }
 
 function allocPort(recipe, slug) {
@@ -267,6 +342,19 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       json(res, 201, publicRoom(result.room));
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/mirror/archive") {
+      const result = await archiveFromUrl(await readBody(req));
+      json(res, result.error ? 400 : 201, result);
+      return;
+    }
+
+    const archiveMatch = url.pathname.match(/^\/mirror\/archive\/(.+)$/);
+    if (req.method === "DELETE" && archiveMatch) {
+      const result = await deleteArchivedFile(decodeURIComponent(archiveMatch[1]));
+      json(res, result.error ? 400 : 200, result);
       return;
     }
 

@@ -27,6 +27,7 @@ GAMES_DIR="$INSTALL_ROOT/games"
 AGENT_DIR="$INSTALL_ROOT/agent"
 ENV_FILE="/etc/playbound-game-host.env"
 HOME_DIR="/var/lib/playbound-host"
+MIRROR_ARCHIVE_DIR="$INSTALL_ROOT/archive"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -60,8 +61,8 @@ if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/v//' | cut -d. -f
 fi
 
 id -u playbound >/dev/null 2>&1 || useradd --system --home "$HOME_DIR" --shell /usr/sbin/nologin playbound
-mkdir -p "$HOME_DIR" "$GAMES_DIR" "$AGENT_DIR"
-chown -R playbound:playbound "$HOME_DIR"
+mkdir -p "$HOME_DIR" "$GAMES_DIR" "$AGENT_DIR" "$MIRROR_ARCHIVE_DIR"
+chown -R playbound:playbound "$HOME_DIR" "$MIRROR_ARCHIVE_DIR"
 
 echo "==> copy agent"
 cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/package.json" "$AGENT_DIR/"
@@ -91,6 +92,8 @@ GAME_HOST_PORT=8741
 GAME_HOST_MAX_ROOMS=8
 GAME_HOST_GAMES_DIR=${GAMES_DIR}
 GAME_HOST_IDLE_MS=14400000
+MIRROR_ARCHIVE_DIR=${MIRROR_ARCHIVE_DIR}
+MIRROR_ARCHIVE_MAX_BYTES=$((20 * 1024 * 1024 * 1024))
 HOME=${HOME_DIR}
 EOF
 chmod 640 "$ENV_FILE"
