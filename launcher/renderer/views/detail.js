@@ -155,7 +155,7 @@ function classifyMediaUrl(src) {
   return { kind: "direct", src: url };
 }
 
-function buildOverviewSidebarHtml(detail, slug) {
+function buildOverviewSidebarHtml(detail, slug, liveStats = null) {
   const dev = detail.developer || detail.developerName || "Independent";
   const pub = detail.publisher || "—";
   const release = detail.releaseYear || detail.releaseDate || "—";
@@ -169,6 +169,9 @@ function buildOverviewSidebarHtml(detail, slug) {
 
   return `
     <aside class="detail-overview-sidebar">
+      <!-- Activity leads the sidebar: it is the only part that changes while
+           you are looking at the page, and it fills in after the paint. -->
+      <div id="detail-activity-slot">${liveStats ? buildActivityPanelHtml(liveStats) : ""}</div>
       <div class="detail-sidebar-card">
         <div class="detail-sidebar-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
@@ -450,8 +453,6 @@ async function renderGameDetailView(slug, opts = {}) {
     <div class="detail-tab-panels">
       <!-- ── Overview Tab ────────────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
-        <div id="detail-activity-slot">${buildActivityPanelHtml(liveStats)}</div>
-        
         <div class="detail-overview-grid">
           <div class="detail-overview-main">
             ${
@@ -492,7 +493,7 @@ async function renderGameDetailView(slug, opts = {}) {
             ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots</h2><div class="shot-row">${shots}</div></section>` : ""}
           </div>
 
-          ${buildOverviewSidebarHtml(detail, slug)}
+          ${buildOverviewSidebarHtml(detail, slug, liveStats)}
         </div>
       </div>
 
