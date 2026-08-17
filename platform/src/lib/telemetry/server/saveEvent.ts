@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
-import { parseUserAgent } from "./parseUserAgent";
+import { launcherOsLabel, parseUserAgent } from "./parseUserAgent";
 import { maybeUpsertAutoBugFromTelemetry } from "@/lib/autoBugReport";
 
 export interface SaveTelemetryEventInput {
@@ -37,6 +37,21 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
   const deviceFromProps =
     typeof props.deviceType === "string" ? props.deviceType : null;
 
+  /*
+   * The launcher states what it is in the payload — `source: "launcher"` and
+   * an exact `platform` — so prefer that over reading its User-Agent. The
+   * header can be rewritten or dropped in transit; the body cannot, and this
+   * keeps launcher events labelled correctly even then.
+   */
+  const client =
+    props.source === "launcher"
+      ? {
+          browser: "Launcher",
+          os: launcherOsLabel(props.platform) || ua.os,
+          device: "desktop",
+        }
+      : ua;
+
   const createdAt = input.timestamp
     ? new Date(input.timestamp)
     : new Date();
@@ -51,9 +66,9 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     referrer,
     ip: input.ip ?? null,
     country: input.country ?? null,
-    browser: ua.browser,
-    os: ua.os,
-    device: deviceFromProps || ua.device,
+    browser: client.browser,
+    os: client.os,
+    device: deviceFromProps || client.device,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
   });
 
