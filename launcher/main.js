@@ -4438,6 +4438,7 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
  * on the edition page for whoever wants it.
  */
 async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
+  if (!entry?.postInstallDiscord) return null;
   if (gameDir && fs.existsSync(gameDir)) {
     try {
       await shell.openPath(gameDir);

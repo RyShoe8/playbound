@@ -330,8 +330,8 @@ function wireMainEvents() {
       setStatus(`${prefix} ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
       setProgress(pct);
     } else if (phase === "extracting") {
-      setStatus("Extracting game files...");
-      setProgress(100);
+      setStatus("Extracting game files… this can take a few minutes");
+      setProgress("indeterminate");
     } else if (phase === "installer-ready") {
       setStatus("Installer opened — finish the setup wizard…");
       setProgress(null);

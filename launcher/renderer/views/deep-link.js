@@ -123,9 +123,12 @@ function renderDeepLinkView(ctx) {
           return;
         }
         if (res.status === "installed") {
-          setStatus("Install complete!");
+          setStatus(res.note || "Install complete!");
           setProgress(null);
           await installLinkedMods();
+          if (res.note) {
+            await new Promise((r) => setTimeout(r, 2500));
+          }
         }
         api.navigateTo("library");
       } catch (err) {
