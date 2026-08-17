@@ -1726,7 +1726,7 @@ export function GameEditorForm({
               </button>
             </>
           )}
-          {onPlayboundLauncher && (
+          {Boolean(form.launcherInstall?.kind) && (
             <details className="rounded-lg border border-border bg-background/40 p-3">
               <summary className="cursor-pointer text-xs font-bold">Customize install recipe</summary>
               <div className="mt-3 space-y-3">
@@ -1917,23 +1917,23 @@ export function GameEditorForm({
                     placeholder="+connect {host}:{port}"
                   />
                 </div>
-                {mode === "edit" && (
-                  <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
-                    <button
-                      type="button"
-                      disabled={busy || launcherSaving}
-                      onClick={saveLauncherInstallOnly}
-                      className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
-                    >
-                      {launcherSaving ? "Saving recipe…" : "Save install recipe only"}
-                    </button>
-                    <span className="text-[11px] text-muted-foreground">
-                      Updates only this recipe. It does not save any other game fields.
-                    </span>
-                  </div>
-                )}
               </div>
             </details>
+          )}
+          {mode === "edit" && form.launcherInstall && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5">
+              <button
+                type="button"
+                disabled={busy || launcherSaving}
+                onClick={saveLauncherInstallOnly}
+                className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+              >
+                {launcherSaving ? "Saving recipe…" : "Save install recipe only"}
+              </button>
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Updates only this recipe. It does not save any other game fields.
+              </span>
+            </div>
           )}
         </AdminCollapsibleSection>
 
