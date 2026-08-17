@@ -26,6 +26,7 @@ const {
   resolveGameDir,
 } = require("./openciv3Display");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
+const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
 const {
   clientConnectArgs,
@@ -112,19 +113,9 @@ function saveCatalogCache(entries) {
 
 /** Mutable catalog: bundled fallback, overlaid with cached/remote entries from the site API. */
 let catalog = (() => {
-  const cached = loadCachedCatalog();
-  const bySlug = new Map(bundledCatalog.map((e) => [e.slug, { ...e }]));
-  if (cached) {
-    for (const entry of cached) {
-      if (!entry?.slug) continue;
-      bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
-    }
-  }
-  const merged = [...bySlug.values()];
-  for (const entry of merged) {
-    registerCatalogEntryHosts(entry);
-  }
-  return merged;
+  const games = startupCatalog({ cached: loadCachedCatalog(), bundled: bundledCatalog });
+  for (const entry of games) registerCatalogEntryHosts(entry);
+  return games;
 })();
 
 /**
@@ -1806,23 +1797,35 @@ async function refreshRemoteCatalog(force = false) {
     const data = await res.json();
     const remote = Array.isArray(data.games) ? data.games : [];
     if (remote.length === 0) return;
-    const bySlug = new Map(bundledCatalog.map((e) => [e.slug, { ...e }]));
-    const cached = loadCachedCatalog();
-    if (cached) {
-      for (const entry of cached) {
-        if (!entry?.slug) continue;
-        bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
-      }
-    }
-    for (const entry of remote) {
-      if (!entry?.slug) continue;
-      bySlug.set(entry.slug, { ...(bySlug.get(entry.slug) || {}), ...entry });
-      registerCatalogEntryHosts(entry);
-    }
-    catalog = [...bySlug.values()];
+    /*
+     * The live feed decides which games exist. Bundled and cached entries only
+     * fill in fields for slugs it still lists.
+     *
+     * This used to union all three into one map, so a slug had to appear in
+     * any of them once to survive forever — and the union was written straight
+     * back to the cache, which then re-seeded the next refresh. Unpublishing a
+     * game or renaming its slug left the old entry on the games page
+     * permanently, and no amount of shipping a corrected catalog.js could
+     * clear it, because the disk cache kept reintroducing it.
+     *
+     * An empty or failed response is the offline case and leaves the existing
+     * catalog untouched, which is what the guard above is for.
+     */
+    const { games, removed } = reconcileCatalog({
+      remote,
+      cached: loadCachedCatalog(),
+      bundled: bundledCatalog,
+    });
+    if (!games) return;
+    for (const entry of games) registerCatalogEntryHosts(entry);
+    catalog = games;
+
     lastCatalogRefreshTime = Date.now();
     saveCatalogCache(catalog);
-    console.log(`Remote catalog: ${remote.length} game(s) merged (${catalog.length} total).`);
+    console.log(
+      `Remote catalog: ${catalog.length} game(s)` +
+        (removed.length ? ` (${removed.length} removed: ${removed.join(", ")})` : "")
+    );
     broadcastCatalogUpdated();
   } catch (err) {
     console.warn("Remote catalog refresh failed:", err.message || err);
