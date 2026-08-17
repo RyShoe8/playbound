@@ -125,6 +125,8 @@ interface ArtifactDetail {
     sizeBytes: number;
     sha256: string;
     licenseStatus: string;
+    mirrorEnabled: boolean;
+    redistributionAllowed: boolean;
     vpsStatus: string;
     r2Status: string;
     r2PromotionScore: number;
@@ -180,6 +182,8 @@ export function DownloadMirrorsManager() {
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
   const [artifactDetail, setArtifactDetail] = useState<ArtifactDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [approvalUrl, setApprovalUrl] = useState("");
+  const [approvalConfirmed, setApprovalConfirmed] = useState(false);
 
   // Settings form local state
   const [budgetInput, setBudgetInput] = useState("8.0");
@@ -420,6 +424,8 @@ export function DownloadMirrorsManager() {
 
   async function openArtifactDetails(id: string) {
     setSelectedArtifactId(id);
+    setApprovalUrl("");
+    setApprovalConfirmed(false);
     setDetailLoading(true);
     try {
       const res = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(id)}`);
@@ -431,6 +437,27 @@ export function DownloadMirrorsManager() {
       console.error("Failed to load artifact details", err);
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function approveArtifactForMirroring() {
+    if (!selectedArtifactId) return;
+    setBusyAction(`approve-${selectedArtifactId}`);
+    try {
+      const res = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(selectedArtifactId)}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceUrl: approvalUrl, confirmRedistribution: approvalConfirmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not approve artifact");
+      setMessage({ text: data.message, type: "success" });
+      await openArtifactDetails(selectedArtifactId);
+      await loadData();
+    } catch (err: unknown) {
+      setMessage({ text: err instanceof Error ? err.message : "Could not approve artifact", type: "error" });
+    } finally {
+      setBusyAction(null);
     }
   }
 
@@ -1160,6 +1187,23 @@ export function DownloadMirrorsManager() {
                     <div className="text-sm font-bold text-indigo-400 mt-1 font-mono">{artifactDetail.artifact.r2PromotionScore} / 100</div>
                   </div>
                 </div>
+
+                {(!artifactDetail.artifact.mirrorEnabled || !artifactDetail.artifact.redistributionAllowed) && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-100">Approve this artifact for mirroring</h4>
+                      <p className="mt-1 text-xs text-amber-100/75">Add the official direct file URL, then confirm you have verified redistribution is allowed. This changes only this artifact&apos;s two mirror-policy fields and its source row.</p>
+                    </div>
+                    <input value={approvalUrl} onChange={(e) => setApprovalUrl(e.target.value)} placeholder="https://publisher.example/file.zip" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm" />
+                    <label className="flex items-start gap-2 text-xs text-foreground">
+                      <input type="checkbox" checked={approvalConfirmed} onChange={(e) => setApprovalConfirmed(e.target.checked)} className="mt-0.5" />
+                      <span>I have confirmed this file may be redistributed and archived by PlayBound.</span>
+                    </label>
+                    <button type="button" onClick={() => void approveArtifactForMirroring()} disabled={!approvalUrl || !approvalConfirmed || busyAction === `approve-${selectedArtifactId}`} className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-black disabled:opacity-50">
+                      {busyAction === `approve-${selectedArtifactId}` ? "Approving…" : "Approve mirror source"}
+                    </button>
+                  </div>
+                )}
 
                 {/* Checksum */}
                 <div className="p-3 rounded-xl border border-border bg-secondary/20 space-y-1">
