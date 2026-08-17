@@ -105,7 +105,21 @@ class GameLauncher {
         cwd: path.dirname(launchPath),
         detached: true,
         stdio: "ignore",
-        windowsHide: true,
+        /*
+         * false, for the same reason the native branch below says so.
+         *
+         * windowsHide sets STARTF_USESHOWWINDOW with SW_HIDE in the child's
+         * STARTUPINFO, and LWJGL/GLFW — which every libGDX game uses — honours
+         * nCmdShow when it creates its window. So `true` did not just hide a
+         * console, it started the game with its window hidden: the process ran,
+         * held a lock on the install folder so uninstall failed with "resource
+         * busy or locked", and nothing ever appeared on screen.
+         *
+         * Nothing is lost by dropping it. resolveJavaBinary already prefers
+         * javaw.exe, which has no console to hide; only a java.exe fallback
+         * shows one, and a stray console beats an invisible game.
+         */
+        windowsHide: false,
       });
       return child;
     }
