@@ -325,7 +325,6 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
     const source = await MirrorSource.findOne({
       artifactId: artifact.artifactId,
       sourceType: "public",
-      enabled: true,
     }).sort({ priority: 1, createdAt: 1 });
     const candidate = String(source?.url || "").trim();
     if (!candidate.startsWith("https://")) {
