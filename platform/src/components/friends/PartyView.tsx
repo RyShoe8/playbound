@@ -14,7 +14,7 @@ import {
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { openDiscordInvite, openPlayboundDeepLink, firePlayboundDeepLink, parseDiscordInviteCode } from "@/lib/openPlayboundDeepLink";
+import { firePlayboundDeepLink, parseDiscordInviteCode, openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
 import { withOutboundUtm } from "@/lib/utm";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
@@ -284,59 +284,59 @@ export function PartyView({
 
         <div className="flex items-center gap-3">
           {party.voiceEnabled || party.discord.inviteUrl || party.discord.voiceChannelId ? (
-            <button
-              type="button"
-              disabled={voiceBusy}
-              onClick={() => {
-                const knownUrl = party.discord.inviteUrl;
-                const pendingTab = knownUrl ? null : window.open("about:blank", "_blank");
-                if (knownUrl) openDiscordInvite(knownUrl);
-                void (async () => {
-                  setVoiceBusy(true);
-                  setVoiceError(null);
-                  const result = await provisionDiscord(party.id);
-                  const url = result.inviteUrl || knownUrl;
-                  if (result.error && !url) {
-                    pendingTab?.close();
-                    setVoiceError(result.error);
-                    setVoiceBusy(false);
-                    return;
-                  }
-                  if (result.needsDiscordLink) {
-                    if (pendingTab && !pendingTab.closed && url) {
-                      try {
-                        pendingTab.location.replace(url);
-                      } catch {
-                        pendingTab.close();
-                      }
-                    } else {
-                      pendingTab?.close();
-                    }
-                    setDiscordPrompt({ open: true, inviteUrl: url });
-                  } else if (url) {
-                    if (pendingTab && !pendingTab.closed) {
-                      try {
-                        pendingTab.location.replace(url);
-                      } catch {
-                        pendingTab.close();
-                        openDiscordInvite(url);
+            party.discord.inviteUrl ? (
+              <a
+                href={party.discord.inviteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors"
+                onClick={() => {
+                  const code = parseDiscordInviteCode(party.discord.inviteUrl!);
+                  if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
+                  void provisionDiscord(party.id);
+                }}
+              >
+                <Phone className="size-3.5" /> Launch Voice
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled={voiceBusy}
+                onClick={() => {
+                  const pendingTab = window.open("about:blank", "_blank");
+                  void (async () => {
+                    setVoiceBusy(true);
+                    setVoiceError(null);
+                    const result = await provisionDiscord(party.id);
+                    const url = result.inviteUrl;
+                    if (url) {
+                      if (pendingTab && !pendingTab.closed) {
+                        try {
+                          pendingTab.location.replace(url);
+                        } catch {
+                          pendingTab.close();
+                          window.location.assign(url);
+                        }
+                      } else {
+                        window.location.assign(url);
                       }
                       const code = parseDiscordInviteCode(url);
                       if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
-                    } else if (!knownUrl) {
-                      openDiscordInvite(url);
+                    } else {
+                      pendingTab?.close();
+                      setVoiceError(result.error || "Couldn't open Discord voice.");
+                      if (result.needsDiscordLink) {
+                        setDiscordPrompt({ open: true, inviteUrl: null });
+                      }
                     }
-                  } else {
-                    pendingTab?.close();
-                    setVoiceError("Couldn't open Discord voice.");
-                  }
-                  setVoiceBusy(false);
-                })();
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors disabled:opacity-50"
-            >
-              <Phone className="size-3.5" /> {voiceBusy ? "Opening…" : "Launch Voice"}
-            </button>
+                    setVoiceBusy(false);
+                  })();
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors disabled:opacity-50"
+              >
+                <Phone className="size-3.5" /> {voiceBusy ? "Opening…" : "Launch Voice"}
+              </button>
+            )
           ) : null}
 
           <button

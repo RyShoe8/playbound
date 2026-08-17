@@ -231,7 +231,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       const data = await res.json();
       if (res.ok && data.party?.discord) {
-        await get().fetchParties();
+        void get().fetchParties();
         return {
           inviteUrl: data.inviteUrl || data.party.discord.inviteUrl || null,
           needsDiscordLink: Boolean(data.needsDiscordLink),
