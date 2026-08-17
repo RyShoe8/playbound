@@ -9,6 +9,7 @@ const links = [
   { href: "/gear", label: "Gear" },
   { href: "/mods", label: "Mods" },
   { href: "/servers", label: "Servers" },
+  { href: "/connect", label: "Connect" },
   { href: "/events", label: "Events" },
   { href: "/weekly", label: "Weekly" },
   { href: "/standards", label: "Our Standard" },

@@ -1297,12 +1297,20 @@ export const editions: EditionSeed[] = [
     name: "Mr. Boom (Portable Standalone Edition)",
     shortDescription: "Portable DRM-free open-source build for PC with zero install footprint.",
     description:
-      "The lightweight standalone open-source release of Mr. Boom. Provides instant portable 8-player party action with native gamepad support and zero installation dependencies.",
+      "The lightweight standalone open-source release of Mr. Boom. Provides instant portable 8-player party action with native gamepad support and zero installation dependencies.\n\nNo longer downloadable: the author's host stopped serving this build, and upstream now publishes source only. Install the RetroArch edition instead — same game, from the libretro core that is still maintained.",
     type: "official",
-    status: "active",
+    /*
+     * Archived because the download is gone, not because the edition was
+     * retired on purpose. mrboom.mumble.info answers every request with 421 —
+     * the parent domain is alive but this vhost has been removed — which is
+     * what the catalog version probe reports as "broken — HTTP 421". Kept
+     * listed rather than deleted so the history is visible, but it can no
+     * longer be the default install route.
+     */
+    status: "archived",
     visibility: "public",
-    isDefault: true,
-    sortOrder: 10,
+    isDefault: false,
+    sortOrder: 30,
     links: {
       website: "http://mrboom.mumble.info/",
       github: "https://github.com/Javanaise/mrboom-libretro",
@@ -3159,6 +3167,67 @@ export const editions: EditionSeed[] = [
     features: ["Local Multiplayer", "Tournament Ready", "Classic SWOS Pitches", "Calibrated 4-Player Controls"],
     tags: ["Sports", "Tournament", "Retro", "SWOS", "Local PvP"],
     verificationLevel: "playbound_verified",
+  },
+
+  // --- Mr. Boom ---
+  {
+    gameSlug: "mrboom",
+    slug: "retroarch",
+    name: "Mr. Boom (RetroArch Edition)",
+    shortDescription:
+      "The libretro build, bundled with RetroArch so it installs and plays in one click.",
+    description:
+      "Mr. Boom's standalone Windows download is gone — the author's site no longer serves it, and upstream publishes source only. What is still maintained is the libretro core, which needs RetroArch to run it.\n\nThis edition installs RetroArch from its official buildbot, drops the Mr. Boom core beside it, and launches straight into the game. Nothing is redistributed by PlayBound: both downloads come from the projects' own servers.\n\nThe core carries its own game data, so there is no ROM to supply. Up to eight players locally.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://github.com/Javanaise/mrboom-libretro",
+      github: "https://github.com/Javanaise/mrboom-libretro",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        /*
+         * RetroArch publishes .7z only — no zip and no setup exe, on stable or
+         * nightly. Windows' bundled tar reads the 7z container but is built
+         * without LZMA, so the launcher ships a 7-Zip binary for this.
+         */
+        kind: "direct-7z",
+        url: "https://buildbot.libretro.com/stable/1.19.1/windows/x86_64/RetroArch.7z",
+        fileName: "RetroArch.7z",
+        versionLabel: "1.19.1",
+        exeHint: "retroarch",
+        installRoot: "RetroArch-Win64",
+        /*
+         * Boot straight into the core rather than RetroArch's menu. These are
+         * static args, so playGame passes them on an ordinary launch (see the
+         * connectArgs handling in main.js — templated entries are join-only).
+         * Paths are relative to the executable, which is also the launch cwd.
+         */
+        connectArgs: ["-L", "cores/mrboom_libretro.dll", "-f"],
+        modLoader: {
+          // Files only: RetroArch runs as shipped, it just needs the core.
+          kind: "files",
+          files: [
+            {
+              url: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/mrboom_libretro.dll.zip",
+              fileName: "mrboom_libretro.dll.zip",
+              dest: "RetroArch-Win64/cores",
+              extract: true,
+              // Archive holds exactly this one file at its root.
+              extractedMarker: "mrboom_libretro.dll",
+            },
+          ],
+        },
+        note: "Installs RetroArch plus the Mr. Boom core, both from their official builds.",
+      },
+    },
+    features: ["Local Multiplayer", "8 Players", "Open Source", "No ROM Needed"],
+    tags: ["Party", "Arcade", "Bomberman", "Local PvP"],
+    verificationLevel: "community_verified",
   },
 ];
 

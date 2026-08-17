@@ -3,11 +3,16 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import { eventsForFamily, type OpsFamily } from "@/lib/admin/opsEvents";
 
 export const runtime = "nodejs";
 
 const querySchema = z.object({
   event: z.string().min(1).max(128).optional(),
+  family: z.enum(["all", "launcher", "party"]).optional(),
+  gameSlug: z.string().min(1).max(120).optional(),
+  partyId: z.string().min(1).max(64).optional(),
+  userId: z.string().min(1).max(64).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -21,6 +26,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const parsed = querySchema.safeParse({
     event: url.searchParams.get("event") || undefined,
+    family: url.searchParams.get("family") || undefined,
+    gameSlug: url.searchParams.get("gameSlug") || undefined,
+    partyId: url.searchParams.get("partyId") || undefined,
+    userId: url.searchParams.get("userId") || undefined,
     from: url.searchParams.get("from") || undefined,
     to: url.searchParams.get("to") || undefined,
     page: url.searchParams.get("page") || 1,
@@ -34,9 +43,16 @@ export async function GET(req: Request) {
     );
   }
 
-  const { event, from, to, page, limit } = parsed.data;
+  const { event, family, gameSlug, partyId, userId, from, to, page, limit } = parsed.data;
   const filter: Record<string, unknown> = {};
   if (event) filter.event = event;
+  else {
+    const names = eventsForFamily((family || "all") as OpsFamily);
+    if (names) filter.event = { $in: names };
+  }
+  if (gameSlug) filter["properties.gameSlug"] = gameSlug;
+  if (partyId) filter["properties.partyId"] = partyId;
+  if (userId) filter.userId = userId;
 
   const createdAt: { $gte?: Date; $lte?: Date } = {};
   if (from) {

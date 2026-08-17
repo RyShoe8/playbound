@@ -568,10 +568,11 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           editions.length > 1
             ? `${game.title} — ${selectedEdition()?.editionName || ed}`
             : game.title;
-        if (!confirm(`Uninstall ${label}?`)) return;
+        if (!confirm(`Uninstall ${label}? This also removes PlayBound mods for this game.`)) return;
         try {
-          await window.playbound.uninstall(game.slug, ed);
-          setStatus(`Uninstalled ${label}`);
+          const res = await window.playbound.uninstall(game.slug, ed);
+          if (res?.warning) setStatus(`Removed ${label} from your library. ${res.warning}`, true);
+          else setStatus(`Uninstalled ${label}`);
           api.renderLibraryView();
         } catch (err) {
           setStatus(err.message || String(err), true);
@@ -1030,7 +1031,7 @@ function buildModsDisclosure(gameMods, modTitles) {
           label: "Remove",
           danger: true,
           onClick: async () => {
-            if (!confirm(`Remove mod ${title} from library tracking?`)) return;
+            if (!confirm(`Uninstall ${title}? This removes the mod from this PC.`)) return;
             await window.playbound.uninstallMod(mod.slug);
             api.renderLibraryView();
           },

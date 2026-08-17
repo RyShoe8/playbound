@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Download, HardDriveDownload } from "lucide-react";
-import type { ConfigSyncResult, ConfigSyncMember } from "@/lib/playTogether/party";
+import type { ConfigSyncMember } from "@/lib/playTogether/types";
+import { usePartyStore } from "@/stores/partyStore";
 import { telemetry } from "@/lib/telemetry";
 
-const SYNC_POLL_MS = 8000;
 const BASE_EDITION_KEY = "__base__";
 
 /**
@@ -53,42 +53,18 @@ export function PartyConfigSync({
   /** Lets the viewer's own row offer the install button rather than a name. */
   currentUserId?: string | null;
 }) {
-  const [sync, setSync] = useState<ConfigSyncResult | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function check() {
-      try {
-        const res = await fetch(`/api/parties/${partyId}/sync`);
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        setSync(data.sync);
-      } catch (err) {
-        console.error("Failed to check config sync", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void check();
-    const timer = setInterval(() => void check(), SYNC_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [partyId, gameSlug, editionSlug]);
+  const storeSync = usePartyStore((s) =>
+    s.activeParty?.id === partyId ? s.activeParty.configSync : undefined
+  );
+  const sync = storeSync ?? null;
 
   useEffect(() => {
     telemetry.track("party_config_sync_viewed", { partyId, gameSlug });
   }, [partyId, gameSlug]);
 
-  if (loading) {
+  if (!sync) {
     return <div className="h-24 animate-pulse rounded-xl border border-border bg-card p-4" />;
   }
-
-  if (!sync) return null;
 
   if (sync.allReady) {
     return (

@@ -1,0 +1,15 @@
+---
+description: PlayBound Connect (multiplayer, hosted servers, transit, connectArgs). Use when changing party join, game-host, adapters, STUN/TURN, or CLI connect syntax.
+globs: platform/src/lib/multiplayer/adapters.ts,platform/src/lib/multiplayer/sessionManager.ts,platform/src/lib/gameHost/**,platform/game-host/**,platform/src/lib/playTogether/party.ts,launcher/services/connectArgs.js,platform/src/lib/servers/registry.ts
+alwaysApply: false
+---
+
+# PlayBound Connect
+
+Read `docs/playbound-connect.md` before changing join, hosting, connect args, adapters, or transit.
+
+- `HOSTABLE_GAMES` and `game-host/recipes.js` must stay in sync.
+- Launcher `connectArgs.js` is authoritative for hosted slugs (overrides the install record).
+- `connectArgs: null` means in-game join (`manualConnect`), not "unsupported".
+- Discord is voice/chat. Game traffic is outbound to the VPS (or STUN/TURN for P2P).
+- Do not put `GAME_HOST_SECRET` or other secrets in docs or UI.

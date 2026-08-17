@@ -123,6 +123,17 @@ export const INSTALL_METHOD_LABELS: Record<InstallMethod, string> = {
 };
 
 /** Per-method configuration. Every field optional — validation is per method. */
+/** A file the launcher fetches and drops inside the game folder. */
+export type EditionModLoaderFile = {
+  url: string;
+  fileName: string;
+  /** Folder under the game dir. Must not escape it. */
+  dest: string;
+  extract?: boolean;
+  /** Path (under dest) proving extraction finished, so it isn't redone. */
+  extractedMarker?: string;
+};
+
 export interface EditionInstallConfig {
   official_download?: {
     url?: string;
@@ -173,27 +184,29 @@ export interface EditionInstallConfig {
      * it before every launch, because the store can restore the original
      * executable at any time and silently disable the mods.
      */
-    modLoader?: {
-      /** Only "aurie" today — GameMaker games via the Aurie framework. */
-      kind: "aurie";
-      /** Files fetched and placed relative to the game folder. */
-      files: {
-        url: string;
-        fileName: string;
-        /** Folder under the game dir. Must not escape it. */
-        dest: string;
-        extract?: boolean;
-        /** Path (under dest) proving extraction finished, so it isn't redone. */
-        extractedMarker?: string;
-      }[];
-      /** Where the patcher and loader core were placed by `files` above. */
-      patcherFileName: string;
-      patcherDest: string;
-      nativeDllFileName: string;
-      nativeDllDest: string;
-      /** Upstream build this combination was last verified against. */
-      testedGameVersion?: string;
-    };
+    modLoader?:
+      | {
+          /** GameMaker games patched through the Aurie framework. */
+          kind: "aurie";
+          files: EditionModLoaderFile[];
+          /** Where the patcher and loader core were placed by `files` above. */
+          patcherFileName: string;
+          patcherDest: string;
+          nativeDllFileName: string;
+          nativeDllDest: string;
+          /** Upstream build this combination was last verified against. */
+          testedGameVersion?: string;
+        }
+      | {
+          /**
+           * Files only, no executable patching — the launcher places them and
+           * stops. Covers a RetroArch core dropped into cores/, an asset pack,
+           * anything where the base install is already runnable as shipped.
+           */
+          kind: "files";
+          files: EditionModLoaderFile[];
+          testedGameVersion?: string;
+        };
   };
   external_installer?: { url?: string; instructions?: string };
   manual?: {

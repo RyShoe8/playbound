@@ -2,6 +2,8 @@
 
 How PlayBound signs its Windows launcher, how to set it up, and how to verify it worked.
 
+**To bump, build, and upload to Blob (signed or unsigned), follow [launcher-build-and-upload.md](./launcher-build-and-upload.md).** This file is the signing setup, not the release checklist.
+
 The build pipeline is already configured. Once a certificate is installed and a
 few environment variables are set, `npm run dist:prod` produces signed,
 verified artifacts with no further changes to any code.

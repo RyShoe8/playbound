@@ -342,6 +342,7 @@ module.exports = [
       "Freeciv"
     ],
     "connectArgs": [
+      "--autoconnect",
       "--server",
       "{host}",
       "--port",

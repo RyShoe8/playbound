@@ -57,6 +57,8 @@ describe("HoloCure editions", () => {
   it("points the patcher at the files the recipe actually installs", () => {
     const loader = holocure.find((e) => e.slug === "playbound")!.installConfig!
       .playbound_installer!.modLoader!;
+    // modLoader is a union now — only the aurie arm has a patcher to check.
+    if (loader.kind !== "aurie") throw new Error("expected the aurie mod loader");
     const placed = loader.files.find(
       (f) => f.fileName === loader.patcherFileName && f.dest === loader.patcherDest
     );
@@ -82,7 +84,11 @@ describe("HoloCure editions", () => {
     const loader = holocure.find((e) => e.slug === "playbound")!.installConfig!
       .playbound_installer!.modLoader!;
     for (const f of loader.files) {
-      expect(f.url).toMatch(/^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/download\/v[\d.]+\//);
+      // Any explicit tag counts — upstream tags are not all bare semver.
+      // YYToolkit's only v5 release is "v5.0.0c", which a [\d.]+ tag pattern
+      // rejected even though it is pinned exactly as intended. The rule being
+      // enforced is "not floating", so /latest/ below is what actually matters.
+      expect(f.url).toMatch(/^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/download\/[^/]+\//);
       expect(f.url).not.toMatch(/\/latest\//);
     }
     expect(loader.testedGameVersion).toBeTruthy();
@@ -156,3 +162,52 @@ describe("edition seed integrity", () => {
   });
 });
 
+
+describe("mr. boom retroarch edition", () => {
+  const mrboom = editions.filter((e) => e.gameSlug === "mrboom");
+  const recipe = mrboom.find((e) => e.slug === "retroarch")!.installConfig!
+    .playbound_installer!;
+
+  it("declares the 7z kind so the recipe is not a mislabelled zip", () => {
+    expect(recipe.kind).toBe("direct-7z");
+    expect(recipe.url).toMatch(/\.7z$/);
+    expect(recipe.fileName).toMatch(/\.7z$/);
+  });
+
+  it("places the core inside the folder RetroArch extracts to", () => {
+    // installRoot is the archive's single top-level folder; the core has to
+    // land under it, not beside it, or -L resolves to nothing.
+    const core = recipe.modLoader!.files[0];
+    expect(core.dest.startsWith(`${recipe.installRoot}/`)).toBe(true);
+    expect(core.dest).toBe("RetroArch-Win64/cores");
+  });
+
+  it("launches the core relative to the executable's directory", () => {
+    // cwd at launch is dirname(exe) = <gameDir>/RetroArch-Win64, so the -L path
+    // is relative to that, NOT to dest which is relative to gameDir.
+    const args = recipe.connectArgs!;
+    const libretroPath = args[args.indexOf("-L") + 1];
+    const core = recipe.modLoader!.files[0];
+    const destUnderExe = core.dest.replace(`${recipe.installRoot}/`, "");
+    expect(libretroPath).toBe(`${destUnderExe}/${core.extractedMarker}`);
+  });
+
+  it("passes only static args, so an ordinary launch keeps them", () => {
+    // playGame drops templated entries when there is no server to join.
+    for (const a of recipe.connectArgs!) expect(a).not.toContain("{host}");
+  });
+
+  it("marks the extracted core so it is not re-downloaded every launch", () => {
+    const core = recipe.modLoader!.files[0];
+    expect(core.extract).toBe(true);
+    expect(core.extractedMarker).toBe("mrboom_libretro.dll");
+    expect(core.fileName).toBe("mrboom_libretro.dll.zip");
+  });
+
+  it("never lets the core escape the game folder", () => {
+    for (const f of recipe.modLoader!.files) {
+      expect(f.dest.includes("..")).toBe(false);
+      expect(f.dest.startsWith("/")).toBe(false);
+    }
+  });
+});

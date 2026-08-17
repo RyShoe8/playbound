@@ -239,7 +239,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "%PROGRAMFILES(X86)%\\Freeciv-3.2.5-msys2-win64-10-gtk4\\freeciv-gtk4.exe",
       "%LOCALAPPDATA%\\Programs\\Freeciv-3.2.5-win64-10-client-gtk4\\freeciv-gtk4.exe",
     ],
-    connectArgs: ["--server", "{host}", "--port", "{port}"],
+    connectArgs: ["--autoconnect", "--server", "{host}", "--port", "{port}"],
     note: "Opens the official Freeciv GTK4 setup — finish the wizard, then Play.",
   },
   "villagers-and-heroes": {

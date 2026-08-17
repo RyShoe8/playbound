@@ -1,0 +1,27 @@
+---
+description: Build and upload the PlayBound launcher (signed dist:prod, unsigned dist:dev, Vercel Blob). Use when the user says build, upload, release the launcher, dist:prod, dist:dev, or mentions eSigner / latest.yml / admin.yml.
+globs: launcher/package.json,launcher/scripts/**,launcher/electron-builder.js,platform/scripts/upload-launcher.ts,docs/launcher-build-and-upload.md,docs/windows-code-signing.md
+alwaysApply: false
+---
+
+# Launcher release
+
+Follow `docs/launcher-build-and-upload.md`. Signing theory is `docs/windows-code-signing.md`. The user does not run a local Next server.
+
+## Required sequence
+
+1. Bump `launcher/package.json` `"version"` (new version or auto-update will not fire).
+2. Commit/push if they asked. `dist:dev` / `dist:prod` overwrite `launcher/catalog.js` from production `https://playbound.club/api/launcher/catalog`.
+3. **Signed (default for public):** in `launcher/`, `npm run signing:status`, set `$env:WINDOWS_CERT_SHA1`, then `npm run dist:prod`. Upload from `platform/`: `npm run upload:launcher` (needs `BLOB_READ_WRITE_TOKEN` in `platform/.env.local`).
+4. **Unsigned:** `npm run dist:dev` in `launcher/`. Upload: `npm run upload:launcher` (admin alias + `admin.yml` only). Public promote: `npm run upload:launcher -- --promote-prod --i-know-its-unsigned` and warn SmartScreen + signed clients may reject the update.
+5. Mac/Linux: `dist:mac` / `dist:linux`, then `upload:launcher -- --mac --promote-prod` or `--linux --promote-prod`.
+
+## Do not
+
+- Retry `dist:prod` after eSigner `authorization grant is invalid` / `SignerSign() failed` — that burns quota. Fall back to unsigned and tell the user to re-login SSL.com CKA.
+- Use `npx electron-builder --win` (can no-op). Use the npm scripts or `node node_modules/electron-builder/cli.js --win`.
+- Use bash `&&` / `VAR=value` on Windows PowerShell. Use `;` and `$env:NAME = "value"`.
+- Promote unsigned Windows without `--i-know-its-unsigned`.
+- Commit `.env.local` or certs.
+
+Return the upload script’s versioned and alias URLs when done.

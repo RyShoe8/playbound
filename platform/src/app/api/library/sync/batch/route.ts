@@ -7,6 +7,7 @@ import { resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { revalidateLibraryPages } from "@/lib/libraryCascade";
 
 const batchSchema = z.object({
   installs: z
@@ -29,6 +30,7 @@ const batchSchema = z.object({
     .max(100)
     .optional()
     .default([]),
+  prune: z.boolean().optional().default(true),
 });
 
 export async function POST(req: Request) {
@@ -116,12 +118,38 @@ export async function POST(req: Request) {
       modsSynced += 1;
     }
 
+    let pruned = 0;
+    let modsPruned = 0;
+    if (body.prune) {
+      const keepGames = body.installs.map((i) => i.slug);
+      const keepMods = (body.modInstalls || []).map((i) => i.slug);
+      const gameFilter: Record<string, unknown> = {
+        userId: user._id,
+        installed: true,
+        $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
+      };
+      if (keepGames.length) gameFilter.gameSlug = { $nin: keepGames };
+      const gameRes = await LibraryEntry.deleteMany(gameFilter);
+      pruned = gameRes.deletedCount || 0;
+
+      const modFilter: Record<string, unknown> = {
+        userId: user._id,
+        installed: true,
+      };
+      if (keepMods.length) modFilter.modSlug = { $nin: keepMods };
+      const modRes = await LibraryModEntry.deleteMany(modFilter);
+      modsPruned = modRes.deletedCount || 0;
+      if (pruned || modsPruned) revalidateLibraryPages();
+    }
+
     return NextResponse.json({
       success: true,
       synced,
       skipped,
       modsSynced,
       modsSkipped,
+      pruned,
+      modsPruned,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -7,6 +7,7 @@ import { resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
+import { removeLibraryModsForGame, revalidateLibraryPages } from "@/lib/libraryCascade";
 
 const syncSchema = z.object({
   kind: z.enum(["game", "mod"]).optional().default("game"),
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
       }
 
       await LibraryModEntry.deleteOne({ userId: user._id, modSlug: body.slug });
+      revalidateLibraryPages(body.baseGameSlug, body.slug);
       return NextResponse.json({ success: true, kind: "mod", deleted: true });
     }
 
@@ -139,10 +141,12 @@ export async function POST(req: Request) {
       $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
     });
     if (!entry) {
+      await removeLibraryModsForGame(String(user._id), body.slug);
       return NextResponse.json({ success: true, deleted: false });
     }
 
     await entry.deleteOne();
+    await removeLibraryModsForGame(String(user._id), body.slug);
     return NextResponse.json({ success: true, deleted: true });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, X, ArrowUp, ArrowDown } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { CATALOG_STATUSES, type CatalogStatus } from "@/lib/catalogStatus";
+import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
 import { GameArt } from "@/components/GameArt";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -36,6 +37,18 @@ export function AdminGamesTable({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const [statusPendingSlug, setStatusPendingSlug] = useState<string | null>(null);
+  const [healthPending, setHealthPending] = useState<string | null>(null);
+
+  const HEALTH_NEXT: Record<GameHealthStatus, GameHealthStatus> = {
+    green: "yellow",
+    yellow: "red",
+    red: "green",
+  };
+
+  function healthOf(g: AdminGameRow, area: GameHealthArea): GameHealthStatus {
+    const value = g.opsHealth?.[area];
+    return value === "yellow" || value === "red" ? value : "green";
+  }
 
   function handleSort(col: string) {
     if (sortCol === col) {
@@ -101,6 +114,45 @@ export function AdminGamesTable({
     }
   }
 
+  async function cycleHealth(slug: string, area: GameHealthArea) {
+    const row = rows.find((g) => g.slug === slug);
+    if (!row) return;
+    const prev = healthOf(row, area);
+    const next = HEALTH_NEXT[prev];
+    const key = `${slug}:${area}`;
+    setHealthPending(key);
+    setRows((list) =>
+      list.map((g) =>
+        g.slug === slug
+          ? { ...g, opsHealth: { install: healthOf(g, "install"), party: healthOf(g, "party"), [area]: next } }
+          : g
+      )
+    );
+    try {
+      const res = await fetch(`/api/admin/games/${encodeURIComponent(slug)}/health`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ area, status: next }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || `Failed (${res.status})`);
+      }
+    } catch (err) {
+      setRows((list) =>
+        list.map((g) =>
+          g.slug === slug
+            ? { ...g, opsHealth: { install: healthOf(g, "install"), party: healthOf(g, "party"), [area]: prev } }
+            : g
+        )
+      );
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Could not update health");
+    } finally {
+      setHealthPending(null);
+    }
+  }
+
   const filtered = useMemo(() => {
     let result = rows;
     const q = query.trim().toLowerCase();
@@ -145,6 +197,14 @@ export function AdminGamesTable({
         case "Version":
           aVal = (a.launcherInstall?.detectedVersion || a.launcherInstall?.versionLabel || "").toLowerCase();
           bVal = (b.launcherInstall?.detectedVersion || b.launcherInstall?.versionLabel || "").toLowerCase();
+          break;
+        case "Install":
+          aVal = healthOf(a, "install");
+          bVal = healthOf(b, "install");
+          break;
+        case "Party":
+          aVal = healthOf(a, "party");
+          bVal = healthOf(b, "party");
           break;
         case "Status":
           aVal = (a.status || "").toLowerCase();
@@ -249,6 +309,8 @@ export function AdminGamesTable({
               <SortableHeader label="Mods" />
               <SortableHeader label="Installs" />
               <SortableHeader label="Version" />
+              <SortableHeader label="Install" />
+              <SortableHeader label="Party" />
               <SortableHeader label="Status" />
               <SortableHeader label="Complete" />
               <SortableHeader label="Published" />
@@ -259,7 +321,7 @@ export function AdminGamesTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
                   No games match the current filters.
                 </td>
               </tr>
@@ -289,6 +351,36 @@ export function AdminGamesTable({
                     <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
                       {g.launcherInstall?.detectedVersion || g.launcherInstall?.versionLabel || "—"}
                     </td>
+                    {(["install", "party"] as const).map((area) => {
+                      const color = healthOf(g, area);
+                      const pending = healthPending === `${g.slug}:${area}`;
+                      return (
+                        <td key={area} className="px-4 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => void cycleHealth(g.slug, area)}
+                              title={`${area} health: ${color}. Click to cycle.`}
+                              aria-label={`${area} health ${color} for ${g.title}`}
+                              className={`size-4 rounded-full border border-black/10 disabled:opacity-50 ${
+                                color === "green"
+                                  ? "bg-emerald-500"
+                                  : color === "yellow"
+                                    ? "bg-amber-400"
+                                    : "bg-red-500"
+                              }`}
+                            />
+                            <Link
+                              href={`/admin/ops?game=${encodeURIComponent(g.slug)}&area=${area}`}
+                              className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                            >
+                              log
+                            </Link>
+                          </div>
+                        </td>
+                      );
+                    })}
                     <td className="px-4 py-2.5">
                       <select
                         disabled={statusChanging}

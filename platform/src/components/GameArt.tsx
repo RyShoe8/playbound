@@ -73,7 +73,10 @@ export function GameArt({
 
   return (
     <div
-      className={cn("relative flex items-center justify-center overflow-hidden", className)}
+      className={cn(
+        "relative isolate flex items-center justify-center overflow-hidden",
+        className
+      )}
       style={{
         background: `linear-gradient(135deg, ${game.art.from} 0%, ${game.art.to} 100%)`,
       }}
@@ -101,7 +104,7 @@ export function GameArt({
         <CoverImage
           src={game.coverImage}
           alt={`${game.title} cover`}
-          className="z-10"
+          className="z-[1]"
           sizes="(max-width: 768px) 50vw, 25vw"
         />
       ) : null}

@@ -28,7 +28,10 @@ const CLIENT_CONNECT_ARGS = {
   openra: ["Launch.Connect={host}:{port}"],
   openttd: ["-n", "{host}:{port}"],
   luanti: ["--go", "--address", "{host}", "--port", "{port}"],
-  freeciv: ["--server", "{host}", "--port", "{port}"],
+  // Without --autoconnect the GTK client only pre-fills the connect dialog
+  // (or ignores the address on the start screen) and both players sit in
+  // single-player instead of the party dedicated server.
+  freeciv: ["--autoconnect", "--server", "{host}", "--port", "{port}"],
   supertuxkart: ["--connect-now={host}:{port}"],
   bzflag: ["{host}:{port}"],
   // Quake-lineage engines all inherit the same console command.

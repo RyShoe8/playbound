@@ -4,6 +4,13 @@ export const LAUNCHER_INSTALL_KINDS = [
   "github-installer",
   "github-jar",
   "direct-zip",
+  /**
+   * Same fetch as direct-zip, for upstreams that only publish .7z — RetroArch
+   * being the one that forced it. The launcher picks the extractor from the
+   * file extension, so this exists to let a recipe say what it actually is
+   * rather than mislabel a 7z as a zip.
+   */
+  "direct-7z",
   "direct-installer",
   "direct-exe",
   "openttd-zip",

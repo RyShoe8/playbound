@@ -28,7 +28,7 @@ const features = [
   { icon: Play, title: "One-click launches", text: "After the first install, playing is a single click. The launcher finds the executable for you." },
   { icon: RefreshCw, title: "Automatic updates", text: "The launcher resolves the latest release every time, so installs never go stale." },
   { icon: Cloud, title: "Cloud saves", text: "Coming soon — sync your saves across machines for supported games." },
-  { icon: Server, title: "Server hosting", text: "Coming soon — host dedicated servers for supported games in one click." },
+  { icon: Server, title: "PlayBound Connect", text: "Party Join Game starts a public dedicated room for supported titles. Every client connects out — no port forwarding.", href: "/connect" },
   { icon: Wrench, title: "Mod management", text: "Install community mods into your game folder with one click — the launcher finds where the base game lives." },
 ];
 
@@ -87,12 +87,17 @@ export default async function LauncherPage() {
       <section>
         <SectionHeader title="What it does" subtitle="Built for discovering, installing, and playing free games fast." />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map(({ icon: Icon, title, text }) => (
+          {features.map(({ icon: Icon, title, text, href }) => (
             <div key={title} className="rounded-xl border border-border bg-card/40 p-4">
               <p className="flex items-center gap-2 text-sm font-bold">
                 <Icon className="size-4 text-play" /> {title}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">{text}</p>
+              {href ? (
+                <Link href={href} className="mt-2 inline-block text-xs font-bold text-primary hover:underline">
+                  How Connect works
+                </Link>
+              ) : null}
             </div>
           ))}
         </div>

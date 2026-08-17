@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import type { PartyPayload, PartyVisibility } from "@/lib/playTogether/types";
+import { presenceSnapshot, usePresenceStore } from "@/stores/presenceStore";
 
 /**
  * Client-side party state.
@@ -67,24 +68,15 @@ let requestedPollMs = 15000;
 const DEFAULT_PARTY_POLL_MS = 15000;
 const FAST_PARTY_POLL_MS = 2000;
 
-function hostedJoinReady(party: PartyPayload | null): boolean {
-  return Boolean(
-    party?.hosted?.status === "ready" && party.hosted.host && party.hosted.port
-  );
+function viewerIsInGame(party: PartyPayload | null): boolean {
+  if (presenceSnapshot().status === "playing") return true;
+  return Boolean(party?.selfPlaying);
 }
 
-/** Hosted room is coming up — poll often so Join Game becomes playbound://join. */
+/** Live party, but only while this user is still in the lobby — not in-game. */
 function needsFastPartyPoll(party: PartyPayload | null): boolean {
   if (!party || party.status === "ended") return false;
-  if (party.hosted?.status === "pending") return true;
-  if (
-    (party.status === "playing" || party.status === "launching") &&
-    party.hosted?.enabled &&
-    !hostedJoinReady(party)
-  ) {
-    return true;
-  }
-  return false;
+  return !viewerIsInGame(party);
 }
 
 function syncPartyPoll(get: () => PartyState) {
@@ -149,12 +141,14 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         voiceEnabled: Boolean(data.party?.voiceEnabled) || Boolean(inviteUrl),
         discord: {
           voiceChannelId: data.party?.discord?.voiceChannelId || null,
+          textChannelId: data.party?.discord?.textChannelId || null,
           inviteUrl,
         },
         needsDiscordLink: Boolean(data.needsDiscordLink),
         inviteUrl,
       };
       set({ activeParty: party, loading: false });
+      syncPartyPoll(get);
       return party;
     } catch (err) {
       set({ error: "Network error", loading: false });
@@ -181,12 +175,14 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         voiceEnabled: Boolean(data.party?.voiceEnabled) || Boolean(inviteUrl),
         discord: {
           voiceChannelId: data.party?.discord?.voiceChannelId || null,
+          textChannelId: data.party?.discord?.textChannelId || null,
           inviteUrl,
         },
         needsDiscordLink: Boolean(data.needsDiscordLink),
         inviteUrl,
       };
       set({ activeParty: party, loading: false });
+      syncPartyPoll(get);
       return party;
     } catch (err) {
       set({ error: "Network error", loading: false });
@@ -256,6 +252,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     try {
       await fetch(`/api/parties/${partyId}`, { method: "DELETE" });
       set({ activeParty: null });
+      syncPartyPoll(get);
     } catch (err) {
       console.error("Failed to end party", err);
     }
@@ -403,3 +400,8 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     }
   },
 }));
+
+usePresenceStore.subscribe((state, prev) => {
+  if (state.status === prev.status) return;
+  syncPartyPoll(usePartyStore.getState);
+});

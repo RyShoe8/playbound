@@ -571,12 +571,18 @@ async function syncAllInstalledGames() {
 
   const state = loadState();
   const installs = [];
-  for (const [slug, info] of Object.entries(state)) {
+  for (const [slug, raw] of Object.entries(state)) {
     if (slug === "__mods__") continue;
-    if (!info || typeof info !== "object" || !info.dir) continue;
+    if (!raw || typeof raw !== "object") continue;
+    const game = ensureGameInstallRecord(raw);
+    const editions = listEditionEntries(game);
+    const listed = Boolean(
+      playableExePath(game) || game.pending || game.dir || editions.length
+    );
+    if (!listed) continue;
     installs.push({
       slug,
-      ...(info.version ? { version: String(info.version) } : {}),
+      ...(game.version ? { version: String(game.version) } : {}),
     });
   }
 
@@ -592,8 +598,6 @@ async function syncAllInstalledGames() {
     });
   }
 
-  if (!installs.length && !modInstalls.length) return { synced: 0, skipped: [], error: null };
-
   try {
     const res = await fetch(`${getApiBase()}/api/library/sync/batch`, {
       method: "POST",
@@ -602,7 +606,7 @@ async function syncAllInstalledGames() {
         authorization: `Bearer ${token}`,
         "user-agent": "playbound-launcher",
       },
-      body: JSON.stringify({ installs, modInstalls }),
+      body: JSON.stringify({ installs, modInstalls, prune: true }),
     });
     if (res.status === 401) {
       return { synced: 0, skipped: [], error: "unauthorized" };
@@ -1956,7 +1960,13 @@ function assetPatternsForEntry(entry) {
 }
 
 async function resolveDownload(entry) {
-  if (entry.kind === "direct-zip" || entry.kind === "direct-installer" || entry.kind === "direct-exe") {
+  if (
+    entry.kind === "direct-zip" ||
+    // Same fetch as direct-zip; extractArchive dispatches on the extension.
+    entry.kind === "direct-7z" ||
+    entry.kind === "direct-installer" ||
+    entry.kind === "direct-exe"
+  ) {
     if (
       process.platform === "darwin" &&
       (entry.kind === "direct-installer" || entry.kind === "direct-exe") &&
@@ -3007,6 +3017,7 @@ function resolveInstallDir(entry, exePath) {
 }
 
 function notifyInstallDetected(slug) {
+  void telemetry.track("exe_located", { gameSlug: slug });
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-detected", { slug });
   }
@@ -3823,6 +3834,7 @@ function invalidateUninstallCache(entry) {
 }
 
 function notifyInstallDetectFailed(slug) {
+  void telemetry.track("exe_locate_failed", { gameSlug: slug });
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-detect-failed", { slug });
   }
@@ -4244,7 +4256,14 @@ function isAuriePatched(exePath) {
  */
 async function ensureEditionMods(slug, entry, gameDir, exePath) {
   const spec = entry?.modLoader;
-  if (!spec || spec.kind !== "aurie") return { changed: false, steps: [] };
+  /*
+   * The file-placement loop below is kind-agnostic — download a file, drop it
+   * at a destination inside the game folder, optionally unpack it. Only the
+   * executable patching after it is Aurie's. Gating the whole function on
+   * "aurie" meant no other install shape could reuse the placement half, which
+   * is exactly what a RetroArch core needs: fetch the core, drop it in cores/.
+   */
+  if (!spec) return { changed: false, steps: [] };
   if (!gameDir || !exePath || !fs.existsSync(exePath)) {
     throw new Error("Game folder not found — reinstall the game.");
   }
@@ -4273,6 +4292,10 @@ async function ensureEditionMods(slug, entry, gameDir, exePath) {
     }
     steps.push(`placed ${file.fileName}`);
   }
+
+  // Everything past here patches the game executable, which only Aurie does.
+  // A RetroArch-style recipe is finished once its files are in place.
+  if (spec.kind !== "aurie") return { changed: steps.length > 0, steps };
 
   if (!isAuriePatched(exePath)) {
     const patcherDir = resolveInsideGameDir(gameDir, spec.patcherDest || "");
@@ -4956,6 +4979,16 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     args.push(...staticArgs.map(String));
   }
 
+  if (join?.host && join?.port) {
+    void telemetry.track("join_attempted", {
+      ...launchInfo(),
+      host: join.host,
+      port: join.port,
+      connectArgsApplied: args.length > 0,
+      manualConnect: Boolean(!connectArgs?.length),
+    });
+  }
+
   if (slug === "flightgear") {
     args.push(...flightGearAddonLaunchArgs(state));
   }
@@ -5181,6 +5214,16 @@ function sendGameExited(slug) {
   }
 }
 
+function playingGameSlug() {
+  return activeLaunches.keys().next().value || null;
+}
+
+function sendGameStarted(slug) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("game-started", { slug });
+  }
+}
+
 /**
  * Back up a game's saves once it closes.
  *
@@ -5372,6 +5415,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
         /* ignore */
       }
       void beatLauncherPresence();
+      sendGameStarted(slug);
       resolve(child);
     };
     const fail = (err) => {
@@ -5504,8 +5548,8 @@ async function confirmAndUninstallGame(slug, editionSlug = null) {
     title: "Uninstall game",
     message: editionSlug ? `Uninstall ${title} — ${editionSlug}?` : `Uninstall ${title}?`,
     detail: editionSlug
-      ? "Removes only this edition folder. Other editions stay installed."
-      : "This removes all PlayBound edition folders for this game from this PC.",
+      ? "Removes this edition folder and every PlayBound mod for this game. Other editions stay installed."
+      : "This removes all PlayBound edition folders for this game from this PC, including its mods.",
   });
   if (response !== 0) return { status: "cancelled" };
   return uninstallGame(slug, editionSlug || null);
@@ -5523,8 +5567,8 @@ async function confirmAndUninstallMod(slug) {
     defaultId: 1,
     cancelId: 1,
     title: "Remove mod",
-    message: `Remove ${title} from your library?`,
-    detail: "This stops tracking the mod. Portable installs are not deleted from disk.",
+    message: `Uninstall ${title}?`,
+    detail: "This removes the mod from this PC, including its PlayBound install folder.",
   });
   if (response !== 0) return { status: "cancelled" };
   return uninstallMod(slug);
@@ -5575,7 +5619,7 @@ async function uninstallGameFromDeepLink(slug, editionSlug = null) {
   }
   const confirmed = await confirmDestructiveDeepLink(
     `Uninstall ${title}?`,
-    "A link outside PlayBound asked to remove this game. Its install folder will be deleted, which may include saved games."
+    "A link outside PlayBound asked to remove this game. Its install folder and any PlayBound mods for it will be deleted, which may include saved games."
   );
   if (!confirmed) return { status: "cancelled" };
   const result = await uninstallGame(slug, editionSlug || null);
@@ -5610,8 +5654,8 @@ async function uninstallModFromDeepLink(slug) {
     return { status: "not-installed" };
   }
   const confirmed = await confirmDestructiveDeepLink(
-    `Remove ${title}?`,
-    "A link outside PlayBound asked to remove this mod from your install."
+    `Uninstall ${title}?`,
+    "A link outside PlayBound asked to remove this mod from this PC, including its PlayBound install folder."
   );
   if (!confirmed) return { status: "cancelled" };
   const result = await uninstallMod(slug);
@@ -5733,16 +5777,139 @@ async function removeDirWithRetries(dir) {
     }
   }
   throw new Error(
-    `Could not remove folder (still in use). Quit the game (check Task Manager for OpenCiv3/Godot) and close Explorer windows on "${dir}", then try again.${
+    `Could not remove "${dir}" (folder still in use). Close the game and any Explorer windows on that folder, then try again.${
       lastErr?.message ? ` (${lastErr.message})` : ""
     }`
   );
+}
+
+function notifyUninstalled(slug) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-detected", { slug, uninstalled: true });
+  }
+}
+
+function sameFsPath(a, b) {
+  if (!a || !b) return false;
+  const left = path.resolve(String(a));
+  const right = path.resolve(String(b));
+  return process.platform === "win32"
+    ? left.toLowerCase() === right.toLowerCase()
+    : left === right;
+}
+
+function isPlayBoundManagedModDir(slug, dir) {
+  if (!slug || !dir) return false;
+  return sameFsPath(dir, path.join(gamesRoot(), slug));
+}
+
+function isBaseGameInstallDir(baseGameSlug, dir) {
+  if (!baseGameSlug || !dir) return false;
+  const state = loadState();
+  const game = ensureGameInstallRecord(state[baseGameSlug]);
+  if (!game) return false;
+  const dirs = [
+    game.dir,
+    ...Object.values(game.editions || {}).map((e) => e && e.dir),
+  ].filter(Boolean);
+  return dirs.some((d) => sameFsPath(d, dir));
+}
+
+function listModSlugsForBaseGame(baseGameSlug) {
+  if (!baseGameSlug) return [];
+  const state = loadState();
+  const mods = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
+  const out = [];
+  for (const [modSlug, info] of Object.entries(mods)) {
+    if (info && typeof info === "object" && info.baseGameSlug === baseGameSlug) {
+      out.push(modSlug);
+    }
+  }
+  return out;
+}
+
+async function uninstallModsForGame(baseGameSlug) {
+  for (const modSlug of listModSlugsForBaseGame(baseGameSlug)) {
+    try {
+      await uninstallMod(modSlug);
+    } catch (err) {
+      console.warn(`[uninstall] failed to remove mod ${modSlug}:`, err?.message || err);
+    }
+  }
+}
+
+function isPlayBoundManagedInstallDir(slug, dir) {
+  if (!slug || !dir) return false;
+  const root = path.resolve(gamesRoot());
+  const slugRoot = path.resolve(path.join(root, slug));
+  const resolved = path.resolve(dir);
+  if (sameFsPath(resolved, root)) return false;
+  if (sameFsPath(resolved, slugRoot)) return true;
+  if (process.platform === "win32") {
+    const rel = path.relative(slugRoot.toLowerCase(), resolved.toLowerCase());
+    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  }
+  return pathUnderRoot(resolved, slugRoot);
+}
+
+function isUnsafeUninstallDir(dir) {
+  if (!dir) return true;
+  const resolved = path.resolve(dir);
+  const { root } = path.parse(resolved);
+  if (root && sameFsPath(resolved, root)) return true;
+  try {
+    if (sameFsPath(resolved, app.getPath("home"))) return true;
+    if (sameFsPath(resolved, app.getPath("userData"))) return true;
+  } catch {
+    /* ignore */
+  }
+  for (const envKey of ["ProgramFiles", "ProgramFiles(x86)", "SystemRoot", "windir"]) {
+    const val = process.env[envKey];
+    if (val && sameFsPath(resolved, val)) return true;
+  }
+  return sameFsPath(resolved, path.resolve(gamesRoot()));
+}
+
+/**
+ * Delete a folder only when it lives under PlayBound's games/<slug> tree.
+ * Steam / MSI / located installs are never deleted — we only drop tracking.
+ */
+async function tryRemovePlayBoundInstallDir(slug, dir) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  if (!isPlayBoundManagedInstallDir(slug, dir) || isUnsafeUninstallDir(dir) || isProtectedSaveDirectory(dir)) {
+    console.warn(`[uninstall] skipping folder PlayBound does not own: ${dir}`);
+    return null;
+  }
+  try {
+    prepareDirRemoval(slug, [{ dir }]);
+    await removeDirWithRetries(dir);
+    return null;
+  } catch (err) {
+    const message = err?.message || String(err);
+    console.warn(`[uninstall] could not delete ${dir}:`, message);
+    return message;
+  }
+}
+
+async function finishGameUninstall(slug, state, extra = {}) {
+  saveState(state);
+  clearPendingInstaller(slug);
+  if (!state[slug]) {
+    await syncLibrary(slug, "uninstall");
+  } else {
+    const game = ensureGameInstallRecord(state[slug]);
+    await syncLibrary(slug, "install", game.version || undefined);
+  }
+  void telemetry.editionUninstalled(editionInfoFor(slug, extra));
+  notifyUninstalled(slug);
 }
 
 async function uninstallGame(slug, editionSlug = null) {
   stopExeScan(slug);
   stopInstallerPoll();
   clearLaunchTracking(slug);
+  if (!loadState()[slug]) return { status: "not-installed" };
+  await uninstallModsForGame(slug);
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   if (!state[slug]) return { status: "not-installed" };
@@ -5763,13 +5930,11 @@ async function uninstallGame(slug, editionSlug = null) {
   // For custom non-catalog games, remove the record from launcher library without deleting external game files.
   if (state[slug]?.custom || game?.custom || slug.startsWith("custom-")) {
     delete state[slug];
-    saveState(state);
-    clearPendingInstaller(slug);
-    if (win && !win.isDestroyed()) {
-      win.webContents.send("install-detected", { slug, uninstalled: true });
-    }
+    await finishGameUninstall(slug, state);
     return { status: "uninstalled", dir: null };
   }
+
+  const warnings = [];
 
   if (editionSlug) {
     if (!game.editions?.[editionSlug]) {
@@ -5780,9 +5945,8 @@ async function uninstallGame(slug, editionSlug = null) {
       delete game.editions[editionSlug];
     } else {
       if (info.dir) {
-        prepareDirRemoval(slug, [info]);
-        // Never delete a sibling edition directory — only this edition's folder.
-        await removeDirWithRetries(info.dir);
+        const warning = await tryRemovePlayBoundInstallDir(slug, info.dir);
+        if (warning) warnings.push(warning);
       }
       delete game.editions[editionSlug];
     }
@@ -5792,36 +5956,31 @@ async function uninstallGame(slug, editionSlug = null) {
       syncGameInstallSummary(game);
       state[slug] = game;
     }
-    saveState(state);
-    clearPendingInstaller(slug);
-    void syncLibrary(slug, "uninstall");
-    void telemetry.editionUninstalled(editionInfoFor(slug, { editionSlug }));
-    return { status: "uninstalled", dir: info?.dir || null, editionSlug };
+    await finishGameUninstall(slug, state, { editionSlug });
+    return {
+      status: "uninstalled",
+      dir: info?.dir || null,
+      editionSlug,
+      warning: warnings[0] || null,
+    };
   }
 
   const editions = listEditionEntries(game);
-  prepareDirRemoval(
-    slug,
-    [
-      ...editions,
-      game.exe || game.dir ? { exe: game.exe, dir: game.dir } : null,
-    ].filter(Boolean)
-  );
-
-  // Uninstall all editions for the game when no editionSlug is passed.
-  for (const info of editions) {
-    if (info.dir) await removeDirWithRetries(info.dir);
-  }
-  // Legacy flat dir if any remain outside editions/
-  if (game.dir && !Object.values(game.editions || {}).some((e) => e.dir === game.dir)) {
-    await removeDirWithRetries(game.dir);
+  const dirs = [
+    ...editions.map((info) => info.dir),
+    game.dir,
+  ].filter(Boolean);
+  const seen = new Set();
+  for (const dir of dirs) {
+    const key = process.platform === "win32" ? path.resolve(dir).toLowerCase() : path.resolve(dir);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const warning = await tryRemovePlayBoundInstallDir(slug, dir);
+    if (warning) warnings.push(warning);
   }
   delete state[slug];
-  saveState(state);
-  clearPendingInstaller(slug);
-  void syncLibrary(slug, "uninstall");
-  void telemetry.editionUninstalled(editionInfoFor(slug));
-  return { status: "uninstalled", dir: game.dir || null };
+  await finishGameUninstall(slug, state);
+  return { status: "uninstalled", dir: game.dir || null, warning: warnings[0] || null };
 }
 
 function listInstalledGames() {
@@ -5937,12 +6096,24 @@ async function uninstallMod(slug) {
     }
   }
 
+  const portableDir =
+    info.dir &&
+    (info.portable || isPlayBoundManagedModDir(slug, info.dir)) &&
+    !isBaseGameInstallDir(baseGameSlug, info.dir)
+      ? info.dir
+      : null;
+  let warning = null;
+  if (portableDir) {
+    warning = await tryRemovePlayBoundInstallDir(slug, portableDir);
+  }
+
   delete state.__mods__[slug];
   saveState(state);
   if (baseGameSlug) {
-    void syncLibrary(slug, "uninstall", undefined, { kind: "mod", baseGameSlug });
+    await syncLibrary(slug, "uninstall", undefined, { kind: "mod", baseGameSlug });
   }
-  return { status: "uninstalled", dir: info.dir || null, baseGameSlug, restored };
+  notifyUninstalled(slug);
+  return { status: "uninstalled", dir: info.dir || null, baseGameSlug, restored, warning };
 }
 
 function sanitizeShortcutName(name) {
@@ -7288,6 +7459,26 @@ ipcMain.handle("provision-party-discord", async (_event, partyId) => {
   }
 });
 
+ipcMain.handle("get-party-chat", async (_event, partyId, after) => {
+  try {
+    const qs = after ? `?after=${encodeURIComponent(after)}` : "";
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/chat${qs}`);
+  } catch (err) {
+    return { error: err.message, messages: [] };
+  }
+});
+
+ipcMain.handle("send-party-chat", async (_event, partyId, content) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/chat`, {
+      method: "POST",
+      body: { content },
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 ipcMain.handle("get-discord-status", async () => {
   try {
     return await launcherJson("/api/account/discord");
@@ -7631,7 +7822,7 @@ function schedulePresenceRetry() {
 async function beatLauncherPresence() {
   const settings = loadSettings();
   if (!settings.launcherToken) return;
-  const playingSlug = activeLaunches.keys().next().value || null;
+  const playingSlug = playingGameSlug();
   const body = {
     status: playingSlug ? "playing" : "online",
     page: "/launcher",
@@ -7685,9 +7876,11 @@ function stopLauncherPresenceLoop() {
   presenceSessionId = null;
 }
 
+ipcMain.handle("get-playing-game", () => playingGameSlug());
+
 ipcMain.handle("presence-heartbeat", async (_event, payload = {}) => {
   try {
-    const playingSlug = activeLaunches.keys().next().value || null;
+    const playingSlug = playingGameSlug();
     const body = {
       status: payload.status || (playingSlug ? "playing" : "online"),
       page: payload.page || "/launcher",

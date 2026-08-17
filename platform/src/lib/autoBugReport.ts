@@ -2,9 +2,10 @@ import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import BugReport from "@/lib/models/BugReport";
 import type { BugReportSource } from "@/lib/bugReports";
+import { healthAreaForBug, markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 export type AutoBugInput = {
-  event: "launch_failed" | "install_failed" | "error";
+  event: string;
   source: BugReportSource;
   code?: string | null;
   message?: string | null;
@@ -60,6 +61,9 @@ export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
       if (input.launcherVersion) existing.launcherVersion = input.launcherVersion.slice(0, 40);
       if (input.platform) existing.platform = input.platform.slice(0, 40);
       await existing.save();
+      if (input.gameSlug) {
+        void markGameHealthYellow(input.gameSlug, healthAreaForBug(input));
+      }
       return;
     }
 
@@ -96,6 +100,9 @@ export async function upsertAutoBugReport(input: AutoBugInput): Promise<void> {
       submitterName: "Auto",
       status: "open",
     });
+    if (input.gameSlug) {
+      void markGameHealthYellow(input.gameSlug, healthAreaForBug(input));
+    }
   } catch (err) {
     console.error("upsertAutoBugReport failed:", err);
   }
@@ -109,7 +116,15 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
   userAgent?: string | null;
 }): Promise<void> {
   const event = opts.event;
-  if (event !== "launch_failed" && event !== "install_failed" && event !== "error") return;
+  const failureEvents = new Set([
+    "launch_failed",
+    "install_failed",
+    "error",
+    "party_hosted_failed",
+    "party_chat_failed",
+    "exe_locate_failed",
+  ]);
+  if (!failureEvents.has(event)) return;
 
   const props = opts.properties || {};
   const sourceProp = typeof props.source === "string" ? props.source : "";
