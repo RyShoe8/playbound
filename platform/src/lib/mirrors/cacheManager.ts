@@ -5,6 +5,8 @@ import MirrorEvent from "@/lib/models/MirrorEvent";
 import MirrorSource from "@/lib/models/MirrorSource";
 import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorJob from "@/lib/models/MirrorJob";
+import CatalogGame from "@/lib/models/CatalogGame";
+import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import {
   archivedArtifactStatusOnHost,
   archiveArtifactOnHost,
@@ -12,6 +14,23 @@ import {
 } from "@/lib/gameHost/client";
 import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
+
+/**
+ * Some older artifact rows were created before the launcher reported its
+ * source URL. The catalog recipe is an explicit, read-only fallback for that
+ * exact game; it does not alter the game, the artifact, or any source record.
+ */
+export async function catalogArchiveSourceUrl(gameSlug: string | null | undefined): Promise<string | null> {
+  const slug = String(gameSlug || "").trim();
+  if (!slug) return null;
+
+  const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
+  const stored = doc?.launcherInstall as { kind?: string; url?: string | null } | undefined;
+  const seed = launcherInstallBySlug[slug];
+  const recipe = stored?.kind && stored.kind !== "external" ? stored : seed;
+  const url = String(recipe?.url || "").trim();
+  return /^https:\/\//i.test(url) ? url : null;
+}
 
 /**
  * Loads or initializes the singleton mirror settings document.
@@ -365,10 +384,18 @@ export async function archiveArtifactToVps(
       }
     }
     const candidate = String(source?.url || "").trim();
-    if (!candidate.startsWith("https://")) {
+    if (candidate.startsWith("https://")) {
+      sourceUrl = candidate;
+    } else {
+      const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug);
+      if (catalogUrl) {
+        sourceUrl = catalogUrl;
+        sourceLabel = "current catalog download";
+      }
+    }
+    if (!sourceUrl) {
       return { success: false, message: "There is no file available to move: this artifact is not physically in R2 and no direct HTTPS download source was recorded." };
     }
-    sourceUrl = candidate;
   }
 
   artifact.vpsStatus = "uploading";

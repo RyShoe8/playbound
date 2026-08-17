@@ -160,7 +160,11 @@ function classifyMediaUrl(src) {
   const url = String(src || "").trim();
   const yt = youtubeId(url);
   if (yt) {
-    return { kind: "youtube", src: url, embedUrl: `https://www.youtube-nocookie.com/embed/${yt}` };
+    return {
+      kind: "youtube",
+      src: url,
+      embedUrl: `https://www.youtube.com/embed/${yt}?rel=0&widget_referrer=${encodeURIComponent("https://playbound.club/launcher/")}`,
+    };
   }
   const vim = vimeoId(url);
   if (vim) {

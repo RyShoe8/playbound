@@ -275,9 +275,9 @@ async function renderGearDetailView(slug) {
                 if (v.includes("youtube.com") || v.includes("youtu.be")) {
                   const ytid = v.match(/(?:embed\/|v=|youtu\.be\/)([\w-]{11})/)?.[1];
                   if (ytid) {
-                    return `<div class="gear-video-frame"><iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(
+                    return `<div class="gear-video-frame"><iframe src="https://www.youtube.com/embed/${escapeHtml(
                       ytid
-                    )}" allowfullscreen></iframe></div>`;
+                    )}?rel=0&amp;widget_referrer=https%3A%2F%2Fplaybound.club%2Flauncher%2F" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>`;
                   }
                 }
                 return `<div class="gear-video-link"><button type="button" class="btn-secondary btn-sm gear-ext-video" data-video-url="${escapeHtml(

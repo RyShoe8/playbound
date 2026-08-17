@@ -3,7 +3,7 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
-import { refreshUploadingVpsArtifacts } from "@/lib/mirrors/cacheManager";
+import { catalogArchiveSourceUrl, refreshUploadingVpsArtifacts } from "@/lib/mirrors/cacheManager";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -23,11 +23,12 @@ export async function GET() {
       sourceMap.set(src.artifactId, list);
     }
 
-    const items = artifacts.map((a) => {
+    const items = await Promise.all(artifacts.map(async (a) => {
       const artSources = sourceMap.get(a.artifactId) || [];
       const archiveSource = [...artSources]
         .filter((source) => /^https:\/\//i.test(String(source.url || "")))
         .sort((a, b) => a.priority - b.priority || a.createdAt.getTime() - b.createdAt.getTime())[0];
+      const archiveSourceUrl = archiveSource?.url || await catalogArchiveSourceUrl(a.gameSlug);
       const healthyPublic = artSources.some((s) => s.healthStatus === "healthy");
       const degradedPublic = artSources.some((s) => s.healthStatus === "degraded");
 
@@ -55,9 +56,9 @@ export async function GET() {
         lastEvicted: a.r2LastEvicted,
         publicHealth,
         sha256: a.sha256,
-        archiveSourceUrl: archiveSource?.url || null,
+        archiveSourceUrl,
       };
-    });
+    }));
 
     return NextResponse.json({ items });
   } catch (error: unknown) {
