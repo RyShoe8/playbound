@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session } = require("electron");
 const { spawn, exec, execFile, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -53,6 +53,29 @@ const LIVE_STATS_CACHE_FILE = path.join(app.getPath("userData"), "live-stats-cac
 const DEFAULT_API_BASE = "https://playbound.club";
 /** Stable Blob prefix used by electron-updater (must match package.json build.publish). */
 const UPDATER_FEED_URL = "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/";
+
+/*
+ * YouTube rejects embeds from Electron's local file:// renderer when the
+ * initial request has no HTTP Referer (player error 153). Identify this as
+ * the PlayBound launcher without replacing legitimate in-frame referers.
+ */
+function configureYoutubeEmbedIdentity() {
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    {
+      urls: [
+        "https://www.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+      ],
+    },
+    (details, callback) => {
+      const requestHeaders = { ...details.requestHeaders };
+      if (!requestHeaders.Referer && !requestHeaders.referer) {
+        requestHeaders.Referer = "https://playbound.club/launcher/";
+      }
+      callback({ requestHeaders });
+    }
+  );
+}
 
 /*
  * Both bound here, near the constants they need, rather than further down where
@@ -8979,6 +9002,8 @@ if (gotLock) {
     if (process.argv.includes("--test-deep-link")) return testDeepLink();
     const uninstallIdx = process.argv.indexOf("--test-uninstall");
     if (uninstallIdx !== -1) return testUninstall(process.argv[uninstallIdx + 1]);
+
+    configureYoutubeEmbedIdentity();
 
     void flushLastCrashReport();
 
