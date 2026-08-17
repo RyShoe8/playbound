@@ -52,8 +52,17 @@ export function parseDiscordInviteCode(inviteUrl: string): string | null {
   return null;
 }
 
-/** Open an https URL in a new tab from a user gesture (not delayed window.open). */
-function openHttpsInNewTab(url: string): void {
+/** Open an https URL in a new tab from a user gesture. */
+function openHttpsInNewTab(url: string): Window | null {
+  const w = window.open(url, "_blank");
+  if (w) {
+    try {
+      w.opener = null;
+    } catch {
+      /* ignore */
+    }
+    return w;
+  }
   const a = document.createElement("a");
   a.href = url;
   a.target = "_blank";
@@ -62,6 +71,7 @@ function openHttpsInNewTab(url: string): void {
   document.body.appendChild(a);
   a.click();
   a.remove();
+  return null;
 }
 
 /**

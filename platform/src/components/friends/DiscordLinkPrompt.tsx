@@ -1,6 +1,6 @@
 "use client";
 
-import { openDiscordInvite } from "@/lib/openPlayboundDeepLink";
+import { firePlayboundDeepLink, openDiscordInvite, parseDiscordInviteCode } from "@/lib/openPlayboundDeepLink";
 
 export function DiscordLinkPrompt({
   open,
@@ -33,13 +33,18 @@ export function DiscordLinkPrompt({
             Link Discord
           </a>
           {inviteUrl ? (
-            <button
-              type="button"
-              onClick={() => openDiscordInvite(inviteUrl)}
+            <a
+              href={inviteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                const code = parseDiscordInviteCode(inviteUrl);
+                if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
+              }}
               className="inline-flex rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold hover:bg-secondary/80"
             >
               Open voice invite
-            </button>
+            </a>
           ) : null}
           <button
             type="button"
