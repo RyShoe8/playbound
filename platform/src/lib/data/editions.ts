@@ -1506,9 +1506,9 @@ export const editions: EditionSeed[] = [
     slug: "playbound",
     name: "HoloCure: Multiplayer (Experimental)",
     shortDescription:
-      "Seamless online co-op multiplayer for HoloCure with 6-character room codes. Zero Steam or VPN required. Experimental — expect occasional crashes.",
+      "Online co-op for HoloCure over a shared PlayBound Connect network. No Steam, no port forwarding, no Hamachi to set up yourself. Experimental — expect occasional crashes.",
     description:
-      "Adds PlayBound's community multiplayer runtime to HoloCure — Save the Fans!, so you can play co-op with friends online using simple 6-character room codes without requiring Steam, Hamachi/VPNs, or router port forwarding. PlayBound installs the Aurie mod loader and verified multiplayer transport for you automatically.\n\nThis is experimental community software, not an official HoloCure feature. The mod's author notes it may have occasional crashes since a lot is modified in the game to get networking working. Your saves remain completely safe in %LOCALAPPDATA%\\HoloCure and you can switch to unmodded vanilla HoloCure at any time.",
+      "Adds PippleCultist's HoloCure Multiplayer Mod to HoloCure — Save the Fans!, so you can run stages co-op with friends. PlayBound installs the Aurie mod loader and the mod for you in one click.\n\nThe mod plays over LAN: one player hosts a session and everyone else finds it on the same network. PlayBound Connect supplies that network. Click Join Game in a party and Connect puts every member on one shared segment, then points HoloCure at it, so a LAN session works across the internet without you configuring anything. In game it is Play → Multiplayer → use the saved network adapter, then Host LAN Session for the leader and Join LAN Session for everyone else.\n\nThis is experimental community software, not an official HoloCure feature. The mod's author notes it may have occasional crashes since a lot is modified in the game to get networking working. Your saves remain completely safe in %LOCALAPPDATA%\\HoloCure and you can switch to unmodded vanilla HoloCure at any time.",
     type: "community",
     // Deliberately NOT the default. The mod is self-described as crash-prone,
     // so the vanilla edition stays the one-click path for anyone who just

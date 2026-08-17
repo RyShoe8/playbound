@@ -7,13 +7,15 @@
  *   1. `playbound-native` — Custom P2P mod / transport with room codes (e.g. HoloCure).
  *   2. `managed-server`  — Automatic dedicated server process spawned on the PlayBound VPS (e.g. OpenRA, OpenTTD).
  *   3. `direct-ip`       — Direct peer connection with CLI argument join (e.g. KeeperFX, Marathon 2).
- *   4. `official`        — Unmodified proprietary/official network layer; PlayBound provides party launch & presence only.
+ *   4. `virtual-lan`     — LAN-only game put on one L2 overlay so its own discovery works (e.g. HoloCure).
+ *   5. `official`        — Unmodified proprietary/official network layer; PlayBound provides party launch & presence only.
  */
 
 export type MultiplayerAdapterType =
   | "playbound-native"
   | "managed-server"
   | "direct-ip"
+  | "virtual-lan"
   | "official";
 
 export type MultiplayerTier =
@@ -35,6 +37,24 @@ export interface ClientLaunchConfig {
   requiresRoomCode?: boolean;
 }
 
+/**
+ * A `virtual-lan` game does its own peer discovery and offers no address to
+ * connect to, so PlayBound cannot hand it a host:port. Instead the party is
+ * placed on one L2 overlay network and the game's existing LAN discovery does
+ * the rest.
+ *
+ * `adapterFile` is a path inside the install that stores the network adapter
+ * the game should listen on. Writing it means the player picks "use the saved
+ * adapter" instead of hunting for the overlay in a dropdown.
+ */
+export interface VirtualLanConfig {
+  /** Discovery needs L2 broadcast, so a routed overlay (WireGuard) will not do. */
+  requiresBroadcast?: boolean;
+  adapterFile?: string;
+  /** What the player still has to click once the overlay is up. */
+  inGameSteps?: string[];
+}
+
 export interface GameMultiplayerAdapter {
   gameSlug: string;
   title: string;
@@ -43,22 +63,46 @@ export interface GameMultiplayerAdapter {
   protocol?: "enet" | "gns" | "udp" | "tcp" | "quake" | "doom" | "custom" | "official";
   host?: HostLaunchConfig;
   client?: ClientLaunchConfig;
+  virtualLan?: VirtualLanConfig;
   notes?: string;
 }
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   // ─── TIER 1: PlayBound Multiplayer Editions ───────────────────────────────
+  /*
+   * HoloCure's multiplayer mod (upstream v1.4.1) offers exactly two ways in:
+   * a Steam friend lobby, and a LAN session bound to a network adapter you
+   * pick in-game. Our build comes from itch and ships no Steamworks — the
+   * game logs "Couldn't load Steam API dll" and disables Steam features — so
+   * LAN is the only path that exists for us.
+   *
+   * There is no room code, no address field and no CLI join, which is why
+   * this is not `playbound-native` and cannot be `managed-server`: there is
+   * nothing to spawn and nothing to connect to. Connect instead puts the
+   * whole party on one overlay segment and lets the mod find itself, which
+   * the mod's own README endorses ("if you want to connect via VPN as a LAN
+   * game, then choose the name of the VPN network adapter").
+   */
   holocure: {
     gameSlug: "holocure",
     title: "HoloCure - Save the Fans!",
     tier: "tier1_improved",
-    adapterType: "playbound-native",
-    protocol: "gns",
+    adapterType: "virtual-lan",
+    protocol: "udp",
     client: {
-      requiresRoomCode: true,
       inGameJoinPrompt: true,
     },
-    notes: "Forked mod with zero-Steam standalone GNS P2P transport + 6-character room codes.",
+    virtualLan: {
+      requiresBroadcast: true,
+      adapterFile: "MultiplayerMod/lastUsedNetworkAdapter",
+      inGameSteps: [
+        "Play → Multiplayer",
+        "Use saved network adapter",
+        "Host LAN Session (leader) or Join LAN Session (everyone else)",
+      ],
+    },
+    notes:
+      "Upstream mod, LAN-only for us. Connect supplies the shared segment; the mod does its own discovery.",
   },
 
   keeperfx: {
@@ -500,4 +544,25 @@ export function isPlayBoundManagedMultiplayer(gameSlug: string): boolean {
  */
 export function getMultiplayerTier(gameSlug: string): MultiplayerTier {
   return getMultiplayerAdapter(gameSlug).tier;
+}
+
+/**
+ * Returns the overlay config when this game reaches its friends over a shared
+ * LAN segment rather than an address, else null.
+ */
+export function getVirtualLanConfig(gameSlug: string): VirtualLanConfig | null {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  if (adapter.adapterType !== "virtual-lan") return null;
+  return adapter.virtualLan || {};
+}
+
+export function isVirtualLanGame(gameSlug: string): boolean {
+  return getMultiplayerAdapter(gameSlug).adapterType === "virtual-lan";
+}
+
+/** Every game Connect reaches by putting the party on one shared segment. */
+export function listVirtualLanGames(): GameMultiplayerAdapter[] {
+  return Object.values(MULTIPLAYER_ADAPTERS).filter(
+    (a) => a.adapterType === "virtual-lan"
+  );
 }

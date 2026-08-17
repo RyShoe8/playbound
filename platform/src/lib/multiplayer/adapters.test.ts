@@ -2,17 +2,29 @@ import { describe, it, expect } from "vitest";
 import {
   getMultiplayerAdapter,
   getMultiplayerTier,
+  getVirtualLanConfig,
   isPlayBoundManagedMultiplayer,
   MULTIPLAYER_ADAPTERS,
 } from "./adapters";
 
 describe("PlayBound Multiplayer Adapter Framework", () => {
   it("correctly identifies Tier 1 PlayBound Multiplayer Editions", () => {
+    /*
+     * HoloCure is virtual-lan, not playbound-native: the mod we ship has no
+     * room codes and no connect target, only LAN discovery on a chosen
+     * adapter. Asserting the absence of a room code keeps the copy and the
+     * adapter honest about that.
+     */
     const holocure = getMultiplayerAdapter("holocure");
-    expect(holocure.adapterType).toBe("playbound-native");
-    expect(holocure.protocol).toBe("gns");
+    expect(holocure.adapterType).toBe("virtual-lan");
     expect(holocure.tier).toBe("tier1_improved");
     expect(isPlayBoundManagedMultiplayer("holocure")).toBe(true);
+    expect(holocure.client?.requiresRoomCode).toBeFalsy();
+    expect(getVirtualLanConfig("holocure")?.requiresBroadcast).toBe(true);
+    expect(getVirtualLanConfig("holocure")?.adapterFile).toBe(
+      "MultiplayerMod/lastUsedNetworkAdapter"
+    );
+    expect(getVirtualLanConfig("openra")).toBeNull();
 
     const keeper = getMultiplayerAdapter("keeperfx");
     expect(keeper.adapterType).toBe("direct-ip");

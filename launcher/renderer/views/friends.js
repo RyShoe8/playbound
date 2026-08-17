@@ -1730,6 +1730,54 @@ function wirePartyView(slot, party) {
 }
 
 /**
+ * Put this machine on the party's overlay segment before launching.
+ *
+ * Returns false when the launch should not proceed — the player has something
+ * to fix first, and starting the game would only strand them on a title
+ * screen with no one to find.
+ */
+async function prepareVirtualLan(party, lan) {
+  if (lan.status === "failed") {
+    setStatus(lan.error || "Could not set up the party network. Try Join Game again.", true);
+    return false;
+  }
+  if (lan.status !== "ready" || !lan.networkId) {
+    setStatus("Setting up the party network — try Join Game again in a moment.");
+    return false;
+  }
+  if (!window.playbound.prepareVirtualLan) {
+    setStatus("Update PlayBound to join this party's network.", true);
+    return false;
+  }
+
+  setStatus("Connecting to the party network…");
+  const res = await window.playbound.prepareVirtualLan({
+    partyId: party.id,
+    networkId: lan.networkId,
+    slug: party.gameSlug,
+    adapterFile: lan.adapterFile || null,
+  });
+
+  if (res?.needsInstall) {
+    setStatus(res.error, true);
+    if (res.downloadUrl) window.playbound.openExternal(res.downloadUrl);
+    return false;
+  }
+  if (res?.error) {
+    setStatus(res.error, true);
+    return false;
+  }
+
+  const steps = Array.isArray(lan.steps) && lan.steps.length ? ` Then: ${lan.steps.join(" → ")}.` : "";
+  setStatus(
+    res?.pointed
+      ? `On the party network as "${res.adapterName}".${steps}`
+      : `On the party network as "${res.adapterName}". Pick that adapter in-game.${steps}`
+  );
+  return true;
+}
+
+/**
  * The launcher's equivalent of the site's launchLocalGame(): a hosted party
  * server joins directly, a browser title opens externally, and anything else
  * launches locally — falling back to the game page when it is not installed.
@@ -1778,6 +1826,19 @@ async function launchPartyGame(party) {
       hosted.status === "failed"
     );
     return;
+  }
+
+  /*
+   * Virtual-LAN games have no address to join — the party shares an overlay
+   * segment and the game finds its own peers over it. Get on the segment
+   * before launching, then tell the player the handful of in-game clicks that
+   * are still theirs to make, because the game opens on its title screen
+   * either way and silence would read as a dead button.
+   */
+  const lan = party.lan || {};
+  if (lan.enabled) {
+    const ready = await prepareVirtualLan(party, lan);
+    if (!ready) return;
   }
 
   const games = partyGamesCache || [];

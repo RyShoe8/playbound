@@ -34,6 +34,26 @@ const PartyHostedSchema = new Schema(
   { _id: false }
 );
 
+/**
+ * Overlay network for `virtual-lan` games, which have no address to connect
+ * to and find each other by broadcast instead. Node IDs are the members'
+ * machines that have been let onto the segment.
+ */
+const PartyLanSchema = new Schema(
+  {
+    networkId: { type: String, default: null },
+    status: {
+      type: String,
+      enum: ["none", "pending", "ready", "failed"],
+      default: "none",
+    },
+    error: { type: String, default: null },
+    authorizedNodeIds: { type: [String], default: [] },
+    provisionedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const PartyMemberSchema = new Schema(
   {
     userId: {
@@ -122,6 +142,9 @@ const PartySchema = new Schema(
     // Public VPS dedicated room for NAT-sensitive listen-server games.
     hosted: { type: PartyHostedSchema, default: () => ({}) },
 
+    // Shared L2 segment for LAN-discovery-only games.
+    lan: { type: PartyLanSchema, default: () => ({}) },
+
     lastActivity: { type: Date, default: Date.now, index: true },
     endedAt: { type: Date, default: null },
   },
@@ -188,6 +211,13 @@ export type PartyDoc = {
     name?: string | null;
     error?: string | null;
     roomCode?: string | null;
+    provisionedAt?: Date | null;
+  };
+  lan?: {
+    networkId?: string | null;
+    status?: string;
+    error?: string | null;
+    authorizedNodeIds?: string[];
     provisionedAt?: Date | null;
   };
   lastActivity: Date;
