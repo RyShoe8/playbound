@@ -42,7 +42,6 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
 function toGame(doc: LeanGame): Game {
   const seed = seedBySlug.get(String(doc.slug));
   const status = normalizeStatus(doc);
-  const resolvedStatus = seed?.status === "published" && status === "draft" ? "published" : status;
 
   const base: Game = {
     slug: String(doc.slug),
@@ -56,7 +55,10 @@ function toGame(doc: LeanGame): Game {
     license: String(doc.license) || seed?.license || "",
     releaseYear: (typeof doc.releaseYear === "number" && doc.releaseYear > 1970 ? doc.releaseYear : seed?.releaseYear) || 0,
     sizeMB: (typeof doc.sizeMB === "number" && doc.sizeMB > 0 ? doc.sizeMB : seed?.sizeMB) || 0,
-    status: resolvedStatus,
+    // Mongo is authoritative for visibility. A seed only fills editorial
+    // fields that are absent from an older document; it must never turn an
+    // explicitly drafted game back into a public one.
+    status,
     platforms: (doc.platforms as string[])?.length ? (doc.platforms as string[]) : (seed?.platforms ?? []),
     features: (doc.features as string[])?.length ? (doc.features as string[]) : (seed?.features ?? []),
     launchMethods: (doc.launchMethods as LaunchMethod[])?.length ? (doc.launchMethods as LaunchMethod[]) : (seed?.launchMethods ?? ["install"]),
