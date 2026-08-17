@@ -2476,12 +2476,15 @@ async function verifyChecksumSha256(filePath, expectedSha256) {
   }
 }
 
-async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256 }) {
+async function downloadResilientArtifact({ slug, artifactId: requestedArtifactId, version, directUrl, dest, expectedSha256 }) {
   const base = getApiBase();
   let resolved = null;
 
   try {
-    const res = await fetch(`${base}/api/downloads?slug=${encodeURIComponent(slug)}`, {
+    const identity = requestedArtifactId
+      ? `artifactId=${encodeURIComponent(requestedArtifactId)}`
+      : `slug=${encodeURIComponent(slug)}`;
+    const res = await fetch(`${base}/api/downloads?${identity}`, {
       headers: { "user-agent": "playbound-launcher", accept: "application/json" },
       signal: AbortSignal.timeout(6000),
     });
@@ -2494,7 +2497,7 @@ async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256
 
   const sources = resolved?.sources || [{ type: "public", url: directUrl, sourceId: "direct-catalog" }];
   const sha256 = expectedSha256 || resolved?.artifact?.sha256 || null;
-  const artifactId = resolved?.artifact?.id || slug;
+  const artifactId = resolved?.artifact?.id || requestedArtifactId || slug;
 
   let lastErr = null;
 
@@ -2526,7 +2529,7 @@ async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256
           // sees it, rather than dropping the count for anything it does not
           // already know about.
           gameSlug: slug || null,
-          version: resolved?.artifact?.version || null,
+          version: resolved?.artifact?.version || version || null,
           filename: path.basename(dest),
           sourceUrl: source.url || null,
           attemptedAt: new Date(startTime).toISOString(),
@@ -2554,7 +2557,7 @@ async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256
           sourceId: source.sourceId || `src-${source.type}`,
           sourceType: source.type,
           gameSlug: slug || null,
-          version: resolved?.artifact?.version || null,
+          version: resolved?.artifact?.version || version || null,
           filename: path.basename(dest),
           sourceUrl: source.url || null,
           attemptedAt: new Date(startTime).toISOString(),
@@ -4266,8 +4269,20 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   sendProgress({ phase: "resolving" });
   const dl = await resolveDownload(entry);
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", dl.name);
+  // Mirror records must identify the exact edition archive, not merely its
+  // parent game. A game can have several differently-sized packages; a
+  // game-slug lookup must never replace the selected edition with a sibling.
+  const artifactId = entry.editionId
+    ? `${entry.slug}--${entry.editionSlug || DEFAULT_EDITION_SLUG}--${dl.version || "unknown"}--${dl.name}`
+    : null;
   try {
-    await downloadResilientArtifact({ slug: entry.slug, directUrl: dl.url, dest: downloadPath });
+    await downloadResilientArtifact({
+      slug: entry.slug,
+      artifactId,
+      version: dl.version,
+      directUrl: dl.url,
+      dest: downloadPath,
+    });
   } catch (err) {
     const site = entry.editionLinks?.website || entry.url;
     const hint =
