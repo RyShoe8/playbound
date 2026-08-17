@@ -20,7 +20,8 @@
     "signing:status": "node scripts/signing-status.js",
     "dist:linux": "electron-builder --linux AppImage",
     "test:cache": "node renderer/cache.test.mjs",
-    "test:connect": "node services/connectArgs.test.js"
+    "test:connect": "node services/connectArgs.test.js",
+    "test:catalog": "node services/catalogMerge.test.js"
   },
   "author": "PlayBound",
   "license": "MIT",
