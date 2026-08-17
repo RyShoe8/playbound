@@ -54,9 +54,5 @@ export async function POST(
   }
 
   await doc.save();
-  if (result.status === "broken" || result.status === "stale") {
-    const { markGameHealthYellow } = await import("@/lib/admin/gameHealth");
-    void markGameHealthYellow(slug, "install");
-  }
   return NextResponse.json({ ok: true, result, applied });
 }

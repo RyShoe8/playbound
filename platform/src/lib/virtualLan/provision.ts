@@ -17,7 +17,6 @@ import {
 } from "./client";
 import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
-import { markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
 
@@ -69,7 +68,6 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
       gameSlug: slug,
       message: result.error,
     });
-    void markGameHealthYellow(slug, "party");
     return false;
   }
 
