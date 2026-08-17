@@ -310,13 +310,10 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
   await dbConnect();
   const artifact = await Artifact.findOne({ artifactId });
   if (!artifact) return { success: false, message: "Artifact not found" };
-  if (!artifact.redistributionAllowed || !artifact.mirrorEnabled) {
-    return { success: false, message: "This artifact is not approved for PlayBound mirroring." };
-  }
   if (!artifact.sizeBytes) return { success: false, message: "Artifact size is unknown; verify it before archiving." };
 
   let sourceUrl: string | null = null;
-  let sourceLabel = "approved public source";
+  let sourceLabel = "original download source";
   if (artifact.r2Status === "cached") {
     const r2 = await checkR2ObjectExists(artifact.relativePath);
     if (r2.exists) {
@@ -332,7 +329,7 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
     }).sort({ priority: 1, createdAt: 1 });
     const candidate = String(source?.url || "").trim();
     if (!candidate.startsWith("https://")) {
-      return { success: false, message: "No approved direct HTTPS download source is available to archive." };
+      return { success: false, message: "There is no file available to move: this artifact is not physically in R2 and no direct HTTPS download source was recorded." };
     }
     sourceUrl = candidate;
   }
