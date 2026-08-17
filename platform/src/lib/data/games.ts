@@ -1291,7 +1291,10 @@ const facts: Game[] = [
       exeHint: "DaggerfallUnity.exe",
       knownExePaths: ["DaggerfallUnity.exe"],
       versionLabel: "v1.1.1",
-      note: "Installs Daggerfall Unity with full widescreen, controller support, and modern modding. Bethesda released the original Daggerfall game data 100% free.",
+      overlayUrl: "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1",
+      overlayFileName: "DaggerfallGameFiles.zip",
+      overlayDest: "DaggerfallUnity_Data/StreamingAssets/GameFiles",
+      note: "Installs Daggerfall Unity and the free Daggerfall game data together — ready to play with widescreen, controller support, and modern modding.",
     },
     communityLinks: {
       officialDiscord: {

@@ -39,6 +39,7 @@ import {
 } from "@/components/admin/EditorialFields";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import { SizeInput } from "@/components/admin/SizeInput";
+import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
 
 export type { EditionDraft };
 
@@ -882,6 +883,20 @@ export function EditionEditorForm({
           </PremiumSelect>
         </div>
         <div className="mt-4 space-y-3">
+          {mode === "edit" ? (
+            <LauncherPackageUploader
+              gameSlug={form.gameSlug}
+              editionSlug={form.slug}
+              onInstalled={(installed) => {
+                patch("installMethod", "playbound_installer");
+                patchConfig("playbound_installer", {
+                  kind: installed.kind,
+                  url: installed.url,
+                  fileName: installed.fileName,
+                });
+              }}
+            />
+          ) : null}
           <InstallMethodFields
             method={form.installMethod}
             config={form.installConfig}

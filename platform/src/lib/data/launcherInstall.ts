@@ -793,7 +793,13 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "~/PlayBound/Games/daggerfall/DaggerfallUnity.x86_64",
       "~/DaggerfallUnity/DaggerfallUnity.x86_64",
     ],
-    note: "Daggerfall Unity open-source remaster with native Windows and Linux support.",
+    // The Daggerfall Unity-compatible game-data bundle is placed in
+    // StreamingAssets so DFU sees it immediately and never asks the player to
+    // locate an ARENA2 folder.
+    overlayUrl: "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1",
+    overlayFileName: "DaggerfallGameFiles.zip",
+    overlayDest: "DaggerfallUnity_Data/StreamingAssets/GameFiles",
+    note: "Installs Daggerfall Unity and the free Daggerfall game data together — ready to play without locating files.",
   },
 
   "tes-arena": {

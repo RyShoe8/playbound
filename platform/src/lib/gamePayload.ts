@@ -146,6 +146,9 @@ export const launcherInstallSchema = z
     versionCheckStatus: optionalTrimmed,
     versionCheckNote: optionalTrimmed,
     autoUpdatePinned: z.boolean().optional().default(true),
+    overlayUrl: optionalTrimmed,
+    overlayFileName: optionalTrimmed,
+    overlayDest: optionalTrimmed,
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
@@ -163,6 +166,7 @@ export const launcherInstallSchema = z
     }
     if (
       (val.kind === "direct-zip" ||
+        val.kind === "direct-7z" ||
         val.kind === "direct-installer" ||
         val.kind === "direct-exe" ||
         val.kind === "external") &&
@@ -554,6 +558,9 @@ export function toPayloadLauncherInstall(
     versionCheckStatus: li.versionCheckStatus ?? null,
     versionCheckNote: li.versionCheckNote ?? null,
     autoUpdatePinned: li.autoUpdatePinned !== false,
+    overlayUrl: li.overlayUrl ?? null,
+    overlayFileName: li.overlayFileName ?? null,
+    overlayDest: li.overlayDest ?? null,
   };
 }
 

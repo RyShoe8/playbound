@@ -33,6 +33,13 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.connectArgs?.length && seed?.connectArgs?.length) {
       merged.connectArgs = seed.connectArgs;
     }
+    // A content overlay can safely fill in only when the stored recipe has no
+    // value. This keeps existing database curation authoritative while letting
+    // a narrowly-scoped launcher repair (such as Daggerfall's free game data)
+    // reach already-stored catalog rows without a database write.
+    if (!merged.overlayUrl && seed?.overlayUrl) merged.overlayUrl = seed.overlayUrl;
+    if (!merged.overlayFileName && seed?.overlayFileName) merged.overlayFileName = seed.overlayFileName;
+    if (!merged.overlayDest && seed?.overlayDest) merged.overlayDest = seed.overlayDest;
     return { ...game, launcherInstall: merged };
   }
   if (seed) return { ...game, launcherInstall: seed };

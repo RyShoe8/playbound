@@ -47,6 +47,9 @@ const LauncherInstallSchema = new Schema(
     },
     versionCheckNote: { type: String, default: null },
     autoUpdatePinned: { type: Boolean, default: true },
+    overlayUrl: { type: String, default: null },
+    overlayFileName: { type: String, default: null },
+    overlayDest: { type: String, default: null },
   },
   { _id: false }
 );
