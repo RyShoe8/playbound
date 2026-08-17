@@ -21,6 +21,7 @@ import {
   Database,
   Info,
   Flame,
+  Archive,
 } from "lucide-react";
 
 interface OverviewData {
@@ -347,6 +348,43 @@ export function DownloadMirrorsManager() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Eviction failed";
       setMessage({ text: msg, type: "error" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleArchive(artifactId: string) {
+    setBusyAction(`archive-${artifactId}`);
+    try {
+      const res = await fetch("/api/admin/download-mirrors/cache/archive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ artifactId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || "Archive failed");
+      setMessage({ text: data.message, type: "success" });
+      await loadData();
+    } catch (err: unknown) {
+      setMessage({ text: err instanceof Error ? err.message : "Archive failed", type: "error" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleDeleteArtifact(artifactId: string) {
+    if (!confirm("Delete this artifact and its R2/VPS copies?\n\nThis removes only the artifact, download-source, attempt, and job records. It never changes game catalog data.")) return;
+    setBusyAction(`delete-${artifactId}`);
+    try {
+      const res = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(artifactId)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || "Delete failed");
+      setMessage({ text: data.message, type: "success" });
+      await loadData();
+    } catch (err: unknown) {
+      setMessage({ text: err instanceof Error ? err.message : "Delete failed", type: "error" });
     } finally {
       setBusyAction(null);
     }
@@ -728,6 +766,14 @@ export function DownloadMirrorsManager() {
                             {item.r2Status === "cached" ? (
                               <>
                                 <button
+                                  onClick={() => void handleArchive(item.id)}
+                                  disabled={busyAction === `archive-${item.id}` || item.vpsStatus === "verified"}
+                                  className="p-1.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs transition-colors disabled:opacity-50"
+                                  title={item.vpsStatus === "verified" ? "Already archived on VPS" : "Copy to VPS archive"}
+                                >
+                                  <Archive className="w-3.5 h-3.5" />
+                                </button>
+                                <button
                                   onClick={() => void handleToggleProtect(item.id, item.r2Protected)}
                                   disabled={busyAction === `protect-${item.id}`}
                                   className={`p-1.5 rounded text-xs transition-colors ${
@@ -757,6 +803,14 @@ export function DownloadMirrorsManager() {
                                 <ArrowUpRight className="w-3.5 h-3.5" /> Promote
                               </button>
                             )}
+                            <button
+                              onClick={() => void handleDeleteArtifact(item.id)}
+                              disabled={busyAction === `delete-${item.id}`}
+                              className="p-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs transition-colors disabled:opacity-50"
+                              title="Delete artifact and its mirror records"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>

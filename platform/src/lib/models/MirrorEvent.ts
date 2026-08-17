@@ -4,6 +4,8 @@ export type MirrorEventType =
   | "budget_changed"
   | "manual_promote"
   | "manual_evict"
+  | "archive_to_vps"
+  | "artifact_deleted"
   | "protect"
   | "unprotect"
   | "r2_disabled"
@@ -31,6 +33,8 @@ const MirrorEventSchema = new Schema<IMirrorEvent>(
         "budget_changed",
         "manual_promote",
         "manual_evict",
+        "archive_to_vps",
+        "artifact_deleted",
         "protect",
         "unprotect",
         "r2_disabled",

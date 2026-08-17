@@ -3,6 +3,9 @@ import Artifact, { IArtifact } from "@/lib/models/Artifact";
 import MirrorSettings, { IMirrorSettings } from "@/lib/models/MirrorSettings";
 import MirrorEvent from "@/lib/models/MirrorEvent";
 import MirrorSource from "@/lib/models/MirrorSource";
+import MirrorAttempt from "@/lib/models/MirrorAttempt";
+import MirrorJob from "@/lib/models/MirrorJob";
+import { archiveArtifactOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
 import { deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
 
@@ -289,6 +292,76 @@ export async function manualEvictArtifact(artifactId: string, actor: string): Pr
   });
 
   return { success: true, message: `Evicted ${artifact.filename} from R2 hot cache.` };
+}
+
+/** Copy an eligible R2 cache object to the authoritative VPS archive. */
+export async function archiveArtifactToVps(artifactId: string, actor: string): Promise<{ success: boolean; message: string }> {
+  await dbConnect();
+  const artifact = await Artifact.findOne({ artifactId });
+  if (!artifact) return { success: false, message: "Artifact not found" };
+  if (!artifact.redistributionAllowed || !artifact.mirrorEnabled) {
+    return { success: false, message: "This artifact is not approved for PlayBound mirroring." };
+  }
+  if (artifact.r2Status !== "cached") {
+    return { success: false, message: "Archive copies must come from an R2 hot-cache object." };
+  }
+  if (!artifact.sizeBytes) return { success: false, message: "Artifact size is unknown; verify it before archiving." };
+
+  artifact.vpsStatus = "uploading";
+  await artifact.save();
+
+  const result = await archiveArtifactOnHost({
+    url: await getR2PresignedDownloadUrl(artifact.relativePath, 60 * 60),
+    relativePath: artifact.relativePath,
+    sizeBytes: artifact.sizeBytes,
+    sha256: artifact.sha256 || null,
+  });
+  if (!result.success) {
+    artifact.vpsStatus = "missing";
+    await artifact.save();
+    return { success: false, message: result.message || "Could not copy artifact to the VPS archive." };
+  }
+
+  artifact.vpsStatus = "verified";
+  await artifact.save();
+  await MirrorEvent.create({
+    eventType: "archive_to_vps",
+    actor,
+    artifactId: artifact.artifactId,
+    details: `${actor} copied ${artifact.filename} from R2 hot cache to the VPS archive`,
+  });
+  return { success: true, message: `Archived ${artifact.filename} on the VPS.` };
+}
+
+/**
+ * Removes an artifact and its mirror bookkeeping. Catalog games are never
+ * queried or changed here. The caller must explicitly confirm this action.
+ */
+export async function deleteArtifactCompletely(artifactId: string, actor: string): Promise<{ success: boolean; message: string }> {
+  await dbConnect();
+  const artifact = await Artifact.findOne({ artifactId });
+  if (!artifact) return { success: false, message: "Artifact not found" };
+
+  if (artifact.vpsStatus === "verified" || artifact.vpsStatus === "uploading") {
+    const vps = await deleteArchivedArtifactOnHost(artifact.relativePath);
+    if (!vps.success) return { success: false, message: vps.message || "Could not remove VPS archive copy." };
+  }
+  const r2 = await deleteObjectFromR2(artifact.relativePath);
+  if (!r2.success) return { success: false, message: "Could not remove R2 cache copy." };
+
+  await Promise.all([
+    MirrorSource.deleteMany({ artifactId }),
+    MirrorAttempt.deleteMany({ artifactId }),
+    MirrorJob.deleteMany({ artifactId }),
+    Artifact.deleteOne({ artifactId }),
+  ]);
+  await MirrorEvent.create({
+    eventType: "artifact_deleted",
+    actor,
+    artifactId,
+    details: `${actor} deleted artifact ${artifact.filename} and its R2/VPS copies`,
+  });
+  return { success: true, message: `Deleted ${artifact.filename} and its mirror records.` };
 }
 
 /**
