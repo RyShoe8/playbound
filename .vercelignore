@@ -1,0 +1,12 @@
+# The Vercel project root is platform/. These are local Electron artifacts and
+# dependencies, never inputs to a website deployment.
+launcher/
+platform/node_modules/
+platform/.next/
+platform/discord-bot/node_modules/
+.git/
+.claude/
+.agents/
+node_modules/
+**/dist/
+**/build/
