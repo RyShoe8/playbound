@@ -1856,9 +1856,9 @@ async function refreshRemoteCatalog(force = false) {
   }
 }
 
-async function ensureCatalogEntry(slug) {
+async function ensureCatalogEntry(slug, forceRemote = false) {
   const existing = catalog.find((e) => e.slug === slug);
-  if (existing && existing.kind && existing.kind !== "external") {
+  if (!forceRemote && existing && existing.kind && existing.kind !== "external") {
     registerCatalogEntryHosts(existing);
     return existing;
   }
@@ -4212,7 +4212,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   let entry =
-    (await ensureCatalogEntry(slug)) ||
+    (await ensureCatalogEntry(slug, true)) ||
     catalog.find((e) => e.slug === slug) ||
     bundledCatalog.find((e) => e.slug === slug);
 
