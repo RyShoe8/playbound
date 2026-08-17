@@ -2751,12 +2751,15 @@ function sevenZipBinary() {
   const archDir = process.arch === "arm64" ? "arm64" : process.arch === "ia32" ? "ia32" : "x64";
   const exe = process.platform === "win32" ? "7za.exe" : "7za";
 
-  const roots = [
-    path.join(__dirname, "node_modules", "7zip-bin"),
-    // Packaged: asar-relative path rewritten to the unpacked copy.
-    path.join(__dirname.replace(/app\.asar([\\/]|$)/, "app.asar.unpacked$1"), "node_modules", "7zip-bin"),
-    path.join(process.resourcesPath || "", "app.asar.unpacked", "node_modules", "7zip-bin"),
-  ];
+  const roots = app.isPackaged
+    ? [
+        // Do not probe app.asar first: Electron's virtual filesystem reports
+        // the packed helper as existing, but Windows cannot spawn an executable
+        // from inside an asar and responds with ENOENT. asarUnpack places the
+        // real binary exactly here.
+        path.join(process.resourcesPath, "app.asar.unpacked", "node_modules", "7zip-bin"),
+      ]
+    : [path.join(__dirname, "node_modules", "7zip-bin")];
 
   for (const root of roots) {
     if (!root) continue;
