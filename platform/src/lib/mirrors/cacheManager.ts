@@ -10,7 +10,7 @@ import {
   archiveArtifactOnHost,
   deleteArchivedArtifactOnHost,
 } from "@/lib/gameHost/client";
-import { deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
+import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
 
 /**
@@ -298,7 +298,14 @@ export async function manualEvictArtifact(artifactId: string, actor: string): Pr
   return { success: true, message: `Evicted ${artifact.filename} from R2 hot cache.` };
 }
 
-/** Copy an eligible R2 cache object to the authoritative VPS archive. */
+/**
+ * Copy an eligible artifact to the authoritative VPS archive.
+ *
+ * R2 is a hot cache, not a prerequisite: an artifact's first durable copy
+ * necessarily comes from its approved public source. Requiring R2 here made
+ * the old Promote → Archive path impossible because Promote in turn required
+ * a VPS copy.
+ */
 export async function archiveArtifactToVps(artifactId: string, actor: string): Promise<{ success: boolean; message: string }> {
   await dbConnect();
   const artifact = await Artifact.findOne({ artifactId });
@@ -306,17 +313,36 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
   if (!artifact.redistributionAllowed || !artifact.mirrorEnabled) {
     return { success: false, message: "This artifact is not approved for PlayBound mirroring." };
   }
-  if (artifact.r2Status !== "cached") {
-    return { success: false, message: "Archive copies must come from an R2 hot-cache object." };
-  }
   if (!artifact.sizeBytes) return { success: false, message: "Artifact size is unknown; verify it before archiving." };
+
+  let sourceUrl: string | null = null;
+  let sourceLabel = "approved public source";
+  if (artifact.r2Status === "cached") {
+    const r2 = await checkR2ObjectExists(artifact.relativePath);
+    if (r2.exists) {
+      sourceUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 60 * 60);
+      sourceLabel = "R2 hot cache";
+    }
+  }
+  if (!sourceUrl) {
+    const source = await MirrorSource.findOne({
+      artifactId: artifact.artifactId,
+      sourceType: "public",
+      enabled: true,
+    }).sort({ priority: 1, createdAt: 1 });
+    const candidate = String(source?.url || "").trim();
+    if (!candidate.startsWith("https://")) {
+      return { success: false, message: "No approved direct HTTPS download source is available to archive." };
+    }
+    sourceUrl = candidate;
+  }
 
   artifact.vpsStatus = "uploading";
   artifact.vpsStatusMessage = "Transfer queued on the VPS.";
   await artifact.save();
 
   const result = await archiveArtifactOnHost({
-    url: await getR2PresignedDownloadUrl(artifact.relativePath, 60 * 60),
+    url: sourceUrl,
     relativePath: artifact.relativePath,
     sizeBytes: artifact.sizeBytes,
     sha256: artifact.sha256 || null,
@@ -333,9 +359,9 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
       eventType: "archive_to_vps",
       actor,
       artifactId: artifact.artifactId,
-      details: `${actor} queued ${artifact.filename} for transfer from R2 hot cache to the VPS archive`,
+      details: `${actor} queued ${artifact.filename} for transfer from ${sourceLabel} to the VPS archive`,
     });
-    return { success: true, message: `Transfer to the VPS started for ${artifact.filename}. This page will mark it On VPS when the copy finishes.` };
+    return { success: true, message: `Transfer to the VPS started from ${sourceLabel} for ${artifact.filename}. This page will mark it On VPS when the copy finishes.` };
   }
 
   artifact.vpsStatus = "verified";
@@ -345,7 +371,7 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
     eventType: "archive_to_vps",
     actor,
     artifactId: artifact.artifactId,
-    details: `${actor} copied ${artifact.filename} from R2 hot cache to the VPS archive`,
+    details: `${actor} copied ${artifact.filename} from ${sourceLabel} to the VPS archive`,
   });
   return { success: true, message: `Archived ${artifact.filename} on the VPS.` };
 }
