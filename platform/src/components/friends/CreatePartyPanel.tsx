@@ -9,7 +9,6 @@ import {
   type PartyVisibility,
 } from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
-import { followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { isHostableGame } from "@/lib/gameHost/catalog";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -62,10 +61,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         onCreated?.();
         closed = true;
         if (wantVoice) {
-          const voice = await provisionDiscord(party.id);
-          if (!voice.error || voice.inviteUrl) {
-            followPartyVoice(voice);
-          }
+          await provisionDiscord(party.id);
         }
       } else {
         setError("Failed to create party. You might already have one active.");

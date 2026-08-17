@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Users, Crown, LogOut, Check, X, Phone, Play } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
@@ -16,7 +16,7 @@ import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
 import { openDiscordInvite, openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
 import { withOutboundUtm } from "@/lib/utm";
-import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
+import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
@@ -54,24 +54,6 @@ export function PartyView({
     open: false,
     inviteUrl: null,
   });
-  const linkPrompted = useRef(false);
-
-  useEffect(() => {
-    const needsLink = Boolean((party as PartyPayload & { needsDiscordLink?: boolean }).needsDiscordLink);
-    if (needsLink && !linkPrompted.current) {
-      linkPrompted.current = true;
-      setDiscordPrompt({ open: true, inviteUrl: party.discord.inviteUrl });
-    }
-    if (
-      party.voiceEnabled &&
-      !party.discord.inviteUrl &&
-      !party.discord.voiceChannelId
-    ) {
-      setVoiceError("Couldn't start Discord voice. Try Enable Voice again.");
-    } else if (party.discord.inviteUrl || party.discord.voiceChannelId) {
-      setVoiceError(null);
-    }
-  }, [party]);
 
   if (!userId) return null;
 
@@ -301,17 +283,7 @@ export function PartyView({
         </div>
 
         <div className="flex items-center gap-3">
-          {party.discord.inviteUrl || party.discord.voiceChannelId ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (party.discord.inviteUrl) openDiscordInvite(party.discord.inviteUrl);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors"
-            >
-              <Phone className="size-3.5" /> Launch Voice
-            </button>
-          ) : isLeader && (
+          {party.voiceEnabled || party.discord.inviteUrl || party.discord.voiceChannelId ? (
             <button
               type="button"
               disabled={voiceBusy}
@@ -325,18 +297,23 @@ export function PartyView({
                     setVoiceBusy(false);
                     return;
                   }
-                  const voice = followPartyVoice(result);
-                  if (voice.needsDiscordLink) {
-                    setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
+                  if (result.needsDiscordLink) {
+                    setDiscordPrompt({ open: true, inviteUrl: result.inviteUrl });
+                  } else if (result.inviteUrl) {
+                    openDiscordInvite(result.inviteUrl);
+                  } else if (party.discord.inviteUrl) {
+                    openDiscordInvite(party.discord.inviteUrl);
+                  } else {
+                    setVoiceError("Couldn't open Discord voice.");
                   }
                   setVoiceBusy(false);
                 })();
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border hover:bg-secondary text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors disabled:opacity-50"
             >
-              <Phone className="size-3.5" /> {voiceBusy ? "Enabling…" : "Enable Voice"}
+              <Phone className="size-3.5" /> {voiceBusy ? "Opening…" : "Launch Voice"}
             </button>
-          )}
+          ) : null}
 
           <button
             onClick={() => {

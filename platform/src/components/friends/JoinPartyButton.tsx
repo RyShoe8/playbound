@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePartyStore } from "@/stores/partyStore";
-import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import type { PartyPayload } from "@/lib/playTogether/types";
 
 export function JoinPartyButton({
@@ -22,10 +21,6 @@ export function JoinPartyButton({
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [askPassword, setAskPassword] = useState(false);
-  const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
-    open: false,
-    inviteUrl: null,
-  });
 
   if (status !== "authenticated") {
     return (
@@ -46,11 +41,6 @@ export function JoinPartyButton({
       if (!result) {
         setError("Could not join this party.");
         if (party.hasPassword) setAskPassword(true);
-        return;
-      }
-      const voice = followPartyVoice(result);
-      if (voice.needsDiscordLink) {
-        setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
         return;
       }
       router.push("/friends");
@@ -91,14 +81,6 @@ export function JoinPartyButton({
         </button>
       )}
       {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
-      <DiscordLinkPrompt
-        open={discordPrompt.open}
-        inviteUrl={discordPrompt.inviteUrl}
-        onClose={() => {
-          setDiscordPrompt({ open: false, inviteUrl: null });
-          router.push("/friends");
-        }}
-      />
     </div>
   );
 }

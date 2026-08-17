@@ -3,11 +3,10 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import User from "@/lib/models/User";
-import { sendPlayInvite } from "@/lib/playTogether/invites";
-import {
-  createPartyInviteNotification,
-} from "@/lib/playTogether/notify";
+import { checkInviteRecipient, sendPlayInvite } from "@/lib/playTogether/invites";
+import { createPartyInviteNotification } from "@/lib/playTogether/notify";
 import { getGame } from "@/lib/catalog";
+import { normalizePartyName } from "@/lib/playTogether/types";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -39,7 +38,6 @@ export async function POST(req: Request, ctx: RouteContext) {
       return NextResponse.json({ error: "Party has ended" }, { status: 400 });
     }
 
-    // Verify the sender is a party member.
     const isMember = (party.members as Array<{ userId: unknown }>).some(
       (m) => String(m.userId) === userId
     );
@@ -47,45 +45,58 @@ export async function POST(req: Request, ctx: RouteContext) {
       return NextResponse.json({ error: "You are not in this party" }, { status: 403 });
     }
 
+    const gameSlug = String(party.gameSlug || "").trim();
     const [sender, game] = await Promise.all([
       User.findById(userId).select("username").lean(),
-      getGame(String(party.gameSlug), { includeTesting: true }),
+      gameSlug ? getGame(gameSlug, { includeTesting: true }) : Promise.resolve(null),
     ]);
     const senderUsername = String(sender?.username || "A friend");
-    const gameTitle = game?.title || String(party.gameSlug);
+    const gameTitle = game?.title || null;
+    const partyName = normalizePartyName(party.name);
     const memberCount = (party.members as unknown[]).length;
 
     const results = await Promise.all(
       friendIds.map(async (recipientId: string) => {
         try {
-          // Send a play invite with party context.
-          const inviteResult = await sendPlayInvite({
-            senderId: userId,
-            recipientId,
-            gameSlug: String(party.gameSlug),
-            editionSlug: (party.editionSlug as string) || null,
-            partyId: String(party._id),
-          });
-
-          // Also send party-specific notification.
-          if (inviteResult.status === 201) {
-            await createPartyInviteNotification({
+          const allowed = await checkInviteRecipient(userId, recipientId);
+          if (!("ok" in allowed)) {
+            return {
               recipientId,
-              senderId: userId,
-              senderUsername,
-              partyId: String(party._id),
-              gameSlug: String(party.gameSlug),
-              gameTitle,
-              memberCount,
-            });
+              status: allowed.status,
+              error: allowed.error,
+            };
           }
 
-          return {
+          await createPartyInviteNotification({
             recipientId,
-            status: inviteResult.status,
-            error: "error" in inviteResult ? inviteResult.error : undefined,
-          };
-        } catch (err) {
+            senderId: userId,
+            senderUsername,
+            partyId: String(party._id),
+            gameSlug: gameSlug || null,
+            gameTitle,
+            partyName,
+            memberCount,
+          });
+
+          if (gameSlug && game) {
+            const inviteResult = await sendPlayInvite({
+              senderId: userId,
+              recipientId,
+              gameSlug,
+              editionSlug: (party.editionSlug as string) || null,
+              partyId: String(party._id),
+            });
+            if (inviteResult.status !== 201 && inviteResult.status !== 409) {
+              return {
+                recipientId,
+                status: inviteResult.status,
+                error: "error" in inviteResult ? inviteResult.error : undefined,
+              };
+            }
+          }
+
+          return { recipientId, status: 201 };
+        } catch {
           return {
             recipientId,
             status: 500,

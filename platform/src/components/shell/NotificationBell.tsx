@@ -272,10 +272,15 @@ export function NotificationBell() {
                           Decline
                         </button>
                       </div>
-                    ) : n.meta?.actions?.includes("join") && n.meta?.gameSlug ? (
+                    ) : n.meta?.actions?.includes("join") ? (
                       <div className="mt-2">
                         <Link
-                          href={`/games/${encodeURIComponent(n.meta.gameSlug)}`}
+                          href={
+                            n.href ||
+                            (n.meta?.gameSlug
+                              ? `/games/${encodeURIComponent(n.meta.gameSlug)}`
+                              : "/friends")
+                          }
                           className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground"
                           onClick={() => {
                             if (!n.readAt) void markRead(n.id);
