@@ -51,13 +51,13 @@ ufw status numbered
 
 ### 3. NetBird itself
 
-Follow the upstream quickstart — we deliberately do not vendor a copy, because a
-stale fork of someone else's installer is worse than no copy at all:
+Follow the upstream quickstart:
 
 <https://docs.netbird.io/selfhosted/selfhosted-quickstart>
 
-It bundles Zitadel as the identity provider and provisions TLS. You will set an
-admin account during setup.
+Run `getting-started.sh` in a dedicated directory. It bundles NetBird's embedded
+Dex-based identity provider and provisions TLS via Let's Encrypt. You will set
+an admin account during setup.
 
 ### 4. A service user and token
 
