@@ -14,7 +14,7 @@ import http from "node:http";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import path from "node:path";
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
@@ -106,6 +106,80 @@ function archivePath(relativePath) {
   const root = path.resolve(MIRROR_ARCHIVE_DIR);
   const target = path.resolve(root, raw);
   return target.startsWith(`${root}${path.sep}`) ? target : null;
+}
+
+function archiveContentType(file) {
+  const lower = file.toLowerCase();
+  if (lower.endsWith(".zip")) return "application/zip";
+  if (lower.endsWith(".7z")) return "application/x-7z-compressed";
+  if (lower.endsWith(".exe")) return "application/vnd.microsoft.portable-executable";
+  if (lower.endsWith(".msi")) return "application/x-msi";
+  return "application/octet-stream";
+}
+
+/** Public download surface for archives that have already been written under
+ * MIRROR_ARCHIVE_DIR. Management endpoints remain Bearer-authenticated below.
+ * Byte ranges are essential for Electron download resume support. */
+async function serveArchivedFile(req, res, encodedPath) {
+  let relativePath;
+  try {
+    relativePath = decodeURIComponent(encodedPath);
+  } catch {
+    json(res, 400, { error: "Invalid archive path" });
+    return;
+  }
+  const target = archivePath(relativePath);
+  if (!target) {
+    json(res, 404, { error: "Not found" });
+    return;
+  }
+  let file;
+  try {
+    file = await stat(target);
+  } catch {
+    json(res, 404, { error: "Not found" });
+    return;
+  }
+  if (!file.isFile()) {
+    json(res, 404, { error: "Not found" });
+    return;
+  }
+
+  const size = file.size;
+  const range = req.headers.range;
+  const headers = {
+    "content-type": archiveContentType(target),
+    "accept-ranges": "bytes",
+    "cache-control": "public, max-age=31536000, immutable",
+    "content-disposition": `attachment; filename="${path.basename(target).replace(/["\\]/g, "")}"`,
+    "x-content-type-options": "nosniff",
+  };
+  if (!range) {
+    res.writeHead(200, { ...headers, "content-length": size });
+    if (req.method !== "HEAD") createReadStream(target).pipe(res);
+    else res.end();
+    return;
+  }
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!match) {
+    res.writeHead(416, { "content-range": `bytes */${size}` });
+    res.end();
+    return;
+  }
+  const start = match[1] ? Number(match[1]) : 0;
+  const end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= size) {
+    res.writeHead(416, { "content-range": `bytes */${size}` });
+    res.end();
+    return;
+  }
+  res.writeHead(206, {
+    ...headers,
+    "content-length": end - start + 1,
+    "content-range": `bytes ${start}-${end}/${size}`,
+  });
+  if (req.method !== "HEAD") createReadStream(target, { start, end }).pipe(res);
+  else res.end();
 }
 
 async function sha256File(file) {
@@ -382,6 +456,13 @@ const server = http.createServer(async (req, res) => {
       maxRooms: MAX_ROOMS,
       games: listInstalled(),
     });
+    return;
+  }
+
+  // The mirror reverse-proxy sends public download paths to this agent. These
+  // files are only created through the authenticated archive workflow.
+  if ((req.method === "GET" || req.method === "HEAD") && !url.pathname.startsWith("/mirror/")) {
+    await serveArchivedFile(req, res, url.pathname.replace(/^\/+/, ""));
     return;
   }
 
