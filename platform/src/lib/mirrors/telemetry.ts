@@ -30,6 +30,20 @@ export interface DownloadTelemetryPayload {
   checksumValid?: boolean | null;
 }
 
+/**
+ * A mirror source belongs to one downloadable artifact. The launcher used the
+ * generic fallback id `direct-catalog` for every game, but sourceId is unique
+ * in Mongo, so the first game silently claimed all later games' public-source
+ * telemetry. Keep an upstream's reported id while making it artifact-scoped.
+ */
+export function artifactScopedSourceId(
+  artifactId: string,
+  sourceId: string,
+  sourceType: DownloadTelemetryPayload["sourceType"]
+) {
+  return sourceType === "public" ? `${artifactId}::${sourceId}` : sourceId;
+}
+
 export async function recordDownloadTelemetry(
   payload: DownloadTelemetryPayload
 ): Promise<{ success: boolean; scoreUpdated?: number }> {
@@ -40,11 +54,12 @@ export async function recordDownloadTelemetry(
   const bytes = payload.bytesDownloaded || 0;
   const duration = payload.downloadDuration || 1;
   const speed = payload.downloadSpeed || (duration > 0 ? Math.round((bytes / duration) * 1000) : 0);
+  const sourceId = artifactScopedSourceId(payload.artifactId, payload.sourceId, payload.sourceType);
 
   // 1. Record Attempt
   await MirrorAttempt.create({
     artifactId: payload.artifactId,
-    sourceId: payload.sourceId,
+    sourceId,
     sourceType: payload.sourceType,
     attemptedAt: attemptedDate,
     completedAt: completedDate,
@@ -78,7 +93,7 @@ export async function recordDownloadTelemetry(
     if (payload.sourceType === "public") {
       await ensurePublicSource({
         artifactId: payload.artifactId,
-        sourceId: payload.sourceId,
+        sourceId,
         url: payload.sourceUrl,
       });
     }
@@ -94,7 +109,7 @@ export async function recordDownloadTelemetry(
   }
 
   // 2. Update MirrorSource if it exists
-  const source = await MirrorSource.findOne({ sourceId: payload.sourceId });
+  const source = await MirrorSource.findOne({ sourceId });
   if (source) {
     if (isSuccess) {
       source.successCount += 1;

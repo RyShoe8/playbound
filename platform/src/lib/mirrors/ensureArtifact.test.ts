@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
+import { artifactScopedSourceId } from "@/lib/mirrors/telemetry";
 
 /**
  * Schema validation for the rows `ensureArtifact` builds.
@@ -83,9 +84,15 @@ describe("artifact registered from a download", () => {
 });
 
 describe("public source registered from a download", () => {
+  it("keeps a catalog fallback source distinct for every artifact", () => {
+    expect(artifactScopedSourceId("0ad", "direct-catalog", "public")).not.toBe(
+      artifactScopedSourceId("unvanquished", "direct-catalog", "public")
+    );
+  });
+
   it("validates with the fields the telemetry payload carries", () => {
     const doc = new MirrorSource({
-      sourceId: "direct-catalog",
+      sourceId: artifactScopedSourceId("0ad", "direct-catalog", "public"),
       artifactId: "0ad",
       sourceType: "public",
       url: "https://releases.wildfiregames.com/0ad-0.27.0-win64.exe",
