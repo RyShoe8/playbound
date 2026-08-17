@@ -17,6 +17,7 @@ import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { getGame } from "@/lib/catalog";
+import { listEditionsForGame } from "@/lib/editions";
 import {
   PARTY_MAX_SIZE,
   PARTY_IDLE_TIMEOUT_MS,
@@ -509,6 +510,10 @@ export async function setPartyGame(
   }
 
   doc.gameSlug = slug;
+  if (switchingGame) {
+    doc.editionSlug = null;
+    doc.modSlugs = [];
+  }
   doc.lastActivity = new Date();
   await doc.save();
   await provisionPartyHost(doc);
@@ -519,6 +524,49 @@ export async function setPartyGame(
       setPresenceParty(userId, { partyId: String(doc._id), gameSlug: slug })
     )
   );
+  const nameById = await resolveUsernames(memberIds);
+
+  return {
+    party: serializeParty(doc.toObject(), nameById, game.title),
+    status: 200,
+  };
+}
+
+export async function setPartyEdition(
+  partyId: string,
+  leaderId: string,
+  editionSlug: string | null
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can change the edition", status: 403 };
+  }
+  if (doc.status === "ended") {
+    return { error: "Party has ended", status: 400 };
+  }
+  if (!doc.gameSlug) {
+    return { error: "Pick a game first", status: 400 };
+  }
+
+  const game = await getGame(String(doc.gameSlug), { includeTesting: true });
+  if (!game) return { error: "Game not found", status: 404 };
+
+  const slug = typeof editionSlug === "string" ? editionSlug.trim() : "";
+  if (slug) {
+    const editions = await listEditionsForGame(game);
+    if (!editions.some((edition) => edition.slug === slug)) {
+      return { error: "Edition not found", status: 404 };
+    }
+  }
+
+  doc.editionSlug = slug || null;
+  doc.lastActivity = new Date();
+  await doc.save();
+
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const nameById = await resolveUsernames(memberIds);
 
   return {

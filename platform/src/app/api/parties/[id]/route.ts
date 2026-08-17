@@ -4,6 +4,7 @@ import {
   getParty,
   setVisibility,
   setPartyGame,
+  setPartyEdition,
   setPartyName,
   endParty,
 } from "@/lib/playTogether/party";
@@ -56,6 +57,18 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     if (typeof body.gameSlug === "string") {
       const result = await setPartyGame(id, userId, body.gameSlug);
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    if (body.editionSlug !== undefined) {
+      const result = await setPartyEdition(
+        id,
+        userId,
+        typeof body.editionSlug === "string" ? body.editionSlug : null
+      );
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }

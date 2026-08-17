@@ -1284,9 +1284,26 @@ function listEditionEntries(game) {
   return Object.values(g.editions || {}).filter((e) => e && typeof e === "object");
 }
 
+function findJarInDir(dir) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  try {
+    const names = fs.readdirSync(dir);
+    const jar = names.find((n) => /\.jar$/i.test(n) && !/unins|setup|install/i.test(n));
+    return jar ? path.join(dir, jar) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** .exe, .jar, or a folder that contains a .jar — all count as Play-ready. */
+function playableExePath(info) {
+  if (info?.exe && fs.existsSync(info.exe)) return info.exe;
+  return findJarInDir(info?.dir) || null;
+}
+
 function pickPrimaryEdition(game) {
   const editions = listEditionEntries(game);
-  const ready = editions.filter((e) => e.exe && fs.existsSync(e.exe));
+  const ready = editions.filter((e) => playableExePath(e));
   ready.sort((a, b) => String(b.installedAt || "").localeCompare(String(a.installedAt || "")));
   if (ready.length) return ready[0];
   const pending = editions.find((e) => e.pending);
@@ -1309,13 +1326,13 @@ function syncGameInstallSummary(game) {
     return game;
   }
   game.version = primary.version || null;
-  game.exe = primary.exe || null;
+  game.exe = playableExePath(primary) || primary.exe || null;
   game.dir = primary.dir || null;
   game.installedAt = primary.installedAt || null;
   game.editionSlug = primary.editionSlug || DEFAULT_EDITION_SLUG;
   game.editionName = primary.editionName || "Official";
   game.editionType = primary.editionType || "official";
-  game.pending = Boolean(primary.pending) && !(primary.exe && fs.existsSync(primary.exe));
+  game.pending = Boolean(primary.pending) && !playableExePath(primary);
   game.scanning = Boolean(primary.scanning);
   if (Array.isArray(primary.connectArgs)) game.connectArgs = primary.connectArgs;
   else delete game.connectArgs;
@@ -1336,17 +1353,20 @@ function installedEditionsPayload(slug) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   return listEditionEntries(game)
-    .filter((e) => (e.exe && fs.existsSync(e.exe)) || e.pending)
-    .map((e) => ({
-      editionSlug: e.editionSlug || DEFAULT_EDITION_SLUG,
-      editionName: e.editionName || "Official",
-      editionType: e.editionType || "official",
-      version: e.version || null,
-      dir: e.dir || null,
-      exe: e.exe && fs.existsSync(e.exe) ? e.exe : null,
-      pending: Boolean(e.pending) && !(e.exe && fs.existsSync(e.exe)),
-      connectArgs: Array.isArray(e.connectArgs) ? e.connectArgs : null,
-    }));
+    .filter((e) => playableExePath(e) || e.pending)
+    .map((e) => {
+      const exe = playableExePath(e);
+      return {
+        editionSlug: e.editionSlug || DEFAULT_EDITION_SLUG,
+        editionName: e.editionName || "Official",
+        editionType: e.editionType || "official",
+        version: e.version || null,
+        dir: e.dir || null,
+        exe,
+        pending: Boolean(e.pending) && !exe,
+        connectArgs: Array.isArray(e.connectArgs) ? e.connectArgs : null,
+      };
+    });
 }
 
 /* loadSettings / saveSettings / gamesRoot / getApiBase now live in
@@ -1512,6 +1532,7 @@ function catalogEntryFromEdition(edition) {
       fileName: cfg.fileName || undefined,
       versionLabel: cfg.versionLabel || undefined,
       knownExePaths: Array.isArray(cfg.knownExePaths) ? cfg.knownExePaths : undefined,
+      registryTitles: Array.isArray(cfg.registryTitles) ? cfg.registryTitles : undefined,
       installRoot: cfg.installRoot || undefined,
       connectArgs: Array.isArray(cfg.connectArgs) ? cfg.connectArgs : undefined,
       note: cfg.note || undefined,
@@ -3010,7 +3031,6 @@ function markInstalledFromExe(slug, entry, exe, version) {
     editionType: entry?.editionType,
     connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
   });
-  notifyInstallDetected(slug);
   // Modded editions finish setting themselves up here — this is the one point
   // every detection path (known path, registry, drive scan) converges on.
   // Failures are reported but not fatal: the same routine runs again before
@@ -3047,8 +3067,6 @@ function stopInstallerPoll() {
   }
 }
 
-const INSTALLER_KNOWN_PATH_GRACE_MS = 50_000;
-
 function startInstallerPoll(slug, entry, version) {
   stopInstallerPoll();
   stopExeScan(slug);
@@ -3061,6 +3079,7 @@ function startInstallerPoll(slug, entry, version) {
 
   const started = Date.now();
   const maxMs = 10 * 60 * 1000;
+  const title = entry?.title || slug;
 
   const tryKnownPath = () => {
     invalidateUninstallCache(entry);
@@ -3079,27 +3098,24 @@ function startInstallerPoll(slug, entry, version) {
     win.webContents.send("install-scan", {
       slug,
       phase: "waiting",
-      message: `Waiting for ${entry.title || slug} install to finish…`,
+      message: `Waiting for the ${title} installer to finish…`,
     });
   }
 
   installerPollTimer = setInterval(() => {
     if (Date.now() - started > maxMs) {
       stopInstallerPoll();
-      // Keep pending Library card; disk scan may still be running or needsLocate.
+      // Keep the pending Library card so Play is Locate, not a vanished install.
+      // Do not start a full-disk exe scan — that freezes the launcher.
+      setPendingScanning(
+        slug,
+        false,
+        `Couldn't find ${title} automatically — choose the .exe in Library.`
+      );
       return;
     }
     tryKnownPath();
   }, 3000);
-
-  // Full-drive BFS is expensive and flashes the UI if it spams progress —
-  // wait for the installer to typically finish writing under known paths first.
-  exeScanDelayTimer = setTimeout(() => {
-    exeScanDelayTimer = null;
-    if (installerPollSlug !== slug) return;
-    if (tryKnownPath()) return;
-    void startExeScan(slug, entry, version);
-  }, INSTALLER_KNOWN_PATH_GRACE_MS);
 }
 
 /** Resume watching pending installs after app restart. */
@@ -3456,6 +3472,8 @@ function markInstalled(slug, { version, exe, dir, editionSlug, editionName, edit
     editionSlug: ed,
     editionName: editionName || prev.editionName || "Official",
     editionType: editionType || prev.editionType || "official",
+    pending: false,
+    scanning: false,
     connectArgs: Array.isArray(connectArgs)
       ? connectArgs
       : Array.isArray(prev.connectArgs)
@@ -3467,6 +3485,7 @@ function markInstalled(slug, { version, exe, dir, editionSlug, editionName, edit
   saveState(state);
   clearPendingInstaller(slug);
   void syncLibrary(slug, "install", version);
+  notifyInstallDetected(slug);
 }
 
 /** Show the game in Library immediately while we look for the exe. */
@@ -3501,7 +3520,7 @@ function markPendingInstall(slug, version, editionExtra = {}) {
   return game.editions[ed];
 }
 
-function setPendingScanning(slug, scanning) {
+function setPendingScanning(slug, scanning, message) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
   const ed = game.editionSlug || DEFAULT_EDITION_SLUG;
@@ -3516,6 +3535,7 @@ function setPendingScanning(slug, scanning) {
     win.webContents.send("install-scan", {
       slug,
       phase: scanning ? "scanning" : "needs-locate",
+      ...(message ? { message } : {}),
     });
   }
 }
@@ -3643,6 +3663,9 @@ function stopExeScan(slug) {
 /**
  * Breadth-first search of fixed local drives for an expected exe basename.
  * Caps at ~8 minutes; leaves pending Library entry for manual locate.
+ *
+ * Installer flows (github-installer / direct-installer) must not call this —
+ * a full-drive walk freezes the launcher. Those poll knownExePaths only.
  */
 async function startExeScan(slug, entry, version) {
   // Always cancel any in-flight scan before starting another.
@@ -3998,7 +4021,10 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   }
 
   if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
-    sendProgress({ phase: "installer-ready" });
+    sendProgress({
+      phase: "installer-ready",
+      addon: `Waiting for the ${entry.title || slug} installer to finish…`,
+    });
     await shell.openPath(downloadPath);
     const known = findKnownExecutable(entry);
     if (known) {
@@ -4041,7 +4067,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     sendProgress({ phase: "done" });
     void reportInstall(slug);
     void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
-    return { status: "installed", version: dl.version, dir: gameDir };
+    return { status: "installed", version: dl.version, dir: gameDir, editionSlug: editionExtra.editionSlug };
   }
 
   sendProgress({ phase: "extracting" });
@@ -4536,6 +4562,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
 }
 
 async function locateGameExecutable(slug) {
+  stopExeScan(slug);
   const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
   if (!entry) throw new Error(`Unknown game: ${slug}`);
 
@@ -5806,7 +5833,7 @@ function listInstalledGames() {
     const game = ensureGameInstallRecord(raw);
     syncGameInstallSummary(game);
     const editions = installedEditionsPayload(slug);
-    const ready = Boolean(game.exe && fs.existsSync(game.exe));
+    const ready = Boolean(playableExePath(game));
     const pending = Boolean(game.pending) && !ready;
     if (!ready && !pending && editions.length === 0) continue;
     const entry = catalog.find((e) => e.slug === slug);
@@ -7814,7 +7841,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     multiplayer: Boolean(rich?.multiplayer ?? entry.multiplayer),
     mods,
     installed:
-      editionsInstalled.some((e) => e.exe) || Boolean(info?.exe && fs.existsSync(info.exe)),
+      editionsInstalled.some((e) => e.exe) || Boolean(playableExePath(info)),
     installedPath: info?.dir || null,
     version: info?.version || null,
     installedEditionSlug: info?.editionSlug || null,

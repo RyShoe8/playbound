@@ -333,7 +333,7 @@ function wireMainEvents() {
       setStatus("Extracting game files… this can take a few minutes");
       setProgress("indeterminate");
     } else if (phase === "installer-ready") {
-      setStatus("Installer opened — finish the setup wizard…");
+      setStatus(addon || "Waiting for the installer to finish…");
       setProgress(null);
     } else if (phase === "installing-base") {
       setStatus("Installing required base game…");
@@ -384,9 +384,10 @@ function wireMainEvents() {
       else if (data.slug) setStatus(`Waiting for ${data.slug} install…`);
     } else if (phase === "needs-locate") {
       setStatus(
-        data.slug
-          ? `Couldn't find ${data.slug} automatically — ${selectExecutableLabel().toLowerCase()} in Library.`
-          : `Couldn't find the install — ${selectExecutableLabel().toLowerCase()} in Library.`,
+        data.message ||
+          (data.slug
+            ? `Couldn't find ${data.slug} automatically — ${selectExecutableLabel().toLowerCase()} in Library.`
+            : `Couldn't find the install — ${selectExecutableLabel().toLowerCase()} in Library.`),
         true
       );
     } else if (phase === "dismissed") {

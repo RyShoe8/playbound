@@ -67,6 +67,7 @@ import {
   GameFeaturingAside,
   GameHeroActions,
   GameHeroActionsFallback,
+  GameHeroInLibraryBadge,
   GameHeroPlayingNow,
   GameHeroPlayingNowFallback,
   GameIncompatibilityBannerAsync,
@@ -214,6 +215,9 @@ export default async function GamePage({
             <div className="max-w-2xl">
               <div className="flex flex-wrap items-center gap-2">
                 <LaunchBadge game={game} />
+                <Suspense fallback={null}>
+                  <GameHeroInLibraryBadge slug={game.slug} />
+                </Suspense>
                 {game.genres.map((g) => (
                   <Badge key={g} tone="outline">
                     {g}

@@ -46,9 +46,12 @@ const CLIENT_CONNECT_ARGS = {
   freedoom: ["-connect", "{host}:{port}"],
   triplea: ["-Dserver.address={host}", "-Dserver.port={port}"],
 
-  // In-game Room Code / Lobby Joins
+  // Mindustry takes `ip:port` as argv (same as the catalog recipe). Without
+  // this, playGame's client-connect override launched the vanilla client.
+  mindustry: ["{host}:{port}"],
+
+  // In-game Room Code / Lobby Joins — no CLI join; show host:port to paste.
   holocure: null,
-  mindustry: null,
   hedgewars: null,
 };
 

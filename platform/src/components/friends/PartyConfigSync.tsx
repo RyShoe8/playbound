@@ -6,6 +6,9 @@ import { AlertCircle, CheckCircle2, Download, HardDriveDownload } from "lucide-r
 import type { ConfigSyncResult, ConfigSyncMember } from "@/lib/playTogether/party";
 import { telemetry } from "@/lib/telemetry";
 
+const SYNC_POLL_MS = 8000;
+const BASE_EDITION_KEY = "__base__";
+
 /**
  * Deep link that makes the launcher install exactly what the host is running.
  *
@@ -15,10 +18,15 @@ import { telemetry } from "@/lib/telemetry";
  */
 function installHref(gameSlug: string, editionSlug: string | null, mods: string[]): string {
   const q = new URLSearchParams();
-  if (editionSlug) q.set("edition", editionSlug);
+  if (editionSlug && editionSlug !== BASE_EDITION_KEY) q.set("edition", editionSlug);
   for (const mod of mods) q.append("mod", mod);
   const qs = q.toString();
   return `playbound://install/${gameSlug}${qs ? `?${qs}` : ""}`;
+}
+
+function usableEditionSlug(slug: string | null | undefined): string | null {
+  if (!slug || slug === BASE_EDITION_KEY) return null;
+  return slug;
 }
 
 /** What this member is short of, in words a player would use. */
@@ -35,10 +43,13 @@ function missingSummary(m: ConfigSyncMember, editionSlug: string | null): string
 export function PartyConfigSync({
   partyId,
   gameSlug,
+  editionSlug,
   currentUserId,
 }: {
   partyId: string;
   gameSlug: string;
+  /** Refetch immediately when the host picks (or clears) an edition. */
+  editionSlug?: string | null;
   /** Lets the viewer's own row offer the install button rather than a name. */
   currentUserId?: string | null;
 }) {
@@ -46,21 +57,30 @@ export function PartyConfigSync({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function check() {
       try {
         const res = await fetch(`/api/parties/${partyId}/sync`);
-        if (res.ok) {
-          const data = await res.json();
-          setSync(data.sync);
-        }
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setSync(data.sync);
       } catch (err) {
         console.error("Failed to check config sync", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     void check();
+    const timer = setInterval(() => void check(), SYNC_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [partyId, gameSlug, editionSlug]);
+
+  useEffect(() => {
     telemetry.track("party_config_sync_viewed", { partyId, gameSlug });
   }, [partyId, gameSlug]);
 
@@ -86,12 +106,27 @@ export function PartyConfigSync({
     );
   }
 
-  const outOfSync = sync.members.filter(
-    (m) => !m.isHost && missingSummary(m, sync.editionSlug).length > 0
-  );
+  const hostMember = sync.members.find((m) => m.isHost);
+  const viewerIsHost = Boolean(currentUserId) && sync.hostUserId === currentUserId;
+  const hostHasGame =
+    Boolean(hostMember?.hasGame) || sync.referenceSource === "host";
+
+  /*
+   * The host's own install picker lives under the game dropdown in PartyView.
+   * This card is for everyone else — and for the host watching who still needs
+   * to install on their machine.
+   */
+  const outOfSync = sync.members.filter((m) => {
+    if (viewerIsHost && m.isHost) return false;
+    return missingSummary(m, sync.editionSlug).length > 0;
+  });
   if (outOfSync.length === 0) return null;
 
-  const href = installHref(gameSlug, sync.editionSlug, sync.modSlugs);
+  const installEdition =
+    usableEditionSlug(sync.editionSlug) ||
+    usableEditionSlug(editionSlug) ||
+    usableEditionSlug(hostMember?.installedEditionSlug);
+  const href = installHref(gameSlug, installEdition, sync.modSlugs);
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -102,10 +137,10 @@ export function PartyConfigSync({
 
       <div className="p-4">
         <p className="mb-4 text-sm text-muted-foreground">
-          {sync.referenceSource === "host" && sync.hostUsername ? (
+          {hostHasGame && sync.hostUsername ? (
             <>
-              This party is playing {sync.hostUsername}&apos;s setup. These members don&apos;t
-              match it yet and won&apos;t be able to join the same game.
+              This party is playing {sync.hostUsername}&apos;s setup. Anyone who doesn&apos;t
+              have it yet can install it from their own party panel.
             </>
           ) : (
             <>
@@ -119,6 +154,7 @@ export function PartyConfigSync({
           {outOfSync.map((m) => {
             const missing = missingSummary(m, sync.editionSlug);
             const isYou = Boolean(currentUserId) && m.userId === currentUserId;
+            const showInstall = isYou && hostHasGame;
 
             return (
               <li
@@ -131,18 +167,20 @@ export function PartyConfigSync({
                   </div>
                   <span className="font-semibold">{isYou ? "You" : m.username}</span>
                   <span className="truncate text-muted-foreground">
-                    {isYou ? "need" : "needs"} {missing.join(" and ")}
+                    {isYou
+                      ? `need ${missing.join(" and ")}`
+                      : `needs ${missing.join(" and ")} — they can install it from their party panel`}
                   </span>
                 </div>
 
-                {isYou && (
+                {showInstall && (
                   <a
                     href={href}
                     onClick={() =>
                       telemetry.track("party_config_sync_install_clicked", {
                         partyId,
                         gameSlug,
-                        editionSlug: sync.editionSlug,
+                        editionSlug: installEdition,
                         modCount: sync.modSlugs.length,
                       })
                     }
@@ -156,13 +194,7 @@ export function PartyConfigSync({
           })}
         </ul>
 
-        {outOfSync.some((m) => Boolean(currentUserId) && m.userId === currentUserId) && (
-          /*
-           * A browser cannot be asked whether a protocol handler exists — the
-           * navigation either resolves or silently does nothing. So rather than
-           * detect the launcher, both routes are always offered and the button
-           * above degrades into "nothing happened", which this line answers.
-           */
+        {outOfSync.some((m) => Boolean(currentUserId) && m.userId === currentUserId && hostHasGame) && (
           <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
             Nothing happened?{" "}
             <Link

@@ -435,7 +435,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
 
   const actions = document.createElement("div");
   actions.className = "library-card-actions";
-  if (game.pending) {
+  if (game.pending && !(game.exe || (game.installedEditions || []).some((e) => e.exe))) {
     actions.innerHTML = `
       <button class="btn-primary btn-sm btn-lib-locate" type="button">${selectExecutableLabel()}</button>
       <button class="btn-secondary btn-sm btn-lib-dismiss" type="button">Dismiss</button>
