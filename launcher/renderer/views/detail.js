@@ -48,8 +48,11 @@ async function fillGameHardwareCompat(slug) {
   const body = document.getElementById("detail-hw-compat-body");
   if (!body) return;
   if (!state.accountState.connected) {
-    body.innerHTML =
-      "Sign in to check this game against your PC. Sync hardware from Settings after signing in.";
+    body.innerHTML = `
+      <div class="hardware-compat-empty">
+        <span class="hardware-compat-empty-icon" aria-hidden="true">⌁</span>
+        <div><strong>Sign in to check your PC</strong><p>Sync hardware from Settings after signing in to see how this game will run.</p></div>
+      </div>`;
     return;
   }
   try {
@@ -59,10 +62,15 @@ async function fillGameHardwareCompat(slug) {
       return;
     }
     if (!data.hasProfile || !data.result || data.result.verdict === "unknown") {
-      body.innerHTML = `${escapeHtml(
-        data.result?.summary ||
-          "Sync your hardware from Settings (Your Gaming PC) to see whether this game will run well."
-      )} <button type="button" class="btn-secondary btn-sm" id="detail-hw-sync" style="margin-left:8px">Sync now</button>`;
+      body.innerHTML = `
+        <div class="hardware-compat-empty">
+          <span class="hardware-compat-empty-icon" aria-hidden="true">⌁</span>
+          <div><strong>Set up your hardware profile</strong><p>${escapeHtml(
+            data.result?.summary ||
+              "Sync your hardware from Settings (Your Gaming PC) to see whether this game will run well."
+          )}</p></div>
+          <button type="button" class="btn-secondary btn-sm" id="detail-hw-sync">Sync now</button>
+        </div>`;
       document.getElementById("detail-hw-sync")?.addEventListener("click", async () => {
         body.textContent = "Syncing…";
         await window.playbound.syncHardwareProfile?.();
@@ -75,20 +83,25 @@ async function fillGameHardwareCompat(slug) {
     const rec = r.compared?.required?.recommended || r.compared?.required?.min || {};
     const reasons = (r.reasons || [])
       .slice(0, 5)
-      .map((x) => `<li>${escapeHtml(x.message)}</li>`)
+      .map((x) => `<li><span aria-hidden="true">✓</span>${escapeHtml(x.message)}</li>`)
       .join("");
     const ram = formatHwRam(r.compared?.user?.ramMB);
     body.innerHTML = `
-      <p style="font-weight:800;margin:0 0 6px">${escapeHtml(label)}</p>
-      <p class="view-sub" style="margin:0 0 10px">${escapeHtml(r.summary || "")}</p>
-      ${reasons ? `<ul style="margin:0 0 12px;padding-left:18px;font-size:13px;color:var(--text-muted)">${reasons}</ul>` : ""}
-      <div class="req-grid">
-        <div class="req-card">
-          <div class="req-label">Your PC</div>
+      <div class="hardware-compat-card verdict-${escapeHtml(r.verdict || "unknown")}">
+        <div class="hardware-compat-heading">
+          <span class="hardware-verdict-mark" aria-hidden="true">${r.verdict === "unsupported" ? "!" : "✓"}</span>
+          <div><span class="hardware-compat-kicker">PlayBound PC check</span><strong>${escapeHtml(label)}</strong></div>
+        </div>
+        ${r.summary ? `<p class="hardware-compat-summary">${escapeHtml(r.summary)}</p>` : ""}
+        ${reasons ? `<ul class="hardware-compat-reasons">${reasons}</ul>` : ""}
+      </div>
+      <div class="req-grid hardware-spec-grid">
+        <div class="req-card hardware-spec-card">
+          <div class="req-label"><span aria-hidden="true">▣</span>Your PC</div>
           <p>${escapeHtml([r.compared?.user?.gpu, r.compared?.user?.cpu, ram ? `${ram} RAM` : null].filter(Boolean).join(" · ") || "—")}</p>
         </div>
-        <div class="req-card">
-          <div class="req-label">Game</div>
+        <div class="req-card hardware-spec-card">
+          <div class="req-label"><span aria-hidden="true">◆</span>Game target</div>
           <p>${escapeHtml(
             [
               rec.gpuText || rec.gpuTier ? `GPU: ${rec.gpuText || rec.gpuTier}` : null,
@@ -320,7 +333,7 @@ async function renderGameDetailView(slug, opts = {}) {
     .map((g) => `<span class="chip">${escapeHtml(g)}</span>`)
     .join("");
   const featureItems = (detail.features || [])
-    .map((f) => `<li>${escapeHtml(f)}</li>`)
+    .map((f) => `<li class="feature-card"><span class="feature-card-mark" aria-hidden="true">✦</span><span>${escapeHtml(f)}</span></li>`)
     .join("");
   const shots = (detail.screenshots || [])
     .slice(0, 8)
@@ -482,13 +495,13 @@ async function renderGameDetailView(slug, opts = {}) {
 
             ${
               featureItems
-                ? `<section class="detail-section"><h2 class="detail-section-title">Key Features</h2><ul class="feature-list">${featureItems}</ul></section>`
+                ? `<section class="detail-section detail-features-section"><div class="detail-section-heading"><div><h2 class="detail-section-title">Key Features</h2><p>What makes ${escapeHtml(detail.title)} worth playing.</p></div><span class="detail-section-count">${detail.features.length}</span></div><ul class="feature-list">${featureItems}</ul></section>`
                 : ""
             }
 
             <section class="detail-section" id="detail-hw-compat">
-              <h2 class="detail-section-title">Will this run on your PC?</h2>
-              <p class="view-sub" id="detail-hw-compat-body">Checking compatibility with your hardware…</p>
+              <div class="detail-section-heading"><div><h2 class="detail-section-title">Will this run on your PC?</h2><p>A quick comparison with the gaming PC saved in your settings.</p></div></div>
+              <div class="hardware-compat-panel" id="detail-hw-compat-body"><span class="hardware-compat-loading" aria-hidden="true"></span>Checking compatibility with your hardware…</div>
             </section>
 
             ${
