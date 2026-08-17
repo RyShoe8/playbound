@@ -672,6 +672,12 @@ export function DownloadMirrorsManager() {
       {/* TAB 1: R2 Hot Cache */}
       {activeTab === "cache" && (
         <div className="space-y-4">
+          <div className="flex items-start gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-sm text-sky-100">
+            <Archive className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+            <p>
+              <span className="font-semibold">Archive to VPS</span> copies a cached R2 file to the VPS archive. It does not remove the R2 copy or change any game catalog data.
+            </p>
+          </div>
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -768,10 +774,11 @@ export function DownloadMirrorsManager() {
                                 <button
                                   onClick={() => void handleArchive(item.id)}
                                   disabled={busyAction === `archive-${item.id}` || item.vpsStatus === "verified"}
-                                  className="p-1.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs transition-colors disabled:opacity-50"
+                                  className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
                                   title={item.vpsStatus === "verified" ? "Already archived on VPS" : "Copy to VPS archive"}
                                 >
                                   <Archive className="w-3.5 h-3.5" />
+                                  {item.vpsStatus === "verified" ? "On VPS" : "Archive to VPS"}
                                 </button>
                                 <button
                                   onClick={() => void handleToggleProtect(item.id, item.r2Protected)}
