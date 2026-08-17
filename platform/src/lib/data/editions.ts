@@ -1555,9 +1555,19 @@ export const editions: EditionSeed[] = [
             {
               /*
                * YYToolkit — the GameMaker interface every one of the mods below
-               * asks Aurie for. Without it all three abort at startup with
-               * "Failed to get YYTK Interface (AURIE_OBJECT_NOT_FOUND)" and the
-               * game opens unmodded.
+               * asks Aurie for.
+               *
+               * mods/Aurie, NOT mods/Native, even though it is a framework
+               * rather than a mod. Native modules are mapped raw at process
+               * attach and never run the Aurie module lifecycle, so a
+               * mods/Native YYToolkit loads and then registers nothing: the
+               * three mods below fail MdpMapImage with AURIE_EXTERNAL_ERROR
+               * (their imports resolve against YYToolkit), Aurie logs
+               * "Failed to get YYTK interface", and CallbackManagerMod is
+               * purged with AURIE_MODULE_DEPENDENCY_NOT_RESOLVED. From
+               * mods/Aurie it exports YYTK_ZeusPrivate and YYTK_ZeusMain and
+               * all three mods map clean. Verified against aurie.log on a real
+               * install, both ways.
                *
                * v5 specifically: HoloCureMultiplayerMod v1.4.1's notes say
                * "Updated for YYTK v5 (WARNING: May become incompatible with
@@ -1568,7 +1578,7 @@ export const editions: EditionSeed[] = [
                */
               url: "https://github.com/AurieFramework/YYToolkit/releases/download/v5.0.0c/YYToolkit.dll",
               fileName: "YYToolkit.dll",
-              dest: "mods/Native",
+              dest: "mods/Aurie",
             },
             {
               url: "https://github.com/AurieFramework/Aurie/releases/download/v2.0.2/AuriePatcher.exe",
