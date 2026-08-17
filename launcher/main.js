@@ -2249,6 +2249,22 @@ async function downloadTo(url, dest, attempts = 3) {
       if (!res || !res.ok || !res.body) {
         throw new Error(`HTTP ${res ? res.status : "failed"}`);
       }
+      /*
+       * A mirror that has rotted usually does not 404 — it answers 200 with a
+       * landing page, an interstitial or an error page. Downloading that gives
+       * you a few KB of HTML named like an archive, which then fails at
+       * extraction with something unreadable. Gradius did exactly this: its
+       * host redirected to its own homepage and returned 13KB of HTML.
+       *
+       * Say so here instead, so the resilient loop can try the next source and
+       * the player gets a sentence that names the problem.
+       */
+      const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+      if (contentType.includes("text/html") || contentType.includes("application/xhtml")) {
+        throw new Error(
+          `The download mirror returned a web page instead of a file (${current}). The link has probably moved.`
+        );
+      }
       const total = Number(res.headers.get("content-length")) || 0;
       await fsp.mkdir(path.dirname(dest), { recursive: true });
       const file = fs.createWriteStream(dest);
