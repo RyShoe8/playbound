@@ -1279,12 +1279,11 @@ async function renderGameDetailView(slug, opts = {}) {
       if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
     });
     document.getElementById("act-uninstall").addEventListener("click", async () => {
-      if (!confirm(`Uninstall ${detail.title}? This also removes PlayBound mods for this game.`)) return;
-      setStatus("Uninstalling...");
       try {
         cacheInvalidate(`game:${slug}`);
         cacheInvalidate(`editions:${slug}`);
         const res = await window.playbound.uninstall(slug);
+        if (res?.status === "cancelled") return;
         cacheInvalidate(`game:${slug}`);
         cacheInvalidate(`editions:${slug}`);
         if (res?.warning) setStatus(`Removed ${detail.title || slug} from your library. ${res.warning}`, true);
@@ -2172,11 +2171,11 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     }
   });
   document.getElementById("edition-uninstall")?.addEventListener("click", async () => {
-    if (!confirm(`Uninstall ${edition.editionName}? Other editions stay installed. Mods for this game will also be removed.`)) return;
     try {
       cacheInvalidate(`game:${gameSlug}`);
       cacheInvalidate(`editions:${gameSlug}`);
       const res = await window.playbound.uninstall(gameSlug, editionSlug);
+      if (res?.status === "cancelled") return;
       cacheInvalidate(`game:${gameSlug}`);
       cacheInvalidate(`editions:${gameSlug}`);
       if (res?.warning) setStatus(`Removed ${edition.editionName} from your library. ${res.warning}`, true);

@@ -568,9 +568,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           editions.length > 1
             ? `${game.title} — ${selectedEdition()?.editionName || ed}`
             : game.title;
-        if (!confirm(`Uninstall ${label}? This also removes PlayBound mods for this game.`)) return;
         try {
           const res = await window.playbound.uninstall(game.slug, ed);
+          if (res?.status === "cancelled") return;
           if (res?.warning) setStatus(`Removed ${label} from your library. ${res.warning}`, true);
           else setStatus(`Uninstalled ${label}`);
           api.renderLibraryView();
