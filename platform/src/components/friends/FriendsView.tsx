@@ -77,6 +77,7 @@ function FriendCard({
   partyId?: string | null;
   onJoinParty?: (partyId: string) => void;
   inYourParty?: boolean;
+}) {
   const gameSlug = friend.presence.currentGameId;
   const join = friend.join;
   const showJoin =
