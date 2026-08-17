@@ -7,6 +7,8 @@ import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorJob from "@/lib/models/MirrorJob";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
+import { ensureArtifact } from "@/lib/mirrors/ensureArtifact";
+import type { ArtifactType } from "@/lib/models/Artifact";
 import {
   archivedArtifactStatusOnHost,
   archiveArtifactOnHost,
@@ -328,10 +330,33 @@ export async function manualEvictArtifact(artifactId: string, actor: string): Pr
 export async function archiveArtifactToVps(
   artifactId: string,
   actor: string,
-  preferredSourceUrl?: string | null
+  preferredSourceUrl?: string | null,
+  fallback?: {
+    gameSlug?: string | null;
+    version?: string | null;
+    filename?: string | null;
+    sizeBytes?: number | null;
+    artifactType?: ArtifactType | null;
+  } | null
 ): Promise<{ success: boolean; message: string }> {
   await dbConnect();
-  const artifact = await Artifact.findOne({ artifactId });
+  let artifact = await Artifact.findOne({ artifactId });
+  /*
+   * Admin pages can briefly show an old cache row after housekeeping removed
+   * its operational artifact document. Recreate only that exact bookkeeping
+   * row from the card that was clicked. This never queries or writes catalog
+   * games, editions, or install recipes.
+   */
+  if (!artifact && fallback?.gameSlug && fallback?.filename && Number(fallback.sizeBytes) > 0) {
+    artifact = await ensureArtifact({
+      artifactId,
+      gameSlug: fallback.gameSlug,
+      version: fallback.version || "unknown",
+      filename: fallback.filename,
+      sizeBytes: Number(fallback.sizeBytes),
+      artifactType: fallback.artifactType || "game",
+    });
+  }
   if (!artifact) return { success: false, message: "Artifact not found" };
   if (!artifact.sizeBytes) return { success: false, message: "Artifact size is unknown; verify it before archiving." };
 
