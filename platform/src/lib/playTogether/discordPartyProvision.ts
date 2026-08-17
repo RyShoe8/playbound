@@ -49,6 +49,15 @@ export async function provisionPartyDiscordVoice(
         partyId: String(party._id),
         gameSlug: party.gameSlug,
         name: typeof party.name === "string" ? party.name : null,
+        /*
+         * Whatever this party already has, so the bot fills in the gap rather
+         * than starting over. A party made before party text channels existed
+         * has voice and no chat; without this, getting it a text channel would
+         * also mint a second voice channel and strand anyone already in the
+         * first one.
+         */
+        existingVoiceChannelId: party.discord?.voiceChannelId ?? null,
+        existingTextChannelId: party.discord?.textChannelId ?? null,
       }),
       signal: AbortSignal.timeout(25_000),
     });
@@ -247,7 +256,16 @@ export async function syncPartyVoiceForMember(
   party: PartyLike,
   userId: string
 ): Promise<PartyVoiceFollowup> {
-  if (!party.discord?.voiceChannelId || party.discord.cleanedAt) {
+  /*
+   * Also re-provision when the voice channel exists but the text one does not.
+   * Party chat is gated on textChannelId, and this guard used to stop at "has
+   * voice", so every party created before text channels existed stayed
+   * permanently unable to chat — launching voice changed nothing, because
+   * nothing ever asked the bot for the missing half.
+   */
+  const needsChannels =
+    !party.discord?.voiceChannelId || !party.discord?.textChannelId || party.discord.cleanedAt;
+  if (needsChannels) {
     await provisionPartyDiscordVoice(party);
   }
   const inviteUrl = party.discord?.inviteUrl || null;

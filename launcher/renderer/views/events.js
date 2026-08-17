@@ -42,6 +42,72 @@ function eventTypeDisplay(type) {
   return map[type] || String(type || "Event").replace(/_/g, " ");
 }
 
+/**
+ * One event card. Extracted from the old flat grid loop so the sectioned
+ * layout can reuse it — the card markup itself is unchanged.
+ */
+function createEventCard(ev) {
+  const card = document.createElement("div");
+  card.className = "pb-event-card";
+
+  const isLive = ev.status === "live";
+  const going = ev.counts?.going ?? 0;
+  const whenStr = ev.when?.dateLine
+    ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
+    : formatEventDate(ev.startsAt);
+  const coverUrl = ev.coverImage || null;
+
+  const badges = `
+    ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
+    <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
+    ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
+  `;
+
+  card.innerHTML = `
+    ${
+      coverUrl
+        ? `<div class="pb-event-card-cover-wrap">
+             <img src="${escapeHtml(coverUrl)}" class="pb-event-card-cover-img" alt="${escapeHtml(ev.title)}" />
+             <div class="pb-event-card-cover-overlay"></div>
+             <div class="pb-event-badges" style="position: absolute; top: 10px; left: 10px; z-index: 2;">${badges}</div>
+           </div>`
+        : `<div class="pb-event-badges" style="padding: 16px 16px 0;">${badges}</div>`
+    }
+    <div class="pb-event-card-body">
+      <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
+      ${ev.gameSlug ? `<p class="pb-event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
+      <p class="pb-event-time">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        ${escapeHtml(whenStr)}
+      </p>
+      ${ev.description ? `<p class="pb-event-desc">${escapeHtml(ev.description)}</p>` : ""}
+      <div class="pb-event-footer">
+        <span class="pb-event-going">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          ${going} going${ev.maxParticipants ? ` / ${ev.maxParticipants}` : ""}
+        </span>
+        <div class="pb-event-actions">
+          ${ev.discordInviteUrl ? `<button class="btn-secondary btn-sm btn-ev-discord" type="button">Discord</button>` : ""}
+          <button class="btn-primary btn-sm btn-ev-view" type="button">View Event</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  card.querySelector(".btn-ev-view")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    api.openEventDetail(ev.id, "events");
+  });
+  card.querySelector(".btn-ev-discord")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (ev.discordInviteUrl) window.playbound.openExternal(ev.discordInviteUrl);
+  });
+  card.addEventListener("pointerenter", () => prefetchEventDetail(ev.id), { once: true });
+  card.addEventListener("click", () => api.openEventDetail(ev.id, "events"));
+
+  return card;
+}
+
 /* ═══════════════════════════════════════════════════════════════
  * 1. EVENTS LIST / OVERVIEW VIEW
  * ═══════════════════════════════════════════════════════════════ */
@@ -54,7 +120,7 @@ async function renderEventsView() {
     <div class="events-header-row" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Events</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Game Nights and tournaments — join, play, and host.</p>
+        <p class="view-sub" style="margin: 4px 0 0 0">Game Nights, tournaments, and open parties so you can actually play together.</p>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
         <button class="btn-primary btn-sm" id="btn-create-event" type="button">+ Create Event</button>
@@ -62,8 +128,13 @@ async function renderEventsView() {
       </div>
     </div>
 
-    <div id="events-banner" class="events-banner" style="margin-top: 16px"></div>
-    <div id="events-grid" class="events-grid" style="margin-top: 20px"></div>
+    <!--
+      Sections rather than one flat grid, matching the website's events page.
+      The old single-event banner is gone with it: the site expresses the same
+      thing as a "Happening soon" section plus the live badge already on each
+      card, so a banner would be a third place saying it.
+    -->
+    <div id="events-sections" style="margin-top: 20px"></div>
 
     <!-- Create Event Modal -->
     <div class="modal-overlay" id="modal-create-event">
@@ -378,123 +449,63 @@ async function renderEventsView() {
       events: [],
     };
   const events = res.events || [];
-  const grid = document.getElementById("events-grid");
-  const banner = document.getElementById("events-banner");
+  const sectionsHost = document.getElementById("events-sections");
 
   if (!events.length) {
-    if (grid) grid.innerHTML = `<p class="view-sub" style="grid-column:1/-1">No upcoming events. Host one with + Create Event above!</p>`;
+    if (sectionsHost) {
+      sectionsHost.innerHTML = `<p class="view-sub">No upcoming events. Host one with + Create Event above!</p>`;
+    }
     markViewReady(container);
     return;
   }
 
-  const live = events.find((ev) => ev.status === "live");
-  const soon = events.find((ev) => {
-    if (!ev.startsAt) return false;
-    const ms = new Date(ev.startsAt).getTime() - Date.now();
-    return ms > 0 && ms < 60 * 60 * 1000;
-  });
+  /*
+   * Same groupings the website's events page uses, in the same order. An empty
+   * section renders nothing, exactly as its Section component returns null.
+   */
+  const now = Date.now();
+  const startOf = (ev) => (ev.startsAt ? new Date(ev.startsAt).getTime() : 0);
+  const groups = [
+    ["Featured", events.filter((ev) => ev.featured)],
+    [
+      "Happening soon",
+      events.filter(
+        (ev) =>
+          ev.status === "live" ||
+          (startOf(ev) >= now && startOf(ev) - now < 48 * 3600_000)
+      ),
+    ],
+    ["Game Nights", events.filter((ev) => ev.eventType === "game_night")],
+    ["Tournaments", events.filter((ev) => ev.eventType === "tournament")],
+    ["Parties", events.filter((ev) => ev.eventType === "party")],
+    ["Upcoming", events],
+    [
+      "Past events",
+      events
+        .filter((ev) => ev.status === "completed" || (ev.endsAt && new Date(ev.endsAt).getTime() < now))
+        .slice(0, 6),
+    ],
+  ];
 
-  if (banner && (live || soon)) {
-    const ev = live || soon;
-    banner.innerHTML = `
-      <div class="event-row" style="border-color: var(--primary); cursor: pointer;">
-        <div>
-          <p class="event-when">${live ? "🔴 LIVE NOW" : "Starts within an hour"}</p>
-          <p class="event-title" style="font-size:16px; font-weight:800;">${escapeHtml(ev.title)}</p>
-          <p class="event-desc">${escapeHtml(ev.gameSlug || "")}${
-      ev.counts?.going != null ? ` · ${ev.counts.going} going` : ""
-    }</p>
-        </div>
-        <button class="btn-primary btn-sm" type="button" id="btn-event-banner-action">${
-          live ? "Join Event" : "View Event"
-        }</button>
-      </div>
-    `;
-    banner.querySelector("#btn-event-banner-action")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      api.openEventDetail(ev.id, "events");
-    });
-    banner.addEventListener("click", () => {
-      api.openEventDetail(ev.id, "events");
-    });
-  }
+  if (sectionsHost) {
+    sectionsHost.replaceChildren();
+    for (const [title, items] of groups) {
+      if (!items.length) continue;
 
-  if (grid) {
-    grid.replaceChildren();
-    for (const ev of events) {
-      const card = document.createElement("div");
-      card.className = "pb-event-card";
+      const section = document.createElement("section");
+      section.className = "events-section";
 
-      const isLive = ev.status === "live";
-      const going = ev.counts?.going ?? 0;
-      const whenStr = ev.when?.dateLine
-        ? `${ev.when.dateLine} · ${ev.when.timeLine || ""}`
-        : formatEventDate(ev.startsAt);
-      const coverUrl = ev.coverImage || null;
+      const heading = document.createElement("h2");
+      heading.className = "events-section-title";
+      heading.textContent = title;
+      section.appendChild(heading);
 
-      card.innerHTML = `
-        ${
-          coverUrl
-            ? `
-          <div class="pb-event-card-cover-wrap">
-            <img src="${escapeHtml(coverUrl)}" class="pb-event-card-cover-img" alt="${escapeHtml(ev.title)}" />
-            <div class="pb-event-card-cover-overlay"></div>
-            <div class="pb-event-badges" style="position: absolute; top: 10px; left: 10px; z-index: 2;">
-              ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
-              <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
-              ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
-            </div>
-          </div>
-        `
-            : `
-          <div class="pb-event-badges" style="padding: 16px 16px 0;">
-            ${isLive ? `<span class="pb-badge-live">● Live now</span>` : ""}
-            <span class="pb-badge-type">${escapeHtml(eventTypeDisplay(ev.eventType))}</span>
-            ${ev.featured ? `<span class="pb-badge-featured">Featured</span>` : ""}
-          </div>
-        `
-        }
-        <div class="pb-event-card-body">
-          <h3 class="pb-event-title">${escapeHtml(ev.title)}</h3>
-          ${ev.gameSlug ? `<p class="pb-event-game">${escapeHtml(ev.gameSlug)}</p>` : ""}
-          <p class="pb-event-time">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            ${escapeHtml(whenStr)}
-          </p>
-          ${ev.description ? `<p class="pb-event-desc">${escapeHtml(ev.description)}</p>` : ""}
-          <div class="pb-event-footer">
-            <span class="pb-event-going">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              ${going} going${ev.maxParticipants ? ` / ${ev.maxParticipants}` : ""}
-            </span>
-            <div class="pb-event-actions">
-              ${
-                ev.discordInviteUrl
-                  ? `<button class="btn-secondary btn-sm btn-ev-discord" type="button">Discord</button>`
-                  : ""
-              }
-              <button class="btn-primary btn-sm btn-ev-view" type="button">View Event</button>
-            </div>
-          </div>
-        </div>
-      `;
+      const grid = document.createElement("div");
+      grid.className = "events-grid";
+      for (const ev of items) grid.appendChild(createEventCard(ev));
+      section.appendChild(grid);
 
-      card.querySelector(".btn-ev-view")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        api.openEventDetail(ev.id, "events");
-      });
-
-      card.querySelector(".btn-ev-discord")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (ev.discordInviteUrl) {
-          window.playbound.openExternal(ev.discordInviteUrl);
-        }
-      });
-
-      card.addEventListener("pointerenter", () => prefetchEventDetail(ev.id), { once: true });
-      card.addEventListener("click", () => api.openEventDetail(ev.id, "events"));
-
-      grid.appendChild(card);
+      sectionsHost.appendChild(section);
     }
   }
 

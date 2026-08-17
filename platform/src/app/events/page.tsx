@@ -82,8 +82,7 @@ export default async function EventsPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Events</h1>
           <p className="mt-1 max-w-xl text-muted-foreground">
-            Game Nights, tournaments, and open parties so you can actually play
-            together — not a calendar of lectures.
+            Game Nights, tournaments, and open parties so you can actually play together.
           </p>
         </div>
         {isAdmin && (

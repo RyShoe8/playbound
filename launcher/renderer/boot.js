@@ -195,6 +195,13 @@ export async function openEventDetail(eventId, fromView) {
 api.navigateTo = navigateTo;
 api.openGameDetail = openGameDetail;
 api.openModDetail = openModDetail;
+/*
+ * Was missing, so clicking a gear card did nothing at all: gear.js calls
+ * api.openGearDetail?.(), and the optional chaining swallowed the absence
+ * silently rather than throwing. The view, the route and the function all
+ * existed — only this line was absent.
+ */
+api.openGearDetail = openGearDetail;
 api.openEditionDetail = openEditionDetail;
 api.openEventDetail = openEventDetail;
 api.renderHomeView = renderHomeView;
