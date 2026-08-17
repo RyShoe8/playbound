@@ -2,9 +2,64 @@ import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
 import Notification from "@/lib/models/Notification";
+import Party from "@/lib/models/Party";
+import Presence from "@/lib/models/Presence";
 import { getGame } from "@/lib/catalog";
 import { createFriendPlayingNotification } from "@/lib/playTogether/notify";
 import { FRIEND_PLAYING_NOTIFY_COOLDOWN_MS } from "@/lib/playTogether/types";
+
+/**
+ * Friends who are already in this with the player, and so should not be told
+ * about it.
+ *
+ * Sharing an active party always counts: you agreed to play together, so being
+ * told your own party member started the game you are both about to launch is
+ * pure noise.
+ *
+ * `alreadyPlaying` additionally excludes friends who are in that game right
+ * now. That is right for "started playing" — they can see them in the game —
+ * but wrong for "looking for players", where being in the game is exactly what
+ * makes the news useful.
+ *
+ * Both queries are scoped to the friend list the caller already resolved, so
+ * this costs two indexed lookups no matter how large the friend list is.
+ */
+export async function findInvolvedFriendIds(
+  userId: string,
+  friendIds: string[],
+  opts: { alreadyPlaying?: string | null } = {}
+): Promise<Set<string>> {
+  const involved = new Set<string>();
+  if (!friendIds.length) return involved;
+
+  const gameSlug = opts.alreadyPlaying || null;
+  const [parties, playing] = await Promise.all([
+    Party.find({ "members.userId": userId, status: { $nin: ["ended"] } })
+      .select("members.userId")
+      .lean(),
+    gameSlug
+      ? Presence.find({
+          userId: { $in: friendIds },
+          status: "playing",
+          currentGameId: gameSlug,
+        })
+          .select("userId")
+          .lean()
+      : Promise.resolve([]),
+  ]);
+
+  const friendSet = new Set(friendIds);
+  for (const party of parties as { members?: { userId: unknown }[] }[]) {
+    for (const member of party.members || []) {
+      const id = String(member.userId);
+      if (id !== userId && friendSet.has(id)) involved.add(id);
+    }
+  }
+  for (const row of playing as { userId: unknown }[]) {
+    involved.add(String(row.userId));
+  }
+  return involved;
+}
 
 /**
  * Notify accepted friends when a user transitions into playing a game.
@@ -58,9 +113,12 @@ export async function maybeNotifyFriendsStartedPlaying(opts: {
     });
     if (!friendIds.length) return;
 
-    const friends = await User.find({ _id: { $in: friendIds } })
-      .select("preferences")
-      .lean();
+    const [friends, involved] = await Promise.all([
+      User.find({ _id: { $in: friendIds } })
+        .select("preferences")
+        .lean(),
+      findInvolvedFriendIds(opts.userId, friendIds, { alreadyPlaying: nextGame }),
+    ]);
 
     const cutoff = new Date(Date.now() - FRIEND_PLAYING_NOTIFY_COOLDOWN_MS);
     const username = String(me.username || "A friend");
@@ -69,6 +127,8 @@ export async function maybeNotifyFriendsStartedPlaying(opts: {
       friends.map(async (friend) => {
         const prefs = (friend as { preferences?: { notifyFriendActivity?: boolean } }).preferences;
         if (prefs?.notifyFriendActivity === false) return;
+        // Already in this with them — telling them is noise.
+        if (involved.has(String(friend._id))) return;
 
         const recent = await Notification.findOne({
           userId: friend._id,

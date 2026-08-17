@@ -7,6 +7,7 @@ import { getFriendsUserId } from "@/lib/friendsAuth";
 import { getGame } from "@/lib/catalog";
 import { LFG_TTL_MS } from "@/lib/playTogether/types";
 import { createFriendLfgNotification } from "@/lib/playTogether/notify";
+import { findInvolvedFriendIds } from "@/lib/playTogether/activityNotify";
 
 /** Enough to say "any of these", short of a wishlist nobody reads. */
 const MAX_LFG_GAMES = 6;
@@ -122,9 +123,14 @@ async function notifyFriendsLfg(userId: string, gameSlug: string | null) {
     const b = String(f.recipientId);
     return a === userId ? b : a;
   });
-  const friends = await User.find({ _id: { $in: friendIds } })
-    .select("preferences")
-    .lean();
+  const [friends, involved] = await Promise.all([
+    User.find({ _id: { $in: friendIds } })
+      .select("preferences")
+      .lean(),
+    // Party members only: a friend already in the game is precisely who wants
+    // to hear that someone is looking for players.
+    findInvolvedFriendIds(userId, friendIds),
+  ]);
 
   await Promise.all(
     friends.map(async (friend) => {
@@ -134,6 +140,7 @@ async function notifyFriendsLfg(userId: string, gameSlug: string | null) {
       ) {
         return;
       }
+      if (involved.has(String(friend._id))) return;
       await createFriendLfgNotification({
         recipientId: String(friend._id),
         fromUserId: userId,
