@@ -565,7 +565,7 @@ body {
   line-height: 1.45;
   color: var(--text-dim, rgba(255, 255, 255, 0.72));
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -972,32 +972,11 @@ body {
   white-space: nowrap;
 }
 
-.detail-cover-wrap {
-  width: 120px;
-  height: 120px;
-  border-radius: 18px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.detail-cover,
-.detail-cover-fallback {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 42px;
-  font-weight: 900;
-  color: #fff;
-}
-
-.detail-cover-lg {
-  width: 160px;
-  height: 160px;
-  border-radius: 20px;
-}
+/*
+ * The .detail-cover thumbnail set lived here. All three detail pages — game,
+ * edition and mod — now use the full-bleed hero instead, so nothing rendered
+ * it. The event- and gear- prefixed covers are separate classes and untouched.
+ */
 
 
 /*
@@ -1047,33 +1026,6 @@ body {
   max-width: 640px;
 }
 
-.detail-cover {
-  flex: 0 0 148px;
-  width: 148px;
-  aspect-ratio: 2 / 3;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-}
-
-.detail-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.detail-cover-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.9);
-}
-
 .detail-hero-title {
   font-size: 40px;
   font-weight: 800;
@@ -1110,11 +1062,6 @@ body {
 
   .detail-hero-title {
     font-size: 30px;
-  }
-
-  .detail-cover {
-    width: 120px;
-    flex-basis: 120px;
   }
 }
 
@@ -1533,73 +1480,6 @@ body {
 }
 
 /* Quality Bar Panel */
-.quality-bar-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-}
-
-.quality-bar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.quality-bar-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.quality-bar-badge {
-  background: rgba(52, 210, 123, 0.12);
-  color: #34d27b;
-  border: 1px solid rgba(52, 210, 123, 0.3);
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.quality-bar-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 8px;
-}
-
-.quality-bar-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.quality-bar-item.passed {
-  color: var(--text-main);
-}
-
-.quality-bar-icon-pass {
-  color: #34d27b;
-  font-weight: 800;
-}
-
-.quality-bar-icon-fail {
-  color: var(--text-dim);
-}
-
 /* Available Editions Grid */
 .detail-editions-grid {
   display: grid;
