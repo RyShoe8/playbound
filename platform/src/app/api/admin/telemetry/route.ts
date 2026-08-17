@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import User from "@/lib/models/User";
 import { eventsForFamily, type OpsFamily } from "@/lib/admin/opsEvents";
 
 export const runtime = "nodejs";
@@ -77,8 +79,29 @@ export async function GET(req: Request) {
     TelemetryEvent.countDocuments(filter),
   ]);
 
+  /*
+   * Resolve the ids on this page to usernames in one lookup, so the console
+   * can show who an event belongs to instead of the last eight characters of
+   * an ObjectId. Ids that no longer resolve — deleted accounts, or an id from
+   * another environment — simply stay absent and the console falls back.
+   */
+  const userIds = [...new Set(items.map((i) => i.userId).filter(Boolean))].map(String);
+  const usernames: Record<string, string> = {};
+  if (userIds.length) {
+    const valid = userIds.filter((id) => mongoose.isValidObjectId(id));
+    if (valid.length) {
+      const users = await User.find({ _id: { $in: valid } })
+        .select("username")
+        .lean();
+      for (const u of users) {
+        if (u.username) usernames[String(u._id)] = String(u.username);
+      }
+    }
+  }
+
   return NextResponse.json({
     items,
+    usernames,
     total,
     page,
     limit,

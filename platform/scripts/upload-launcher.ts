@@ -14,6 +14,7 @@
  *   - stable site alias (PlayBound-Launcher-Setup[.exe|.dmg|.AppImage])
  */
 import { readFileSync, existsSync, readdirSync } from "fs";
+import { createHash } from "crypto";
 import { basename, dirname, resolve } from "path";
 import { loadEnvConfig } from "@next/env";
 import { put } from "@vercel/blob";
@@ -185,6 +186,14 @@ async function main() {
 
   const feedBase = (prodAliasUrl || aliasUrl).replace(/\/[^/]+$/, "/");
 
+  await registerLauncherArtifact({
+    platform,
+    setupName,
+    setupPath,
+    downloadUrl: prodAliasUrl || aliasUrl,
+    channel: isAdmin ? "admin" : "prod",
+  });
+
   console.log("");
   console.log("Uploaded.");
   console.log(`  Versioned: ${setupUrl}`);
@@ -196,6 +205,76 @@ async function main() {
   console.log("");
   console.log("Set on Vercel (Production + Preview) if changed:");
   console.log(`  ${cfg.envVar}=${prodAliasUrl || aliasUrl}`);
+}
+
+/**
+ * Register this build in the download-mirror tables.
+ *
+ * The launcher installer is the one artifact we host ourselves, and it was the
+ * only download outside the mirror system entirely — so it had no size, health
+ * or download history alongside everything else. Registering it here rather
+ * than in a separate step means it happens on every release, using the exact
+ * file and version that just went up.
+ *
+ * Failure is logged and swallowed: the build is already on the blob and
+ * downloadable, and a bookkeeping miss must not fail the release.
+ */
+async function registerLauncherArtifact(input: {
+  platform: PlatformKind;
+  setupName: string;
+  setupPath: string;
+  downloadUrl: string;
+  channel: "admin" | "prod";
+}) {
+  try {
+    const version = input.setupName.match(/(\d+\.\d+\.\d+)/)?.[1] || "unknown";
+    const bytes = readFileSync(input.setupPath);
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    const artifactId = `playbound-launcher-${input.platform}-${version}`;
+
+    const [{ default: dbConnect }, { ensureArtifact, ensurePublicSource }, mongoose] =
+      await Promise.all([
+        import("../src/lib/db"),
+        import("../src/lib/mirrors/ensureArtifact"),
+        import("mongoose"),
+      ]);
+
+    await dbConnect();
+
+    const artifact = await ensureArtifact({
+      artifactId,
+      gameSlug: null,
+      version,
+      filename: input.setupName,
+      sizeBytes: bytes.length,
+      sha256,
+      artifactType: "launcher",
+    });
+
+    if (artifact) {
+      // Unlike a third-party download, this one we do host and may mirror.
+      artifact.mirrorEnabled = true;
+      artifact.redistributionAllowed = true;
+      artifact.licenseStatus = "first_party";
+      artifact.vpsStatus = "verified";
+      await artifact.save();
+    }
+
+    await ensurePublicSource({
+      artifactId,
+      sourceId: `blob-${input.platform}-${input.channel}`,
+      url: input.downloadUrl,
+    });
+
+    console.log(`  Registered artifact: ${artifactId} (${sha256.slice(0, 12)}…)`);
+    await mongoose.default.disconnect();
+  } catch (err) {
+    console.warn(
+      `  Could not register the mirror artifact (upload itself succeeded): ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
 }
 
 main().catch((err) => {

@@ -23,6 +23,8 @@ export function AdminOpsConsole({
   const [family, setFamily] = useState<OpsFamily>(initialFamily);
   const [gameSlug, setGameSlug] = useState(initialGame);
   const [items, setItems] = useState<OpsItem[]>([]);
+  /** userId → username for the ids on the current page. */
+  const [usernames, setUsernames] = useState<Record<string, string>>({});
   const [total, setTotal] = useState(0);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
@@ -38,8 +40,13 @@ export function AdminOpsConsole({
     try {
       const res = await fetch(`/api/admin/telemetry?${params.toString()}`);
       if (!res.ok) return;
-      const data = (await res.json()) as { items?: OpsItem[]; total?: number };
+      const data = (await res.json()) as {
+        items?: OpsItem[];
+        usernames?: Record<string, string>;
+        total?: number;
+      };
       setItems(Array.isArray(data.items) ? data.items : []);
+      setUsernames(data.usernames || {});
       setTotal(Number(data.total) || 0);
     } finally {
       setLoading(false);
@@ -135,8 +142,19 @@ export function AdminOpsConsole({
                         "—"
                       )}
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                      {item.userId ? String(item.userId).slice(-8) : "—"}
+                    {/* Username when the id still resolves; the id tail is the
+                        fallback for deleted accounts and anonymous events. */}
+                    <td
+                      className={`px-3 py-2 text-xs ${
+                        item.userId && usernames[String(item.userId)]
+                          ? "font-semibold text-foreground"
+                          : "font-mono text-muted-foreground"
+                      }`}
+                      title={item.userId ? String(item.userId) : undefined}
+                    >
+                      {item.userId
+                        ? usernames[String(item.userId)] || String(item.userId).slice(-8)
+                        : "—"}
                     </td>
                     <td className="max-w-xs truncate px-3 py-2 text-muted-foreground" title={detail}>
                       {detail || "—"}

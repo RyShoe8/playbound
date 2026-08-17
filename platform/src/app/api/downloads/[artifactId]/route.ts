@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { resolveDownloadSources } from "@/lib/mirrors/resolution";
-import { ensureSeedArtifacts } from "@/lib/mirrors/seedData";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ artifactId: string }> }
 ) {
   try {
-    await ensureSeedArtifacts();
     const { artifactId } = await params;
 
     const result = await resolveDownloadSources(artifactId);

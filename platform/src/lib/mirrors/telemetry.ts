@@ -1,13 +1,24 @@
 import dbConnect from "@/lib/db";
 import MirrorAttempt, { MirrorAttemptResult } from "@/lib/models/MirrorAttempt";
 import MirrorSource from "@/lib/models/MirrorSource";
-import Artifact from "@/lib/models/Artifact";
+import Artifact, { type ArtifactType } from "@/lib/models/Artifact";
 import { evaluateSourceHealth, calculateArtifactCacheScore } from "./scoring";
+import { ensureArtifact, ensurePublicSource } from "./ensureArtifact";
 
 export interface DownloadTelemetryPayload {
   artifactId: string;
   sourceId: string;
   sourceType: "public" | "r2" | "playbound_vps";
+  /**
+   * Enough to register the artifact the first time it is seen. Optional
+   * because older launchers do not send them — those still record an attempt,
+   * they just create a sparser row.
+   */
+  gameSlug?: string | null;
+  version?: string | null;
+  filename?: string | null;
+  sourceUrl?: string | null;
+  artifactType?: ArtifactType;
   attemptedAt?: string | number | Date;
   completedAt?: string | number | Date;
   result: MirrorAttemptResult;
@@ -49,6 +60,27 @@ export async function recordDownloadTelemetry(
   const isSuccess = payload.result === "success";
   const isTimeout = payload.result === "timeout" || payload.result === "stalled";
   const isChecksumFailure = payload.result === "checksum_failure" || payload.checksumValid === false;
+
+  /*
+   * Register on first sight. Without this, a download of anything outside the
+   * old seed list looked its artifact up, missed, and dropped the count —
+   * which is why the admin table only ever showed the seeded handful.
+   */
+  await ensureArtifact({
+    artifactId: payload.artifactId,
+    gameSlug: payload.gameSlug,
+    version: payload.version,
+    filename: payload.filename,
+    sizeBytes: bytes || null,
+    artifactType: payload.artifactType,
+  });
+  if (payload.sourceType === "public") {
+    await ensurePublicSource({
+      artifactId: payload.artifactId,
+      sourceId: payload.sourceId,
+      url: payload.sourceUrl,
+    });
+  }
 
   // 2. Update MirrorSource if it exists
   const source = await MirrorSource.findOne({ sourceId: payload.sourceId });
