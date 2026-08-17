@@ -4228,10 +4228,10 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     if (fromEdition) {
       entry = { ...(entry || {}), ...fromEdition };
     } else {
-      const bundled = bundledCatalog.find((e) => e.slug === slug);
-      if (bundled && bundled.kind && bundled.kind !== "external") {
-        entry = { ...(entry || {}), ...bundled };
-      } else if (editionMeta.installMethod === "official_download") {
+      // An edition's own official/external action must win over the parent
+      // game's install recipe. Falling back first sent Classic DOS Daggerfall
+      // through a stale Daggerfall Unity package URL.
+      if (editionMeta.installMethod === "official_download") {
         const url =
           editionMeta.installConfig?.official_download?.url ||
           editionMeta.links?.website ||
@@ -4258,6 +4258,11 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
           content: slug,
         });
         return { status: "external", editionSlug: editionMeta.editionSlug };
+      } else {
+        const bundled = bundledCatalog.find((e) => e.slug === slug);
+        if (bundled && bundled.kind && bundled.kind !== "external") {
+          entry = { ...(entry || {}), ...bundled };
+        }
       }
     }
   }
