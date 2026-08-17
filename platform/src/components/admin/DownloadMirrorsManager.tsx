@@ -74,6 +74,7 @@ interface CacheItem {
   lastEvicted: string | null;
   publicHealth: string;
   sha256: string;
+  archiveSourceUrl: string | null;
 }
 
 interface SourceItem {
@@ -354,7 +355,7 @@ export function DownloadMirrorsManager() {
     }
   }
 
-  async function handleArchive(artifactId: string) {
+  async function handleArchive(artifactId: string, sourceUrl?: string | null) {
     setBusyAction(`archive-${artifactId}`);
     setCacheItems((items) => items.map((item) => item.id === artifactId
       ? { ...item, vpsStatus: "uploading", vpsStatusMessage: "Starting VPS transfer…" }
@@ -363,7 +364,7 @@ export function DownloadMirrorsManager() {
       const res = await fetch("/api/admin/download-mirrors/cache/archive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ artifactId }),
+        body: JSON.stringify({ artifactId, sourceUrl: sourceUrl || null }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.message || "Archive failed");
@@ -780,7 +781,7 @@ export function DownloadMirrorsManager() {
                               <Eye className="w-3.5 h-3.5" /> Details
                             </button>
                             <button
-                              onClick={() => void handleArchive(item.id)}
+                              onClick={() => void handleArchive(item.id, item.archiveSourceUrl)}
                               disabled={
                                 busyAction === `archive-${item.id}` ||
                                 item.vpsStatus === "verified" ||

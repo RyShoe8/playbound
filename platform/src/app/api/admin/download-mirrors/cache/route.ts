@@ -25,6 +25,9 @@ export async function GET() {
 
     const items = artifacts.map((a) => {
       const artSources = sourceMap.get(a.artifactId) || [];
+      const archiveSource = [...artSources]
+        .filter((source) => /^https:\/\//i.test(String(source.url || "")))
+        .sort((a, b) => a.priority - b.priority || a.createdAt.getTime() - b.createdAt.getTime())[0];
       const healthyPublic = artSources.some((s) => s.healthStatus === "healthy");
       const degradedPublic = artSources.some((s) => s.healthStatus === "degraded");
 
@@ -52,6 +55,7 @@ export async function GET() {
         lastEvicted: a.r2LastEvicted,
         publicHealth,
         sha256: a.sha256,
+        archiveSourceUrl: archiveSource?.url || null,
       };
     });
 

@@ -306,7 +306,11 @@ export async function manualEvictArtifact(artifactId: string, actor: string): Pr
  * the old Promote → Archive path impossible because Promote in turn required
  * a VPS copy.
  */
-export async function archiveArtifactToVps(artifactId: string, actor: string): Promise<{ success: boolean; message: string }> {
+export async function archiveArtifactToVps(
+  artifactId: string,
+  actor: string,
+  preferredSourceUrl?: string | null
+): Promise<{ success: boolean; message: string }> {
   await dbConnect();
   const artifact = await Artifact.findOne({ artifactId });
   if (!artifact) return { success: false, message: "Artifact not found" };
@@ -320,6 +324,14 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
       sourceUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 60 * 60);
       sourceLabel = "R2 hot cache";
     }
+  }
+  // The admin cache row already has this exact URL from its Public sources
+  // record. Prefer it when supplied so archiving does not depend on a second
+  // lookup of historic telemetry identifiers.
+  const preferred = String(preferredSourceUrl || "").trim();
+  if (!sourceUrl && preferred.startsWith("https://")) {
+    sourceUrl = preferred;
+    sourceLabel = "selected public source";
   }
   if (!sourceUrl) {
     let source = await MirrorSource.findOne({
