@@ -1575,7 +1575,7 @@ async function pushCompatibilityPreference(mode) {
 
 async function fetchLauncherEditions(gameSlug) {
   const qs = gameSlug ? `?game=${encodeURIComponent(gameSlug)}` : "";
-  const res = await fetch(`${getApiBase()}/api/launcher/editions${qs}`, {
+  const res = await apiFetch(`${getApiBase()}/api/launcher/editions${qs}`, {
     headers: launcherApiHeaders(),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1663,6 +1663,30 @@ function launcherApiHeaders(extra = {}) {
     headers.authorization = `Bearer ${settings.launcherToken}`;
   }
   return headers;
+}
+
+/**
+ * Default ceiling for a site API call.
+ *
+ * Long enough that a slow-but-working connection still succeeds, short enough
+ * that a stalled one gives up while the player is still watching.
+ */
+const API_TIMEOUT_MS = 8000;
+
+/**
+ * `fetch` that cannot hang forever.
+ *
+ * Nearly every call here went out with no AbortSignal, so a connection that
+ * opened and then stalled — a captive portal, a dropped VPN, a half-open
+ * socket after sleep — never settled. The game page awaits four of these
+ * before it paints, so one stall left it on "Loading game details…"
+ * indefinitely rather than falling back to the catalog it already has.
+ *
+ * Callers that need their own deadline can still pass a signal; theirs wins.
+ */
+async function apiFetch(url, init = {}, timeoutMs = API_TIMEOUT_MS) {
+  if (init.signal) return fetch(url, init);
+  return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
 let lastCatalogRefreshTime = 0;
@@ -1811,7 +1835,7 @@ async function ensureCatalogEntry(slug) {
     return existing;
   }
   try {
-    const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/install`, {
+    const res = await apiFetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/install`, {
       headers: launcherApiHeaders(),
     });
     if (!res.ok) return existing || null;
@@ -7597,7 +7621,10 @@ ipcMain.handle("get-live-stats", async (_event, opts = {}) => {
   async function attempt(headers) {
     const res = await fetch(url, {
       headers,
-      signal: AbortSignal.timeout(scoped ? 30_000 : 20_000),
+      // The scoped call used to allow 30s. Nothing a player is waiting on
+      // should be allowed to stall that long, and the game page no longer
+      // blocks its paint on this anyway.
+      signal: AbortSignal.timeout(scoped ? 10_000 : 20_000),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -8446,7 +8473,7 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
 
   let rich = null;
   try {
-    const res = await fetch(`${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}`, {
+    const res = await apiFetch(`${getApiBase()}/api/launcher/games/${encodeURIComponent(slug)}`, {
       headers: launcherApiHeaders(),
     });
     if (res.ok) rich = await res.json();

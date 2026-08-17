@@ -324,19 +324,30 @@ async function renderGameDetailView(slug, opts = {}) {
     .join("");
 
 
-  const [liveStats, editionsRes] = await Promise.all([
-    cacheInvoke(`live:${slug}`, CACHE_TTL.liveStatsGame, () =>
-      window.playbound.getLiveStats?.({ game: slug })
-    ),
-    cacheInvoke(`editions:${slug}`, CACHE_TTL.editions, () => window.playbound.getEditions?.(slug)),
-  ]);
+  /*
+   * Only editions gate the paint — the hero button depends on how many there
+   * are. Live stats used to be awaited alongside it, which meant a slow
+   * counting query held the whole page on "Loading game details…"; it is
+   * started here and folded in when it lands, the same way the games grid
+   * paints first and fills counts in after.
+   */
+  const livePromise = cacheInvoke(`live:${slug}`, CACHE_TTL.liveStatsGame, () =>
+    window.playbound.getLiveStats?.({ game: slug })
+  ).catch(() => null);
+
+  const editionsRes = await cacheInvoke(`editions:${slug}`, CACHE_TTL.editions, () =>
+    window.playbound.getEditions?.(slug)
+  ).catch(() => null);
   const editions = Array.isArray(editionsRes?.editions) ? editionsRes.editions : [];
-  const playingChip =
-    liveStats && Number(liveStats.playingNow) > 0
-      ? `<span class="playing-now-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
-      : liveStats
-        ? `<span class="playing-now-chip">0 playing now</span>`
-        : "";
+
+  // Cached stats paint immediately; anything still in flight arrives below.
+  const cachedLive = cachePeek(`live:${slug}`, CACHE_TTL.liveStatsGame)?.data || null;
+  const playingChip = cachedLive
+    ? `<span class="playing-now-chip" id="detail-playing-chip">${formatStatNumber(
+        Number(cachedLive.playingNow) || 0
+      )} playing now</span>`
+    : `<span class="playing-now-chip" id="detail-playing-chip" hidden></span>`;
+  const liveStats = cachedLive;
 
   const faqHtml = (detail.faq || [])
     .map(
@@ -439,7 +450,7 @@ async function renderGameDetailView(slug, opts = {}) {
     <div class="detail-tab-panels">
       <!-- ── Overview Tab ────────────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
-        ${buildActivityPanelHtml(liveStats)}
+        <div id="detail-activity-slot">${buildActivityPanelHtml(liveStats)}</div>
         
         <div class="detail-overview-grid">
           <div class="detail-overview-main">
@@ -804,6 +815,22 @@ async function renderGameDetailView(slug, opts = {}) {
     window.playbound.openExternal(
       `https://playbound.club/games/${encodeURIComponent(slug)}?tab=achievements`
     );
+  });
+
+  /*
+   * Live stats, folded in whenever they land. The page has already painted by
+   * now, so a slow counting query costs a late-appearing number rather than a
+   * page that never arrives.
+   */
+  void livePromise.then((stats) => {
+    if (!stats || renderToken !== detailRenderToken) return;
+    const chip = document.getElementById("detail-playing-chip");
+    if (chip) {
+      chip.textContent = `${formatStatNumber(Number(stats.playingNow) || 0)} playing now`;
+      chip.hidden = false;
+    }
+    const slot = document.getElementById("detail-activity-slot");
+    if (slot) slot.innerHTML = buildActivityPanelHtml(stats);
   });
 
   // Guides / news / media / discussion / reviews (lazy fill)
