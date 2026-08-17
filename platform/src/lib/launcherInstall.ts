@@ -97,6 +97,12 @@ export type LauncherCatalogEntry = {
   coverImage?: string | null;
   genres?: string[];
   tags?: string[];
+  /**
+   * Carried so the launcher can tell a browser game from an installable one the
+   * same way the site does. `kind: "external"` covers both — a browser title and
+   * a live-service game with its own installer — so it cannot be the signal.
+   */
+  launchMethods?: string[];
   /** @deprecated Means "has a server browser". Use hasServerBrowser / isMultiplayer. */
   multiplayer?: boolean;
   /** Gates the Servers tab. */
@@ -263,6 +269,7 @@ export function toLauncherCatalogEntry(input: {
     approxSize: sizeLabelFromMB(input.sizeMB),
     genres: Array.isArray(input.genres) ? input.genres : [],
     tags: Array.isArray(input.tags) ? input.tags : [],
+    launchMethods: Array.isArray(input.launchMethods) ? input.launchMethods : [],
     multiplayer: hasServerBrowser(input),
     hasServerBrowser: hasServerBrowser(input),
     isMultiplayer: isMultiplayerGame(input),

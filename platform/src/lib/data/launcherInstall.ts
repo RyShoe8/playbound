@@ -692,9 +692,20 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
 
   "mega-man-unlimited": {
     enabled: true,
-    kind: "external",
-    url: "https://megaphilx.com/index.php/home/games/mega-man-unlimited/",
-    note: "Unofficial fangame. Download only from the creator’s site — PlayBound does not host the zip.",
+    /*
+     * One click rather than a hand-off to the creator's page. The zip is
+     * linked directly from that page and served by the creator's own host, so
+     * PlayBound still hosts nothing — it just follows the same link the player
+     * would have clicked. Verified: 200, application/zip, ~97.6 MB.
+     */
+    kind: "direct-zip",
+    url: "https://megaphilx.com/Game/MegaManUnlimitedV131.zip",
+    fileName: "MegaManUnlimitedV131.zip",
+    versionLabel: "1.3.1",
+    // Archive contains a single "MegaMan Unlimited/" folder holding MMU.exe.
+    exeHint: "MMU",
+    installRoot: "MegaMan Unlimited",
+    note: "Unofficial fangame, downloaded straight from the creator’s site — PlayBound does not host the zip.",
   },
 
   holocure: {

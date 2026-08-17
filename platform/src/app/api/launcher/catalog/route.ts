@@ -65,6 +65,7 @@ export async function GET(req: Request) {
           approxSize: sizeLabelFromMB(g.sizeMB) ?? "Browser",
           genres: Array.isArray(g.genres) ? g.genres : [],
           tags: Array.isArray(g.tags) ? g.tags : [],
+          launchMethods: Array.isArray(g.launchMethods) ? g.launchMethods : [],
           multiplayer: hasServerBrowser(g),
           hasServerBrowser: hasServerBrowser(g),
           isMultiplayer: isMultiplayerGame(g),
