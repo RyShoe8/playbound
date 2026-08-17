@@ -16,7 +16,6 @@ import { PartyView, type PartyGameOption } from "@/components/friends/PartyView"
 import { PartyDiscovery } from "@/components/friends/PartyDiscovery";
 import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { CreatePartyPanel } from "@/components/friends/CreatePartyPanel";
-import { DiscordLinkPrompt, followPartyVoice } from "@/components/friends/DiscordLinkPrompt";
 import { PopoutButton } from "@/components/friends/PopoutButton";
 import { Checkbox } from "@/components/ui/Checkbox";
 
@@ -392,10 +391,6 @@ export function FriendsView({
   const [lfgGames, setLfgGames] = useState<string[]>([]);
   const [lfgPickerOpen, setLfgPickerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [discordPrompt, setDiscordPrompt] = useState<{ open: boolean; inviteUrl: string | null }>({
-    open: false,
-    inviteUrl: null,
-  });
   const {
     playingFriends,
     awayFriends,
@@ -452,12 +447,7 @@ export function FriendsView({
         
       startPartyPolling(15000);
       if (partyParam) {
-        void joinParty(partyParam).then((party) => {
-          const voice = followPartyVoice(party);
-          if (voice.needsDiscordLink) {
-            setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
-          }
-        });
+        void joinParty(partyParam);
       }
     }
     return () => {
@@ -779,12 +769,7 @@ export function FriendsView({
                   partyId={inParty ? f.presence.currentPartyId : null}
                   lfgJoinSlug={!isPlaying && isLooking ? f.presence.lookingForPlayersGameId ?? null : null}
                   onJoinParty={(id) => {
-                    void joinParty(id).then((party) => {
-                      const voice = followPartyVoice(party);
-                      if (voice.needsDiscordLink) {
-                        setDiscordPrompt({ open: true, inviteUrl: voice.inviteUrl });
-                      }
-                    });
+                    void joinParty(id);
                   }}
                   subtitle={
                     inParty ? (
@@ -906,11 +891,6 @@ export function FriendsView({
       </div>
 
       <FriendsUpcomingEvents />
-      <DiscordLinkPrompt
-        open={discordPrompt.open}
-        inviteUrl={discordPrompt.inviteUrl}
-        onClose={() => setDiscordPrompt({ open: false, inviteUrl: null })}
-      />
     </div>
   );
 }

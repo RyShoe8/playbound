@@ -24,6 +24,26 @@ async function areFriends(a: string, b: string): Promise<boolean> {
   return Boolean(row);
 }
 
+/** Friendship + allowPlayInvites checks shared by play invites and party invites. */
+export async function checkInviteRecipient(
+  senderId: string,
+  recipientId: string
+): Promise<{ ok: true } | { error: string; status: 400 | 403 | 404 }> {
+  if (senderId === recipientId) {
+    return { error: "Cannot invite yourself", status: 400 };
+  }
+  if (!(await areFriends(senderId, recipientId))) {
+    return { error: "You can only invite friends", status: 403 };
+  }
+  const recipient = await User.findById(recipientId).select("preferences username").lean();
+  if (!recipient) return { error: "User not found", status: 404 };
+  const allow =
+    (recipient as { preferences?: { allowPlayInvites?: boolean } }).preferences?.allowPlayInvites !==
+    false;
+  if (!allow) return { error: "This user is not accepting play invites", status: 403 };
+  return { ok: true };
+}
+
 export async function sendPlayInvite(opts: {
   senderId: string;
   recipientId: string;
@@ -33,19 +53,8 @@ export async function sendPlayInvite(opts: {
   partyId?: string | null;
 }) {
   await dbConnect();
-  if (opts.senderId === opts.recipientId) {
-    return { error: "Cannot invite yourself", status: 400 as const };
-  }
-  if (!(await areFriends(opts.senderId, opts.recipientId))) {
-    return { error: "You can only invite friends", status: 403 as const };
-  }
-
-  const recipient = await User.findById(opts.recipientId).select("preferences username").lean();
-  if (!recipient) return { error: "User not found", status: 404 as const };
-  const allow =
-    (recipient as { preferences?: { allowPlayInvites?: boolean } }).preferences?.allowPlayInvites !==
-    false;
-  if (!allow) return { error: "This user is not accepting play invites", status: 403 as const };
+  const allowed = await checkInviteRecipient(opts.senderId, opts.recipientId);
+  if (!("ok" in allowed)) return allowed;
 
   const game = await getGame(opts.gameSlug, { includeTesting: true });
   if (!game) return { error: "Game not found", status: 404 as const };

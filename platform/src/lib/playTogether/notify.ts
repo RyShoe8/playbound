@@ -127,24 +127,28 @@ export async function createPartyInviteNotification(opts: {
   senderId: string;
   senderUsername: string;
   partyId: string;
-  gameSlug: string;
-  gameTitle: string;
+  gameSlug?: string | null;
+  gameTitle?: string | null;
+  partyName?: string | null;
   memberCount: number;
 }) {
   try {
     await dbConnect();
+    const count = `${opts.memberCount} player${opts.memberCount === 1 ? "" : "s"} currently in party`;
+    const headline = opts.gameTitle || opts.partyName;
     await Notification.create({
       userId: opts.recipientId,
       type: "party_invite",
       title: `${opts.senderUsername} invited you to a party`,
-      body: `${opts.gameTitle} · ${opts.memberCount} player${opts.memberCount === 1 ? "" : "s"} currently in party`,
+      body: headline ? `${headline} · ${count}` : count,
       href: `/friends?party=${encodeURIComponent(opts.partyId)}`,
       meta: {
         partyId: opts.partyId,
         fromUserId: opts.senderId,
         fromUsername: opts.senderUsername,
-        gameSlug: opts.gameSlug,
-        gameTitle: opts.gameTitle,
+        gameSlug: opts.gameSlug || null,
+        gameTitle: opts.gameTitle || null,
+        partyName: opts.partyName || null,
         memberCount: opts.memberCount,
         actions: ["join", "decline"],
       },

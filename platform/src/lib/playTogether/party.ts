@@ -31,7 +31,6 @@ import {
   cleanupPartyDiscordVoice,
   placePartyDiscordVoice,
   renamePartyDiscordVoice,
-  syncPartyVoiceForMember,
   type PartyVoiceFollowup,
 } from "@/lib/playTogether/discordPartyProvision";
 import {
@@ -294,8 +293,6 @@ export async function joinParty(
   await doc.save();
 
   await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
-  const voice =
-    doc.voiceEnabled === false ? SKIP_VOICE : await syncPartyVoiceForMember(doc, userId);
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
@@ -306,7 +303,7 @@ export async function joinParty(
   return {
     party: serializeParty(doc.toObject(), nameById, game?.title || null),
     status: 200,
-    ...voice,
+    ...SKIP_VOICE,
   };
 }
 
