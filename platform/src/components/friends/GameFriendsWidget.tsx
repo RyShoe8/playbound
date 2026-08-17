@@ -4,6 +4,7 @@ import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
+import { usePartyStore } from "@/stores/partyStore";
 import { Avatar } from "@/components/ui/bits";
 import { InviteFriendsPanel } from "@/components/friends/InviteFriendsPanel";
 import { AcceptPlayInviteEffect } from "@/components/friends/AcceptPlayInviteEffect";
@@ -12,15 +13,36 @@ import { telemetry } from "@/lib/telemetry";
 export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
   const { status } = useSession();
   const { friends, fetchFriends, startPolling, stopPolling } = useFriendsStore();
+  const {
+    activeParty,
+    fetchParties,
+    startPolling: startPartyPolling,
+    stopPolling: stopPartyPolling,
+  } = usePartyStore();
 
   useEffect(() => {
     if (status !== "authenticated") return;
     void fetchFriends();
     startPolling(45000);
-    return () => stopPolling();
-  }, [status, fetchFriends, startPolling, stopPolling]);
+    void fetchParties();
+    startPartyPolling(15000);
+    return () => {
+      stopPolling();
+      stopPartyPolling();
+    };
+  }, [
+    status,
+    fetchFriends,
+    startPolling,
+    stopPolling,
+    fetchParties,
+    startPartyPolling,
+    stopPartyPolling,
+  ]);
 
   if (status !== "authenticated") return null;
+
+  const viewerPartyId = activeParty?.id ?? null;
 
   const friendsInParty = friends.filter(
     (f) => f.presence.currentPartyId && f.presence.currentGameId === gameSlug
@@ -88,12 +110,16 @@ export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
             <p className="text-sm font-medium mb-3">
               {partyFriends.map((f) => f.username).join(", ")}
             </p>
-            <Link
-              href={`/friends?party=${partyId}`}
-              className="inline-block rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:brightness-110"
-            >
-              Join Party
-            </Link>
+            {viewerPartyId === partyId ? (
+              <span className="text-xs font-semibold text-muted-foreground">In your party</span>
+            ) : (
+              <Link
+                href={`/friends?party=${partyId}`}
+                className="inline-block rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:brightness-110"
+              >
+                Join Party
+              </Link>
+            )}
           </div>
         </div>
       ))}

@@ -518,8 +518,13 @@ export function setProgress(pct) {
   const statusProgress = document.getElementById("statusbar-progress");
   const statusBar = document.getElementById("statusbar-bar");
   if (!statusProgress || !statusBar) return;
+  statusBar.classList.remove("indeterminate");
   if (pct === null) {
     statusProgress.classList.add("hidden");
+  } else if (pct === "indeterminate") {
+    statusProgress.classList.remove("hidden");
+    statusBar.style.width = "35%";
+    statusBar.classList.add("indeterminate");
   } else {
     statusProgress.classList.remove("hidden");
     statusBar.style.width = `${pct}%`;

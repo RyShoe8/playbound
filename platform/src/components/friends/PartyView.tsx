@@ -14,7 +14,7 @@ import {
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { openDiscordInvite, openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
+import { openDiscordInvite, openPlayboundDeepLink, firePlayboundDeepLink, parseDiscordInviteCode } from "@/lib/openPlayboundDeepLink";
 import { withOutboundUtm } from "@/lib/utm";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
@@ -288,22 +288,46 @@ export function PartyView({
               type="button"
               disabled={voiceBusy}
               onClick={() => {
+                const knownUrl = party.discord.inviteUrl;
+                const pendingTab = knownUrl ? null : window.open("about:blank", "_blank");
+                if (knownUrl) openDiscordInvite(knownUrl);
                 void (async () => {
                   setVoiceBusy(true);
                   setVoiceError(null);
                   const result = await provisionDiscord(party.id);
-                  if (result.error && !result.inviteUrl) {
+                  const url = result.inviteUrl || knownUrl;
+                  if (result.error && !url) {
+                    pendingTab?.close();
                     setVoiceError(result.error);
                     setVoiceBusy(false);
                     return;
                   }
                   if (result.needsDiscordLink) {
-                    setDiscordPrompt({ open: true, inviteUrl: result.inviteUrl });
-                  } else if (result.inviteUrl) {
-                    openDiscordInvite(result.inviteUrl);
-                  } else if (party.discord.inviteUrl) {
-                    openDiscordInvite(party.discord.inviteUrl);
+                    if (pendingTab && !pendingTab.closed && url) {
+                      try {
+                        pendingTab.location.replace(url);
+                      } catch {
+                        pendingTab.close();
+                      }
+                    } else {
+                      pendingTab?.close();
+                    }
+                    setDiscordPrompt({ open: true, inviteUrl: url });
+                  } else if (url) {
+                    if (pendingTab && !pendingTab.closed) {
+                      try {
+                        pendingTab.location.replace(url);
+                      } catch {
+                        pendingTab.close();
+                        openDiscordInvite(url);
+                      }
+                      const code = parseDiscordInviteCode(url);
+                      if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
+                    } else if (!knownUrl) {
+                      openDiscordInvite(url);
+                    }
                   } else {
+                    pendingTab?.close();
                     setVoiceError("Couldn't open Discord voice.");
                   }
                   setVoiceBusy(false);

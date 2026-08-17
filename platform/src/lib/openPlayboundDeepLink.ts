@@ -52,62 +52,32 @@ export function parseDiscordInviteCode(inviteUrl: string): string | null {
   return null;
 }
 
+/** Open an https URL in a new tab from a user gesture (not delayed window.open). */
+function openHttpsInNewTab(url: string): void {
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 /**
- * Prefer the Discord desktop app via discord://, then fall back to https
- * if the tab stays visible (app not installed / protocol ignored).
+ * Prefer the Discord desktop app via discord://, and always open the https
+ * invite on the same click so people without the app still get Discord web.
+ * A Windows protocol prompt blurs the tab without hiding it — that is not
+ * treated as a successful app handoff.
  */
-export function openDiscordInvite(
-  inviteUrl: string,
-  opts?: { timeoutMs?: number }
-): () => void {
+export function openDiscordInvite(inviteUrl: string): () => void {
   const httpsUrl = inviteUrl;
   const code = parseDiscordInviteCode(inviteUrl);
-  if (!code) {
-    window.open(httpsUrl, "_blank", "noopener,noreferrer");
-    return () => {};
+  openHttpsInNewTab(httpsUrl);
+  if (code) {
+    firePlayboundDeepLink(`discord://-/invite/${code}`);
   }
-
-  const timeoutMs = opts?.timeoutMs ?? DISCORD_HANDOFF_MS;
-  let settled = false;
-  let sawHandoff = false;
-
-  const finish = (openedApp: boolean) => {
-    if (settled) return;
-    settled = true;
-    cleanup();
-    if (!openedApp) {
-      window.open(httpsUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const onBlur = () => {
-    sawHandoff = true;
-  };
-  const onVisibility = () => {
-    if (document.visibilityState === "hidden") sawHandoff = true;
-  };
-
-  const cleanup = () => {
-    window.removeEventListener("blur", onBlur);
-    document.removeEventListener("visibilitychange", onVisibility);
-    window.clearTimeout(timer);
-  };
-
-  window.addEventListener("blur", onBlur);
-  document.addEventListener("visibilitychange", onVisibility);
-
-  firePlayboundDeepLink(`discord://-/invite/${code}`);
-
-  const timer = window.setTimeout(() => {
-    finish(sawHandoff);
-  }, timeoutMs);
-
-  return () => {
-    if (!settled) {
-      settled = true;
-      cleanup();
-    }
-  };
+  return () => {};
 }
 
 /** Trigger a file download (or open the download page) in a new gesture-safe way. */

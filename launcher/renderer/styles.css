@@ -1852,6 +1852,20 @@ textarea.input-text {
   transition: width 0.2s;
 }
 
+#statusbar-bar.indeterminate {
+  width: 35% !important;
+  animation: statusbar-indet 1.2s ease-in-out infinite;
+}
+
+@keyframes statusbar-indet {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(380%);
+  }
+}
+
 .hidden {
   display: none !important;
 }

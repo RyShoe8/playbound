@@ -59,6 +59,7 @@ function FriendCard({
   lfgJoinSlug,
   partyId,
   onJoinParty,
+  inYourParty,
 }: {
   friend: FriendUser;
   subtitle: ReactNode;
@@ -75,7 +76,7 @@ function FriendCard({
   lfgJoinSlug?: string | null;
   partyId?: string | null;
   onJoinParty?: (partyId: string) => void;
-}) {
+  inYourParty?: boolean;
   const gameSlug = friend.presence.currentGameId;
   const join = friend.join;
   const showJoin =
@@ -152,6 +153,8 @@ function FriendCard({
           >
             View Game
           </Link>
+        ) : inYourParty ? (
+          <span className="text-[11px] font-semibold text-muted-foreground">In your party</span>
         ) : partyId ? (
           <button
             type="button"
@@ -767,6 +770,9 @@ export function FriendsView({
                   away={isAway}
                   onRemove={removeFriend}
                   partyId={inParty ? f.presence.currentPartyId : null}
+                  inYourParty={Boolean(
+                    inParty && activeParty?.id && f.presence.currentPartyId === activeParty.id
+                  )}
                   lfgJoinSlug={!isPlaying && isLooking ? f.presence.lookingForPlayersGameId ?? null : null}
                   onJoinParty={(id) => {
                     void joinParty(id);
