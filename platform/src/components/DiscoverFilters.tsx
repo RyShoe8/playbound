@@ -49,6 +49,8 @@ export function DiscoverFilters({
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
+  /** Only games with someone in them right now, per the shared live snapshot. */
+  const [hasPlayersOnly, setHasPlayersOnly] = useState(false);
   const [hwFilter, setHwFilter] = useState<HwFilter>("");
   const [userHw, setUserHw] = useState<{
     cpuTier?: string;
@@ -118,6 +120,15 @@ export function DiscoverFilters({
       );
     }
 
+    /*
+     * Reads the same 15-minute snapshot the cards show their counts from, so
+     * the filter and the "N playing" on each card can never disagree. A slug
+     * absent from the snapshot has nobody in it.
+     */
+    if (hasPlayersOnly) {
+      list = list.filter((g) => (playingNowBySlug[g.slug] ?? 0) > 0);
+    }
+
     if (hwFilter && userHw) {
       list = list.filter((g) => {
         const r = evaluateCompatibility(
@@ -153,6 +164,7 @@ export function DiscoverFilters({
   }, [
     serialized,
     multiplayerOnly,
+    hasPlayersOnly,
     hwFilter,
     userHw,
     mode,
@@ -360,6 +372,11 @@ export function DiscoverFilters({
             checked={multiplayerOnly}
             onCheckedChange={setMultiplayerOnly}
             label="Multiplayer"
+          />
+          <Checkbox
+            checked={hasPlayersOnly}
+            onCheckedChange={setHasPlayersOnly}
+            label="Has Players"
           />
         </div>
       </div>

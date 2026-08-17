@@ -30,6 +30,8 @@ export const state = {
     genre: "",
     multiplayerOnly: false,
     installableOnly: false,
+    /** Only games with someone in them right now, per the live snapshot. */
+    hasPlayersOnly: false,
     sort: "name",
   },
   compatibilityFilter: "compatible",

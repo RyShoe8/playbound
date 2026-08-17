@@ -81,7 +81,6 @@ function wireFriendsAppearOfflineButton() {
       const result = await window.playbound.setAppearOffline(!on);
       if (!result?.error) on = !on;
       btn.textContent = on ? "Go online" : "Appear offline";
-      syncPrivacyToggles({ appearOffline: on });
       btn.disabled = false;
     };
   });
@@ -260,55 +259,6 @@ function renderLfgPicker() {
   });
 }
 
-function syncPrivacyToggles(values) {
-  for (const [key, value] of Object.entries(values || {})) {
-    const box = document.querySelector(`.privacy-toggle[data-key="${key}"]`);
-    if (box) box.checked = Boolean(value);
-  }
-}
-
-/** The site's collapsible "Activity privacy" block, same four switches. */
-function wirePrivacyPanel() {
-  const header = document.getElementById("privacy-toggle-header");
-  const body = document.getElementById("privacy-panel-body");
-  const hint = document.getElementById("privacy-toggle-hint");
-  if (!header || !body) return;
-  header.onclick = () => {
-    const open = body.style.display !== "none";
-    body.style.display = open ? "none" : "block";
-    if (hint) hint.textContent = open ? "Show" : "Hide";
-  };
-
-  void window.playbound
-    .getAppearOffline()
-    .then((data) => {
-      if (!data || data.error) return;
-      syncPrivacyToggles({
-        appearOffline: data.appearOffline,
-        hideActivityFromFriends: data.hideActivityFromFriends,
-        allowPlayInvites: data.allowPlayInvites !== false,
-        notifyFriendActivity: data.notifyFriendActivity !== false,
-      });
-    })
-    .catch(() => {});
-
-  body.querySelectorAll(".privacy-toggle").forEach((box) => {
-    box.addEventListener("change", async () => {
-      const key = box.dataset.key;
-      const next = box.checked;
-      box.disabled = true;
-      const res = await window.playbound.setPresenceVisibility({ [key]: next });
-      if (res?.error) {
-        box.checked = !next;
-        setStatus(res.error, true);
-      } else if (key === "appearOffline") {
-        const btn = document.getElementById("btn-appear-offline");
-        if (btn) btn.textContent = next ? "Go online" : "Appear offline";
-      }
-      box.disabled = false;
-    });
-  });
-}
 
 async function renderFriendsView() {
   const container = views.friends;
@@ -341,10 +291,11 @@ async function renderFriendsView() {
           <p class="view-sub" style="margin: 4px 0 0 0">See who's playing and jump in together.</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-          <button class="btn-primary btn-sm" id="btn-toggle-create-party">Start Party</button>
-          <button class="btn-secondary btn-sm" id="btn-lfg">Look for party</button>
-          <button class="btn-secondary btn-sm" id="btn-appear-offline">Loading…</button>
-          <button class="btn-secondary btn-sm" id="btn-toggle-add-friend">Add Friend</button>
+          <!-- Full-size buttons, not btn-sm: these are the page's primary actions. -->
+          <button class="btn-primary friends-action-btn" id="btn-toggle-create-party">Start Party</button>
+          <button class="btn-secondary friends-action-btn" id="btn-lfg">Look for party</button>
+          <button class="btn-secondary friends-action-btn" id="btn-appear-offline">Loading…</button>
+          <button class="btn-secondary friends-action-btn" id="btn-toggle-add-friend">Add Friend</button>
         </div>
       </div>
 
@@ -461,32 +412,6 @@ async function renderFriendsView() {
         </div>
       </div>
 
-      <div class="privacy-panel" id="privacy-panel">
-        <button type="button" class="privacy-panel-header" id="privacy-toggle-header">
-          <span>Activity privacy</span>
-          <span class="view-sub" style="font-size: 12px;" id="privacy-toggle-hint">Show</span>
-        </button>
-        <div id="privacy-panel-body" style="display: none;">
-          ${[
-            ["appearOffline", "Appear offline", "Friends see you as offline"],
-            ["hideActivityFromFriends", "Hide what I'm playing", "Stay online without sharing game activity"],
-            ["allowPlayInvites", "Allow play invites", "Friends can invite you to play"],
-            ["notifyFriendActivity", "Friend activity notifications", "Get notified when friends start playing or LFG"],
-          ]
-            .map(
-              ([key, label, description]) => `
-            <label class="party-switch privacy-row">
-              <span style="min-width: 0;">
-                <span style="display: block; font-size: 14px; font-weight: 600;">${escapeHtml(label)}</span>
-                <span class="view-sub" style="display: block; font-size: 12px;">${escapeHtml(description)}</span>
-              </span>
-              <input type="checkbox" class="privacy-toggle" data-key="${key}" />
-            </label>`
-            )
-            .join("")}
-        </div>
-      </div>
-
       <div id="friends-party-area" style="margin-top: 20px;"></div>
       <div id="friends-content-area" style="margin-top: 20px;">
         <p class="view-sub">Loading friends...</p>
@@ -497,7 +422,6 @@ async function renderFriendsView() {
     document.getElementById("btn-toggle-create-party").onclick = () => toggleCreatePartyPanel();
     wireFriendsAppearOfflineButton();
     wireLfgButton();
-    wirePrivacyPanel();
   }
 
   // Loaded before the first paint so the party window's game picker is
