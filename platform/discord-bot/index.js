@@ -1077,21 +1077,43 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { partyId, gameSlug, name } = JSON.parse(body || "{}");
+      const {
+        partyId,
+        gameSlug,
+        name,
+        // Existing channels, when the caller is filling in what it is missing
+        // rather than starting fresh. A party provisioned before this endpoint
+        // made text channels has a voice channel and no chat, and creating a
+        // second voice channel to reach one would orphan the first and move
+        // everybody already sitting in it.
+        existingVoiceChannelId,
+        existingTextChannelId,
+      } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
       const category = await ensureCategory(guild, "PlayBound Parties");
-      const voice = await guild.channels.create({
-        name: partyVoiceChannelName(name || gameSlug, partyId),
-        type: ChannelType.GuildVoice,
-        parent: category.id,
-        reason: `PlayBound party voice ${partyId || ""}`,
-      });
-      const text = await guild.channels.create({
-        name: partyTextChannelName(name || gameSlug, partyId),
-        type: ChannelType.GuildText,
-        parent: category.id,
-        reason: `PlayBound party text ${partyId || ""}`,
-      });
+
+      const reuse = async (id, type) => {
+        if (!id) return null;
+        const ch = await guild.channels.fetch(String(id)).catch(() => null);
+        return ch && ch.type === type ? ch : null;
+      };
+
+      const voice =
+        (await reuse(existingVoiceChannelId, ChannelType.GuildVoice)) ||
+        (await guild.channels.create({
+          name: partyVoiceChannelName(name || gameSlug, partyId),
+          type: ChannelType.GuildVoice,
+          parent: category.id,
+          reason: `PlayBound party voice ${partyId || ""}`,
+        }));
+      const text =
+        (await reuse(existingTextChannelId, ChannelType.GuildText)) ||
+        (await guild.channels.create({
+          name: partyTextChannelName(name || gameSlug, partyId),
+          type: ChannelType.GuildText,
+          parent: category.id,
+          reason: `PlayBound party text ${partyId || ""}`,
+        }));
       const invite = await voice.createInvite({
         maxAge: 0,
         maxUses: 0,

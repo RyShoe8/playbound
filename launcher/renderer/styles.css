@@ -1962,11 +1962,20 @@ textarea.input-text {
   gap: 20px;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 .home-header-copy {
   min-width: 0;
   flex: 1;
+}
+/*
+ * Three margins were stacking under the welcome text — .view-sub's global 24px,
+ * the row's 8px, and the first .section-header's 28px — leaving 60px of empty
+ * space before any content. The row and the subtitle give theirs up; the
+ * section headings keep their own rhythm between sections.
+ */
+.home-header-copy .view-sub {
+  margin-bottom: 0;
 }
 .catalog-stats-card {
   width: 100%;
@@ -4297,6 +4306,16 @@ textarea.input-text {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
+}
+
+/* Sectioned events list, matching the website's grouped layout. */
+.events-section + .events-section {
+  margin-top: 32px;
+}
+.events-section-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .pb-event-card {
