@@ -50,8 +50,10 @@ async function renderServersView() {
         <span class="servers-field-label">Search</span>
         <input type="search" class="input-text" id="servers-search" placeholder="Name, map, players…" value="${escapeHtml(state.serversState.search)}" />
       </div>
-      <label class="filter-check servers-installed-check"><input type="checkbox" id="servers-installed-only" ${state.serversState.installedOnly ? "checked" : ""} /> Installed only</label>
-      <label class="filter-check"><input type="checkbox" id="servers-with-players" class="accent-primary" ${state.serversState.withPlayersOnly ? "checked" : ""} /> Servers With Players</label>
+      <div class="servers-filter-options" aria-label="Server filters">
+        <label class="servers-filter-toggle"><input type="checkbox" id="servers-installed-only" ${state.serversState.installedOnly ? "checked" : ""} /><span>Installed only</span></label>
+        <label class="servers-filter-toggle"><input type="checkbox" id="servers-with-players" ${state.serversState.withPlayersOnly ? "checked" : ""} /><span>Servers with players</span></label>
+      </div>
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
     <p class="servers-stats" id="servers-stats"></p>

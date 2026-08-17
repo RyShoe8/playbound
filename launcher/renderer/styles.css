@@ -807,6 +807,8 @@ body {
   gap: 10px;
   align-items: flex-end;
   margin-top: 16px;
+  position: relative;
+  z-index: 12;
 }
 
 .servers-field {
@@ -944,8 +946,80 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.servers-installed-check {
-  margin-bottom: 8px;
+.servers-filter-options {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+}
+
+.servers-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.servers-filter-toggle:hover {
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--text-main);
+}
+
+.servers-filter-toggle:has(input:checked) {
+  border-color: rgba(124, 92, 240, 0.7);
+  background: rgba(124, 92, 240, 0.15);
+  color: var(--text-main);
+}
+
+.servers-filter-toggle input {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.servers-filter-toggle input::after {
+  content: "";
+  width: 7px;
+  height: 4px;
+  border: solid #fff;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg) scale(0);
+  transition: transform 0.12s ease;
+}
+
+.servers-filter-toggle input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.servers-filter-toggle input:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.servers-filter-toggle input:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
 }
 
 .servers-stats {
@@ -4402,6 +4476,12 @@ textarea.input-text {
   transform: translateY(0) scale(1);
 }
 
+/* The server browser's empty state comes after its toolbar in the DOM. Keep
+   an open picker above it, including when the window is short or narrow. */
+.servers-toolbar .premium-select.open {
+  z-index: 20;
+}
+
 .premium-select-dropdown::-webkit-scrollbar {
   width: 5px;
 }
@@ -6021,6 +6101,117 @@ textarea.input-text {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+}
+
+/*
+ * Launcher windows include a persistent 220px sidebar, so a 1280px window
+ * only leaves about 1,000px for a directory. These adaptive tracks preserve
+ * the card designs while fitting more useful content in that space. They are
+ * deliberately shared by every directory instead of per-page one-offs.
+ */
+.game-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  gap: 16px;
+}
+
+.events-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+}
+
+.gear-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 14px;
+}
+
+.friends-grid,
+.friends-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1400px) {
+  .view {
+    padding: 20px 24px;
+  }
+
+  .launcher-topbar {
+    padding-inline: 24px;
+  }
+
+  .game-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+    gap: 14px;
+  }
+
+  .card-meta {
+    padding: 8px 10px;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 12px;
+  }
+
+  .pb-event-card-cover-wrap {
+    height: 126px;
+  }
+
+  .pb-event-card-body {
+    padding: 13px;
+  }
+
+  .gear-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 195px), 1fr));
+    gap: 12px;
+  }
+
+  .gear-card-body {
+    padding: 10px 12px 12px;
+  }
+
+  .friends-grid,
+  .friends-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 12px;
+  }
+
+  .friends-grid .friend-card,
+  .pb-friend-card {
+    padding: 14px;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .library-card-head {
+    gap: 11px;
+    padding: 12px;
+    min-height: 78px;
+  }
+
+  .library-thumb {
+    width: 90px;
+    height: 60px;
+  }
+
+  .library-card-extra {
+    padding: 8px 12px 10px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .servers-toolbar {
+    align-items: stretch;
+  }
+
+  .servers-field,
+  .servers-field-grow {
+    flex: 1 1 180px;
+  }
+
+  .servers-filter-options {
+    flex: 1 1 100%;
+  }
 }
 
 /* ── GEAR DETAIL VIEW ────────────────────────────────────────── */
