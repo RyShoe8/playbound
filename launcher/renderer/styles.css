@@ -768,6 +768,105 @@ body {
   min-width: 140px;
 }
 
+/* ── Games page filters, laid out like the website's discover filters ── */
+
+/* Genre pills: a horizontally scrolling row, each carrying its own count. */
+.genre-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  margin-top: 16px;
+  scrollbar-width: none;
+}
+.genre-pills::-webkit-scrollbar {
+  display: none;
+}
+.genre-pill {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.15;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.genre-pill:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.genre-pill.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.genre-pill-count {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+.genre-pill.selected .genre-pill-count {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.games-filter-card {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  padding: 12px;
+}
+.games-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.games-filter-row-secondary {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.games-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.games-filter-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.games-filter-select {
+  min-width: 150px;
+}
+.games-filter-search {
+  min-width: 240px;
+}
+.games-filter-count {
+  margin: 0 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .servers-installed-check {
   margin-bottom: 8px;
 }
@@ -2766,6 +2865,16 @@ textarea.input-text {
 }
 .party-card-join:hover { background: var(--accent-light); }
 .party-card-join:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/*
+ * Friends header actions. These are the page's primary controls, so they take
+ * the full button size rather than btn-sm, matching the weight the website
+ * gives them.
+ */
+.friends-action-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
 
 /* Activity privacy block */
 .privacy-panel {

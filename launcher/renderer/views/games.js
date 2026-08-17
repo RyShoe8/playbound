@@ -22,19 +22,34 @@ function ensureGamesShell() {
       <button class="btn-secondary btn-sm" id="btn-open-web">Open playbound.club</button>
     </div>
 
-    <div class="games-filters" id="games-filters">
-      <input type="search" class="input-text" id="games-search" placeholder="Search title, tagline, tags…" value="${escapeHtml(state.gamesFilters.query)}" />
-      <select class="input-text" id="games-genre">
-        <option value="">All genres</option>
-      </select>
-      <select class="input-text" id="games-sort">
-        <option value="name" ${state.gamesFilters.sort === "name" ? "selected" : ""}>Sort: Name</option>
-        <option value="size" ${state.gamesFilters.sort === "size" ? "selected" : ""}>Sort: Size</option>
-      </select>
-      <label class="filter-check"><input type="checkbox" id="games-mp" ${state.gamesFilters.multiplayerOnly ? "checked" : ""} /> Multiplayer</label>
-      <label class="filter-check"><input type="checkbox" id="games-installable" ${state.gamesFilters.installableOnly ? "checked" : ""} /> Installable</label>
+    <!--
+      Laid out like the website's discover filters: a scrolling row of genre
+      pills carrying their own counts, then one card holding sort and the
+      secondary toggles with the game count on the right.
+    -->
+    <div class="genre-pills" id="games-genre-pills"></div>
+
+    <div class="games-filter-card">
+      <div class="games-filter-row">
+        <div class="games-filter-group">
+          <span class="games-filter-label">Sort:</span>
+          <select class="input-text games-filter-select" id="games-sort">
+            <option value="name" ${state.gamesFilters.sort === "name" ? "selected" : ""}>Name (A-Z)</option>
+            <option value="size" ${state.gamesFilters.sort === "size" ? "selected" : ""}>Size (Largest)</option>
+            <option value="players" ${state.gamesFilters.sort === "players" ? "selected" : ""}>Most Players</option>
+          </select>
+        </div>
+        <div class="games-filter-group">
+          <input type="search" class="input-text games-filter-search" id="games-search" placeholder="Search title, tagline, tags…" value="${escapeHtml(state.gamesFilters.query)}" />
+        </div>
+        <p class="view-sub games-filter-count" id="games-count"></p>
+      </div>
+      <div class="games-filter-row games-filter-row-secondary">
+        <label class="filter-check"><input type="checkbox" id="games-mp" ${state.gamesFilters.multiplayerOnly ? "checked" : ""} /> Multiplayer</label>
+        <label class="filter-check"><input type="checkbox" id="games-installable" ${state.gamesFilters.installableOnly ? "checked" : ""} /> Installable</label>
+        <label class="filter-check"><input type="checkbox" id="games-has-players" ${state.gamesFilters.hasPlayersOnly ? "checked" : ""} /> Has Players</label>
+      </div>
     </div>
-    <p class="view-sub" id="games-count" style="margin: 10px 0 0 0"></p>
     <div id="games-grid" class="game-grid" style="margin-top: 16px"></div>
   `;
 
@@ -45,10 +60,6 @@ function ensureGamesShell() {
   const apply = () => paintGamesGrid(state.catalogCache);
   document.getElementById("games-search").addEventListener("input", (e) => {
     state.gamesFilters.query = e.target.value;
-    apply();
-  });
-  document.getElementById("games-genre").addEventListener("change", (e) => {
-    state.gamesFilters.genre = e.target.value;
     apply();
   });
   document.getElementById("games-sort").addEventListener("change", (e) => {
@@ -63,28 +74,51 @@ function ensureGamesShell() {
     state.gamesFilters.installableOnly = e.target.checked;
     apply();
   });
+  document.getElementById("games-has-players").addEventListener("change", (e) => {
+    state.gamesFilters.hasPlayersOnly = e.target.checked;
+    apply();
+  });
   return true;
 }
 
+/**
+ * Genre pills with counts, matching the website's discover filters.
+ *
+ * Counts come from the compatibility-filtered catalog so a pill never promises
+ * more games than clicking it will show.
+ */
 function syncGenreOptions(catalog) {
-  const genreSelect = document.getElementById("games-genre");
-  if (!genreSelect) return;
-  const existing = new Set([...genreSelect.options].map((o) => o.value).filter(Boolean));
-  const genreSet = new Set();
-  for (const g of catalog) {
-    for (const genre of g.genres || []) genreSet.add(genre);
+  const host = document.getElementById("games-genre-pills");
+  if (!host) return;
+
+  const base = filterByCompatibility(catalog);
+  const counts = new Map();
+  for (const g of base) {
+    for (const genre of g.genres || []) counts.set(genre, (counts.get(genre) || 0) + 1);
   }
-  let added = false;
-  [...genreSet].sort().forEach((genre) => {
-    if (existing.has(genre)) return;
-    const opt = document.createElement("option");
-    opt.value = genre;
-    opt.textContent = genre;
-    if (state.gamesFilters.genre === genre) opt.selected = true;
-    genreSelect.appendChild(opt);
-    added = true;
+  const ordered = [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+  const pill = (value, label, count) => {
+    const selected = state.gamesFilters.genre === value;
+    return `<button type="button" class="genre-pill${selected ? " selected" : ""}" data-genre="${escapeHtml(
+      value
+    )}"><span>${escapeHtml(label)}</span><span class="genre-pill-count">${count}</span></button>`;
+  };
+
+  host.innerHTML = [
+    pill("", "All", base.length),
+    ...ordered.map(([genre, count]) => pill(genre, genre, count)),
+  ].join("");
+
+  host.querySelectorAll("[data-genre]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const value = btn.dataset.genre || "";
+      // Clicking the active pill clears it, as the website's does.
+      state.gamesFilters.genre = state.gamesFilters.genre === value ? "" : value;
+      syncGenreOptions(catalog);
+      paintGamesGrid(catalog);
+    });
   });
-  if (added) genreSelect._syncCustomSelect?.();
 }
 
 function parseSizeMB(label) {
@@ -116,9 +150,23 @@ export function paintGamesGrid(catalog = state.catalogCache) {
   if (state.gamesFilters.installableOnly) {
     list = list.filter((g) => g.kind && g.kind !== "external");
   }
+  /*
+   * Has Players reads the same shared 15-minute snapshot the cards do, so the
+   * filter and the "N playing" on each card can never disagree. A slug absent
+   * from the snapshot has nobody in it.
+   */
+  if (state.gamesFilters.hasPlayersOnly) {
+    list = list.filter((g) => (gamesPlayingNow.get(g.slug) || 0) > 0);
+  }
 
   if (state.gamesFilters.sort === "size") {
     list.sort((a, b) => parseSizeMB(b.approxSize) - parseSizeMB(a.approxSize));
+  } else if (state.gamesFilters.sort === "players") {
+    list.sort(
+      (a, b) =>
+        (gamesPlayingNow.get(b.slug) || 0) - (gamesPlayingNow.get(a.slug) || 0) ||
+        String(a.title).localeCompare(String(b.title))
+    );
   } else {
     list.sort((a, b) => String(a.title).localeCompare(String(b.title)));
   }
@@ -145,9 +193,10 @@ async function renderGamesView() {
   if (!state.catalogCache.length && Array.isArray(catalog)) state.catalogCache = catalog;
   syncGenreOptions(catalog);
   if (created) {
-    const genreSelect = document.getElementById("games-genre");
-    enhanceSelect(genreSelect);
-    genreSelect?._syncCustomSelect?.();
+    // The genre select is a pill row now; sort is the only dropdown left.
+    const sortSelect = document.getElementById("games-sort");
+    enhanceSelect(sortSelect);
+    sortSelect?._syncCustomSelect?.();
   }
   paintGamesGrid(catalog);
   markViewReady(views.games);
