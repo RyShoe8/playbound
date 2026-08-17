@@ -112,6 +112,21 @@ export const CACHE_TTL = {
 /** @type {Map<string, { at: number, data?: any, inflight?: Promise<any> | null }>} */
 const ipcCache = new Map();
 
+/**
+ * Bumped by every invalidation.
+ *
+ * Deleting a key does not stop a request that is already in the air, and that
+ * request still writes its result when it lands. After an install that meant
+ * the pre-install payload — the one that says the game is not installed — could
+ * drop back into the cache *after* the invalidation, and the next read would
+ * treat it as fresh. The visible symptom was the hero button staying on
+ * "Install Game" after the status area already said the install had finished.
+ *
+ * A request remembers the epoch it started in and declines to cache its result
+ * if the world has moved on since.
+ */
+let cacheEpoch = 0;
+
 export function cachePeek(key, ttlMs) {
   const hit = ipcCache.get(key);
   if (!hit || hit.data === undefined) return null;
@@ -124,6 +139,7 @@ export function cachePut(key, data) {
 }
 
 export function cacheInvalidate(prefix = "") {
+  cacheEpoch++;
   if (!prefix) {
     ipcCache.clear();
     return;
@@ -140,9 +156,15 @@ export async function cacheInvoke(key, ttlMs, fn) {
   if (hit?.inflight) {
     return hit.data !== undefined ? hit.data : hit.inflight;
   }
+  const startedAt = cacheEpoch;
   const inflight = Promise.resolve()
     .then(fn)
-    .then((data) => cachePut(key, data))
+    .then((data) => {
+      // Invalidated while this was in the air — hand the caller the answer it
+      // asked for, but do not let it become the cached truth.
+      if (cacheEpoch !== startedAt) return data;
+      return cachePut(key, data);
+    })
     .finally(() => {
       const cur = ipcCache.get(key);
       if (cur) cur.inflight = null;

@@ -311,7 +311,18 @@ function buildInstallStepsHtml(detail) {
   `;
 }
 
+/**
+ * Guards against a superseded render painting last.
+ *
+ * Finishing an install fires two forced re-renders — one from the
+ * install-detected event, one when the install call returns — and they race.
+ * Whichever resolves last writes the DOM, so without this the older render
+ * could repaint the pre-install hero over the correct one.
+ */
+let detailRenderToken = 0;
+
 async function renderGameDetailView(slug, opts = {}) {
+  const renderToken = ++detailRenderToken;
   state.currentDetailSlug = slug;
   const container = views.gameDetail;
   const force = Boolean(opts?.force);
@@ -427,6 +438,10 @@ async function renderGameDetailView(slug, opts = {}) {
         <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
       </div>`
     : "";
+
+  // A newer render started while this one was fetching — let it win rather
+  // than painting stale state over it.
+  if (renderToken !== detailRenderToken) return;
 
   container.innerHTML = `
     <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 14px">← Back</button>
