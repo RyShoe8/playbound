@@ -4,6 +4,7 @@ import {
   applyAccountToSidebar,
   applyCompatibilitySetting,
   bindViews,
+  cacheInvalidate,
   cachePut,
   DISCORD_INVITE,
   editionsContextSlug,
@@ -424,11 +425,18 @@ function wireMainEvents() {
     } else {
       setStatus("Installs updated.");
     }
+    if (data?.slug) {
+      cacheInvalidate(`game:${data.slug}`);
+      cacheInvalidate(`editions:${data.slug}`);
+    } else {
+      cacheInvalidate("game");
+      cacheInvalidate("editions");
+    }
     markViewDirty(views.library, views.gameDetail, views.editionDetail);
     if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
     else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {
-      api.renderGameDetailView?.(data.slug);
+      api.renderGameDetailView?.(data.slug, { force: true });
     } else if (
       // Installing an edition now leaves you on the edition page, so that page
       // has to pick the finished install up itself and swap Install for Play.
@@ -438,7 +446,8 @@ function wireMainEvents() {
     ) {
       api.renderEditionDetailView?.(
         state.currentEditionDetail.gameSlug,
-        state.currentEditionDetail.editionSlug
+        state.currentEditionDetail.editionSlug,
+        { force: true }
       );
     }
   });
@@ -464,11 +473,15 @@ function wireMainEvents() {
     } else if (phase === "dismissed") {
       setStatus("Removed from Library.");
     }
+    if (data?.slug) {
+      cacheInvalidate(`game:${data.slug}`);
+      cacheInvalidate(`editions:${data.slug}`);
+    }
     markViewDirty(views.library, views.gameDetail);
     if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
     else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {
-      api.renderGameDetailView?.(data.slug);
+      api.renderGameDetailView?.(data.slug, { force: true });
     }
   });
 
@@ -478,10 +491,14 @@ function wireMainEvents() {
       `Couldn't auto-detect ${name}. Open Library and click ${selectExecutableLabel()} to locate it.`,
       true
     );
+    if (data?.slug) {
+      cacheInvalidate(`game:${data.slug}`);
+      cacheInvalidate(`editions:${data.slug}`);
+    }
     markViewDirty(views.library, views.gameDetail);
     if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {
-      api.renderGameDetailView?.(data.slug);
+      api.renderGameDetailView?.(data.slug, { force: true });
     }
   });
 

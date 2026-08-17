@@ -62,6 +62,7 @@ import { PlayingNowBadge } from "@/components/ActivityStats";
 import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 import { ModCard } from "@/components/ModCard";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
+import { LocateGameButton } from "@/components/LocateGameButton";
 import { launcherPlayModUrl } from "@/lib/launcher";
 import { modsForEdition } from "@/lib/mods";
 import { cn } from "@/lib/utils";
@@ -261,6 +262,7 @@ export default async function EditionPage({
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <EditionInstallButton action={action} telemetryProps={telemetryProps} size="lg" />
+            <LocateGameButton slug={game.slug} size="lg" />
             {secondary.map((alt) => (
               <EditionInstallButton
                 key={alt.method}

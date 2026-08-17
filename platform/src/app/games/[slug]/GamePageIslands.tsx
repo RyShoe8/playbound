@@ -20,6 +20,7 @@ import {
 import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { issueForGame } from "@/lib/weekly";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
+import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
 import { Badge } from "@/components/ui/bits";
 import { PlayingNowBadge } from "@/components/ActivityStats";
@@ -118,6 +119,7 @@ export async function GameHeroActions({
       ) : (
         <PlayCta game={game} size="lg" />
       )}
+      {!initiallyInLibrary && <LocateGameButton slug={game.slug} size="lg" />}
       <AdaptiveAddToLibraryButton
         game={game}
         initiallyInLibrary={initiallyInLibrary}
@@ -148,6 +150,7 @@ export function GameHeroActionsFallback({
       ) : (
         <PlayCta game={game} size="lg" />
       )}
+      <LocateGameButton slug={game.slug} size="lg" />
       <AdaptiveAddToLibraryButton
         game={game}
         initiallyInLibrary={false}
