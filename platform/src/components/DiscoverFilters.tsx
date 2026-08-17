@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
-type SortOption = "name" | "size" | "players";
+type SortOption = "name" | "players";
 type HwFilter = "" | "great" | "playable";
 
 interface SerializedGame {
@@ -150,9 +150,7 @@ export function DiscoverFilters({
 
     list = filterGamesForPreference(list, mode, device.type);
 
-    if (sort === "size") {
-      list.sort((a, b) => b.sizeMB - a.sizeMB);
-    } else if (sort === "players") {
+    if (sort === "players") {
       list.sort(
         (a, b) => (playingNowBySlug[b.slug] ?? 0) - (playingNowBySlug[a.slug] ?? 0) || a.title.localeCompare(b.title)
       );
@@ -321,7 +319,6 @@ export function DiscoverFilters({
                 className="!w-auto h-8 min-w-[130px] rounded-lg border border-border/80 bg-secondary/50 px-2.5 text-xs font-semibold outline-none transition-colors hover:border-border focus:border-ring"
               >
                 <option value="name">Name (A-Z)</option>
-                <option value="size">Size (Largest)</option>
                 <option value="players">Most Players</option>
               </PremiumSelect>
             </div>

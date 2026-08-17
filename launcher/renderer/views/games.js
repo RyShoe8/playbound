@@ -17,7 +17,6 @@ function ensureGamesShell() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Games</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Browse free PC games you can install with PlayBound.</p>
       </div>
       <button class="btn-secondary btn-sm" id="btn-open-web">Open playbound.club</button>
     </div>
@@ -35,18 +34,13 @@ function ensureGamesShell() {
           <span class="games-filter-label">Sort:</span>
           <select class="input-text games-filter-select" id="games-sort">
             <option value="name" ${state.gamesFilters.sort === "name" ? "selected" : ""}>Name (A-Z)</option>
-            <option value="size" ${state.gamesFilters.sort === "size" ? "selected" : ""}>Size (Largest)</option>
             <option value="players" ${state.gamesFilters.sort === "players" ? "selected" : ""}>Most Players</option>
           </select>
-        </div>
-        <div class="games-filter-group">
-          <input type="search" class="input-text games-filter-search" id="games-search" placeholder="Search title, tagline, tags…" value="${escapeHtml(state.gamesFilters.query)}" />
         </div>
         <p class="view-sub games-filter-count" id="games-count"></p>
       </div>
       <div class="games-filter-row games-filter-row-secondary">
         <label class="filter-check"><input type="checkbox" id="games-mp" ${state.gamesFilters.multiplayerOnly ? "checked" : ""} /> Multiplayer</label>
-        <label class="filter-check"><input type="checkbox" id="games-installable" ${state.gamesFilters.installableOnly ? "checked" : ""} /> Installable</label>
         <label class="filter-check"><input type="checkbox" id="games-has-players" ${state.gamesFilters.hasPlayersOnly ? "checked" : ""} /> Has Players</label>
       </div>
     </div>
@@ -58,20 +52,12 @@ function ensureGamesShell() {
   });
 
   const apply = () => paintGamesGrid(state.catalogCache);
-  document.getElementById("games-search").addEventListener("input", (e) => {
-    state.gamesFilters.query = e.target.value;
-    apply();
-  });
   document.getElementById("games-sort").addEventListener("change", (e) => {
     state.gamesFilters.sort = e.target.value;
     apply();
   });
   document.getElementById("games-mp").addEventListener("change", (e) => {
     state.gamesFilters.multiplayerOnly = e.target.checked;
-    apply();
-  });
-  document.getElementById("games-installable").addEventListener("change", (e) => {
-    state.gamesFilters.installableOnly = e.target.checked;
     apply();
   });
   document.getElementById("games-has-players").addEventListener("change", (e) => {
@@ -146,10 +132,6 @@ export function paintGamesGrid(catalog = state.catalogCache) {
   }
   if (state.gamesFilters.multiplayerOnly) {
     list = list.filter((g) => g.isMultiplayer ?? g.multiplayer);
-  }
-  if (state.gamesFilters.installableOnly) {
-    list = list.filter((g) => g.kind && g.kind !== "external");
-  }
   /*
    * Has Players reads the same shared 15-minute snapshot the cards do, so the
    * filter and the "N playing" on each card can never disagree. A slug absent
@@ -159,9 +141,7 @@ export function paintGamesGrid(catalog = state.catalogCache) {
     list = list.filter((g) => (gamesPlayingNow.get(g.slug) || 0) > 0);
   }
 
-  if (state.gamesFilters.sort === "size") {
-    list.sort((a, b) => parseSizeMB(b.approxSize) - parseSizeMB(a.approxSize));
-  } else if (state.gamesFilters.sort === "players") {
+  if (state.gamesFilters.sort === "players") {
     list.sort(
       (a, b) =>
         (gamesPlayingNow.get(b.slug) || 0) - (gamesPlayingNow.get(a.slug) || 0) ||

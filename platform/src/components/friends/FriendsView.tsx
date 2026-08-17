@@ -588,9 +588,6 @@ export function FriendsView({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Friends</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              See who&apos;s playing and jump in together.
-            </p>
           </div>
           <PopoutButton />
         </div>

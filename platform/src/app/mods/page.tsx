@@ -95,10 +95,6 @@ export default async function ModsIndexPage() {
           <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
             <Puzzle className="size-6 text-primary" /> Mods
           </h1>
-          <p className="mt-1 text-muted-foreground">
-            Free add-ons for games in the PlayBound catalog — total conversions, map
-            packs, AI opponents and content libraries.
-          </p>
         </div>
       </div>
 
