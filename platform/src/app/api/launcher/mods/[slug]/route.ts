@@ -39,6 +39,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         downloadKind: mod.downloadKind,
         installRelativePath: mod.installRelativePath || null,
         platforms: Array.isArray(mod.platforms) ? mod.platforms : [],
+        tags: mod.tags || [],
+        classificationIds: mod.classificationIds || [],
         status: mod.status || "published",
         testing: mod.status === "testing",
         baseGame: baseGame

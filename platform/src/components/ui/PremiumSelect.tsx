@@ -1,9 +1,7 @@
 import React, { SelectHTMLAttributes, useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 
-interface PremiumSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  // Any extra custom props can go here
-}
+export type PremiumSelectProps = SelectHTMLAttributes<HTMLSelectElement>;
 
 export function PremiumSelect({ children, className, value, onChange, disabled, ...props }: PremiumSelectProps) {
   const [open, setOpen] = useState(false);
@@ -23,11 +21,11 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
   const options = React.Children.toArray(children)
     .map((child) => {
       if (React.isValidElement(child) && child.type === "option") {
-        const props = (child as React.ReactElement<any>).props;
+        const optionProps = (child as React.ReactElement<React.OptionHTMLAttributes<HTMLOptionElement>>).props;
         return {
-          value: props.value !== undefined ? props.value : props.children,
-          label: props.children,
-          disabled: props.disabled,
+          value: optionProps.value !== undefined ? optionProps.value : optionProps.children,
+          label: optionProps.children,
+          disabled: optionProps.disabled,
         };
       }
       return null;
@@ -89,8 +87,11 @@ export function PremiumSelect({ children, className, value, onChange, disabled, 
                 onClick={() => {
                   if (opt.disabled) return;
                   if (onChange) {
-                    const e = { target: { value: String(opt.value), name: props.name } } as any;
-                    onChange(e);
+                    const syntheticEvent = {
+                      target: { value: String(opt.value), name: props.name },
+                      currentTarget: { value: String(opt.value), name: props.name },
+                    } as unknown as React.ChangeEvent<HTMLSelectElement>;
+                    onChange(syntheticEvent);
                   }
                   setOpen(false);
                 }}

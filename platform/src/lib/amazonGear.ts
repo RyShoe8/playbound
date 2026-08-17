@@ -211,7 +211,7 @@ function parseDeliveryDate(text: string, now = new Date()): number | null {
     ];
     const mi = monthNames.findIndex((m) => md[1].toLowerCase().startsWith(m));
     const day = Number(md[2]);
-    let year = md[3] ? Number(md[3]) : now.getFullYear();
+    const year = md[3] ? Number(md[3]) : now.getFullYear();
     if (mi >= 0 && day >= 1 && day <= 31) {
       let target = new Date(year, mi, day);
       // If date already passed this year and year wasn't explicit, roll forward.

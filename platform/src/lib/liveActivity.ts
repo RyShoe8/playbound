@@ -644,14 +644,25 @@ async function computeGameTopPlayers(gameSlug: string, limit = 3): Promise<TopPl
 
   if (topUsers.length === 0) return [];
 
+  interface TopUserAggregate {
+    _id: { toString(): string };
+    totalDurationMs: number;
+  }
+  interface UserSummaryDoc {
+    _id: { toString(): string };
+    username: string;
+    image?: string | null;
+  }
+
+  const aggregates = topUsers as unknown as TopUserAggregate[];
   const User = (await import("@/lib/models/User")).default;
-  const userIds = topUsers.map((u: any) => u._id);
-  const users = await User.find({ _id: { $in: userIds } }).select("username image").lean();
+  const userIds = aggregates.map((u) => u._id);
+  const users = (await User.find({ _id: { $in: userIds } }).select("username image").lean()) as unknown as UserSummaryDoc[];
   
-  const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+  const userMap = new Map(users.map((u) => [u._id.toString(), u]));
   
-  return topUsers
-    .map((u: any) => {
+  return aggregates
+    .map((u) => {
       const user = userMap.get(u._id.toString());
       if (!user) return null;
       return {

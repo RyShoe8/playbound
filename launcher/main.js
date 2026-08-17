@@ -2342,6 +2342,115 @@ async function verifyChecksumMd5(filePath, expectedMd5) {
   }
 }
 
+async function verifyChecksumSha256(filePath, expectedSha256) {
+  if (!expectedSha256) return;
+  const want = String(expectedSha256).trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(want)) return;
+  const hash = crypto.createHash("sha256");
+  await new Promise((resolve, reject) => {
+    const stream = fs.createReadStream(filePath);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("error", reject);
+    stream.on("end", resolve);
+  });
+  const got = hash.digest("hex");
+  if (got !== want) {
+    throw new Error(
+      `Download SHA-256 checksum mismatch (expected ${want}, got ${got}). The downloaded file may be corrupted.`
+    );
+  }
+}
+
+async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256 }) {
+  const base = getApiBase();
+  let resolved = null;
+
+  try {
+    const res = await fetch(`${base}/api/downloads?slug=${encodeURIComponent(slug)}`, {
+      headers: { "user-agent": "playbound-launcher", accept: "application/json" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.ok) {
+      resolved = await res.json();
+    }
+  } catch {
+    /* fallback to directUrl */
+  }
+
+  const sources = resolved?.sources || [{ type: "public", url: directUrl, sourceId: "direct-catalog" }];
+  const sha256 = expectedSha256 || resolved?.artifact?.sha256 || null;
+  const artifactId = resolved?.artifact?.id || slug;
+
+  let lastErr = null;
+
+  for (const source of sources) {
+    const startTime = Date.now();
+    let bytesReceived = 0;
+    try {
+      console.log(`[Mirror Resilience] Trying source: ${source.type} (${source.sourceId || source.url})`);
+      await downloadTo(source.url, dest);
+
+      // Verify checksum
+      if (sha256) {
+        await verifyChecksumSha256(dest, sha256);
+      }
+
+      const duration = Date.now() - startTime;
+      const stats = await fsp.stat(dest).catch(() => ({ size: 0 }));
+      bytesReceived = stats.size || 0;
+
+      // Report telemetry asynchronously
+      void fetch(`${base}/api/telemetry/downloads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "user-agent": "playbound-launcher" },
+        body: JSON.stringify({
+          artifactId,
+          sourceId: source.sourceId || `src-${source.type}`,
+          sourceType: source.type,
+          attemptedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+          result: "success",
+          bytesDownloaded: bytesReceived,
+          downloadDuration: duration,
+          checksumValid: true,
+        }),
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => {});
+
+      return; // Success!
+    } catch (err) {
+      lastErr = err;
+      const duration = Date.now() - startTime;
+      const isChecksum = String(err?.message || "").includes("checksum");
+
+      // Report failure telemetry
+      void fetch(`${base}/api/telemetry/downloads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "user-agent": "playbound-launcher" },
+        body: JSON.stringify({
+          artifactId,
+          sourceId: source.sourceId || `src-${source.type}`,
+          sourceType: source.type,
+          attemptedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+          result: isChecksum ? "checksum_failure" : "connection_error",
+          failureType: err?.message || String(err),
+          bytesDownloaded: bytesReceived,
+          downloadDuration: duration,
+          checksumValid: isChecksum ? false : null,
+        }),
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => {});
+
+      try {
+        await fsp.rm(dest, { force: true });
+      } catch {}
+    }
+  }
+
+  throw lastErr || new Error("All download sources failed.");
+}
+
 async function reportInstall(slug) {
   try {
     const base = getApiBase();
@@ -4020,7 +4129,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   const dl = await resolveDownload(entry);
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", dl.name);
   try {
-    await downloadTo(dl.url, downloadPath);
+    await downloadResilientArtifact({ slug: entry.slug, directUrl: dl.url, dest: downloadPath });
   } catch (err) {
     const site = entry.editionLinks?.website || entry.url;
     const hint =

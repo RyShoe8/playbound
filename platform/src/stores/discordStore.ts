@@ -43,8 +43,9 @@ export const useDiscordStore = create<DiscordState>((set) => ({
       } else {
         set({ discordLinked: false, discordProfile: null, loading: false });
       }
-    } catch (err: any) {
-      set({ error: err.message || "An error occurred", loading: false });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      set({ error: message, loading: false });
     }
   },
   unlink: async () => {
@@ -55,8 +56,9 @@ export const useDiscordStore = create<DiscordState>((set) => ({
         throw new Error("Failed to unlink Discord");
       }
       set({ discordLinked: false, discordProfile: null, loading: false });
-    } catch (err: any) {
-      set({ error: err.message || "An error occurred", loading: false });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      set({ error: message, loading: false });
     }
   },
 }));

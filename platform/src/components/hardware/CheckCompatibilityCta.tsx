@@ -42,10 +42,12 @@ export function CheckCompatibilityCta({
   const { track } = useTelemetry();
   const [hint, setHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [prevStatus, setPrevStatus] = useState(status);
 
-  useEffect(() => {
+  if (status !== prevStatus) {
+    setPrevStatus(status);
     setHint(null);
-  }, [status]);
+  }
 
   if (!shouldOfferLauncher(device.type)) {
     return null;

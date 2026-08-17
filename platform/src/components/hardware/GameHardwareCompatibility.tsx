@@ -101,7 +101,6 @@ export function GameHardwareCompatibility({
     if (!syncing) return;
     let cancelled = false;
     const started = Date.now();
-    setSyncHint("Waiting for hardware sync…");
 
     const tick = async () => {
       try {

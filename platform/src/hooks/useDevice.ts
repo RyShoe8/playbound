@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { DeviceType } from "@/lib/compatibility/compatibility";
 
 export type DeviceInfo = {
@@ -63,10 +61,5 @@ export function useDevice(ssrSeed: DeviceType = "desktop"): DeviceInfo {
     () => ssrSeed
   );
 
-  const [type, setType] = useState<DeviceType>(clientType);
-  useEffect(() => {
-    setType(clientType);
-  }, [clientType]);
-
-  return toInfo(type);
+  return toInfo(clientType);
 }

@@ -85,6 +85,12 @@ const CatalogModSchema = new Schema(
     hardwareRequirements: { type: ModHardwareRequirementsSchema, default: null },
     installSteps: { type: [InstallStepSchema], default: [] },
     faq: { type: [FaqSchema], default: [] },
+    classificationIds: {
+      type: [Schema.Types.ObjectId],
+      ref: "ModClassification",
+      default: [],
+      index: true,
+    },
   },
   { timestamps: true }
 );

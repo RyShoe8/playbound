@@ -115,3 +115,88 @@ export async function getDeveloperAdmin(
 export async function developersBySlugMap(): Promise<Map<string, Developer>> {
   return new Map((await loadPublished()).map((d) => [d.slug, d]));
 }
+
+/**
+ * Ensures a developer exists in MongoDB. If not found by slug or name, creates one.
+ */
+export async function ensureDeveloperExists(
+  developerSlug: string,
+  developerName?: string | null
+): Promise<{ slug: string; name: string }> {
+  await dbConnect();
+
+  let slug = (developerSlug || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const trimmedName = (developerName || "").trim();
+
+  if (!slug && trimmedName) {
+    slug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
+  if (!slug) {
+    slug = "indie-web";
+  }
+
+  const name =
+    trimmedName ||
+    slug
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+  // 1. Check database by slug
+  const docBySlug = await DeveloperModel.findOne({ slug });
+  if (docBySlug) {
+    return { slug: String(docBySlug.slug), name: String(docBySlug.name) };
+  }
+
+  // 2. Check database by exact name
+  if (trimmedName) {
+    const docByName = await DeveloperModel.findOne({ name: trimmedName });
+    if (docByName) {
+      return { slug: String(docByName.slug), name: String(docByName.name) };
+    }
+  }
+
+  // 3. Check seed developers
+  const seed = seedDevelopers.find(
+    (s) => s.slug === slug || (trimmedName && s.name.toLowerCase() === trimmedName.toLowerCase())
+  );
+  if (seed) {
+    try {
+      await DeveloperModel.create({
+        slug: seed.slug,
+        name: seed.name,
+        tagline: seed.tagline || "",
+        about: seed.about || "",
+        founded: seed.founded || 0,
+        location: seed.location || "",
+        website: seed.website || "",
+        artHue: seed.artHue || 210,
+        published: true,
+      });
+    } catch {
+      /* ignore race condition */
+    }
+    return { slug: seed.slug, name: seed.name };
+  }
+
+  // 4. Create new developer in DB
+  try {
+    const newDoc = await DeveloperModel.create({
+      slug,
+      name,
+      tagline: "",
+      about: "",
+      founded: 0,
+      location: "",
+      website: "",
+      artHue: Math.floor(Math.random() * 360),
+      published: true,
+    });
+    return { slug: String(newDoc.slug), name: String(newDoc.name) };
+  } catch (err) {
+    const clash = await DeveloperModel.findOne({ slug });
+    if (clash) return { slug: String(clash.slug), name: String(clash.name) };
+    throw err;
+  }
+}

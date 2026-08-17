@@ -91,8 +91,8 @@ export function parseRequirementLine(text: string | null | undefined): Requireme
   const working = clauses.length ? clauses : [text.trim()];
   const spec: RequirementSpec = {};
   const notes: string[] = [];
-  let cpuBits: string[] = [];
-  let gpuBits: string[] = [];
+  const cpuBits: string[] = [];
+  const gpuBits: string[] = [];
 
   for (const clause of working) {
     const ram = extractMemory(clause, "RAM");

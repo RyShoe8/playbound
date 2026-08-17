@@ -517,6 +517,21 @@ export async function listAllPublicEditions(): Promise<Edition[]> {
   }
 }
 
+export async function listAllEditions(includeHidden = true): Promise<Edition[]> {
+  try {
+    const filter = includeHidden ? {} : { visibility: { $ne: "hidden" } };
+    const fromDb = await fetchEditions(filter);
+    const dbKeys = new Set(fromDb.map((e) => `${e.gameSlug}:${e.slug}`));
+    const seeds = seedEditions
+      .filter((s) => !dbKeys.has(`${s.gameSlug}:${s.slug}`))
+      .map(seedToEdition);
+    return [...fromDb, ...seeds];
+  } catch (err) {
+    console.error("[editions] listAllEditions failed:", err);
+    return seedEditions.map(seedToEdition);
+  }
+}
+
 /** How many editions each of the given games has stored, for admin lists. */
 export async function editionCountsByGame(): Promise<Map<string, number>> {
   const counts = new Map<string, number>();

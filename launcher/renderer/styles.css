@@ -2912,6 +2912,229 @@ textarea.input-text {
   background: #5865f2;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CREATE PARTY PANEL (MATCHES WEB CREATE PARTY EXACTLY)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.create-party-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 600px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+}
+
+.create-party-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.create-party-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.create-party-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.create-party-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.create-party-close:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.create-party-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.create-party-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.create-party-label-opt {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-dim);
+}
+
+.create-party-input {
+  height: 40px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text-main);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.create-party-input:focus {
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.create-party-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.create-party-voice-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.create-party-voice-box:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.create-party-voice-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.create-party-voice-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.create-party-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.create-party-friends-box {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.create-party-friend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.create-party-friend-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.create-party-friend-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.create-party-empty-friends {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.create-party-error {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(240, 113, 120, 0.12);
+  border: 1px solid rgba(240, 113, 120, 0.3);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.create-party-submit-btn {
+  width: 100%;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px var(--accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-party-submit-btn:hover {
+  background: var(--accent-light);
+  box-shadow: 0 6px 20px rgba(124, 92, 240, 0.5);
+  transform: translateY(-1px);
+}
+
+.create-party-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Party window — mirrors PartyView.tsx */
 .party-panel {
   border: 1px solid var(--border);

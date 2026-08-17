@@ -4,6 +4,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogMod from "@/lib/models/CatalogMod";
 import { developersBySlug } from "@/lib/data";
+import { ensureDeveloperExists } from "@/lib/developers";
 import { getGame } from "@/lib/catalog";
 import { modPayloadSchema, withDefaultModArt } from "@/lib/modPayload";
 import { withSyncedPublished } from "@/lib/catalogStatus";
@@ -51,22 +52,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
     }
 
-    const developerName =
-      body.developerName || developersBySlug.get(body.developerSlug)?.name || null;
+    let developerSlug = body.developerSlug;
+    let developerName = body.developerName;
+    if (developerSlug) {
+      const dev = await ensureDeveloperExists(developerSlug, developerName);
+      developerSlug = dev.slug;
+      developerName = dev.name;
+    } else {
+      developerName = developerName || developersBySlug.get(developerSlug)?.name || null;
+    }
 
     const doc = await CatalogMod.create({
       ...body,
+      developerSlug,
+      developerName,
       githubRepo: body.githubRepo || null,
       assetPattern: body.assetPattern || null,
       directUrl: body.directUrl || null,
       coverImage: body.coverImage || null,
       screenshots: body.screenshots ?? [],
-      developerName,
       ownerUserId: body.ownerUserId || null,
       managedBy: body.managedBy || "admin",
     });
 
     revalidateTag("mods", { expire: 0 });
+    revalidateTag("developers", { expire: 0 });
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {

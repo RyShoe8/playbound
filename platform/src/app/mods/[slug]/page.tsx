@@ -9,6 +9,7 @@ import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { getMod } from "@/lib/mods";
+import { getModClassificationsWithAncestry } from "@/lib/modClassifications";
 import { getGame } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { isLauncherInstallable, launcherPlayModUrl } from "@/lib/launcher";
@@ -134,6 +135,7 @@ export default async function ModPage({
   const showPlay = modInstalled && canOneClickBase;
   const liveStats = await getModLiveStats(mod.slug);
   const isSignedIn = Boolean(session?.user);
+  const classificationTags = await getModClassificationsWithAncestry(mod.classificationIds ?? []);
 
   return (
     <div>
@@ -196,9 +198,20 @@ export default async function ModPage({
             className="h-48 w-full rounded-xl sm:h-56"
             alt={`${mod.title} cover`}
           />
-          <Badge tone="brand">
-            <Puzzle className="size-3" /> Mod
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone="brand">
+              <Puzzle className="size-3" /> Mod
+            </Badge>
+            {classificationTags.map((tag) => (
+              <span
+                key={tag.id}
+                title={tag.path}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-foreground"
+              >
+                {tag.leaf}
+              </span>
+            ))}
+          </div>
           <h1 className="text-4xl font-extrabold tracking-tight">{mod.title}</h1>
           <p className="text-lg text-muted-foreground">{mod.tagline}</p>
           <PlayingNowBadge count={liveStats.playingNow} />
