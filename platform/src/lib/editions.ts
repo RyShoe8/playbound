@@ -131,7 +131,11 @@ function toEdition(doc: LeanEdition): Edition {
     if (
       seedMatch &&
       (JSON.stringify(installConfig).includes("sahaquiel.us") ||
-        (gameSlugStr === "everquest" && editionSlugStr === "project-quarm"))
+        (gameSlugStr === "everquest" && editionSlugStr === "project-quarm") ||
+        (gameSlugStr === "wolfenstein-enemy-territory" &&
+          editionSlugStr === "et-legacy" &&
+          (installConfig.playbound_installer?.kind === "external" ||
+            installConfig.playbound_installer?.kind === "github-zip")))
     ) {
       installConfig = seedMatch.installConfig ?? installConfig;
       installMethod = seedMatch.installMethod ?? installMethod;

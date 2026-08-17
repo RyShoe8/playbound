@@ -2061,13 +2061,16 @@ const facts: Game[] = [
     },
     launcherInstall: {
       enabled: true,
-      kind: "github-zip",
-      repo: "etlegacy/etlegacy",
-      assetPattern: "etlegacy-.*-x86_64\\.zip$|etlegacy-.*-win32\\.zip$|\\.zip$",
+      kind: "direct-zip",
+      // ET: Legacy publishes its supported Windows archives from these official
+      // per-release endpoints, not GitHub Releases (which is empty).
+      url: "https://www.etlegacy.com/download/file/720",
+      fileName: "etlegacy-v2.84.0-x86.zip",
+      checksumMd5: "1507c7013f88fa9eb65dcf9d3d6a5031",
       exeHint: "etl.exe",
       knownExePaths: ["etl.exe", "ETL.exe"],
-      versionLabel: "v2.82.1",
-      note: "Installs the modern ET: Legacy client with 64-bit performance, widescreen rendering, and automatic server mod/map downloading.",
+      versionLabel: "v2.84.0",
+      note: "Installs the official ET: Legacy Windows archive directly, with broad compatibility for classic ET mods and servers.",
     },
     communityLinks: {
       officialDiscord: {

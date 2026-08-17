@@ -505,22 +505,15 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        /*
-         * Hand-off, not a one-click install. etlegacy/etlegacy publishes no
-         * GitHub releases at all — the repo exists but the releases API returns
-         * an empty list — so the github-zip recipe here could never resolve an
-         * asset and Install failed outright.
-         *
-         * Their own site does serve the builds, but only behind per-file ids
-         * (/download/file/722 is currently etlegacy-v2.84.0-x64.exe) that turn
-         * over with each release. Pinning one would work today and 404 quietly
-         * at the next version, which is worse than sending people to the page
-         * that is always right. Revisit if upstream publishes a stable URL.
-         */
-        kind: "external",
-        url: "https://www.etlegacy.com/download",
+        // Official ET: Legacy 2.84.0 Windows archive. x86 is deliberately
+        // chosen here because it remains compatible with classic 32-bit mods
+        // and servers, while x64 only works with 64-bit mods.
+        kind: "direct-zip",
+        url: "https://www.etlegacy.com/download/file/720",
+        fileName: "etlegacy-v2.84.0-x86.zip",
+        checksumMd5: "1507c7013f88fa9eb65dcf9d3d6a5031",
         exeHint: "etl",
-        note: "Download the Windows x64 build from the ET: Legacy site, then run it.",
+        note: "One-click official ET: Legacy archive with broad classic mod and server compatibility.",
       },
     },
     features: ["Multiplayer", "Dedicated Servers", "Mod Support", "Open Source", "Controller Support"],
