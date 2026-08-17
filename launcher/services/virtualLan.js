@@ -1,17 +1,16 @@
 /**
  * Virtual LAN — the launcher half of PlayBound Connect's overlay mode.
  *
- * Some games only find their friends over LAN broadcast and offer no address
- * to connect to, so there is nothing for the launcher to pass on the command
- * line. Instead the party shares one L2 overlay segment and the game's own
- * discovery does the work. ZeroTier provides the segment because it is the
- * overlay that actually carries broadcast; routed VPNs do not.
+ * Some games only find their friends over LAN and offer no address to connect
+ * to, so there is nothing for the launcher to pass on the command line.
+ * Instead the party shares one NetBird segment, self-hosted on the PlayBound
+ * VPS, and the game's own discovery works across it.
  *
  * What this module does, in order:
- *   1. find the ZeroTier CLI
- *   2. read this machine's node ID (the site authorizes it onto the network)
- *   3. join the network
- *   4. resolve the Windows adapter name ZeroTier created
+ *   1. find the NetBird CLI
+ *   2. enrol against our management server with the party's setup key
+ *   3. wait for the interface to come up
+ *   4. resolve the adapter's friendly name
  *   5. write that name into the game's saved-adapter file
  *
  * Step 5 is what turns a fiddly in-game dropdown into one click on "use saved
@@ -23,7 +22,7 @@ const fsp = fs.promises;
 const path = require("path");
 const { execFile } = require("child_process");
 
-const EXEC_TIMEOUT_MS = 15_000;
+const EXEC_TIMEOUT_MS = 30_000;
 
 function run(file, args) {
   return new Promise((resolve) => {
@@ -43,24 +42,20 @@ function run(file, args) {
   });
 }
 
-/**
- * Candidate CLI locations. ZeroTier ships `zerotier-cli.bat` on Windows and a
- * plain binary elsewhere; if it is on PATH the bare name wins.
- */
 function cliCandidates() {
   if (process.platform === "win32") {
-    const pf86 = process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
     const pf = process.env.ProgramFiles || "C:\\Program Files";
+    const pf86 = process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
     return [
-      path.join(pf86, "ZeroTier", "One", "zerotier-cli.bat"),
-      path.join(pf, "ZeroTier", "One", "zerotier-cli.bat"),
-      "zerotier-cli",
+      path.join(pf, "NetBird", "netbird.exe"),
+      path.join(pf86, "NetBird", "netbird.exe"),
+      "netbird",
     ];
   }
   if (process.platform === "darwin") {
-    return ["/usr/local/bin/zerotier-cli", "/usr/sbin/zerotier-cli", "zerotier-cli"];
+    return ["/usr/local/bin/netbird", "/opt/homebrew/bin/netbird", "netbird"];
   }
-  return ["/usr/sbin/zerotier-cli", "/usr/bin/zerotier-cli", "zerotier-cli"];
+  return ["/usr/bin/netbird", "/usr/local/bin/netbird", "netbird"];
 }
 
 function findCli() {
@@ -72,69 +67,81 @@ function findCli() {
   return null;
 }
 
-const DOWNLOAD_URL = "https://www.zerotier.com/download/";
+const DOWNLOAD_URL = "https://app.netbird.io/install";
 
 /**
- * Present tense state of the overlay client on this machine. `needsElevation`
- * is its own case rather than a generic failure because it is the common one:
- * the CLI reads a secret only an administrator can open, so a perfectly
- * installed ZeroTier still refuses to answer an unelevated launcher.
+ * State of the overlay client on this machine.
+ *
+ * `needsElevation` is its own case rather than a generic failure because it is
+ * the common one: the CLI talks to a privileged service, so a perfectly
+ * installed NetBird still refuses an unelevated launcher.
  */
 async function overlayStatus() {
   const cli = findCli();
   if (!cli) {
-    return { installed: false, ready: false, nodeId: null, downloadUrl: DOWNLOAD_URL };
+    return { installed: false, connected: false, downloadUrl: DOWNLOAD_URL };
   }
 
-  const info = await run(cli, ["info"]);
-  if (!info.ok) {
-    const blob = `${info.stdout}${info.stderr}`.toLowerCase();
+  const res = await run(cli, ["status"]);
+  const blob = `${res.stdout}${res.stderr}`;
+  if (!res.ok) {
+    const lower = blob.toLowerCase();
     const needsElevation =
-      blob.includes("authtoken") || blob.includes("permission") || blob.includes("denied");
+      lower.includes("permission") || lower.includes("denied") || lower.includes("administrator");
     return {
       installed: true,
-      ready: false,
-      nodeId: null,
+      connected: false,
       needsElevation,
       error: needsElevation
-        ? "ZeroTier needs administrator access. Run PlayBound as administrator once to let it manage the network."
-        : info.error || "ZeroTier is installed but not responding.",
+        ? "NetBird needs administrator access. Run PlayBound as administrator once to let it manage the network."
+        : res.error || "NetBird is installed but not responding.",
       downloadUrl: DOWNLOAD_URL,
     };
   }
 
-  // "200 info <nodeId> <version> ONLINE"
-  const match = info.stdout.match(/\b200 info ([0-9a-f]{10})\b/i);
   return {
     installed: true,
-    ready: Boolean(match),
-    nodeId: match ? match[1].toLowerCase() : null,
-    online: /ONLINE/i.test(info.stdout),
+    connected: /Management:\s*Connected/i.test(blob) || /Daemon status:\s*Connected/i.test(blob),
     downloadUrl: DOWNLOAD_URL,
   };
 }
 
-async function joinNetwork(networkId) {
+/**
+ * Enrol this machine on the party's segment.
+ *
+ * `netbird up` is idempotent — an already-connected peer re-registers against
+ * the new key and picks up the party's group rather than erroring.
+ */
+async function joinNetwork({ managementUrl, setupKey }) {
   const cli = findCli();
-  if (!cli) return { error: "ZeroTier is not installed" };
-  if (!/^[0-9a-f]{16}$/i.test(String(networkId || ""))) {
-    return { error: "Invalid network id" };
+  if (!cli) return { error: "NetBird is not installed" };
+  if (!managementUrl || !setupKey) return { error: "Missing network details" };
+  // Our own management server only; never enrol against a URL we did not issue.
+  if (!/^https:\/\/[\w.-]+(:\d+)?\/?$/.test(String(managementUrl))) {
+    return { error: "Invalid management URL" };
   }
-  const res = await run(cli, ["join", String(networkId).toLowerCase()]);
-  if (!res.ok) return { error: res.error || "Could not join the network" };
+
+  const res = await run(cli, [
+    "up",
+    "--management-url",
+    String(managementUrl),
+    "--setup-key",
+    String(setupKey),
+  ]);
+  if (!res.ok) return { error: res.error || "Could not join the party network" };
   return { ok: true };
 }
 
-async function leaveNetwork(networkId) {
+async function leaveNetwork() {
   const cli = findCli();
-  if (!cli || !/^[0-9a-f]{16}$/i.test(String(networkId || ""))) return;
-  await run(cli, ["leave", String(networkId).toLowerCase()]);
+  if (!cli) return;
+  await run(cli, ["down"]);
 }
 
 /**
- * The adapter's *friendly* name — what the game shows in its dropdown and
- * what its saved-adapter file expects. ZeroTier's own CLI reports the device
- * GUID instead, so this has to come from the OS.
+ * The adapter's *friendly* name — what the game shows in its dropdown and what
+ * its saved-adapter file expects. The CLI reports interface details, not the
+ * Windows friendly name, so this has to come from the OS.
  */
 async function resolveAdapterName() {
   if (process.platform !== "win32") return null;
@@ -142,7 +149,7 @@ async function resolveAdapterName() {
     "-NoProfile",
     "-NonInteractive",
     "-Command",
-    "(Get-NetAdapter | Where-Object { $_.InterfaceDescription -like 'ZeroTier*' } | Select-Object -First 1).Name",
+    "(Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*NetBird*' -or $_.Name -like '*netbird*' } | Select-Object -First 1).Name",
   ]);
   if (!res.ok) return null;
   const name = res.stdout.trim();
@@ -150,9 +157,8 @@ async function resolveAdapterName() {
 }
 
 /**
- * Wait for the adapter to come up. A join returns immediately but the
- * interface only appears once the controller authorizes this node, so the
- * caller would otherwise write an empty adapter name.
+ * Wait for the adapter to come up. `up` returns before the interface is
+ * registered, so the caller would otherwise write an empty adapter name.
  */
 async function waitForAdapter(timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs;

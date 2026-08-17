@@ -1741,7 +1741,7 @@ async function prepareVirtualLan(party, lan) {
     setStatus(lan.error || "Could not set up the party network. Try Join Game again.", true);
     return false;
   }
-  if (lan.status !== "ready" || !lan.networkId) {
+  if (lan.status !== "ready") {
     setStatus("Setting up the party network — try Join Game again in a moment.");
     return false;
   }
@@ -1753,7 +1753,6 @@ async function prepareVirtualLan(party, lan) {
   setStatus("Connecting to the party network…");
   const res = await window.playbound.prepareVirtualLan({
     partyId: party.id,
-    networkId: lan.networkId,
     slug: party.gameSlug,
     adapterFile: lan.adapterFile || null,
   });
