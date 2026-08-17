@@ -35,6 +35,18 @@ function apiToken(): string | null {
   return process.env.NETBIRD_API_TOKEN || null;
 }
 
+/**
+ * Group holding the VPS discovery reflector.
+ *
+ * A LAN game's peers find each other by broadcasting, and WireGuard routes
+ * rather than replicates, so the reflector has to sit inside every party's
+ * policy to receive that broadcast and pass it on. Optional: without it the
+ * segment still forms and unicast still works, only discovery does not.
+ */
+function infraGroupId(): string | null {
+  return process.env.NETBIRD_INFRA_GROUP_ID || null;
+}
+
 export function isVirtualLanConfigured(): boolean {
   return Boolean(apiBase() && apiToken());
 }
@@ -103,6 +115,11 @@ export async function createPartyNetwork(opts: {
   const groupId = group.data.id;
   if (!groupId) return { error: "NetBird did not return a group id" };
 
+  // The reflector must be inside the party's policy or it never sees the
+  // discovery traffic it exists to forward.
+  const infra = infraGroupId();
+  const members = infra ? [groupId, infra] : [groupId];
+
   const policy = await nb<{ id?: string }>("/policies", {
     method: "POST",
     body: {
@@ -118,8 +135,8 @@ export async function createPartyNetwork(opts: {
           action: "accept",
           bidirectional: true,
           protocol: "all",
-          sources: [groupId],
-          destinations: [groupId],
+          sources: members,
+          destinations: members,
         },
       ],
     },

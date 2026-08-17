@@ -82,13 +82,19 @@ addresses. But NetBird is WireGuard — it routes, it does not replicate — so 
 to `100.x.255.255` reaches nobody and neither side ever learns the other's address.
 `virtualLan.requiresBroadcast` on the adapter row records this requirement.
 
-Closing that gap needs one more piece: a reflector on the VPS that receives the 5-byte
-discovery packets and re-emits them to the party's other peers **with the original
-source address preserved** — the client identifies the host by that source, so a
-reflector that rewrote it would point everyone at the VPS instead. The VPS is Linux,
-so a raw socket can do it. **Not built yet.**
+Closing that gap is what [`platform/game-host/netbird/discovery-reflector.py`](../platform/game-host/netbird/discovery-reflector.py)
+does: NetBird routes the broadcast address to the VPS peer, the reflector receives
+those packets and re-emits them to every other peer **in the sender's group**, with
+the original source address preserved via a raw socket. Preserving the source is the
+whole point — the client identifies the host by it, so a reflector that rewrote it
+would point everyone at the VPS. Group scoping is what stops one party's discovery
+leaking into another's; it needs `NETBIRD_INFRA_GROUP_ID` so the reflector peer is
+inside each party's policy.
 
-Run the two-machine test before assuming any of this works end to end.
+Setup order, ports, and the DNS gotcha: [`platform/game-host/netbird/README.md`](../platform/game-host/netbird/README.md).
+
+Run the two-machine test before assuming any of this works end to end. Written, not
+yet run against a live overlay.
 
 Key files:
 
