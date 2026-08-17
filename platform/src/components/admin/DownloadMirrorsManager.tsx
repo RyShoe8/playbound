@@ -685,7 +685,7 @@ export function DownloadMirrorsManager() {
           <div className="flex items-start gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-sm text-sky-100">
             <Archive className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
             <p>
-              <span className="font-semibold">Archive to VPS</span> copies a cached R2 file to the VPS archive. It does not remove the R2 copy or change any game catalog data.
+              <span className="font-semibold">Archive to VPS</span> copies from R2 when available, otherwise from its approved public source. It does not change any game catalog data.
             </p>
           </div>
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl">
@@ -782,16 +782,16 @@ export function DownloadMirrorsManager() {
                             <button
                               onClick={() => void handleArchive(item.id)}
                               disabled={
-                                item.r2Status !== "cached" ||
                                 busyAction === `archive-${item.id}` ||
-                                item.vpsStatus === "verified"
+                                item.vpsStatus === "verified" ||
+                                item.vpsStatus === "uploading"
                               }
                               className="px-2.5 py-1 rounded bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
                               title={
                                 item.vpsStatus === "verified"
                                   ? "Already archived on VPS"
-                                  : item.r2Status !== "cached"
-                                  ? "Promote this artifact to R2 hot cache before copying it to the VPS archive"
+                                  : item.vpsStatus === "uploading"
+                                  ? "VPS archive transfer is in progress"
                                   : "Copy to VPS archive"
                               }
                             >
