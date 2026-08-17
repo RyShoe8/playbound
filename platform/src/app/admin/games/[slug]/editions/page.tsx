@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
 import { getGame } from "@/lib/catalog";
-import { listAllEditionsForGame, deriveVirtualEdition } from "@/lib/editions";
+import { listAllEditionsForGame, deriveVirtualEdition, editionSource } from "@/lib/editions";
 import { EDITION_STATUS_LABELS, EDITION_TYPE_LABELS, VERIFICATION_LABELS } from "@/lib/editionTypes";
 import { EditionReorderList } from "@/components/admin/EditionReorderList";
 import { MaterializeEditionsButton } from "@/components/admin/MaterializeEditionsButton";
@@ -72,6 +72,7 @@ export default async function AdminGameEditionsPage({
                   <th className="px-4 py-3 font-semibold">Edition</th>
                   <th className="px-4 py-3 font-semibold">Type</th>
                   <th className="px-4 py-3 font-semibold">Install</th>
+                  <th className="px-4 py-3 font-semibold">Stored in</th>
                   <th className="px-4 py-3 font-semibold">Certification</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Visibility</th>
@@ -98,6 +99,18 @@ export default async function AdminGameEditionsPage({
                     <td className="px-4 py-2.5">{EDITION_TYPE_LABELS[e.type]}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {e.installMethod.replace(/_/g, " ")}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {editionSource(e.id) === "seed" ? (
+                        <span
+                          className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground"
+                          title="Served from the seed file. Saving any change creates the database row."
+                        >
+                          Seed
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Database</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">{VERIFICATION_LABELS[e.verificationLevel]}</td>
                     <td className="px-4 py-2.5">{EDITION_STATUS_LABELS[e.status]}</td>

@@ -457,14 +457,36 @@ export async function getEditionById(rawId: string): Promise<Edition | undefined
 export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[]> {
   try {
     const stored = await fetchEditions({ gameSlug });
-    if (stored.length > 0) return [...stored].sort(compareEditions);
-    const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug).map(seedToEdition);
-    return [...seeds].sort(compareEditions);
+    /*
+     * Merge exactly as loadStoredForGame does, rather than returning only the
+     * stored rows when any exist.
+     *
+     * Those two disagreeing meant admin could not show an edition the launcher
+     * was serving: one database row for a game hid every seed-only edition of
+     * it, so a live install route was invisible to the person responsible for
+     * it — unlistable, unopenable, uneditable. Stored still wins per slug.
+     */
+    const dbSlugs = new Set(stored.map((e) => e.slug));
+    const seeds = seedEditions
+      .filter((s) => s.gameSlug === gameSlug && !dbSlugs.has(s.slug))
+      .map(seedToEdition);
+    return [...stored, ...seeds].sort(compareEditions);
   } catch (err) {
     console.error("[editions] listAll failed:", err);
     const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug).map(seedToEdition);
     return [...seeds].sort(compareEditions);
   }
+}
+
+/**
+ * Where an edition is stored — the answer to "is this one seed-only?".
+ *
+ * Seed ids carry a "seed:" prefix, so this is derivable from the id alone and
+ * needs no extra query. A seed-backed edition is served from the file and has
+ * no database row until someone saves it.
+ */
+export function editionSource(id: string): "seed" | "database" {
+  return parseSeedEditionId(id) ? "seed" : "database";
 }
 
 /**
