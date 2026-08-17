@@ -66,20 +66,31 @@ export async function recordDownloadTelemetry(
    * old seed list looked its artifact up, missed, and dropped the count —
    * which is why the admin table only ever showed the seeded handful.
    */
-  await ensureArtifact({
-    artifactId: payload.artifactId,
-    gameSlug: payload.gameSlug,
-    version: payload.version,
-    filename: payload.filename,
-    sizeBytes: bytes || null,
-    artifactType: payload.artifactType,
-  });
-  if (payload.sourceType === "public") {
-    await ensurePublicSource({
+  try {
+    await ensureArtifact({
       artifactId: payload.artifactId,
-      sourceId: payload.sourceId,
-      url: payload.sourceUrl,
+      gameSlug: payload.gameSlug,
+      version: payload.version,
+      filename: payload.filename,
+      sizeBytes: bytes || null,
+      artifactType: payload.artifactType,
     });
+    if (payload.sourceType === "public") {
+      await ensurePublicSource({
+        artifactId: payload.artifactId,
+        sourceId: payload.sourceId,
+        url: payload.sourceUrl,
+      });
+    }
+  } catch (err) {
+    /*
+     * Registration is bookkeeping; the attempt above is the record that
+     * matters. Letting a write problem here reject the whole call once cost
+     * us every download of every unregistered game — the route 500'd and the
+     * launcher's fire-and-forget catch swallowed it, so nothing appeared and
+     * nothing complained.
+     */
+    console.error("recordDownloadTelemetry: could not register artifact:", err);
   }
 
   // 2. Update MirrorSource if it exists
