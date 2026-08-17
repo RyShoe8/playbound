@@ -20,6 +20,8 @@ import {
   type EditionPatchNote,
   type InstallMethod,
 } from "@/lib/editionTypes";
+import { FEATURES, TAGS } from "@/lib/gamePayload";
+import { ChipPicker } from "@/components/admin/ChipToggle";
 import { type EditionDraft } from "@/lib/editionDraft";
 import { classifyMediaUrl } from "@/lib/mediaEmbed";
 import {
@@ -934,27 +936,30 @@ export function EditionEditorForm({
             onChange={(hardwareRequirements) => patch("hardwareRequirements", hardwareRequirements)}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label className={label}>Features</label>
-            <textarea
-              rows={4}
-              value={form.features.join("\n")}
-              onChange={(e) => patch("features", toList(e.target.value))}
-              className={area}
-              placeholder="One per line"
-            />
-          </div>
-          <div>
-            <label className={label}>Tags</label>
-            <textarea
-              rows={4}
-              value={form.tags.join("\n")}
-              onChange={(e) => patch("tags", toList(e.target.value))}
-              className={area}
-              placeholder="classic-mmo&#10;pve"
-            />
-          </div>
+        {/*
+          Features and Tags were newline-separated textareas, which made them
+          effectively unusable and let editions accumulate values that no game
+          uses — so nothing downstream could match on them. Same vocabulary and
+          same interaction as the game editor now.
+        */}
+        <div className="space-y-5">
+          <ChipPicker
+            label="Features"
+            hint="What this edition supports. Drawn from the same list games use."
+            options={FEATURES}
+            selected={form.features}
+            onChange={(features) => patch("features", features)}
+          />
+          <ChipPicker
+            label="Tags"
+            hint="How players find it. Keep to the shared vocabulary so search and filters line up with games."
+            options={TAGS}
+            selected={form.tags}
+            onChange={(tags) => patch("tags", tags)}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Languages</label>
             <textarea
