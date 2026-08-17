@@ -21,6 +21,7 @@ import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { issueForGame } from "@/lib/weekly";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { PlayCta } from "@/components/GameCard";
+import { Badge } from "@/components/ui/bits";
 import { PlayingNowBadge } from "@/components/ActivityStats";
 import { ActivityStatsCard } from "@/components/ActivityStatsCard";
 import { CommunityCard } from "@/components/discussion/CommunityCard";
@@ -86,6 +87,13 @@ async function resolveInitiallyInLibrary(gameSlug: string): Promise<{
   } catch {
     return { signedIn: true, initiallyInLibrary: false };
   }
+}
+
+/** Hero chip when this device already has an installed library row. */
+export async function GameHeroInLibraryBadge({ slug }: { slug: string }) {
+  const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(slug);
+  if (!signedIn || !initiallyInLibrary) return null;
+  return <Badge tone="play">In Library</Badge>;
 }
 
 /** Hero CTAs that need library membership — keep Play ready without waiting. */

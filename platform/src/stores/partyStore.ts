@@ -38,7 +38,7 @@ interface PartyState {
   leaveParty: (partyId: string) => Promise<void>;
   setReady: (partyId: string, ready: boolean) => Promise<void>;
   launchParty: (partyId: string) => Promise<void>;
-  joinGame: (partyId: string) => Promise<void>;
+  joinGame: (partyId: string) => Promise<PartyPayload | null>;
   endParty: (partyId: string) => Promise<void>;
   inviteFriends: (
     partyId: string,
@@ -50,6 +50,7 @@ interface PartyState {
     error?: string | null;
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
+  setEdition: (partyId: string, editionSlug: string | null) => Promise<void>;
   setName: (partyId: string, name: string | null) => Promise<void>;
   removeMember: (partyId: string, userId: string) => Promise<void>;
   transferLeadership: (partyId: string, userId: string) => Promise<void>;
@@ -60,6 +61,51 @@ interface PartyState {
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let pollSubscribers = 0;
+let pollMs = 15000;
+let requestedPollMs = 15000;
+
+const DEFAULT_PARTY_POLL_MS = 15000;
+const FAST_PARTY_POLL_MS = 2000;
+
+function hostedJoinReady(party: PartyPayload | null): boolean {
+  return Boolean(
+    party?.hosted?.status === "ready" && party.hosted.host && party.hosted.port
+  );
+}
+
+/** Hosted room is coming up — poll often so Join Game becomes playbound://join. */
+function needsFastPartyPoll(party: PartyPayload | null): boolean {
+  if (!party || party.status === "ended") return false;
+  if (party.hosted?.status === "pending") return true;
+  if (
+    (party.status === "playing" || party.status === "launching") &&
+    party.hosted?.enabled &&
+    !hostedJoinReady(party)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function syncPartyPoll(get: () => PartyState) {
+  const next = needsFastPartyPoll(get().activeParty)
+    ? FAST_PARTY_POLL_MS
+    : requestedPollMs;
+  if (pollSubscribers === 0) {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    pollMs = next;
+    return;
+  }
+  if (pollInterval && pollMs === next) return;
+  if (pollInterval) clearInterval(pollInterval);
+  pollMs = next;
+  pollInterval = setInterval(() => {
+    void get().fetchParties();
+  }, pollMs);
+}
 
 export const usePartyStore = create<PartyState>((set, get) => ({
   activeParty: null,
@@ -78,6 +124,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         discoverableParties: data.discoverable || [],
         loading: false,
       });
+      syncPartyPoll(get);
     } catch (err) {
       console.error("Failed to fetch parties", err);
     }
@@ -194,11 +241,15 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        const party = (data.party as PartyPayload) || null;
+        if (party) set({ activeParty: party });
+        syncPartyPoll(get);
+        return party;
       }
     } catch (err) {
       console.error("Failed to join party game", err);
     }
+    return null;
   },
 
   endParty: async (partyId) => {
@@ -256,6 +307,22 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to set party game", err);
+    }
+  },
+
+  setEdition: async (partyId, editionSlug) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ editionSlug }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+      }
+    } catch (err) {
+      console.error("Failed to set party edition", err);
     }
   },
 
@@ -321,13 +388,11 @@ export const usePartyStore = create<PartyState>((set, get) => ({
     }
   },
 
-  startPolling: (intervalMs = 15000) => {
+  startPolling: (intervalMs = DEFAULT_PARTY_POLL_MS) => {
     pollSubscribers += 1;
+    requestedPollMs = intervalMs;
     get().fetchParties();
-    if (pollInterval) return;
-    pollInterval = setInterval(() => {
-      get().fetchParties();
-    }, intervalMs);
+    syncPartyPoll(get);
   },
 
   stopPolling: () => {

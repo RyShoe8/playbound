@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Users, Crown, LogOut, Check, X, Phone, Play } from "lucide-react";
+import { Users, Crown, LogOut, Check, X, Phone, Play, HardDriveDownload } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
 import type { PartyPayload } from "@/lib/playTogether/types";
 import {
@@ -14,9 +15,16 @@ import {
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { firePlayboundDeepLink, parseDiscordInviteCode, openPlayboundDeepLink } from "@/lib/openPlayboundDeepLink";
+import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
+import {
+  detectLauncherOs,
+  firePlayboundDeepLink,
+  parseDiscordInviteCode,
+  openPlayboundDeepLink,
+} from "@/lib/openPlayboundDeepLink";
 import { withOutboundUtm } from "@/lib/utm";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
+import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
@@ -76,36 +84,45 @@ export function PartyView({
         party.hosted.name || party.gameTitle || undefined
       )
     : null;
-
-  function launchLocalGame() {
-    if (joinUrl) {
-      openPlayboundDeepLink(joinUrl);
-      return;
-    }
-    if (
-      catalogGame &&
-      isBrowserGame({
-        browserPlayable: Boolean(catalogGame.browserPlayable),
-        launchMethods: catalogGame.launchMethods ?? [],
-      }) &&
-      catalogGame.website
-    ) {
-      window.open(
-        withOutboundUtm(catalogGame.website, {
+  const browserHref =
+    catalogGame &&
+    isBrowserGame({
+      browserPlayable: Boolean(catalogGame.browserPlayable),
+      launchMethods: catalogGame.launchMethods ?? [],
+    }) &&
+    catalogGame.website
+      ? withOutboundUtm(catalogGame.website, {
           campaign: "party_join_game",
           content: party.gameSlug,
-        }),
-        "_blank",
-        "noopener,noreferrer"
-      );
-      return;
-    }
-    openPlayboundDeepLink(launcherPlayUrl(party.gameSlug));
-  }
+        })
+      : null;
+  const joinHref = joinUrl || browserHref || launcherPlayUrl(party.gameSlug);
+  const joinOpensBrowser = Boolean(browserHref && !joinUrl);
 
   function handleJoinGame() {
-    void joinGame(party.id);
-    launchLocalGame();
+    /*
+     * Do not preventDefault — the <a href> is the launcher/browser handoff.
+     * After join-game returns a hosted room, follow up with the join deep link
+     * so the first clicker is not stuck on playbound://play with no server.
+     */
+    void (async () => {
+      const next = await joinGame(party.id);
+      const nextJoin =
+        next?.hosted?.status === "ready" && next.hosted.host && next.hosted.port
+          ? launcherJoinUrl(
+              next.gameSlug,
+              next.hosted.host,
+              next.hosted.port,
+              next.hosted.name || next.gameTitle || undefined
+            )
+          : null;
+      if (nextJoin && nextJoin !== joinUrl) {
+        openPlayboundDeepLink(nextJoin, {
+          autoDownload: true,
+          downloadUrl: launcherDownloadUrlForOs(detectLauncherOs()),
+        });
+      }
+    })();
   }
 
   return (
@@ -136,25 +153,34 @@ export function PartyView({
             * server-side.
             */}
           {isLeader && party.status !== "ended" ? (
-            <label className="block max-w-md">
-              <span className="sr-only">Party game</span>
-              <PremiumSelect
-                value={party.gameSlug}
-                onChange={(e) => {
-                  if (e.target.value) void setGame(party.id, e.target.value);
-                }}
-              >
-                <option value="">Select a game</option>
-                {games.map((g) => (
-                  <option key={g.slug} value={g.slug}>
-                    {g.title}
-                  </option>
-                ))}
-                {party.gameSlug && !games.some((g) => g.slug === party.gameSlug) ? (
-                  <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
-                ) : null}
-              </PremiumSelect>
-            </label>
+            <div className="max-w-md">
+              <label className="block">
+                <span className="sr-only">Party game</span>
+                <PremiumSelect
+                  value={party.gameSlug}
+                  onChange={(e) => {
+                    if (e.target.value) void setGame(party.id, e.target.value);
+                  }}
+                >
+                  <option value="">Select a game</option>
+                  {games.map((g) => (
+                    <option key={g.slug} value={g.slug}>
+                      {g.title}
+                    </option>
+                  ))}
+                  {party.gameSlug && !games.some((g) => g.slug === party.gameSlug) ? (
+                    <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
+                  ) : null}
+                </PremiumSelect>
+              </label>
+              {party.gameSlug ? (
+                <PartyHostInstallPicker
+                  partyId={party.id}
+                  gameSlug={party.gameSlug}
+                  editionSlug={party.editionSlug}
+                />
+              ) : null}
+            </div>
           ) : hasGame ? (
             <p className="text-sm font-semibold text-muted-foreground">
               {party.gameTitle || party.gameSlug}
@@ -243,14 +269,16 @@ export function PartyView({
 
           {canJoinGame && (
             <div className="flex flex-col gap-1">
-              <button
-                type="button"
+              <a
+                href={joinHref}
+                target={joinOpensBrowser ? "_blank" : undefined}
+                rel={joinOpensBrowser ? "noopener noreferrer" : undefined}
                 onClick={handleJoinGame}
                 className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
               >
                 <Play className="size-4 fill-current" />
                 Join Game
-              </button>
+              </a>
               {party.hosted?.roomCode ? (
                 <p className="text-xs text-primary font-mono font-bold">
                   Room Code: {party.hosted.roomCode}
@@ -260,6 +288,17 @@ export function PartyView({
                   {party.hosted?.host}:{party.hosted?.port}
                 </p>
               ) : null}
+              {!joinOpensBrowser && (
+                <p className="text-xs text-muted-foreground">
+                  Nothing happened?{" "}
+                  <Link
+                    href="/launcher"
+                    className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                  >
+                    <HardDriveDownload className="size-3" /> Get the PlayBound launcher
+                  </Link>
+                </p>
+              )}
             </div>
           )}
 

@@ -123,14 +123,32 @@ module.exports = [
     "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/beyond-all-reason/cover-989bd0c965f96f3a.webp",
     "repo": "beyond-all-reason/BYAR-Chobby",
     "assetPattern": "Beyond-All-Reason-.*\\.exe$",
+    "registryTitles": [
+      "Beyond All Reason",
+      "Beyond-All-Reason",
+      "BYAR-Chobby"
+    ],
     "knownExePaths": [
       "%LOCALAPPDATA%\\Programs\\Beyond-All-Reason\\Beyond-All-Reason.exe",
       "%LOCALAPPDATA%\\Programs\\Beyond-All-Reason\\Beyond All Reason.exe",
+      "%LOCALAPPDATA%\\Programs\\Beyond-All-Reason\\BeyondAllReason.exe",
       "%LOCALAPPDATA%\\Programs\\Beyond All Reason\\Beyond-All-Reason.exe",
       "%LOCALAPPDATA%\\Programs\\Beyond All Reason\\Beyond All Reason.exe",
+      "%LOCALAPPDATA%\\Programs\\Beyond All Reason\\BeyondAllReason.exe",
+      "%LOCALAPPDATA%\\Programs\\BYAR-Chobby\\Beyond-All-Reason.exe",
+      "%LOCALAPPDATA%\\Programs\\BYAR-Chobby\\Beyond All Reason.exe",
+      "%LOCALAPPDATA%\\Programs\\BYAR-Chobby\\BeyondAllReason.exe",
+      "%LOCALAPPDATA%\\Programs\\BeyondAllReason\\BeyondAllReason.exe",
+      "%LOCALAPPDATA%\\BYAR-Chobby\\Beyond-All-Reason.exe",
+      "%LOCALAPPDATA%\\Beyond-All-Reason\\Beyond-All-Reason.exe",
+      "%LOCALAPPDATA%\\Beyond All Reason\\Beyond All Reason.exe",
       "%PROGRAMFILES%\\Beyond-All-Reason\\Beyond-All-Reason.exe",
       "%PROGRAMFILES%\\Beyond All Reason\\Beyond All Reason.exe",
-      "%PROGRAMFILES(X86)%\\Beyond-All-Reason\\Beyond-All-Reason.exe"
+      "%PROGRAMFILES%\\Beyond All Reason\\BeyondAllReason.exe",
+      "%PROGRAMFILES(X86)%\\Beyond-All-Reason\\Beyond-All-Reason.exe",
+      "%PROGRAMFILES(X86)%\\Beyond All Reason\\Beyond All Reason.exe",
+      "%PROGRAMFILES(X86)%\\Beyond All Reason\\BeyondAllReason.exe",
+      "%APPDATA%\\Beyond-All-Reason\\Beyond-All-Reason.exe"
     ],
     "note": "Opens the BAR launcher — click Update, then Start.",
     "status": "published",
