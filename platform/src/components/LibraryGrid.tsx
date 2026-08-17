@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, ExternalLink, FolderOpen, Play, Trash2 } from "lucide-react";
@@ -11,6 +11,7 @@ import {
   launcherPlayUrl,
   launcherUninstallUrl,
 } from "@/lib/launcher";
+import { startPcUninstall } from "@/lib/watchLibraryGone";
 import { GameArt } from "@/components/GameArt";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { LibraryModsDisclosure, type LibraryModItem } from "@/components/LibraryModsDisclosure";
@@ -41,8 +42,11 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const stopWatch = useRef<(() => void) | null>(null);
   const chip =
     "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
+
+  useEffect(() => () => stopWatch.current?.(), []);
 
   async function removeFromLibrary() {
     if (removing) return;
@@ -60,6 +64,19 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
     } catch {
       setRemoving(false);
     }
+  }
+
+  function uninstallFromPc() {
+    stopWatch.current?.();
+    stopWatch.current = startPcUninstall({
+      kind: "game",
+      slug,
+      deepLink: launcherUninstallUrl(slug),
+      onGone: () => {
+        setHidden(true);
+        router.refresh();
+      },
+    });
   }
 
   if (hidden) return null;
@@ -98,13 +115,14 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
       >
         <Trash2 className="size-3" /> {removing ? "Removing…" : "Remove"}
       </button>
-      <a
-        href={launcherUninstallUrl(slug)}
+      <button
+        type="button"
+        onClick={uninstallFromPc}
         className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
         title="Uninstall from this PC via the PlayBound app"
       >
         Uninstall from PC
-      </a>
+      </button>
     </div>
   );
 }

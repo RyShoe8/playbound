@@ -16,6 +16,7 @@ import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
+import Presence from "@/lib/models/Presence";
 import { getGame } from "@/lib/catalog";
 import { listEditionsForGame } from "@/lib/editions";
 import {
@@ -25,8 +26,12 @@ import {
   type PartyVisibility,
   type PartyPayload,
   type PartyMemberPayload,
+  type ConfigSyncMember,
+  type ConfigSyncResult,
   normalizePartyName,
 } from "@/lib/playTogether/types";
+import { STALE_AFTER_MS } from "@/lib/presence/types";
+import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
 import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
 import {
   cleanupPartyDiscordVoice,
@@ -143,6 +148,7 @@ function serializeParty(
     eventId: doc.eventId ? String(doc.eventId) : null,
     discord: {
       voiceChannelId: (discord.voiceChannelId as string) || null,
+      textChannelId: (discord.textChannelId as string) || null,
       inviteUrl: (discord.inviteUrl as string) || null,
     },
     hosted: hostedPayloadFromDoc(
@@ -152,6 +158,24 @@ function serializeParty(
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
     createdAt: (doc.createdAt as Date)?.toISOString() || new Date().toISOString(),
   };
+}
+
+async function attachConfigSync(
+  party: PartyPayload,
+  viewerUserId?: string
+): Promise<PartyPayload> {
+  if (!party.gameSlug || party.status === "ended") return party;
+  try {
+    const result = await checkConfigSync(party.id);
+    if ("error" in result) return party;
+    const selfPlaying = viewerUserId
+      ? Boolean(result.sync.members.find((m) => m.userId === viewerUserId)?.playing)
+      : false;
+    return { ...party, configSync: result.sync, selfPlaying };
+  } catch (err) {
+    console.warn("attachConfigSync failed", err);
+    return party;
+  }
 }
 
 /* ─── create (4B) ────────────────────────────────────────────────────────── */
@@ -230,12 +254,19 @@ export async function createParty(opts: {
   });
   if (gameSlug) await provisionPartyHost(doc);
   const nameById = await resolveUsernames([opts.userId]);
+  const party = serializeParty(
+    doc.toObject ? doc.toObject() : doc,
+    nameById,
+    game?.title || null
+  );
+  trackPartyEvent("party_created", {
+    partyId: party.id,
+    gameSlug: party.gameSlug || null,
+    userId: opts.userId,
+    visibility: party.visibility,
+  });
   return {
-    party: serializeParty(
-      doc.toObject ? doc.toObject() : doc,
-      nameById,
-      game?.title || null
-    ),
+    party,
     status: 201,
     ...SKIP_VOICE,
   };
@@ -301,8 +332,14 @@ export async function joinParty(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
+  const party = serializeParty(doc.toObject(), nameById, game?.title || null);
+  trackPartyEvent("party_joined", {
+    partyId: party.id,
+    gameSlug: party.gameSlug || null,
+    userId,
+  });
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party,
     status: 200,
     ...SKIP_VOICE,
   };
@@ -347,6 +384,18 @@ export async function leaveParty(
       await setPresenceParty(userId, { partyId: null });
       await clearPresenceForParty(String(doc._id));
       void cleanupPartyDiscordVoice(doc);
+      trackPartyEvent("party_left", {
+        partyId: String(doc._id),
+        gameSlug: String(doc.gameSlug || "") || null,
+        userId,
+        ended: true,
+      });
+      trackPartyEvent("party_ended", {
+        partyId: String(doc._id),
+        gameSlug: String(doc.gameSlug || "") || null,
+        userId,
+        reason: "last_member",
+      });
       return { party: null, status: 200 };
     }
   }
@@ -375,10 +424,100 @@ export async function leaveParty(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
+  const leftParty = serializeParty(doc.toObject(), nameById, game?.title || null);
+  trackPartyEvent("party_left", {
+    partyId: String(doc._id),
+    gameSlug: leftParty.gameSlug || null,
+    userId,
+    ended: doc.status === "ended",
+  });
+  if (doc.status === "ended") {
+    trackPartyEvent("party_ended", {
+      partyId: String(doc._id),
+      gameSlug: leftParty.gameSlug || null,
+      userId,
+      reason: "empty",
+    });
+  }
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: leftParty,
     status: 200,
   };
+}
+
+/**
+ * Drop this user from every live party. Used when they actually go offline
+ * (launcher quit, tab close, stale heartbeat) — not "appear offline".
+ */
+export async function leavePartiesOnDisconnect(userId: string): Promise<number> {
+  await dbConnect();
+  const docs = await Party.find({
+    status: { $nin: ["ended"] },
+    "members.userId": userId,
+  });
+  let dropped = 0;
+  for (const doc of docs) {
+    const result = await leaveParty(String(doc._id), userId);
+    if ("status" in result && result.status === 200) {
+      dropped += 1;
+      trackPartyEvent("party_member_dropped_offline", {
+        partyId: String(doc._id),
+        gameSlug: String(doc.gameSlug || "") || null,
+        userId,
+        reason: "disconnect",
+      });
+    }
+  }
+  return dropped;
+}
+
+/**
+ * Remove party members whose presence is offline or whose heartbeat has aged
+ * out. Appear-offline users keep a live heartbeat and stay in the party.
+ */
+export async function dropOfflinePartyMembers(now = new Date()): Promise<{ dropped: number }> {
+  await dbConnect();
+  const active = await Party.find({ status: { $nin: ["ended"] } });
+  if (active.length === 0) return { dropped: 0 };
+
+  const memberIds = [
+    ...new Set(
+      active.flatMap((doc) =>
+        (doc.members || []).map((m: { userId: unknown }) => String(m.userId))
+      )
+    ),
+  ];
+  if (memberIds.length === 0) return { dropped: 0 };
+
+  const cutoff = new Date(now.getTime() - STALE_AFTER_MS);
+  const live = await Presence.find({
+    userId: { $in: memberIds },
+    status: { $ne: "offline" },
+    lastHeartbeat: { $gte: cutoff },
+  })
+    .select("userId")
+    .lean();
+  const liveSet = new Set(live.map((row) => String(row.userId)));
+
+  let dropped = 0;
+  for (const doc of active) {
+    const gone = (doc.members || []).filter(
+      (m: { userId: unknown }) => !liveSet.has(String(m.userId))
+    );
+    for (const m of gone) {
+      const result = await leaveParty(String(doc._id), String(m.userId));
+      if ("status" in result && result.status === 200) {
+        dropped += 1;
+        trackPartyEvent("party_member_dropped_offline", {
+          partyId: String(doc._id),
+          gameSlug: String(doc.gameSlug || "") || null,
+          userId: String(m.userId),
+          reason: "stale_presence",
+        });
+      }
+    }
+  }
+  return { dropped };
 }
 
 /* ─── remove member (4F) ─────────────────────────────────────────────────── */
@@ -526,8 +665,26 @@ export async function setPartyGame(
   );
   const nameById = await resolveUsernames(memberIds);
 
+  const updated = serializeParty(doc.toObject(), nameById, game.title);
+  trackPartyEvent("party_game_set", {
+    partyId: updated.id,
+    gameSlug: slug,
+    userId: leaderId,
+  });
+  if (updated.gameSlug) {
+    const sync = await checkConfigSync(updated.id);
+    if (!("error" in sync) && !sync.sync.allReady) {
+      trackPartyEvent("party_config_sync", {
+        partyId: updated.id,
+        gameSlug: slug,
+        userId: leaderId,
+        allReady: false,
+        missing: sync.sync.members.filter((m) => !m.hasGame).map((m) => m.userId),
+      });
+    }
+  }
   return {
-    party: serializeParty(doc.toObject(), nameById, game.title),
+    party: updated,
     status: 200,
   };
 }
@@ -569,6 +726,12 @@ export async function setPartyEdition(
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const nameById = await resolveUsernames(memberIds);
 
+  trackPartyEvent("party_edition_set", {
+    partyId: String(doc._id),
+    gameSlug: String(doc.gameSlug || "") || null,
+    editionSlug: slug || null,
+    userId: leaderId,
+  });
   return {
     party: serializeParty(doc.toObject(), nameById, game.title),
     status: 200,
@@ -729,13 +892,21 @@ export async function joinPartyGame(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
+  const joined = serializeParty(doc.toObject(), nameById, game?.title || null);
+  trackPartyEvent("party_join_game", {
+    partyId: joined.id,
+    gameSlug: joined.gameSlug || null,
+    userId,
+    firstLaunch,
+    hostedStatus: joined.hosted?.status || null,
+    host: joined.hosted?.host || null,
+    port: joined.hosted?.port || null,
+  });
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: joined,
     status: 200,
   };
 }
-
-/* ─── launch (4B, 4G) ────────────────────────────────────────────────────── */
 
 export async function launchParty(
   partyId: string,
@@ -765,13 +936,22 @@ export async function launchParty(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
+  const launched = serializeParty(doc.toObject(), nameById, game?.title || null);
+  trackPartyEvent("party_join_game", {
+    partyId: launched.id,
+    gameSlug: launched.gameSlug || null,
+    userId: leaderId,
+    firstLaunch: true,
+    via: "launch",
+    hostedStatus: launched.hosted?.status || null,
+    host: launched.hosted?.host || null,
+    port: launched.hosted?.port || null,
+  });
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: launched,
     status: 200,
   };
 }
-
-/* ─── end party (4F) ─────────────────────────────────────────────────────── */
 
 export async function endParty(
   partyId: string,
@@ -795,6 +975,12 @@ export async function endParty(
   await doc.save();
   await clearPresenceForParty(String(doc._id));
   void cleanupPartyDiscordVoice(doc);
+  trackPartyEvent("party_ended", {
+    partyId: String(doc._id),
+    gameSlug: String(doc.gameSlug || "") || null,
+    userId,
+    reason: "leader",
+  });
 
   return { status: 200 };
 }
@@ -802,7 +988,8 @@ export async function endParty(
 /* ─── get party (4A) ─────────────────────────────────────────────────────── */
 
 export async function getParty(
-  partyId: string
+  partyId: string,
+  viewerUserId?: string
 ): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 404 }> {
   await dbConnect();
 
@@ -819,7 +1006,10 @@ export async function getParty(
   ]);
 
   return {
-    party: serializeParty(doc, nameById, game?.title || null),
+    party: await attachConfigSync(
+      serializeParty(doc, nameById, game?.title || null),
+      viewerUserId
+    ),
     status: 200,
   };
 }
@@ -862,9 +1052,13 @@ export async function listPartiesForUser(
   ]);
   const titleBySlug = new Map(games);
 
-  return docs.map((d) =>
+  const parties = docs.map((d) =>
     serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
   );
+  if (parties[0]) {
+    parties[0] = await attachConfigSync(parties[0], userId);
+  }
+  return parties;
 }
 
 /* ─── discover friend parties (4E) ───────────────────────────────────────── */
@@ -1011,37 +1205,7 @@ export async function countOpenPublicParties(): Promise<number> {
  */
 const BASE_EDITION_KEY = "__base__";
 
-export type ConfigSyncMember = {
-  userId: string;
-  username: string;
-  hasGame: boolean;
-  hasEdition: boolean;
-  missingMods: string[];
-  /** The host measures itself; nobody is warned about not matching themselves. */
-  isHost: boolean;
-  /** Which edition this member actually has installed, when they have one. */
-  installedEditionSlug: string | null;
-};
-
-export type ConfigSyncResult = {
-  gameSlug: string;
-  editionSlug: string | null;
-  modSlugs: string[];
-  members: ConfigSyncMember[];
-  allReady: boolean;
-  /**
-   * Where the reference config came from.
-   *
-   * "host" means it was read off the party leader's actual library — the case
-   * the feature exists for, since what matters is matching the person who
-   * picked the game, not a field someone typed. "party" means the leader has
-   * nothing installed yet, so the party's declared editionSlug/modSlugs stand
-   * in and nobody gets told they are incompatible with an empty install.
-   */
-  referenceSource: "host" | "party";
-  hostUserId: string | null;
-  hostUsername: string | null;
-};
+export type { ConfigSyncMember, ConfigSyncResult } from "@/lib/playTogether/types";
 
 export async function checkConfigSync(
   partyId: string
@@ -1056,7 +1220,7 @@ export async function checkConfigSync(
   );
   const hostId = doc.leaderId ? String(doc.leaderId) : null;
 
-  const [nameById, libraryEntries, modEntries] = await Promise.all([
+  const [nameById, libraryEntries, modEntries, presences] = await Promise.all([
     resolveUsernames(memberIds),
     LibraryEntry.find({
       userId: { $in: memberIds },
@@ -1070,6 +1234,12 @@ export async function checkConfigSync(
       installed: true,
     })
       .select("userId modSlug")
+      .lean(),
+    Presence.find({
+      userId: { $in: memberIds },
+      lastHeartbeat: { $gte: new Date(Date.now() - STALE_AFTER_MS) },
+    })
+      .select("userId currentGameId status")
       .lean(),
   ]);
 
@@ -1124,19 +1294,37 @@ export async function checkConfigSync(
     ? [...(hostId ? modsByUser.get(hostId) ?? new Set<string>() : new Set<string>())].sort()
     : declaredMods;
 
+  const playingThisGame = new Set(
+    presences
+      .filter((row) => {
+        const status = String(row.status || "");
+        if (status === "offline") return false;
+        return String(row.currentGameId || "") === String(doc.gameSlug || "");
+      })
+      .map((row) => String(row.userId))
+  );
+  const currentlyPlaying = new Set(
+    presences
+      .filter((row) => String(row.status || "") === "playing")
+      .map((row) => String(row.userId))
+  );
+
   const members: ConfigSyncMember[] = memberIds.map((uid) => {
     const editions = installedByUser.get(uid) || new Set<string>();
-    const hasGame = editions.size > 0;
+    const inThisGame = playingThisGame.has(uid);
+    const playing = currentlyPlaying.has(uid);
+    const hasGame = editions.size > 0 || inThisGame;
     const isHost = uid === hostId;
     const theirMods = modsByUser.get(uid) || new Set<string>();
     return {
       userId: uid,
       username: nameById.get(uid) || "Player",
       hasGame,
-      hasEdition: editionSlug ? editions.has(editionSlug) : hasGame,
+      hasEdition: editionSlug ? editions.has(editionSlug) || inThisGame : hasGame,
       // Only meaningful once they have the game; otherwise the game is the ask.
       missingMods: hasGame ? modSlugs.filter((slug) => !theirMods.has(slug)) : modSlugs,
       isHost,
+      playing,
       installedEditionSlug:
         [...editions].find((e) => e !== BASE_EDITION_KEY) ??
         (hasGame ? BASE_EDITION_KEY : null),

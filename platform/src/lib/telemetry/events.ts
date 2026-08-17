@@ -136,6 +136,40 @@ export type TelemetryEventMap = {
     capability?: string;
     surface?: string;
   } & Extra;
+  join_attempted: EditionProps & {
+    host?: string;
+    port?: number;
+    connectArgsApplied?: boolean;
+    manualConnect?: boolean;
+  } & Extra;
+  exe_located: { gameSlug?: string } & Extra;
+  exe_locate_failed: { gameSlug?: string } & Extra;
+  party_created: { partyId?: string; gameSlug?: string; visibility?: string } & Extra;
+  party_joined: { partyId?: string; gameSlug?: string } & Extra;
+  party_left: { partyId?: string; gameSlug?: string; ended?: boolean } & Extra;
+  party_ended: { partyId?: string; gameSlug?: string; reason?: string } & Extra;
+  party_member_dropped_offline: { partyId?: string; gameSlug?: string; reason?: string } & Extra;
+  party_game_set: { partyId?: string; gameSlug?: string } & Extra;
+  party_edition_set: { partyId?: string; gameSlug?: string; editionSlug?: string } & Extra;
+  party_join_game: {
+    partyId?: string;
+    gameSlug?: string;
+    firstLaunch?: boolean;
+    hostedStatus?: string;
+    host?: string;
+    port?: number;
+  } & Extra;
+  party_hosted_ready: { partyId?: string; gameSlug?: string; host?: string; port?: number } & Extra;
+  party_hosted_failed: { partyId?: string; gameSlug?: string; message?: string } & Extra;
+  party_config_sync: { partyId?: string; gameSlug?: string; allReady?: boolean } & Extra;
+  party_chat_failed: { partyId?: string; gameSlug?: string; message?: string } & Extra;
+  party_config_sync_viewed: { partyId?: string; gameSlug?: string } & Extra;
+  party_config_sync_install_clicked: {
+    partyId?: string;
+    gameSlug?: string;
+    editionSlug?: string;
+    modCount?: number;
+  } & Extra;
   play_together_viewed: { count?: number; surface?: string } & Extra;
   shared_game_clicked: { gameSlug?: string; surface?: string } & Extra;
   invite_friends_clicked: { gameSlug?: string; surface?: string } & Extra;

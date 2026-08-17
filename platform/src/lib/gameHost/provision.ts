@@ -10,6 +10,8 @@ import {
   isHostableGame,
   type HostedStatus,
 } from "./catalog";
+import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
+import { markGameHealthYellow } from "@/lib/admin/gameHealth";
 
 export type PartyHostFields = {
   roomId?: string | null;
@@ -66,6 +68,12 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     hosted.status = "failed";
     hosted.error = result.error;
     await party.save();
+    trackPartyEvent("party_hosted_failed", {
+      partyId: String(party._id),
+      gameSlug: slug,
+      message: result.error,
+    });
+    void markGameHealthYellow(slug, "party");
     return false;
   }
 
@@ -78,6 +86,12 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.error = null;
   hosted.provisionedAt = new Date();
   await party.save();
+  trackPartyEvent("party_hosted_ready", {
+    partyId: String(party._id),
+    gameSlug: slug,
+    host: result.host,
+    port: result.port,
+  });
   return true;
 }
 

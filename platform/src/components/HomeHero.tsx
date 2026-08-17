@@ -26,9 +26,19 @@ export function HomeHero({ gamesNewestFirst }: { gamesNewestFirst: Game[] }) {
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border">
-      <GameArt game={hero} showTitle={false} className="absolute inset-0" iconSize="lg" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/10" />
-      <div className="relative flex min-h-[380px] flex-col justify-end gap-4 p-6 sm:p-10 lg:max-w-2xl">
+      <GameArt
+        game={hero}
+        showTitle={false}
+        className="pointer-events-none absolute inset-0 z-0"
+        iconSize="lg"
+      />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-black/85 via-black/55 to-black/10" />
+      <Link
+        href={`/games/${hero.slug}`}
+        className="absolute inset-0 z-[2]"
+        aria-label={`${hero.title} — view game`}
+      />
+      <div className="pointer-events-none relative z-[3] flex min-h-[380px] flex-col justify-end gap-4 p-6 sm:p-10 lg:max-w-2xl">
         <Badge tone="play" className="w-fit">
           <Sparkles className="size-3" /> Newest
         </Badge>
@@ -39,7 +49,7 @@ export function HomeHero({ gamesNewestFirst }: { gamesNewestFirst: Game[] }) {
         <p className="text-sm text-white/70">
           {hero.genres.join(" / ")} · {hero.releaseYear}
         </p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
+        <div className="pointer-events-auto relative z-[4] mt-2 flex flex-wrap items-center gap-3">
           <PlayCta game={hero} size="lg" />
           <Link
             href={`/games/${hero.slug}`}

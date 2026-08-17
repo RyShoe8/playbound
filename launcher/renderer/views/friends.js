@@ -20,6 +20,12 @@ import {
 } from "../shared.js";
 
 let friendsPollInterval = null;
+let friendsPollMs = 30000;
+let localPlaying = false;
+let playPollWired = false;
+
+const FRIENDS_POLL_MS = 30000;
+const LIVE_PARTY_POLL_MS = 2000;
 
 /*
  * Party constants, copied from platform/src/lib/playTogether/types.ts so the
@@ -498,18 +504,56 @@ async function renderFriendsView() {
   // populated the moment an existing party renders.
   await ensurePartyGames();
   await api.refreshFriendsData();
-
-  if (!friendsPollInterval) {
-    friendsPollInterval = setInterval(() => {
-      if (state.currentView === "friends" && state.accountState.connected) {
-        api.refreshFriendsData();
-      } else {
-        clearInterval(friendsPollInterval);
-        friendsPollInterval = null;
-      }
-    }, 30000); // Poll every 30s
-  }
+  syncFriendsPoll();
   markViewReady(container);
+}
+
+function syncFriendsPoll() {
+  const live = Boolean(state._activeParty && state._activeParty.status !== "ended");
+  const next = live && !localPlaying ? LIVE_PARTY_POLL_MS : FRIENDS_POLL_MS;
+  if (friendsPollInterval && friendsPollMs === next) return;
+  if (friendsPollInterval) {
+    clearInterval(friendsPollInterval);
+    friendsPollInterval = null;
+  }
+  friendsPollMs = next;
+  friendsPollInterval = setInterval(() => {
+    if (state.currentView === "friends" && state.accountState.connected) {
+      api.refreshFriendsData();
+    } else {
+      clearInterval(friendsPollInterval);
+      friendsPollInterval = null;
+    }
+  }, friendsPollMs);
+}
+
+function setLocalPlaying(next) {
+  const on = Boolean(next);
+  if (localPlaying === on) return;
+  localPlaying = on;
+  syncFriendsPoll();
+}
+
+async function refreshLocalPlaying() {
+  if (!window.playbound.getPlayingGame) {
+    setLocalPlaying(false);
+    return;
+  }
+  try {
+    const slug = await window.playbound.getPlayingGame();
+    setLocalPlaying(Boolean(slug));
+  } catch {
+    setLocalPlaying(false);
+  }
+}
+
+if (!playPollWired) {
+  playPollWired = true;
+  void refreshLocalPlaying();
+  window.playbound.onGameStarted?.(() => setLocalPlaying(true));
+  window.playbound.onGameExited?.(() => {
+    void refreshLocalPlaying();
+  });
 }
 
 async function refreshFriendsData() {
@@ -526,6 +570,9 @@ async function refreshFriendsData() {
     const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
     state._createPartyFriends = friends;
     paintPartyArea(partiesData);
+    syncFriendsPoll();
+    const activeParty = Array.isArray(partiesData?.myParties) ? partiesData.myParties[0] : null;
+    if (activeParty?.id) void refreshPartyChat(activeParty);
 
     const incomingRequests = Array.isArray(requestsData?.incoming) ? requestsData.incoming : [];
     const outgoingRequests = Array.isArray(requestsData?.outgoing) ? requestsData.outgoing : [];
@@ -1365,6 +1412,9 @@ function buildPartyViewHtml(party) {
           <ul class="party-member-list">${membersHtml}</ul>
         </div>
 
+        ${buildPartyConfigSyncHtml(party, userId)}
+        ${buildPartyChatHtml(party)}
+
         <div class="party-actions">
           <div class="party-actions-group">
             ${readyHtml}
@@ -1383,6 +1433,78 @@ function buildPartyViewHtml(party) {
       </div>
     </div>
   `;
+}
+
+function buildPartyConfigSyncHtml(party, userId) {
+  const sync = party.configSync;
+  if (!party.gameSlug) return "";
+  if (!sync) {
+    return `<p class="view-sub party-inline-note">Checking who has the game…</p>`;
+  }
+  if (sync.allReady) {
+    return `<p class="view-sub party-inline-note">Everyone is ready to play.</p>`;
+  }
+  const out = (sync.members || []).filter((m) => {
+    if (!userId) return !m.hasGame || (sync.editionSlug && !m.hasEdition) || (m.missingMods || []).length;
+    return true;
+  }).filter((m) => !m.hasGame || (sync.editionSlug && !m.hasEdition) || (m.missingMods || []).length);
+  if (out.length === 0) return "";
+  const rows = out
+    .map((m) => {
+      const missing = [];
+      if (!m.hasGame) missing.push("the game");
+      else if (sync.editionSlug && !m.hasEdition) missing.push("a different edition");
+      if ((m.missingMods || []).length) missing.push("mods");
+      const isYou = String(m.userId) === String(userId);
+      return `<li class="party-member-sub">${escapeHtml(isYou ? "You" : m.username)} ${
+        isYou ? "need" : "needs"
+      } ${escapeHtml(missing.join(" and "))}</li>`;
+    })
+    .join("");
+  return `<div class="party-inline-note"><p class="party-member-sub" style="color: var(--danger)">Not everyone can play yet</p><ul>${rows}</ul></div>`;
+}
+
+function buildPartyChatHtml(party) {
+  const ready = Boolean(party.discord?.textChannelId);
+  return `
+    <div class="party-chat" id="party-chat">
+      <h4 class="party-section-label">Party chat</h4>
+      <div class="party-chat-list" id="party-chat-list" data-party="${escapeHtml(party.id || "")}">
+        <p class="view-sub">${ready ? "No messages yet." : "Chat starts when the host launches voice."}</p>
+      </div>
+      <form class="party-chat-form" id="party-chat-form">
+        <input type="text" class="input-text" id="party-chat-input" maxlength="500" placeholder="${
+          ready ? "Message the party…" : "Voice first, then chat"
+        }" ${ready ? "" : "disabled"} />
+        <button type="submit" class="party-btn btn-primary" id="party-chat-send" ${
+          ready ? "" : "disabled"
+        }>Send</button>
+      </form>
+      <p class="view-sub">Opens in Discord too.</p>
+    </div>
+  `;
+}
+
+async function refreshPartyChat(party) {
+  const list = document.getElementById("party-chat-list");
+  if (!list || !party?.id || !party.discord?.textChannelId) return;
+  if (!window.playbound.getPartyChat) return;
+  try {
+    const data = await window.playbound.getPartyChat(party.id);
+    const messages = Array.isArray(data?.messages) ? data.messages : [];
+    if (!messages.length) return;
+    list.innerHTML = messages
+      .map(
+        (m) =>
+          `<div class="party-member-sub"><strong>${escapeHtml(m.username || "Player")}</strong> ${escapeHtml(
+            m.content || ""
+          )}</div>`
+      )
+      .join("");
+    list.scrollTop = list.scrollHeight;
+  } catch {
+    /* ignore */
+  }
 }
 
 /** The site's PartyCard, used by PartyDiscovery. */
@@ -1453,6 +1575,17 @@ function partyAreaSignature(active, discoverable) {
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
       hosted: active.hosted || null,
       discord: active.discord || null,
+      configSync: active.configSync
+        ? [
+            active.configSync.allReady,
+            (active.configSync.members || []).map((m) => [
+              m.userId,
+              m.hasGame,
+              m.hasEdition,
+              (m.missingMods || []).length,
+            ]),
+          ]
+        : null,
     },
     discoverable.map((p) => [p.id, p.status, p.members?.length, p.name, p.gameSlug]),
   ]);
@@ -1468,6 +1601,7 @@ function paintPartyArea(partiesData) {
   const mine = Array.isArray(partiesData?.myParties) ? partiesData.myParties : [];
   const discoverable = Array.isArray(partiesData?.discoverable) ? partiesData.discoverable : [];
   const active = mine[0] || null;
+  state._activeParty = active;
 
   // The site hides "Start Party" while you are already in one.
   const startBtn = document.getElementById("btn-toggle-create-party");
@@ -1650,6 +1784,23 @@ function wirePartyView(slot, party) {
       const areaSlot = document.getElementById("friends-party-area");
       if (areaSlot) areaSlot.dataset.sig = "";
       void api.refreshFriendsData();
+    });
+  }
+
+  const chatForm = slot.querySelector("#party-chat-form");
+  if (chatForm) {
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = slot.querySelector("#party-chat-input");
+      const content = String(input?.value || "").trim();
+      if (!content || !window.playbound.sendPartyChat) return;
+      input.value = "";
+      const res = await window.playbound.sendPartyChat(partyId, content);
+      if (res?.error) {
+        setStatus(res.error, true);
+        return;
+      }
+      void refreshPartyChat(party);
     });
   }
 }

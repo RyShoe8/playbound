@@ -20,6 +20,7 @@ import {
   Mouse,
   Cpu,
   Gift,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,7 @@ const links: NavItem[] = [
   { href: "/admin/free-offers", label: "Free Offers", icon: Gift },
   { href: "/admin/submissions", label: "Submissions", icon: Inbox },
   { href: "/admin/bugs", label: "Bugs", icon: Bug },
+  { href: "/admin/ops", label: "Ops", icon: Activity },
   { href: "/admin/version-issues", label: "Versions", icon: AlertTriangle },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/events", label: "Events", icon: CalendarDays },

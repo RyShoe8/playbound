@@ -56,7 +56,8 @@ export default async function AboutPage() {
       icon: Users,
       title: "Multiplayer & Parties",
       description:
-        "Join active community servers, organize parties with friends, and coordinate seamlessly with our Discord bot — without vendor lock-in.",
+        "Join Game starts a PlayBound Connect room so friends behind home internet land in the same server. Public server lists and official-game parties still work the way they always have.",
+      href: "/connect",
     },
     {
       icon: Gift,
@@ -178,6 +179,11 @@ export default async function AboutPage() {
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
                   {pillar.description}
                 </p>
+                {"href" in pillar && pillar.href ? (
+                  <Link href={pillar.href} className="mt-3 text-xs font-bold text-primary hover:underline">
+                    PlayBound Connect
+                  </Link>
+                ) : null}
               </div>
             );
           })}

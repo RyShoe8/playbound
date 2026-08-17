@@ -15,6 +15,7 @@ import type { Edition } from "@/lib/editionTypes";
 import type { Collection, Developer } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 import { normalizeQualityBar } from "@/lib/gamePayload";
+import { normalizeOpsHealth } from "@/lib/admin/gameHealth";
 
 export type { Game } from "@/lib/data/types";
 // Developers are deliberately no longer re-exported here. They are database
@@ -70,6 +71,7 @@ function toGame(doc: LeanGame): Game {
     gameOfWeek: Boolean(doc.gameOfWeek ?? seed?.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem ?? seed?.hiddenGem),
     complete: Boolean(doc.complete ?? seed?.complete),
+    opsHealth: normalizeOpsHealth(doc.opsHealth),
     art: (doc.art as Game["art"]) || seed?.art || { from: "#1e293b", to: "#64748b", icon: "Gamepad2" },
     coverImage: (doc.coverImage as string) || usableSeedMedia(seed?.coverImage),
     screenshots: (doc.screenshots as string[])?.length

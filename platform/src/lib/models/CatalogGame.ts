@@ -128,6 +128,18 @@ const CatalogGameSchema = new Schema(
     hiddenGem: { type: Boolean, default: false },
     /** Admin checklist: catalog info for this title is fully entered. */
     complete: { type: Boolean, default: false },
+    opsHealth: {
+      install: {
+        type: String,
+        enum: ["green", "yellow", "red"],
+        default: "green",
+      },
+      party: {
+        type: String,
+        enum: ["green", "yellow", "red"],
+        default: "green",
+      },
+    },
     art: { type: GameArtSchema, required: true },
     coverImage: { type: String, default: null },
     screenshots: { type: [String], default: [] },

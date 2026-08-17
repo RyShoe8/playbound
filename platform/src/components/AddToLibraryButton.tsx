@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LibraryBig, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { launcherLocateUrl } from "@/lib/launcher";
@@ -28,6 +29,7 @@ export function AddToLibraryButton({
   saveForLater = false,
 }: Props) {
   const { device } = useCompatibilityFilter();
+  const router = useRouter();
   const [inLibrary, setInLibrary] = useState(initiallyInLibrary);
   const [busy, setBusy] = useState(false);
 
@@ -76,6 +78,7 @@ export function AddToLibraryButton({
           method: "DELETE",
         });
         if (!res.ok) setInLibrary(true);
+        else router.refresh();
       }
     } catch {
       setInLibrary(!next);

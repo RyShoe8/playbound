@@ -21,7 +21,7 @@ export async function GET(req: Request, ctx: RouteContext) {
 
   try {
     const { id } = await ctx.params;
-    const result = await getParty(id);
+    const result = await getParty(id, userId);
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, FolderOpen, Play, Puzzle, Trash2 } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   launcherPlayModUrl,
   launcherUninstallModUrl,
 } from "@/lib/launcher";
+import { startPcUninstall } from "@/lib/watchLibraryGone";
 import { cn } from "@/lib/utils";
 
 export type LibraryModItem = { slug: string; title: string };
@@ -17,6 +18,9 @@ function ModRowActions({ slug, title }: { slug: string; title: string }) {
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const stopWatch = useRef<(() => void) | null>(null);
+
+  useEffect(() => () => stopWatch.current?.(), []);
 
   async function removeFromLibrary() {
     if (removing) return;
@@ -34,6 +38,19 @@ function ModRowActions({ slug, title }: { slug: string; title: string }) {
     } catch {
       setRemoving(false);
     }
+  }
+
+  function uninstallFromPc() {
+    stopWatch.current?.();
+    stopWatch.current = startPcUninstall({
+      kind: "mod",
+      slug,
+      deepLink: launcherUninstallModUrl(slug),
+      onGone: () => {
+        setHidden(true);
+        router.refresh();
+      },
+    });
   }
 
   if (hidden) return null;
@@ -63,13 +80,14 @@ function ModRowActions({ slug, title }: { slug: string; title: string }) {
       >
         <Trash2 className="size-2.5" /> {removing ? "…" : "Remove"}
       </button>
-      <a
-        href={launcherUninstallModUrl(slug)}
+      <button
+        type="button"
+        onClick={uninstallFromPc}
         className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground hover:bg-secondary/70"
         title="Uninstall from this PC via the PlayBound app"
       >
         Uninstall from PC
-      </a>
+      </button>
     </div>
   );
 }

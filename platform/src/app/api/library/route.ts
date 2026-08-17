@@ -9,6 +9,7 @@ import type { LibraryEntryDTO } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 import { platformFromRequest } from "@/lib/libraryPlatform";
 import { buildLibraryUnionEntries } from "@/lib/libraryUnion";
+import { removeLibraryModsForGame, revalidateLibraryPages } from "@/lib/libraryCascade";
 
 function toDto(entry: {
   gameSlug: string;
@@ -223,9 +224,9 @@ export async function DELETE(req: Request) {
     // must not also remove the desktop copy you still have installed.
     // `?allPlatforms=1` is the deliberate opt-out for "remove everywhere".
     const allPlatforms = url.searchParams.get("allPlatforms") === "1";
+    const platform = platformFromRequest(req);
     const filter: Record<string, unknown> = { userId: session.user.id, gameSlug: slug };
     if (!allPlatforms) {
-      const platform = platformFromRequest(req);
       // Legacy entries have no platform and are desktop by definition, so a
       // desktop delete must match them too or they become unremovable.
       filter.$or =
@@ -235,6 +236,15 @@ export async function DELETE(req: Request) {
     }
 
     const res = await LibraryEntry.deleteMany(filter);
+    const remaining = await LibraryEntry.countDocuments({
+      userId: session.user.id,
+      gameSlug: slug,
+    });
+    if (allPlatforms || remaining === 0 || platform === "desktop") {
+      await removeLibraryModsForGame(session.user.id, slug);
+    } else {
+      revalidateLibraryPages(slug);
+    }
     return NextResponse.json({ success: true, deleted: res.deletedCount > 0 });
   } catch (error) {
     console.error("Library remove error:", error);

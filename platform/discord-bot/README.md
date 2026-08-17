@@ -9,7 +9,9 @@ Long-lived worker for channel provisioning, welcome pins, slash commands, and Ga
 3. Start command: `npm start`
 
 Invite the bot with scopes `bot` **and** `applications.commands`, plus permissions:
-Manage Channels, Manage Messages, Create Instant Invite, Send Messages, Embed Links, Move Members.
+Manage Channels, Manage Messages, Manage Webhooks, Create Instant Invite, Send Messages, Embed Links, Move Members.
+
+In the Discord Developer Portal, enable **Message Content Intent** (privileged). Party and event chat in PlayBound reads channel messages.
 
 Example invite URL (replace CLIENT_ID and GUILD_ID):
 

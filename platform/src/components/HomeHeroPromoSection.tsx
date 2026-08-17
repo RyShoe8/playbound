@@ -31,6 +31,51 @@ interface HomeHeroPromoSectionProps {
   openPartyCount?: number;
 }
 
+function FeaturedGameHero({ hero, badge }: { hero: Game; badge: string }) {
+  const blurb = hero.tagline?.trim() || hero.description?.trim() || "";
+  const meta = [hero.genres.filter(Boolean).join(" / "), hero.releaseYear]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section className="relative h-full overflow-hidden rounded-2xl border border-border shadow-md">
+      <GameArt
+        game={hero}
+        showTitle={false}
+        className="pointer-events-none absolute inset-0 z-0"
+        iconSize="lg"
+      />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
+      <Link
+        href={`/games/${hero.slug}`}
+        className="absolute inset-0 z-[2]"
+        aria-label={`${hero.title} — view game`}
+      />
+      <div className="pointer-events-none relative z-[3] flex h-full min-h-[340px] flex-col justify-end gap-3.5 p-6 sm:p-8 lg:max-w-2xl">
+        <Badge tone="play" className="w-fit">
+          <Sparkles className="size-3" /> {badge}
+        </Badge>
+        <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          {hero.title}
+        </h2>
+        {blurb ? (
+          <p className="line-clamp-2 max-w-xl text-sm text-white/85 sm:text-base">{blurb}</p>
+        ) : null}
+        {meta ? <p className="text-xs text-white/70">{meta}</p> : null}
+        <div className="pointer-events-auto relative z-[4] mt-2 flex flex-wrap items-center gap-3">
+          <PlayCta game={hero} size="md" />
+          <Link
+            href={`/games/${hero.slug}`}
+            className="inline-flex h-9 items-center rounded-full border border-white/25 bg-white/10 px-5 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20"
+          >
+            Learn More
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function HomeHeroPromoSection({
   gamesNewestFirst,
   games,
@@ -258,35 +303,7 @@ export function HomeHeroPromoSection({
       {showPromo ? (
         <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
           <div className="min-w-0 flex-1">
-            {hero && (
-              <section className="relative h-full overflow-hidden rounded-2xl border border-border shadow-md">
-                <GameArt game={hero} showTitle={false} className="absolute inset-0" iconSize="lg" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
-                <div className="relative flex min-h-[340px] flex-col justify-end gap-3.5 p-6 sm:p-8 lg:max-w-2xl">
-                  <Badge tone="play" className="w-fit">
-                    <Sparkles className="size-3" /> Newest Addition
-                  </Badge>
-                  <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                    {hero.title}
-                  </h2>
-                  <p className="line-clamp-2 max-w-xl text-sm text-white/85 sm:text-base">
-                    {hero.tagline}
-                  </p>
-                  <p className="text-xs text-white/70">
-                    {hero.genres.join(" / ")} · {hero.releaseYear}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-3">
-                    <PlayCta game={hero} size="md" />
-                    <Link
-                      href={`/games/${hero.slug}`}
-                      className="inline-flex h-9 items-center rounded-full border border-white/25 bg-white/10 px-5 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20"
-                    >
-                      Learn More
-                    </Link>
-                  </div>
-                </div>
-              </section>
-            )}
+            {hero ? <FeaturedGameHero hero={hero} badge="Newest Addition" /> : null}
           </div>
           <div className="flex w-full shrink-0 lg:w-80">
             <CatalogStatsCard live={live} openPartyCount={openPartyCount} />
@@ -296,40 +313,7 @@ export function HomeHeroPromoSection({
         /* Elevated Compact Layout (Dismissed Promo / 3rd+ visit): Hero & Stats in the SAME ROW */
         <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
           <div className="min-w-0 flex-1">
-            {hero && (
-              <section className="relative h-full overflow-hidden rounded-2xl border border-border shadow-md">
-                <GameArt game={hero} showTitle={false} className="absolute inset-0" iconSize="lg" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
-                <div className="relative flex h-full min-h-[320px] flex-col justify-end gap-3 p-6 sm:p-8">
-                  <div className="flex items-center gap-2">
-                    <Badge tone="play" className="w-fit">
-                      <Sparkles className="size-3" /> Featured New Game
-                    </Badge>
-                    <span className="text-xs font-semibold text-white/70">
-                      {hero.releaseYear}
-                    </span>
-                  </div>
-                  <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                    {hero.title}
-                  </h2>
-                  <p className="line-clamp-2 max-w-xl text-sm text-white/85">
-                    {hero.tagline}
-                  </p>
-                  <p className="text-xs text-white/70">
-                    {hero.genres.join(" / ")}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-3">
-                    <PlayCta game={hero} size="md" />
-                    <Link
-                      href={`/games/${hero.slug}`}
-                      className="inline-flex h-9 items-center rounded-full border border-white/25 bg-white/10 px-5 text-sm font-bold text-white backdrop-blur transition-colors hover:bg-white/20"
-                    >
-                      Learn More
-                    </Link>
-                  </div>
-                </div>
-              </section>
-            )}
+            {hero ? <FeaturedGameHero hero={hero} badge="Featured New Game" /> : null}
           </div>
           <div className="flex w-full shrink-0 lg:w-80">
             <CatalogStatsCard live={live} openPartyCount={openPartyCount} />

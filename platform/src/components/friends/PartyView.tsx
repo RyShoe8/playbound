@@ -25,6 +25,7 @@ import {
 import { withOutboundUtm } from "@/lib/utm";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
+import { PartyChat } from "@/components/friends/PartyChat";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
@@ -96,7 +97,12 @@ export function PartyView({
           content: party.gameSlug,
         })
       : null;
-  const joinHref = joinUrl || browserHref || launcherPlayUrl(party.gameSlug);
+  const joinHref =
+    joinUrl ||
+    browserHref ||
+    // Hosted titles must not fall back to playbound://play — that launches a
+    // local client with no server, so both players sit in single-player.
+    (party.hosted?.enabled ? undefined : launcherPlayUrl(party.gameSlug));
   const joinOpensBrowser = Boolean(browserHref && !joinUrl);
 
   function handleJoinGame() {
@@ -270,7 +276,7 @@ export function PartyView({
           {canJoinGame && (
             <div className="flex flex-col gap-1">
               <a
-                href={joinHref}
+                href={joinHref || "#"}
                 target={joinOpensBrowser ? "_blank" : undefined}
                 rel={joinOpensBrowser ? "noopener noreferrer" : undefined}
                 onClick={handleJoinGame}
@@ -393,6 +399,11 @@ export function PartyView({
           <p className="w-full text-xs text-destructive">{voiceError}</p>
         ) : null}
       </div>
+      <PartyChat
+        partyId={party.id}
+        textChannelId={party.discord.textChannelId}
+        inviteUrl={party.discord.inviteUrl}
+      />
       <DiscordLinkPrompt
         open={discordPrompt.open}
         inviteUrl={discordPrompt.inviteUrl}

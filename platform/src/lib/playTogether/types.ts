@@ -91,6 +91,40 @@ export function partyDisplayName(party: {
   return party.name?.trim() || `${party.leaderUsername}'s party`;
 }
 
+export type ConfigSyncMember = {
+  userId: string;
+  username: string;
+  hasGame: boolean;
+  hasEdition: boolean;
+  missingMods: string[];
+  /** The host measures itself; nobody is warned about not matching themselves. */
+  isHost: boolean;
+  /** Which edition this member actually has installed, when they have one. */
+  installedEditionSlug: string | null;
+  /** Live presence status is `playing` (in a game process right now). */
+  playing: boolean;
+};
+
+export type ConfigSyncResult = {
+  gameSlug: string;
+  editionSlug: string | null;
+  modSlugs: string[];
+  members: ConfigSyncMember[];
+  allReady: boolean;
+  /**
+   * Where the reference config came from.
+   *
+   * "host" means it was read off the party leader's actual library — the case
+   * the feature exists for, since what matters is matching the person who
+   * picked the game, not a field someone typed. "party" means the leader has
+   * nothing installed yet, so the party's declared editionSlug/modSlugs stand
+   * in and nobody gets told they are incompatible with an empty install.
+   */
+  referenceSource: "host" | "party";
+  hostUserId: string | null;
+  hostUsername: string | null;
+};
+
 /** Auto-end parties with no heartbeat/activity older than this. */
 export const PARTY_IDLE_TIMEOUT_MS = 4 * 60 * 60 * 1000;
 
@@ -124,8 +158,13 @@ export type PartyPayload = {
   voiceEnabled: boolean;
   discord: {
     voiceChannelId: string | null;
+    textChannelId: string | null;
     inviteUrl: string | null;
   };
+  /** Present on the caller's live party when GET /api/parties (or GET :id) attaches it. */
+  configSync?: ConfigSyncResult | null;
+  /** True when the requesting user is currently in a game (presence `playing`). */
+  selfPlaying?: boolean;
   /** Public VPS room for games that cannot host from a home PC. */
   hosted: {
     enabled: boolean;

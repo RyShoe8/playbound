@@ -32,6 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/collections`, changeFrequency: "weekly", priority: 0.9, lastModified: now },
     { url: `${SITE_URL}/mods`, changeFrequency: "weekly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/servers`, changeFrequency: "hourly", priority: 0.7, lastModified: now },
+    { url: `${SITE_URL}/connect`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/launcher`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/developers`, changeFrequency: "monthly", priority: 0.6, lastModified: now },
     { url: `${SITE_URL}/community`, changeFrequency: "weekly", priority: 0.5, lastModified: now },

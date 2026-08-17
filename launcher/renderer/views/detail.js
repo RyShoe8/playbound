@@ -838,11 +838,12 @@ async function renderGameDetailView(slug) {
       if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
     });
     document.getElementById("act-uninstall").addEventListener("click", async () => {
-      if (!confirm(`Uninstall ${detail.title}?`)) return;
+      if (!confirm(`Uninstall ${detail.title}? This also removes PlayBound mods for this game.`)) return;
       setStatus("Uninstalling...");
       try {
-        await window.playbound.uninstall(slug);
-        setStatus(`Uninstalled ${detail.title || slug}`);
+        const res = await window.playbound.uninstall(slug);
+        if (res?.warning) setStatus(`Removed ${detail.title || slug} from your library. ${res.warning}`, true);
+        else setStatus(`Uninstalled ${detail.title || slug}`);
         api.renderGameDetailView(slug);
       } catch (err) {
         setStatus(err.message || String(err), true);
@@ -979,7 +980,7 @@ async function renderGameDetailView(slug) {
           window.playbound.openFolder(mod.installedPath);
         });
         row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async () => {
-          if (!confirm(`Remove mod ${mod.title} from library tracking?`)) return;
+          if (!confirm(`Uninstall ${mod.title}? This removes the mod from this PC.`)) return;
           try {
             setStatus(`Removing ${mod.title}…`);
             await window.playbound.uninstallMod(mod.slug);
@@ -1017,7 +1018,7 @@ async function renderGameDetailView(slug) {
             window.playbound.openFolder(mod.installedPath);
           });
           row.querySelector(".btn-mod-uninstall")?.addEventListener("click", async () => {
-            if (!confirm(`Remove mod ${mod.title} from library tracking?`)) return;
+            if (!confirm(`Uninstall ${mod.title}? This removes the mod from this PC.`)) return;
             try {
               setStatus(`Removing ${mod.title}…`);
               await window.playbound.uninstallMod(mod.slug);
@@ -1416,7 +1417,7 @@ async function renderModDetailView(slug) {
       if (detail.installedPath) window.playbound.openFolder(detail.installedPath);
     });
     document.getElementById("mod-act-uninstall")?.addEventListener("click", async () => {
-      if (!confirm(`Remove mod ${detail.title}?`)) return;
+      if (!confirm(`Uninstall ${detail.title}? This removes the mod from this PC.`)) return;
       try {
         setStatus(`Removing ${detail.title}…`);
         await window.playbound.uninstallMod(slug);
@@ -1674,10 +1675,11 @@ async function renderEditionDetailView(gameSlug, editionSlug) {
     }
   });
   document.getElementById("edition-uninstall")?.addEventListener("click", async () => {
-    if (!confirm(`Uninstall ${edition.editionName}? Other editions stay installed.`)) return;
+    if (!confirm(`Uninstall ${edition.editionName}? Other editions stay installed. Mods for this game will also be removed.`)) return;
     try {
-      await window.playbound.uninstall(gameSlug, editionSlug);
-      setStatus(`Uninstalled ${edition.editionName}`);
+      const res = await window.playbound.uninstall(gameSlug, editionSlug);
+      if (res?.warning) setStatus(`Removed ${edition.editionName} from your library. ${res.warning}`, true);
+      else setStatus(`Uninstalled ${edition.editionName}`);
       api.renderEditionDetailView(gameSlug, editionSlug);
     } catch (err) {
       setStatus(err.message || String(err), true);

@@ -53,6 +53,7 @@ export async function POST(req: Request, ctx: RouteContext) {
       party: {
         discord: {
           voiceChannelId: party.discord?.voiceChannelId || null,
+          textChannelId: party.discord?.textChannelId || null,
           inviteUrl,
         },
       },

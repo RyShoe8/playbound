@@ -354,9 +354,9 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       argsTemplate: ["-p", "{port}"],
     },
     client: {
-      launchArguments: ["--server", "{host}", "--port", "{port}"],
+      launchArguments: ["--autoconnect", "--server", "{host}", "--port", "{port}"],
     },
-    notes: "Freeciv dedicated server with --server CLI connect.",
+    notes: "Freeciv dedicated server. Client needs --autoconnect or GTK opens the start screen instead of joining.",
   },
 
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────

@@ -346,7 +346,9 @@ function wireMainEvents() {
 
   window.playbound.onInstallDetected((data) => {
     setProgress(null);
-    if (data?.slug) {
+    if (data?.uninstalled) {
+      setStatus("Removed from this PC.");
+    } else if (data?.slug) {
       setStatus("Install detected — added to library.");
     } else if (data?.scanned != null) {
       setStatus(`Library scan found ${data.scanned} install(s).`);

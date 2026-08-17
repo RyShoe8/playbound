@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getJavaStatus: () => ipcRenderer.invoke("get-java-status"),
   removeFriend: (friendId) => ipcRenderer.invoke("remove-friend", friendId),
   presenceHeartbeat: (payload) => ipcRenderer.invoke("presence-heartbeat", payload || {}),
+  getPlayingGame: () => ipcRenderer.invoke("get-playing-game"),
   searchUsers: (query) => ipcRenderer.invoke("search-users", query),
   discoverPlayers: (params) => ipcRenderer.invoke("discover-players", params),
   sendFriendRequest: (targetUserId) => ipcRenderer.invoke("send-friend-request", targetUserId),
@@ -99,6 +100,8 @@ contextBridge.exposeInMainWorld("playbound", {
   transferPartyLeadership: (partyId, userId) =>
     ipcRenderer.invoke("transfer-party-leadership", partyId, userId),
   provisionPartyDiscord: (partyId) => ipcRenderer.invoke("provision-party-discord", partyId),
+  getPartyChat: (partyId, after) => ipcRenderer.invoke("get-party-chat", partyId, after || null),
+  sendPartyChat: (partyId, content) => ipcRenderer.invoke("send-party-chat", partyId, content),
   /** Prefers the Discord desktop app, falls back to the browser. */
   openDiscordInvite: (inviteUrl) => ipcRenderer.invoke("open-discord-invite", inviteUrl),
   setPresenceVisibility: (patch) => ipcRenderer.invoke("set-presence-visibility", patch || {}),
@@ -158,5 +161,6 @@ contextBridge.exposeInMainWorld("playbound", {
     ipcRenderer.on("mod-install-finished", (_event, data) => cb(data || {})),
   onUpdateStatus: (cb) => ipcRenderer.on("update-status", (_event, data) => cb(data || {})),
   onGameExited: (cb) => ipcRenderer.on("game-exited", (_event, data) => cb(data || {})),
+  onGameStarted: (cb) => ipcRenderer.on("game-started", (_event, data) => cb(data || {})),
   onNavigate: (cb) => ipcRenderer.on("navigate", (_event, data) => cb(data || {})),
 });
