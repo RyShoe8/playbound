@@ -2070,7 +2070,14 @@ const facts: Game[] = [
       exeHint: "etl.exe",
       knownExePaths: ["etl.exe", "ETL.exe"],
       versionLabel: "v2.84.0",
-      note: "Installs the official ET: Legacy Windows archive directly, with broad compatibility for classic ET mods and servers.",
+      // ET: Legacy ships only the GPL engine. Its upstream documentation
+      // requires the three free original ET data files alongside it; this
+      // data-only package is prepared from Splash Damage's official 2.60b
+      // archive so a new PlayBound install is immediately playable.
+      overlayUrl:
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein-enemy-territory/ET-260b-Base-Data.zip",
+      overlayFileName: "ET-260b-Base-Data.zip",
+      note: "Installs ET: Legacy plus the official free Enemy Territory game data, ready to play with classic mod and server compatibility.",
     },
     communityLinks: {
       officialDiscord: {
