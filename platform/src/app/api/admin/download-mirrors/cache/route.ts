@@ -3,6 +3,7 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
+import { refreshUploadingVpsArtifacts } from "@/lib/mirrors/cacheManager";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -10,6 +11,7 @@ export async function GET() {
 
   try {
     await dbConnect();
+    await refreshUploadingVpsArtifacts();
 
     const artifacts = await Artifact.find({}).sort({ r2Status: 1, r2PromotionScore: -1 }).lean();
     const sources = await MirrorSource.find({ sourceType: "public" }).lean();

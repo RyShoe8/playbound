@@ -39,6 +39,8 @@ const rooms = new Map();
 const byParty = new Map();
 /** `${slug}:${port}` */
 const usedPorts = new Set();
+/** relative archive path → in-flight/completed transfer state for this agent lifetime. */
+const archiveJobs = new Map();
 
 /**
  * @typedef {{
@@ -118,7 +120,7 @@ async function sha256File(file) {
   return hash.digest("hex");
 }
 
-async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }) {
+async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSignal = undefined) {
   const target = archivePath(relativePath);
   if (!target) return { error: "Invalid archive path" };
   let source;
@@ -135,7 +137,9 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }) {
   const temp = `${target}.partial-${crypto.randomBytes(6).toString("hex")}`;
   try {
     await mkdir(path.dirname(target), { recursive: true });
-    const res = await fetch(source, { signal: AbortSignal.timeout(60 * 60 * 1000) });
+    const timeout = AbortSignal.timeout(60 * 60 * 1000);
+    const signal = abortSignal ? AbortSignal.any([timeout, abortSignal]) : timeout;
+    const res = await fetch(source, { signal });
     if (!res.ok || !res.body) return { error: `Archive download failed (${res.status})` };
     const contentLength = Number(res.headers.get("content-length") || 0);
     if (contentLength && contentLength > MIRROR_ARCHIVE_MAX_BYTES) return { error: "Archive exceeds the host limit" };
@@ -155,10 +159,45 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }) {
   }
 }
 
+async function archiveStatus(relativePath) {
+  const target = archivePath(relativePath);
+  if (!target) return { error: "Invalid archive path" };
+  const job = archiveJobs.get(relativePath);
+  if (job?.status === "uploading") return { status: "uploading" };
+  if (job?.status === "failed") return { status: "missing", error: job.error || "Archive transfer failed" };
+  try {
+    const file = await stat(target);
+    return { status: "verified", sizeBytes: file.size };
+  } catch (err) {
+    if (err?.code === "ENOENT") return { status: "missing" };
+    return { error: err instanceof Error ? err.message : "Could not inspect archive" };
+  }
+}
+
+async function queueArchive(input) {
+  const target = archivePath(input?.relativePath);
+  if (!target) return { error: "Invalid archive path" };
+  const existing = await archiveStatus(input.relativePath);
+  if (existing.error) return existing;
+  if (existing.status === "verified") return existing;
+  if (existing.status === "uploading") return existing;
+
+  const controller = new AbortController();
+  archiveJobs.set(input.relativePath, { status: "uploading", controller });
+  void archiveFromUrl(input, controller.signal).then((result) => {
+    archiveJobs.set(input.relativePath, result.error
+      ? { status: "failed", error: result.error }
+      : { status: "verified", sizeBytes: result.sizeBytes });
+  });
+  return { status: "uploading" };
+}
+
 async function deleteArchivedFile(relativePath) {
   const target = archivePath(relativePath);
   if (!target) return { error: "Invalid archive path" };
   try {
+    archiveJobs.get(relativePath)?.controller?.abort();
+    archiveJobs.delete(relativePath);
     await rm(target, { force: true });
     return { ok: true };
   } catch (err) {
@@ -346,12 +385,17 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && url.pathname === "/mirror/archive") {
-      const result = await archiveFromUrl(await readBody(req));
-      json(res, result.error ? 400 : 201, result);
+      const result = await queueArchive(await readBody(req));
+      json(res, result.error ? 400 : result.status === "uploading" ? 202 : 200, result);
       return;
     }
 
     const archiveMatch = url.pathname.match(/^\/mirror\/archive\/(.+)$/);
+    if (req.method === "GET" && archiveMatch) {
+      const result = await archiveStatus(decodeURIComponent(archiveMatch[1]));
+      json(res, result.error ? 400 : 200, result);
+      return;
+    }
     if (req.method === "DELETE" && archiveMatch) {
       const result = await deleteArchivedFile(decodeURIComponent(archiveMatch[1]));
       json(res, result.error ? 400 : 200, result);

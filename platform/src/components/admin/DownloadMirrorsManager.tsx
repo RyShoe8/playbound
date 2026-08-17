@@ -449,6 +449,8 @@ export function DownloadMirrorsManager() {
       {/* Toast Notification */}
       {message && (
         <div
+          role="status"
+          aria-live="polite"
           className={`p-4 rounded-xl border flex items-center justify-between transition-all ${
             message.type === "success"
               ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400"
