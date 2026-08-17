@@ -75,7 +75,7 @@ export async function provisionPartyDiscordVoice(
     };
 
     if (!party.discord) {
-      (party as any).discord = {};
+      party.set("discord", {});
     }
     const discord = party.discord!;
     if (data.inviteUrl) discord.inviteUrl = data.inviteUrl;

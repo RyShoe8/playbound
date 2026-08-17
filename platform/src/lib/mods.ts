@@ -5,6 +5,8 @@ import type { GameArt, GameFaq, InstallStep } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 import type { ModHardwareRequirements } from "@/lib/hardware/types";
 import { mods as seedMods } from "@/lib/data/mods";
+import ModClassification from "@/lib/models/ModClassification";
+import { getDescendantClassificationIds } from "@/lib/modClassifications";
 
 const seedBySlug = new Map(seedMods.map((s) => [s.slug, s]));
 
@@ -59,6 +61,8 @@ export type CatalogModPublic = {
   installSteps?: InstallStep[];
   faq?: GameFaq[];
   updatedAt?: string;
+  classificationIds?: string[];
+  tags?: string[];
 };
 
 /**
@@ -153,6 +157,9 @@ function toMod(doc: LeanMod): CatalogModPublic {
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,
+    classificationIds: Array.isArray(doc.classificationIds)
+      ? doc.classificationIds.map((id) => String(id))
+      : [],
   };
 }
 
@@ -179,24 +186,14 @@ export function toInstallMeta(mod: CatalogModPublic): ModInstallMeta {
 
 /**
  * Editorial fields a list/grid view never renders.
- *
- * These are the bulk of a mod document — `longDescription` alone is 80+ words
- * by editorial policy, and `faq`/`installSteps`/`screenshots` are unbounded
- * arrays. Fetching them for a card grid cost twice over: once pulling them out
- * of Atlas, then again serializing them into the RSC payload for the client
- * component that renders the grid. /mods was shipping ~1.2 MB of HTML for a
- * view that reads seven fields per mod.
- *
- * Every field here is optional on CatalogModPublic, so a projected document is
- * still a valid CatalogModPublic — callers that ask for the card view simply
- * see them as undefined rather than getting a different type.
  */
 const CARD_EXCLUDED_FIELDS = [
   "longDescription",
+  "whatItChanges",
   "compatibility",
-  "hardwareRequirements",
   "installSteps",
   "faq",
+  "hardwareRequirements",
   "screenshots",
 ] as const;
 
@@ -206,6 +203,8 @@ export type ListModsOptions = {
   baseGameSlug?: string;
   /** null = base-wide only; string = that edition; omit = any edition. */
   editionSlug?: string | null;
+  /** Filter by classification slug or ID (includes all descendants) */
+  classification?: string;
   includeUnpublished?: boolean;
   includeTesting?: boolean;
   /**
@@ -239,6 +238,7 @@ export async function listMods(opts?: ListModsOptions): Promise<CatalogModPublic
   const key = JSON.stringify({
     baseGameSlug: opts?.baseGameSlug ?? null,
     editionSlug: opts && "editionSlug" in opts ? opts.editionSlug ?? null : "any",
+    classification: opts?.classification ?? null,
     includeTesting: Boolean(opts?.includeTesting),
     view: opts?.view ?? "full",
   });
@@ -259,6 +259,10 @@ async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPubli
       // null matches both explicit null and missing field (legacy docs).
       parts.push({ editionSlug: opts.editionSlug ?? null });
     }
+    if (opts?.classification) {
+      const descendantIds = await getDescendantClassificationIds(opts.classification);
+      parts.push({ classificationIds: { $in: descendantIds } });
+    }
     if (!opts?.includeUnpublished) {
       parts.push(mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) }));
     }
@@ -267,7 +271,20 @@ async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPubli
     const query = CatalogMod.find(filter).sort({ title: 1 });
     if (opts?.view === "card") query.select(CARD_PROJECTION);
     const docs = await query.lean();
-    dbMods = docs.map((d) => toMod(d as LeanMod));
+
+    const classifications = await ModClassification.find({ isActive: true }, { _id: 1, name: 1 }).lean();
+    const classMap = new Map<string, string>();
+    for (const c of classifications) {
+      classMap.set(String(c._id), c.name);
+    }
+
+    dbMods = docs.map((d) => {
+      const mod = toMod(d as LeanMod);
+      if (mod.classificationIds?.length) {
+        mod.tags = mod.classificationIds.map((id) => classMap.get(id)).filter(Boolean) as string[];
+      }
+      return mod;
+    });
   } catch (err) {
     console.error("[mods] listMods failed:", err);
   }
@@ -322,7 +339,17 @@ export async function getMod(
       ? { slug }
       : { $and: [{ slug }, mongoVisibleFilter({ includeTesting: Boolean(opts?.includeTesting) })] };
     const doc = await CatalogMod.findOne(query).lean();
-    if (doc) return toMod(doc as LeanMod);
+    if (doc) {
+      const mod = toMod(doc as LeanMod);
+      if (mod.classificationIds?.length) {
+        const classifications = await ModClassification.find(
+          { _id: { $in: mod.classificationIds } },
+          { name: 1 }
+        ).lean();
+        mod.tags = classifications.map((c) => c.name);
+      }
+      return mod;
+    }
   } catch (err) {
     console.error("[mods] getMod failed:", err);
   }

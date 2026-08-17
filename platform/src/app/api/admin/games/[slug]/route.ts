@@ -4,6 +4,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import { developersBySlug } from "@/lib/data";
+import { ensureDeveloperExists } from "@/lib/developers";
 import { gamePayloadSchema, withDefaultArt, withDefaultLauncherInstall } from "@/lib/gamePayload";
 import { withSyncedPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
@@ -72,8 +73,15 @@ export async function PATCH(
       );
     }
 
-    const developerName =
-      body.developerName || developersBySlug.get(body.developerSlug)?.name || null;
+    let developerSlug = body.developerSlug;
+    let developerName = body.developerName;
+    if (developerSlug) {
+      const dev = await ensureDeveloperExists(developerSlug, developerName);
+      developerSlug = dev.slug;
+      developerName = dev.name;
+    } else {
+      developerName = developerName || developersBySlug.get(developerSlug)?.name || null;
+    }
 
     const previous = await CatalogGame.findOne({ slug }).select("published publishedAt status").lean();
     let publishedAt = (previous as { publishedAt?: Date | null })?.publishedAt;
@@ -86,6 +94,8 @@ export async function PATCH(
       {
         $set: {
           ...body,
+          developerSlug,
+          developerName,
           publishedAt: body.status === "published" ? (publishedAt ?? new Date()) : null,
           steamAppId: body.steamAppId || null,
           githubRepo: body.githubRepo || null,
@@ -93,7 +103,6 @@ export async function PATCH(
           screenshots: body.screenshots ?? [],
           launcherInstall: body.launcherInstall || null,
           serverLobbyAuth: body.serverLobbyAuth || null,
-          developerName,
           submissionId: body.submissionId || null,
           managedBy: body.managedBy || "admin",
           ownerUserId: body.ownerUserId || null,
@@ -146,6 +155,7 @@ export async function PATCH(
     }
 
     revalidateTag("catalog", { expire: 0 });
+    revalidateTag("developers", { expire: 0 });
     return NextResponse.json({
       success: true,
       slug: doc.slug,

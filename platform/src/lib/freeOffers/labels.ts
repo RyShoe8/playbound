@@ -109,7 +109,7 @@ export function expirationLabel(endDate: Date | string | null): string | null {
     return `Ends ${dayName}`;
   }
 
-  const days = Math.floor(diffDays);
+  const days = Math.round(diffDays);
   return `${days} days left`;
 }
 

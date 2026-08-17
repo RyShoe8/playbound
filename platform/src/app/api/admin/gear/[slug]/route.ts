@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
 import GearRecommendation from "@/lib/models/GearRecommendation";
@@ -9,10 +8,8 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import { slugifyTitle } from "@/lib/gamePayload";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { error } = await requireAdminSession();
+  if (error) return error;
 
   const { slug: currentSlug } = await params;
 
@@ -65,10 +62,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ slug: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const { error } = await requireAdminSession();
+  if (error) return error;
 
   const { slug } = await params;
 

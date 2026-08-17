@@ -117,7 +117,7 @@ const SORT_OPTIONS = [
 let searchPlayingNow = new Map();
 
 function ensureSearchShell() {
-  const container = views.search;
+  const container = views.search || document.getElementById("view-search");
   if (!container) return false;
   if (document.getElementById("search-games-grid")) return false;
 
@@ -401,10 +401,17 @@ export function paintSearchResults(catalog = state.catalogCache) {
 
 export async function renderSearchView() {
   ensureSearchShell();
-  const catalog = state.catalogCache;
-  searchPlayingNow = await loadPlayingNowBySlug();
+  const catalog =
+    state.catalogCache.length > 0 ? state.catalogCache : await window.playbound.getCatalog();
+  if (!state.catalogCache.length && Array.isArray(catalog)) state.catalogCache = catalog;
   paintSearchResults(catalog);
-  markViewReady(views.search);
+  markViewReady(views.search || document.getElementById("view-search"));
+
+  const counts = await loadPlayingNowBySlug();
+  if (counts.size > 0) {
+    searchPlayingNow = counts;
+    if (state.currentView === "search") paintSearchResults(catalog);
+  }
 }
 
 api.renderSearchView = renderSearchView;

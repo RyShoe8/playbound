@@ -358,58 +358,57 @@ async function renderFriendsView() {
         <div id="add-friends-results" style="margin-top: 12px;"></div>
       </div>
 
-      <div id="create-party-panel" class="party-panel" style="display: none; margin-top: 16px;">
-        <div class="party-panel-body">
+      <div id="create-party-panel" class="create-party-card" style="display: none; margin-top: 16px;">
+        <div class="create-party-header">
           <div>
-            <h2 style="margin: 0; font-size: 16px; font-weight: bold;">Create a Party</h2>
-            <p class="view-sub" style="margin: 4px 0 0; font-size: 13px;">Host a lobby, invite friends, then pick a game in the party window.</p>
+            <h4 class="create-party-title">Create a Party</h4>
+            <p class="create-party-subtitle">Host a lobby, invite friends, then pick a game in the party window.</p>
           </div>
-
-          <div class="party-field">
-            <label class="party-field-label" for="create-party-name">
-              Party name <span style="font-weight: 400; text-transform: none;">(optional)</span>
-            </label>
-            <input type="text" class="input-text" id="create-party-name" maxlength="${PARTY_NAME_MAX}" placeholder="Friday raid, OpenRA night…" autocomplete="off" style="width: 100%;" />
-          </div>
-
-          <div class="party-field">
-            <label class="party-field-label" for="create-party-game">
-              Game <span style="font-weight: 400; text-transform: none;">(optional)</span>
-            </label>
-            <select class="input-text" id="create-party-game" style="width: 100%;"></select>
-          </div>
-
-          <div class="party-field">
-            <label class="party-field-label" for="create-party-visibility">Who can join</label>
-            <select class="input-text" id="create-party-visibility" style="width: 100%;">
-              ${VISIBILITY_OPTIONS.map(
-                (o) => `<option value="${o.value}">${escapeHtml(PARTY_VISIBILITY_LABELS[o.value])}</option>`
-              ).join("")}
-            </select>
-            <p class="view-sub" id="create-party-visibility-hint" style="margin: 0; font-size: 12px;"></p>
-          </div>
-
-          <div class="party-field" id="create-party-password-wrap" style="display: none;">
-            <label class="party-field-label" for="create-party-password">Party password</label>
-            <input type="text" class="input-text" id="create-party-password" placeholder="At least 4 characters" autocomplete="off" style="width: 100%;" />
-          </div>
-
-          <label class="party-switch">
-            <span style="min-width: 0;">
-              <span style="display: block; font-size: 14px; font-weight: 600;">Voice channel</span>
-              <span class="view-sub" style="display: block; font-size: 12px;">Open a Discord voice room for this party</span>
-            </span>
-            <input type="checkbox" id="create-party-voice" checked />
-          </label>
-
-          <div class="party-field">
-            <span class="party-field-label">Invite Friends (Optional)</span>
-            <div id="create-party-friends" style="max-height: 160px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px;"></div>
-          </div>
-
-          <p id="create-party-message" class="view-sub" style="display: none; margin: 0; font-size: 13px;"></p>
-          <button class="btn-primary" id="btn-create-party-submit">Create Party</button>
+          <button type="button" class="create-party-close" id="btn-create-party-close" aria-label="Close">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
+
+        <div class="create-party-field">
+          <label class="create-party-label" for="create-party-name">
+            Party name <span class="create-party-label-opt">(optional)</span>
+          </label>
+          <input type="text" class="create-party-input" id="create-party-name" maxlength="${PARTY_NAME_MAX}" placeholder="Friday raid, OpenRA night…" autocomplete="off" />
+        </div>
+
+        <div class="create-party-field">
+          <label class="create-party-label" for="create-party-visibility">Who can join</label>
+          <select class="create-party-input" id="create-party-visibility">
+            ${VISIBILITY_OPTIONS.map(
+              (o) => `<option value="${o.value}">${escapeHtml(PARTY_VISIBILITY_LABELS[o.value])}</option>`
+            ).join("")}
+          </select>
+          <p class="create-party-hint" id="create-party-visibility-hint"></p>
+        </div>
+
+        <div class="create-party-field" id="create-party-password-wrap" style="display: none;">
+          <label class="create-party-label" for="create-party-password">Party password</label>
+          <input type="text" class="create-party-input" id="create-party-password" placeholder="At least 4 characters" autocomplete="off" />
+        </div>
+
+        <label class="create-party-voice-box">
+          <div style="min-width: 0; flex: 1;">
+            <span class="create-party-voice-title">Voice channel</span>
+            <span class="create-party-voice-desc">Open a Discord voice room for this party</span>
+          </div>
+          <input type="checkbox" class="create-party-checkbox" id="create-party-voice" checked />
+        </label>
+
+        <div class="create-party-field">
+          <span class="create-party-label">Invite Friends <span class="create-party-label-opt">(Optional)</span></span>
+          <div id="create-party-friends" class="create-party-friends-box"></div>
+        </div>
+
+        <div id="create-party-message" class="create-party-error" style="display: none;"></div>
+        <button type="button" class="create-party-submit-btn" id="btn-create-party-submit">Create Party</button>
       </div>
 
       <div id="friends-party-area" style="margin-top: 20px;"></div>
@@ -1892,14 +1891,19 @@ async function toggleCreatePartyPanel(forceShow) {
 }
 
 async function fillCreatePartyPanel() {
-  const gameSelect = document.getElementById("create-party-game");
   const friendsBox = document.getElementById("create-party-friends");
   const submit = document.getElementById("btn-create-party-submit");
   const msg = document.getElementById("create-party-message");
   const nameInput = document.getElementById("create-party-name");
-  if (!gameSelect || !friendsBox || !submit) return;
+  const closeBtn = document.getElementById("btn-create-party-close");
+  if (!friendsBox || !submit) return;
 
-  await ensurePartyGames();
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      document.getElementById("create-party-panel").style.display = "none";
+    };
+  }
+
   const visSelect = document.getElementById("create-party-visibility");
   const passwordWrap = document.getElementById("create-party-password-wrap");
   const visHint = document.getElementById("create-party-visibility-hint");
@@ -1917,43 +1921,24 @@ async function fillCreatePartyPanel() {
   }
   syncVisibility();
 
-  /*
-   * The game is optional here, exactly as on the site: its create panel has no
-   * picker at all and the leader chooses in the party window. The launcher
-   * keeps the picker for people starting a party around something already
-   * installed, but an empty selection is a valid submission.
-   */
-  const previous = gameSelect.value;
-  gameSelect.innerHTML = partyGameOptionsHtml("", null).replace(
-    ">Select a game<",
-    ">No game yet — pick one later<"
-  );
-  if (previous && [...gameSelect.options].some((o) => o.value === previous)) {
-    gameSelect.value = previous;
-  }
-  enhanceSelect(gameSelect);
   if (visSelect) enhanceSelect(visSelect);
-  // innerHTML bypasses the appendChild hook the custom select patches in, so
-  // the rendered list has to be refreshed by hand after a rebuild.
-  gameSelect._syncCustomSelect?.();
   visSelect?._syncCustomSelect?.();
 
   const friends = state._createPartyFriends || [];
   friendsBox.innerHTML =
     friends.length === 0
-      ? `<p class="view-sub" style="margin:0;font-size:12px;">Add friends to invite them.</p>`
+      ? `<p class="create-party-empty-friends">Add friends to invite them.</p>`
       : friends
           .map(
             (f) => `
-        <label class="filter-check" style="display:flex;align-items:center;gap:8px;margin:4px 0;">
-          <input type="checkbox" class="create-party-friend" value="${escapeHtml(f.id)}" />
-          ${escapeHtml(f.username)}
+        <label class="create-party-friend-row">
+          <input type="checkbox" class="create-party-friend create-party-checkbox" value="${escapeHtml(f.id)}" />
+          <span class="create-party-friend-name">${escapeHtml(f.username)}</span>
         </label>`
           )
           .join("");
 
   submit.onclick = async () => {
-    const gameSlug = gameSelect.value || null;
     const name = nameInput?.value?.trim() || "";
     const visibility = document.getElementById("create-party-visibility")?.value || "friends";
     const password = document.getElementById("create-party-password")?.value?.trim() || "";
@@ -1962,7 +1947,6 @@ async function fillCreatePartyPanel() {
     if (visibility === "password" && password.length < 4) {
       if (msg) {
         msg.textContent = "Password must be at least 4 characters.";
-        msg.style.color = "var(--danger)";
         msg.style.display = "block";
       }
       return;
@@ -1973,7 +1957,7 @@ async function fillCreatePartyPanel() {
     try {
       const res = await window.playbound.createParty({
         name: name || null,
-        gameSlug,
+        gameSlug: null,
         visibility,
         maxSize: 8,
         password: visibility === "password" ? password : null,
@@ -2005,7 +1989,6 @@ async function fillCreatePartyPanel() {
     } catch (err) {
       if (msg) {
         msg.textContent = err.message || "Couldn't create party.";
-        msg.style.color = "var(--danger)";
         msg.style.display = "block";
       }
     } finally {

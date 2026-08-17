@@ -13,6 +13,7 @@
     "seed:launcher-install": "tsx scripts/seed-launcher-install.ts",
     "upload:launcher": "tsx scripts/upload-launcher.ts",
     "seed:mods": "tsx scripts/seed-mods.ts",
+    "seed:mod-classifications": "tsx scripts/seed-mod-classifications.ts",
     "seed:editions": "tsx scripts/seed-editions.ts",
     "fix:mod-media": "tsx scripts/fix-mod-media.ts",
     "fetch:mod-covers": "tsx scripts/fetch-mod-covers.ts",

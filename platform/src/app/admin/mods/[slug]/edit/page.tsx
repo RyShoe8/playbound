@@ -54,6 +54,9 @@ export default async function AdminEditModPage({ params }: { params: Promise<{ s
     compatibility: doc.compatibility ? String(doc.compatibility) : undefined,
     installSteps: (doc.installSteps as ModPayload["installSteps"]) ?? [],
     faq: (doc.faq as ModPayload["faq"]) ?? [],
+    classificationIds: Array.isArray(doc.classificationIds)
+      ? doc.classificationIds.map((id: unknown) => String(id))
+      : [],
   };
 
   return (

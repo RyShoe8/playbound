@@ -10,9 +10,11 @@ export async function GET(req: Request) {
     const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
     const baseGameSlug = new URL(req.url).searchParams.get("baseGameSlug") || undefined;
+    const classification = new URL(req.url).searchParams.get("classification") || undefined;
     const [mods, games] = await Promise.all([
       listMods({
         ...(baseGameSlug ? { baseGameSlug } : {}),
+        ...(classification ? { classification } : {}),
         includeTesting,
         view: "card",
       }),
@@ -41,6 +43,8 @@ export async function GET(req: Request) {
           approxSize: sizeLabelFromMB(m.sizeMB) || null,
           art: [m.art.from, m.art.to] as [string, string],
           platforms: Array.isArray(m.platforms) ? m.platforms : [],
+          tags: m.tags || [],
+          classificationIds: m.classificationIds || [],
           status: m.status || "published",
           testing: m.status === "testing",
           baseHasServers:

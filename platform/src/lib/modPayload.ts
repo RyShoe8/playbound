@@ -90,6 +90,7 @@ export const modPayloadSchema = z.object({
   hardwareRequirements: modHardwareRequirementsSchema.optional().nullable(),
   installSteps: z.array(installStepSchema).max(30).default([]),
   faq: z.array(faqEntrySchema).max(30).default([]),
+  classificationIds: z.array(z.string().trim()).default([]),
 });
 
 export type ModPayload = z.infer<typeof modPayloadSchema>;
@@ -134,4 +135,5 @@ export const emptyModDraft = (baseGameSlug = ""): ModPayload => ({
   platforms: [],
   installSteps: [],
   faq: [],
+  classificationIds: [],
 });

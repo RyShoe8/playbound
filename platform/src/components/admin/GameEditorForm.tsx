@@ -3,6 +3,7 @@ import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, UserPlus } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import {
   FEATURES,
@@ -171,6 +172,38 @@ export function GameEditorForm({
     notFor: [],
   });
 
+  const isKnownDev = useMemo(
+    () => developers.some((d) => d.slug === form.developerSlug),
+    [developers, form.developerSlug]
+  );
+  const [isCustomDev, setIsCustomDev] = useState(() => {
+    return Boolean(form.developerSlug && !developers.some((d) => d.slug === form.developerSlug));
+  });
+  const [customDevName, setCustomDevName] = useState(() => {
+    if (form.developerName) return form.developerName;
+    if (form.developerSlug && !developers.some((d) => d.slug === form.developerSlug)) {
+      return form.developerSlug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    }
+    return "";
+  });
+
+  function handleCustomDevNameChange(name: string) {
+    setCustomDevName(name);
+    const slug = name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    setForm((prev) => ({
+      ...prev,
+      developerName: name || null,
+      developerSlug: slug || prev.developerSlug || "indie-web",
+    }));
+  }
+
   // Mirrors the server-side publish gate so nothing is a surprise on save.
   // Must apply the same derivation first — the server fills install steps and
   // the FAQ before checking readiness, so evaluating the raw form here would
@@ -291,6 +324,12 @@ export function GameEditorForm({
         bestFor: prev.bestFor?.length ? prev.bestFor : (draft.bestFor ?? []),
         notFor: prev.notFor?.length ? prev.notFor : (draft.notFor ?? []),
       }));
+      if (draft.developerSlug && !developers.some((d) => d.slug === draft.developerSlug)) {
+        setIsCustomDev(true);
+        setCustomDevName(draft.developerName || draft.developerSlug);
+      } else if (draft.developerSlug) {
+        setIsCustomDev(false);
+      }
       setEvidence((data.evidence as string[]) ?? []);
       setSourceMaterial((data.sourceMaterial as string | null) ?? null);
       setSuggestions(
@@ -798,35 +837,101 @@ export function GameEditorForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className={label}>Developer</label>
-            <PremiumSelect
-              value={form.developerSlug}
-              onChange={(e) => patch("developerSlug", e.target.value)}
-              className={field}
-            >
-              {/* Without a blank option, a game whose developerSlug matches
-                  nothing in the list renders as the first entry while the
-                  stored value is something else — the credit looks wrong and
-                  touching the dropdown would silently overwrite it. */}
-              <option value="">Select a developer…</option>
-              {developers.map((d) => (
-                <option key={d.slug} value={d.slug}>
-                  {d.name}
-                </option>
-              ))}
-              {form.developerSlug && !developers.some((d) => d.slug === form.developerSlug) && (
-                <option value={form.developerSlug}>
-                  {form.developerSlug} (unknown — no such developer)
-                </option>
+            <div className="flex items-center justify-between">
+              <label className={label}>Developer</label>
+              {!isCustomDev ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomDev(true);
+                    if (isKnownDev) {
+                      setCustomDevName("");
+                      patch("developerSlug", "");
+                      patch("developerName", null);
+                    }
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                >
+                  <Plus className="size-3" /> New developer
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomDev(false);
+                    if (!isKnownDev) {
+                      patch("developerSlug", "");
+                      patch("developerName", null);
+                    }
+                  }}
+                  className="text-[11px] font-semibold text-muted-foreground hover:text-foreground underline"
+                >
+                  Pick from list
+                </button>
               )}
-            </PremiumSelect>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Missing one?{" "}
-              <a href="/admin/developers/new" className="text-primary hover:underline">
-                Add a developer
-              </a>
-              .
-            </p>
+            </div>
+
+            {isCustomDev ? (
+              <div className="mt-1 space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                <div>
+                  <input
+                    type="text"
+                    required
+                    value={customDevName}
+                    onChange={(e) => handleCustomDevNameChange(e.target.value)}
+                    placeholder="Enter new developer name (e.g. Team Cherry)"
+                    className={field}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>
+                    Slug: <code className="font-mono text-primary font-bold">{form.developerSlug || "…"}</code>
+                  </span>
+                  <span className="font-semibold text-primary text-[10px]">
+                    ✨ Added to developer list on save
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <PremiumSelect
+                  value={form.developerSlug}
+                  onChange={(e) => {
+                    if (e.target.value === "__custom__") {
+                      setIsCustomDev(true);
+                      setCustomDevName("");
+                      patch("developerSlug", "");
+                      patch("developerName", null);
+                    } else {
+                      const chosen = developers.find((d) => d.slug === e.target.value);
+                      setForm((prev) => ({
+                        ...prev,
+                        developerSlug: e.target.value,
+                        developerName: chosen?.name || null,
+                      }));
+                    }
+                  }}
+                  className={field}
+                >
+                  <option value="">Select a developer…</option>
+                  <option value="__custom__">+ Enter new developer…</option>
+                  <option disabled>──────────</option>
+                  {developers.map((d) => (
+                    <option key={d.slug} value={d.slug}>
+                      {d.name}
+                    </option>
+                  ))}
+                  {form.developerSlug && !isKnownDev && (
+                    <option value={form.developerSlug}>
+                      {customDevName || form.developerSlug} (new developer)
+                    </option>
+                  )}
+                </PremiumSelect>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Select an existing developer or click <strong className="text-primary">+ New developer</strong> to add one on save.
+                </p>
+              </>
+            )}
           </div>
           <div>
             <label className={label}>License</label>

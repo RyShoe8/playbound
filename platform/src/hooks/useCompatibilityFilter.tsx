@@ -105,18 +105,13 @@ export function CompatibilityProvider({
 }) {
   const { status } = useSession();
   const device = useDevice(ssrDevice);
-  const localMode = useSyncExternalStore<CompatibilityFilterMode>(
+  const mode = useSyncExternalStore<CompatibilityFilterMode>(
     subscribeLocal,
     readLocalMode,
     () => "compatible"
   );
-  const [mode, setModeState] = useState<CompatibilityFilterMode>(localMode);
   const [ready, setReady] = useState(false);
   const syncedUser = useRef(false);
-
-  useEffect(() => {
-    setModeState(localMode);
-  }, [localMode]);
 
   // After auth resolves: prefer profile; else push local → profile once.
   useEffect(() => {
@@ -139,7 +134,6 @@ export function CompatibilityProvider({
 
       if (serverMode) {
         writeLocalMode(serverMode);
-        setModeState(serverMode);
       } else {
         const local = readLocalMode();
         await patchServerMode(local);
@@ -158,7 +152,6 @@ export function CompatibilityProvider({
 
   const setMode = useCallback(
     (next: CompatibilityFilterMode) => {
-      setModeState(next);
       writeLocalMode(next);
       if (status === "authenticated") void patchServerMode(next);
     },

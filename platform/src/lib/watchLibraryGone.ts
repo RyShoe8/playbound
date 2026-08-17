@@ -32,7 +32,7 @@ export function watchUntilLibraryGone(opts: {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let stopped = false;
   let timer: number | undefined;
-  let timeout: number | undefined;
+  let timeoutId: number | undefined;
   let polling = false;
 
   const cleanup = () => {
@@ -41,7 +41,7 @@ export function watchUntilLibraryGone(opts: {
     window.removeEventListener("focus", onFocus);
     document.removeEventListener("visibilitychange", onVis);
     if (timer) window.clearInterval(timer);
-    if (timeout) window.clearTimeout(timeout);
+    if (timeoutId) window.clearTimeout(timeoutId);
   };
 
   const tick = async () => {
@@ -74,7 +74,7 @@ export function watchUntilLibraryGone(opts: {
 
   window.addEventListener("focus", onFocus);
   document.addEventListener("visibilitychange", onVis);
-  timeout = window.setTimeout(cleanup, timeoutMs);
+  timeoutId = window.setTimeout(cleanup, timeoutMs);
   startPolling();
 
   return cleanup;

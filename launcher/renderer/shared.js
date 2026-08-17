@@ -184,6 +184,7 @@ export function markViewDirty(...els) {
 export function bindViews() {
   views.home = document.getElementById("view-home");
   views.games = document.getElementById("view-games");
+  views.search = document.getElementById("view-search");
   views.editions = document.getElementById("view-editions");
   views.mods = document.getElementById("view-mods");
   views.servers = document.getElementById("view-servers");
