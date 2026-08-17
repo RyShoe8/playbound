@@ -4227,10 +4227,11 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const fromEdition = catalogEntryFromEdition(editionMeta);
     if (fromEdition) {
       entry = { ...(entry || {}), ...fromEdition };
-    } else {
-      // An edition's own official/external action must win over the parent
-      // game's install recipe. Falling back first sent Classic DOS Daggerfall
-      // through a stale Daggerfall Unity package URL.
+    } else if (!(entry?.kind && entry.kind !== "external")) {
+      // Use an edition's own hand-off only when its parent game has no
+      // installable PlayBound recipe. A game-level package is the one
+      // canonical Daggerfall installation, even though its historical edition
+      // metadata is still labelled Classic DOS.
       if (editionMeta.installMethod === "official_download") {
         const url =
           editionMeta.installConfig?.official_download?.url ||

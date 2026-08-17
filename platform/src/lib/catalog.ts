@@ -56,28 +56,27 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       merged.exeHint = seed.exeHint;
       merged.versionLabel = seed.versionLabel;
     }
-    // A retired mirror hostname was saved on the Daggerfall row. Prefer the
-    // already-verified seed recipe at read time until that one launcher recipe
-    // is edited in Admin. This never writes to Mongo and only replaces the
-    // unreachable install transport plus its matching overlay fields.
+    // A retired mirror hostname was saved on the Daggerfall row, but its
+    // original package never completed uploading. Serve the verified
+    // PlayBound one-click archive at read time until that one launcher recipe
+    // is edited in Admin. This never writes to Mongo.
     if (
       game.slug === "daggerfall" &&
       typeof merged.url === "string" &&
       merged.url.includes("mirror.playbound.club") &&
       seed
     ) {
-      merged.kind = seed.kind;
-      merged.repo = seed.repo;
-      merged.assetPattern = seed.assetPattern;
-      merged.url = seed.url;
-      merged.fileName = seed.fileName;
-      merged.checksumMd5 = seed.checksumMd5;
-      merged.exeHint = seed.exeHint;
-      merged.knownExePaths = seed.knownExePaths;
-      merged.versionLabel = seed.versionLabel;
-      merged.overlayUrl = seed.overlayUrl;
-      merged.overlayFileName = seed.overlayFileName;
-      merged.overlayDest = seed.overlayDest;
+      merged.kind = "direct-zip";
+      merged.url =
+        "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/daggerfall/Daggerfall-Unity-PlayBound-v1.1.1.zip";
+      merged.fileName = "Daggerfall-Unity-PlayBound-v1.1.1.zip";
+      merged.checksumMd5 = "029a8e79fc5722cd08fa2936cf73975e";
+      merged.exeHint = "DaggerfallUnity.exe";
+      merged.knownExePaths = ["DaggerfallUnity.exe"];
+      merged.versionLabel = "v1.1.1";
+      merged.overlayUrl = undefined;
+      merged.overlayFileName = undefined;
+      merged.overlayDest = undefined;
     }
     return { ...game, launcherInstall: merged };
   }
