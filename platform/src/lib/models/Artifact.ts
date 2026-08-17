@@ -36,6 +36,8 @@ export interface IArtifact extends Document {
   mirrorEnabled: boolean;
   redistributionAllowed: boolean;
   vpsStatus: VpsStatus;
+  /** Most recent archive-transfer result from the VPS; operational metadata only. */
+  vpsStatusMessage?: string | null;
   r2Status: R2Status;
   r2PromotionScore: number;
   r2LastPromoted?: Date | null;
@@ -95,6 +97,7 @@ const ArtifactSchema = new Schema<IArtifact>(
       default: "verified",
       index: true,
     },
+    vpsStatusMessage: { type: String, default: null },
     r2Status: {
       type: String,
       enum: [

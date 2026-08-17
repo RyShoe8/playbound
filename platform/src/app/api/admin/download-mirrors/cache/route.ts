@@ -47,6 +47,7 @@ export async function GET() {
         r2Protected: a.r2Protected,
         r2Disabled: a.r2Disabled,
         vpsStatus: a.vpsStatus,
+        vpsStatusMessage: a.vpsStatusMessage || null,
         lastPromoted: a.r2LastPromoted,
         lastEvicted: a.r2LastEvicted,
         publicHealth,

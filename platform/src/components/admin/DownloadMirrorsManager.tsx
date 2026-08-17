@@ -69,6 +69,7 @@ interface CacheItem {
   r2Protected: boolean;
   r2Disabled: boolean;
   vpsStatus: string;
+  vpsStatusMessage: string | null;
   lastPromoted: string | null;
   lastEvicted: string | null;
   publicHealth: string;
@@ -355,6 +356,9 @@ export function DownloadMirrorsManager() {
 
   async function handleArchive(artifactId: string) {
     setBusyAction(`archive-${artifactId}`);
+    setCacheItems((items) => items.map((item) => item.id === artifactId
+      ? { ...item, vpsStatus: "uploading", vpsStatusMessage: "Starting VPS transfer…" }
+      : item));
     try {
       const res = await fetch("/api/admin/download-mirrors/cache/archive", {
         method: "POST",
@@ -366,7 +370,11 @@ export function DownloadMirrorsManager() {
       setMessage({ text: data.message, type: "success" });
       await loadData();
     } catch (err: unknown) {
-      setMessage({ text: err instanceof Error ? err.message : "Archive failed", type: "error" });
+      const detail = err instanceof Error ? err.message : "Archive failed";
+      setCacheItems((items) => items.map((item) => item.id === artifactId
+        ? { ...item, vpsStatus: "missing", vpsStatusMessage: detail }
+        : item));
+      setMessage({ text: detail, type: "error" });
     } finally {
       setBusyAction(null);
     }
@@ -788,8 +796,22 @@ export function DownloadMirrorsManager() {
                               }
                             >
                               <Archive className="w-3.5 h-3.5" />
-                              {item.vpsStatus === "verified" ? "On VPS" : "Archive to VPS"}
+                              {item.vpsStatus === "verified"
+                                ? "On VPS"
+                                : busyAction === `archive-${item.id}`
+                                ? "Starting…"
+                                : item.vpsStatus === "uploading"
+                                ? "Transferring…"
+                                : "Archive to VPS"}
                             </button>
+                            {item.vpsStatusMessage && (
+                              <span
+                                className={`max-w-52 text-[11px] leading-tight ${item.vpsStatus === "missing" ? "text-rose-300" : "text-sky-200"}`}
+                                title={item.vpsStatusMessage}
+                              >
+                                {item.vpsStatusMessage}
+                              </span>
+                            )}
                             {item.r2Status === "cached" ? (
                               <>
                                 <button
