@@ -2125,7 +2125,9 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "github-zip",
         repo: "Aleph-One-Marathon/alephone",
-        assetPattern: "Marathon2-.*-Win\\.zip$",
+        // The release also has Marathon2-*-Exe-Win.zip (engine only). Match
+        // only the full engine + scenario bundle for a first install.
+        assetPattern: "^Marathon2-\\d{8}-Win\\.zip$",
         exeHint: "Marathon2.exe",
       },
     },
@@ -2154,7 +2156,8 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "github-zip",
         repo: "Aleph-One-Marathon/alephone",
-        assetPattern: "Marathon-.*-Win\\.zip$",
+        // Do not select Marathon-*-Exe-Win.zip; it opens with no scenario.
+        assetPattern: "^Marathon-\\d{8}-Win\\.zip$",
         exeHint: "Marathon.exe",
       },
     },
@@ -2184,7 +2187,8 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "github-zip",
         repo: "Aleph-One-Marathon/alephone",
-        assetPattern: "Marathon2-.*-Win\\.zip$",
+        // The Exe-Win asset is an engine-only updater, not a playable install.
+        assetPattern: "^Marathon2-\\d{8}-Win\\.zip$",
         exeHint: "Marathon2.exe",
       },
     },
@@ -2213,7 +2217,8 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "github-zip",
         repo: "Aleph-One-Marathon/alephone",
-        assetPattern: "Marathon-.*-Win\\.zip$",
+        // The Exe-Win asset is an engine-only updater, not a playable install.
+        assetPattern: "^Marathon-\\d{8}-Win\\.zip$",
         exeHint: "Marathon.exe",
       },
     },
@@ -2242,7 +2247,8 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "github-zip",
         repo: "Aleph-One-Marathon/alephone",
-        assetPattern: "MarathonInfinity-.*-Win\\.zip$",
+        // The Exe-Win asset is an engine-only updater, not a playable install.
+        assetPattern: "^MarathonInfinity-\\d{8}-Win\\.zip$",
         exeHint: "MarathonInfinity.exe",
       },
     },
