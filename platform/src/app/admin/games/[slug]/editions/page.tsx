@@ -7,6 +7,7 @@ import { listAllEditionsForGame, deriveVirtualEdition, editionSource } from "@/l
 import { EDITION_STATUS_LABELS, EDITION_TYPE_LABELS, VERIFICATION_LABELS } from "@/lib/editionTypes";
 import { EditionReorderList } from "@/components/admin/EditionReorderList";
 import { MaterializeEditionsButton } from "@/components/admin/MaterializeEditionsButton";
+import { SwgOneClickInstallButton } from "@/components/admin/SwgOneClickInstallButton";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -41,6 +42,7 @@ export default async function AdminGameEditionsPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {game.slug === "star-wars-galaxies" && <SwgOneClickInstallButton />}
           <MaterializeEditionsButton gameSlug={game.slug} />
           <Link
             href={`/admin/games/${game.slug}/editions/new`}
