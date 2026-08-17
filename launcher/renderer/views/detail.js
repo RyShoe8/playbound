@@ -21,6 +21,7 @@ import {
   setStatus,
   startGameSession,
   state,
+  updateGamesFamilyNav,
   views,
   setProgress,
 } from "../shared.js";
@@ -289,6 +290,9 @@ let detailRenderToken = 0;
 
 async function renderGameDetailView(slug, opts = {}) {
   const renderToken = ++detailRenderToken;
+  // Clear the previous game's count first: carrying it over flashes an
+  // Editions nav entry on a game that turns out to have none.
+  if (state.currentDetailSlug !== slug) state.currentDetailEditionCount = 0;
   state.currentDetailSlug = slug;
   const container = views.gameDetail;
   const force = Boolean(opts?.force);
@@ -342,6 +346,9 @@ async function renderGameDetailView(slug, opts = {}) {
     window.playbound.getEditions?.(slug)
   ).catch(() => null);
   const editions = Array.isArray(editionsRes?.editions) ? editionsRes.editions : [];
+  // Drives whether the Editions nav entry appears for this game.
+  state.currentDetailEditionCount = editions.length;
+  updateGamesFamilyNav();
 
   // Cached stats paint immediately; anything still in flight arrives below.
   const cachedLive = cachePeek(`live:${slug}`, CACHE_TTL.liveStatsGame)?.data || null;

@@ -16,6 +16,7 @@ import {
   setStatus,
   startGameSession,
   state,
+  updateGamesFamilyNav,
   views,
 } from "../shared.js";
 
