@@ -1,0 +1,208 @@
+import dbConnect from "@/lib/db";
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
+
+/**
+ * Per-game Install and Join lights, derived from telemetry.
+ *
+ * These used to be a stored flag: `markGameHealthYellow` set yellow on a
+ * failure and nothing ever set it back, so a game that broke once in March
+ * still showed yellow in August until somebody clicked it. Deriving the colour
+ * from a rolling window means it clears itself when the failures stop.
+ *
+ * Install reuses the definition the Ops failure-rate card settled on —
+ * `install_failed` against `edition_installed`, and deliberately not
+ * `game_installed`/`mod_installed`, which come from library sync rather than
+ * an install completing.
+ *
+ * Join is the party path: a room that could not be provisioned, or a launch
+ * that failed while joining one. `launch_attempted` carries `phase: "join"`
+ * for exactly those launches, which is what makes a denominator possible —
+ * successes are attempts minus failures, since nothing emits "joined ok".
+ */
+
+export const HEALTH_WINDOW_DAYS = 7;
+
+/** At least this many attempts before a colour means anything. */
+const MIN_ATTEMPTS = 3;
+/** Failure share at or above this is red. */
+const RED_AT = 0.2;
+
+export type AreaHealth = {
+  status: GameHealthStatus;
+  failed: number;
+  attempts: number;
+};
+
+export type GameHealth = Record<GameHealthArea, AreaHealth>;
+
+const HEALTHY: AreaHealth = { status: "green", failed: 0, attempts: 0 };
+
+export function emptyGameHealth(): GameHealth {
+  return { install: HEALTHY, party: HEALTHY };
+}
+
+/**
+ * Colour for one area.
+ *
+ * No failures is green whatever the volume. Below the minimum attempts a
+ * failure is yellow rather than red — one bad install on a game nobody has
+ * tried yet is not evidence the game is broken, and a table full of red is a
+ * table nobody reads.
+ */
+export function statusFor(failed: number, attempts: number): GameHealthStatus {
+  if (failed <= 0) return "green";
+  if (attempts < MIN_ATTEMPTS) return "yellow";
+  return failed / attempts >= RED_AT ? "red" : "yellow";
+}
+
+/**
+ * How a row counts.
+ *
+ *   attempt       a finished attempt that did not fail
+ *   failed        a failure that is its own attempt — `install_failed` and
+ *                 `party_hosted_failed` are mutually exclusive with their
+ *                 success events, so each is one attempt
+ *   failure_only  a failure already counted as an attempt by another event —
+ *                 a failed join emits `launch_attempted` *and* `launch_failed`,
+ *                 so counting both would make one join look like two
+ */
+type Outcome = "attempt" | "failed" | "failure_only";
+
+type Row = {
+  _id: { slug: string; area: GameHealthArea; outcome: Outcome };
+  count: number;
+};
+
+export function buildGameHealth(rows: Row[]): Map<string, GameHealth> {
+  const out = new Map<string, GameHealth>();
+  const bump = (slug: string) => {
+    const existing = out.get(slug);
+    if (existing) return existing;
+    const fresh: GameHealth = {
+      install: { status: "green", failed: 0, attempts: 0 },
+      party: { status: "green", failed: 0, attempts: 0 },
+    };
+    out.set(slug, fresh);
+    return fresh;
+  };
+
+  for (const row of rows) {
+    const { slug, area, outcome } = row._id || ({} as Row["_id"]);
+    if (!slug || (area !== "install" && area !== "party")) continue;
+    const health = bump(slug);
+    if (outcome === "failed" || outcome === "failure_only") health[area].failed += row.count;
+    if (outcome === "failed" || outcome === "attempt") health[area].attempts += row.count;
+  }
+
+  for (const health of out.values()) {
+    for (const area of ["install", "party"] as const) {
+      health[area].status = statusFor(health[area].failed, health[area].attempts);
+    }
+  }
+  return out;
+}
+
+/**
+ * One aggregation for the whole table. Classifying inside the pipeline keeps
+ * this to a single pass over the window instead of four queries per game.
+ */
+export async function getGameHealth(
+  days = HEALTH_WINDOW_DAYS
+): Promise<Map<string, GameHealth>> {
+  try {
+    await dbConnect();
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const rows = await TelemetryEvent.aggregate<Row>([
+      {
+        $match: {
+          event: {
+            $in: [
+              "install_failed",
+              "edition_installed",
+              "party_hosted_failed",
+              "party_hosted_ready",
+              "launch_attempted",
+              "launch_failed",
+            ],
+          },
+          createdAt: { $gte: since },
+          "properties.gameSlug": { $type: "string", $ne: "" },
+        },
+      },
+      {
+        $project: {
+          slug: "$properties.gameSlug",
+          event: 1,
+          // Only join-phase launches belong to the Join light; a plain Play
+          // that failed is an install/launch problem, not a party one.
+          isJoinPhase: { $eq: ["$properties.phase", "join"] },
+        },
+      },
+      {
+        $project: {
+          slug: 1,
+          area: {
+            $cond: [
+              {
+                $or: [
+                  { $in: ["$event", ["party_hosted_failed", "party_hosted_ready"]] },
+                  {
+                    $and: [
+                      { $in: ["$event", ["launch_attempted", "launch_failed"]] },
+                      "$isJoinPhase",
+                    ],
+                  },
+                ],
+              },
+              "party",
+              "install",
+            ],
+          },
+          outcome: {
+            $switch: {
+              branches: [
+                // Already counted as an attempt by its own launch_attempted.
+                { case: { $eq: ["$event", "launch_failed"] }, then: "failure_only" },
+                {
+                  case: { $in: ["$event", ["install_failed", "party_hosted_failed"]] },
+                  then: "failed",
+                },
+              ],
+              default: "attempt",
+            },
+          },
+          keep: {
+            // Non-join launches are not part of either denominator here:
+            // Install counts completed installs, and a plain Play failure is
+            // already visible on the Ops card rather than this light.
+            $cond: [
+              {
+                $and: [
+                  { $in: ["$event", ["launch_attempted", "launch_failed"]] },
+                  { $not: "$isJoinPhase" },
+                ],
+              },
+              false,
+              true,
+            ],
+          },
+        },
+      },
+      { $match: { keep: true } },
+      {
+        $group: {
+          _id: { slug: "$slug", area: "$area", outcome: "$outcome" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    return buildGameHealth(rows);
+  } catch (err) {
+    // The table must still render if telemetry is unavailable.
+    console.error("getGameHealth failed:", err);
+    return new Map();
+  }
+}
