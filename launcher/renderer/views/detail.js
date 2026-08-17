@@ -155,43 +155,6 @@ function classifyMediaUrl(src) {
   return { kind: "direct", src: url };
 }
 
-const QUALITY_BAR = [
-  { key: "noPayToWin", label: "No Pay-to-Win", desc: "No microtransactions affecting balance" },
-  { key: "nativeBuild", label: "Native PC Build", desc: "Native desktop build without emulation" },
-  { key: "activeMultiplayer", label: "Active Community", desc: "Active servers or online community" },
-  { key: "noDrm", label: "No DRM", desc: "No restrictive DRM or telemetry" },
-  { key: "steamDeckFriendly", label: "Linux / Steam Deck", desc: "Runs on Steam Deck or Linux" },
-  { key: "cleanInstall", label: "Clean Install", desc: "No bloatware, adware, or account gates" },
-];
-
-function buildQualityBarHtml(bar) {
-  if (!bar || typeof bar !== "object") return "";
-  const passedCount = QUALITY_BAR.filter((c) => bar[c.key]).length;
-  const total = QUALITY_BAR.length;
-  return `
-    <section class="quality-bar-panel">
-      <div class="quality-bar-header">
-        <div class="quality-bar-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-          <span>The PlayBound Bar</span>
-        </div>
-        <span class="quality-bar-badge">${passedCount} of ${total} met</span>
-      </div>
-      <div class="quality-bar-grid">
-        ${QUALITY_BAR.map((c) => {
-          const pass = Boolean(bar[c.key]);
-          return `
-            <div class="quality-bar-item ${pass ? "passed" : ""}" title="${escapeHtml(c.desc)}">
-              <span class="${pass ? "quality-bar-icon-pass" : "quality-bar-icon-fail"}">${pass ? "✓" : "✕"}</span>
-              <span>${escapeHtml(c.label)}</span>
-            </div>
-          `;
-        }).join("")}
-      </div>
-    </section>
-  `;
-}
-
 function buildOverviewSidebarHtml(detail, slug) {
   const dev = detail.developer || detail.developerName || "Independent";
   const pub = detail.publisher || "—";
@@ -360,11 +323,6 @@ async function renderGameDetailView(slug, opts = {}) {
     )
     .join("");
 
-  const coverHtml = coverUrl
-    ? `<div class="detail-cover"><img src="${escapeHtml(coverUrl)}" alt="" loading="lazy" /></div>`
-    : `<div class="detail-cover detail-cover-fallback" style="background:${bgGrad}"><span>${escapeHtml(
-        (detail.title || "?").charAt(0)
-      )}</span></div>`;
 
   const [liveStats, editionsRes] = await Promise.all([
     cacheInvoke(`live:${slug}`, CACHE_TTL.liveStatsGame, () =>
@@ -486,8 +444,6 @@ async function renderGameDetailView(slug, opts = {}) {
         
         <div class="detail-overview-grid">
           <div class="detail-overview-main">
-            ${buildQualityBarHtml(detail.qualityBar)}
-
             ${
               editions.length > 1
                 ? `<section class="detail-section" id="detail-editions-sec">
@@ -1677,11 +1633,6 @@ async function renderModDetailView(slug) {
       ? `linear-gradient(135deg, ${detail.art[0]}, ${detail.art[1]})`
       : `linear-gradient(135deg, #312e81, #a78bfa)`;
   const coverUrl = detail.coverImage || detail.baseGame?.coverImage || "";
-  const coverHtml = coverUrl
-    ? `<div class="detail-cover"><img src="${escapeHtml(coverUrl)}" alt="" loading="lazy" /></div>`
-    : `<div class="detail-cover detail-cover-fallback" style="background:${bgGrad}"><span>${escapeHtml(
-        (detail.title || "?").charAt(0)
-      )}</span></div>`;
 
   const faqHtml = (detail.faq || [])
     .map(
@@ -1713,16 +1664,21 @@ async function renderModDetailView(slug) {
   container.innerHTML = `
     <button class="btn-secondary btn-sm" id="mod-detail-back" style="margin-bottom: 12px">← Back</button>
 
-    <section class="detail-hero">
-      ${coverHtml}
-      <div class="detail-hero-copy">
-        <div class="chip-row"><span class="chip chip-accent">Mod</span>${
-          baseTitle ? `<span class="chip">For ${escapeHtml(baseTitle)}</span>` : ""
-        }</div>
-        <h1 class="view-title detail-hero-title">${escapeHtml(detail.title)}</h1>
-        <p class="view-sub detail-hero-sub">${escapeHtml(detail.tagline || "")}${
-          detail.approxSize ? ` · ${escapeHtml(detail.approxSize)}` : ""
-        }${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+    <!-- Same hero as the game and edition pages; see renderGameDetailView. -->
+    <section class="detail-hero" style="${
+      coverUrl ? `background-image:url('${escapeHtml(coverUrl)}')` : `background:${bgGrad}`
+    }">
+      <div class="detail-hero-scrim"></div>
+      <div class="detail-hero-inner">
+        <div class="detail-hero-copy">
+          <div class="chip-row"><span class="chip chip-accent">Mod</span>${
+            baseTitle ? `<span class="chip">For ${escapeHtml(baseTitle)}</span>` : ""
+          }</div>
+          <h1 class="detail-hero-title">${escapeHtml(detail.title)}</h1>
+          <p class="detail-hero-sub">${escapeHtml(detail.tagline || "")}${
+            detail.approxSize ? ` · ${escapeHtml(detail.approxSize)}` : ""
+          }${detail.version ? ` · v${escapeHtml(detail.version)}` : ""}</p>
+        </div>
         <div class="detail-hero-actions" id="mod-detail-actions"></div>
       </div>
     </section>
@@ -1984,12 +1940,15 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     return;
   }
 
-  const cover = edition.coverImage || gameDetail?.coverImage || "";
-  const coverHtml = cover
-    ? `<div class="detail-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" /></div>`
-    : `<div class="detail-cover detail-cover-fallback"><span>${escapeHtml(
-        (edition.editionName || "?").charAt(0)
-      )}</span></div>`;
+  // heroImage first, like the website's edition hero — a wide banner suits a
+  // full-bleed band, where a portrait cover gets cropped to its middle.
+  const coverUrl =
+    edition.heroImage || edition.coverImage || gameDetail?.heroImage || gameDetail?.coverImage || "";
+  const art = Array.isArray(gameDetail?.art) ? gameDetail.art : null;
+  const bgGrad =
+    art && art.length >= 2
+      ? `linear-gradient(135deg, ${art[0]}, ${art[1]})`
+      : `linear-gradient(135deg, #312e81, #a78bfa)`;
 
   const links = edition.links || {};
   const linkButtons = [
@@ -2047,19 +2006,34 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     <button class="btn-secondary btn-sm" id="edition-back" style="margin-bottom:12px">← ${escapeHtml(
       edition.gameTitle || gameSlug
     )}</button>
-    <section class="detail-hero">
-      ${coverHtml}
-      <div class="detail-hero-copy">
-        <div class="chip-row">
-          <span class="chip">${escapeHtml(edition.editionType || "edition")}</span>
-          ${
-            liveStats
-              ? `<span class="playing-now-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
-              : ""
-          }
+    <!--
+      Same hero as the website's edition page: the art fills the band, a scrim
+      keeps the type readable, edition name and tagline bottom-left, actions
+      bottom-right. Structurally identical to the game hero above so the three
+      pages can be changed together.
+    -->
+    <section class="detail-hero" style="${
+      coverUrl ? `background-image:url('${escapeHtml(coverUrl)}')` : `background:${bgGrad}`
+    }">
+      <div class="detail-hero-scrim"></div>
+      <div class="detail-hero-inner">
+        <div class="detail-hero-copy">
+          <div class="chip-row">
+            <span class="chip">${escapeHtml(edition.editionType || "edition")}</span>
+            ${
+              edition.verificationLevel
+                ? `<span class="chip chip-accent">${escapeHtml(edition.verificationLevel.replace(/_/g, " "))}</span>`
+                : ""
+            }
+            ${
+              liveStats
+                ? `<span class="playing-now-chip">${formatStatNumber(liveStats.playingNow)} playing now</span>`
+                : ""
+            }
+          </div>
+          <h1 class="detail-hero-title">${escapeHtml(edition.editionName)}</h1>
+          <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")}</p>
         </div>
-        <h1 class="view-title detail-hero-title">${escapeHtml(edition.editionName)}</h1>
-        <p class="view-sub detail-hero-sub">${escapeHtml(edition.shortDescription || "")}</p>
         <div class="detail-hero-actions">
           <button class="btn-primary" id="edition-install">${
             editionInstalled ? "Reinstall this edition" : "Install this edition"
@@ -2067,13 +2041,13 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           ${
             editionInstalled
               ? `<button class="btn-success" id="edition-play">Play</button>
-                 <button class="btn-danger" id="edition-uninstall">Uninstall</button>
-                 ${gamePlayHintHtml(gameSlug)}`
+                 <button class="btn-danger" id="edition-uninstall">Uninstall</button>`
               : `<button class="btn-secondary" id="edition-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>`
           }
         </div>
       </div>
     </section>
+    ${editionInstalled ? gamePlayHintHtml(gameSlug) : ""}
     ${buildActivityPanelHtml(liveStats, "Edition activity")}
     <section class="detail-section">
       <h2 class="detail-section-title">About</h2>
