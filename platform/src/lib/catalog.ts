@@ -40,6 +40,22 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.overlayUrl && seed?.overlayUrl) merged.overlayUrl = seed.overlayUrl;
     if (!merged.overlayFileName && seed?.overlayFileName) merged.overlayFileName = seed.overlayFileName;
     if (!merged.overlayDest && seed?.overlayDest) merged.overlayDest = seed.overlayDest;
+    // ET: Legacy has no GitHub release assets and the former database recipe
+    // was an external download-page hand-off. Serve the verified official
+    // archive recipe at read time until that one game is next edited; this is
+    // deliberately read-only and leaves every stored catalog field intact.
+    if (
+      game.slug === "wolfenstein-enemy-territory" &&
+      seed?.kind === "direct-zip" &&
+      (merged.kind === "github-zip" || merged.kind === "external")
+    ) {
+      merged.kind = seed.kind;
+      merged.url = seed.url;
+      merged.fileName = seed.fileName;
+      merged.checksumMd5 = seed.checksumMd5;
+      merged.exeHint = seed.exeHint;
+      merged.versionLabel = seed.versionLabel;
+    }
     return { ...game, launcherInstall: merged };
   }
   if (seed) return { ...game, launcherInstall: seed };
