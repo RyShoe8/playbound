@@ -402,7 +402,6 @@ async function renderGameDetailView(slug, opts = {}) {
   if (renderToken !== detailRenderToken) return;
 
   container.innerHTML = `
-    <button class="btn-secondary btn-sm" id="detail-back" style="margin-bottom: 14px">← Back</button>
 
     <!--
       Mirrors the website's game hero: the art fills the band, a scrim keeps
@@ -1170,12 +1169,6 @@ async function renderGameDetailView(slug, opts = {}) {
     }
   })();
 
-  document.getElementById("detail-back").addEventListener("click", () => {
-    const back = ["games", "library", "home", "servers"].includes(state.detailReturnView)
-      ? state.detailReturnView
-      : "games";
-    api.navigateTo(back);
-  });
   document.getElementById("detail-open-site")?.addEventListener("click", (e) => {
     e.preventDefault();
     window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(slug)}`);
@@ -1662,8 +1655,6 @@ async function renderModDetailView(slug) {
   const baseTitle = detail.baseGame?.title || detail.baseGame?.slug || "";
 
   container.innerHTML = `
-    <button class="btn-secondary btn-sm" id="mod-detail-back" style="margin-bottom: 12px">← Back</button>
-
     <!-- Same hero as the game and edition pages; see renderGameDetailView. -->
     <section class="detail-hero" style="${
       coverUrl ? `background-image:url('${escapeHtml(coverUrl)}')` : `background:${bgGrad}`
@@ -1780,18 +1771,6 @@ async function renderModDetailView(slug) {
     }
   })();
 
-  document.getElementById("mod-detail-back")?.addEventListener("click", () => {
-    const back = ["mods", "library", "home", "games", "gameDetail", "servers"].includes(
-      state.detailReturnView
-    )
-      ? state.detailReturnView
-      : "mods";
-    if (back === "gameDetail" && state.currentDetailSlug) {
-      api.navigateTo("gameDetail", { slug: state.currentDetailSlug });
-    } else {
-      api.navigateTo(back);
-    }
-  });
 
   document.getElementById("mod-detail-open-site")?.addEventListener("click", () => {
     window.playbound.openExternal(`https://playbound.club/mods/${encodeURIComponent(slug)}`);
@@ -1931,12 +1910,8 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   const edition = (editionsRes?.editions || []).find((e) => e.editionSlug === editionSlug);
   if (!edition) {
     container.innerHTML = `
-      <button class="btn-secondary btn-sm" id="edition-back">← Back to game</button>
       <p class="view-sub" style="margin-top:12px">Edition not found.</p>
     `;
-    document.getElementById("edition-back")?.addEventListener("click", () =>
-      api.openGameDetail(gameSlug, state.detailReturnView)
-    );
     return;
   }
 
@@ -2003,9 +1978,6 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     .join("");
 
   container.innerHTML = `
-    <button class="btn-secondary btn-sm" id="edition-back" style="margin-bottom:12px">← ${escapeHtml(
-      edition.gameTitle || gameSlug
-    )}</button>
     <!--
       Same hero as the website's edition page: the art fills the band, a scrim
       keeps the type readable, edition name and tagline bottom-left, actions
@@ -2089,9 +2061,6 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     }
   `;
 
-  document.getElementById("edition-back")?.addEventListener("click", () =>
-    api.openGameDetail(gameSlug, state.detailReturnView)
-  );
   document.getElementById("edition-install")?.addEventListener("click", async () => {
     setStatus("Starting install...");
     try {

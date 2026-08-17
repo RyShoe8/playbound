@@ -2478,6 +2478,13 @@ async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256
           artifactId,
           sourceId: source.sourceId || `src-${source.type}`,
           sourceType: source.type,
+          // Enough for the server to register this artifact the first time it
+          // sees it, rather than dropping the count for anything it does not
+          // already know about.
+          gameSlug: slug || null,
+          version: resolved?.artifact?.version || null,
+          filename: path.basename(dest),
+          sourceUrl: source.url || null,
           attemptedAt: new Date(startTime).toISOString(),
           completedAt: new Date().toISOString(),
           result: "success",
@@ -2502,6 +2509,10 @@ async function downloadResilientArtifact({ slug, directUrl, dest, expectedSha256
           artifactId,
           sourceId: source.sourceId || `src-${source.type}`,
           sourceType: source.type,
+          gameSlug: slug || null,
+          version: resolved?.artifact?.version || null,
+          filename: path.basename(dest),
+          sourceUrl: source.url || null,
           attemptedAt: new Date(startTime).toISOString(),
           completedAt: new Date().toISOString(),
           result: isChecksum ? "checksum_failure" : "connection_error",

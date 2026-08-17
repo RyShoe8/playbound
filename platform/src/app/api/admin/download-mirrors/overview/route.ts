@@ -5,14 +5,12 @@ import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
 import MirrorEvent from "@/lib/models/MirrorEvent";
 import { getMirrorSettings } from "@/lib/mirrors/cacheManager";
-import { ensureSeedArtifacts } from "@/lib/mirrors/seedData";
 
 export async function GET() {
   const { error } = await requireAdminSession();
   if (error) return error;
 
   try {
-    await ensureSeedArtifacts();
     await dbConnect();
 
     const settings = await getMirrorSettings();

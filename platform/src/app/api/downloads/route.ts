@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { resolveDownloadSources } from "@/lib/mirrors/resolution";
-import { ensureSeedArtifacts } from "@/lib/mirrors/seedData";
 import Artifact from "@/lib/models/Artifact";
 import dbConnect from "@/lib/db";
 
 export async function GET(req: Request) {
   try {
-    await ensureSeedArtifacts();
     await dbConnect();
 
     const { searchParams } = new URL(req.url);
