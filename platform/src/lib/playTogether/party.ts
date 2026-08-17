@@ -45,6 +45,11 @@ import {
   releasePartyHost,
 } from "@/lib/gameHost/provision";
 import {
+  lanPayloadFromDoc,
+  provisionPartyLan,
+  releasePartyLan,
+} from "@/lib/virtualLan/provision";
+import {
   canJoinParty,
   canLeaveParty,
   canRemoveMember,
@@ -155,6 +160,10 @@ function serializeParty(
       String(doc.gameSlug || ""),
       (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[1]) || null
     ),
+    lan: lanPayloadFromDoc(
+      String(doc.gameSlug || ""),
+      (doc.lan as Parameters<typeof lanPayloadFromDoc>[1]) || null
+    ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
     createdAt: (doc.createdAt as Date)?.toISOString() || new Date().toISOString(),
   };
@@ -252,7 +261,10 @@ export async function createParty(opts: {
     partyId: String(doc._id),
     gameSlug: gameSlug || null,
   });
-  if (gameSlug) await provisionPartyHost(doc);
+  if (gameSlug) {
+    await provisionPartyHost(doc);
+    await provisionPartyLan(doc);
+  }
   const nameById = await resolveUsernames([opts.userId]);
   const party = serializeParty(
     doc.toObject ? doc.toObject() : doc,
@@ -380,6 +392,7 @@ export async function leaveParty(
       doc.status = "ended";
       doc.endedAt = now;
       await releasePartyHost(doc);
+      await releasePartyLan(doc);
       await doc.save();
       await setPresenceParty(userId, { partyId: null });
       await clearPresenceForParty(String(doc._id));
@@ -410,6 +423,7 @@ export async function leaveParty(
 
   if (doc.status === "ended") {
     await releasePartyHost(doc);
+    await releasePartyLan(doc);
   }
   await doc.save();
   await setPresenceParty(userId, { partyId: null });
@@ -642,6 +656,7 @@ export async function setPartyGame(
 
   if (switchingGame && (wasInSession || doc.hosted?.roomId)) {
     await releasePartyHost(doc);
+    await releasePartyLan(doc);
   }
   if (switchingGame && wasInSession) {
     doc.status = "forming";
@@ -656,6 +671,7 @@ export async function setPartyGame(
   doc.lastActivity = new Date();
   await doc.save();
   await provisionPartyHost(doc);
+  await provisionPartyLan(doc);
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   await Promise.all(
@@ -878,6 +894,7 @@ export async function joinPartyGame(
   const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
   if (firstLaunch) {
     await provisionPartyHost(doc);
+    await provisionPartyLan(doc);
     doc.status = "playing";
     doc.lastActivity = new Date();
     await doc.save();
@@ -926,6 +943,7 @@ export async function launchParty(
 
   const now = new Date();
   await provisionPartyHost(doc);
+  await provisionPartyLan(doc);
   doc.status = "playing";
   doc.lastActivity = now;
   await doc.save();
@@ -972,6 +990,7 @@ export async function endParty(
   doc.endedAt = now;
   doc.lastActivity = now;
   await releasePartyHost(doc);
+  await releasePartyLan(doc);
   await doc.save();
   await clearPresenceForParty(String(doc._id));
   void cleanupPartyDiscordVoice(doc);
@@ -1364,6 +1383,7 @@ export async function sweepStaleParties(now = new Date()) {
     doc.status = "ended";
     doc.endedAt = now;
     await releasePartyHost(doc);
+    await releasePartyLan(doc);
     await doc.save();
     ended += 1;
   }

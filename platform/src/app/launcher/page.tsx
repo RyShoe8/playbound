@@ -28,7 +28,7 @@ const features = [
   { icon: Play, title: "One-click launches", text: "After the first install, playing is a single click. The launcher finds the executable for you." },
   { icon: RefreshCw, title: "Automatic updates", text: "The launcher resolves the latest release every time, so installs never go stale." },
   { icon: Cloud, title: "Cloud saves", text: "Coming soon — sync your saves across machines for supported games." },
-  { icon: Server, title: "PlayBound Connect", text: "Party Join Game starts a public dedicated room for supported titles. Every client connects out — no port forwarding.", href: "/connect" },
+  { icon: Server, title: "PlayBound Connect", text: "Party Join Game starts a public dedicated room, or puts everyone on one shared network for LAN-only games. No port forwarding either way.", href: "/connect" },
   { icon: Wrench, title: "Mod management", text: "Install community mods into your game folder with one click — the launcher finds where the base game lives." },
 ];
 

@@ -26,6 +26,7 @@ const {
   resolveGameDir,
 } = require("./openciv3Display");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
+const virtualLan = require("./services/virtualLan");
 const {
   clientConnectArgs,
   hasClientConnectArgs,
@@ -7479,6 +7480,75 @@ ipcMain.handle("provision-party-discord", async (_event, partyId) => {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/discord`, {
       method: "POST",
     });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+/**
+ * Install folder for a slug, preferring the edition record the way playGame
+ * does — a modded edition and the vanilla install are different folders and
+ * only one of them has the mod that reads the adapter file.
+ */
+function resolveGameDirForSlug(slug, editionSlug = null) {
+  const game = loadState()[slug];
+  if (!game) return null;
+  const edSlug = editionSlug || game.editionSlug || DEFAULT_EDITION_SLUG;
+  const info = game.editions?.[edSlug] || game;
+  const exe = info?.exe || game.exe;
+  if (info?.dir) return info.dir;
+  return exe ? path.dirname(exe) : null;
+}
+
+/*
+ * Put this machine on a party's overlay segment and point the game at it.
+ *
+ * The whole sequence lives in one handler because every step is useless
+ * without the next: joining without authorization never brings the adapter
+ * up, and an adapter nobody wrote into the game's saved-adapter file leaves
+ * the player picking from a dropdown anyway. Each failure returns a reason
+ * the party window can show verbatim rather than a bare false.
+ */
+ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
+  const { partyId, networkId, slug, adapterFile } = opts || {};
+  try {
+    const status = await virtualLan.overlayStatus();
+    if (!status.installed) {
+      return {
+        error: "PlayBound Connect needs the ZeroTier network client for this game.",
+        needsInstall: true,
+        downloadUrl: status.downloadUrl,
+      };
+    }
+    if (!status.ready) {
+      return {
+        error: status.error || "The network client is not responding.",
+        needsElevation: Boolean(status.needsElevation),
+        downloadUrl: status.downloadUrl,
+      };
+    }
+
+    const joined = await virtualLan.joinNetwork(networkId);
+    if (joined.error) return { error: joined.error };
+
+    // The site authorizes this node; until it does, the adapter stays down.
+    const authorized = await launcherJson(
+      `/api/parties/${encodeURIComponent(partyId)}/lan`,
+      { method: "POST", body: { nodeId: status.nodeId } }
+    );
+    if (authorized?.error) return { error: authorized.error };
+
+    const adapterName = await virtualLan.waitForAdapter();
+    if (!adapterName) {
+      return { error: "The network adapter did not come up. Try Join Game again." };
+    }
+
+    let pointed = false;
+    if (adapterFile) {
+      const gameDir = resolveGameDirForSlug(slug);
+      pointed = await virtualLan.writeAdapterFile(gameDir, adapterFile, adapterName);
+    }
+    return { ok: true, adapterName, pointed };
   } catch (err) {
     return { error: err.message };
   }

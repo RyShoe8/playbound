@@ -175,6 +175,19 @@ export type PartyPayload = {
     error: string | null;
     roomCode?: string | null;
   };
+  /**
+   * Shared L2 segment for games that only discover peers over LAN and offer
+   * no address to connect to. `steps` is what the player still does in-game
+   * once their machine is on the segment.
+   */
+  lan: {
+    enabled: boolean;
+    status: "none" | "pending" | "ready" | "failed";
+    networkId: string | null;
+    adapterFile: string | null;
+    steps: string[];
+    error: string | null;
+  };
   lastActivity: string;
   createdAt: string;
 };
