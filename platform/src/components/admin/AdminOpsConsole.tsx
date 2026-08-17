@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { LocalTime } from "@/components/LocalTime";
 import type { OpsFamily } from "@/lib/admin/opsEvents";
 
@@ -20,6 +21,8 @@ export function AdminOpsConsole({
   initialFamily: OpsFamily;
   initialGame: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [family, setFamily] = useState<OpsFamily>(initialFamily);
   const [gameSlug, setGameSlug] = useState(initialGame);
   const [items, setItems] = useState<OpsItem[]>([]);
@@ -58,6 +61,30 @@ export function AdminOpsConsole({
     const timer = setInterval(() => void load(), 5000);
     return () => clearInterval(timer);
   }, [load]);
+
+  /*
+   * Keep the URL in step with the game filter.
+   *
+   * The failure-rate card above is server-rendered from ?game=, while this
+   * filter was local state — so typing a slug narrowed the event table while
+   * the card kept reporting the whole catalog under a heading that looked
+   * scoped. One source of truth instead: the filter writes the query param,
+   * the server re-renders the card, and the two always agree.
+   *
+   * Debounced because this fires per keystroke, and `replace` so filtering
+   * does not fill the back button with every prefix of a slug.
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (family !== "all") params.set("family", family);
+      const trimmed = gameSlug.trim();
+      if (trimmed) params.set("game", trimmed);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [gameSlug, family, pathname, router]);
 
   return (
     <div className="space-y-4">
