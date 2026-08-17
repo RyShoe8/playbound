@@ -15,13 +15,14 @@ import {
 } from "./shared.js";
 
 const HOME_SHELL_HTML = `
-    <div class="home-top-section">
-      <div id="home-stats-slot">${buildCatalogStatsSkeletonHtml()}</div>
-    </div>
-
-    <div id="home-recent-section" class="hidden">
-      <div class="section-header" style="margin-top: 0">Recently Played</div>
-      <div id="home-recent-grid" class="game-grid"></div>
+    <div class="home-top-row">
+      <div class="home-top-left">
+        <div id="home-recent-section" class="hidden">
+          <div class="section-header" style="margin-top: 0">Recently Played</div>
+          <div id="home-recent-grid" class="game-grid"></div>
+        </div>
+      </div>
+      <div id="home-stats-slot" class="home-top-stats">${buildCatalogStatsSkeletonHtml()}</div>
     </div>
 
     <div id="home-free-offers-section" class="hidden">

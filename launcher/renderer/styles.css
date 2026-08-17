@@ -2132,31 +2132,21 @@ textarea.input-text {
 }
 
 /* Catalog / activity stats */
-.home-top-section {
+.home-top-row {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 4px;
-}
-.home-header-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 0;
+  gap: 24px;
+  margin-bottom: 8px;
 }
-.home-header-copy {
-  min-width: 0;
+.home-top-left {
   flex: 1;
+  min-width: 0;
 }
-/*
- * Three margins were stacking under the welcome text — .view-sub's global 24px,
- * the row's 8px, and the first .section-header's 28px — leaving 60px of empty
- * space before any content. The row and the subtitle give theirs up; the
- * section headings keep their own rhythm between sections.
- */
-.home-header-copy .view-sub {
-  margin-bottom: 0;
+.home-top-stats {
+  width: 100%;
+  max-width: 320px;
+  flex-shrink: 0;
 }
 .catalog-stats-card {
   width: 100%;

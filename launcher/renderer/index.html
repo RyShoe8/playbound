@@ -139,8 +139,14 @@
         </header>
 
         <div id="view-home" class="view active">
-          <div class="home-top-section">
-            <div id="home-stats-slot">
+          <div class="home-top-row">
+            <div class="home-top-left">
+              <div id="home-recent-section" class="hidden">
+                <div class="section-header" style="margin-top: 0">Recently Played</div>
+                <div id="home-recent-grid" class="game-grid"></div>
+              </div>
+            </div>
+            <div id="home-stats-slot" class="home-top-stats">
               <aside class="catalog-stats-card" aria-busy="true">
                 <dl class="catalog-stats-grid">
                   <div><dt>Games</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>

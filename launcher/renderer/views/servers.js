@@ -25,10 +25,16 @@ async function renderServersView() {
   container.innerHTML = `
     <div class="section-header" style="margin-top: 0">
       <div>
-        <h1 class="view-title" style="margin: 0">Server Browser</h1>
-        <p class="view-sub" style="margin: 4px 0 0 0">Live multiplayer for PlayBound titles — host ping from this PC.</p>
+        <h1 class="view-title" style="margin: 0">Servers</h1>
       </div>
-      <button class="btn-secondary btn-sm" id="servers-refresh">Refresh</button>
+      <button class="btn-secondary btn-sm" id="servers-refresh">
+        <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Refresh
+      </button>
     </div>
 
     <div class="servers-toolbar">
@@ -49,7 +55,17 @@ async function renderServersView() {
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
     <p class="servers-stats" id="servers-stats"></p>
-    <div id="servers-table-wrap"><p class="view-sub">Loading…</p></div>
+    <div id="servers-table-wrap">
+      <div class="empty-hint">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-server">
+          <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+          <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+          <line x1="6" x2="6.01" y1="6" y2="6"/>
+          <line x1="6" x2="6.01" y1="18" y2="18"/>
+        </svg>
+        <p>Pick a game above to see who's playing right now.</p>
+      </div>
+    </div>
   `;
 
   document.getElementById("servers-refresh").addEventListener("click", () => {
@@ -75,6 +91,9 @@ async function renderServersView() {
     paintServersTable();
   });
 
+  if (state._supportedServerGames && state._supportedServerGames.length > 0) {
+    void refreshServersPickersAndList();
+  }
   await loadServersBrowser();
   markViewReady(container);
 }

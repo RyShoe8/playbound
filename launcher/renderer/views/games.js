@@ -132,6 +132,7 @@ export function paintGamesGrid(catalog = state.catalogCache) {
   }
   if (state.gamesFilters.multiplayerOnly) {
     list = list.filter((g) => g.isMultiplayer ?? g.multiplayer);
+  }
   /*
    * Has Players reads the same shared 15-minute snapshot the cards do, so the
    * filter and the "N playing" on each card can never disagree. A slug absent
