@@ -44,8 +44,12 @@ apt-get install -y --no-install-recommends \
   bzflag-server \
   supertuxkart \
   openarena-server \
-  wesnoth-server \
   0ad
+
+# Wesnoth uses its own lobby infrastructure and its old `wesnoth-server`
+# package is not available on Ubuntu 24.04. Do not let an optional game
+# server package prevent the agent itself (including archive transfers) from
+# being updated.
 
 # Luanti was still Minetest on Ubuntu 24.04.
 if apt-cache show luanti-server >/dev/null 2>&1; then
