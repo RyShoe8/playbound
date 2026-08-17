@@ -268,9 +268,86 @@ body {
   background: radial-gradient(circle at top right, rgba(124, 92, 240, 0.08), transparent 40%);
 }
 
+.launcher-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 36px;
+  background: rgba(12, 10, 18, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.global-search-form {
+  width: 100%;
+  max-width: 540px;
+}
+
+.global-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.global-search-icon {
+  position: absolute;
+  left: 14px;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.global-search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 36px 0 38px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.global-search-input:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.global-search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.global-search-clear:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .view {
   display: none;
-  padding: 28px 36px;
+  padding: 24px 36px;
 }
 
 .view.active {
@@ -2055,6 +2132,11 @@ textarea.input-text {
 }
 
 /* Catalog / activity stats */
+.home-top-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
 .home-header-row {
   display: flex;
   flex-wrap: wrap;
@@ -2094,6 +2176,20 @@ textarea.input-text {
 .catalog-stats-card dt {
   font-size: 11px;
   color: var(--text-muted);
+}
+.stat-label-btn {
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+.stat-label-btn:hover {
+  color: var(--accent-light);
 }
 .catalog-stats-card dd {
   margin: 1px 0 0;
@@ -2143,6 +2239,210 @@ textarea.input-text {
   font-size: 11px;
   color: var(--text-muted);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEARCH VIEW STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.search-filters-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  padding: 18px 20px;
+  backdrop-filter: blur(8px);
+}
+
+.search-filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-filters-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-filter-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-light);
+}
+
+.search-filters-heading {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.search-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(124, 92, 240, 0.2);
+  color: var(--accent-light);
+}
+
+.search-badge.hidden {
+  display: none;
+}
+
+.search-clear-btn-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.search-clear-btn-text:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.search-clear-btn-text.hidden {
+  display: none;
+}
+
+.search-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-filter-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.search-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.filter-chip:hover {
+  border-color: var(--border-focus);
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+.search-details-group {
+  cursor: pointer;
+}
+
+.search-details-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.search-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.search-details-group .chevron-icon {
+  transition: transform 0.2s ease;
+}
+
+.search-details-group[open] .chevron-icon {
+  transform: rotate(180deg);
+}
+
+.search-sort-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.search-sort-group {
+  min-width: 0;
+  flex: 1;
+}
+
+.search-result-summary {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.search-summary-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.search-summary-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.search-empty-box {
+  text-align: center;
+  padding: 48px 24px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.search-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.search-empty-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 /*
  * Sized like .catalog-stats-card rather than stretching the panel it sits in.
  * Full width meant every value was flung to the far right of the page, with a

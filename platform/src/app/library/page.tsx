@@ -142,10 +142,6 @@ export default async function LibraryPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Library</h1>
-          <p className="mt-1 text-muted-foreground">
-            Games you own on <strong>{LIBRARY_PLATFORM_LABELS[viewerPlatform]}</strong>, plus
-            cross-platform titles from your other devices — install here if needed.
-          </p>
         </div>
         {isLibraryPlatform(viewerPlatform) ? (
           <AddGameButton games={installableGames} />

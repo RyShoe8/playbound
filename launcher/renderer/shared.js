@@ -29,10 +29,23 @@ export const state = {
     query: "",
     genre: "",
     multiplayerOnly: false,
-    installableOnly: false,
     /** Only games with someone in them right now, per the live snapshot. */
     hasPlayersOnly: false,
     sort: "name",
+  },
+  searchQuery: "",
+  searchFilters: {
+    q: "",
+    genres: [],
+    tags: [],
+    platforms: [],
+    features: [],
+    sort: "title",
+    sortDir: "asc",
+  },
+  liveExtraStats: {
+    openParties: 0,
+    lookingToParty: 0,
   },
   compatibilityFilter: "compatible",
   currentEditionDetail: null,
@@ -432,6 +445,8 @@ export function buildCatalogStatsSkeletonHtml() {
         ${cell("Mods")}
         ${cell("Editions")}
         ${cell("Gamers Playing")}
+        ${cell("Open Parties")}
+        ${cell("Looking to Party")}
       </dl>
       <div class="catalog-stats-popular">
         <h3>Most Popular Right Now</h3>
@@ -441,11 +456,14 @@ export function buildCatalogStatsSkeletonHtml() {
     </aside>`;
 }
 
-export function buildCatalogStatsCardHtml(live) {
+export function buildCatalogStatsCardHtml(live, extra = {}) {
   const usable = live && live.ok !== false && typeof live.gameCount === "number";
   if (!usable) {
     return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable.</p></aside>`;
   }
+  const openParties = extra.openParties ?? state.liveExtraStats?.openParties ?? 0;
+  const lookingToParty = extra.lookingToParty ?? state.liveExtraStats?.lookingToParty ?? 0;
+
   const popular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
   const popularHtml =
     popular.length > 0
@@ -468,6 +486,8 @@ export function buildCatalogStatsCardHtml(live) {
         <div><dt>Mods</dt><dd>${formatStatNumber(live.modCount)}</dd></div>
         <div><dt>Editions</dt><dd>${formatStatNumber(live.editionCount)}</dd></div>
         <div><dt>Gamers Playing</dt><dd>${formatStatNumber(live.playingNow)}</dd></div>
+        <div><dt><button type="button" class="linkish stat-label-btn" data-stats-nav="events">Open Parties</button></dt><dd>${formatStatNumber(openParties)}</dd></div>
+        <div><dt><button type="button" class="linkish stat-label-btn" data-stats-nav="friends">Looking to Party</button></dt><dd>${formatStatNumber(lookingToParty)}</dd></div>
       </dl>
       ${popularHtml}
       <p class="catalog-stats-footer">Across supported games • Updated every 15 min</p>

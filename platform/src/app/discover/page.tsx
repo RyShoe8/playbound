@@ -25,9 +25,6 @@ export default async function DiscoverPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Games</h1>
-          <p className="mt-1 text-muted-foreground">
-            Browse free PC games you can install with PlayBound.
-          </p>
         </div>
       </div>
 

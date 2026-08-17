@@ -42,10 +42,6 @@ export default async function ServersPage() {
           <Server className="size-6 text-primary" />
           <h1 className="text-3xl font-extrabold tracking-tight">Servers</h1>
         </div>
-        <p className="mt-1 text-muted-foreground">
-          Browse live multiplayer servers across PlayBound titles. Est. latency is GeoIP-based — the
-          desktop app shows a real host ping.
-        </p>
       </div>
 
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading servers…</p>}>

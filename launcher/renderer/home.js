@@ -15,16 +15,12 @@ import {
 } from "./shared.js";
 
 const HOME_SHELL_HTML = `
-    <div class="home-header-row">
-      <div class="home-header-copy">
-        <h1 class="view-title">Welcome back</h1>
-        <p class="view-sub">Play your favorite titles or browse free games on PlayBound.</p>
-      </div>
+    <div class="home-top-section">
       <div id="home-stats-slot">${buildCatalogStatsSkeletonHtml()}</div>
     </div>
 
     <div id="home-recent-section" class="hidden">
-      <div class="section-header">Recently Played</div>
+      <div class="section-header" style="margin-top: 0">Recently Played</div>
       <div id="home-recent-grid" class="game-grid"></div>
     </div>
 
@@ -99,13 +95,43 @@ export function paintHomeGrids(catalog = state.catalogCache, recent = state.rece
   }
 }
 
+async function fetchExtraStats() {
+  try {
+    const [pRes, lfgRes] = await Promise.allSettled([
+      fetch("https://playbound.club/api/parties/open-count", { signal: AbortSignal.timeout(5000) }).then((r) =>
+        r.ok ? r.json() : null
+      ),
+      fetch("https://playbound.club/api/presence/lfg/count", { signal: AbortSignal.timeout(5000) }).then((r) =>
+        r.ok ? r.json() : null
+      ),
+    ]);
+    const openParties =
+      pRes.status === "fulfilled" && typeof pRes.value?.count === "number"
+        ? pRes.value.count
+        : state.liveExtraStats.openParties;
+    const lookingToParty =
+      lfgRes.status === "fulfilled" && typeof lfgRes.value?.count === "number"
+        ? lfgRes.value.count
+        : state.liveExtraStats.lookingToParty;
+    state.liveExtraStats = { openParties, lookingToParty };
+    if (state._liveStatsLastGood && document.getElementById("home-stats-slot")?.isConnected) {
+      paintCatalogStats(state._liveStatsLastGood, state.catalogCache);
+    }
+  } catch {
+    /* keep previous stats */
+  }
+}
+
 function paintCatalogStats(live, catalog) {
   const statsSlot = document.getElementById("home-stats-slot");
   const popularGrid = document.getElementById("home-popular-grid");
   if (statsSlot) {
-    statsSlot.innerHTML = buildCatalogStatsCardHtml(live);
+    statsSlot.innerHTML = buildCatalogStatsCardHtml(live, state.liveExtraStats);
     statsSlot.querySelectorAll("[data-popular-slug]").forEach((btn) => {
       btn.addEventListener("click", () => api.openGameDetail?.(btn.dataset.popularSlug, "home"));
+    });
+    statsSlot.querySelectorAll("[data-stats-nav]").forEach((btn) => {
+      btn.addEventListener("click", () => api.navigateTo?.(btn.dataset.statsNav));
     });
   }
 
@@ -181,6 +207,7 @@ export async function renderHomeView() {
   const recent = state.recentCache;
   paintHomeGrids(catalog, recent);
   loadLiveStats(catalog, true);
+  fetchExtraStats();
   loadFreeOffers();
   markViewReady(views.home);
 }

@@ -114,12 +114,32 @@
 
       <!-- Main Content -->
       <main id="content">
-        <div id="view-home" class="view active">
-          <div class="home-header-row">
-            <div class="home-header-copy">
-              <h1 class="view-title">Welcome back</h1>
-              <p class="view-sub">Play your favorite titles or browse free games on PlayBound.</p>
+        <header id="launcher-topbar" class="launcher-topbar">
+          <form id="global-search-form" class="global-search-form">
+            <div class="global-search-box">
+              <svg class="global-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                id="global-search-input"
+                class="global-search-input"
+                placeholder="Search games, developers, collections…"
+                autocomplete="off"
+              />
+              <button type="button" id="global-search-clear" class="global-search-clear hidden" aria-label="Clear search">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
+          </form>
+        </header>
+
+        <div id="view-home" class="view active">
+          <div class="home-top-section">
             <div id="home-stats-slot">
               <aside class="catalog-stats-card" aria-busy="true">
                 <dl class="catalog-stats-grid">
@@ -127,6 +147,8 @@
                   <div><dt>Mods</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
                   <div><dt>Editions</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
                   <div><dt>Gamers Playing</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
+                  <div><dt>Open Parties</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
+                  <div><dt>Looking to Party</dt><dd><span class="stat-skeleton" aria-hidden="true"></span></dd></div>
                 </dl>
                 <div class="catalog-stats-popular">
                   <h3>Most Popular Right Now</h3>
@@ -165,6 +187,7 @@
             <p class="view-sub">Loading popularity data…</p>
           </div>
         </div>
+        <div id="view-search" class="view"></div>
         <div id="view-games" class="view"></div>
         <div id="view-editions" class="view"></div>
         <div id="view-mods" class="view"></div>

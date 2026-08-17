@@ -30,6 +30,7 @@ import {
 const KEEP_ALIVE = new Set([
   "home",
   "games",
+  "search",
   "mods",
   "gear",
   "events",
@@ -41,6 +42,7 @@ const KEEP_ALIVE = new Set([
 
 const viewLoaders = {
   games: () => import("./views/games.js"),
+  search: () => import("./views/search.js"),
   library: () => import("./views/library.js"),
   friends: () => import("./views/friends.js"),
   gear: () => import("./views/gear.js"),
@@ -132,6 +134,13 @@ export async function navigateTo(viewName, params = {}) {
   }
 
   if (viewName === "games") return api.renderGamesView?.();
+  if (viewName === "search") {
+    if (params.q !== undefined) {
+      state.searchQuery = params.q;
+      state.searchFilters.q = params.q;
+    }
+    return api.renderSearchView?.();
+  }
   if (viewName === "editions") return api.renderEditionsView?.(params.gameSlug);
   if (viewName === "mods") return api.renderModsView?.();
   if (viewName === "servers") return api.renderServersView?.();
@@ -250,6 +259,60 @@ function wireShell() {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       void runStatusAction();
+    }
+  });
+
+  const searchForm = document.getElementById("global-search-form");
+  const searchInput = document.getElementById("global-search-input");
+  const searchClear = document.getElementById("global-search-clear");
+
+  const syncSearchClear = () => {
+    if (!searchClear || !searchInput) return;
+    searchClear.classList.toggle("hidden", !searchInput.value.trim());
+  };
+
+  if (searchForm && searchInput) {
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const val = searchInput.value.trim();
+      state.searchQuery = val;
+      state.searchFilters.q = val;
+      syncSearchClear();
+      void navigateTo("search", { q: val, force: true });
+    });
+
+    searchInput.addEventListener("input", () => {
+      syncSearchClear();
+      const val = searchInput.value;
+      state.searchQuery = val;
+      state.searchFilters.q = val;
+      if (state.currentView === "search") {
+        api.paintSearchResults?.(state.catalogCache);
+      }
+    });
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = searchInput.value.trim();
+        state.searchQuery = val;
+        state.searchFilters.q = val;
+        syncSearchClear();
+        void navigateTo("search", { q: val, force: true });
+      }
+    });
+  }
+
+  searchClear?.addEventListener("click", () => {
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.focus();
+    }
+    state.searchQuery = "";
+    state.searchFilters.q = "";
+    syncSearchClear();
+    if (state.currentView === "search") {
+      api.paintSearchResults?.(state.catalogCache);
     }
   });
 }
