@@ -139,19 +139,53 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
     await mkdir(path.dirname(target), { recursive: true });
     const timeout = AbortSignal.timeout(60 * 60 * 1000);
     const signal = abortSignal ? AbortSignal.any([timeout, abortSignal]) : timeout;
-    const res = await fetch(source, { signal });
-    if (!res.ok || !res.body) return { error: `Archive download failed (${res.status})` };
-    const contentLength = Number(res.headers.get("content-length") || 0);
-    if (contentLength && contentLength > MIRROR_ARCHIVE_MAX_BYTES) return { error: "Archive exceeds the host limit" };
-    await pipeline(Readable.fromWeb(res.body), createWriteStream(temp, { flags: "wx" }));
-    const file = await stat(temp);
-    if (file.size !== Number(sizeBytes)) return { error: `Archive size mismatch (expected ${sizeBytes}, got ${file.size})` };
-    if (sha256) {
-      const actual = await sha256File(temp);
-      if (actual.toLowerCase() !== String(sha256).toLowerCase()) return { error: "Archive checksum mismatch" };
+    const maxAttempts = 3;
+    let lastError = "Archive transfer terminated";
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        let received = 0;
+        try {
+          received = (await stat(temp)).size;
+        } catch {
+          /* First attempt, or a prior attempt did not create a partial file. */
+        }
+        const headers = received > 0 ? { Range: `bytes=${received}-` } : undefined;
+        const res = await fetch(source, { signal, headers });
+        if (!res.ok || !res.body) throw new Error(`Archive download failed (${res.status})`);
+        const resuming = received > 0 && res.status === 206;
+        // A source that ignores Range starts at zero. Replace the old partial
+        // rather than appending a duplicate copy of the archive.
+        if (received > 0 && !resuming) {
+          await rm(temp, { force: true });
+          received = 0;
+        }
+        const contentLength = Number(res.headers.get("content-length") || 0);
+        if (contentLength && received + contentLength > MIRROR_ARCHIVE_MAX_BYTES) {
+          throw new Error("Archive exceeds the host limit");
+        }
+        await pipeline(
+          Readable.fromWeb(res.body),
+          createWriteStream(temp, { flags: received > 0 ? "a" : "w" })
+        );
+        const file = await stat(temp);
+        if (file.size !== Number(sizeBytes)) {
+          throw new Error(`Archive size mismatch (expected ${sizeBytes}, got ${file.size})`);
+        }
+        if (sha256) {
+          const actual = await sha256File(temp);
+          if (actual.toLowerCase() !== String(sha256).toLowerCase()) {
+            throw new Error("Archive checksum mismatch");
+          }
+        }
+        await rename(temp, target);
+        return { ok: true, sizeBytes: file.size };
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : "Could not archive artifact";
+        if (abortSignal?.aborted || attempt === maxAttempts) break;
+      }
     }
-    await rename(temp, target);
-    return { ok: true, sizeBytes: file.size };
+    return { error: `${lastError} after ${maxAttempts} attempts` };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Could not archive artifact" };
   } finally {
