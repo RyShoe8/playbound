@@ -92,6 +92,13 @@
   html {
     @apply font-sans;
     color-scheme: dark;
+    font-size: clamp(13px, 0.35vw + 11.2px, 16px);
+  }
+
+  @media (max-height: 800px) {
+    html {
+      font-size: min(14.5px, 0.35vw + 11.2px);
+    }
   }
 }
 

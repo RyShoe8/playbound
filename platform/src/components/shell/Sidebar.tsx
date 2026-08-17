@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -41,11 +42,40 @@ const nav = [
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const asideRef = useRef<HTMLElement>(null);
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
+  useEffect(() => {
+    const aside = asideRef.current;
+    if (!aside) return;
+
+    const sync = () => {
+      const maxMain = document.documentElement.scrollHeight - window.innerHeight;
+      const maxSide = aside.scrollHeight - aside.clientHeight;
+      if (maxMain > 0 && maxSide > 0) {
+        aside.scrollTop = (window.scrollY / maxMain) * maxSide;
+      }
+    };
+
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    const ro = new ResizeObserver(sync);
+    ro.observe(document.documentElement);
+
+    return () => {
+      window.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      ro.disconnect();
+    };
+  }, [pathname, session]);
+
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-      <Link href="/" className="flex items-center gap-2.5 px-5 pt-5 pb-6">
+    <aside
+      ref={asideRef}
+      className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col overflow-y-auto no-scrollbar border-r border-sidebar-border bg-sidebar lg:flex"
+    >
+      <Link href="/" className="flex shrink-0 items-center gap-2.5 px-5 pt-5 pb-6">
         <span className="flex size-9 items-center justify-center rounded-xl bg-primary shadow-[0_0_28px_-6px_var(--primary)]">
           <Play className="size-4.5 fill-primary-foreground text-primary-foreground" />
         </span>
@@ -88,7 +118,7 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="shrink-0 border-t border-sidebar-border p-3">
         <a
           href={withOutboundUtm(SITE_DISCORD_INVITE, { campaign: "discord_sidebar" })}
           target="_blank"
