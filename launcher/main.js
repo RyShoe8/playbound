@@ -6744,7 +6744,7 @@ ipcMain.handle("post-telemetry", async (_event, payload) => {
   }
 });
 ipcMain.handle("uninstall", (_event, slug, editionSlug) =>
-  uninstallGame(slug, editionSlug || null)
+  confirmAndUninstallGame(slug, editionSlug || null)
 );
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
