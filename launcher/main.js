@@ -4271,6 +4271,31 @@ async function ensureEditionMods(slug, entry, gameDir, exePath) {
   const steps = [];
   const files = Array.isArray(spec.files) ? spec.files : [];
 
+  /*
+   * A recipe can move a file between dests — YYToolkit went mods/Native ->
+   * mods/Aurie once we learned native modules are mapped raw at process attach
+   * and never run the Aurie module lifecycle, so the interface it registers
+   * from mods/Aurie never appeared. Placement below is copy-only, so without
+   * this an already-installed player keeps the old copy and loads the DLL
+   * twice. Bounded to filenames and folders this same recipe declares, and
+   * skips any pair the recipe actually wants, so it can only clean up after
+   * itself.
+   */
+  const wanted = new Set(files.map((f) => `${f.dest || ""}|${f.fileName}`));
+  const dests = [...new Set(files.map((f) => f.dest || ""))];
+  for (const file of files) {
+    if (file.extract) continue;
+    for (const dest of dests) {
+      if (dest === (file.dest || "") || wanted.has(`${dest}|${file.fileName}`)) continue;
+      const staleDir = resolveInsideGameDir(gameDir, dest);
+      if (!staleDir) continue;
+      const stale = path.join(staleDir, file.fileName);
+      if (!fs.existsSync(stale)) continue;
+      await fsp.rm(stale, { force: true });
+      steps.push(`removed stale ${file.fileName} from ${dest}`);
+    }
+  }
+
   for (const file of files) {
     const targetDir = resolveInsideGameDir(gameDir, file.dest || "");
     if (!targetDir) {
