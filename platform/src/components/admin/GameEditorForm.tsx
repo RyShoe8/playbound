@@ -159,6 +159,7 @@ export function GameEditorForm({
   const [form, setForm] = useState<GamePayload>(initial);
   const [importUrl, setImportUrl] = useState(mode === "create" ? "" : initial.website || "");
   const [busy, setBusy] = useState(false);
+  const [launcherSaving, setLauncherSaving] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [mediaNote, setMediaNote] = useState("");
@@ -231,6 +232,31 @@ export function GameEditorForm({
         launcherInstall: toPayloadLauncherInstall({ ...base, ...partial }),
       };
     });
+  }
+
+  /** Save operational install data without submitting the surrounding game form. */
+  async function saveLauncherInstallOnly() {
+    if (mode !== "edit" || !form.launcherInstall) return;
+    setLauncherSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/games/${initial.slug}/launcher-install`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ launcherInstall: toPayloadLauncherInstall(form.launcherInstall) }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Couldn't save the install recipe.");
+        return;
+      }
+      setLauncherDiscoverNote("Install recipe saved. No other game fields were changed.");
+      router.refresh();
+    } catch {
+      setError("Couldn't reach the server.");
+    } finally {
+      setLauncherSaving(false);
+    }
   }
 
   async function addToPlayboundLauncher() {
@@ -1891,6 +1917,21 @@ export function GameEditorForm({
                     placeholder="+connect {host}:{port}"
                   />
                 </div>
+                {mode === "edit" && (
+                  <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+                    <button
+                      type="button"
+                      disabled={busy || launcherSaving}
+                      onClick={saveLauncherInstallOnly}
+                      className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                    >
+                      {launcherSaving ? "Saving recipe…" : "Save install recipe only"}
+                    </button>
+                    <span className="text-[11px] text-muted-foreground">
+                      Updates only this recipe. It does not save any other game fields.
+                    </span>
+                  </div>
+                )}
               </div>
             </details>
           )}
