@@ -84,10 +84,33 @@ function applyConnectTemplates(templates, join) {
   );
 }
 
+const TEMPLATE_TOKEN = /\{(host|port|name)\}/;
+
+/**
+ * Args to pass on a plain launch — one with no server to join.
+ *
+ * A connect list is a command line, not a bag of independent flags. Filtering
+ * out only the elements containing a placeholder splits pairs: Unvanquished's
+ * `["+connect", "{host}:{port}"]` became a bare `+connect`, and the engine
+ * rejected it with `URL "+connect" contains forbidden character '+'`. Twelve
+ * hosted games had the same shape — `-n`, `--host`, `-connect`, `--address`
+ * — and only survived because their engines happen to ignore a dangling flag.
+ *
+ * So a list is all-or-nothing: if any element is templated the whole thing
+ * belongs to joining and is dropped. Genuinely static args, like P99's
+ * `patchme`, carry no placeholder and still apply.
+ */
+function staticLaunchArgs(connectArgs) {
+  if (!Array.isArray(connectArgs) || connectArgs.length === 0) return [];
+  if (connectArgs.some((t) => TEMPLATE_TOKEN.test(String(t)))) return [];
+  return connectArgs.map(String);
+}
+
 module.exports = {
   CLIENT_CONNECT_ARGS,
   clientConnectArgs,
   hasClientConnectArgs,
   joinsFromInGameMenu,
   applyConnectTemplates,
+  staticLaunchArgs,
 };

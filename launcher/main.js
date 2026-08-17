@@ -31,6 +31,7 @@ const {
   clientConnectArgs,
   hasClientConnectArgs,
   joinsFromInGameMenu,
+  staticLaunchArgs,
 } = require("./services/connectArgs");
 
 function loadHardwareModule() {
@@ -5223,10 +5224,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
           .replaceAll("{name}", join.name || "")
       );
     }
-  } else if (Array.isArray(connectArgs) && connectArgs.length) {
-    // Static args like "patchme" (P99) — apply when not templated for server join.
-    const staticArgs = connectArgs.filter((t) => !String(t).includes("{host}"));
-    args.push(...staticArgs.map(String));
+  } else {
+    // All-or-nothing: a half-applied connect line is worse than none. See
+    // staticLaunchArgs in services/connectArgs.js.
+    args.push(...staticLaunchArgs(connectArgs));
   }
 
   if (join?.host && join?.port) {
