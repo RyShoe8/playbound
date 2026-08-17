@@ -355,7 +355,8 @@ export function DownloadMirrorsManager() {
     }
   }
 
-  async function handleArchive(artifactId: string, sourceUrl?: string | null) {
+  async function handleArchive(item: CacheItem) {
+    const { id: artifactId, archiveSourceUrl: sourceUrl } = item;
     setBusyAction(`archive-${artifactId}`);
     setCacheItems((items) => items.map((item) => item.id === artifactId
       ? { ...item, vpsStatus: "uploading", vpsStatusMessage: "Starting VPS transfer…" }
@@ -364,7 +365,17 @@ export function DownloadMirrorsManager() {
       const res = await fetch("/api/admin/download-mirrors/cache/archive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ artifactId, sourceUrl: sourceUrl || null }),
+        body: JSON.stringify({
+          artifactId,
+          sourceUrl: sourceUrl || null,
+          artifact: {
+            gameSlug: item.gameSlug,
+            version: item.version,
+            filename: item.filename,
+            sizeBytes: item.sizeBytes,
+            artifactType: item.artifactType,
+          },
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.message || "Archive failed");
@@ -781,7 +792,7 @@ export function DownloadMirrorsManager() {
                               <Eye className="w-3.5 h-3.5" /> Details
                             </button>
                             <button
-                              onClick={() => void handleArchive(item.id, item.archiveSourceUrl)}
+                              onClick={() => void handleArchive(item)}
                               disabled={
                                 busyAction === `archive-${item.id}` ||
                                 item.vpsStatus === "verified" ||

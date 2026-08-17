@@ -2944,6 +2944,34 @@ function findExecutable(dir, exeHint) {
   return candidates.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
 }
 
+/**
+ * A few portable releases ship both a .jar and the vendor's native launcher.
+ * Prefer the named native launcher when it is known to carry its own runtime
+ * (YSoccer ships a bundled JRE beside ysoccer.exe), rather than asking the
+ * player to install a separate Java runtime for a package that already has one.
+ */
+function findNamedPortableExe(dir, expectedName) {
+  const target = String(expectedName || "").toLowerCase();
+  if (!dir || !target || !fs.existsSync(dir)) return null;
+  const pending = [{ dir, depth: 0 }];
+  while (pending.length) {
+    const current = pending.shift();
+    if (!current || current.depth > 4) continue;
+    let entries = [];
+    try {
+      entries = fs.readdirSync(current.dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const full = path.join(current.dir, entry.name);
+      if (entry.isFile() && entry.name.toLowerCase() === target) return full;
+      if (entry.isDirectory()) pending.push({ dir: full, depth: current.depth + 1 });
+    }
+  }
+  return null;
+}
+
 function expandWinPath(p) {
   let out = String(p || "")
     .replace(/%LOCALAPPDATA%/gi, process.env.LOCALAPPDATA || "")
@@ -4390,7 +4418,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     await flattenWadFiles(gameDir);
   }
 
-  const exe = findExecutable(gameDir, entry.exeHint);
+  const exe = entry.slug === "ysoccer"
+    ? findNamedPortableExe(gameDir, "ysoccer.exe") || findExecutable(gameDir, entry.exeHint)
+    : findExecutable(gameDir, entry.exeHint);
   if (!exe) throw new Error("Extracted, but no executable found");
 
   await processAddons(entry, gameDir, selectedAddons);
@@ -5310,7 +5340,27 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   // Legacy github-jar installs pointed at play.cmd — prefer the sidecar .jar.
-  const launchPath = GameLauncher.preferJarBesideLauncher(info.exe);
+  let launchPath = GameLauncher.preferJarBesideLauncher(info.exe);
+  // Repair copies installed before YSoccer's native launcher was preferred.
+  // This changes only the local installed-game pointer, never catalog data.
+  if (slug === "ysoccer" && /\.jar$/i.test(launchPath)) {
+    const nativeLauncher = findNamedPortableExe(info.dir, "ysoccer.exe");
+    if (nativeLauncher) {
+      launchPath = nativeLauncher;
+      try {
+        const st = loadState();
+        const installed = ensureGameInstallRecord(st[slug]);
+        if (installed.editions?.[edSlug]) installed.editions[edSlug].exe = nativeLauncher;
+        installed.exe = nativeLauncher;
+        installed.dir = info.dir;
+        syncGameInstallSummary(installed);
+        st[slug] = installed;
+        saveState(st);
+      } catch {
+        /* The current launch is still valid if the optional local repair fails. */
+      }
+    }
+  }
   if (launchPath !== info.exe && /\.jar$/i.test(launchPath)) {
     try {
       const st = loadState();
