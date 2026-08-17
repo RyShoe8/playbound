@@ -312,6 +312,7 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
   if (!artifact.sizeBytes) return { success: false, message: "Artifact size is unknown; verify it before archiving." };
 
   artifact.vpsStatus = "uploading";
+  artifact.vpsStatusMessage = "Transfer queued on the VPS.";
   await artifact.save();
 
   const result = await archiveArtifactOnHost({
@@ -322,6 +323,7 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
   });
   if (!result.success) {
     artifact.vpsStatus = "missing";
+    artifact.vpsStatusMessage = result.message || "Could not start the VPS archive transfer.";
     await artifact.save();
     return { success: false, message: result.message || "Could not copy artifact to the VPS archive." };
   }
@@ -337,6 +339,7 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
   }
 
   artifact.vpsStatus = "verified";
+  artifact.vpsStatusMessage = null;
   await artifact.save();
   await MirrorEvent.create({
     eventType: "archive_to_vps",
@@ -355,6 +358,7 @@ export async function refreshUploadingVpsArtifacts(): Promise<void> {
     const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
     if (!remote || remote.status === "uploading") continue;
     artifact.vpsStatus = remote.status === "verified" ? "verified" : "missing";
+    artifact.vpsStatusMessage = remote.status === "verified" ? null : remote.message || "The VPS did not retain the archive transfer.";
     await artifact.save();
   }
 }
