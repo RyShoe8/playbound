@@ -5,7 +5,11 @@ import MirrorEvent from "@/lib/models/MirrorEvent";
 import MirrorSource from "@/lib/models/MirrorSource";
 import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorJob from "@/lib/models/MirrorJob";
-import { archiveArtifactOnHost, deleteArchivedArtifactOnHost } from "@/lib/gameHost/client";
+import {
+  archivedArtifactStatusOnHost,
+  archiveArtifactOnHost,
+  deleteArchivedArtifactOnHost,
+} from "@/lib/gameHost/client";
 import { deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
 
@@ -322,6 +326,16 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
     return { success: false, message: result.message || "Could not copy artifact to the VPS archive." };
   }
 
+  if (result.queued) {
+    await MirrorEvent.create({
+      eventType: "archive_to_vps",
+      actor,
+      artifactId: artifact.artifactId,
+      details: `${actor} queued ${artifact.filename} for transfer from R2 hot cache to the VPS archive`,
+    });
+    return { success: true, message: `Transfer to the VPS started for ${artifact.filename}. This page will mark it On VPS when the copy finishes.` };
+  }
+
   artifact.vpsStatus = "verified";
   await artifact.save();
   await MirrorEvent.create({
@@ -331,6 +345,18 @@ export async function archiveArtifactToVps(artifactId: string, actor: string): P
     details: `${actor} copied ${artifact.filename} from R2 hot cache to the VPS archive`,
   });
   return { success: true, message: `Archived ${artifact.filename} on the VPS.` };
+}
+
+/** Refresh only in-progress archive rows from the VPS agent; no catalog data is touched. */
+export async function refreshUploadingVpsArtifacts(): Promise<void> {
+  await dbConnect();
+  const uploading = await Artifact.find({ vpsStatus: "uploading" });
+  for (const artifact of uploading) {
+    const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
+    if (!remote || remote.status === "uploading") continue;
+    artifact.vpsStatus = remote.status === "verified" ? "verified" : "missing";
+    await artifact.save();
+  }
 }
 
 /**

@@ -116,19 +116,35 @@ export async function archiveArtifactOnHost(input: {
   relativePath: string;
   sizeBytes: number;
   sha256?: string | null;
-}): Promise<{ success: boolean; message?: string }> {
+}): Promise<{ success: boolean; queued?: boolean; message?: string }> {
   try {
     const res = await hostFetch("/mirror/archive", {
       method: "POST",
       body: JSON.stringify(input),
     });
     if (!res) return { success: false, message: "Game host is not configured" };
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    const data = (await res.json().catch(() => ({}))) as { error?: string; status?: string };
     return res.ok
-      ? { success: true }
+      ? { success: true, queued: data.status === "uploading" }
       : { success: false, message: data.error || `Game host returned ${res.status}` };
   } catch (err) {
     return { success: false, message: err instanceof Error ? err.message : "Game host unreachable" };
+  }
+}
+
+export async function archivedArtifactStatusOnHost(
+  relativePath: string
+): Promise<{ status: "missing" | "uploading" | "verified"; message?: string } | null> {
+  try {
+    const res = await hostFetch(`/mirror/archive/${encodeURIComponent(relativePath)}`, { method: "GET" });
+    if (!res) return null;
+    const data = (await res.json().catch(() => ({}))) as { status?: string; error?: string };
+    if (!res.ok || !["missing", "uploading", "verified"].includes(String(data.status))) {
+      return { status: "missing", message: data.error || `Game host returned ${res.status}` };
+    }
+    return { status: data.status as "missing" | "uploading" | "verified", message: data.error };
+  } catch (err) {
+    return { status: "missing", message: err instanceof Error ? err.message : "Game host unreachable" };
   }
 }
 
