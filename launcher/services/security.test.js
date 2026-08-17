@@ -78,7 +78,7 @@ function makeReference({ packaged }) {
     if (host.endsWith(".r2.cloudflarestorage.com")) return true;
     if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
     if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
-    if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net")) return true;
+    if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net") || host.endsWith(".dl.dropboxusercontent.com")) return true;
     try {
       const apiHost = new URL(API_BASE).hostname.toLowerCase();
       if (host === apiHost) return true;
@@ -103,7 +103,7 @@ const DOMAINS = [
   "swtor.com", "runescape.com", "xsolla.com", "itch.io", "itch.zone", "archive.org",
   "codeberg.org", "myabandonware.com", "allegro.cc", "bzflag.org", "scummvm.org",
   "r2.cloudflarestorage.com", "hwcdn.net", "s3.amazonaws.com", "cloudfront.net",
-  "fastly.net", "akamaihd.net", "azureedge.net", "playbound.club", "localhost",
+  "fastly.net", "akamaihd.net", "azureedge.net", "dl.dropboxusercontent.com", "playbound.club", "localhost",
   "evil.example", "sourceforgeznet.com",
 ];
 

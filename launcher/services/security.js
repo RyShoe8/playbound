@@ -94,6 +94,8 @@ const DOWNLOAD_SUFFIXES = [
   ".fastly.net",
   ".akamaihd.net",
   ".azureedge.net",
+  // SWG Infinity's official updater redirects the signed installer here.
+  ".dl.dropboxusercontent.com",
 ];
 
 /** itch.io's mirror hosts. Anchored at both ends; see rule 1 above. */

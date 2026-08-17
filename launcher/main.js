@@ -2926,6 +2926,7 @@ function expandWinPath(p) {
     .replace(/%APPDATA%/gi, process.env.APPDATA || "")
     .replace(/%PROGRAMFILES%/gi, process.env.PROGRAMFILES || "")
     .replace(/%PROGRAMFILES\(X86\)%/gi, process.env["ProgramFiles(x86)"] || "")
+    .replace(/%SYSTEMDRIVE%/gi, process.env.SYSTEMDRIVE || "C:")
     // Daybreak titles (DCUO) install under C:\Users\Public by default, so an
     // unexpanded %PUBLIC% would leave a path that can never match.
     .replace(/%PUBLIC%/gi, process.env.PUBLIC || "C:\\Users\\Public")
