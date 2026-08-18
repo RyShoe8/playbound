@@ -5,7 +5,6 @@ export const LIVE_PRICE_RETAILERS = [
   "GOG",
   "Epic Games Store",
   "Fanatical",
-  "eBay",
 ] as const;
 
 export function retailerHasLivePrice(name: string): boolean {

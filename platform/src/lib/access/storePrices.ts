@@ -8,13 +8,6 @@
  */
 
 import { parseEpicProductSlug } from "@/lib/epicStore";
-import {
-  ebayItemPriceCents,
-  isEbayItemUrl,
-  isEbaySearchUrl,
-  lowestEbaySearchPriceCents,
-  withEbayPriceSort,
-} from "./ebayPrices";
 import { detectRetailer, parseFanaticalSlug, parseGogSlug, parseSteamAppId } from "./storeUrls";
 import type { Cents } from "./types";
 
@@ -234,46 +227,6 @@ async function lookupFanatical(url: string): Promise<StorePriceLookup> {
   };
 }
 
-const EBAY_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-
-async function fetchEbayHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      "user-agent": EBAY_UA,
-      accept: "text/html,application/xhtml+xml",
-      "accept-language": "en-US,en;q=0.9",
-    },
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) throw new StorePriceError(`eBay did not return listings (${res.status}).`);
-  const html = await res.text();
-  if (/pardon our interruption|captcha|security.?check/i.test(html) && html.length < 8000) {
-    throw new StorePriceError("eBay did not return listings.");
-  }
-  return html;
-}
-
-async function lookupEbay(url: string): Promise<StorePriceLookup> {
-  if (isEbayItemUrl(url)) {
-    const html = await fetchEbayHtml(url);
-    const live = ebayItemPriceCents(html);
-    if (live == null || live <= 0) {
-      throw new StorePriceError("eBay did not report a price for that item.");
-    }
-    return { retailer: "eBay", url, priceCents: live, listPriceCents: live };
-  }
-  if (!isEbaySearchUrl(url)) {
-    throw new StorePriceError("Paste an eBay search or item URL.");
-  }
-  const html = await fetchEbayHtml(withEbayPriceSort(url));
-  const live = lowestEbaySearchPriceCents(html);
-  if (live == null || live <= 0) {
-    throw new StorePriceError("eBay did not return listings.");
-  }
-  return { retailer: "eBay", url, priceCents: live, listPriceCents: live };
-}
-
 export async function lookupStorePrice(url: string): Promise<StorePriceLookup> {
   const trimmed = url.trim();
   let parsed: URL;
@@ -291,13 +244,17 @@ export async function lookupStorePrice(url: string): Promise<StorePriceLookup> {
   if (retailer === "GOG") return lookupGog(trimmed);
   if (retailer === "Epic Games Store") return lookupEpic(trimmed);
   if (retailer === "Fanatical") return lookupFanatical(trimmed);
-  if (retailer === "eBay") return lookupEbay(trimmed);
-  if (retailer === "Humble Bundle" || retailer === "itch.io" || retailer === "Green Man Gaming") {
+  if (
+    retailer === "Humble Bundle" ||
+    retailer === "itch.io" ||
+    retailer === "Green Man Gaming" ||
+    retailer === "eBay"
+  ) {
     throw new StorePriceError(
-      `${retailer} does not expose a public price API we can use yet. Use Steam, GOG, Epic, Fanatical, or an eBay search.`
+      `${retailer} does not expose a public price API we can use yet. Use Steam, GOG, Epic, or Fanatical, or type the price.`
     );
   }
   throw new StorePriceError(
-    "Unknown store. Use a Steam, GOG, Epic Games Store, Fanatical, or eBay search URL."
+    "Unknown store. Use a Steam, GOG, Epic Games Store, or Fanatical product URL, or type the price."
   );
 }
