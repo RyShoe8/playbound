@@ -10,6 +10,7 @@ import {
   parsePriceFilter,
   accessPriceLabel,
   requiresGamePriceLine,
+  scopeCatalogLiveStats,
 } from "./discoveryMode";
 import type { GameTierMap } from "./tierMap";
 
@@ -94,6 +95,41 @@ describe("filterGamesByMode", () => {
 
   it("keeps VALUE in ALL", () => {
     expect(filterGamesByMode(games, "ALL", tiers)).toEqual(games);
+  });
+});
+
+describe("scopeCatalogLiveStats", () => {
+  const live = {
+    gameCount: 3,
+    modCount: 10,
+    editionCount: 5,
+    playingNow: 40,
+    byGame: [
+      { slug: "morrowind", title: "Morrowind", playingNow: 20 },
+      { slug: "0ad", title: "0 A.D.", playingNow: 15 },
+      { slug: "openmw", title: "OpenMW", playingNow: 5 },
+    ],
+    mostPopular: [
+      { slug: "morrowind", title: "Morrowind", playingNow: 20 },
+      { slug: "0ad", title: "0 A.D.", playingNow: 15 },
+      { slug: "openmw", title: "OpenMW", playingNow: 5 },
+    ],
+    editionCountBySlug: { morrowind: 2, "0ad": 1, openmw: 2 },
+    modCountBySlug: { morrowind: 8, "0ad": 2, openmw: 0 },
+  };
+
+  it("leaves ALL mode numbers alone", () => {
+    expect(scopeCatalogLiveStats(live, "ALL", tiers)).toBe(live);
+  });
+
+  it("counts only FREE games, their players, editions, and mods", () => {
+    const next = scopeCatalogLiveStats(live, "FREE", tiers);
+    expect(next.gameCount).toBe(1);
+    expect(next.playingNow).toBe(15);
+    expect(next.editionCount).toBe(1);
+    expect(next.modCount).toBe(2);
+    expect(next.mostPopular.map((g) => g.slug)).toEqual(["0ad"]);
+    expect(next.byGame.map((g) => g.slug)).toEqual(["0ad"]);
   });
 });
 

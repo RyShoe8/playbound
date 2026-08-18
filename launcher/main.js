@@ -1652,6 +1652,7 @@ function catalogEntryFromEdition(edition) {
       fileName: cfg.fileName || undefined,
       versionLabel: cfg.versionLabel || undefined,
       knownExePaths: Array.isArray(cfg.knownExePaths) ? cfg.knownExePaths : undefined,
+      launchArgs: Array.isArray(cfg.launchArgs) ? cfg.launchArgs : undefined,
       registryTitles: Array.isArray(cfg.registryTitles) ? cfg.registryTitles : undefined,
       installRoot: cfg.installRoot || undefined,
       connectArgs: Array.isArray(cfg.connectArgs) ? cfg.connectArgs : undefined,
@@ -3867,7 +3868,10 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
   }
 }
 
-function markInstalled(slug, { version, exe, dir, editionSlug, editionName, editionType, connectArgs }) {
+function markInstalled(
+  slug,
+  { version, exe, dir, editionSlug, editionName, editionType, connectArgs, launchArgs }
+) {
   stopExeScan(slug);
   stopInstallerPoll();
   const state = loadState();
@@ -3888,6 +3892,11 @@ function markInstalled(slug, { version, exe, dir, editionSlug, editionName, edit
       ? connectArgs
       : Array.isArray(prev.connectArgs)
         ? prev.connectArgs
+        : undefined,
+    launchArgs: Array.isArray(launchArgs)
+      ? launchArgs
+      : Array.isArray(prev.launchArgs)
+        ? prev.launchArgs
         : undefined,
   };
   syncGameInstallSummary(game);
@@ -4424,6 +4433,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     editionName: entry.editionName || editionMeta?.editionName || "Official",
     editionType: entry.editionType || editionMeta?.editionType || "official",
     connectArgs: Array.isArray(entry.connectArgs) ? entry.connectArgs : undefined,
+    launchArgs: Array.isArray(entry.launchArgs) ? entry.launchArgs : undefined,
   };
 
   if (entry.kind === "locate-then-zip") {
@@ -4538,6 +4548,8 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     await flattenWadFiles(gameDir);
   }
 
+  await prepareClassicDosInstall(entry, gameDir);
+
   const exe = entry.slug === "ysoccer"
     ? findNamedPortableExe(gameDir, "ysoccer.exe") || findExecutable(gameDir, entry.exeHint)
     : findExecutable(gameDir, entry.exeHint);
@@ -4569,6 +4581,32 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     editionSlug: editionExtra.editionSlug,
     note: postNote || null,
   };
+}
+
+/**
+ * Bethesda's DFInstall.zip is the complete freeware CD tree, not a portable
+ * installed copy. The game itself is already present under DFCD/DAGGER; it
+ * only needs the full-install Z.CFG that the original DOS installer would
+ * have written. DOSBox mounts the FALL.EXE directory as C:, so both paths are
+ * deliberately relative to that mount.
+ */
+async function prepareClassicDosInstall(entry, gameDir) {
+  if (entry?.slug !== "daggerfall" || entry?.editionSlug !== "classic-dos") return;
+  const fallExe = findExecutable(gameDir, "FALL.EXE");
+  if (!fallExe) throw new Error("Daggerfall Classic is missing FALL.EXE");
+  const daggerDir = path.dirname(fallExe);
+  if (!fs.existsSync(path.join(daggerDir, "ARENA2", "GLOBAL.BSA"))) {
+    throw new Error("Daggerfall Classic is missing its ARENA2 game data");
+  }
+  const config = [
+    "type dfall_huge",
+    "path c:\\arena2\\",
+    "pathcd c:\\arena2\\",
+    "fade_time 3",
+    "map_file huge_map.txt",
+    "",
+  ].join("\r\n");
+  await fsp.writeFile(path.join(daggerDir, "Z.CFG"), config, "ascii");
 }
 
 async function flattenWadFiles(gameDir) {
@@ -5470,7 +5508,11 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
-  const args = [];
+  const args = Array.isArray(info.launchArgs)
+    ? [...info.launchArgs]
+    : Array.isArray(entry?.launchArgs)
+      ? [...entry.launchArgs]
+      : [];
   if (join?.host && join?.port && Array.isArray(connectArgs)) {
     for (const template of connectArgs) {
       args.push(
@@ -8286,7 +8328,7 @@ function resolveGameDirForSlug(slug, editionSlug = null) {
  * a reason the party window can show verbatim rather than a bare false.
  */
 ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
-  const { partyId, slug, adapterFile, editionSlug } = opts || {};
+  const { partyId, slug, adapterFile, editionSlug, isLeader } = opts || {};
   try {
     const status = await virtualLan.overlayStatus();
     if (!status.installed) {
@@ -8322,6 +8364,29 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
       return { error: "The network adapter did not come up. Try Join Game again." };
     }
 
+    const adapterAddress = await virtualLan.resolveAdapterAddress();
+    if (!adapterAddress) {
+      return { error: "The party network came up without an address. Try Join Game again." };
+    }
+    const reported = await launcherJson(
+      `/api/parties/${encodeURIComponent(partyId)}/lan`,
+      { method: "POST", body: { address: adapterAddress } }
+    );
+    if (reported?.error) return { error: reported.error };
+
+    if (slug === "holocure" && isLeader) {
+      await virtualLan.startDiscoveryBridge({
+        localAddress: adapterAddress,
+        getPeerAddresses: async () => {
+          const peers = await launcherJson(
+            `/api/parties/${encodeURIComponent(partyId)}/lan`,
+            { method: "POST", body: { address: adapterAddress } }
+          );
+          return peers?.peerAddresses || [];
+        },
+      });
+    }
+
     let pointed = false;
     if (adapterFile) {
       const gameDir = resolveGameDirForSlug(slug, editionSlug || null);
@@ -8333,7 +8398,7 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
         };
       }
     }
-    return { ok: true, adapterName, pointed };
+    return { ok: true, adapterName, adapterAddress, pointed };
   } catch (err) {
     return { error: err.message };
   }

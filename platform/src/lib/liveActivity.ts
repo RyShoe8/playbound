@@ -59,6 +59,8 @@ export type CatalogLiveStats = {
   byGame: CatalogPopularGame[];
   /** Reachable (non-hidden, non-archived) edition counts keyed by game slug. */
   editionCountBySlug: Record<string, number>;
+  /** Card-view mods keyed by base game slug, for Discover-mode scoping. */
+  modCountBySlug: Record<string, number>;
   asOf: string;
 };
 
@@ -460,6 +462,13 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     editionCount += Math.max(1, Number(editionCountBySlug[g.slug]) || 0);
   }
 
+  const modCountBySlug: Record<string, number> = {};
+  for (const mod of mods) {
+    const base = mod.baseGameSlug;
+    if (!base) continue;
+    modCountBySlug[base] = (modCountBySlug[base] || 0) + 1;
+  }
+
   const byGame = [...games]
     .map((g) => ({
       slug: g.slug,
@@ -485,6 +494,7 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     mostPopular,
     byGame,
     editionCountBySlug,
+    modCountBySlug,
     asOf,
   };
 }
@@ -577,7 +587,7 @@ export function playingNowBySlug(stats: CatalogLiveStats): Record<string, number
 
 /** Catalog-wide snapshot (homepage). Shared for 15 minutes. */
 export function getCatalogLiveStats(): Promise<CatalogLiveStats> {
-  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v7"], {
+  return unstable_cache(computeCatalogLiveStats, ["live-activity-catalog-v8"], {
     revalidate: CACHE_SECONDS,
     tags: ["live-activity"],
   })();

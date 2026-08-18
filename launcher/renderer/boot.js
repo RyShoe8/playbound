@@ -3,6 +3,7 @@ import {
   api,
   applyAccountToSidebar,
   applyCompatibilitySetting,
+  applyDiscoverySetting,
   bindViews,
   cacheInvalidate,
   cachePut,
@@ -19,6 +20,7 @@ import {
   prefetchGameDetail,
   setCatalogCache,
   setCompatibilityFilter,
+  setDiscoveryMode,
   setProgress,
   setStatus,
   setStatusAction,
@@ -39,6 +41,22 @@ const KEEP_ALIVE = new Set([
   "settings",
   "library",
 ]);
+
+function isSameDeepLinkContext(a, b) {
+  if (!a || !b) return false;
+  if (a.action !== b.action || String(a.slug || "") !== String(b.slug || "")) return false;
+  if (String(a.editionSlug || "") !== String(b.editionSlug || "")) return false;
+  if (a.action === "install-mod") {
+    return Boolean(a.mod) === Boolean(b.mod) && String(a.modError || "") === String(b.modError || "");
+  }
+  if (a.action === "join") {
+    return (
+      String(a.join?.host || "") === String(b.join?.host || "") &&
+      Number(a.join?.port || 0) === Number(b.join?.port || 0)
+    );
+  }
+  return true;
+}
 
 const viewLoaders = {
   games: () => import("./views/games.js"),
@@ -250,6 +268,18 @@ function wireShell() {
     });
   });
 
+  document.querySelectorAll('input[name="discovery-filter"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) void setDiscoveryMode(input.value);
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-discovery-mode]");
+    if (!btn) return;
+    void setDiscoveryMode(btn.dataset.discoveryMode);
+  });
+
   const statusMsg = document.getElementById("statusbar-msg");
   statusMsg?.addEventListener("click", () => {
     void runStatusAction();
@@ -394,6 +424,7 @@ function wireMainEvents() {
   window.playbound.onProgress(({ phase, received, total, addon, message }) => {
     if (phase === "resolving") setStatus("Resolving download package...");
     else if (phase === "java") setStatus(message || "Installing Java…");
+    else if (phase === "dosbox") setStatus(message || "Installing DOSBox…");
     else if (phase === "downloading") {
       const pct = total ? Math.round((received / total) * 100) : null;
       const prefix = addon ? `Downloading ${addon}...` : "Downloading...";
@@ -504,7 +535,12 @@ function wireMainEvents() {
 
   window.playbound.onContext((data) => {
     if (data) {
+      const same =
+        state.currentView === "deepLink" && isSameDeepLinkContext(state.deepLinkCtx, data);
       state.deepLinkCtx = data;
+      // Remounting this panel auto-starts install/mod-install. A second
+      // identical context event must not start a second download.
+      if (same) return;
       void navigateTo("deepLink", { ctx: data });
     } else if (state.currentView === "deepLink") {
       void navigateTo("home");
@@ -537,6 +573,7 @@ async function boot() {
     setCatalogCache(bootState.catalog);
     state.recentCache = Array.isArray(bootState.recent) ? bootState.recent : [];
     applyCompatibilitySetting(bootState.settings);
+    applyDiscoverySetting(bootState.settings);
     applyAccountToSidebar(bootState.account);
     if (bootState.context) {
       state.deepLinkCtx = bootState.context;

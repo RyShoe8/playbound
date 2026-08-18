@@ -161,6 +161,8 @@ export interface EditionInstallConfig {
     fileName?: string | null;
     versionLabel?: string | null;
     knownExePaths?: string[];
+    /** Arguments passed to the installed executable when Play is pressed. */
+    launchArgs?: string[];
     installRoot?: string | null;
     connectArgs?: string[];
     note?: string | null;

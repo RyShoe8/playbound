@@ -17,7 +17,6 @@ import {
   ARENA_GAMEFILES_URL,
   OPENTESARENA_EXE_HINT,
   OPENTESARENA_KNOWN_EXE_PATHS,
-  OPENTESARENA_OVERLAY_DEST,
   TES_ARENA_EXE_HINT,
   TES_ARENA_KNOWN_EXE_PATHS,
 } from "@/lib/data/tesArenaAssets";
@@ -79,14 +78,13 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-zip",
-        repo: "Interkarma/daggerfall-unity",
-        assetPattern: "DaggerfallUnity.*Windows.*\\.zip$|dfu_windows.*\\.zip$|\\.zip$",
-        exeHint: "DaggerfallUnity",
-        overlayUrl: "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1",
-        overlayFileName: "DaggerfallGameFiles.zip",
-        overlayDest: "DaggerfallUnity_Data/StreamingAssets/GameFiles",
-        note: "Includes the free Daggerfall game data — ready to play without locating files.",
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/launcher-packages/games/daggerfall/1787010604732-Daggerfall-Unity-PlayBound-v1.1.1.zip",
+        fileName: "Daggerfall-Unity-PlayBound-v1.1.1.zip",
+        versionLabel: "v1.1.1",
+        exeHint: "DaggerfallUnity.exe",
+        knownExePaths: ["DaggerfallUnity.exe"],
+        note: "PlayBound's verified Daggerfall Unity v1.1.1 package, including the free game data.",
       },
     },
     requirements: {
@@ -110,12 +108,18 @@ export const editions: EditionSeed[] = [
     links: {
       website: "https://elderscrolls.bethesda.net/en/daggerfall",
     },
-    installMethod: "official_download",
+    installMethod: "playbound_installer",
     installConfig: {
-      official_download: {
+      playbound_installer: {
+        kind: "direct-zip",
         url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/DFInstall.zip",
         fileName: "DFInstall.zip",
-        sizeMB: 150,
+        versionLabel: "1.0 (Bethesda freeware release)",
+        exeHint: "FALL.EXE",
+        knownExePaths: ["DFCD/DAGGER/FALL.EXE", "DAGGER/FALL.EXE", "FALL.EXE"],
+        launchArgs: ["Z.CFG"],
+        needsDosBox: true,
+        note: "Installs Bethesda's freeware DOS release, configures its full game data, and runs it through PlayBound-managed DOSBox Staging.",
       },
     },
     requirements: {
@@ -2313,22 +2317,13 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-zip",
-        /*
-         * aep93/OpenTESArena does not exist — the GitHub API 404s on it, which
-         * surfaced as "github api 404" the moment anyone pressed Install.
-         * afritz1 is the actual upstream project. The Windows exe is otesa.exe
-         * as of 0.18.0, not OpenTESArena.exe.
-         */
-        repo: "afritz1/OpenTESArena",
-        assetPattern: "windows_x86-64\\.zip$",
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/launcher-packages/games/tes-arena/1786989627126-OpenTESArena-PlayBound-0.18.0.zip",
+        fileName: "OpenTESArena-PlayBound-0.18.0.zip",
+        versionLabel: "0.18.0",
         exeHint: OPENTESARENA_EXE_HINT,
         knownExePaths: [...OPENTESARENA_KNOWN_EXE_PATHS],
-        unwrapSingleRoot: true,
-        overlayUrl: ARENA_GAMEFILES_URL,
-        overlayFileName: ARENA_GAMEFILES_FILE,
-        overlayDest: OPENTESARENA_OVERLAY_DEST,
-        note: "Installs OpenTESArena and overlays Bethesda's freeware Arena 1.06 data into data/ARENA.",
+        note: "Verified portable OpenTESArena 0.18.0 package with Bethesda's freeware Arena 1.06 data already in data/ARENA.",
       },
     },
     features: ["Singleplayer", "Hardware Rendering", "Mouselook Controls", "Open Source"],

@@ -20,6 +20,7 @@
 const fs = require("fs");
 const fsp = fs.promises;
 const path = require("path");
+const dgram = require("dgram");
 const { execFile } = require("child_process");
 
 const EXEC_TIMEOUT_MS = 30_000;
@@ -156,6 +157,70 @@ async function resolveAdapterName() {
   return name || null;
 }
 
+async function resolveAdapterAddress() {
+  if (process.platform !== "win32") return null;
+  const res = await run("powershell", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -like '*netbird*' } | Select-Object -First 1).IPAddress",
+  ]);
+  if (!res.ok) return null;
+  const address = res.stdout.trim();
+  return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(address) ? address : null;
+}
+
+let discoverySocket = null;
+let discoveryTimer = null;
+
+function stopDiscoveryBridge() {
+  if (discoveryTimer) clearInterval(discoveryTimer);
+  discoveryTimer = null;
+  if (discoverySocket) discoverySocket.close();
+  discoverySocket = null;
+}
+
+/**
+ * HoloCure's mod discovers hosts with UDP broadcast, which WireGuard/NetBird
+ * intentionally does not carry. The party leader therefore sends the mod's
+ * normal `From2` discovery reply directly to each overlay peer. The packet's
+ * source remains the leader's NetBird address, so the unmodified client then
+ * opens its normal TCP connection to port 27016.
+ */
+async function startDiscoveryBridge({ localAddress, getPeerAddresses }) {
+  stopDiscoveryBridge();
+  if (!localAddress || typeof getPeerAddresses !== "function") return false;
+
+  const socket = dgram.createSocket("udp4");
+  await new Promise((resolve, reject) => {
+    socket.once("error", reject);
+    socket.bind(0, localAddress, () => {
+      socket.removeListener("error", reject);
+      resolve();
+    });
+  });
+  discoverySocket = socket;
+
+  const announce = async () => {
+    let peers = [];
+    try {
+      peers = await getPeerAddresses();
+    } catch {
+      return;
+    }
+    const payload = Buffer.from("From2", "utf8");
+    for (const address of new Set(peers || [])) {
+      if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(String(address))) {
+        socket.send(payload, 27015, String(address));
+      }
+    }
+  };
+  await announce();
+  discoveryTimer = setInterval(announce, 1500);
+  discoveryTimer.unref?.();
+  return true;
+}
+
 /**
  * Wait for the adapter to come up. `up` returns before the interface is
  * registered, so the caller would otherwise write an empty adapter name.
@@ -194,7 +259,10 @@ module.exports = {
   joinNetwork,
   leaveNetwork,
   overlayStatus,
+  resolveAdapterAddress,
   resolveAdapterName,
+  startDiscoveryBridge,
+  stopDiscoveryBridge,
   waitForAdapter,
   writeAdapterFile,
 };

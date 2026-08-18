@@ -2,9 +2,11 @@ import { createGameCard } from "../cards.js";
 import {
   api,
   escapeHtml,
-  filterByCompatibility,
+  filterCatalogGames,
+  filterGamesByPrice,
   loadPlayingNowBySlug,
   markViewReady,
+  parsePriceFilter,
   state,
   views,
 } from "../shared.js";
@@ -107,6 +109,14 @@ export const FEATURES = [
   "Team Play",
 ];
 
+const PRICE_OPTIONS = [
+  { label: "Any", value: "any" },
+  { label: "Free", value: "free" },
+  { label: "Under $5", value: "under5" },
+  { label: "Under $10", value: "under10" },
+  { label: "Under $15", value: "under15" },
+];
+
 const SORT_OPTIONS = [
   { label: "Title", value: "title" },
   { label: "Release Year", value: "releaseYear" },
@@ -174,6 +184,11 @@ function ensureSearchShell() {
         <div class="search-chips-wrap" id="search-feature-chips" style="margin-top: 8px;"></div>
       </details>
 
+      <div class="search-filter-group" id="search-price-group">
+        <p class="search-filter-group-label">Price</p>
+        <div class="search-chips-wrap" id="search-price-chips"></div>
+      </div>
+
       <div class="search-sort-row">
         <div class="search-sort-group">
           <p class="search-filter-group-label">Sort by</p>
@@ -197,6 +212,7 @@ function ensureSearchShell() {
     state.searchFilters.features = [];
     state.searchFilters.sort = "title";
     state.searchFilters.sortDir = "asc";
+    state.searchFilters.price = "any";
     state.searchFilters.q = "";
     state.searchQuery = "";
     const globalInput = document.getElementById("global-search-input");
@@ -236,9 +252,15 @@ export function paintSearchResults(catalog = state.catalogCache) {
   const featureSet = new Set(state.searchFilters.features || []);
   const sort = state.searchFilters.sort || "title";
   const sortDir = state.searchFilters.sortDir || "asc";
+  const price = parsePriceFilter(state.searchFilters.price);
+  const showPrice = state.discoveryMode === "ALL";
 
   const activeCount =
-    genreSet.size + tagSet.size + platformSet.size + featureSet.size;
+    genreSet.size +
+    tagSet.size +
+    platformSet.size +
+    featureSet.size +
+    (showPrice && price !== "any" ? 1 : 0);
 
   const activeBadge = document.getElementById("search-active-count");
   const clearAllBtn = document.getElementById("search-clear-all");
@@ -295,6 +317,22 @@ export function paintSearchResults(catalog = state.catalogCache) {
     paintSearchResults(catalog);
   });
 
+  const priceGroup = document.getElementById("search-price-group");
+  if (priceGroup) priceGroup.hidden = !showPrice;
+  const priceHost = document.getElementById("search-price-chips");
+  if (showPrice && priceHost) {
+    priceHost.innerHTML = PRICE_OPTIONS.map(
+      (o) =>
+        `<button type="button" class="filter-chip ${price === o.value ? "active" : ""}" data-price="${o.value}">${o.label}</button>`
+    ).join("");
+    priceHost.querySelectorAll("[data-price]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.searchFilters.price = parsePriceFilter(btn.dataset.price);
+        paintSearchResults(catalog);
+      });
+    });
+  }
+
   // Render sort chips
   const sortHost = document.getElementById("search-sort-chips");
   if (sortHost) {
@@ -320,7 +358,8 @@ export function paintSearchResults(catalog = state.catalogCache) {
   }
 
   // Filter games from catalog
-  let list = filterByCompatibility(catalog).slice();
+  let list = filterCatalogGames(catalog).slice();
+  if (showPrice) list = filterGamesByPrice(list, price);
 
   if (q) {
     list = list.filter((g) => {

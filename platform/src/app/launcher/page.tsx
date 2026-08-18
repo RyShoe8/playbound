@@ -28,7 +28,7 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata: Metadata = pageMetadata({
   title: "PlayBound Launcher — Install, Play, and Party Up in One Click",
   description:
-    "A free desktop app for free games. One-click installs from official releases, cloud saves, mod management, and parties that land everyone in the same game.",
+    "A free desktop app for PlayBound's curated free and affordable games. Get one-click installs, cloud saves, mod management, and parties that land everyone in the same game.",
   path: "/launcher",
 });
 
@@ -207,7 +207,7 @@ export default async function LauncherPage() {
       <section>
         <SectionHeader
           title="What it does"
-          subtitle="Built for discovering, installing, and playing free games fast."
+          subtitle="Built for discovering, installing, and playing great free and affordable games fast."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pillars.map(({ icon: Icon, title, text }) => (

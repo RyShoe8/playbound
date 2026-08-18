@@ -6,9 +6,9 @@ import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Games — Free Catalog Worth Playing",
+  title: "Games — Free and Affordable Catalog Worth Playing",
   description:
-    "Browse every game in the PlayBound catalog. A deliberately small list — each title is tested and played, then clears four published criteria for whether a free game is actually good.",
+    "Browse PlayBound's deliberately small catalog of exceptional free and affordable games. Every title is tested, played, and clears four published criteria.",
   path: "/discover",
 });
 
@@ -25,6 +25,10 @@ export default async function DiscoverPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Games</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Free or regularly $15 or less. Every game is fun today, tested by PlayBound,
+            and has That One Thing worth telling a friend about.
+          </p>
         </div>
       </div>
 

@@ -7,14 +7,24 @@ import {
   cacheInvoke,
   cachePeek,
   cachePut,
-  filterByCompatibility,
+  filterCatalogGames,
   markViewReady,
   playingNowBySlug,
   state,
+  syncDiscoveryControls,
   views,
 } from "./shared.js";
 
 const HOME_SHELL_HTML = `
+    <div class="home-discover-card">
+      <p class="home-discover-label">Explore PlayBound</p>
+      <div class="home-discover-pills" role="radiogroup" aria-label="Discovery mode">
+        <button type="button" role="radio" data-discovery-mode="FREE" aria-checked="false">FREE</button>
+        <button type="button" role="radio" data-discovery-mode="ALL" aria-checked="true" class="is-selected">ALL</button>
+      </div>
+      <p class="home-discover-caption" id="home-discovery-caption">Show me every PlayBound-approved game up to $15.</p>
+    </div>
+
     <div class="home-top-row">
       <div class="home-top-left">
         <div id="home-recent-section" class="hidden">
@@ -73,12 +83,13 @@ function makeCard(game) {
 }
 
 export function paintHomeGrids(catalog = state.catalogCache, recent = state.recentCache) {
+  syncDiscoveryControls();
   const recentSec = document.getElementById("home-recent-section");
   const recentGrid = document.getElementById("home-recent-grid");
   if (recentSec && recentGrid) {
     if (recent && recent.length > 0) {
       recentSec.classList.remove("hidden");
-      recentGrid.replaceChildren(...filterByCompatibility(recent).map(makeCard));
+      recentGrid.replaceChildren(...filterCatalogGames(recent).map(makeCard));
     } else {
       recentSec.classList.add("hidden");
       recentGrid.replaceChildren();
@@ -87,13 +98,15 @@ export function paintHomeGrids(catalog = state.catalogCache, recent = state.rece
 
   const newestGrid = document.getElementById("home-newest-grid");
   if (newestGrid) {
-    const newest = [...filterByCompatibility(catalog)].sort((a, b) => {
+    const newest = [...filterCatalogGames(catalog)].sort((a, b) => {
       const ta = Date.parse(a.createdAt || "") || 0;
       const tb = Date.parse(b.createdAt || "") || 0;
       return tb - ta;
     });
     newestGrid.replaceChildren(...newest.slice(0, 8).map(makeCard));
   }
+
+  if (state._liveStatsLastGood) paintCatalogStats(state._liveStatsLastGood, catalog);
 }
 
 async function fetchExtraStats() {
@@ -139,7 +152,7 @@ function paintCatalogStats(live, catalog) {
   if (!popularGrid) return;
   const byGame = Array.isArray(live?.byGame) ? live.byGame : [];
   const bySlug = new Map(catalog.map((g) => [g.slug, g]));
-  const popular = filterByCompatibility(byGame.map((row) => bySlug.get(row.slug)).filter(Boolean)).slice(0, 8);
+  const popular = filterCatalogGames(byGame.map((row) => bySlug.get(row.slug)).filter(Boolean)).slice(0, 8);
   if (popular.length > 0) {
     popularGrid.replaceChildren(...popular.map(makeCard));
   } else {

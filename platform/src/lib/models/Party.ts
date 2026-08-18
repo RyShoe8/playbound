@@ -76,6 +76,10 @@ const PartyMemberSchema = new Schema(
       default: "member",
     },
     ready: { type: Boolean, default: false },
+    // NetBird address reported by this member's launcher. Kept out of the
+    // normal party payload and exposed only through the authenticated LAN
+    // enrollment endpoint so LAN-discovery bridges can reach party peers.
+    lanAddress: { type: String, default: null },
     joinedAt: { type: Date, default: Date.now },
   },
   { _id: false }
@@ -185,6 +189,7 @@ export type PartyMemberDoc = {
   userId: Types.ObjectId;
   role: string;
   ready: boolean;
+  lanAddress?: string | null;
   joinedAt: Date;
 };
 

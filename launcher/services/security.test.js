@@ -67,6 +67,9 @@ function makeReference({ packaged }) {
     if (host === "swtor.com" || host.endsWith(".swtor.com")) return true;
     if (host === "runescape.com" || host.endsWith(".runescape.com")) return true;
     if (host === "xsolla.com" || host.endsWith(".xsolla.com")) return true;
+    if (host === "dropbox.com" || host.endsWith(".dropbox.com")) return true;
+    if (host === "bethsoft.com" || host.endsWith(".bethsoft.com")) return true;
+    if (host === "playbound.club" || host.endsWith(".playbound.club")) return true;
     if (host === "itch.io" || host.endsWith(".itch.io") || host.endsWith(".itch.zone")) return true;
     if (host === "archive.org" || host.endsWith(".archive.org")) return true;
     if (host === "codeberg.org" || host.endsWith(".codeberg.org")) return true;
@@ -78,7 +81,7 @@ function makeReference({ packaged }) {
     if (host.endsWith(".r2.cloudflarestorage.com")) return true;
     if (host.endsWith(".hwcdn.net") || host.endsWith(".ssl.hwcdn.net")) return true;
     if (host.endsWith(".s3.amazonaws.com") || host.endsWith(".cloudfront.net")) return true;
-    if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net") || host.endsWith(".dl.dropboxusercontent.com")) return true;
+    if (host.endsWith(".fastly.net") || host.endsWith(".akamaihd.net") || host.endsWith(".azureedge.net") || host.endsWith(".dropboxusercontent.com")) return true;
     try {
       const apiHost = new URL(API_BASE).hostname.toLowerCase();
       if (host === apiHost) return true;
@@ -103,7 +106,7 @@ const DOMAINS = [
   "swtor.com", "runescape.com", "xsolla.com", "itch.io", "itch.zone", "archive.org",
   "codeberg.org", "myabandonware.com", "allegro.cc", "bzflag.org", "scummvm.org",
   "r2.cloudflarestorage.com", "hwcdn.net", "s3.amazonaws.com", "cloudfront.net",
-  "fastly.net", "akamaihd.net", "azureedge.net", "dl.dropboxusercontent.com", "playbound.club", "localhost",
+  "fastly.net", "akamaihd.net", "azureedge.net", "dropbox.com", "dropboxusercontent.com", "playbound.club", "bethsoft.com", "localhost",
   "evil.example", "sourceforgeznet.com",
 ];
 
@@ -229,6 +232,28 @@ for (const packaged of [true, false]) {
   check("installConfig url registered", sec.hostAllowedForDownload("installer.example-game.org"));
   check("registering is host-exact, not suffix", !sec.hostAllowedForDownload("evil.cdn.example-game.org"));
   check("malformed entries are ignored", (sec.registerCatalogEntryHosts(null), true));
+}
+
+{
+  const sec = createSecurity({ isPackaged: () => true, getApiBase: () => API_BASE });
+  check("accepts www.dropbox.com share links", sec.hostAllowedForDownload("www.dropbox.com"));
+  check("accepts dropbox.com", sec.hostAllowedForDownload("dropbox.com"));
+  check("accepts dl.dropboxusercontent.com after redirect", sec.hostAllowedForDownload("dl.dropboxusercontent.com"));
+  check("rejects dropbox.com.attacker.example", !sec.hostAllowedForDownload("dropbox.com.attacker.example"));
+  check(
+    "accepts a Daggerfall overlay URL",
+    sec.assertDownloadUrl("https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1").includes("dropbox.com")
+  );
+  const overlaySec = createSecurity({ isPackaged: () => true, getApiBase: () => API_BASE });
+  check("overlay host starts disallowed", !overlaySec.hostAllowedForDownload("files.overlay-host.example"));
+  overlaySec.registerCatalogEntryHosts({
+    overlayUrl: "https://files.overlay-host.example/DaggerfallGameFiles.zip",
+    installConfig: {
+      playbound_installer: { overlayUrl: "https://cdn.overlay-host.example/data.zip" },
+    },
+  });
+  check("entry overlayUrl registered", overlaySec.hostAllowedForDownload("files.overlay-host.example"));
+  check("installConfig overlayUrl registered", overlaySec.hostAllowedForDownload("cdn.overlay-host.example"));
 }
 
 // exactOrSubdomain itself.

@@ -47,25 +47,25 @@ export const QUALITY_BAR = [
     key: "genuinelyFree" as const,
     title: "Worth the cost",
     description:
-      "Free, or exceptional value at $15 or less. No trial, no paywalled campaign, no pay-to-win, no cosmetic treadmill. Respect the player's money.",
+      "Free, or regularly available for $15 or less. Good developers deserve to be paid, and optional cosmetics, expansions, and premium extras are welcome. But we won't list games that sell competitive advantages, disguise a trial as free, or charge again to finish the core experience.",
   },
   {
     key: "finished" as const,
     title: "Ready to play",
     description:
-      "Playable and satisfying today — a finished game, or a promising alpha that already plays well. Not a stub you should check back on.",
+      "Playable and satisfying today. It can be unfinished; it cannot be unfun. We love supporting indie developers, but prototypes, broken releases, and promises of a future game do not make the cut.",
   },
   {
     key: "activelyMaintained" as const,
-    title: "Curated",
+    title: "Tested by PlayBound",
     description:
-      "We install it, launch it, and play it thoroughly before it is listed. Testing is ours — not a store-page copy.",
+      "We install it, launch it, and play it ourselves. We've spent hours building definitive editions and making multiplayer work, because a store-page claim is not the same as a game we can confidently put in front of you.",
   },
   {
     key: "highQuality" as const,
-    title: "High quality or strong potential",
+    title: "That One Thing",
     description:
-      "Either already excellent, or clearly becoming something worth your time. We do not list filler, shovelware, or games we have not played.",
+      "Every game needs that one thing we'd excitedly tell our friends about. It might be the mechanics, story, art, soundtrack, controls, community, or the way it brings people together. If it doesn't have one, it doesn't make the catalog.",
   },
 ];
 

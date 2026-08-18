@@ -87,6 +87,10 @@ export async function GET(
   out.push("## About");
   out.push("");
   out.push(game.longDescription || game.description);
+
+  if (game.thatOneThing) {
+    out.push("", "## That One Thing", "", game.thatOneThing);
+  }
   out.push("");
 
   if (game.whyWePickedIt) {

@@ -12,7 +12,7 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata = pageMetadata({
   title: "PlayBound Weekly — Every Pick, Archived",
   description:
-    "One high-quality free game every Wednesday. Browse every PlayBound Weekly pick — dated and permanently archived.",
+    "One high-value game every Wednesday. Browse every free or affordable PlayBound Weekly pick — dated and permanently archived.",
   path: "/weekly",
 });
 
@@ -31,7 +31,7 @@ export default async function WeeklyIndexPage() {
             name: "PlayBound Weekly",
             url: absoluteUrl("/weekly"),
             description:
-              "Archive of every PlayBound Weekly pick — one high-quality free game per week.",
+              "Archive of every PlayBound Weekly pick — one high-value free or affordable game per week.",
             publisher: { "@id": ORGANIZATION_ID },
           },
           {
@@ -56,15 +56,15 @@ export default async function WeeklyIndexPage() {
         <Mail className="size-4" /> The PlayBound Weekly
       </div>
       <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
-        One free game worth playing, every Wednesday
+        One budget-friendly game worth playing, every Wednesday
       </h1>
       <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
         Every pick has cleared the{" "}
         <Link href="/standards" className="font-semibold text-primary hover:underline">
           PlayBound Bar
         </Link>{" "}
-        — genuinely free, ready to play, curated through thorough testing, and high quality or
-        showing strong potential. Every pick is tested and played before it is added.
+        — worth the cost, ready to play, tested by PlayBound, and built around That One Thing. Every pick is
+        tested and played before it is added.
         Here is every issue.
       </p>
 

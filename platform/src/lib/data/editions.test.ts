@@ -3,6 +3,27 @@ import { editions } from "./editions";
 
 const holocure = editions.filter((e) => e.gameSlug === "holocure");
 
+describe("Daggerfall editions", () => {
+  const daggerfall = editions.filter((e) => e.gameSlug === "daggerfall");
+
+  it("keeps the Unity package on the Unity edition only", () => {
+    const unity = daggerfall.find((e) => e.slug === "daggerfall-unity")!;
+    const classic = daggerfall.find((e) => e.slug === "classic-dos")!;
+    expect(unity.installConfig?.playbound_installer?.fileName).toBe(
+      "Daggerfall-Unity-PlayBound-v1.1.1.zip"
+    );
+    expect(classic.installConfig?.playbound_installer?.fileName).toBe("DFInstall.zip");
+  });
+
+  it("launches Classic through DOSBox with its generated full-install config", () => {
+    const recipe = daggerfall.find((e) => e.slug === "classic-dos")!.installConfig!
+      .playbound_installer!;
+    expect(recipe.exeHint).toBe("FALL.EXE");
+    expect(recipe.needsDosBox).toBe(true);
+    expect(recipe.launchArgs).toEqual(["Z.CFG"]);
+  });
+});
+
 /**
  * The modded HoloCure edition patches a Steam copy of a game PlayBound does
  * not own. Its folder layout is dictated by upstream (Aurie only loads DLLs

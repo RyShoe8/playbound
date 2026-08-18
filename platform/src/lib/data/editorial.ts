@@ -55,6 +55,7 @@ export type GameEditorial = Pick<
   | "qualityBar"
   | "longDescription"
   | "whyWePickedIt"
+  | "thatOneThing"
   | "installSteps"
   | "faq"
   | "bestFor"
@@ -2638,7 +2639,7 @@ export const editorial: Record<string, GameEditorial> = {
       standsAlone: true,
       highQuality: true,
       verdict:
-        "Warframe is a huge, well-made co-op shooter you can play without paying, but Platinum, a cosmetic treadmill, and a dense living economy mean it fails a strict ‘genuinely free’ test.",
+        "Warframe is a huge, well-made co-op shooter you can play without paying, but Platinum-funded progression shortcuts and its dense living economy need a closer value judgement than a simple ‘free-to-play’ label.",
       lastVerified: "2026-08-13",
     },
     longDescription:

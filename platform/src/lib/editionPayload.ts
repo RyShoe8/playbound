@@ -66,6 +66,7 @@ const installConfigSchema = z
         fileName: z.string().trim().max(200).nullish(),
         versionLabel: z.string().trim().max(100).nullish(),
         knownExePaths: z.array(z.string().trim().max(300)).max(20).optional(),
+        launchArgs: z.array(z.string().trim().max(200)).max(20).optional(),
         installRoot: z.string().trim().max(300).nullish(),
         connectArgs: z.array(z.string().trim().max(200)).max(20).optional(),
         note: z.string().trim().max(500).nullish(),

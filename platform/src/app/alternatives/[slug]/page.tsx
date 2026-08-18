@@ -77,7 +77,7 @@ export default async function AlternativesPage({
     },
     {
       q: `Are these ${page.commercialGame} alternatives really free?`,
-      a: "Yes. Every game listed here is free with no trial, no paywalled content and no pay-to-win purchases. Each has been tested and played, then assessed against PlayBound's four published criteria — including high quality or showing good potential.",
+      a: "Yes. Every game listed here is free to start, with no trial masquerading as a full game and no paid competitive advantage. Optional cosmetics and premium extras are allowed. Each game has been tested and played, then assessed against PlayBound's four published criteria — including whether it has That One Thing worth telling a friend about.",
     },
     {
       q: `Do I need to pay for multiplayer in these ${page.commercialGame} alternatives?`,

@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Users } from "lucide-react";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
 import { Avatar } from "@/components/ui/bits";
+import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
+import { useAccessTiers } from "@/components/AccessTiersProvider";
+import { scopeCatalogLiveStats } from "@/lib/access/discoveryMode";
 
 export type TopPlayer = {
   id: string;
@@ -83,7 +86,7 @@ export function ActivityStatsCard({
 
 const PODIUM_MEDALS = ["🥇", "🥈", "🥉"] as const;
 
-/** Homepage header catalog snapshot. Same 15-minute numbers for every visitor. */
+/** Homepage header catalog snapshot, scoped to the current Discover mode. */
 export function CatalogStatsCard({
   live,
   openPartyCount = 0,
@@ -91,6 +94,9 @@ export function CatalogStatsCard({
   live: CatalogLiveStats;
   openPartyCount?: number;
 }) {
+  const { mode } = useDiscoveryMode();
+  const tiers = useAccessTiers();
+  const scoped = useMemo(() => scopeCatalogLiveStats(live, mode, tiers), [live, mode, tiers]);
   /*
    * Fetched on the client rather than rendered with the page.
    *
@@ -130,12 +136,12 @@ export function CatalogStatsCard({
     };
   }, []);
 
-  const mostPopular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
+  const mostPopular = Array.isArray(scoped.mostPopular) ? scoped.mostPopular : [];
   const items = [
-    { label: "Games", value: live.gameCount, href: "/discover" },
-    { label: "Mods", value: live.modCount, href: "/mods" },
-    { label: "Editions", value: live.editionCount, href: null },
-    { label: "Gamers Playing", value: live.playingNow, href: null },
+    { label: "Games", value: scoped.gameCount, href: "/discover" },
+    { label: "Mods", value: scoped.modCount, href: "/mods" },
+    { label: "Editions", value: scoped.editionCount, href: null },
+    { label: "Gamers Playing", value: scoped.playingNow, href: null },
     { label: "Open Parties", value: parties, href: "/events" },
     { label: "Looking to Party", value: looking, href: "/looking-to-party" },
   ];

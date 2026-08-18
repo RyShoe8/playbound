@@ -76,6 +76,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     qualityBar: game.qualityBar ?? null,
     longDescription: game.longDescription,
     whyWePickedIt: game.whyWePickedIt,
+    thatOneThing: game.thatOneThing,
     installSteps: game.installSteps ?? [],
     faq: game.faq ?? [],
     bestFor: game.bestFor ?? [],

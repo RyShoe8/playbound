@@ -224,7 +224,7 @@ export function StringListEditor({
   );
 }
 
-/** The five-criterion assessment. */
+/** The four-criterion assessment. */
 export function QualityBarEditor({
   value,
   onChange,
@@ -282,8 +282,8 @@ export function QualityBarEditor({
         </label>
         <p className="text-[11px] text-muted-foreground">
           This is the line that gets quoted. Write it so it stands alone with no
-          surrounding context, e.g. &ldquo;X clears the PlayBound Bar: genuinely free,
-          ready to play, curated, and high quality or showing strong potential.&rdquo;
+          surrounding context, e.g. &ldquo;X clears the PlayBound Bar: worth the cost,
+          ready to play, tested by PlayBound, and built around a hook worth sharing.&rdquo;
         </p>
         <textarea
           rows={3}

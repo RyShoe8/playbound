@@ -169,8 +169,8 @@ class GameLauncher {
         err.code = "DOSBOX_MISSING";
         throw err;
       }
-      const spec = dosBoxLaunchSpec(launchPath);
-      return spawn(dosBoxBin, [...spec.args, ...args], {
+      const spec = dosBoxLaunchSpec(launchPath, args);
+      return spawn(dosBoxBin, spec.args, {
         cwd: spec.cwd,
         detached: true,
         stdio: "ignore",

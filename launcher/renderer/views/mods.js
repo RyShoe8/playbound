@@ -5,6 +5,7 @@ import {
   cacheInvoke,
   enhanceSelect,
   escapeHtml,
+  filterRelatedByDiscovery,
   isModDesktopCompatible,
   markViewReady,
   prefetchModDetail,
@@ -45,25 +46,22 @@ function ensureModsShell() {
 function syncModGameOptions(mods) {
   const gameSelect = document.getElementById("mods-game");
   if (!gameSelect) return;
-  const existing = new Set([...gameSelect.options].map((o) => o.value).filter(Boolean));
+  const previous = gameSelect.value;
   const gameOptions = new Map();
   for (const m of mods) {
     if (m.baseGameSlug && !gameOptions.has(m.baseGameSlug)) {
       gameOptions.set(m.baseGameSlug, m.baseGameTitle || m.baseGameSlug);
     }
   }
-  let added = false;
-  [...gameOptions.entries()]
-    .sort((a, b) => String(a[1]).localeCompare(String(b[1])))
-    .forEach(([slug, title]) => {
-      if (existing.has(slug)) return;
-      const opt = document.createElement("option");
-      opt.value = slug;
-      opt.textContent = title;
-      gameSelect.appendChild(opt);
-      added = true;
-    });
-  if (added) gameSelect._syncCustomSelect?.();
+  gameSelect.innerHTML =
+    `<option value="">All games</option>` +
+    [...gameOptions.entries()]
+      .sort((a, b) => String(a[1]).localeCompare(String(b[1])))
+      .map(([slug, title]) => `<option value="${escapeHtml(slug)}">${escapeHtml(title)}</option>`)
+      .join("");
+  gameSelect.value = gameOptions.has(previous) ? previous : "";
+  enhanceSelect(gameSelect);
+  gameSelect._syncCustomSelect?.();
 }
 
 export function paintModsGrid() {
@@ -71,11 +69,13 @@ export function paintModsGrid() {
   const search = document.getElementById("mods-search");
   const gameSelect = document.getElementById("mods-game");
   const q = (search?.value || "").trim().toLowerCase();
-  const gameSlug = gameSelect?.value || "";
   let list = mods.slice();
   if (state.compatibilityFilter === "compatible") {
     list = list.filter(isModDesktopCompatible);
   }
+  list = filterRelatedByDiscovery(list, (m) => m.baseGameSlug);
+  syncModGameOptions(list);
+  const gameSlug = gameSelect?.value || "";
   if (gameSlug) list = list.filter((m) => m.baseGameSlug === gameSlug);
   if (q) {
     list = list.filter((m) =>
@@ -99,11 +99,9 @@ async function renderModsView() {
   const res = await cacheInvoke("mods", CACHE_TTL.mods, () => window.playbound.getModsCatalog());
   const mods = res?.mods || [];
   state._modsCatalog = mods;
-  syncModGameOptions(mods);
   if (created) {
     const gameSelect = document.getElementById("mods-game");
     enhanceSelect(gameSelect);
-    gameSelect?._syncCustomSelect?.();
   }
   paintModsGrid();
   markViewReady(views.mods);

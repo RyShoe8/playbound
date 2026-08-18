@@ -6,6 +6,7 @@ import {
   cachePeek,
   enhanceSelect,
   escapeHtml,
+  filterRelatedByDiscovery,
   markViewDirty,
   markViewReady,
   prefetchEventDetail,
@@ -329,7 +330,7 @@ async function renderEventsView() {
 
   // Populate games dropdown
   try {
-    const catalog = await window.playbound.getCatalog();
+    const catalog = filterRelatedByDiscovery(await window.playbound.getCatalog() || []);
     (catalog || []).forEach((g) => {
       gameCatalogMap.set(g.slug, g);
       const opt = document.createElement("option");
@@ -448,7 +449,7 @@ async function renderEventsView() {
     (await cacheInvoke("events", CACHE_TTL.events, () => window.playbound.getEvents?.())) || {
       events: [],
     };
-  const events = res.events || [];
+  const events = filterRelatedByDiscovery(res.events || [], (ev) => ev.gameSlug);
   const sectionsHost = document.getElementById("events-sections");
 
   if (!events.length) {

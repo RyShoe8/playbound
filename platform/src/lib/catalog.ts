@@ -50,6 +50,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.overlayDest && seed?.overlayDest) merged.overlayDest = seed.overlayDest;
     if (!merged.unwrapSingleRoot && seed?.unwrapSingleRoot) merged.unwrapSingleRoot = true;
     if (!merged.needsDosBox && seed?.needsDosBox) merged.needsDosBox = true;
+    if (!merged.launchArgs?.length && seed?.launchArgs?.length) merged.launchArgs = seed.launchArgs;
     // ET: Legacy has no GitHub release assets and the former database recipe
     // was an external download-page hand-off. Serve the verified official
     // archive recipe at read time until that one game is next edited; this is
@@ -83,6 +84,30 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       merged.knownExePaths = seed.knownExePaths;
       merged.versionLabel = seed.versionLabel;
       merged.note = seed.note;
+      if (seed.needsDosBox) merged.needsDosBox = true;
+    }
+    // The parent Daggerfall record accidentally received the Unity edition's
+    // package. Keep the parent/default on Classic DOS; Unity has its own
+    // edition and verified package.
+    if (
+      game.slug === "daggerfall" &&
+      seed?.kind === "direct-zip" &&
+      (/DaggerfallUnity/i.test(String(merged.exeHint || "")) ||
+        /Daggerfall-Unity|dfu_/i.test(String(merged.url || merged.fileName || "")))
+    ) {
+      merged.kind = seed.kind;
+      merged.url = seed.url;
+      merged.fileName = seed.fileName;
+      merged.versionLabel = seed.versionLabel;
+      merged.exeHint = seed.exeHint;
+      merged.knownExePaths = seed.knownExePaths;
+      merged.launchArgs = seed.launchArgs;
+      merged.note = seed.note;
+      merged.repo = null;
+      merged.assetPattern = null;
+      merged.overlayUrl = null;
+      merged.overlayFileName = null;
+      merged.overlayDest = null;
       if (seed.needsDosBox) merged.needsDosBox = true;
     }
     return { ...game, launcherInstall: merged };
@@ -155,6 +180,8 @@ function toGame(doc: LeanGame): Game {
       (doc.longDescription as string) || seed?.longDescription || extra?.longDescription,
     whyWePickedIt:
       (doc.whyWePickedIt as string) || seed?.whyWePickedIt || extra?.whyWePickedIt,
+    thatOneThing:
+      (doc.thatOneThing as string) || seed?.thatOneThing || extra?.thatOneThing,
     installSteps:
       (doc.installSteps as Game["installSteps"])?.length
         ? (doc.installSteps as Game["installSteps"])

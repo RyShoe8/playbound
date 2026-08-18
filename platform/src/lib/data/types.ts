@@ -54,7 +54,7 @@ export interface GameArt {
  * claimed, and `lastVerified` supplies the recency signal LLMs weight heavily.
  */
 export interface QualityBar {
-  /** Worth the cost: free or exceptional value at $15 or less; no predatory monetization. */
+  /** Worth the cost: free or regularly $15 or less, with fair non-pay-to-win monetization. */
   genuinelyFree: boolean;
   /** Playable and satisfying start to finish today. */
   finished: boolean;
@@ -62,7 +62,7 @@ export interface QualityBar {
   activelyMaintained: boolean;
   /** Kept for older assessments; no longer a published criterion. */
   standsAlone: boolean;
-  /** High quality already, or clearly showing good potential. */
+  /** The game itself is good enough—or promising enough—to recommend. */
   highQuality: boolean;
   /** Self-contained quotable sentence summarising the assessment. */
   verdict: string;
@@ -173,6 +173,8 @@ export interface Game {
   longDescription?: string;
   /** ~100 words, first-person curation POV. Why this one made the cut. */
   whyWePickedIt?: string;
+  /** The single memorable hook we would excitedly tell a friend about. */
+  thatOneThing?: string;
   /** Structured per-platform install guide. */
   installSteps?: InstallStep[];
   /** 5–8 entries. Drives FAQPage structured data and question-shaped H2s. */
