@@ -9,6 +9,7 @@ import {
   cleanupEventDiscordVoice,
   provisionEventDiscordVoice,
 } from "@/lib/events/discordEventProvision";
+import { channelCleanupDue } from "@/lib/events/channelLifecycle";
 
 /**
  * Status transitions, reminders, attendance sync, Discord voice lifecycle.
@@ -66,14 +67,8 @@ export async function runEventsCron(now = new Date()): Promise<{
         const ok = await provisionEventDiscordVoice(event);
         if (ok) discordActions++;
       }
-      if (
-        (next === "completed" || next === "cancelled") &&
-        event.discordVoiceChannelId &&
-        !event.discordVoiceCleanedAt
-      ) {
-        const ok = await cleanupEventDiscordVoice(event);
-        if (ok) discordActions++;
-      }
+      // Cleanup is not done here. It is a state predicate swept below, so a
+      // Discord outage on this exact tick does not orphan the channel forever.
       void prev;
     }
 
@@ -131,5 +126,37 @@ export async function runEventsCron(now = new Date()): Promise<{
     }
   }
 
+  discordActions += await cleanupDueEventChannels(now);
+
   return { statusUpdates, reminders, attendanceSynced, discordActions };
+}
+
+/**
+ * Remove the Discord channels of events that are over.
+ *
+ * Queried by channel state rather than by event status: the set of events
+ * holding an un-cleaned channel is naturally small and self-emptying, whereas
+ * filtering on `completed` would grow without bound and eventually crowd out
+ * live events under the main loop's limit.
+ *
+ * Every tick re-evaluates, so a cleanup that fails because the bot is down is
+ * simply retried on the next run instead of being lost.
+ */
+export async function cleanupDueEventChannels(now = new Date()): Promise<number> {
+  await dbConnect();
+
+  const pending = await PlatformEvent.find({
+    discordVoiceCleanedAt: null,
+    $or: [
+      { discordVoiceChannelId: { $nin: [null, ""] } },
+      { discordTextChannelId: { $nin: [null, ""] } },
+    ],
+  }).limit(200);
+
+  let cleaned = 0;
+  for (const event of pending) {
+    if (!channelCleanupDue(event, now)) continue;
+    if (await cleanupEventDiscordVoice(event)) cleaned++;
+  }
+  return cleaned;
 }
