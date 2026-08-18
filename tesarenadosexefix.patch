@@ -1,0 +1,586 @@
+From cc29f1ce0cb9460601ecc460f1ab7134f302f9c6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 18 Aug 2026 11:02:55 +0000
+Subject: [PATCH] fix(launcher): never launch a DOS-era executable
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+TES: Arena failed on every Play with `spawn
+C:\Games\tes-arena\Arena106.exe EACCES` — a message that reads like a
+permissions problem and sends players hunting through antivirus settings.
+
+Arena106.exe is Bethesda's original 16-bit self-extracting installer,
+which the freeware package ships beside the modern build. findExecutable
+ranks every .exe the same and breaks ties by size, and the DOS blob is
+the biggest file in the folder, so it became the stored launch target.
+CreateProcess refuses a 16-bit image on 64-bit Windows and libuv reports
+that refusal as EACCES.
+
+Headers tell the two apart without running either: a modern binary's MZ
+stub points at a "PE\0\0" signature, while DOS and 16-bit NE/LE images do
+not. services/executableFormat.js reads that, and three places use it:
+
+- findExecutable takes the best-ranked candidate that is actually a PE,
+  so a DOS file can only win when it is the sole executable present.
+- Play re-resolves a stored DOS launch target inside its own install
+  folder before spawning, repairing existing installs without a
+  reinstall, and reports the swap as launch_exe_repaired.
+- GameLauncher refuses a DOS image outright with DOS_EXECUTABLE, so the
+  player is told it needs DOSBox instead of seeing a spawn error.
+
+EACCES from any other cause is now classified as SPAWN_EACCES and
+explained as elevation or antivirus, rather than surfacing raw. Error
+codes also survive spawnTrackedExe's re-wrap, which previously erased
+them.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01FN6ATHFYk4mkNFeSvA2xwk
+---
+ launcher/main.js                           | 101 ++++++++++++-
+ launcher/package.json                      |   3 +-
+ launcher/services/GameLauncher.js          |  12 ++
+ launcher/services/executableFormat.js      | 132 +++++++++++++++++
+ launcher/services/executableFormat.test.js | 162 +++++++++++++++++++++
+ platform/src/lib/admin/opsEvents.ts        |   1 +
+ platform/src/lib/telemetry/events.ts       |  11 ++
+ 7 files changed, 418 insertions(+), 4 deletions(-)
+ create mode 100644 launcher/services/executableFormat.js
+ create mode 100644 launcher/services/executableFormat.test.js
+
+diff --git a/launcher/main.js b/launcher/main.js
+index ead46b4..f707317 100644
+--- a/launcher/main.js
++++ b/launcher/main.js
+@@ -28,6 +28,11 @@ const {
+ const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
+ const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
+ const virtualLan = require("./services/virtualLan");
++const {
++  isLegacyDosExecutable,
++  preferRunnableExecutable,
++  dosExecutableMessage,
++} = require("./services/executableFormat");
+ const {
+   clientConnectArgs,
+   hasClientConnectArgs,
+@@ -2944,10 +2949,25 @@ function findExecutable(dir, exeHint) {
+     const hint = new RegExp(hintClean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+     const hinted = candidates.filter((e) => hint.test(e.name));
+     if (hinted.length > 0) {
+-      return hinted.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
++      return preferRunnableCandidate(hinted);
+     }
+   }
+-  return candidates.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
++  return preferRunnableCandidate(candidates);
++}
++
++/**
++ * Best candidate that Windows can actually execute.
++ *
++ * Rank then size decides the order, and preferRunnableExecutable settles what
++ * that order cannot: TES: Arena ships Bethesda's 16-bit `Arena106.exe` beside
++ * the modern build, both plain .exe files, and the bigger DOS blob won — so
++ * Play spawned an image CreateProcess refuses and reported a bare EACCES.
++ * @param {{ full: string, rank: number, size: number }[]} entries
++ * @returns {string}
++ */
++function preferRunnableCandidate(entries) {
++  const sorted = [...entries].sort((a, b) => b.rank - a.rank || b.size - a.size);
++  return preferRunnableExecutable(sorted.map((e) => e.full)) || sorted[0].full;
+ }
+ 
+ /**
+@@ -5243,6 +5263,39 @@ async function playGame(slug, join = null, editionSlug = null) {
+   }
+ }
+ 
++/**
++ * Point an installed edition at a different executable and let the flat
++ * summary fields follow from it. Local pointer repair only — never touches
++ * catalog data.
++ *
++ * The launch path can come from the flat record when the edition key does not
++ * match (an install migrated from before editions existed), so the stale path
++ * is the second way in: whichever edition still records it is the one to fix.
++ * Nothing writes `game.exe` directly — syncGameInstallSummary derives it from
++ * the primary edition, and a hand-set value would only be overwritten.
++ * @param {string} slug
++ * @param {string} edSlug
++ * @param {string} previousExe - The path being replaced.
++ * @param {string} exePath
++ */
++function persistEditionExe(slug, edSlug, previousExe, exePath) {
++  try {
++    const st = loadState();
++    const g = ensureGameInstallRecord(st[slug]);
++    const editions = g.editions && typeof g.editions === "object" ? g.editions : {};
++    const target =
++      editions[edSlug] ||
++      Object.values(editions).find((e) => e && typeof e === "object" && e.exe === previousExe);
++    if (!target) return;
++    target.exe = exePath;
++    syncGameInstallSummary(g);
++    st[slug] = g;
++    saveState(st);
++  } catch {
++    /* A failed local repair must not stop the launch it was meant to help. */
++  }
++}
++
+ async function playGameInner(slug, join = null, editionSlug = null) {
+   const state = loadState();
+   const game = ensureGameInstallRecord(state[slug]);
+@@ -5388,6 +5441,32 @@ async function playGameInner(slug, join = null, editionSlug = null) {
+     }
+   }
+ 
++  /*
++   * Repair installs that recorded a DOS-era exe as the launch target.
++   *
++   * TES: Arena copies installed before findExecutable learned to read PE
++   * headers point at Bethesda's 16-bit Arena106.exe, so every Play failed with
++   * `spawn ... EACCES`. Re-resolving inside the same folder finds the modern
++   * build the package also ships, without making anyone reinstall.
++   */
++  if (
++    process.platform === "win32" &&
++    /\.(exe|com)$/i.test(launchPath) &&
++    isLegacyDosExecutable(launchPath)
++  ) {
++    const runnable = info.dir ? findExecutable(info.dir, entry?.exeHint) : null;
++    if (runnable && runnable !== launchPath && !isLegacyDosExecutable(runnable)) {
++      void telemetry.track("launch_exe_repaired", {
++        ...launchInfo(),
++        from: path.basename(launchPath),
++        to: path.basename(runnable),
++        reason: "dos_executable",
++      });
++      persistEditionExe(slug, edSlug, launchPath, runnable);
++      launchPath = runnable;
++    }
++  }
++
+   // Repair modded editions before launching. Steam restores the original
+   // executable on update or file verification, which silently strips the mod
+   // loader; without this the player would just find the modded menus gone.
+@@ -5431,6 +5510,18 @@ async function playGameInner(slug, join = null, editionSlug = null) {
+       code = "SHELL_LAUNCH_BLOCKED";
+     } else if (/outside allowed install locations/i.test(rawMessage)) {
+       code = "SPAWN_PATH_DENIED";
++    } else if (err?.code === "DOS_EXECUTABLE" || /DOS-era \(16-bit\)/i.test(rawMessage)) {
++      code = "DOS_EXECUTABLE";
++      message = dosExecutableMessage(exeName);
++    } else if (err?.code === "EACCES" || /\bEACCES\b/.test(rawMessage)) {
++      /*
++       * Windows has no single meaning for EACCES here: libuv reports it for
++       * ERROR_ACCESS_DENIED and for ERROR_ELEVATION_REQUIRED alike, so an
++       * installer stub demanding UAC and an antivirus block look identical.
++       * Name both rather than echoing the raw `spawn <path> EACCES`.
++       */
++      code = "SPAWN_EACCES";
++      message = `Windows blocked ${exeName} from starting. It may need administrator rights, or antivirus may be holding it — try Open Folder and running it once yourself, or use Locate to pick the game executable.`;
+     } else if (
+       err?.code === "UNKNOWN" ||
+       /^spawn\s+UNKNOWN/i.test(rawMessage) ||
+@@ -5761,7 +5852,11 @@ function spawnTrackedExe(slug, exePath, args = []) {
+       err?.code === "JAVA_MISSING" || /Java 17\+/i.test(String(err?.message || ""))
+         ? err.message || GameLauncher.JAVA_MISSING_MSG
+         : err?.message || String(err);
+-    throw new Error(msg);
++    const out = new Error(msg);
++    // Keep the classification GameLauncher already made — playGame turns codes
++    // like DOS_EXECUTABLE into an explanation, and re-wrapping erased them.
++    if (err?.code) out.code = err.code;
++    throw out;
+   }
+ 
+   const entry = catalog.find((e) => e.slug === slug);
+diff --git a/launcher/package.json b/launcher/package.json
+index 5f17cbf..a784016 100644
+--- a/launcher/package.json
++++ b/launcher/package.json
+@@ -21,7 +21,8 @@
+     "dist:linux": "electron-builder --linux AppImage",
+     "test:cache": "node renderer/cache.test.mjs",
+     "test:connect": "node services/connectArgs.test.js",
+-    "test:catalog": "node services/catalogMerge.test.js"
++    "test:catalog": "node services/catalogMerge.test.js",
++    "test:exe-format": "node services/executableFormat.test.js"
+   },
+   "author": "PlayBound",
+   "license": "MIT",
+diff --git a/launcher/services/GameLauncher.js b/launcher/services/GameLauncher.js
+index d6fb06a..5c4bc19 100644
+--- a/launcher/services/GameLauncher.js
++++ b/launcher/services/GameLauncher.js
+@@ -2,6 +2,7 @@ const { spawn, execFileSync } = require("child_process");
+ const fs = require("fs");
+ const path = require("path");
+ const Platform = require("../platform");
++const { isLegacyDosExecutable, dosExecutableMessage } = require("./executableFormat");
+ 
+ const JAVA_MISSING_MSG =
+   "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
+@@ -140,6 +141,17 @@ class GameLauncher {
+       if (preferred !== launchPath) return this.spawnGame(preferred, args);
+     }
+ 
++    /*
++     * A DOS-era image never starts: CreateProcess rejects it and libuv reports
++     * the failure as EACCES, which reads like a permissions problem and sent
++     * TES: Arena players hunting for antivirus rules. Say what it actually is.
++     */
++    if (process.platform === "win32" && /\.(exe|com)$/i.test(launchPath) && isLegacyDosExecutable(launchPath)) {
++      const err = new Error(dosExecutableMessage(path.basename(launchPath)));
++      err.code = "DOS_EXECUTABLE";
++      throw err;
++    }
++
+     const launchCommand = Platform.getGameLaunchCommand(launchPath);
+     const cmd = launchCommand[0];
+     const finalArgs = [...launchCommand.slice(1), ...args];
+diff --git a/launcher/services/executableFormat.js b/launcher/services/executableFormat.js
+new file mode 100644
+index 0000000..e9d6564
+--- /dev/null
++++ b/launcher/services/executableFormat.js
+@@ -0,0 +1,132 @@
++/**
++ * Windows executable-format sniffing.
++ *
++ * The Elder Scrolls: Arena is a DOS game, and Bethesda's freeware package
++ * carries `Arena106.exe` — the original 16-bit self-extracting installer —
++ * alongside the modern files. `findExecutable` broke ties by file size, and
++ * the DOS blob is the biggest .exe in the folder, so Play pointed at it.
++ * `CreateProcess` refused the image and telemetry recorded
++ * `spawn C:\Games\tes-arena\Arena106.exe EACCES`, with no hint of why.
++ *
++ * A Windows image can be identified without running it. Every one starts with
++ * an "MZ" DOS header whose `e_lfanew` field (offset 0x3C) points at the real
++ * header: "PE\0\0" for anything 64-bit Windows can execute, "NE"/"LE"/"LX"
++ * for 16-bit Windows and DOS-extender binaries, and nothing at all for a plain
++ * DOS program. Everything that is not PE needs DOSBox or an equivalent, so the
++ * launcher must never pick one as a launch target — and must say so plainly
++ * when one is all that is installed.
++ */
++
++const fs = require("fs");
++
++/** MZ header size — `e_lfanew` lives at 0x3C, so 64 bytes always covers it. */
++const DOS_HEADER_BYTES = 64;
++const E_LFANEW_OFFSET = 0x3c;
++
++/**
++ * @typedef {"pe" | "legacy" | "not-windows" | "unreadable"} ExecutableFormat
++ * - `pe`          — a modern PE image; Windows can execute it.
++ * - `legacy`      — MZ without PE: DOS, 16-bit NE, or an LE/LX extender.
++ * - `not-windows` — readable, but not an MZ image at all (script, ELF, Mach-O).
++ * - `unreadable`  — missing, locked, or too short to classify.
++ */
++
++/**
++ * Classify a file by its executable headers. Never executes anything.
++ * @param {string} filePath
++ * @returns {ExecutableFormat}
++ */
++function executableFormat(filePath) {
++  if (!filePath) return "unreadable";
++  let fd;
++  try {
++    fd = fs.openSync(filePath, "r");
++    const dosHeader = Buffer.alloc(DOS_HEADER_BYTES);
++    const dosRead = fs.readSync(fd, dosHeader, 0, DOS_HEADER_BYTES, 0);
++    if (dosRead < 2) return "unreadable";
++    if (dosHeader[0] !== 0x4d || dosHeader[1] !== 0x5a) return "not-windows"; // "MZ"
++    if (dosRead < E_LFANEW_OFFSET + 4) return "legacy";
++
++    const peOffset = dosHeader.readUInt32LE(E_LFANEW_OFFSET);
++    // A real DOS stub points past itself and inside the file. Zero, or an
++    // offset past the end, means there is no second header to find.
++    const size = fs.fstatSync(fd).size;
++    if (peOffset < DOS_HEADER_BYTES || peOffset + 4 > size) return "legacy";
++
++    const signature = Buffer.alloc(4);
++    const sigRead = fs.readSync(fd, signature, 0, 4, peOffset);
++    if (sigRead < 4) return "legacy";
++    // "PE\0\0". NE / LE / LX land here too and stay `legacy` — 64-bit Windows
++    // dropped the 16-bit subsystem those need.
++    if (signature.toString("latin1") === "PE\0\0") return "pe";
++    return "legacy";
++  } catch {
++    return "unreadable";
++  } finally {
++    if (fd !== undefined) {
++      try {
++        fs.closeSync(fd);
++      } catch {
++        /* ignore */
++      }
++    }
++  }
++}
++
++/**
++ * True only when the file is definitely a DOS-era image. Anything unreadable
++ * or non-Windows answers false: refusing to launch is a worse failure than
++ * letting a spawn we could not classify try its luck.
++ * @param {string} filePath
++ * @returns {boolean}
++ */
++function isLegacyDosExecutable(filePath) {
++  return executableFormat(filePath) === "legacy";
++}
++
++/**
++ * First path, in the caller's preference order, that Windows can actually
++ * execute.
++ *
++ * Preference ranking alone chose wrong for TES: Arena — Bethesda's 16-bit
++ * `Arena106.exe` and the modern build are both plain .exe files, and the
++ * size tie-break favours the DOS blob. Only headers separate them. A file
++ * that is not a Windows image at all (a .jar, a macOS bundle, a Linux
++ * binary) is taken at its ranked position; the check applies to .exe/.com
++ * alone. When every candidate is DOS-era, the top one comes back anyway so
++ * the caller can report the real problem instead of "no executable found".
++ * @param {string[]} orderedPaths - Best first.
++ * @param {{ platform?: NodeJS.Platform }} [options] - Platform override for tests.
++ * @returns {string | null}
++ */
++function preferRunnableExecutable(orderedPaths, { platform = process.platform } = {}) {
++  const list = (orderedPaths || []).filter(Boolean);
++  if (list.length === 0) return null;
++  if (platform !== "win32") return list[0];
++  for (const candidate of list) {
++    if (!/\.(exe|com)$/i.test(candidate)) return candidate;
++    if (!isLegacyDosExecutable(candidate)) return candidate;
++  }
++  return list[0];
++}
++
++/**
++ * Player-facing explanation for a DOS-era launch target.
++ * @param {string} exeName
++ * @returns {string}
++ */
++function dosExecutableMessage(exeName) {
++  const name = exeName || "This program";
++  return (
++    `${name} is a DOS-era (16-bit) program, which 64-bit Windows cannot run directly. ` +
++    `Run it through DOSBox, or use Locate to pick the modern game executable if this ` +
++    `install has one.`
++  );
++}
++
++module.exports = {
++  executableFormat,
++  isLegacyDosExecutable,
++  preferRunnableExecutable,
++  dosExecutableMessage,
++};
+diff --git a/launcher/services/executableFormat.test.js b/launcher/services/executableFormat.test.js
+new file mode 100644
+index 0000000..84d0eb6
+--- /dev/null
++++ b/launcher/services/executableFormat.test.js
+@@ -0,0 +1,162 @@
++/**
++ * Executable-format sniffing.
++ *
++ * TES: Arena's freeware package ships Bethesda's 16-bit `Arena106.exe` beside
++ * the modern build. The launcher picked the DOS blob as the launch target and
++ * every Play died with `spawn C:\Games\tes-arena\Arena106.exe EACCES` — no
++ * message a player could act on. These cases pin the header reading that now
++ * tells the two apart before anything is spawned.
++ *
++ * Run: node services/executableFormat.test.js
++ */
++
++const assert = require("node:assert/strict");
++const { test } = require("node:test");
++const fs = require("node:fs");
++const os = require("node:os");
++const path = require("node:path");
++
++const {
++  executableFormat,
++  isLegacyDosExecutable,
++  preferRunnableExecutable,
++  dosExecutableMessage,
++} = require("./executableFormat");
++
++const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "playbound-exefmt-"));
++
++/** Write a fixture and return its path. */
++function fixture(name, buffer) {
++  const full = path.join(tmp, name);
++  fs.writeFileSync(full, buffer);
++  return full;
++}
++
++/**
++ * An MZ image whose DOS stub points at `signature` — the shape every real
++ * Windows binary has. `peOffset` null writes a header with no onward pointer,
++ * which is what a plain DOS program looks like.
++ */
++function mzImage(signature, { peOffset = 128, stubBytes = 256 } = {}) {
++  const buf = Buffer.alloc(stubBytes, 0);
++  buf.write("MZ", 0, "latin1");
++  if (signature) {
++    buf.writeUInt32LE(peOffset, 0x3c);
++    // A pointer past the end of the buffer leaves the signature unwritten on
++    // purpose — that is exactly the truncated-file case.
++    if (peOffset + signature.length <= stubBytes) buf.write(signature, peOffset, "latin1");
++  }
++  return buf;
++}
++
++test("a PE image is runnable", () => {
++  assert.equal(executableFormat(fixture("modern.exe", mzImage("PE\0\0"))), "pe");
++  assert.equal(isLegacyDosExecutable(fixture("modern2.exe", mzImage("PE\0\0"))), false);
++});
++
++test("a plain DOS image is legacy", () => {
++  // e_lfanew left at 0: Arena106.exe's shape.
++  const dos = fixture("Arena106.exe", mzImage(null));
++  assert.equal(executableFormat(dos), "legacy");
++  assert.equal(isLegacyDosExecutable(dos), true);
++});
++
++test("16-bit NE and DOS-extender images are legacy too", () => {
++  // 64-bit Windows dropped the subsystem all of these need.
++  assert.equal(executableFormat(fixture("win16.exe", mzImage("NE\0\0"))), "legacy");
++  assert.equal(executableFormat(fixture("ext.exe", mzImage("LE\0\0"))), "legacy");
++  assert.equal(executableFormat(fixture("lx.exe", mzImage("LX\0\0"))), "legacy");
++});
++
++test("a stub pointer past the end of the file is legacy, not a crash", () => {
++  // Truncated downloads produce this; reading at the offset would throw.
++  const bogus = mzImage("PE\0\0", { peOffset: 100000, stubBytes: 256 });
++  assert.equal(executableFormat(fixture("truncated.exe", bogus)), "legacy");
++});
++
++test("a pointer inside the MZ header itself is legacy", () => {
++  // Below 64 bytes there is no room for a second header — only DOS fields.
++  const overlapping = mzImage("PE\0\0", { peOffset: 8, stubBytes: 256 });
++  assert.equal(executableFormat(fixture("overlap.exe", overlapping)), "legacy");
++});
++
++test("an MZ file too short to hold e_lfanew is legacy", () => {
++  assert.equal(executableFormat(fixture("stub.exe", Buffer.from("MZ", "latin1"))), "legacy");
++});
++
++test("non-Windows files are reported as such, never as legacy", () => {
++  // Play must still try these: macOS and Linux binaries reach the same code.
++  const elf = fixture("game", Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01, 0x01]));
++  assert.equal(executableFormat(elf), "not-windows");
++  assert.equal(isLegacyDosExecutable(elf), false);
++
++  const script = fixture("play.sh", Buffer.from("#!/bin/sh\nexec ./game\n"));
++  assert.equal(executableFormat(script), "not-windows");
++});
++
++test("unreadable paths never claim to be legacy", () => {
++  // A missing or locked file is the caller's problem to report; blocking a
++  // launch on a failed read would turn a transient error into a dead button.
++  assert.equal(executableFormat(path.join(tmp, "absent.exe")), "unreadable");
++  assert.equal(executableFormat(fixture("empty.exe", Buffer.alloc(0))), "unreadable");
++  assert.equal(executableFormat(""), "unreadable");
++  assert.equal(executableFormat(null), "unreadable");
++  assert.equal(isLegacyDosExecutable(path.join(tmp, "absent.exe")), false);
++});
++
++/** The reported install: a DOS installer outranking the real build on size. */
++function arenaFolder() {
++  return {
++    dos: fixture("pick-Arena106.exe", mzImage(null, { stubBytes: 4096 })),
++    modern: fixture("pick-OpenTESArena.exe", mzImage("PE\0\0")),
++  };
++}
++
++test("selection skips a DOS image for a runnable one behind it", () => {
++  const { dos, modern } = arenaFolder();
++  // Size ranked the DOS blob first — the reported ordering.
++  assert.equal(preferRunnableExecutable([dos, modern], { platform: "win32" }), modern);
++});
++
++test("selection keeps the caller's order when the best is already runnable", () => {
++  const { dos, modern } = arenaFolder();
++  assert.equal(preferRunnableExecutable([modern, dos], { platform: "win32" }), modern);
++});
++
++test("a DOS-only folder still yields a path to complain about", () => {
++  // Returning null here would surface as "no executable found" instead of the
++  // DOSBox explanation the player can act on.
++  const { dos } = arenaFolder();
++  assert.equal(preferRunnableExecutable([dos], { platform: "win32" }), dos);
++});
++
++test("selection only judges .exe and .com", () => {
++  const jar = fixture("game.jar", Buffer.from("PK\u0003\u0004"));
++  assert.equal(preferRunnableExecutable([jar], { platform: "win32" }), jar);
++});
++
++test("selection is a no-op off Windows", () => {
++  const { dos, modern } = arenaFolder();
++  // A DOS-named file on Linux or macOS is some other project's binary.
++  assert.equal(preferRunnableExecutable([dos, modern], { platform: "darwin" }), dos);
++  assert.equal(preferRunnableExecutable([dos, modern], { platform: "linux" }), dos);
++});
++
++test("selection handles an empty or gappy list", () => {
++  assert.equal(preferRunnableExecutable([], { platform: "win32" }), null);
++  assert.equal(preferRunnableExecutable(null, { platform: "win32" }), null);
++  assert.equal(preferRunnableExecutable([null, ""], { platform: "win32" }), null);
++});
++
++test("the player-facing message names the file and the way out", () => {
++  const msg = dosExecutableMessage("Arena106.exe");
++  assert.match(msg, /Arena106\.exe/);
++  assert.match(msg, /DOSBox/);
++  assert.match(msg, /Locate/);
++  // Still a sentence when the caller has no name to give.
++  assert.match(dosExecutableMessage(""), /^This program/);
++});
++
++test.after(() => {
++  fs.rmSync(tmp, { recursive: true, force: true });
++});
+diff --git a/platform/src/lib/admin/opsEvents.ts b/platform/src/lib/admin/opsEvents.ts
+index 481ec58..578a37f 100644
+--- a/platform/src/lib/admin/opsEvents.ts
++++ b/platform/src/lib/admin/opsEvents.ts
+@@ -10,6 +10,7 @@ export const LAUNCHER_OPS_EVENTS = [
+   "session_ended",
+   "game_ended",
+   "join_attempted",
++  "launch_exe_repaired",
+   "exe_located",
+   "exe_locate_failed",
+   "java_runtime_install_started",
+diff --git a/platform/src/lib/telemetry/events.ts b/platform/src/lib/telemetry/events.ts
+index adc3834..d7cef4d 100644
+--- a/platform/src/lib/telemetry/events.ts
++++ b/platform/src/lib/telemetry/events.ts
+@@ -142,6 +142,17 @@ export type TelemetryEventMap = {
+     connectArgsApplied?: boolean;
+     manualConnect?: boolean;
+   } & Extra;
++  /**
++   * The stored launch target was unrunnable and the launcher re-resolved it
++   * inside the same install folder — a DOS-era .exe picked over the modern
++   * build, for instance. Repairs are silent to the player, so this event is
++   * the only way to see how many installs shipped with the wrong pointer.
++   */
++  launch_exe_repaired: EditionProps & {
++    from?: string;
++    to?: string;
++    reason?: string;
++  } & Extra;
+   exe_located: { gameSlug?: string } & Extra;
+   exe_locate_failed: { gameSlug?: string } & Extra;
+   party_created: { partyId?: string; gameSlug?: string; visibility?: string } & Extra;
+-- 
+2.43.0
+
