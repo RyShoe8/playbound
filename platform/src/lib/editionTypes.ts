@@ -176,6 +176,13 @@ export interface EditionInstallConfig {
     overlayFileName?: string | null;
     /** Relative directory inside the installed game where the overlay is extracted. */
     overlayDest?: string | null;
+    /**
+     * GitHub/Windows zips often wrap the payload in a versioned folder.
+     * Promote that single directory so overlayDest (e.g. data/) lands next
+     * to the executable rather than beside the wrapper.
+     */
+    unwrapSingleRoot?: boolean;
+    needsDosBox?: boolean;
     /** Prompt user to pick an existing base client folder first. */
     requiresBaseDir?: boolean;
     /** Numbered get-to-playing steps shown on the edition page + launcher. */

@@ -1,5 +1,11 @@
 import type { Game } from "./types";
 import { withEditorial } from "./editorial";
+import {
+  ARENA_GAMEFILES_FILE,
+  ARENA_GAMEFILES_URL,
+  TES_ARENA_EXE_HINT,
+  TES_ARENA_KNOWN_EXE_PATHS,
+} from "./tesArenaAssets";
 
 /**
  * Factual catalog entries. Editorial content (quality assessment, long-form
@@ -1356,18 +1362,19 @@ const facts: Game[] = [
     launcherInstall: {
       enabled: true,
       /*
-       * Bethesda's own freeware package, hosted on their CDN since the 2004
-       * tenth-anniversary release. Verified reachable and 9.1 MB. This is the
-       * self-installing DOS build; it bundles what it needs to run, which is
-       * why the download is far smaller than the installed footprint.
+       * Bethesda's 1.06 freeware is a zip wrapping Arena106.exe (WinRAR SFX).
+       * The launcher's 7za cannot open that SFX, so we install an extracted
+       * ARENA/ tree archived on the VPS. The original setup zip is kept
+       * beside it at launcher-packages/games/tes-arena/original/.
        */
       kind: "direct-zip",
-      url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/Arena106Setup.zip",
-      fileName: "Arena106Setup.zip",
+      url: ARENA_GAMEFILES_URL,
+      fileName: ARENA_GAMEFILES_FILE,
       versionLabel: "1.06 (Bethesda freeware release)",
-      exeHint: "ARENA.EXE",
-      knownExePaths: ["ARENA.EXE", "Arena/ARENA.EXE"],
-      note: "Bethesda's official freeware release, free since 2004. A DOS game — run it through DOSBox for sane speed and windowing. OpenTESArena is a modern open-source engine for it, still in development.",
+      exeHint: TES_ARENA_EXE_HINT,
+      knownExePaths: [...TES_ARENA_KNOWN_EXE_PATHS],
+      needsDosBox: true,
+      note: "Bethesda's official freeware release, free since 2004. A DOS game — run it through DOSBox for sane speed and windowing. OpenTESArena (listed as an edition) is the modern engine and pulls these same files in automatically.",
     },
     videos: ["https://www.youtube.com/watch?v=Jm3UuW4j57M"],
     communityLinks: {

@@ -135,7 +135,9 @@ function toEdition(doc: LeanEdition): Edition {
         (gameSlugStr === "wolfenstein-enemy-territory" &&
           editionSlugStr === "et-legacy" &&
           (installConfig.playbound_installer?.kind === "external" ||
-            installConfig.playbound_installer?.kind === "github-zip")))
+            installConfig.playbound_installer?.kind === "github-zip")) ||
+        (gameSlugStr === "tes-arena" &&
+          (editionSlugStr === "official" || editionSlugStr === "opentesarena")))
     ) {
       installConfig = seedMatch.installConfig ?? installConfig;
       installMethod = seedMatch.installMethod ?? installMethod;
@@ -237,6 +239,12 @@ function deriveInstallMethod(game: Game): { method: InstallMethod; config: Editi
           installRoot: recipe.installRoot ?? null,
           connectArgs: recipe.connectArgs ?? [],
           note: recipe.note ?? null,
+          overlayUrl: recipe.overlayUrl ?? null,
+          overlayFileName: recipe.overlayFileName ?? null,
+          overlayDest: recipe.overlayDest ?? null,
+          unwrapSingleRoot: recipe.unwrapSingleRoot || undefined,
+          needsDosBox: recipe.needsDosBox || undefined,
+          requiresBaseDir: recipe.requiresBaseDir || undefined,
         },
       },
     };

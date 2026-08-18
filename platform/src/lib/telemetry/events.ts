@@ -226,6 +226,18 @@ export type TelemetryEventMap = {
     phase?: string;
   } & Extra;
 
+  /**
+   * Play retargeted a stored DOS-era exe to a Windows PE in the same folder
+   * (TES: Arena Arena106.exe → otesa.exe) without a reinstall.
+   */
+  launch_exe_repaired: EditionProps & {
+    from?: string;
+    to?: string;
+    reason?: string;
+    platform?: string;
+    launcherVersion?: string;
+  } & Extra;
+
   /** Game/mod install failed before completion (download blocked, extract, etc.). */
   install_failed: EditionProps & {
     code?: string;

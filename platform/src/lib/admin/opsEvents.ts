@@ -1,6 +1,7 @@
 export const LAUNCHER_OPS_EVENTS = [
   "launch_attempted",
   "launch_failed",
+  "launch_exe_repaired",
   "install_failed",
   "edition_installed",
   "edition_launched",

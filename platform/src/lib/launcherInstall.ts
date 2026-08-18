@@ -80,6 +80,11 @@ export type LauncherInstall = {
    */
   unwrapSingleRoot?: boolean;
   /**
+   * Spawn through PlayBound-managed DOSBox Staging even if header sniffing
+   * is unsure. Auto-detect still wraps any DOS-era image without this flag.
+   */
+  needsDosBox?: boolean;
+  /**
    * Prompt for an existing install before doing anything else.
    *
    * Pairs with "locate-then-zip" for games PlayBound must not distribute: the
@@ -130,6 +135,7 @@ export type LauncherCatalogEntry = {
   overlayFileName?: string;
   overlayDest?: string;
   unwrapSingleRoot?: boolean;
+  needsDosBox?: boolean;
   /** Ask the player to locate a copy they own before installing anything. */
   requiresBaseDir?: boolean;
 };
@@ -312,6 +318,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.overlayFileName) entry.overlayFileName = li.overlayFileName;
   if (li.overlayDest) entry.overlayDest = li.overlayDest;
   if (li.unwrapSingleRoot) entry.unwrapSingleRoot = true;
+  if (li.needsDosBox) entry.needsDosBox = true;
   /*
    * Without this the launcher never learns it must ask for an existing copy,
    * so an owner-supplied game would fall through to a normal install and fail

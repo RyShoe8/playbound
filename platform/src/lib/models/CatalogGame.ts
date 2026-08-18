@@ -50,6 +50,8 @@ const LauncherInstallSchema = new Schema(
     overlayUrl: { type: String, default: null },
     overlayFileName: { type: String, default: null },
     overlayDest: { type: String, default: null },
+    unwrapSingleRoot: { type: Boolean, default: false },
+    needsDosBox: { type: Boolean, default: false },
   },
   { _id: false }
 );

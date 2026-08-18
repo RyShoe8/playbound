@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { toLauncherCatalogEntry, LAUNCHER_INSTALL_KINDS } from "./launcherInstall";
 import { launcherInstallBySlug } from "./data/launcherInstall";
+import { ARENA_GAMEFILES_URL } from "./data/tesArenaAssets";
 
 const base = {
   slug: "x",
@@ -57,5 +58,51 @@ describe("commercial base games are never distributed", () => {
     const serialised = JSON.stringify(recipe);
     expect(serialised).not.toMatch(/archive\.org/i);
     expect(serialised).not.toMatch(/Freelancer\.zip/i);
+  });
+});
+
+describe("TES Arena freeware vs OpenTESArena", () => {
+  it("installs extracted Bethesda 1.06 files, not the OpenTESArena engine", () => {
+    const recipe = launcherInstallBySlug["tes-arena"];
+    expect(recipe.kind).toBe("direct-zip");
+    expect(recipe.exeHint).toBe("A.EXE");
+    expect(recipe.needsDosBox).toBe(true);
+    expect(recipe.fileName).toBe("Arena-1.06-GameFiles.zip");
+    expect(recipe.url).toContain("Arena-1.06-GameFiles.zip");
+    expect(recipe.kind).not.toBe("github-zip");
+  });
+
+  it("passes overlay dest through to the launcher catalog", () => {
+    const entry = toLauncherCatalogEntry({
+      ...base,
+      slug: "tes-arena",
+      launcherInstall: {
+        enabled: true,
+        kind: "github-zip",
+        repo: "afritz1/OpenTESArena",
+        assetPattern: "windows_x86-64\\.zip$",
+        exeHint: "otesa.exe",
+        unwrapSingleRoot: true,
+        overlayUrl: ARENA_GAMEFILES_URL,
+        overlayFileName: "Arena-1.06-GameFiles.zip",
+        overlayDest: "data",
+      },
+    });
+    expect(entry.unwrapSingleRoot).toBe(true);
+    expect(entry.overlayDest).toBe("data");
+    expect(entry.exeHint).toBe("otesa.exe");
+  });
+
+  it("passes needsDosBox through to the launcher catalog", () => {
+    const entry = toLauncherCatalogEntry({
+      ...base,
+      launcherInstall: {
+        enabled: true,
+        kind: "direct-zip",
+        url: "https://x.test/a.zip",
+        needsDosBox: true,
+      },
+    });
+    expect(entry.needsDosBox).toBe(true);
   });
 });

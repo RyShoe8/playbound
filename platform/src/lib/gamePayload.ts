@@ -150,6 +150,7 @@ export const launcherInstallSchema = z
     overlayFileName: optionalTrimmed,
     overlayDest: optionalTrimmed,
     unwrapSingleRoot: z.boolean().optional(),
+    needsDosBox: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
@@ -662,6 +663,7 @@ export function toPayloadLauncherInstall(
     overlayFileName: li.overlayFileName ?? null,
     overlayDest: li.overlayDest ?? null,
     unwrapSingleRoot: li.unwrapSingleRoot || undefined,
+    needsDosBox: li.needsDosBox || undefined,
   };
 }
 

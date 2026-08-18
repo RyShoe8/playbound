@@ -49,6 +49,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.overlayFileName && seed?.overlayFileName) merged.overlayFileName = seed.overlayFileName;
     if (!merged.overlayDest && seed?.overlayDest) merged.overlayDest = seed.overlayDest;
     if (!merged.unwrapSingleRoot && seed?.unwrapSingleRoot) merged.unwrapSingleRoot = true;
+    if (!merged.needsDosBox && seed?.needsDosBox) merged.needsDosBox = true;
     // ET: Legacy has no GitHub release assets and the former database recipe
     // was an external download-page hand-off. Serve the verified official
     // archive recipe at read time until that one game is next edited; this is
@@ -82,6 +83,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       merged.knownExePaths = seed.knownExePaths;
       merged.versionLabel = seed.versionLabel;
       merged.note = seed.note;
+      if (seed.needsDosBox) merged.needsDosBox = true;
     }
     return { ...game, launcherInstall: merged };
   }

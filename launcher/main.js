@@ -11,6 +11,7 @@ const { createTelemetry } = require("./telemetry");
 const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
+const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const { createCloudSaves } = require("./services/CloudSaves");
@@ -28,6 +29,12 @@ const {
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
+const {
+  isLegacyDosExecutable,
+  preferRunnableExecutable,
+  shouldLaunchThroughDosBox,
+  dosExecutableMessage,
+} = require("./services/executableFormat");
 const {
   clientConnectArgs,
   hasClientConnectArgs,
@@ -1565,11 +1572,18 @@ async function pullCompatibilityPreference() {
     });
     if (!res.ok) return;
     const data = await res.json();
-    const mode = data?.preferences?.compatibilityFilter;
+    const prefs = data?.preferences || {};
+    let changed = false;
+    const mode = prefs.compatibilityFilter;
     if (mode === "compatible" || mode === "all") {
       settings.compatibilityFilter = mode;
-      saveSettings(settings);
+      changed = true;
     }
+    if (prefs.discoveryMode === "FREE" || prefs.discoveryMode === "ALL") {
+      settings.discoveryMode = prefs.discoveryMode;
+      changed = true;
+    }
+    if (changed) saveSettings(settings);
   } catch {
     /* offline */
   }
@@ -1583,6 +1597,20 @@ async function pushCompatibilityPreference(mode) {
       method: "PATCH",
       headers: launcherApiHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ compatibilityFilter: mode }),
+    });
+  } catch {
+    /* offline */
+  }
+}
+
+async function pushDiscoveryPreference(mode) {
+  const settings = loadSettings();
+  if (!settings.launcherToken) return;
+  try {
+    await fetch(`${getApiBase()}/api/auth/preferences`, {
+      method: "PATCH",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ discoveryMode: mode }),
     });
   } catch {
     /* offline */
@@ -1633,6 +1661,8 @@ function catalogEntryFromEdition(edition) {
       overlayUrl: cfg.overlayUrl || undefined,
       overlayFileName: cfg.overlayFileName || undefined,
       overlayDest: cfg.overlayDest || undefined,
+      unwrapSingleRoot: Boolean(cfg.unwrapSingleRoot),
+      needsDosBox: Boolean(cfg.needsDosBox),
       requiresBaseDir: Boolean(cfg.requiresBaseDir),
       checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
       modLoader: cfg.modLoader || undefined,
@@ -1787,10 +1817,12 @@ function buildSettingsPayload() {
     packaged: app.isPackaged,
     compatibilityFilter:
       settings.compatibilityFilter === "all" ? "all" : "compatible",
+    discoveryMode: settings.discoveryMode === "FREE" ? "FREE" : "ALL",
     canUseAdminChannel: linkedCanUseAdminChannel,
     updateChannel,
     updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
     javaRuntime: managedJava.status(),
+    dosBoxRuntime: managedDosBox.status(),
   };
 }
 
@@ -2352,6 +2384,16 @@ const managedJava = createManagedJava({
 });
 GameLauncher.managedJavaResolver = () => managedJava.findManagedJavaBinary();
 
+/** Shared DOSBox Staging for TES: Arena official and later DOS titles. */
+const managedDosBox = createManagedDosBox({
+  userDataPath: app.getPath("userData"),
+  loadSettings,
+  saveSettings,
+  downloadTo,
+  onProgress: (payload) => sendProgress(payload),
+});
+GameLauncher.managedDosBoxResolver = () => managedDosBox.findManagedDosBoxBinary();
+
 /**
  * Save history lives under userData, beside settings — not in the game folder,
  * so uninstalling a game never takes its backups with it.
@@ -2841,6 +2883,36 @@ function extract7z(archivePath, destDir) {
   });
 }
 
+/**
+ * GitHub zips often wrap the payload in one versioned folder. Promote that
+ * folder so overlayDest (data/) and exeHint resolve next to the real files.
+ */
+async function unwrapSingleRootDirectory(dir) {
+  let names;
+  try {
+    names = (await fsp.readdir(dir)).filter((n) => n !== "__MACOSX" && n !== ".DS_Store");
+  } catch {
+    return;
+  }
+  if (names.length !== 1) return;
+  const only = path.join(dir, names[0]);
+  let st;
+  try {
+    st = await fsp.stat(only);
+  } catch {
+    return;
+  }
+  if (!st.isDirectory()) return;
+  const tmp = `${dir}.unwrap-tmp`;
+  await fsp.rm(tmp, { recursive: true, force: true });
+  await fsp.rename(only, tmp);
+  const inner = await fsp.readdir(tmp);
+  for (const name of inner) {
+    await fsp.rename(path.join(tmp, name), path.join(dir, name));
+  }
+  await fsp.rm(tmp, { recursive: true, force: true });
+}
+
 async function extractArchive(archivePath, destDir) {
   const lower = String(archivePath || "").toLowerCase();
   await fsp.mkdir(destDir, { recursive: true });
@@ -2944,10 +3016,25 @@ function findExecutable(dir, exeHint) {
     const hint = new RegExp(hintClean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     const hinted = candidates.filter((e) => hint.test(e.name));
     if (hinted.length > 0) {
-      return hinted.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
+      return preferRunnableCandidate(hinted);
     }
   }
-  return candidates.sort((a, b) => b.rank - a.rank || b.size - a.size)[0].full;
+  return preferRunnableCandidate(candidates);
+}
+
+/**
+ * Best candidate that Windows can actually execute.
+ *
+ * Rank then size decides the order, and preferRunnableExecutable settles what
+ * that order cannot: TES: Arena ships Bethesda's 16-bit `Arena106.exe` beside
+ * the modern build, both plain .exe files, and the bigger DOS blob won — so
+ * Play spawned an image CreateProcess refuses and reported a bare EACCES.
+ * @param {{ full: string, rank: number, size: number }[]} entries
+ * @returns {string}
+ */
+function preferRunnableCandidate(entries) {
+  const sorted = [...entries].sort((a, b) => b.rank - a.rank || b.size - a.size);
+  return preferRunnableExecutable(sorted.map((e) => e.full)) || sorted[0].full;
 }
 
 /**
@@ -3331,13 +3418,15 @@ function notifyInstallDetected(slug) {
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-detected", { slug });
   }
-  if (
-    context?.slug === slug ||
-    context?.mod?.baseGameSlug === slug ||
-    (context?.action === "install-mod" && context?.baseGameSlug === slug)
-  ) {
-    pushContext();
-  }
+  /*
+   * Do not re-push an install deep-link here. markInstalled used to broadcast
+   * the still-live `playbound://install/...` context, the renderer remounted
+   * that panel, and auto-start fired again — so the same archive downloaded
+   * in a loop until the launcher was closed.
+   *
+   * Library / detail views already refresh via `install-detected`. The
+   * in-flight IPC call is what tells the deep-link panel it succeeded.
+   */
   void maybeResumePendingMod(slug);
 }
 
@@ -4207,13 +4296,29 @@ function reportInstallFailed(slug, editionSlug, err, phase = "install") {
   }
 }
 
+/** One in-flight game install per slug+edition — overlapping calls shared the same temp file and restarted each other. */
+const gameInstallJobs = new Map();
+const modInstallJobs = new Map();
+
+function installJobKey(slug, editionSlug) {
+  return `${String(slug || "")}::${editionSlug || ""}`;
+}
+
 async function installGame(slug, targetDir, editionSlug, selectedAddons) {
-  try {
-    return await installGameInner(slug, targetDir, editionSlug, selectedAddons);
-  } catch (err) {
-    reportInstallFailed(slug, editionSlug || null, err, "install");
-    throw err;
-  }
+  const key = installJobKey(slug, editionSlug);
+  const existing = gameInstallJobs.get(key);
+  if (existing) return existing;
+
+  const job = installGameInner(slug, targetDir, editionSlug, selectedAddons)
+    .catch((err) => {
+      reportInstallFailed(slug, editionSlug || null, err, "install");
+      throw err;
+    })
+    .finally(() => {
+      if (gameInstallJobs.get(key) === job) gameInstallJobs.delete(key);
+    });
+  gameInstallJobs.set(key, job);
+  return job;
 }
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
@@ -4415,6 +4520,9 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   await fsp.rm(gameDir, { recursive: true, force: true });
   await extractArchive(downloadPath, gameDir);
   await removeFileWithRetries(downloadPath);
+  if (entry.unwrapSingleRoot) {
+    await unwrapSingleRootDirectory(gameDir);
+  }
 
   if (entry.overlayUrl) {
     sendProgress({ phase: "downloading", addon: "Game Assets" });
@@ -5159,12 +5267,20 @@ async function placeModFiles(slug, install, baseDirOverride) {
 }
 
 async function installMod(slug, baseDirOverride) {
-  try {
-    return await installModInner(slug, baseDirOverride);
-  } catch (err) {
-    reportInstallFailed(slug, null, err, "install-mod");
-    throw err;
-  }
+  const key = String(slug || "");
+  const existing = modInstallJobs.get(key);
+  if (existing) return existing;
+
+  const job = installModInner(slug, baseDirOverride)
+    .catch((err) => {
+      reportInstallFailed(slug, null, err, "install-mod");
+      throw err;
+    })
+    .finally(() => {
+      if (modInstallJobs.get(key) === job) modInstallJobs.delete(key);
+    });
+  modInstallJobs.set(key, job);
+  return job;
 }
 
 async function installModInner(slug, baseDirOverride) {
@@ -5240,6 +5356,39 @@ async function playGame(slug, join = null, editionSlug = null) {
       }
     }
     throw err;
+  }
+}
+
+/**
+ * Point an installed edition at a different executable and let the flat
+ * summary fields follow from it. Local pointer repair only — never touches
+ * catalog data.
+ *
+ * The launch path can come from the flat record when the edition key does not
+ * match (an install migrated from before editions existed), so the stale path
+ * is the second way in: whichever edition still records it is the one to fix.
+ * Nothing writes `game.exe` directly — syncGameInstallSummary derives it from
+ * the primary edition, and a hand-set value would only be overwritten.
+ * @param {string} slug
+ * @param {string} edSlug
+ * @param {string} previousExe - The path being replaced.
+ * @param {string} exePath
+ */
+function persistEditionExe(slug, edSlug, previousExe, exePath) {
+  try {
+    const st = loadState();
+    const g = ensureGameInstallRecord(st[slug]);
+    const editions = g.editions && typeof g.editions === "object" ? g.editions : {};
+    const target =
+      editions[edSlug] ||
+      Object.values(editions).find((e) => e && typeof e === "object" && e.exe === previousExe);
+    if (!target) return;
+    target.exe = exePath;
+    syncGameInstallSummary(g);
+    st[slug] = g;
+    saveState(st);
+  } catch {
+    /* A failed local repair must not stop the launch it was meant to help. */
   }
 }
 
@@ -5388,6 +5537,57 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  /*
+   * Repair installs that recorded a DOS-era exe as the launch target.
+   *
+   * TES: Arena copies installed before findExecutable learned to read PE
+   * headers point at Bethesda's 16-bit Arena106.exe, so every Play failed with
+   * `spawn ... EACCES`. Re-resolving inside the same folder finds the modern
+   * build the package also ships, without making anyone reinstall.
+   */
+  if (
+    process.platform === "win32" &&
+    /\.(exe|com)$/i.test(launchPath) &&
+    isLegacyDosExecutable(launchPath)
+  ) {
+    const runnable = info.dir ? findExecutable(info.dir, entry?.exeHint) : null;
+    if (runnable && runnable !== launchPath && !isLegacyDosExecutable(runnable)) {
+      void telemetry.track("launch_exe_repaired", {
+        ...launchInfo(),
+        from: path.basename(launchPath),
+        to: path.basename(runnable),
+        reason: "dos_executable",
+      });
+      persistEditionExe(slug, edSlug, launchPath, runnable);
+      launchPath = runnable;
+    }
+  }
+
+  const wrapDos = shouldLaunchThroughDosBox(launchPath, { needsDosBox: Boolean(entry?.needsDosBox) });
+  if (wrapDos) {
+    const existing = managedDosBox.findManagedDosBoxBinary();
+    if (!existing) {
+      sendProgress({ phase: "dosbox", message: "Downloading DOSBox…" });
+      const outcome = await managedDosBox.ensureManagedDosBox();
+      if (!outcome.ok || !outcome.dosBoxBin) {
+        const message = outcome.error
+          ? `Couldn't install DOSBox: ${outcome.error}`
+          : dosExecutableMessage(path.basename(launchPath));
+        void telemetry.launchFailed({
+          ...launchInfo(),
+          code: "DOSBOX_MISSING",
+          message,
+          phase: "dosbox",
+        });
+        const out = new Error(message);
+        out.code = "DOSBOX_MISSING";
+        out.__launchFailedReported = true;
+        throw out;
+      }
+      sendProgress({ phase: "dosbox", message: "DOSBox ready — launching…" });
+    }
+  }
+
   // Repair modded editions before launching. Steam restores the original
   // executable on update or file verification, which silently strips the mod
   // loader; without this the player would just find the modded menus gone.
@@ -5431,6 +5631,20 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       code = "SHELL_LAUNCH_BLOCKED";
     } else if (/outside allowed install locations/i.test(rawMessage)) {
       code = "SPAWN_PATH_DENIED";
+    } else if (err?.code === "DOSBOX_MISSING" || err?.code === "DOS_EXECUTABLE" || /DOS-era \(16-bit\)/i.test(rawMessage)) {
+      code = err?.code === "DOSBOX_MISSING" ? "DOSBOX_MISSING" : "DOS_EXECUTABLE";
+      message = rawMessage.includes("Couldn't install DOSBox")
+        ? rawMessage
+        : dosExecutableMessage(exeName);
+    } else if (err?.code === "EACCES" || /\bEACCES\b/.test(rawMessage)) {
+      /*
+       * Windows has no single meaning for EACCES here: libuv reports it for
+       * ERROR_ACCESS_DENIED and for ERROR_ELEVATION_REQUIRED alike, so an
+       * installer stub demanding UAC and an antivirus block look identical.
+       * Name both rather than echoing the raw `spawn <path> EACCES`.
+       */
+      code = "SPAWN_EACCES";
+      message = `Windows blocked ${exeName} from starting. It may need administrator rights, or antivirus may be holding it — try Open Folder and running it once yourself, or use Locate to pick the game executable.`;
     } else if (
       err?.code === "UNKNOWN" ||
       /^spawn\s+UNKNOWN/i.test(rawMessage) ||
@@ -5755,21 +5969,29 @@ function spawnTrackedExe(slug, exePath, args = []) {
 
   let child;
   try {
-    child = GameLauncher.spawnGame(exePath, args);
+    child = GameLauncher.spawnGame(exePath, args, {
+      needsDosBox: Boolean(catalog.find((e) => e.slug === slug)?.needsDosBox),
+    });
   } catch (err) {
     const msg =
       err?.code === "JAVA_MISSING" || /Java 17\+/i.test(String(err?.message || ""))
         ? err.message || GameLauncher.JAVA_MISSING_MSG
         : err?.message || String(err);
-    throw new Error(msg);
+    const out = new Error(msg);
+    // Keep the classification GameLauncher already made — playGame turns codes
+    // like DOSBOX_MISSING into an explanation, and re-wrapping erased them.
+    if (err?.code) out.code = err.code;
+    throw out;
   }
 
   const entry = catalog.find((e) => e.slug === slug);
+  const wrapDos = shouldLaunchThroughDosBox(exePath, { needsDosBox: Boolean(entry?.needsDosBox) });
   const imageNames = [
     ...new Set(
       [
         normalizeProcessImageName(exePath),
         ...(isJar ? ["javaw.exe", "java.exe"] : []),
+        ...(wrapDos ? ["dosbox-staging.exe", "dosbox.exe"] : []),
         ...hintProcessNames(entry?.exeHint),
       ].filter(Boolean)
     ),
@@ -7676,6 +7898,10 @@ ipcMain.handle("save-settings", (_event, patch) => {
   if (patch.compatibilityFilter === "compatible" || patch.compatibilityFilter === "all") {
     settings.compatibilityFilter = patch.compatibilityFilter;
     void pushCompatibilityPreference(patch.compatibilityFilter);
+  }
+  if (patch.discoveryMode === "FREE" || patch.discoveryMode === "ALL") {
+    settings.discoveryMode = patch.discoveryMode;
+    void pushDiscoveryPreference(patch.discoveryMode);
   }
   if (linkedCanUseAdminChannel && (patch.updateChannel === "admin" || patch.updateChannel === "latest")) {
     settings.updateChannel = patch.updateChannel;
