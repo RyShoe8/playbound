@@ -37,6 +37,7 @@ import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { GameCommerce } from "@/components/GameCommerce";
+import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { FreeOfferBanner } from "@/components/FreeOfferBanner";
 import { offersForGame } from "@/lib/freeOffers/service";
 import { GameInstallContent } from "@/components/GameInstallContent";
@@ -389,7 +390,7 @@ export default async function GamePage({
 
 /* ────────────────────────── Tabs ────────────────────────── */
 
-function OverviewTab({
+async function OverviewTab({
   game,
   developer,
   editions,
@@ -399,6 +400,7 @@ function OverviewTab({
   editions: Edition[];
 }) {
   if (!game) return null;
+  const affiliates = await getStoreAffiliateMap();
 
   const relatedComparisons = comparisonsFeaturing(game.slug);
   const relatedAlternatives = alternativePages.filter((p) =>
@@ -408,7 +410,7 @@ function OverviewTab({
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
-        <GameCommerce game={game} />
+        <GameCommerce game={game} affiliates={affiliates} />
 
         {/* Quality assessment leads the rest of the page — it is the reason to trust
             everything below it, and the block most likely to be cited. */}

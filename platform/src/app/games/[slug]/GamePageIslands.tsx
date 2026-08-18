@@ -26,6 +26,7 @@ import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
 import { GetGameCta } from "@/components/GameCommerce";
 import { bestPurchase } from "@/lib/access/offers";
+import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { Badge } from "@/components/ui/bits";
 import { PlayingNowBadge } from "@/components/ActivityStats";
 import { ActivityStatsCard } from "@/components/ActivityStatsCard";
@@ -112,9 +113,10 @@ export async function GameHeroActions({
   const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
   const buy = bestPurchase(game.access);
   const installEmphasis = buy ? "secondary" : "primary";
+  const affiliates = await getStoreAffiliateMap();
   return (
     <>
-      <GetGameCta game={game} size="lg" />
+      <GetGameCta game={game} size="lg" affiliates={affiliates} />
       {choosable ? (
         <Link
           href="#editions"

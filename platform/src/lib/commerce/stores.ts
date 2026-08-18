@@ -15,6 +15,8 @@ export const COMMERCE_STORE_SLUGS = [
   "humble",
   "itch",
   "gmg",
+  "gamersgate",
+  "ebay",
   "prime_gaming",
 ] as const;
 
@@ -95,6 +97,22 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
     freeOfferIngest: false,
     retailer: "Green Man Gaming",
   },
+  gamersgate: {
+    discovery: "feed",
+    livePrice: false,
+    titleSearch: false,
+    feedIngest: true,
+    freeOfferIngest: false,
+    retailer: "GamersGate",
+  },
+  ebay: {
+    discovery: "manual",
+    livePrice: false,
+    titleSearch: false,
+    feedIngest: true,
+    freeOfferIngest: false,
+    retailer: "eBay",
+  },
   prime_gaming: {
     discovery: "manual",
     livePrice: false,
@@ -105,15 +123,24 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
   },
 };
 
+/** Query key used when the admin leaves Affiliate param blank. */
+export const AFFILIATE_PARAM_DEFAULTS: Partial<Record<CommerceStoreSlug, string>> = {
+  gog: "pp",
+  humble: "partner",
+  itch: "ac",
+  gmg: "tap_a",
+  ebay: "campid",
+};
+
 export const SEED_COMMERCE_STORES: Array<{
   slug: CommerceStoreSlug;
   name: string;
   baseUrl: string;
   color: string;
-  active: boolean;
   matchingEnabled: boolean;
   priceRefreshEnabled: boolean;
   affiliateDefault: boolean;
+  freeOffersEnabled: boolean;
   discovery: StoreDiscovery;
 }> = [
   {
@@ -121,10 +148,10 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "Steam",
     baseUrl: "https://store.steampowered.com",
     color: "oklch(0.68 0.14 250)",
-    active: true,
     matchingEnabled: true,
     priceRefreshEnabled: true,
     affiliateDefault: true,
+    freeOffersEnabled: true,
     discovery: "api",
   },
   {
@@ -132,10 +159,10 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "GOG",
     baseUrl: "https://www.gog.com",
     color: "oklch(0.72 0.18 310)",
-    active: true,
     matchingEnabled: true,
     priceRefreshEnabled: true,
     affiliateDefault: true,
+    freeOffersEnabled: true,
     discovery: "api",
   },
   {
@@ -143,10 +170,10 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "Epic Games Store",
     baseUrl: "https://store.epicgames.com",
     color: "oklch(0.70 0.14 220)",
-    active: true,
     matchingEnabled: true,
     priceRefreshEnabled: true,
     affiliateDefault: true,
+    freeOffersEnabled: true,
     discovery: "api",
   },
   {
@@ -154,10 +181,10 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "Fanatical",
     baseUrl: "https://www.fanatical.com",
     color: "oklch(0.70 0.16 30)",
-    active: true,
     matchingEnabled: true,
     priceRefreshEnabled: true,
     affiliateDefault: true,
+    freeOffersEnabled: false,
     discovery: "api",
   },
   {
@@ -165,10 +192,10 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "Humble Bundle",
     baseUrl: "https://www.humblebundle.com",
     color: "oklch(0.72 0.16 80)",
-    active: true,
     matchingEnabled: false,
     priceRefreshEnabled: false,
     affiliateDefault: true,
+    freeOffersEnabled: false,
     discovery: "feed",
   },
   {
@@ -176,10 +203,10 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "itch.io",
     baseUrl: "https://itch.io",
     color: "oklch(0.68 0.18 15)",
-    active: true,
     matchingEnabled: false,
     priceRefreshEnabled: false,
     affiliateDefault: true,
+    freeOffersEnabled: false,
     discovery: "manual",
   },
   {
@@ -187,21 +214,43 @@ export const SEED_COMMERCE_STORES: Array<{
     name: "Green Man Gaming",
     baseUrl: "https://www.greenmangaming.com",
     color: "oklch(0.62 0.14 145)",
-    active: true,
     matchingEnabled: false,
     priceRefreshEnabled: false,
     affiliateDefault: true,
+    freeOffersEnabled: false,
     discovery: "feed",
+  },
+  {
+    slug: "gamersgate",
+    name: "GamersGate",
+    baseUrl: "https://www.gamersgate.com",
+    color: "oklch(0.64 0.12 250)",
+    matchingEnabled: false,
+    priceRefreshEnabled: false,
+    affiliateDefault: true,
+    freeOffersEnabled: false,
+    discovery: "feed",
+  },
+  {
+    slug: "ebay",
+    name: "eBay",
+    baseUrl: "https://www.ebay.com",
+    color: "oklch(0.62 0.19 30)",
+    matchingEnabled: false,
+    priceRefreshEnabled: false,
+    affiliateDefault: true,
+    freeOffersEnabled: false,
+    discovery: "manual",
   },
   {
     slug: "prime_gaming",
     name: "Amazon Prime Gaming",
     baseUrl: "https://gaming.amazon.com",
     color: "oklch(0.72 0.18 170)",
-    active: true,
     matchingEnabled: false,
     priceRefreshEnabled: false,
     affiliateDefault: false,
+    freeOffersEnabled: true,
     discovery: "manual",
   },
 ];
@@ -214,6 +263,8 @@ export function retailerToStoreSlug(retailer: string): CommerceStoreSlug | null 
   }
   if (want === "epic") return "epic";
   if (want === "green man gaming") return "gmg";
+  if (want === "gamersgate") return "gamersgate";
+  if (want === "ebay") return "ebay";
   return isCommerceStoreSlug(want) ? want : null;
 }
 

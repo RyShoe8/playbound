@@ -9,7 +9,8 @@ export default function AdminEcommerceStoresPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Stores</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Enable matching, paste product feeds, or leave a store manual.
+          Free offers and purchase matching are separate. Paste a feed or an affiliate ID only
+          where you have one.
         </p>
       </div>
       <EcommerceStoresManager />

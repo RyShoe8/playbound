@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { revalidateTag } from "next/cache";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import StoreProvider from "@/lib/models/StoreProvider";
 import IngestionLog from "@/lib/models/IngestionLog";
 import {
+  AFFILIATE_PARAM_DEFAULTS,
   COMMERCE_STORE_SLUGS,
   SEED_COMMERCE_STORES,
   STORE_CAPABILITIES,
@@ -43,10 +45,13 @@ export async function GET() {
         name: s.name,
         baseUrl: s.baseUrl,
         color: s.color,
-        active: s.active !== false,
         matchingEnabled: Boolean(s.matchingEnabled),
         priceRefreshEnabled: Boolean(s.priceRefreshEnabled),
+        freeOffersEnabled: Boolean(s.freeOffersEnabled),
         affiliateDefault: s.affiliateDefault !== false,
+        affiliateId: typeof s.affiliateId === "string" ? s.affiliateId : "",
+        affiliateParam: typeof s.affiliateParam === "string" ? s.affiliateParam : "",
+        defaultAffiliateParam: slug ? AFFILIATE_PARAM_DEFAULTS[slug] || "" : "",
         discovery: s.discovery || caps?.discovery || "manual",
         feedUrl: s.feedUrl || "",
         capabilities: caps,
@@ -60,10 +65,18 @@ export async function GET() {
 
 const patchSchema = z.object({
   slug: z.string(),
-  active: z.boolean().optional(),
   matchingEnabled: z.boolean().optional(),
   priceRefreshEnabled: z.boolean().optional(),
+  freeOffersEnabled: z.boolean().optional(),
   affiliateDefault: z.boolean().optional(),
+  affiliateId: z.string().trim().max(120).nullable().optional(),
+  affiliateParam: z
+    .string()
+    .trim()
+    .max(40)
+    .regex(/^[A-Za-z0-9_-]*$/, "Query param must be letters, numbers, _ or -.")
+    .nullable()
+    .optional(),
   feedUrl: z.string().trim().max(2000).nullable().optional(),
 });
 
@@ -76,12 +89,17 @@ export async function PATCH(req: Request) {
   }
   await dbConnect();
   const $set: Record<string, unknown> = {};
-  if (body.active != null) $set.active = body.active;
   if (body.matchingEnabled != null) $set.matchingEnabled = body.matchingEnabled;
   if (body.priceRefreshEnabled != null) $set.priceRefreshEnabled = body.priceRefreshEnabled;
+  if (body.freeOffersEnabled != null) $set.freeOffersEnabled = body.freeOffersEnabled;
   if (body.affiliateDefault != null) $set.affiliateDefault = body.affiliateDefault;
+  if (body.affiliateId !== undefined) $set.affiliateId = body.affiliateId || null;
+  if (body.affiliateParam !== undefined) $set.affiliateParam = body.affiliateParam || null;
   if (body.feedUrl !== undefined) $set.feedUrl = body.feedUrl || null;
   await StoreProvider.updateOne({ slug: body.slug }, { $set }, { upsert: false });
+  if (body.affiliateId !== undefined || body.affiliateParam !== undefined) {
+    revalidateTag("store-affiliates", { expire: 0 });
+  }
   return NextResponse.json({ ok: true });
 }
 

@@ -159,7 +159,7 @@ export async function applyStoreHit(opts: {
 async function enabledStores(): Promise<
   Array<{ slug: CommerceStoreSlug; affiliateDefault: boolean }>
 > {
-  const docs = await StoreProvider.find({ active: true, matchingEnabled: true }).lean();
+  const docs = await StoreProvider.find({ matchingEnabled: true }).lean();
   const out: Array<{ slug: CommerceStoreSlug; affiliateDefault: boolean }> = [];
   for (const doc of docs) {
     const slug = doc.slug as CommerceStoreSlug;
