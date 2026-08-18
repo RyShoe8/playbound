@@ -67,6 +67,9 @@ fi
 id -u playbound >/dev/null 2>&1 || useradd --system --home "$HOME_DIR" --shell /usr/sbin/nologin playbound
 mkdir -p "$HOME_DIR" "$GAMES_DIR" "$AGENT_DIR" "$MIRROR_ARCHIVE_DIR"
 chown -R playbound:playbound "$HOME_DIR" "$MIRROR_ARCHIVE_DIR"
+# Archive contents are intentionally public through the read-only mirror
+# container, so its top-level directory must be traversable by that service.
+chmod 755 "$MIRROR_ARCHIVE_DIR"
 
 echo "==> copy agent"
 cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/package.json" "$AGENT_DIR/"
