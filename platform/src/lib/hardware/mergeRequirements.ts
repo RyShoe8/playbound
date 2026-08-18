@@ -92,7 +92,9 @@ export function hasStructuredRequirements(block?: HardwareRequirementsBlock | nu
     if (!s) return false;
     return Boolean(
       s.cpuTier ||
+        s.cpuText ||
         s.gpuTier ||
+        s.gpuText ||
         s.ramMB ||
         s.vramMB ||
         s.storageMB ||

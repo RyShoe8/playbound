@@ -49,12 +49,16 @@ export function AccessPricingFields({
   catalogTiers,
   onChange,
   gameSlug,
+  masterCopy = false,
+  onMasterCopyChange,
 }: {
   value: Access | null | undefined;
   catalogGames: CatalogPick[];
   catalogTiers: GameTierMap;
   onChange: (next: Access | null) => void;
   gameSlug?: string;
+  masterCopy?: boolean;
+  onMasterCopyChange?: (next: boolean) => void;
 }) {
   const access: Access = value ?? {
     priceType: "FREE",
@@ -147,6 +151,22 @@ export function AccessPricingFields({
           </label>
         ))}
       </fieldset>
+
+      <label className="flex cursor-pointer items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={Boolean(masterCopy)}
+          onChange={(e) => onMasterCopyChange?.(e.target.checked)}
+        />
+        <span>
+          <span className="font-semibold">Master copy</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            This page leads with games, editions, and mods that require owning this copy.
+            Does not change FREE vs VALUE.
+          </span>
+        </span>
+      </label>
 
       {showPrices ? (
         <>

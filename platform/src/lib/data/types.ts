@@ -131,6 +131,11 @@ export interface Game {
   gameOfWeek: boolean;
   hiddenGem: boolean;
   /**
+   * Overview leads with games, editions, and mods that require owning this
+   * copy. Does not change FREE vs VALUE.
+   */
+  masterCopy?: boolean;
+  /**
    * Admin checklist: all catalog info for this title has been entered.
    * Optional on seed objects; missing means incomplete.
    */

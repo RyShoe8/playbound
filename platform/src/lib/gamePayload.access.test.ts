@@ -156,4 +156,17 @@ describe("gamePayloadSchema access", () => {
     const parsed = gamePayloadSchema.parse(draft);
     expect(parsed.tags).toEqual(["Classic", "Evil"]);
   });
+
+  it("defaults masterCopy to false", () => {
+    const draft = emptyGameDraft();
+    expect(draft.masterCopy).toBe(false);
+    const parsed = gamePayloadSchema.parse({
+      ...draft,
+      slug: "gold",
+      title: "Gold",
+      tagline: "t",
+      description: "d",
+    });
+    expect(parsed.masterCopy).toBe(false);
+  });
 });

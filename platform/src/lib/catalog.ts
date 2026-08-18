@@ -7,6 +7,11 @@ import type { Game, Genre, LaunchMethod } from "@/lib/data/types";
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import { games as seedGames } from "@/lib/data/games";
 import { editorial } from "@/lib/data/editorial";
+import {
+  DUNGEON_KEEPER_GOLD_SLUG,
+  dungeonKeeperGoldHardwareRequirements,
+  dungeonKeeperGoldSystemRequirements,
+} from "@/lib/data/dungeonKeeperGoldSpecs";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
@@ -17,6 +22,7 @@ import type { Collection, Developer } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
 import { normalizeQualityBar } from "@/lib/gamePayload";
 import { accessFromDoc } from "@/lib/access/docs";
+import { pickHardwareRequirements, pickSystemRequirements } from "@/lib/catalogRequirements";
 
 export type { Game } from "@/lib/data/types";
 // Developers are deliberately no longer re-exported here. They are database
@@ -42,6 +48,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.overlayUrl && seed?.overlayUrl) merged.overlayUrl = seed.overlayUrl;
     if (!merged.overlayFileName && seed?.overlayFileName) merged.overlayFileName = seed.overlayFileName;
     if (!merged.overlayDest && seed?.overlayDest) merged.overlayDest = seed.overlayDest;
+    if (!merged.unwrapSingleRoot && seed?.unwrapSingleRoot) merged.unwrapSingleRoot = true;
     // ET: Legacy has no GitHub release assets and the former database recipe
     // was an external download-page hand-off. Serve the verified official
     // archive recipe at read time until that one game is next edited; this is
@@ -58,6 +65,24 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
       merged.exeHint = seed.exeHint;
       merged.versionLabel = seed.versionLabel;
     }
+    // tes-arena: a PlayBound OpenTESArena zip was previously saved as the
+    // parent game recipe. That package is the engine edition; the original
+    // freeware files are a separate archive. Restore the seed until Mongo is
+    // next saved for this slug.
+    if (
+      game.slug === "tes-arena" &&
+      seed?.kind === "direct-zip" &&
+      typeof merged.url === "string" &&
+      /OpenTESArena/i.test(merged.url)
+    ) {
+      merged.kind = seed.kind;
+      merged.url = seed.url;
+      merged.fileName = seed.fileName;
+      merged.exeHint = seed.exeHint;
+      merged.knownExePaths = seed.knownExePaths;
+      merged.versionLabel = seed.versionLabel;
+      merged.note = seed.note;
+    }
     return { ...game, launcherInstall: merged };
   }
   if (seed) return { ...game, launcherInstall: seed };
@@ -66,7 +91,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
 
 function toGame(doc: LeanGame): Game {
   const seed = seedBySlug.get(String(doc.slug));
-  const extra = editorialForMongoOnly(String(doc.slug));
+  const extra = overlayForMongoOnly(String(doc.slug));
   const status = normalizeStatus(doc);
 
   const base: Game = {
@@ -97,6 +122,7 @@ function toGame(doc: LeanGame): Game {
     githubRepo: (doc.githubRepo as string) || seed?.githubRepo,
     gameOfWeek: Boolean(doc.gameOfWeek ?? seed?.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem ?? seed?.hiddenGem),
+    masterCopy: Boolean(doc.masterCopy ?? seed?.masterCopy),
     complete: Boolean(doc.complete ?? seed?.complete),
     // Left undefined when unclassified, which every consumer reads as free.
     access: accessFromDoc(doc.access) ?? seed?.access,
@@ -106,13 +132,16 @@ function toGame(doc: LeanGame): Game {
       ? (doc.screenshots as string[])
       : usableSeedScreenshots(seed?.screenshots),
     videos: (doc.videos as string[])?.length ? (doc.videos as string[]) : seed?.videos,
-    systemRequirements: (doc.systemRequirements && typeof doc.systemRequirements === "object" && (doc.systemRequirements as { min?: string }).min)
-      ? (doc.systemRequirements as Game["systemRequirements"])
-      : (seed?.systemRequirements || { min: "", recommended: "" }),
-    hardwareRequirements:
-      (doc.hardwareRequirements as Game["hardwareRequirements"]) ||
-      seed?.hardwareRequirements ||
-      null,
+    systemRequirements: pickSystemRequirements(
+      doc.systemRequirements,
+      seed?.systemRequirements,
+      extra?.systemRequirements
+    ),
+    hardwareRequirements: pickHardwareRequirements(
+      doc.hardwareRequirements as Game["hardwareRequirements"],
+      seed?.hardwareRequirements,
+      extra?.hardwareRequirements
+    ),
 
     qualityBar:
       normalizeQualityBar(
@@ -220,10 +249,15 @@ for (const g of seedGames) {
   }
 }
 
-/** Mongo-only titles that have writing in editorial.ts but no games.ts stub. */
-function editorialForMongoOnly(slug: string) {
-  if (slug !== "dungeon-keeper-gold") return undefined;
-  return editorial[slug];
+/** Mongo-only titles with overlay copy/specs and no games.ts stub. */
+function overlayForMongoOnly(slug: string) {
+  if (slug !== DUNGEON_KEEPER_GOLD_SLUG) return undefined;
+  const ed = editorial[slug];
+  return {
+    ...(ed ?? {}),
+    systemRequirements: dungeonKeeperGoldSystemRequirements,
+    hardwareRequirements: dungeonKeeperGoldHardwareRequirements,
+  };
 }
 
 function seedGameWithInstall(g: Game): Game {
