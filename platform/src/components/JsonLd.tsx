@@ -105,16 +105,37 @@ export function breadcrumbSchema(
 /**
  * VideoGame entity.
  *
- * `offers` at price 0 plus an explicit `license` is what lets a machine assert
- * "this is genuinely free" — the exact claim PlayBound wants attached to its
- * name. `sameAs` links out to every corroborating source, which is how entity
- * resolution works.
+ * `offers` plus an explicit `license` is what lets a machine assert what a game
+ * actually costs. `sameAs` links out to every corroborating source, which is
+ * how entity resolution works.
+ *
+ * Price is read from the game rather than asserted. Both fields used to be
+ * hardcoded to free, which was a correct invariant while the catalog was
+ * free-only and becomes false structured data the moment a paid game is
+ * published — a claim to search engines that the game costs nothing.
+ * Unclassified games have no `access` and are still emitted as free, which is
+ * what they are.
  */
+/**
+ * What a machine should be told this game costs.
+ *
+ * The qualifying price, not the current one: a sale should not make structured
+ * data claim a price that will not be there next week. Unclassified games have
+ * no `access` and are free, which is what the catalog was when the field was
+ * added.
+ */
+function gamePriceCents(game: Game): number {
+  const access = game.access;
+  if (!access || access.priceType === "FREE") return 0;
+  return access.qualifyingPriceCents ?? access.currentPriceCents ?? 0;
+}
+
 export function videoGameSchema(
   game: Game,
   developer?: Developer,
   opts?: { aggregateRating?: { ratingValue: number; reviewCount: number } }
 ): Json {
+  const priceCents = gamePriceCents(game);
   const sameAs = [
     game.website,
     game.githubRepo ? `https://github.com/${game.githubRepo}` : undefined,
@@ -138,7 +159,7 @@ export function videoGameSchema(
     fileSize: `${game.sizeMB} MB`,
     datePublished: String(game.releaseYear),
     license: game.license,
-    isAccessibleForFree: true,
+    isAccessibleForFree: priceCents === 0,
     ...(sameAs.length ? { sameAs } : {}),
     ...(game.coverImage ? { image: absImage(game.coverImage) } : {}),
     ...(game.screenshots?.length
@@ -158,11 +179,13 @@ export function videoGameSchema(
       : ["SinglePlayer"],
     offers: {
       "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
+      price: (priceCents / 100).toFixed(2),
+      priceCurrency: game.access?.currency ?? "USD",
       availability: "https://schema.org/InStock",
       url: absoluteUrl(`/games/${game.slug}`),
-      seller: { "@id": ORGANIZATION_ID },
+      // Seller is PlayBound only when PlayBound is where you get it. For a
+      // paid title we point at the store rather than claim to sell it.
+      ...(priceCents === 0 ? { seller: { "@id": ORGANIZATION_ID } } : {}),
     },
     // Only emitted when real review data exists — never synthesised.
     ...(opts?.aggregateRating && opts.aggregateRating.reviewCount > 0

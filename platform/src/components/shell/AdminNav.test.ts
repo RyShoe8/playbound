@@ -86,6 +86,7 @@ describe("admin nav structure", () => {
       children: [
         { label: "Bugs", href: "/admin/bugs" },
         { label: "Versions", href: "/admin/version-issues" },
+        { label: "Access Audit", href: "/admin/access-audit" },
         { label: "Download Mirrors", href: "/admin/download-mirrors" },
       ],
     });

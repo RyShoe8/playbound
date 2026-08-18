@@ -95,6 +95,8 @@ function toGame(doc: LeanGame): Game {
     gameOfWeek: Boolean(doc.gameOfWeek ?? seed?.gameOfWeek),
     hiddenGem: Boolean(doc.hiddenGem ?? seed?.hiddenGem),
     complete: Boolean(doc.complete ?? seed?.complete),
+    // Left undefined when unclassified, which every consumer reads as free.
+    access: (doc.access as Game["access"]) ?? seed?.access,
     art: (doc.art as Game["art"]) || seed?.art || { from: "#1e293b", to: "#64748b", icon: "Gamepad2" },
     coverImage: (doc.coverImage as string) || usableSeedMedia(seed?.coverImage),
     screenshots: (doc.screenshots as string[])?.length

@@ -23,6 +23,7 @@ import {
   Gift,
   Activity,
   DownloadCloud,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -66,7 +67,13 @@ export const links: NavItem[] = [
     href: "/admin/ops",
     label: "Ops",
     icon: Activity,
-    family: ["/admin/ops", "/admin/bugs", "/admin/version-issues", "/admin/download-mirrors"],
+    family: [
+      "/admin/ops",
+      "/admin/bugs",
+      "/admin/version-issues",
+      "/admin/download-mirrors",
+      "/admin/access-audit",
+    ],
   },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
@@ -163,6 +170,12 @@ const OPS_CHILDREN: NavChild[] = [
     icon: AlertTriangle,
     href: "/admin/version-issues",
     match: (p) => p.startsWith("/admin/version-issues"),
+  },
+  {
+    label: "Access Audit",
+    icon: ShieldCheck,
+    href: "/admin/access-audit",
+    match: (p) => p.startsWith("/admin/access-audit"),
   },
   {
     label: "Download Mirrors",

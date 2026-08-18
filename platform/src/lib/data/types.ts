@@ -1,5 +1,6 @@
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import type { GameAccess } from "@/lib/access/types";
 
 export type LaunchMethod = "browser" | "install" | "server";
 
@@ -134,6 +135,16 @@ export interface Game {
    * Optional on seed objects; missing means incomplete.
    */
   complete?: boolean;
+  /**
+   * How this game is acquired. Absent means free, which is what the whole
+   * catalog was when the field was introduced — so every existing entry keeps
+   * behaving exactly as before until it is classified.
+   *
+   * Never read this to decide Free vs Value. Ask the resolver in
+   * `lib/access/resolver.ts`, which accounts for dependencies this field
+   * cannot see.
+   */
+  access?: GameAccess;
   art: GameArt;
   /** Local cover under /public, e.g. /games/openra/cover.webp */
   coverImage?: string;
