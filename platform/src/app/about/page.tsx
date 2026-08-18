@@ -21,9 +21,9 @@ import { absoluteUrl } from "@/lib/site";
 import { listGames } from "@/lib/catalog";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About PlayBound — High-Quality Free Games, Zero Catch",
+  title: "About PlayBound — Great Games on a Real-World Budget",
   description:
-    "PlayBound is the premier destination and lightweight launcher for genuinely free, high-quality games. Learn about our mission, curation bar, and open gaming ecosystem.",
+    "PlayBound curates exceptional free and affordable games, tests them ourselves, and makes the best editions, mods, and multiplayer easier to enjoy.",
   path: "/about",
 });
 
@@ -36,9 +36,9 @@ export default async function AboutPage() {
   const pillars = [
     {
       icon: ShieldCheck,
-      title: "Genuinely Free",
+      title: "Fair Value",
       description:
-        "No predatory monetization, no pay-to-win microtransactions, no paywalled core campaigns, and no cosmetic FOMO treadmills. Every title is 100% complete and free.",
+        "Free or affordable, with no paid competitive advantage or bait-and-switch pricing. Optional cosmetics, battle passes, and premium extras are welcome when the core game remains fair.",
     },
     {
       icon: Sparkles,
@@ -82,7 +82,7 @@ export default async function AboutPage() {
             name: "About PlayBound",
             url: absoluteUrl("/about"),
             description:
-              "Learn about PlayBound's mission to curate high-quality free games and provide an open, privacy-first gaming ecosystem.",
+              "Learn about PlayBound's mission to curate exceptional free and affordable games and provide an open, privacy-first gaming ecosystem.",
             publisher: { "@id": ORGANIZATION_ID },
           },
           breadcrumbSchema([
@@ -99,15 +99,15 @@ export default async function AboutPage() {
           The PlayBound Mission
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
-          High-Quality Free Games. <br className="hidden sm:inline" />
+          Great Games. Friendly Prices. <br className="hidden sm:inline" />
           <span className="bg-gradient-to-r from-primary via-accent-foreground to-primary bg-clip-text text-transparent">
             Actually Worth Your Time.
           </span>
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          We built PlayBound to solve a fundamental problem in modern gaming: great free games exist,
-          but they get drowned out by pay-to-win microtransactions, algorithmic store clutter, and
-          monetization pressure.
+          We built PlayBound around a simple belief: a small budget should still buy years of great
+          play. Exceptional free games and $5–$15 classics get drowned out by store clutter,
+          pay-to-win systems, and catalogs built for volume instead of trust.
         </p>
       </header>
 
@@ -118,16 +118,16 @@ export default async function AboutPage() {
           <div className="mt-1 text-xs font-medium text-muted-foreground">Curated Games</div>
         </div>
         <div className="rounded-xl border border-border/70 bg-card/50 p-4 text-center">
-          <div className="text-2xl font-black text-primary sm:text-3xl">100%</div>
-          <div className="mt-1 text-xs font-medium text-muted-foreground">Free to Play</div>
+          <div className="text-2xl font-black text-primary sm:text-3xl">$15</div>
+          <div className="mt-1 text-xs font-medium text-muted-foreground">Regular-Price Cap</div>
         </div>
         <div className="rounded-xl border border-border/70 bg-card/50 p-4 text-center">
           <div className="text-2xl font-black text-foreground sm:text-3xl">{verifiedCount}</div>
           <div className="mt-1 text-xs font-medium text-muted-foreground">Quality Verified</div>
         </div>
         <div className="rounded-xl border border-border/70 bg-card/50 p-4 text-center">
-          <div className="text-2xl font-black text-primary sm:text-3xl">$0</div>
-          <div className="mt-1 text-xs font-medium text-muted-foreground">Cost to Players</div>
+          <div className="text-2xl font-black text-primary sm:text-3xl">4</div>
+          <div className="mt-1 text-xs font-medium text-muted-foreground">Criteria, No Filler</div>
         </div>
       </div>
 
@@ -138,10 +138,10 @@ export default async function AboutPage() {
         </h2>
         <div className="space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
           <p>
-            The mainstream video game industry has increasingly shifted toward aggressive live-service
-            models, battle passes, loot boxes, and dark UX patterns designed to extract time and money.
+            Parts of the mainstream video game industry have shifted toward aggressive live-service
+            economies, paid competitive advantages, loot boxes, and dark UX patterns designed to extract time and money.
             Meanwhile, passionate independent developers, open-source maintainers, and community teams
-            have quietly built extraordinary, full-featured games that ask for nothing in return.
+            have quietly built extraordinary games that are free or remarkably affordable.
           </p>
           <p>
             The problem is discovery. Finding these gems usually requires digging through forum threads,
@@ -149,7 +149,7 @@ export default async function AboutPage() {
           </p>
           <p>
             <strong>PlayBound changes that.</strong> We provide a sleek, centralized catalog and an
-            integrated desktop launcher that turns great free software into seamless one-click experiences.
+            integrated desktop launcher that turns great free and affordable games into seamless one-click experiences.
             No ads, no bundled spyware, and no paywalls.
           </p>
         </div>
@@ -197,8 +197,7 @@ export default async function AboutPage() {
             <h2 className="text-xl font-bold text-foreground">The PlayBound Standard</h2>
             <p className="text-sm text-muted-foreground">
               Every game is tested and played before it is added, and must clear our 4-point
-              evaluation: genuinely free, ready to play, curated through thorough testing, and high
-              quality or showing strong potential.
+              evaluation: worth the cost, ready to play, tested by PlayBound, and That One Thing.
             </p>
           </div>
           <Link

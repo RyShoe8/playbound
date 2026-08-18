@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import { ChevronDown, Film, Gamepad2, Image as ImageIcon, Newspaper, Play, Trophy, Wrench } from "lucide-react";
+import { ChevronDown, Film, Gamepad2, Image as ImageIcon, Newspaper, Play, Sparkles, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
@@ -425,6 +425,28 @@ async function OverviewTab({
         {unlocks ? <MasterCopyUnlocks game={game} unlocks={unlocks} affiliates={affiliates} /> : null}
 
         <GameCommerce game={game} affiliates={affiliates} />
+
+        {game.thatOneThing && (
+          <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm sm:p-7">
+            <div aria-hidden className="absolute -right-10 -top-12 size-36 rounded-full bg-primary/15 blur-3xl" />
+            <div className="relative flex gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/15 text-primary shadow-sm">
+                <Sparkles className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold tracking-[0.18em] text-primary uppercase">
+                  That One Thing
+                </p>
+                <h2 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">
+                  Why {game.title} sticks with us
+                </h2>
+                <p className="mt-2 text-base leading-relaxed text-foreground/85 sm:text-lg">
+                  {game.thatOneThing}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Quality assessment leads the rest of the page — it is the reason to trust
             everything below it, and the block most likely to be cited. */}

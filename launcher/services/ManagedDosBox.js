@@ -55,13 +55,20 @@ function findDosBoxBinaryUnder(root) {
  * Mount the folder that contains the DOS exe as C: so data files sit next to it.
  * TES: Arena's A.EXE lives in ARENA/, not the parent install folder.
  * @param {string} dosExePath
+ * @param {string[]} [programArgs]
  * @returns {{ args: string[], cwd: string }}
  */
-function dosBoxLaunchSpec(dosExePath) {
+function dosBoxLaunchSpec(dosExePath, programArgs = []) {
   const exeDir = path.dirname(dosExePath);
   const exeName = path.basename(dosExePath);
   const mountPath = exeDir.replace(/\\/g, "/");
   const quoted = mountPath.includes(" ") ? `"${mountPath}"` : mountPath;
+  const safeProgramArgs = programArgs.map((value) => {
+    const arg = String(value);
+    if (!arg || /[&|<>^\r\n]/.test(arg)) throw new Error("Unsafe DOS launch argument");
+    return /\s/.test(arg) ? `"${arg.replace(/"/g, "")}"` : arg;
+  });
+  const command = [exeName, ...safeProgramArgs].join(" ");
   return {
     args: [
       "-noprimaryconf",
@@ -71,7 +78,7 @@ function dosBoxLaunchSpec(dosExePath) {
       "-c",
       "c:",
       "-c",
-      exeName,
+      command,
       "-c",
       "exit",
     ],

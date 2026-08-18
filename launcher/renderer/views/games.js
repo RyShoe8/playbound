@@ -3,12 +3,24 @@ import {
   api,
   enhanceSelect,
   escapeHtml,
-  filterByCompatibility,
+  filterCatalogGames,
+  filterGamesByPrice,
   loadPlayingNowBySlug,
   markViewReady,
+  parsePriceFilter,
   state,
   views,
 } from "../shared.js";
+
+const PRICE_OPTIONS = [
+  { label: "Any", value: "any" },
+  { label: "Free", value: "free" },
+  { label: "Under $5", value: "under5" },
+  { label: "Under $10", value: "under10" },
+  { label: "Under $15", value: "under15" },
+];
+
+const CHECK_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 function ensureGamesShell() {
   const container = views.games;
@@ -17,6 +29,7 @@ function ensureGamesShell() {
     <div class="section-header" style="margin-top: 0">
       <div>
         <h1 class="view-title" style="margin: 0">Games</h1>
+        <p class="view-sub" style="margin: 5px 0 0">Free or regularly $15 or less. Tested by PlayBound, with one memorable reason to play.</p>
       </div>
       <button class="btn-secondary btn-sm" id="btn-open-web">Open playbound.club</button>
     </div>
@@ -39,9 +52,21 @@ function ensureGamesShell() {
         </div>
         <p class="view-sub games-filter-count" id="games-count"></p>
       </div>
+      <div class="games-filter-row games-price-row ${state.discoveryMode === "ALL" ? "is-visible" : ""}" id="games-price-row">
+        <span class="games-filter-label">Price:</span>
+        <div class="search-chips-wrap" id="games-price-chips"></div>
+      </div>
       <div class="games-filter-row games-filter-row-secondary">
-        <label class="filter-check"><input type="checkbox" id="games-mp" ${state.gamesFilters.multiplayerOnly ? "checked" : ""} /> Multiplayer</label>
-        <label class="filter-check"><input type="checkbox" id="games-has-players" ${state.gamesFilters.hasPlayersOnly ? "checked" : ""} /> Has Players</label>
+        <label class="pb-check">
+          <input type="checkbox" class="pb-check-input" id="games-mp" ${state.gamesFilters.multiplayerOnly ? "checked" : ""} />
+          <span class="pb-check-box" aria-hidden="true">${CHECK_ICON}</span>
+          Multiplayer
+        </label>
+        <label class="pb-check">
+          <input type="checkbox" class="pb-check-input" id="games-has-players" ${state.gamesFilters.hasPlayersOnly ? "checked" : ""} />
+          <span class="pb-check-box" aria-hidden="true">${CHECK_ICON}</span>
+          Has Players
+        </label>
       </div>
     </div>
     <div id="games-grid" class="game-grid" style="margin-top: 16px"></div>
@@ -70,14 +95,18 @@ function ensureGamesShell() {
 /**
  * Genre pills with counts, matching the website's discover filters.
  *
- * Counts come from the compatibility-filtered catalog so a pill never promises
- * more games than clicking it will show.
+ * Counts come from the compatibility + discovery-filtered catalog so a pill
+ * never promises more games than clicking it will show.
  */
 function syncGenreOptions(catalog) {
   const host = document.getElementById("games-genre-pills");
   if (!host) return;
 
-  const base = filterByCompatibility(catalog);
+  const base = (() => {
+    let list = filterCatalogGames(catalog);
+    if (state.discoveryMode === "ALL") list = filterGamesByPrice(list, state.gamesFilters.price);
+    return list;
+  })();
   const counts = new Map();
   for (const g of base) {
     for (const genre of g.genres || []) counts.set(genre, (counts.get(genre) || 0) + 1);
@@ -101,8 +130,27 @@ function syncGenreOptions(catalog) {
       const value = btn.dataset.genre || "";
       // Clicking the active pill clears it, as the website's does.
       state.gamesFilters.genre = state.gamesFilters.genre === value ? "" : value;
-      syncGenreOptions(catalog);
       paintGamesGrid(catalog);
+    });
+  });
+}
+
+function syncPriceChips() {
+  const row = document.getElementById("games-price-row");
+  const host = document.getElementById("games-price-chips");
+  if (!row || !host) return;
+  const show = state.discoveryMode === "ALL";
+  row.classList.toggle("is-visible", show);
+  if (!show) return;
+  const current = parsePriceFilter(state.gamesFilters.price);
+  host.innerHTML = PRICE_OPTIONS.map(
+    (o) =>
+      `<button type="button" class="filter-chip ${current === o.value ? "active" : ""}" data-price="${o.value}">${o.label}</button>`
+  ).join("");
+  host.querySelectorAll("[data-price]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.gamesFilters.price = parsePriceFilter(btn.dataset.price);
+      paintGamesGrid(state.catalogCache);
     });
   });
 }
@@ -116,8 +164,13 @@ function parseSizeMB(label) {
 }
 
 export function paintGamesGrid(catalog = state.catalogCache) {
+  syncGenreOptions(catalog);
+  syncPriceChips();
   const q = state.gamesFilters.query.trim().toLowerCase();
-  let list = filterByCompatibility(catalog.slice());
+  let list = filterCatalogGames(catalog.slice());
+  if (state.discoveryMode === "ALL") {
+    list = filterGamesByPrice(list, state.gamesFilters.price);
+  }
 
   if (q) {
     list = list.filter((g) => {

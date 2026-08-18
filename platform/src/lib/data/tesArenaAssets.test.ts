@@ -28,16 +28,18 @@ describe("tesArenaAssets", () => {
 });
 
 describe("tes-arena edition recipes", () => {
-  it("overlays freeware assets into OpenTESArena data/ARENA", async () => {
+  it("uses the verified portable OpenTESArena package", async () => {
     const { editions } = await import("./editions");
     const engine = editions.find((e) => e.gameSlug === "tes-arena" && e.slug === "opentesarena");
     const official = editions.find((e) => e.gameSlug === "tes-arena" && e.slug === "official");
-    expect(official?.installConfig.playbound_installer?.exeHint).toBe("A.EXE");
-    expect(official?.installConfig.playbound_installer?.needsDosBox).toBe(true);
-    expect(official?.installConfig.playbound_installer?.url).toBe(ARENA_GAMEFILES_URL);
-    expect(engine?.installConfig.playbound_installer?.exeHint).toBe("otesa.exe");
-    expect(engine?.installConfig.playbound_installer?.overlayDest).toBe("data");
-    expect(engine?.installConfig.playbound_installer?.overlayUrl).toBe(ARENA_GAMEFILES_URL);
-    expect(engine?.installConfig.playbound_installer?.unwrapSingleRoot).toBe(true);
+    expect(official?.installConfig?.playbound_installer?.exeHint).toBe("A.EXE");
+    expect(official?.installConfig?.playbound_installer?.needsDosBox).toBe(true);
+    expect(official?.installConfig?.playbound_installer?.url).toBe(ARENA_GAMEFILES_URL);
+    expect(engine?.installConfig?.playbound_installer?.exeHint).toBe("otesa.exe");
+    expect(engine?.installConfig?.playbound_installer?.kind).toBe("direct-zip");
+    expect(engine?.installConfig?.playbound_installer?.fileName).toBe(
+      "OpenTESArena-PlayBound-0.18.0.zip"
+    );
+    expect(engine?.installConfig?.playbound_installer?.overlayUrl).toBeUndefined();
   });
 });

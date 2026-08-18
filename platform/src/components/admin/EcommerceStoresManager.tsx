@@ -91,6 +91,24 @@ export function EcommerceStoresManager() {
     setBusy(null);
   }
 
+  async function upload(slug: string, file: File) {
+    setBusy(slug);
+    setError(null);
+    const body = new FormData();
+    body.set("store", slug);
+    body.set("file", file);
+    const res = await fetch("/api/admin/ecommerce/feeds/ingest", {
+      method: "POST",
+      body,
+    });
+    const json = (await res.json()) as { error?: string; found?: number };
+    if (!res.ok) setError(json.error || "Feed upload failed.");
+    else if (json.found === 0) setError("No products found in that feed.");
+    await load();
+    router.refresh();
+    setBusy(null);
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
@@ -259,6 +277,23 @@ export function EcommerceStoresManager() {
                         {store.lastFeed
                           ? ` Last ingest ${new Date(store.lastFeed.startedAt).toLocaleString()} (${store.lastFeed.status}).`
                           : ""}
+                      </p>
+                      <label className="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                        Or upload a feed
+                      </label>
+                      <input
+                        type="file"
+                        accept=".csv,.tsv,.txt,.json,.xml,.rss,.atom,text/csv,application/json,application/xml,text/xml,text/plain"
+                        disabled={busy === store.slug}
+                        className="block w-full text-sm file:mr-2 file:rounded-full file:border file:border-border file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-bold"
+                        onChange={(e) => {
+                          const file = e.currentTarget.files?.[0];
+                          e.currentTarget.value = "";
+                          if (file) void upload(store.slug, file);
+                        }}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Optional. Same formats as the URL. Max 8MB. The file is parsed and not kept.
                       </p>
                     </div>
                   ) : (

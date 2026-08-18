@@ -6,7 +6,8 @@ import {
   enhanceSelect,
   escapeHtml,
   executableNoun,
-  filterByCompatibility,
+  filterByDiscovery,
+  filterCatalogGames,
   gamePlayHintHtml,
   isGameDesktopCompatible,
   isMacOS,
@@ -962,7 +963,7 @@ async function initAddFriendsPanel() {
   tabEmail.onclick = () => setMode("email");
 
   const catalog = await window.playbound.getCatalog().catch(() => []);
-  const gamesList = Array.isArray(catalog) ? catalog : catalog?.games || [];
+  const gamesList = filterCatalogGames(Array.isArray(catalog) ? catalog : catalog?.games || []);
   const gameSelect = document.getElementById("add-friends-game-select");
   const genreSelect = document.getElementById("add-friends-genre-select");
   
@@ -1164,7 +1165,7 @@ async function ensurePartyGames() {
 }
 
 function partyGameOptionsHtml(selectedSlug, party) {
-  const games = partyGamesCache || [];
+  const games = filterByDiscovery(partyGamesCache || []);
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     options.push(
@@ -1848,6 +1849,7 @@ async function prepareVirtualLan(party, lan) {
     slug: party.gameSlug,
     editionSlug: party.editionSlug || null,
     adapterFile: lan.adapterFile || null,
+    isLeader: String(party.leaderId) === String(currentUserId(party)),
   });
 
   if (res?.needsInstall) {
@@ -2154,4 +2156,3 @@ api.renderFriendsView = renderFriendsView;
 api.refreshFriendsData = refreshFriendsData;
 api.toggleAddFriendsPanel = toggleAddFriendsPanel;
 window.toggleAddFriendsPanel = (...args) => api.toggleAddFriendsPanel?.(...args);
-

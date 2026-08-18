@@ -48,6 +48,8 @@ export type LauncherInstall = {
   fileName?: string | null;
   versionLabel?: string | null;
   knownExePaths?: string[];
+  /** Arguments passed to the installed executable when Play is pressed. */
+  launchArgs?: string[];
   steamAppId?: string | null;
   /**
    * MD5 of the downloaded archive, verified before install.
@@ -107,6 +109,7 @@ export type LauncherCatalogEntry = {
   fileName?: string;
   versionLabel?: string;
   knownExePaths?: string[];
+  launchArgs?: string[];
   steamAppId?: string;
   checksumMd5?: string;
   registryTitles?: string[];
@@ -307,6 +310,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.fileName) entry.fileName = li.fileName;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
+  if (li.launchArgs?.length) entry.launchArgs = li.launchArgs;
   if (li.steamAppId) entry.steamAppId = li.steamAppId;
   if (li.checksumMd5) entry.checksumMd5 = li.checksumMd5;
   if (li.registryTitles?.length) entry.registryTitles = li.registryTitles;

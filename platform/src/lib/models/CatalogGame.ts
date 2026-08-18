@@ -200,6 +200,7 @@ const CatalogGameSchema = new Schema(
     qualityBar: { type: QualityBarSchema, default: null },
     longDescription: { type: String, default: null },
     whyWePickedIt: { type: String, default: null },
+    thatOneThing: { type: String, default: null },
     installSteps: { type: [InstallStepSchema], default: [] },
     faq: { type: [FaqSchema], default: [] },
     bestFor: { type: [String], default: [] },

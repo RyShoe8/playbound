@@ -81,6 +81,7 @@ export async function GET(
         bestFor: Array.isArray(game.bestFor) ? game.bestFor : [],
         notFor: Array.isArray(game.notFor) ? game.notFor : [],
         whyWePickedIt: game.whyWePickedIt || null,
+        thatOneThing: game.thatOneThing || null,
         qualityBar: game.qualityBar || null,
         multiplayer: hasServerBrowser(game),
         hasServerBrowser: hasServerBrowser(game),

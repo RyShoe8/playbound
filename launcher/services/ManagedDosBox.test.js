@@ -29,6 +29,13 @@ test("paths with spaces are quoted for DOSBox -c", () => {
   assert.match(mount, /^mount c "/);
 });
 
+test("DOS program arguments are part of the command before exit", () => {
+  const spec = dosBoxLaunchSpec(path.join("C:", "Games", "daggerfall", "FALL.EXE"), ["Z.CFG"]);
+  const commands = spec.args.filter((value, index) => spec.args[index - 1] === "-c");
+  assert.ok(commands.includes("FALL.EXE Z.CFG"));
+  assert.ok(commands.indexOf("FALL.EXE Z.CFG") < commands.indexOf("exit"));
+});
+
 test("pickDosBoxAsset prefers a Windows x64 zip", () => {
   const asset = pickDosBoxAsset([
     { name: "dosbox-staging-windows-msvc-x86_64-v0.82.2.zip", browser_download_url: "https://example/win.zip" },

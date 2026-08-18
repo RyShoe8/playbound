@@ -7,20 +7,20 @@ import { isCommerceStoreSlug, STORE_CAPABILITIES, type CommerceStoreSlug } from 
 
 const UA = "PlayBoundAdmin/1.0";
 
-export async function ingestStoreFeed(store: CommerceStoreSlug): Promise<{
+export type FeedIngestResult = {
   store: CommerceStoreSlug;
   found: number;
   upserted: number;
   error?: string;
-}> {
+};
+
+export async function ingestStoreFeed(
+  store: CommerceStoreSlug,
+  uploaded?: { body: string; contentType?: string }
+): Promise<FeedIngestResult> {
   await dbConnect();
   if (!STORE_CAPABILITIES[store].feedIngest) {
     return { store, found: 0, upserted: 0, error: "This store has no feed ingest path." };
-  }
-  const provider = await StoreProvider.findOne({ slug: store }).lean();
-  const feedUrl = typeof provider?.feedUrl === "string" ? provider.feedUrl.trim() : "";
-  if (!feedUrl) {
-    return { store, found: 0, upserted: 0, error: "Set a product feed URL on this store first." };
   }
 
   const started = new Date();
@@ -32,10 +32,24 @@ export async function ingestStoreFeed(store: CommerceStoreSlug): Promise<{
   });
 
   try {
-    const res = await fetch(feedUrl, { headers: { "user-agent": UA, accept: "*/*" }, next: { revalidate: 0 } });
-    if (!res.ok) throw new Error(`Feed request failed (${res.status}).`);
-    const body = await res.text();
-    const products = parseProductFeed(body, res.headers.get("content-type") || "");
+    let body = uploaded?.body ?? "";
+    let contentType = uploaded?.contentType ?? "";
+    if (!body) {
+      const provider = await StoreProvider.findOne({ slug: store }).lean();
+      const feedUrl = typeof provider?.feedUrl === "string" ? provider.feedUrl.trim() : "";
+      if (!feedUrl) {
+        throw new Error("Set a product feed URL or upload a feed file.");
+      }
+      const res = await fetch(feedUrl, {
+        headers: { "user-agent": UA, accept: "*/*" },
+        next: { revalidate: 0 },
+      });
+      if (!res.ok) throw new Error(`Feed request failed (${res.status}).`);
+      body = await res.text();
+      contentType = res.headers.get("content-type") || "";
+    }
+
+    const products = parseProductFeed(body, contentType);
     const now = new Date();
     let upserted = 0;
     for (const product of products) {

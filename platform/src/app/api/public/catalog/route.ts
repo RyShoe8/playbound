@@ -51,6 +51,7 @@ export async function GET() {
         qualifyingPriceCents: tierFor(tiers, game.slug).qualifyingPriceCents,
         currentPriceCents: tierFor(tiers, game.slug).fromPriceCents,
         qualityBar: game.qualityBar ?? null,
+        thatOneThing: game.thatOneThing || null,
         bestFor: game.bestFor ?? [],
         notFor: game.notFor ?? [],
         comparableTo: game.comparableTo ?? [],

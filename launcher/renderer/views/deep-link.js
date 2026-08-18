@@ -19,8 +19,25 @@ import {
   views,
 } from "../shared.js";
 
+/**
+ * Auto-start must be once-per-link. Re-rendering this view (catalog
+ * refresh, install-detected, a second context event) used to call
+ * startInstall again and redownload until the launcher was closed.
+ */
+let activeDeepLinkJob = null;
+
+function deepLinkJobKey(ctx) {
+  if (!ctx) return "";
+  return `${ctx.action || ""}:${ctx.slug || ""}:${ctx.editionSlug || ""}`;
+}
+
 function renderDeepLinkView(ctx) {
   if (!ctx) return;
+  const jobKey = deepLinkJobKey(ctx);
+  if (activeDeepLinkJob && activeDeepLinkJob === jobKey) {
+    state.deepLinkCtx = ctx;
+    return;
+  }
   state.deepLinkCtx = ctx;
 
   const container = views.deepLink;
@@ -111,18 +128,31 @@ function renderDeepLinkView(ctx) {
     };
 
     const startInstall = async () => {
+      const key = deepLinkJobKey(ctx);
+      if (activeDeepLinkJob === key) return;
+      activeDeepLinkJob = key;
       setStatus(`Installing ${title}…`);
       try {
         const checkboxes = document.querySelectorAll(".addon-checkbox");
         const addons = Array.from(checkboxes).filter((cb) => cb.checked).map((cb) => cb.value);
         const res = await window.playbound.install(ctx.slug, null, ctx.editionSlug || null, addons);
         if (res.status === "installer-opened") {
+          try {
+            await window.playbound.clearContext();
+          } catch {
+            /* panel can still finish even if the context clear fails */
+          }
           setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);
           api.openGameDetail(ctx.slug, "deepLink");
           return;
         }
         if (res.status === "installed") {
+          try {
+            await window.playbound.clearContext();
+          } catch {
+            /* panel can still finish even if the context clear fails */
+          }
           setStatus(res.note || "Install complete!");
           setProgress(null);
           await installLinkedMods();
@@ -139,6 +169,8 @@ function renderDeepLinkView(ctx) {
           btn.disabled = false;
           btn.textContent = "Retry Install";
         }
+      } finally {
+        if (activeDeepLinkJob === key) activeDeepLinkJob = null;
       }
     };
 
@@ -196,6 +228,9 @@ function renderDeepLinkView(ctx) {
       `;
 
       const startModInstall = async () => {
+        const key = deepLinkJobKey(ctx);
+        if (activeDeepLinkJob === key) return;
+        activeDeepLinkJob = key;
         try {
           setStatus(`Installing mod ${title}…`);
           const res = await window.playbound.installMod(ctx.slug);
@@ -208,6 +243,11 @@ function renderDeepLinkView(ctx) {
             }
             return;
           }
+          try {
+            await window.playbound.clearContext();
+          } catch {
+            /* panel can still finish even if the context clear fails */
+          }
           setStatus("Mod installed.");
           api.navigateTo("library");
         } catch (err) {
@@ -217,6 +257,8 @@ function renderDeepLinkView(ctx) {
             btn.disabled = false;
             btn.textContent = "Retry Mod Install";
           }
+        } finally {
+          if (activeDeepLinkJob === key) activeDeepLinkJob = null;
         }
       };
 
@@ -255,6 +297,7 @@ function renderDeepLinkView(ctx) {
   }
 
   document.getElementById("dl-act-cancel")?.addEventListener("click", async () => {
+    activeDeepLinkJob = null;
     await window.playbound.clearContext();
     api.navigateTo("home");
   });

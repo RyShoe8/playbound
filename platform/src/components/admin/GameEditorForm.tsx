@@ -1237,6 +1237,15 @@ export function GameEditorForm({
           />
 
           <ProseField
+            title="That One Thing"
+            hint="One punchy sentence: the hook you would excitedly tell a friend about. Be specific to this game. The callout stays hidden until this is written."
+            value={form.thatOneThing ?? ""}
+            minWords={4}
+            rows={3}
+            onChange={(v) => patch("thatOneThing", v)}
+          />
+
+          <ProseField
             title="Long description"
             hint="400–600 words of original editorial. This replaces the scraped summary on the public page — do not paste store or README copy, it is duplicate content and will not rank. Blank line between paragraphs."
             value={form.longDescription ?? ""}

@@ -160,7 +160,7 @@ export function deriveFaq(game: FaqSource): GameFaq[] {
     q: `Is ${game.title} free?`,
     a: `Yes. ${game.title} is released under ${game.license} and costs nothing to download or play.${
       free
-        ? " It meets PlayBound's 'genuinely free' criterion: no trial, no paywalled content, no pay-to-win purchases and no cosmetic treadmill."
+        ? " It meets PlayBound's value criterion: no trial masquerading as a full game, no paywalled core content, and no paid competitive advantage. Optional cosmetics and premium extras are allowed."
         : ""
     }`,
   });
@@ -268,7 +268,7 @@ export function deriveQualityBarSignals(input: {
     );
   } else if (input.steamIsFree === true) {
     evidence.push(
-      "Genuinely free: Steam reports free-to-play, which does NOT rule out pay-to-win or a cosmetic treadmill. Check the store page for in-app purchases before setting this."
+      "Worth the cost: Steam reports free-to-play, which does NOT rule out paid competitive advantages, paywalled core content, or bait-and-switch pricing. Check the store page and in-app purchases before setting this."
     );
   } else if (input.steamIsFree === false) {
     evidence.push("Genuinely free: FAILS — Steam reports this title is paid.");

@@ -9,14 +9,14 @@ import { absoluteUrl } from "@/lib/site";
 export const metadata = pageMetadata({
   title: "The PlayBound Bar — Our Standard",
   description:
-    "Four criteria every game must clear to make the PlayBound catalog: worth the cost, ready to play, curated through thorough testing, and high quality or showing strong potential. Every game is tested and played before it is added.",
+    "Four criteria every game must clear to make the PlayBound catalog: worth the cost, ready to play, tested by PlayBound, and That One Thing.",
   path: "/standards",
 });
 
 const FAQ = [
   {
     q: "What does PlayBound mean by 'worth the cost'?",
-    a: "The game is free, or it is regularly obtainable for $15 or less from an authorized source. Predatory monetization is out either way: no trial-locked campaign, no pay-to-win, no cosmetic treadmill designed to extract money over time. A $5.99 classic that you own outright can clear this bar. A 'free' game that bills you to finish it cannot.",
+    a: "The game is free, or regularly obtainable for $15 or less from an authorized source. Cosmetic shops, battle passes, and premium extras are acceptable when they remain optional. Paid competitive advantages, a trial pretending to be a full game, paywalled core content, and bait-and-switch pricing fail the bar. A genuinely free live-service game can qualify, and so can a $5.99 classic you own outright.",
   },
   {
     q: "Why does PlayBound have so few games?",
@@ -24,15 +24,15 @@ const FAQ = [
   },
   {
     q: "Do you actually play the games before listing them?",
-    a: "Yes. Every game is tested and played thoroughly before it is added to the platform. Criterion three — curated — means we installed it, launched it, and played it ourselves, not that we copied a store page. If we cannot get a real session going, it does not ship.",
+    a: "Yes. We install it, launch it, and play it ourselves. We have spent hours building definitive editions and making multiplayer work because a store-page claim is not the same as a game we can confidently put in front of you. If we cannot get a real session going, it does not ship.",
   },
   {
     q: "How often is the standard re-checked?",
     a: "Each game carries a last-verified date shown on its page. If a game stops meeting the bar, that is recorded rather than hidden.",
   },
   {
-    q: "What does 'high quality or strong potential' mean?",
-    a: "There are tens of thousands of free games. Most are not worth your evening. Criterion four is catalog selectivity: the game is already excellent, or it is clearly becoming something worth your time. Volume is not a goal, and we do not list games we have not played.",
+    q: "What is 'That One Thing'?",
+    a: "It is the hook we would excitedly tell a friend about: a mechanic, story, art style, soundtrack, control scheme, community, or a special way the game brings people together. Every catalog game needs a specific answer. If we cannot name one, fair pricing alone is not enough.",
   },
   {
     q: "Does a game have to be open-source to be listed?",
@@ -107,15 +107,34 @@ export default async function StandardsPage() {
         ))}
       </ol>
 
+      <section className="mt-12 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 sm:p-8">
+        <p className="text-xs font-extrabold tracking-[0.18em] text-primary uppercase">The $15 rule</p>
+        <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Small price. Ridiculous value.</h2>
+        <div className="mt-3 max-w-3xl space-y-3 leading-relaxed text-muted-foreground">
+          <p>
+            PlayBound is not trying to be Steam or catalog every worthwhile game. We focus on
+            budget-friendly games that deliver disproportionate value: genuinely good free games,
+            affordable classics, and living communities where mods, editions, servers, and
+            open-source engines can turn a $5–$15 purchase into years of play.
+          </p>
+          <p>
+            Fifteen dollars is our regular-price ceiling, not a claim that developers should work
+            for less. Good developers deserve to be paid. We simply know who we are building for:
+            players who want a deep library, great multiplayer nights, and far more game than their
+            budget should normally buy.
+          </p>
+        </div>
+      </section>
+
       <section className="mt-12 rounded-xl border-l-4 border-primary bg-card p-6">
         <h2 className="text-xl font-bold">What this rules out</h2>
         <p className="mt-3 leading-relaxed text-muted-foreground">
           Plenty of well-known free games fail this standard, and that is the point.
-          A game funded by a battle pass fails criterion one. A promising early-access
+          A game that sells competitive advantages or locks its core experience behind later payments fails criterion one. A promising early-access
           project that is not enjoyable yet fails criterion two. A game we could not
           get running, or that falls over in a normal session, fails criterion
-          three. Low-quality shovelware and free-game noise fail criterion four —
-          we have to play it, and it has to be good or clearly becoming good.
+          three. Games without a memorable hook fail criterion four — fair pricing
+          alone is not a recommendation; there has to be one thing worth telling a friend about.
         </p>
         <p className="mt-3 leading-relaxed text-muted-foreground">
           {verified > 0 ? (

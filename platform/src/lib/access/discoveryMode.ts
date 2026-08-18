@@ -81,6 +81,51 @@ export function filterGamesByMode<T extends { slug: string }>(
   return filterBySlugAccess(games, mode, tiers, (g) => g.slug);
 }
 
+export type CatalogLiveStatsSlice = {
+  gameCount: number;
+  modCount: number;
+  editionCount: number;
+  playingNow: number;
+  mostPopular: Array<{ slug: string; title: string; playingNow: number }>;
+  byGame: Array<{ slug: string; title: string; playingNow: number }>;
+  editionCountBySlug?: Record<string, number>;
+  modCountBySlug?: Record<string, number>;
+};
+
+/**
+ * Homepage catalog snapshot, limited to the current Discover mode.
+ *
+ * The 15-minute live payload is mode-blind so the CDN and launcher can share
+ * one computation. FREE vs ALL is applied here, the same way listings are.
+ */
+export function scopeCatalogLiveStats<T extends CatalogLiveStatsSlice>(
+  live: T,
+  mode: DiscoveryMode,
+  tiers: GameTierMap
+): T {
+  if (mode === "ALL") return live;
+  const byGame = filterGamesByMode(live.byGame || [], mode, tiers);
+  const editionCountBySlug = live.editionCountBySlug || {};
+  const modCountBySlug = live.modCountBySlug || {};
+  let editionCount = 0;
+  let modCount = 0;
+  let playingNow = 0;
+  for (const game of byGame) {
+    editionCount += Math.max(1, Number(editionCountBySlug[game.slug]) || 0);
+    modCount += Number(modCountBySlug[game.slug]) || 0;
+    playingNow += Number(game.playingNow) || 0;
+  }
+  return {
+    ...live,
+    byGame,
+    gameCount: byGame.length,
+    editionCount,
+    modCount,
+    playingNow,
+    mostPopular: byGame.slice(0, 3),
+  };
+}
+
 /**
  * Collections stay valid with a subset of their games. An empty remainder is
  * dropped — a collection of zero titles is not a collection.

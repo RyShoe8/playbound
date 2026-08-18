@@ -3,8 +3,20 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { partyLanEnrollment } from "@/lib/virtualLan/provision";
+import { isIP } from "node:net";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+function isPrivateOverlayAddress(value: unknown): value is string {
+  if (typeof value !== "string" || isIP(value) !== 4) return false;
+  const [a, b] = value.split(".").map(Number);
+  return (
+    a === 10 ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127)
+  );
+}
 
 /**
  * POST /api/parties/:id/lan — hand this member's launcher what it needs to
@@ -42,7 +54,25 @@ export async function POST(req: Request, ctx: RouteContext) {
     if ("error" in result) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
-    return NextResponse.json(result);
+    const body = await req.json().catch(() => ({}));
+    if (body.address !== undefined) {
+      if (!isPrivateOverlayAddress(body.address)) {
+        return NextResponse.json({ error: "Invalid party network address" }, { status: 400 });
+      }
+      member.lanAddress = body.address;
+      doc.lastActivity = new Date();
+      await doc.save();
+    }
+
+    return NextResponse.json({
+      ...result,
+      isLeader: String(doc.leaderId) === userId,
+      peerAddresses: doc.members
+        .filter((candidate: { userId: unknown; lanAddress?: string | null }) =>
+          String(candidate.userId) !== userId && isPrivateOverlayAddress(candidate.lanAddress)
+        )
+        .map((candidate: { lanAddress: string }) => candidate.lanAddress),
+    });
   } catch (err) {
     console.error("POST /api/parties/[id]/lan failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

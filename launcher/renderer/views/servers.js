@@ -6,7 +6,7 @@ import {
   enhanceSelect,
   escapeHtml,
   executableNoun,
-  filterByCompatibility,
+  filterCatalogGames,
   gamePlayHintHtml,
   isGameDesktopCompatible,
   isMacOS,
@@ -141,7 +141,7 @@ function selectedModOrNull() {
 }
 
 function gamesForServerPicker() {
-  let list = state._supportedServerGames.slice();
+  let list = filterCatalogGames(state._supportedServerGames.slice());
   if (state.serversState.installedOnly) {
     list = list.filter((g) => state._installedGameSlugs.has(g.slug));
   }

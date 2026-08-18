@@ -587,6 +587,19 @@ async function renderGameDetailView(slug, opts = {}) {
       </section>`
     : "";
 
+  const thatOneThingHtml = detail.thatOneThing
+    ? `<section class="detail-section">
+        <div class="detail-one-thing-card">
+          <div class="detail-one-thing-mark" aria-hidden="true">✦</div>
+          <div>
+            <div class="detail-one-thing-kicker">That One Thing</div>
+            <h2>Why ${escapeHtml(detail.title)} sticks with us</h2>
+            <p>${escapeHtml(detail.thatOneThing)}</p>
+          </div>
+        </div>
+      </section>`
+    : "";
+
   const bestForItems = (detail.bestFor || [])
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
@@ -677,6 +690,7 @@ async function renderGameDetailView(slug, opts = {}) {
         <div class="detail-overview-grid">
           <div class="detail-overview-main">
             ${commerceHtml}
+            ${thatOneThingHtml}
             ${
               detail.masterCopy
                 ? `<section class="detail-section" id="detail-unlocks-sec">

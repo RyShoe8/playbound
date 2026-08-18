@@ -56,6 +56,18 @@ const DOWNLOAD_DOMAINS = [
   "swtor.com",
   "runescape.com",
   "xsolla.com",
+  /*
+   * Daggerfall's free game-data overlay is a Dropbox share link
+   * (www.dropbox.com/s/…?dl=1). That host is the download URL in the recipe;
+   * Dropbox then redirects onto dropboxusercontent.com. Allow the share apex
+   * so the first hop is not blocked, and keep the content CDN on the suffix
+   * list below for the redirect.
+   */
+  "dropbox.com",
+  // Bethesda's official TES: Arena freeware zip (cdnstatic.bethsoft.com).
+  "bethsoft.com",
+  // PlayBound VPS mirror, including mirror.playbound.club launcher packages.
+  "playbound.club",
 ];
 
 /**
@@ -94,8 +106,13 @@ const DOWNLOAD_SUFFIXES = [
   ".fastly.net",
   ".akamaihd.net",
   ".azureedge.net",
-  // SWG Infinity's official updater redirects the signed installer here.
-  ".dl.dropboxusercontent.com",
+  /*
+   * Dropbox content CDN. Share links on dropbox.com redirect here (often
+   * dl.dropboxusercontent.com, sometimes a deeper subdomain). The previous
+   * ".dl.dropboxusercontent.com" suffix only matched hosts *under* that name,
+   * so the apex itself was blocked after the redirect.
+   */
+  ".dropboxusercontent.com",
 ];
 
 /** itch.io's mirror hosts. Anchored at both ends; see rule 1 above. */
@@ -144,6 +161,7 @@ function createSecurity({ isPackaged, getApiBase }) {
     if (!entry || typeof entry !== "object") return;
     registerDownloadHostFromUrl(entry.url);
     registerDownloadHostFromUrl(entry.downloadUrl);
+    registerDownloadHostFromUrl(entry.overlayUrl);
     registerDownloadHostFromUrl(entry.coverImage);
     if (Array.isArray(entry.addons)) {
       for (const addon of entry.addons) {
@@ -152,9 +170,9 @@ function createSecurity({ isPackaged, getApiBase }) {
     }
     if (entry.installConfig && typeof entry.installConfig === "object") {
       for (const val of Object.values(entry.installConfig)) {
-        if (val && typeof val === "object" && val.url) {
-          registerDownloadHostFromUrl(val.url);
-        }
+        if (!val || typeof val !== "object") continue;
+        registerDownloadHostFromUrl(val.url);
+        registerDownloadHostFromUrl(val.overlayUrl);
       }
     }
   }

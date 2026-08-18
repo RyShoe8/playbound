@@ -145,7 +145,7 @@ export function HomeHeroPromoSection({
       icon: ShieldCheck,
       title: "Worth Playing",
       tagline: "Four-point quality standard",
-      desc: "Every title is tested and played before it is added: worth your time, worth what it costs, curated through thorough testing, and high quality or showing strong potential.",
+      desc: "Every title must be worth the cost, fun today, tested by PlayBound, and have That One Thing we'd excitedly tell a friend about.",
       color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     },
     {

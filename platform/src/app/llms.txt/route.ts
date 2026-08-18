@@ -22,7 +22,7 @@ export async function GET() {
   lines.push(`# ${SITE_NAME}`);
   lines.push("");
   lines.push(
-    "> A deliberately small, curated catalog of free games that are genuinely good."
+    "> A deliberately small, curated catalog of free and affordable games that are genuinely good."
   );
   lines.push(
     "> Free games are not scarce; good ones are. Every title listed here has been"

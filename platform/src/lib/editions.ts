@@ -137,7 +137,9 @@ function toEdition(doc: LeanEdition): Edition {
           (installConfig.playbound_installer?.kind === "external" ||
             installConfig.playbound_installer?.kind === "github-zip")) ||
         (gameSlugStr === "tes-arena" &&
-          (editionSlugStr === "official" || editionSlugStr === "opentesarena")))
+          (editionSlugStr === "official" || editionSlugStr === "opentesarena")) ||
+        (gameSlugStr === "daggerfall" &&
+          (editionSlugStr === "classic-dos" || editionSlugStr === "daggerfall-unity")))
     ) {
       installConfig = seedMatch.installConfig ?? installConfig;
       installMethod = seedMatch.installMethod ?? installMethod;

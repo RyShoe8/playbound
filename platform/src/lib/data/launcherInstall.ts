@@ -789,23 +789,19 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
 
   daggerfall: {
     enabled: true,
-    kind: "github-zip",
-    repo: "Interkarma/daggerfall-unity",
-    assetPattern: "dfu_windows.*\\.zip$|DaggerfallUnity.*\\.zip$",
-    exeHint: "DaggerfallUnity",
+    kind: "direct-zip",
+    url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/DFInstall.zip",
+    fileName: "DFInstall.zip",
+    versionLabel: "1.0 (Bethesda freeware release)",
+    exeHint: "FALL.EXE",
     knownExePaths: [
-      "%LOCALAPPDATA%\\Programs\\DaggerfallUnity\\DaggerfallUnity.exe",
-      "%PROGRAMFILES%\\DaggerfallUnity\\DaggerfallUnity.exe",
-      "~/PlayBound/Games/daggerfall/DaggerfallUnity.x86_64",
-      "~/DaggerfallUnity/DaggerfallUnity.x86_64",
+      "DFCD/DAGGER/FALL.EXE",
+      "DAGGER/FALL.EXE",
+      "FALL.EXE",
     ],
-    // The Daggerfall Unity-compatible game-data bundle is placed in
-    // StreamingAssets so DFU sees it immediately and never asks the player to
-    // locate an ARENA2 folder.
-    overlayUrl: "https://www.dropbox.com/s/rlkfnjknu32afe4/DaggerfallGameFiles.zip?dl=1",
-    overlayFileName: "DaggerfallGameFiles.zip",
-    overlayDest: "DaggerfallUnity_Data/StreamingAssets/GameFiles",
-    note: "Installs Daggerfall Unity and the free Daggerfall game data together — ready to play without locating files.",
+    launchArgs: ["Z.CFG"],
+    needsDosBox: true,
+    note: "Bethesda's freeware Classic DOS release, configured automatically and launched through PlayBound-managed DOSBox Staging. Daggerfall Unity is available as its own edition.",
   },
 
   "tes-arena": {

@@ -1622,6 +1622,57 @@ body {
   white-space: pre-wrap;
 }
 
+.detail-one-thing-card {
+  position: relative;
+  display: flex;
+  gap: 15px;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid rgba(124, 92, 255, 0.34);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(124, 92, 255, 0.22), transparent 42%),
+    linear-gradient(135deg, rgba(124, 92, 255, 0.13), rgba(255, 255, 255, 0.025));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
+}
+
+.detail-one-thing-mark {
+  display: flex;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(167, 139, 250, 0.34);
+  border-radius: 12px;
+  background: rgba(124, 92, 255, 0.18);
+  color: #c4b5fd;
+  font-size: 18px;
+}
+
+.detail-one-thing-kicker {
+  margin-bottom: 4px;
+  color: #a78bfa;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.detail-one-thing-card h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.detail-one-thing-card p {
+  margin: 8px 0 0;
+  color: var(--text-main);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
 .feature-list {
   margin: 0;
   padding: 0;
