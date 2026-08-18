@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Game } from "@/lib/data/types";
-import { gamesRequiringMaster, masterCopyUnlocksEmpty } from "./masterCopy";
+import { gamesRequiringMaster, masterCopyUnlocksEmpty, toLauncherUnlocks } from "./masterCopy";
 
 function game(partial: Partial<Game> & Pick<Game, "slug">): Game {
   return {
@@ -73,5 +73,32 @@ describe("masterCopyUnlocksEmpty", () => {
     expect(
       masterCopyUnlocksEmpty({ games: [game({ slug: "keeperfx" })], editions: [], mods: [] })
     ).toBe(false);
+  });
+});
+
+describe("toLauncherUnlocks", () => {
+  it("sends catalog-shaped game cards with absolute covers", () => {
+    const fx = game({
+      slug: "keeperfx",
+      title: "KeeperFX",
+      tagline: "Open-source Dungeon Keeper",
+      coverImage: "/covers/fx.png",
+      art: { from: "#111", to: "#222", icon: "Gamepad2" },
+    });
+    const payload = toLauncherUnlocks(
+      { games: [fx], editions: [], mods: [] },
+      "https://playbound.club"
+    );
+    expect(payload.games).toEqual([
+      expect.objectContaining({
+        slug: "keeperfx",
+        title: "KeeperFX",
+        tagline: "Open-source Dungeon Keeper",
+        coverImage: "https://playbound.club/covers/fx.png",
+        testing: false,
+      }),
+    ]);
+    expect(payload.editions).toEqual([]);
+    expect(payload.mods).toEqual([]);
   });
 });

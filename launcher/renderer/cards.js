@@ -1,9 +1,12 @@
 import {
+  accessPriceLabel,
   api,
+  catalogPriceBySlug,
   escapeHtml,
   isGameDesktopCompatible,
   prefetchGameDetail,
   prefetchModDetail,
+  requiresGamePriceLine,
   state,
 } from "./shared.js";
 
@@ -127,8 +130,12 @@ export function createGameCard(game, playingNow) {
 
   const footer = document.createElement("div");
   footer.className = "card-meta";
+  const price = accessPriceLabel(game.fromPriceCents);
   footer.innerHTML = `
-    ${categoryChipsHtml(game)}
+    <div class="card-meta-copy">
+      <p class="card-price">${escapeHtml(price)}</p>
+      ${categoryChipsHtml(game)}
+    </div>
     ${
       typeof playingNow === "number"
         ? `<p class="card-playing"><span class="card-playing-dot"></span>${playingNow.toLocaleString()} playing</p>`
@@ -209,9 +216,14 @@ export function createModCard(mod) {
 
   const footer = document.createElement("div");
   footer.className = "card-meta";
+  const baseTitle = mod.baseGameTitle || mod.baseGameSlug || "";
+  const requireLine = requiresGamePriceLine(
+    baseTitle,
+    catalogPriceBySlug().get(mod.baseGameSlug)
+  );
   const tags = [
     mod.license,
-    mod.baseGameTitle ? `For ${mod.baseGameTitle}` : mod.baseGameSlug ? `For ${mod.baseGameSlug}` : null,
+    requireLine || (baseTitle ? `For ${baseTitle}` : null),
   ].filter(Boolean);
   footer.innerHTML = `
     <div class="card-tags">${tags.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("")}</div>

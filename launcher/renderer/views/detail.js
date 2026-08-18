@@ -1,4 +1,4 @@
-import { createFreeOfferCard, createGameCard } from "../cards.js";
+import { createFreeOfferCard, createGameCard, createModCard } from "../cards.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -10,7 +10,7 @@ import {
   enhanceSelect,
   escapeHtml,
   executableNoun,
-  filterByCompatibility,
+  formatCents,
   formatStatNumber,
   gamePlayHintHtml,
   isGameDesktopCompatible,
@@ -28,6 +28,9 @@ import {
 
 /** Sort state for game-detail servers table */
 const detailServersSort = { sort: "players", sortDir: "desc" };
+
+/** Prevents a second Install click (or a re-render) from starting another download of the same edition. */
+const installingKeys = new Set();
 
 const HW_VERDICT_LABEL = {
   excellent: "Runs Great",
@@ -295,6 +298,198 @@ function buildInstallStepsHtml(detail) {
   `;
 }
 
+function paintMasterCopyUnlocks(detail) {
+  const root = document.getElementById("detail-unlocks-body");
+  if (!root) return;
+  const unlocks = detail.unlocks || {};
+  const games = Array.isArray(unlocks.games) ? unlocks.games : [];
+  const editions = Array.isArray(unlocks.editions) ? unlocks.editions : [];
+  const mods = Array.isArray(unlocks.mods) ? unlocks.mods : [];
+  root.replaceChildren();
+
+  if (!games.length && !editions.length && !mods.length) {
+    const empty = document.createElement("p");
+    empty.className = "view-sub";
+    empty.textContent =
+      "Nothing is wired to this copy yet. Games, editions, and mods that require owning it will appear here.";
+    root.appendChild(empty);
+    return;
+  }
+
+  const titleCount = games.length + editions.length;
+  const sectionTitle = document.querySelector("#detail-unlocks-sec .detail-section-title");
+  if (sectionTitle && titleCount > 0) {
+    sectionTitle.textContent = `What this copy unlocks (${titleCount})`;
+  }
+
+  if (games.length) {
+    const grid = document.createElement("div");
+    grid.className = "unlocks-game-grid";
+    grid.style.marginTop = "12px";
+    grid.style.marginBottom = "18px";
+    for (const game of games) {
+      const wrap = document.createElement("div");
+      wrap.className = "unlock-game-wrap";
+      wrap.appendChild(createGameCard(game));
+      const buy = game.commerce?.buy;
+      const paid = Boolean(game.commerce?.requiresPurchase);
+      if (buy?.url) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-primary btn-sm";
+        btn.textContent = `Get Game — ${formatCents(buy.priceCents)}`;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          window.playbound.openExternal(buy.url, { skipUtm: true, campaign: "game_get" });
+        });
+        wrap.appendChild(btn);
+      } else if (!paid) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-primary btn-sm";
+        btn.textContent = "Get It Free";
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          api.openGameDetail?.(game.slug, state.currentView);
+        });
+        wrap.appendChild(btn);
+      }
+      grid.appendChild(wrap);
+    }
+    root.appendChild(grid);
+  }
+
+  if (editions.length) {
+    const grid = document.createElement("div");
+    grid.className = "detail-editions-grid unlocks-editions-grid";
+    grid.style.marginBottom = "18px";
+    for (const ed of editions) {
+      const card = document.createElement("div");
+      card.className = "detail-edition-card";
+      const cover = ed.coverImage || "";
+      const banner = cover
+        ? `<img src="${escapeHtml(cover)}" alt="" loading="lazy" />`
+        : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:32px;font-weight:900;color:rgba(255,255,255,0.8)">${escapeHtml((ed.editionName || "?").charAt(0))}</div>`;
+      card.innerHTML = `
+        <div class="detail-edition-card-banner">${banner}</div>
+        <div class="detail-edition-card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span class="detail-edition-card-title">${escapeHtml(ed.editionName)}</span>
+            ${ed.isDefault ? `<span class="chip chip-accent" style="font-size:10px;padding:2px 8px">Default</span>` : ""}
+          </div>
+          <div class="detail-edition-card-desc">${escapeHtml(ed.shortDescription || "")}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px">
+            <span class="chip" style="font-size:11px">${escapeHtml(ed.editionType || "edition")}</span>
+            <button type="button" class="btn-secondary btn-sm">View Edition</button>
+          </div>
+        </div>
+      `;
+      card.addEventListener("click", () => {
+        api.openEditionDetail(ed.gameSlug, ed.editionSlug);
+      });
+      grid.appendChild(card);
+    }
+    root.appendChild(grid);
+  }
+
+  if (mods.length) {
+    const heading = document.createElement("h3");
+    heading.className = "detail-section-title";
+    heading.textContent = `Mods (${mods.length})`;
+    const grid = document.createElement("div");
+    grid.className = "game-grid";
+    grid.style.marginTop = "12px";
+    for (const mod of mods) grid.appendChild(createModCard(mod));
+    root.appendChild(heading);
+    root.appendChild(grid);
+  }
+}
+
+function openStoreUrl(url) {
+  if (!url) return;
+  window.playbound.openExternal(url, { skipUtm: true, campaign: "game_get" });
+}
+
+function gameRequiresPurchase(detail) {
+  return Boolean(detail?.commerce?.requiresPurchase);
+}
+
+function buildGameCommerceHtml(detail) {
+  const c = detail?.commerce;
+  if (!c?.requiresPurchase) return "";
+  const buy = c.buy;
+  const usual =
+    typeof c.regularPriceCents === "number" &&
+    buy &&
+    c.regularPriceCents > buy.priceCents
+      ? c.regularPriceCents
+      : null;
+  const priceHtml = buy
+    ? `<div class="detail-commerce-price">
+         <p class="detail-commerce-amount">${escapeHtml(formatCents(buy.priceCents))}</p>
+         ${usual ? `<p class="detail-commerce-usual">Usually ${escapeHtml(formatCents(usual))}</p>` : ""}
+       </div>`
+    : typeof c.qualifyingPriceCents === "number"
+      ? `<p class="detail-commerce-amount">${escapeHtml(formatCents(c.qualifyingPriceCents))}</p>`
+      : "";
+  const required = Array.isArray(c.requires) ? c.requires : [];
+  const requiresHtml = required.length
+    ? `<ul class="detail-commerce-requires">${required
+        .map(
+          (dep) =>
+            `<li>Requires ${
+              dep.slug
+                ? `<button type="button" data-require-slug="${escapeHtml(dep.slug)}">${escapeHtml(dep.label)}</button>`
+                : escapeHtml(dep.label)
+            }${
+              dep.currentPriceCents != null ? ` — ${escapeHtml(formatCents(dep.currentPriceCents))}` : ""
+            }</li>`
+        )
+        .join("")}</ul>`
+    : "";
+  const ctaHtml = buy?.url
+    ? `<div class="detail-commerce-cta"><button type="button" class="btn-primary" id="detail-commerce-buy">Get Game — ${escapeHtml(
+        formatCents(buy.priceCents)
+      )}</button></div>`
+    : "";
+  const sources = Array.isArray(c.sources) ? c.sources : [];
+  const sourcesHtml = sources.length
+    ? `<ul class="detail-commerce-sources">${sources
+        .map(
+          (source) =>
+            `<li><button type="button" class="detail-commerce-source" data-commerce-url="${escapeHtml(
+              source.url
+            )}"><span>${escapeHtml(source.retailer)}${
+              source.affiliate
+                ? `<span class="detail-commerce-partner">Partner</span>`
+                : ""
+            }</span><span>${escapeHtml(formatCents(source.priceCents))}</span></button></li>`
+        )
+        .join("")}</ul>`
+    : "";
+  return `
+    <section class="detail-section detail-commerce" id="detail-commerce">
+      <h2 class="detail-section-title">${buy ? `Get ${escapeHtml(detail.title)}` : `To play ${escapeHtml(detail.title)}`}</h2>
+      ${priceHtml}
+      ${requiresHtml}
+      ${ctaHtml}
+      ${sourcesHtml}
+      <p class="detail-commerce-note">PlayBound does not sell this game. Once you own it, install the PlayBound edition from the header or the Install tab.</p>
+    </section>
+  `;
+}
+
+function bindGameCommerce(detail) {
+  const buyUrl = detail?.commerce?.buy?.url;
+  document.getElementById("detail-commerce-buy")?.addEventListener("click", () => openStoreUrl(buyUrl));
+  document.querySelectorAll("[data-commerce-url]").forEach((btn) => {
+    btn.addEventListener("click", () => openStoreUrl(btn.dataset.commerceUrl));
+  });
+  document.querySelectorAll("[data-require-slug]").forEach((btn) => {
+    btn.addEventListener("click", () => api.openGameDetail?.(btn.dataset.requireSlug, state.currentView));
+  });
+}
+
 /**
  * Guards against a superseded render painting last.
  *
@@ -428,6 +623,8 @@ async function renderGameDetailView(slug, opts = {}) {
   ].join("");
 
   const genreFirst = (detail.genres || ["game"])[0]?.toLowerCase() || "game";
+  const paid = gameRequiresPurchase(detail);
+  const commerceHtml = buildGameCommerceHtml(detail);
   const reqGridHtml = detail.systemRequirements
     ? `<div class="req-grid">
         <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(detail.systemRequirements.min || "—")}</p></div>
@@ -479,6 +676,16 @@ async function renderGameDetailView(slug, opts = {}) {
       <div class="detail-tab-panel ${state.detailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
         <div class="detail-overview-grid">
           <div class="detail-overview-main">
+            ${commerceHtml}
+            ${
+              detail.masterCopy
+                ? `<section class="detail-section" id="detail-unlocks-sec">
+                     <h2 class="detail-section-title">What this copy unlocks</h2>
+                     <p class="view-sub" style="margin-top:-6px;margin-bottom:12px">Owning ${escapeHtml(detail.title)} unlocks the games, editions, and mods below.</p>
+                     <div id="detail-unlocks-body"></div>
+                   </section>`
+                : ""
+            }
             ${
               editions.length > 1
                 ? `<section class="detail-section" id="detail-editions-sec">
@@ -523,10 +730,14 @@ async function renderGameDetailView(slug, opts = {}) {
 
       <!-- ── Install Tab ─────────────────────────────────────── -->
       <div class="detail-tab-panel ${state.detailActiveTab === "install" ? "active" : ""}" data-panel="install">
-        <div class="tab-panel-header"><h2>How to install ${escapeHtml(detail.title)} for free</h2></div>
+        <div class="tab-panel-header"><h2>How to install ${escapeHtml(detail.title)}${paid ? "" : " for free"}</h2></div>
         <div class="install-header-card">
           <p class="install-header-prose">
-            ${escapeHtml(detail.title)} is a free ${escapeHtml(genreFirst)} game released under ${escapeHtml(detail.license || "an open license")}. It runs on ${escapeHtml((detail.platforms || ["Windows"]).join(", "))}, needs about ${escapeHtml(detail.approxSize || "disk space")}, and requires no account or payment.
+            ${
+              paid
+                ? `PlayBound does not sell ${escapeHtml(detail.title)}. After you buy it, add your existing install to Library or install the PlayBound edition below.`
+                : `${escapeHtml(detail.title)} is a free ${escapeHtml(genreFirst)} game released under ${escapeHtml(detail.license || "an open license")}. It runs on ${escapeHtml((detail.platforms || ["Windows"]).join(", "))}, needs about ${escapeHtml(detail.approxSize || "disk space")}, and requires no account or payment.`
+            }
           </p>
         </div>
 
@@ -695,6 +906,9 @@ async function renderGameDetailView(slug, opts = {}) {
     }
   }
 
+  paintMasterCopyUnlocks(detail);
+  bindGameCommerce(detail);
+
   // Sidebar link handlers
   document.getElementById("sidebar-link-website")?.addEventListener("click", () => {
     if (detail.website) window.playbound.openExternal(detail.website, { campaign: "launcher_sidebar", content: slug });
@@ -738,6 +952,11 @@ async function renderGameDetailView(slug, opts = {}) {
   }
 
   async function runInstall(editionSlug) {
+    const lockKey = `${slug}::${editionSlug || ""}`;
+    if (installingKeys.has(lockKey)) return;
+    installingKeys.add(lockKey);
+    const btn = document.getElementById("install-tab-install");
+    if (btn) btn.disabled = true;
     setStatus("Starting install...");
     try {
       cacheInvalidate(`game:${slug}`);
@@ -761,6 +980,9 @@ async function renderGameDetailView(slug, opts = {}) {
     } catch (err) {
       setStatus(err.message || String(err), true);
       setProgress(null);
+      if (btn) btn.disabled = false;
+    } finally {
+      installingKeys.delete(lockKey);
     }
   }
 
@@ -1342,17 +1564,32 @@ async function renderGameDetailView(slug, opts = {}) {
     });
   } else {
     /*
-     * Label matches the website's hero for the same condition. There it links
-     * to the editions section; here the button can do the whole job, so it
-     * opens the chooser and installs from it.
+     * Paid titles send the player to a store. Engines that need a paid
+     * original still require purchase, so they do not get Install here either
+     * — the overview buy box points at that original. Free titles install.
+     * "Already installed?" stays in every case so a copy they own can still
+     * be added to Library.
      */
     const choosable = editions.length > 1;
-    actions.innerHTML = `
+    const buy = detail.commerce?.buy;
+    const paidHero = gameRequiresPurchase(detail);
+    const getGameBtn =
+      buy?.url
+        ? `<button class="btn-primary" id="act-get-game">Get Game — ${escapeHtml(formatCents(buy.priceCents))}</button>`
+        : "";
+    actions.innerHTML = paidHero
+      ? `
+      ${getGameBtn}
+      <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
+      ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
+    `
+      : `
       <button class="btn-primary" id="act-install">${choosable ? "Choose an edition" : "Install Game"}</button>
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `;
-    document.getElementById("act-install").addEventListener("click", async () => {
+    document.getElementById("act-get-game")?.addEventListener("click", () => openStoreUrl(buy?.url));
+    document.getElementById("act-install")?.addEventListener("click", async () => {
       await runInstallGated();
     });
     document.getElementById("act-locate")?.addEventListener("click", async () => {
@@ -2113,6 +2350,11 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   `;
 
   document.getElementById("edition-install")?.addEventListener("click", async () => {
+    const lockKey = `${gameSlug}::${editionSlug || ""}`;
+    if (installingKeys.has(lockKey)) return;
+    installingKeys.add(lockKey);
+    const btn = document.getElementById("edition-install");
+    if (btn) btn.disabled = true;
     setStatus("Starting install...");
     try {
       cacheInvalidate(`game:${gameSlug}`);
@@ -2137,6 +2379,9 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     } catch (err) {
       setStatus(err.message || String(err), true);
       setProgress(null);
+      if (btn) btn.disabled = false;
+    } finally {
+      installingKeys.delete(lockKey);
     }
   });
   document.getElementById("edition-locate")?.addEventListener("click", async () => {

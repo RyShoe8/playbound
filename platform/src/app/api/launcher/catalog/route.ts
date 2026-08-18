@@ -11,12 +11,17 @@ import {
   isMultiplayerGame,
 } from "@/lib/launcherInstall";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
+import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
+import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
 
 export async function GET(req: Request) {
   try {
     const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const games = await listGames({ includeTesting });
+    const [games, tiers] = await Promise.all([
+      listGames({ includeTesting }),
+      gameAccessTiers(),
+    ]);
     const entries = games
       .map((g) => {
         // PC-installable games: full launcher recipe
@@ -49,6 +54,7 @@ export async function GET(req: Request) {
                 browserPlayable: Boolean(g.browserPlayable),
                 steamDeck: Boolean(g.steamDeck),
                 createdAt: g.createdAt || null,
+                ...accessFieldsForLauncher(tierFor(tiers, g.slug)),
               }
             : null;
         }
@@ -76,6 +82,7 @@ export async function GET(req: Request) {
           steamDeck: Boolean(g.steamDeck),
           createdAt: g.createdAt || null,
           ...(cover ? { coverImage: cover } : {}),
+          ...accessFieldsForLauncher(tierFor(tiers, g.slug)),
         };
       })
       .filter(Boolean);
