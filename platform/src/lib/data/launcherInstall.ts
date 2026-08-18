@@ -1,4 +1,10 @@
 import type { LauncherInstall } from "@/lib/launcherInstall";
+import {
+  ARENA_GAMEFILES_FILE,
+  ARENA_GAMEFILES_URL,
+  TES_ARENA_EXE_HINT,
+  TES_ARENA_KNOWN_EXE_PATHS,
+} from "./tesArenaAssets";
 
 /**
  * Seed recipes mirrored from launcher/catalog.js.
@@ -804,16 +810,14 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
 
   "tes-arena": {
     enabled: true,
-    kind: "github-zip",
-    repo: "afritz1/OpenTESArena",
-    assetPattern: ".*windows.*\\.zip$|.*win64.*\\.zip$|\\.zip$",
-    exeHint: "OpenTESArena",
-    knownExePaths: [
-      "%LOCALAPPDATA%\\Programs\\OpenTESArena\\OpenTESArena.exe",
-      "%PROGRAMFILES%\\OpenTESArena\\OpenTESArena.exe",
-      "~/PlayBound/Games/tes-arena/OpenTESArena",
-    ],
-    note: "OpenTESArena modern open-source engine reimplementation for The Elder Scrolls: Arena.",
+    kind: "direct-zip",
+    url: ARENA_GAMEFILES_URL,
+    fileName: ARENA_GAMEFILES_FILE,
+    versionLabel: "1.06 (Bethesda freeware release)",
+    exeHint: TES_ARENA_EXE_HINT,
+    knownExePaths: [...TES_ARENA_KNOWN_EXE_PATHS],
+    needsDosBox: true,
+    note: "Bethesda's official freeware release. OpenTESArena is a separate edition and overlays these files into data/ARENA.",
   },
 
   "star-wars-galaxies": {

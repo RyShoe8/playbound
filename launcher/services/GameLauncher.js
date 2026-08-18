@@ -2,6 +2,8 @@ const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const Platform = require("../platform");
+const { shouldLaunchThroughDosBox, dosExecutableMessage } = require("./executableFormat");
+const { dosBoxLaunchSpec } = require("./ManagedDosBox");
 
 const JAVA_MISSING_MSG =
   "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
@@ -16,6 +18,8 @@ const JAVA_EARLY_EXIT_MSG =
 class GameLauncher {
   /** Optional: () => string | null — PlayBound-managed Temurin path. */
   static managedJavaResolver = null;
+  /** Optional: () => string | null — PlayBound-managed DOSBox Staging path. */
+  static managedDosBoxResolver = null;
 
   /**
    * Locate a verified javaw (Windows) or java for launching .jar games.
@@ -90,13 +94,26 @@ class GameLauncher {
     return exePath;
   }
 
+  static resolveDosBoxBinary() {
+    if (typeof this.managedDosBoxResolver === "function") {
+      try {
+        const managed = this.managedDosBoxResolver();
+        if (managed && fs.existsSync(managed)) return managed;
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
+  }
+
   /**
    * Spawns a game process detached and returns the child process.
    * @param {string} targetPath - Path to the executable, .jar, or .app bundle
    * @param {string[]} args - Additional arguments
+   * @param {{ needsDosBox?: boolean }} [opts]
    * @returns {import("child_process").ChildProcess}
    */
-  static spawnGame(targetPath, args = []) {
+  static spawnGame(targetPath, args = [], opts = {}) {
     const launchPath = this.preferJarBesideLauncher(targetPath);
 
     if (/\.jar$/i.test(launchPath)) {
@@ -137,7 +154,29 @@ class GameLauncher {
     // macOS play.sh is a helper for Terminal; Play launches the jar/binary directly.
     if (/\.sh$/i.test(launchPath)) {
       const preferred = this.preferJarBesideLauncher(launchPath);
-      if (preferred !== launchPath) return this.spawnGame(preferred, args);
+      if (preferred !== launchPath) return this.spawnGame(preferred, args, opts);
+    }
+
+    /*
+     * DOS-era images never start natively: CreateProcess rejects them and
+     * libuv reports EACCES. Wrap them in the shared DOSBox Staging runtime
+     * instead of failing Play.
+     */
+    if (shouldLaunchThroughDosBox(launchPath, { needsDosBox: opts.needsDosBox })) {
+      const dosBoxBin = this.resolveDosBoxBinary();
+      if (!dosBoxBin) {
+        const err = new Error(dosExecutableMessage(path.basename(launchPath)));
+        err.code = "DOSBOX_MISSING";
+        throw err;
+      }
+      const spec = dosBoxLaunchSpec(launchPath);
+      return spawn(dosBoxBin, [...spec.args, ...args], {
+        cwd: spec.cwd,
+        detached: true,
+        stdio: "ignore",
+        windowsHide: false,
+        shell: false,
+      });
     }
 
     const launchCommand = Platform.getGameLaunchCommand(launchPath);

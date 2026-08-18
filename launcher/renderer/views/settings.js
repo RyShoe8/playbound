@@ -121,6 +121,14 @@ async function renderSettingsView() {
     </div>
 
     <div class="settings-group">
+      <label class="settings-label">DOSBox runtime</label>
+      <p class="settings-hint">Used for DOS games like TES: Arena. PlayBound installs a private copy of DOSBox Staging on first Play.</p>
+      <div id="set-dosbox-status" style="margin-top: 8px; font-size: 13px; color: var(--text-muted);">${
+        settings.dosBoxRuntime?.installed ? "DOSBox Staging installed" : "Not installed yet — first Play of a DOS game will download it."
+      }</div>
+    </div>
+
+    <div class="settings-group">
       <label class="settings-label">Report a bug</label>
       <p class="settings-hint">Send a problem report to the PlayBound team. If you are signed in, it is linked to your account.</p>
       <input type="text" class="input-text" id="set-bug-title" placeholder="Short title" maxlength="160" />

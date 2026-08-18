@@ -26,6 +26,7 @@ import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
 import { GetGameCta } from "@/components/GameCommerce";
 import { bestPurchase } from "@/lib/access/offers";
+import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { Badge } from "@/components/ui/bits";
 import { PlayingNowBadge } from "@/components/ActivityStats";
@@ -125,7 +126,7 @@ export async function GameHeroActions({
           <Play className="size-5" />
           Choose an edition
         </Link>
-      ) : (
+      ) : gameRequiresPurchase(game.access) ? null : (
         <PlayCta game={game} size="lg" emphasis={installEmphasis} />
       )}
       {!initiallyInLibrary && <LocateGameButton slug={game.slug} size="lg" />}
@@ -158,7 +159,7 @@ export function GameHeroActionsFallback({
           <Play className="size-5" />
           Choose an edition
         </Link>
-      ) : (
+      ) : gameRequiresPurchase(game.access) ? null : (
         <PlayCta game={game} size="lg" emphasis={buy ? "secondary" : "primary"} />
       )}
       <LocateGameButton slug={game.slug} size="lg" />

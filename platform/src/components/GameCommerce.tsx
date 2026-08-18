@@ -100,7 +100,7 @@ export function GameCommerce({
       : null;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="max-w-md rounded-xl border border-border bg-card p-5">
       <h2 className="text-lg font-bold">{buy ? `Get ${game.title}` : `To play ${game.title}`}</h2>
       {buy ? (
         <div className="mt-3 flex flex-wrap items-end gap-3">

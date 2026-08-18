@@ -12,6 +12,15 @@ import type {
   VerificationLevel,
 } from "@/lib/editionTypes";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import {
+  ARENA_GAMEFILES_FILE,
+  ARENA_GAMEFILES_URL,
+  OPENTESARENA_EXE_HINT,
+  OPENTESARENA_KNOWN_EXE_PATHS,
+  OPENTESARENA_OVERLAY_DEST,
+  TES_ARENA_EXE_HINT,
+  TES_ARENA_KNOWN_EXE_PATHS,
+} from "@/lib/data/tesArenaAssets";
 
 export type EditionSeed = {
   gameSlug: string;
@@ -2272,8 +2281,13 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "direct-zip",
-        url: "https://cdnstatic.bethsoft.com/elderscrolls.com/assets/files/tes/extras/Arena106Setup.zip",
-        exeHint: "ARENA.EXE",
+        url: ARENA_GAMEFILES_URL,
+        fileName: ARENA_GAMEFILES_FILE,
+        versionLabel: "1.06 (Bethesda freeware release)",
+        exeHint: TES_ARENA_EXE_HINT,
+        knownExePaths: [...TES_ARENA_KNOWN_EXE_PATHS],
+        needsDosBox: true,
+        note: "Extracted Bethesda 1.06 freeware (A.EXE). Original Arena106Setup.zip is archived on the VPS.",
       },
     },
     features: ["Singleplayer", "Open World", "Retro RPG"],
@@ -2303,18 +2317,18 @@ export const editions: EditionSeed[] = [
         /*
          * aep93/OpenTESArena does not exist — the GitHub API 404s on it, which
          * surfaced as "github api 404" the moment anyone pressed Install.
-         * afritz1 is the actual upstream project.
+         * afritz1 is the actual upstream project. The Windows exe is otesa.exe
+         * as of 0.18.0, not OpenTESArena.exe.
          */
         repo: "afritz1/OpenTESArena",
-        /*
-         * Windows build specifically. The old `.*\.zip$` happened to work only
-         * because the Windows archive is currently the release's sole .zip —
-         * the Linux and macOS builds ship as .tar.gz and .dmg today, and a zip
-         * among them later would have been picked at random.
-         */
         assetPattern: "windows_x86-64\\.zip$",
-        exeHint: "OpenTESArena.exe",
-        note: "Requires Arena 1.06 data files.",
+        exeHint: OPENTESARENA_EXE_HINT,
+        knownExePaths: [...OPENTESARENA_KNOWN_EXE_PATHS],
+        unwrapSingleRoot: true,
+        overlayUrl: ARENA_GAMEFILES_URL,
+        overlayFileName: ARENA_GAMEFILES_FILE,
+        overlayDest: OPENTESARENA_OVERLAY_DEST,
+        note: "Installs OpenTESArena and overlays Bethesda's freeware Arena 1.06 data into data/ARENA.",
       },
     },
     features: ["Singleplayer", "Hardware Rendering", "Mouselook Controls", "Open Source"],
