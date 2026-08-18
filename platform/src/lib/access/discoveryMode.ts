@@ -12,7 +12,7 @@
  */
 
 import type { AccessTier } from "./types";
-import { tierFor, type GameTierMap } from "./tiers";
+import { tierFor, type GameTierMap } from "./tierMap";
 
 export type DiscoveryMode = "FREE" | "ALL";
 

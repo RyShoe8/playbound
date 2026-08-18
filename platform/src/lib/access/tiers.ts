@@ -1,6 +1,10 @@
 /**
  * Resolved access tier for every game, as a cached lookup.
  *
+ * Server-only. This file talks to Mongo. Client components must import
+ * `tierMap.ts` instead — pulling this module into the browser bundle is what
+ * made Vercel fail with `Can't resolve 'async_hooks'`.
+ *
  * The resolver answers one node at a time from a graph, which is right for the
  * audit and wrong for a listing page — rebuilding the graph to render a grid of
  * forty cards would put four collection reads on the hot path of every request.
@@ -16,38 +20,13 @@
 import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
-import { accessId, type AccessNode, type AccessTier, type Cents } from "./types";
+import { accessId, type AccessNode } from "./types";
 import { buildAccessGraph, resolveAccess } from "./resolver";
 import { accessFromDoc, gameDependencies, type AccessDoc } from "./docs";
+import { type GameTierMap } from "./tierMap";
 
-export interface GameTier {
-  tier: AccessTier;
-  /** Cheapest price a player pays today — card label, not eligibility. */
-  fromPriceCents: Cents | null;
-  /** Cheapest qualifying price across the chain. Catalog / ceiling. */
-  qualifyingPriceCents: Cents | null;
-  /** What has to be bought, so the UI can say why rather than only that. */
-  requires: Array<{
-    label: string;
-    slug: string | null;
-    qualifyingPriceCents: Cents | null;
-    currentPriceCents: Cents | null;
-  }>;
-}
-
-export type GameTierMap = Record<string, GameTier>;
-
-/** A game with no entry in the map is free — same default as an absent record. */
-export const FREE_TIER: GameTier = {
-  tier: "FREE",
-  fromPriceCents: null,
-  qualifyingPriceCents: null,
-  requires: [],
-};
-
-export function tierFor(map: GameTierMap, slug: string): GameTier {
-  return map[slug] ?? FREE_TIER;
-}
+export type { GameTier, GameTierMap } from "./tierMap";
+export { FREE_TIER, tierFor } from "./tierMap";
 
 /**
  * Pure: rows in, tiers out.

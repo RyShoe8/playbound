@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import { FREE_TIER, tierFor, type GameTier, type GameTierMap } from "@/lib/access/tiers";
+import { FREE_TIER, tierFor, type GameTier, type GameTierMap } from "@/lib/access/tierMap";
 
 const AccessTiersContext = createContext<GameTierMap>({});
 

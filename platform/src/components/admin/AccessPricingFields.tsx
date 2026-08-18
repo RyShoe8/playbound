@@ -5,7 +5,7 @@ import type { GamePayload } from "@/lib/gamePayload";
 import type { AccessTier, PriceType } from "@/lib/access/types";
 import { formatCents, gameRequiresPurchase } from "@/lib/access/resolver";
 import { bestPurchase, KNOWN_RETAILERS } from "@/lib/access/offers";
-import { tierFor, type GameTierMap } from "@/lib/access/tiers";
+import { tierFor, type GameTierMap } from "@/lib/access/tierMap";
 import type { RetailOffer } from "@/lib/access/types";
 
 type Access = NonNullable<GamePayload["access"]>;
