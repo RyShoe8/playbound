@@ -9,7 +9,7 @@ import type { CompatibilityFilterMode } from "@/lib/compatibility/compatibility"
 type Variant = "sidebar" | "topbar";
 
 const OPTIONS: { value: CompatibilityFilterMode; label: string; short: string }[] = [
-  { value: "compatible", label: "Compatible With This Device", short: "Compatible" },
+  { value: "compatible", label: "This Device", short: "This Device" },
   { value: "all", label: "All Games", short: "All Games" },
 ];
 
@@ -61,7 +61,7 @@ function SidebarControl({
     <div className="space-y-2 px-1">
       <div className="flex items-center gap-2 px-2 text-xs font-bold tracking-wide text-muted-foreground uppercase">
         <MonitorSmartphone className="size-3.5" aria-hidden />
-        Games for
+        Compatibility
       </div>
       <div
         role="radiogroup"

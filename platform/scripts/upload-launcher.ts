@@ -190,8 +190,11 @@ async function main() {
     platform,
     setupName,
     setupPath,
-    downloadUrl: prodAliasUrl || aliasUrl,
+    // The immutable versioned object is the only safe archive source. An
+    // alias changes on the next release while the VPS may still be fetching.
+    downloadUrl: setupUrl,
     channel: isAdmin ? "admin" : "prod",
+    archiveToVps: platform === "windows" && !isAdmin,
   });
 
   console.log("");
@@ -225,6 +228,8 @@ async function registerLauncherArtifact(input: {
   setupPath: string;
   downloadUrl: string;
   channel: "admin" | "prod";
+  /** Only a signed Windows release is eligible for automatic VPS archival. */
+  archiveToVps: boolean;
 }) {
   try {
     const version = input.setupName.match(/(\d+\.\d+\.\d+)/)?.[1] || "unknown";
@@ -256,17 +261,42 @@ async function registerLauncherArtifact(input: {
       artifact.mirrorEnabled = true;
       artifact.redistributionAllowed = true;
       artifact.licenseStatus = "first_party";
-      artifact.vpsStatus = "verified";
+      // Blob upload does not mean an authoritative VPS copy exists yet.
+      // Unsigned/admin builds intentionally remain outside that archive flow.
+      if (!input.archiveToVps) artifact.vpsStatus = "missing";
       await artifact.save();
     }
 
     await ensurePublicSource({
       artifactId,
-      sourceId: `blob-${input.platform}-${input.channel}`,
+      sourceId: `blob-${input.platform}-${input.channel}-${version}`,
       url: input.downloadUrl,
     });
 
     console.log(`  Registered artifact: ${artifactId} (${sha256.slice(0, 12)}…)`);
+    if (input.archiveToVps && artifact) {
+      const { archiveArtifactToVps } = await import("../src/lib/mirrors/cacheManager");
+      const { archivedArtifactStatusOnHost, deleteArchivedArtifactOnHost } = await import("../src/lib/gameHost/client");
+      const { default: Artifact } = await import("../src/lib/models/Artifact");
+      const archived = await archiveArtifactToVps(artifactId, "signed-launcher-release", input.downloadUrl);
+      if (!archived.success) {
+        console.warn(`  Could not archive signed launcher to VPS: ${archived.message}`);
+      } else {
+        console.log(`  VPS archive: ${archived.message}`);
+        const ready = await waitForVpsArchive(artifact.relativePath, archivedArtifactStatusOnHost);
+        if (!ready) {
+          console.warn("  New signed launcher is still copying to the VPS; older launcher archives were left in place.");
+        } else {
+          const removed = await removeOlderWindowsLauncherArchives({
+            Artifact,
+            currentArtifactId: artifactId,
+            currentVersion: version,
+            deleteArchivedArtifactOnHost,
+          });
+          if (removed > 0) console.log(`  Removed ${removed} superseded signed Windows launcher archive(s) from the VPS.`);
+        }
+      }
+    }
     await mongoose.default.disconnect();
   } catch (err) {
     console.warn(
@@ -275,6 +305,65 @@ async function registerLauncherArtifact(input: {
       }`
     );
   }
+}
+
+/** Wait for the new signed installer before removing any predecessor. */
+async function waitForVpsArchive(
+  relativePath: string,
+  status: (path: string) => Promise<{ status: "missing" | "uploading" | "verified"; message?: string } | null>
+) {
+  const deadline = Date.now() + 15 * 60 * 1000;
+  while (Date.now() < deadline) {
+    const result = await status(relativePath);
+    if (result?.status === "verified") return true;
+    if (result?.status === "missing") return false;
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+  }
+  return false;
+}
+
+function compareVersions(a: string, b: string) {
+  const left = a.split(".").map((part) => Number(part));
+  const right = b.split(".").map((part) => Number(part));
+  for (let i = 0; i < 3; i += 1) {
+    const difference = (left[i] || 0) - (right[i] || 0);
+    if (difference) return difference;
+  }
+  return 0;
+}
+
+/**
+ * Retain the artifact records and any R2 cache history, but remove only old
+ * signed Windows installer files from the authoritative VPS disk. This is
+ * deliberately constrained to the launcher artifact-id namespace.
+ */
+async function removeOlderWindowsLauncherArchives(input: {
+  Artifact: typeof import("../src/lib/models/Artifact").default;
+  currentArtifactId: string;
+  currentVersion: string;
+  deleteArchivedArtifactOnHost: (relativePath: string) => Promise<{ success: boolean; message?: string }>;
+}) {
+  const oldArtifacts = await input.Artifact.find({
+    artifactType: "launcher",
+    artifactId: /^playbound-launcher-windows-\d+\.\d+\.\d+$/,
+    vpsStatus: "verified",
+  }).select("artifactId version relativePath vpsStatus vpsStatusMessage");
+
+  let removed = 0;
+  for (const oldArtifact of oldArtifacts) {
+    if (String(oldArtifact.artifactId) === input.currentArtifactId) continue;
+    if (compareVersions(String(oldArtifact.version), input.currentVersion) >= 0) continue;
+    const result = await input.deleteArchivedArtifactOnHost(String(oldArtifact.relativePath));
+    if (!result.success) {
+      console.warn(`  Could not remove old VPS launcher ${oldArtifact.filename || oldArtifact.artifactId}: ${result.message || "unknown error"}`);
+      continue;
+    }
+    oldArtifact.vpsStatus = "missing";
+    oldArtifact.vpsStatusMessage = `Superseded by signed launcher ${input.currentVersion}.`;
+    await oldArtifact.save();
+    removed += 1;
+  }
+  return removed;
 }
 
 main().catch((err) => {
