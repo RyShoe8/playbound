@@ -47,6 +47,24 @@ describe("gameAccessSchema", () => {
     expect(parsed.currentPriceCents).toBe(349);
     expect(parsed.qualifyingPriceCents).toBe(799);
     expect(parsed.offers).toHaveLength(2);
+    expect(parsed.offers[0]?.matchSource).toBe("manual");
+    expect(parsed.offers[1]?.matchSource).toBe("manual");
+  });
+
+  it("keeps an auto match source on save", () => {
+    const parsed = gameAccessSchema.parse({
+      priceType: "PAID",
+      qualifyingPriceCents: 599,
+      offers: [
+        {
+          retailer: "Steam",
+          url: "https://store.steampowered.com/app/22330",
+          priceCents: 999,
+          matchSource: "auto",
+        },
+      ],
+    });
+    expect(parsed.offers[0]?.matchSource).toBe("auto");
   });
 
   it("does not let offers rewrite a free game", () => {
@@ -81,6 +99,23 @@ describe("gameAccessSchema", () => {
     expect(parsed.offers[0]?.retailer).toBe("Fanatical");
     expect(parsed.currentPriceCents).toBe(349);
   });
+
+  it("drops a draft source with no store instead of rejecting the save", () => {
+    const parsed = gameAccessSchema.parse({
+      priceType: "PAID",
+      qualifyingPriceCents: 599,
+      offers: [
+        { retailer: "", url: "https://store.steampowered.com/app/22330", priceCents: 0 },
+        {
+          retailer: "Steam",
+          url: "https://store.steampowered.com/app/22330",
+          priceCents: 1499,
+        },
+      ],
+    });
+    expect(parsed.offers).toHaveLength(1);
+    expect(parsed.offers[0]?.retailer).toBe("Steam");
+  });
 });
 
 describe("gamePayloadSchema access", () => {
@@ -109,5 +144,16 @@ describe("gamePayloadSchema access", () => {
     const parsed = gamePayloadSchema.parse(draft);
     expect(parsed.access?.priceType).toBe("PAID");
     expect(parsed.access?.qualifyingPriceCents).toBe(599);
+  });
+
+  it("drops Multiplayer and Singleplayer from tags, and keeps Evil", () => {
+    const draft = emptyGameDraft();
+    draft.slug = "diablo";
+    draft.title = "Diablo";
+    draft.tagline = "ARPG";
+    draft.description = "Hack and slash.";
+    draft.tags = ["Classic", "Multiplayer", "Evil", "Singleplayer"];
+    const parsed = gamePayloadSchema.parse(draft);
+    expect(parsed.tags).toEqual(["Classic", "Evil"]);
   });
 });

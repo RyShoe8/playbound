@@ -188,6 +188,7 @@ export const TAGS = [
   "Sandbox",
   "Sci-Fi",
   "Fantasy",
+  "Evil",
   "Space Trading",
   "Turn-Based",
   "Arena Shooter",
@@ -195,9 +196,15 @@ export const TAGS = [
   "Family Friendly",
   "Browser",
   "Indie",
-  "Multiplayer",
-  "Singleplayer",
 ] as const;
+
+/** Play modes belong in FEATURES. Strip them if they linger on tags. */
+const PLAY_MODE_TAG_NAMES = new Set(["Multiplayer", "Singleplayer"]);
+
+export function dropPlayModeTags(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.filter((v) => typeof v !== "string" || !PLAY_MODE_TAG_NAMES.has(v));
+}
 
 const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> = {
   Strategy: { from: "#312e81", to: "#a78bfa", icon: "Swords" },
@@ -297,7 +304,7 @@ const optionalCents = z
   .transform((v) => (typeof v === "number" ? v : null));
 
 const retailOfferSchema = z.object({
-  retailer: z.string().trim().min(1).max(80),
+  retailer: z.string().trim().max(80),
   url: z.string().trim().max(2000),
   priceCents: z.number().int().min(0).max(1_000_000),
   affiliate: z.boolean().optional().default(true),
@@ -309,7 +316,8 @@ const retailOfferSchema = z.object({
       const d = new Date(v);
       return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }),
-  isActive: z.boolean().optional().default(true),
+    isActive: z.boolean().optional().default(true),
+  matchSource: z.enum(["auto", "manual"]).optional().default("manual"),
 });
 
 function isHttpUrl(url: string): boolean {
@@ -379,7 +387,7 @@ export const gamePayloadSchema = z.object({
   developerSlug: z.string().trim().min(1).max(80),
   developerName: z.string().trim().max(120).optional().nullable(),
   genres: z.preprocess(dropUnknown(GENRES), z.array(z.enum(GENRES)).default([])),
-  tags: z.array(z.string().trim().min(1).max(40)).max(30).default([]),
+  tags: z.preprocess(dropPlayModeTags, z.array(z.string().trim().min(1).max(40)).max(30).default([])),
   aliases: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
   license: z.string().trim().min(1).max(120),
   releaseYear: z.number().int().min(1970).max(2100),

@@ -78,6 +78,7 @@ const RetailOfferSchema = new Schema(
     affiliate: { type: Boolean, default: true },
     lastCheckedAt: { type: Date, default: null },
     isActive: { type: Boolean, default: true },
+    matchSource: { type: String, enum: ["auto", "manual"], default: "manual" },
   },
   { _id: false }
 );

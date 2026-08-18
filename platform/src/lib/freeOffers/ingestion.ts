@@ -57,6 +57,7 @@ async function ingestProvider(store: StoreSlug): Promise<IngestionResult> {
 
   const log = await IngestionLog.create({
     provider: store,
+    jobKind: "free_offers",
     startedAt: new Date(),
     status: "failed",
   });

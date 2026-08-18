@@ -23,6 +23,7 @@ const offer = (partial: Partial<RetailOffer> & Pick<RetailOffer, "retailer" | "u
   affiliate: true,
   lastCheckedAt: null,
   isActive: true,
+  matchSource: "manual",
   ...partial,
 });
 
@@ -53,6 +54,25 @@ describe("offerFromUnknown", () => {
     });
     expect(parsed?.affiliate).toBe(true);
     expect(parsed?.isActive).toBe(true);
+    expect(parsed?.matchSource).toBe("manual");
+  });
+
+  it("keeps an auto match source and defaults missing ones to manual", () => {
+    expect(
+      offerFromUnknown({
+        retailer: "Steam",
+        url: "https://store.steampowered.com/app/22330",
+        priceCents: 999,
+        matchSource: "auto",
+      })?.matchSource
+    ).toBe("auto");
+    expect(
+      offerFromUnknown({
+        retailer: "itch.io",
+        url: "https://someone.itch.io/game",
+        priceCents: 499,
+      })?.matchSource
+    ).toBe("manual");
   });
 });
 

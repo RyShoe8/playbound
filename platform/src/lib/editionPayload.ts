@@ -7,6 +7,7 @@ import {
   VERIFICATION_LEVELS,
 } from "@/lib/editionTypes";
 import { hardwareRequirementsBlockSchema } from "@/lib/hardware/schema";
+import { dropPlayModeTags } from "@/lib/gamePayload";
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -145,7 +146,10 @@ export const editionPayloadSchema = z
     hardwareRequirements: hardwareRequirementsBlockSchema.optional().nullable(),
 
     features: z.array(z.string().trim().min(1).max(200)).max(40).default([]),
-    tags: z.array(z.string().trim().min(1).max(60)).max(40).default([]),
+    tags: z.preprocess(
+      dropPlayModeTags,
+      z.array(z.string().trim().min(1).max(60)).max(40).default([])
+    ),
     aliases: z.array(z.string().trim().min(1).max(80)).max(20).default([]),
     serverName: z.string().trim().max(120).optional(),
     languages: z.array(z.string().trim().min(1).max(60)).max(60).default([]),

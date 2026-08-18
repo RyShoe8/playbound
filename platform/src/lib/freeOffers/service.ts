@@ -12,7 +12,7 @@ import dbConnect from "@/lib/db";
 import FreeOffer from "@/lib/models/FreeOffer";
 import StoreProviderModel from "@/lib/models/StoreProvider";
 import { seedFreeOffers, seedStoreProviders } from "@/lib/data/freeOffers";
-import type { FreeOfferRecord, StoreProviderRecord, StoreSlug } from "./types";
+import { STORE_SLUGS, type FreeOfferRecord, type StoreProviderRecord, type StoreSlug } from "./types";
 
 // ── Mappers ──────────────────────────────────────────────────────────────
 
@@ -148,7 +148,9 @@ async function queryUnmatched(): Promise<FreeOfferRecord[]> {
 async function queryProviders(): Promise<StoreProviderRecord[]> {
   try {
     await dbConnect();
-    const docs = await StoreProviderModel.find().sort({ slug: 1 }).lean();
+    const docs = await StoreProviderModel.find({ slug: { $in: [...STORE_SLUGS] } })
+      .sort({ slug: 1 })
+      .lean();
     if (docs.length > 0) {
       return docs.map((d) => toProviderRecord(d as LeanDoc));
     }

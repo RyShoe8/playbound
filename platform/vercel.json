@@ -13,6 +13,14 @@
       "schedule": "0 */6 * * *"
     },
     {
+      "path": "/api/cron/offer-prices",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/catalog-match",
+      "schedule": "15 12 * * *"
+    },
+    {
       "path": "/api/cron/presence-sweep",
       "schedule": "* * * * *"
     },

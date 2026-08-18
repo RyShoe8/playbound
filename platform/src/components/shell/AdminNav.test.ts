@@ -47,8 +47,11 @@ describe("admin nav structure", () => {
     expect(top).not.toContain("Download Mirrors");
     expect(top).not.toContain("Mods");
     expect(top).not.toContain("Editions");
+    expect(top).not.toContain("Free Offers");
+    expect(top).not.toContain("Stores");
     expect(top).toContain("Games");
     expect(top).toContain("Ops");
+    expect(top).toContain("eCommerce");
   });
 
   it("keeps the top row identical on every route", () => {
@@ -63,6 +66,9 @@ describe("admin nav structure", () => {
       "/admin/bugs",
       "/admin/download-mirrors",
       "/admin/games/openra/edit",
+      "/admin/ecommerce",
+      "/admin/ecommerce/stores",
+      "/admin/free-offers",
     ]) {
       expect(topRow(path).map((i) => i.label), `for ${path}`).toEqual(baseline);
     }
@@ -76,6 +82,17 @@ describe("admin nav structure", () => {
         { label: "Editions" },
         { label: "Collections" },
         { label: "Mod Classifications" },
+      ],
+    });
+  });
+
+  it("puts stores and free offers under eCommerce", () => {
+    expect(subRow("/admin/ecommerce")).toMatchObject({
+      section: "eCommerce",
+      children: [
+        { label: "Overview", href: "/admin/ecommerce" },
+        { label: "Stores", href: "/admin/ecommerce/stores" },
+        { label: "Free Offers", href: "/admin/free-offers" },
       ],
     });
   });
@@ -98,6 +115,11 @@ describe("admin nav active state", () => {
     expect(subRow("/admin")).toBeNull();
     expect(subRow("/admin/users")).toBeNull();
     expect(subRow("/admin/gear")).toBeNull();
+  });
+
+  it("keeps eCommerce open on Free Offers", () => {
+    expect(subRow("/admin/free-offers")?.section).toBe("eCommerce");
+    expect(subRow("/admin/ecommerce/stores")?.section).toBe("eCommerce");
   });
 
   it("keeps the section open while on one of its children", () => {
@@ -124,6 +146,9 @@ describe("admin nav active state", () => {
     // On the section root itself, nothing in the second row is current.
     expect(lit("/admin/ops")).toEqual({ top: ["Ops"], sub: [] });
     expect(lit("/admin/games")).toEqual({ top: ["Games"], sub: [] });
+    expect(lit("/admin/free-offers")).toEqual({ top: ["eCommerce"], sub: ["Free Offers"] });
+    expect(lit("/admin/ecommerce/stores")).toEqual({ top: ["eCommerce"], sub: ["Stores"] });
+    expect(lit("/admin/ecommerce")).toEqual({ top: ["eCommerce"], sub: ["Overview"] });
   });
 
   it("lights exactly one top-row section per route", () => {
@@ -137,6 +162,8 @@ describe("admin nav active state", () => {
       "/admin/version-issues",
       "/admin/download-mirrors",
       "/admin/users",
+      "/admin/ecommerce",
+      "/admin/free-offers",
     ]) {
       expect(topRow(path).filter((i) => i.active), `for ${path}`).toHaveLength(1);
     }
