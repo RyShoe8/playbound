@@ -50,6 +50,11 @@ import {
   releasePartyLan,
 } from "@/lib/virtualLan/provision";
 import {
+  BASE_EDITION_KEY,
+  isBaseEditionSlug,
+  libraryHasRequiredEdition,
+} from "@/lib/playTogether/editionMatch";
+import {
   canJoinParty,
   canLeaveParty,
   canRemoveMember,
@@ -681,7 +686,7 @@ export async function setPartyGame(
   );
   const nameById = await resolveUsernames(memberIds);
 
-  const updated = serializeParty(doc.toObject(), nameById, game.title);
+  let updated = serializeParty(doc.toObject(), nameById, game.title);
   trackPartyEvent("party_game_set", {
     partyId: updated.id,
     gameSlug: slug,
@@ -689,14 +694,17 @@ export async function setPartyGame(
   });
   if (updated.gameSlug) {
     const sync = await checkConfigSync(updated.id);
-    if (!("error" in sync) && !sync.sync.allReady) {
-      trackPartyEvent("party_config_sync", {
-        partyId: updated.id,
-        gameSlug: slug,
-        userId: leaderId,
-        allReady: false,
-        missing: sync.sync.members.filter((m) => !m.hasGame).map((m) => m.userId),
-      });
+    if (!("error" in sync)) {
+      updated = { ...updated, configSync: sync.sync };
+      if (!sync.sync.allReady) {
+        trackPartyEvent("party_config_sync", {
+          partyId: updated.id,
+          gameSlug: slug,
+          userId: leaderId,
+          allReady: false,
+          missing: sync.sync.members.filter((m) => !m.hasGame).map((m) => m.userId),
+        });
+      }
     }
   }
   return {
@@ -748,8 +756,9 @@ export async function setPartyEdition(
     editionSlug: slug || null,
     userId: leaderId,
   });
+  const serialized = serializeParty(doc.toObject(), nameById, game.title);
   return {
-    party: serializeParty(doc.toObject(), nameById, game.title),
+    party: await attachConfigSync(serialized, leaderId),
     status: 200,
   };
 }
@@ -1216,15 +1225,8 @@ export async function countOpenPublicParties(): Promise<number> {
 
 /* ─── config sync (4H, 4I) ──────────────────────────────────────────────── */
 
-/**
- * Stands in for "the game, no particular edition" in the installed-edition
- * sets. A LibraryEntry with no editionSlug still means the game is installed,
- * and without a placeholder those rows would vanish from a Set and read as
- * "not installed".
- */
-const BASE_EDITION_KEY = "__base__";
-
 export type { ConfigSyncMember, ConfigSyncResult } from "@/lib/playTogether/types";
+export { BASE_EDITION_KEY, isBaseEditionSlug, libraryHasRequiredEdition } from "@/lib/playTogether/editionMatch";
 
 export async function checkConfigSync(
   partyId: string
@@ -1300,11 +1302,11 @@ export async function checkConfigSync(
 
   const hostEdition =
     hostHasGame && hostEditions
-      ? [...hostEditions].find((e) => e !== BASE_EDITION_KEY) ?? BASE_EDITION_KEY
+      ? [...hostEditions].find((e) => !isBaseEditionSlug(e)) ?? BASE_EDITION_KEY
       : null;
 
   const editionSlug = hostHasGame
-    ? hostEdition === BASE_EDITION_KEY
+    ? isBaseEditionSlug(hostEdition)
       ? null
       : hostEdition
     : declaredEdition;
@@ -1339,13 +1341,13 @@ export async function checkConfigSync(
       userId: uid,
       username: nameById.get(uid) || "Player",
       hasGame,
-      hasEdition: editionSlug ? editions.has(editionSlug) || inThisGame : hasGame,
+      hasEdition: Boolean(hasGame && (inThisGame || libraryHasRequiredEdition(editions, editionSlug))),
       // Only meaningful once they have the game; otherwise the game is the ask.
       missingMods: hasGame ? modSlugs.filter((slug) => !theirMods.has(slug)) : modSlugs,
       isHost,
       playing,
       installedEditionSlug:
-        [...editions].find((e) => e !== BASE_EDITION_KEY) ??
+        [...editions].find((e) => !isBaseEditionSlug(e)) ??
         (hasGame ? BASE_EDITION_KEY : null),
     };
   });

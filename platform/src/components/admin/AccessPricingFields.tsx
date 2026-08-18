@@ -9,7 +9,7 @@ import { tierFor, type GameTierMap } from "@/lib/access/tierMap";
 import type { RetailOffer } from "@/lib/access/types";
 
 type Access = NonNullable<GamePayload["access"]>;
-type CatalogPick = { slug: string; title: string };
+type CatalogPick = { slug: string; title: string; priceType?: PriceType };
 
 function centsToInput(cents: number | null | undefined): string {
   if (cents == null) return "";
@@ -66,6 +66,19 @@ export function AccessPricingFields({
     offers: [],
   };
   const tier = previewTier(access, catalogTiers);
+  const selectedSlugs = access.requiresGameSlugs ?? [];
+  const paidCatalog = useMemo(
+    () =>
+      catalogGames.filter((g) => {
+        if (selectedSlugs.includes(g.slug)) return false;
+        if (g.priceType === "PAID") return true;
+        // Saved PAID games land in the VALUE map as themselves. Unclassified
+        // and free engines stay out of this list on purpose.
+        const t = tierFor(catalogTiers, g.slug);
+        return t.tier === "VALUE" && t.requires.some((r) => r.slug === g.slug);
+      }),
+    [catalogGames, catalogTiers, selectedSlugs]
+  );
   const cheapestDep = useMemo(() => {
     let best: { title: string; cents: number | null } | null = null;
     for (const slug of access.requiresGameSlugs ?? []) {
@@ -191,6 +204,10 @@ export function AccessPricingFields({
           <label className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
             This game requires
           </label>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Pick the commercial catalog title this engine or port needs. Classify that title as
+            Paid first — free games are omitted here.
+          </p>
           <select
             className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
             value=""
@@ -202,14 +219,18 @@ export function AccessPricingFields({
               patch({ requiresGameSlugs: next });
             }}
           >
-            <option value="">Add a required game…</option>
-            {catalogGames
-              .filter((g) => !(access.requiresGameSlugs ?? []).includes(g.slug))
-              .map((g) => (
+            <option value="">
+              {paidCatalog.length === 0 ? "No paid games in the catalog yet…" : "Add a required game…"}
+            </option>
+            {paidCatalog.map((g) => {
+              const price = tierFor(catalogTiers, g.slug).fromPriceCents;
+              return (
                 <option key={g.slug} value={g.slug}>
                   {g.title}
+                  {price ? ` — ${formatCents(price)}` : ""}
                 </option>
-              ))}
+              );
+            })}
           </select>
           {(access.requiresGameSlugs ?? []).length > 0 ? (
             <ul className="mt-2 space-y-1">

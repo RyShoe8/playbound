@@ -11,7 +11,8 @@ import {
   authErrorMessage,
 } from "@/components/GoogleSignInButton";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
-import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { RecaptchaBlockedNote } from "@/components/RecaptchaBlockedNote";
+import { getRecaptchaToken, recaptchaConfigured } from "@/lib/recaptchaClient";
 import { useTelemetry } from "@/lib/telemetry";
 
 function LoginForm() {
@@ -26,6 +27,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [captchaBlocked, setCaptchaBlocked] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +35,7 @@ function LoginForm() {
     setError("");
     // Passed through NextAuth into the credentials authorize() callback.
     const recaptchaToken = (await getRecaptchaToken("login")) ?? "";
+    if (!recaptchaToken && recaptchaConfigured()) setCaptchaBlocked(true);
     const res = await signIn("credentials", {
       email,
       password,
@@ -92,6 +95,7 @@ function LoginForm() {
           </p>
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
+        <RecaptchaBlockedNote blocked={captchaBlocked} />
         <button
           type="submit"
           disabled={busy}

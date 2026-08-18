@@ -264,6 +264,31 @@ export function resolveRecipe(slug) {
   return { recipe, binary };
 }
 
+const HOST_TITLES = {
+  freedoom: "Freedoom",
+  "0-ad": "0 A.D.",
+  "battle-for-wesnoth": "Battle for Wesnoth",
+};
+
+/**
+ * VPS dedicated binary is missing — not the party leader's local install.
+ * health.games lists which recipes resolved a binary on this box.
+ */
+export function missingDedicatedBinaryMessage(slug, recipe) {
+  const title = HOST_TITLES[slug] || slug;
+  const names = [
+    ...new Set(
+      (recipe?.binaries || [])
+        .map((p) => path.basename(String(p || "")))
+        .filter(Boolean)
+    ),
+  ];
+  const ops = names.length
+    ? ` The VPS is missing ${names.join(" or ")} — check health.games.`
+    : "";
+  return `PlayBound's game server does not have ${title} yet.${ops}`;
+}
+
 export function listInstalled() {
   const out = {};
   for (const slug of Object.keys(recipes)) {

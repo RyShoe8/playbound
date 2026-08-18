@@ -18,7 +18,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { resolveRecipe, listInstalled } from "./recipes.js";
+import { resolveRecipe, listInstalled, missingDedicatedBinaryMessage } from "./recipes.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -363,7 +363,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
   const { recipe, binary } = resolved;
   if (!binary) {
-    return { error: `${gameSlug} is not installed on the host` };
+    return { error: missingDedicatedBinaryMessage(gameSlug, recipe) };
   }
 
   const port = allocPort(recipe, gameSlug);

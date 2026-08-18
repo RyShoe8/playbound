@@ -96,6 +96,11 @@ Setup order, ports, and the DNS gotcha: [`platform/game-host/netbird/README.md`]
 Run the two-machine test before assuming any of this works end to end. Written, not
 yet run against a live overlay.
 
+**Ops:** Join LAN stays silent unless the discovery reflector is running on the
+NetBird VPS **and** `NETBIRD_INFRA_GROUP_ID` is in each party policy. Host LAN
+can bind locally without that; Join LAN still does nothing. Confirm the
+reflector process and infra group before treating a UI/code change as the fix.
+
 Key files:
 
 - [`platform/src/lib/virtualLan/client.ts`](../platform/src/lib/virtualLan/client.ts) — NetBird management API

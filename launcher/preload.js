@@ -56,7 +56,7 @@ contextBridge.exposeInMainWorld("playbound", {
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),
   signIn: () => ipcRenderer.invoke("sign-in"),
-  syncLibraryNow: () => ipcRenderer.invoke("sync-library-now"),
+  syncLibraryNow: (opts) => ipcRenderer.invoke("sync-library-now", opts || {}),
   reportBug: (payload) => ipcRenderer.invoke("report-bug", payload || {}),
 
   // Friends API

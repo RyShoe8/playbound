@@ -142,7 +142,7 @@ export function recaptchaErrorMessage(reason: string): string {
     case "token-expired":
       return "That took a little too long — please try again.";
     case "missing-token":
-      return "Couldn't complete the bot check. Refresh the page and try again.";
+      return "Couldn't complete the bot check. If you use Brave Shields or an ad blocker, allow Google on this site and try again.";
     case "verification-unavailable":
       return "Bot protection is temporarily unavailable. Please try again shortly.";
     default:

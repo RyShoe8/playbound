@@ -32,6 +32,11 @@ const LibraryEntrySchema = new Schema({
   saved: { type: Boolean, default: false },
   installed: { type: Boolean, default: false },
   version: { type: String },
+  /**
+   * Primary edition on this device. One library row per game, so this is the
+   * edition party config-sync compares — not a second unique key.
+   */
+  editionSlug: { type: String, default: null },
   installedAt: { type: Date },
   addedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -57,6 +62,7 @@ export type LibraryEntryDoc = {
   saved: boolean;
   installed: boolean;
   version?: string;
+  editionSlug?: string | null;
   installedAt?: Date;
   addedAt: Date;
   updatedAt: Date;
