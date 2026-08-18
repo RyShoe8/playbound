@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { gamesFor } from "@/lib/catalog";
+import { filterDiscoverableBySlug } from "@/lib/access/discover";
 import { listWeeklyIssues } from "@/lib/weekly";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { NewsletterForm } from "@/components/NewsletterForm";
@@ -16,8 +17,9 @@ export const metadata = pageMetadata({
 });
 
 export default async function WeeklyIndexPage() {
-  const issues = await listWeeklyIssues();
-  const games = await gamesFor(issues.map((i) => i.gameSlug));
+  const issuesRaw = await listWeeklyIssues();
+  const visibleIssues = await filterDiscoverableBySlug(issuesRaw, (i) => i.gameSlug);
+  const games = await gamesFor(visibleIssues.map((i) => i.gameSlug));
   const bySlug = new Map(games.map((g) => [g.slug, g]));
 
   return (
@@ -35,8 +37,8 @@ export default async function WeeklyIndexPage() {
           {
             "@type": "ItemList",
             name: "PlayBound Weekly picks",
-            numberOfItems: issues.length,
-            itemListElement: issues.map((issue, i) => ({
+            numberOfItems: visibleIssues.length,
+            itemListElement: visibleIssues.map((issue, i) => ({
               "@type": "ListItem",
               position: i + 1,
               url: absoluteUrl(`/weekly/${issue.slug}`),
@@ -77,7 +79,7 @@ export default async function WeeklyIndexPage() {
         <RecaptchaNotice className="mt-3" />
       </div>
 
-      {issues.length === 0 ? (
+      {visibleIssues.length === 0 ? (
         <p className="mt-10 text-sm text-muted-foreground">The first issue lands this Wednesday.</p>
       ) : (
         <div className="mt-10 overflow-x-auto rounded-xl border border-border">
@@ -90,7 +92,7 @@ export default async function WeeklyIndexPage() {
               </tr>
             </thead>
             <tbody>
-              {issues.map((issue) => {
+              {visibleIssues.map((issue) => {
                 const game = bySlug.get(issue.gameSlug);
                 return (
                   <tr key={issue.slug} className="border-b border-border last:border-0">

@@ -5,6 +5,8 @@ import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
 import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
+import { useGameTier } from "@/components/AccessTiersProvider";
+import { accessPriceLabel } from "@/lib/access/discoveryMode";
 import {
   CompatibleGamesFade,
   useFilteredGames,
@@ -13,6 +15,7 @@ import {
 
 function CollectionGameRow({ game, index }: { game: Game; index: number }) {
   const badge = useIncompatibilityLabel(game);
+  const price = accessPriceLabel(useGameTier(game.slug).fromPriceCents);
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40">
       <span className="w-6 text-center text-lg font-extrabold text-muted-foreground">
@@ -38,6 +41,7 @@ function CollectionGameRow({ game, index }: { game: Game; index: number }) {
         <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{game.tagline}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
           <LaunchBadge game={game} />
+          <span className="font-bold tabular-nums text-muted-foreground">{price}</span>
           <span className="text-muted-foreground">{game.genres.join(" · ")}</span>
         </div>
         <CardCategoryTags genres={game.genres} tags={game.tags} className="mt-1.5" />

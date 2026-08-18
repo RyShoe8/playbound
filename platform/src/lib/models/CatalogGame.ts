@@ -70,6 +70,18 @@ const QualityBarSchema = new Schema(
   { _id: false }
 );
 
+const RetailOfferSchema = new Schema(
+  {
+    retailer: { type: String, required: true },
+    url: { type: String, required: true },
+    priceCents: { type: Number, required: true },
+    affiliate: { type: Boolean, default: true },
+    lastCheckedAt: { type: Date, default: null },
+    isActive: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
 const InstallStepSchema = new Schema(
   {
     platform: { type: String, enum: ["all", "windows", "macos", "linux"], default: "all" },
@@ -155,6 +167,11 @@ const CatalogGameSchema = new Schema(
       requiresOwnedBaseGame: { type: Boolean, default: false },
       /** Slugs of games this one cannot be played without. */
       requiresGameSlugs: { type: [String], default: [] },
+      /**
+       * Where to buy it. Current price is the cheapest active row.
+       * Eligibility still uses qualifyingPriceCents, not these.
+       */
+      offers: { type: [RetailOfferSchema], default: [] },
     },
     /*
      * `opsHealth` used to live here — a stored triage light that failures set

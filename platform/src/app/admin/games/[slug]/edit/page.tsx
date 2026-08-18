@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { listDevelopers } from "@/lib/developers";
-import { getGame } from "@/lib/catalog";
+import { getGame, listAllGames } from "@/lib/catalog";
+import { gameAccessTiers } from "@/lib/access/tiers";
 import type { GamePayload } from "@/lib/gamePayload";
-import { toPayloadLauncherInstall, toPayloadCommunityLinks } from "@/lib/gamePayload";
+import { toPayloadLauncherInstall, toPayloadCommunityLinks, toPayloadAccess } from "@/lib/gamePayload";
 import { GameEditorForm } from "@/components/admin/GameEditorForm";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
@@ -79,7 +80,14 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     bestFor: game.bestFor ?? [],
     notFor: game.notFor ?? [],
     comparableTo: game.comparableTo ?? [],
+    access: toPayloadAccess(game.access),
   };
+
+  const [developers, allGames, catalogTiers] = await Promise.all([
+    listDevelopers(),
+    listAllGames(),
+    gameAccessTiers(),
+  ]);
 
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -102,7 +110,9 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
       <GameEditorForm
         mode="edit"
         initial={initial}
-        developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
+        developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
+        catalogGames={allGames.map((g) => ({ slug: g.slug, title: g.title }))}
+        catalogTiers={catalogTiers}
       />
     </div>
   );

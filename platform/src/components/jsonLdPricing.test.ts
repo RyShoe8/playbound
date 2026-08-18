@@ -95,6 +95,25 @@ describe("paid games", () => {
     expect(offerOf(paid).offer.seller).toBeUndefined();
   });
 
+  it("points the offer at a listed store when we have one", () => {
+    const withStore = withAccess({
+      ...paid.access!,
+      offers: [
+        {
+          retailer: "GOG",
+          url: "https://www.gog.com/game/x",
+          priceCents: 499,
+          affiliate: true,
+          lastCheckedAt: null,
+          isActive: true,
+        },
+      ],
+    });
+    expect(offerOf(withStore).offer.url).toBe("https://www.gog.com/game/x");
+    // Schema still quotes qualifying, not the sale.
+    expect(offerOf(withStore).offer.price).toBe("5.99");
+  });
+
   it("a free-to-download game needing retail assets is not free", () => {
     const engine = withAccess({
       priceType: "PAID_BASE_GAME_REQUIRED",

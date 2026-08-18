@@ -58,6 +58,8 @@ type Props = {
   installedGameSlugs: string[];
   installedModSlugs: string[];
   signedIn: boolean;
+  /** When set, hide games whose resolved access is VALUE (FREE discovery mode). */
+  allowedSlugs?: string[] | null;
 };
 
 type ApiResponse = {
@@ -142,6 +144,7 @@ export function GlobalServerBrowser({
   installedGameSlugs,
   installedModSlugs,
   signedIn,
+  allowedSlugs = null,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -197,9 +200,15 @@ export function GlobalServerBrowser({
         const serversJson = serversRes.ok ? await serversRes.json() : { games: [] };
         const modsJson = modsRes.ok ? await modsRes.json() : { mods: [] };
         if (cancelled) return;
-        const supported = (serversJson.games || []).filter((g: IndexGame) => g.supported);
+        const allowed = allowedSlugs ? new Set(allowedSlugs) : null;
+        const supported = (serversJson.games || []).filter(
+          (g: IndexGame) => g.supported && (!allowed || allowed.has(g.slug))
+        );
         setGames(supported);
-        setMods(modsJson.mods || []);
+        const allowedMods = allowed
+          ? (modsJson.mods || []).filter((m: CatalogMod) => allowed.has(m.baseGameSlug))
+          : modsJson.mods || [];
+        setMods(allowedMods);
         if (queryGame && supported.some((g: IndexGame) => g.slug === queryGame)) {
           setGameSlug(queryGame);
         } else {
@@ -218,7 +227,7 @@ export function GlobalServerBrowser({
     return () => {
       cancelled = true;
     };
-  }, [queryGame, queryMod, queryEdition]);
+  }, [queryGame, queryMod, queryEdition, allowedSlugs]);
 
   const visibleGames = useMemo(() => {
     let list = games;

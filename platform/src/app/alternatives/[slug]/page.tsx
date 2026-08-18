@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Award, Check } from "lucide-react";
 import { gamesFor } from "@/lib/catalog";
+import { getDiscoveryContext } from "@/lib/access/discover";
+import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { alternativePages, alternativesBySlug } from "@/lib/data/alternatives";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { GameArt } from "@/components/GameArt";
@@ -60,10 +62,12 @@ export default async function AlternativesPage({
   if (!page) notFound();
 
   const games = await gamesFor(page.picks.map((p) => p.slug));
+  const { mode, tiers } = await getDiscoveryContext();
+  const visible = new Set(filterGamesByMode(games, mode, tiers).map((g) => g.slug));
   const bySlug = new Map(games.map((g) => [g.slug, g]));
   const ordered = page.picks
     .map((pick) => ({ pick, game: bySlug.get(pick.slug) }))
-    .filter((x) => x.game);
+    .filter((x) => x.game && visible.has(x.game.slug));
   const top = ordered.find((x) => x.pick.slug === page.topPick) ?? ordered[0];
 
   const faq = [

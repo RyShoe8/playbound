@@ -91,7 +91,10 @@ export function resolveAccess(
   walk(rootId);
 
   const paidDependencies = [...paid.values()];
-  const prices = paidDependencies
+  const displayPrices = paidDependencies
+    .map((d) => d.currentPriceCents ?? d.qualifyingPriceCents)
+    .filter((p): p is Cents => typeof p === "number" && p > 0);
+  const qualifyingPrices = paidDependencies
     .map((d) => d.qualifyingPriceCents ?? d.currentPriceCents)
     .filter((p): p is Cents => typeof p === "number" && p > 0);
 
@@ -103,7 +106,8 @@ export function resolveAccess(
   return {
     tier,
     paidDependencies,
-    fromPriceCents: prices.length ? Math.min(...prices) : null,
+    fromPriceCents: displayPrices.length ? Math.min(...displayPrices) : null,
+    qualifyingPriceCents: qualifyingPrices.length ? Math.min(...qualifyingPrices) : null,
     unresolved,
     cycle,
   };

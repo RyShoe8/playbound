@@ -8,6 +8,7 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { GlobalServerBrowser } from "@/components/GlobalServerBrowser";
 import { pageMetadata } from "@/lib/seo";
+import { listDiscoverableGames } from "@/lib/access/discover";
 
 export const metadata: Metadata = pageMetadata({
   title: "Live Free Game Servers — Player Counts Right Now",
@@ -20,6 +21,8 @@ export default async function ServersPage() {
   const session = await getServerSession(authOptions);
   let installedGameSlugs: string[] = [];
   let installedModSlugs: string[] = [];
+  const discoverable = await listDiscoverableGames();
+  const allowedSlugs = discoverable.map((g) => g.slug);
 
   if (session?.user) {
     try {
@@ -49,6 +52,7 @@ export default async function ServersPage() {
           installedGameSlugs={installedGameSlugs}
           installedModSlugs={installedModSlugs}
           signedIn={Boolean(session?.user)}
+          allowedSlugs={allowedSlugs}
         />
       </Suspense>
     </div>

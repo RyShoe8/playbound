@@ -16,7 +16,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
-import { listGames } from "@/lib/catalog";
+import { listDiscoverableGames } from "@/lib/access/discover";
 import { isLauncherInstallable, launcherInstallUrl } from "@/lib/launcher";
 import { LauncherHeroDownload } from "@/components/LauncherHeroDownload";
 import { GameArt } from "@/components/GameArt";
@@ -126,7 +126,7 @@ const steps = [
 ];
 
 export default async function LauncherPage() {
-  const games = await listGames();
+  const games = await listDiscoverableGames();
   const installable = games.filter((g) => isLauncherInstallable(g));
 
   return (

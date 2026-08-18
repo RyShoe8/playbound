@@ -1,10 +1,19 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Gem, Newspaper, Server } from "lucide-react";
-import { listGamesNewestFirst, listGames, mostPopularGames, getGame } from "@/lib/catalog";
+import { getGame } from "@/lib/catalog";
 import { listCollections } from "@/lib/collections";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
+import {
+  listDiscoverableGames,
+  listDiscoverableGamesNewestFirst,
+  listDiscoverablePopular,
+  filterDiscoverableBySlug,
+  filterDiscoverableCollections,
+  getDiscoveryContext,
+} from "@/lib/access/discover";
+import { filterBySlugAccess } from "@/lib/access/discoveryMode";
 import { CardRow } from "@/components/GameCard";
 import { ModPreviewCard } from "@/components/ModPreviewCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
@@ -24,8 +33,10 @@ const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
 
 async function loadServerPreviews(): Promise<HomeServerPreview[]> {
+  const { mode, tiers } = await getDiscoveryContext();
+  const slugs = filterBySlugAccess([...HOME_SERVER_SLUGS], mode, tiers, (slug) => slug);
   const settled = await Promise.allSettled(
-    HOME_SERVER_SLUGS.map(async (slug): Promise<HomeServerPreview | null> => {
+    slugs.map(async (slug): Promise<HomeServerPreview | null> => {
       const [game, result] = await Promise.all([getGame(slug), listServersForGame(slug)]);
       if (!game || !result.supported) return null;
       const servers = result.servers ?? [];
@@ -87,16 +98,18 @@ export default async function HomePage() {
    */
   const [gamesNewestFirst, games, popular, mods, liveStats, collections] =
     await Promise.all([
-      listGamesNewestFirst(),
-      listGames(),
-      mostPopularGames(12),
+      listDiscoverableGamesNewestFirst(),
+      listDiscoverableGames(),
+      listDiscoverablePopular(12),
       listMods({ view: "card" }),
       getCatalogLiveStats(),
       listCollections(),
     ]);
 
-  const featuredMods = mods.slice(0, FEATURED_MODS_LIMIT);
-  const featuredCollections = collections.slice(0, 3);
+  const featuredMods = (
+    await filterDiscoverableBySlug(mods.slice(0, FEATURED_MODS_LIMIT * 3), (m) => m.baseGameSlug)
+  ).slice(0, FEATURED_MODS_LIMIT);
+  const featuredCollections = (await filterDiscoverableCollections(collections)).slice(0, 3);
   const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
   return (

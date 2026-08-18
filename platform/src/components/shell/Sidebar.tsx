@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
+import { DiscoveryModeToggle } from "@/components/DiscoveryModeToggle";
 
 const nav = [
   { href: "/", label: "Home", icon: Home, exact: true },
@@ -136,7 +137,8 @@ export function Sidebar() {
             Open Discord
           </span>
         </a>
-        <div className="mb-3">
+        <div className="mb-3 space-y-3">
+          <DiscoveryModeToggle variant="sidebar" />
           <GameCompatibilityToggle variant="sidebar" />
         </div>
         {session?.user ? (

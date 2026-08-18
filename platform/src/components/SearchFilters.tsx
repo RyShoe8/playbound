@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { GENRES, TAGS, PLATFORMS, FEATURES } from "@/lib/gamePayload";
+import type { DiscoveryMode } from "@/lib/access/discoveryMode";
 import { useTelemetry } from "@/lib/telemetry";
 
 type SortOption = "title" | "releaseYear" | "players" | "plays";
@@ -15,6 +16,14 @@ type SortDir = "asc" | "desc";
  * ordering the catalog by megabytes ranks games by a property nobody is
  * shopping for.
  */
+const PRICE_OPTIONS: { label: string; value: string }[] = [
+  { label: "Any", value: "any" },
+  { label: "Free", value: "free" },
+  { label: "Under $5", value: "under5" },
+  { label: "Under $10", value: "under10" },
+  { label: "Under $15", value: "under15" },
+];
+
 const SORT_OPTIONS: { label: string; value: SortOption }[] = [
   { label: "Title", value: "title" },
   { label: "Release Year", value: "releaseYear" },
@@ -49,9 +58,11 @@ function FilterChip({
 export function SearchFilters({
   query = "",
   resultCount = null,
+  discoveryMode = "ALL",
 }: {
   query?: string;
   resultCount?: number | null;
+  discoveryMode?: DiscoveryMode;
 }) {
   const router = useRouter();
   const sp = useSearchParams();
@@ -64,18 +75,24 @@ export function SearchFilters({
   const features = useMemo(() => sp.getAll("feature"), [sp]);
   const sort = (sp.get("sort") ?? "title") as SortOption;
   const sortDir = (sp.get("sortDir") ?? "asc") as SortDir;
+  const price = sp.get("price") ?? "any";
 
   const genreSet = useMemo(() => new Set(genres), [genres]);
   const tagSet = useMemo(() => new Set(tags), [tags]);
   const platformSet = useMemo(() => new Set(platforms), [platforms]);
   const featureSet = useMemo(() => new Set(features), [features]);
 
-  const activeFilterCount = genres.length + tags.length + platforms.length + features.length;
+  const activeFilterCount =
+    genres.length +
+    tags.length +
+    platforms.length +
+    features.length +
+    (discoveryMode === "ALL" && price !== "any" ? 1 : 0);
 
   const buildUrl = useCallback(
     (overrides: Record<string, string | string[] | null>) => {
       const params = new URLSearchParams();
-      const values: Record<string, string | string[]> = {
+      const values: Record<string, string | string[] | null> = {
         q,
         genre: genres,
         tag: tags,
@@ -83,6 +100,7 @@ export function SearchFilters({
         feature: features,
         sort,
         sortDir,
+        price: discoveryMode === "ALL" && price !== "any" ? price : null,
         ...overrides,
       };
       for (const [key, val] of Object.entries(values)) {
@@ -99,7 +117,7 @@ export function SearchFilters({
       if (params.get("sortDir") === "asc") params.delete("sortDir");
       return `/search?${params.toString()}`;
     },
-    [q, genres, tags, platforms, features, sort, sortDir]
+    [q, genres, tags, platforms, features, sort, sortDir, price, discoveryMode]
   );
 
   function toggleInArray(arr: string[], val: string): string[] {
@@ -134,6 +152,10 @@ export function SearchFilters({
     const next = sortDir === "asc" ? "desc" : "asc";
     void track("filter_changed", { surface: "search", filters: { sortDir: next } });
     router.push(buildUrl({ sortDir: next }));
+  }
+  function setPrice(next: string) {
+    void track("filter_changed", { surface: "search", filters: { price: next } });
+    router.push(buildUrl({ price: next === "any" ? null : next }));
   }
   function clearFilters() {
     void track("filter_changed", { surface: "search", filters: { cleared: true } });
@@ -224,6 +246,24 @@ export function SearchFilters({
           ))}
         </div>
       </details>
+
+      {discoveryMode === "ALL" ? (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Price
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {PRICE_OPTIONS.map((o) => (
+              <FilterChip
+                key={o.value}
+                label={o.label}
+                active={price === o.value || (o.value === "any" && price !== "free" && price !== "under5" && price !== "under10" && price !== "under15")}
+                onClick={() => setPrice(o.value)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-4 border-t border-border/50 pt-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">

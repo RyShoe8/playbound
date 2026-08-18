@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useTelemetry } from "@/lib/telemetry";
 import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
+import { DiscoveryModeToggle } from "@/components/DiscoveryModeToggle";
 import { MobileFriendsButton } from "@/components/friends/MobileFriendsButton";
 import { NotificationBell } from "@/components/shell/NotificationBell";
 
@@ -46,6 +47,7 @@ export function TopBar() {
         </form>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <DiscoveryModeToggle variant="topbar" className="lg:hidden" />
           <GameCompatibilityToggle variant="topbar" className="lg:hidden" />
           {session?.user ? (
             <>

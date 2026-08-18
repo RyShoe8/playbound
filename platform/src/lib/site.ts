@@ -15,7 +15,7 @@ export const SITE_NAME = "PlayBound";
 export const SITE_TAGLINE = "Discover. Play. Connect.";
 
 export const SITE_DESCRIPTION =
-  "PlayBound is a curated gaming platform built to make finding and playing great free games easier. Every game is tested and played before we add it, with everything you need to get playing—from one-click game and mod installation to hardware compatibility, live multiplayer, parties, events, and cloud saves.";
+  "Great games don't have to cost $70. PlayBound finds exceptional free and affordable games, tests them, improves them with the best community tools and mods, and makes them easier to install and play together.";
 
 /** Public Discord invite (sidebar + Organization.sameAs). */
 export const SITE_DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
@@ -45,9 +45,9 @@ export const SITE_SAME_AS: string[] = [SITE_DISCORD_INVITE];
 export const QUALITY_BAR = [
   {
     key: "genuinelyFree" as const,
-    title: "Genuinely free",
+    title: "Worth the cost",
     description:
-      "No trial, no paywalled campaign, no pay-to-win, no cosmetic treadmill. Free means free, forever.",
+      "Free, or exceptional value at $15 or less. No trial, no paywalled campaign, no pay-to-win, no cosmetic treadmill. Respect the player's money.",
   },
   {
     key: "finished" as const,

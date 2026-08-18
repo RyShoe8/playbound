@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Layers } from "lucide-react";
 import { listCollections } from "@/lib/collections";
-import { listGames } from "@/lib/catalog";
+import { listDiscoverableGames, filterDiscoverableCollections } from "@/lib/access/discover";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
@@ -14,7 +14,10 @@ export const metadata = pageMetadata({
 });
 
 export default async function CollectionsIndexPage() {
-  const [games, collections] = await Promise.all([listGames(), listCollections()]);
+  const [games, collections] = await Promise.all([
+    listDiscoverableGames(),
+    listCollections().then(filterDiscoverableCollections),
+  ]);
   const bySlug = new Map(games.map((g) => [g.slug, g]));
 
   return (

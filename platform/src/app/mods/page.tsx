@@ -1,5 +1,5 @@
 import { Puzzle } from "lucide-react";
-import { listGames } from "@/lib/catalog";
+import { listDiscoverableGames } from "@/lib/access/discover";
 import { listMods, toModCard } from "@/lib/mods";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { pageMetadata } from "@/lib/seo";
@@ -19,7 +19,7 @@ export default async function ModsIndexPage() {
   const includeTesting = await viewerCanSeeTesting();
   const [mods, games] = await Promise.all([
     listMods({ includeTesting, view: "card" }),
-    listGames({ includeTesting }),
+    listDiscoverableGames({ includeTesting }),
   ]);
   // Mods are no longer grouped into per-game sections here — the list is flat
   // and filtered client-side, so only the slug→game lookup is still needed.

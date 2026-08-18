@@ -7,16 +7,16 @@ import { JsonLd, graph, breadcrumbSchema, faqSchema, ORGANIZATION_ID } from "@/c
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata = pageMetadata({
-  title: "The PlayBound Bar — Our Standard for Free Games",
+  title: "The PlayBound Bar — Our Standard",
   description:
-    "Four criteria every game must clear to make the PlayBound catalog: genuinely free, ready to play, curated through thorough testing, and high quality or showing strong potential. Every game is tested and played before it is added.",
+    "Four criteria every game must clear to make the PlayBound catalog: worth the cost, ready to play, curated through thorough testing, and high quality or showing strong potential. Every game is tested and played before it is added.",
   path: "/standards",
 });
 
 const FAQ = [
   {
-    q: "What does PlayBound mean by 'genuinely free'?",
-    a: "No trial period, no paywalled campaign, no pay-to-win purchases, and no cosmetic treadmill designed to extract money over time. If any part of the game a reasonable player would consider core is behind a payment, it does not qualify. Free-to-play games funded by monetisation pressure are excluded even when technically free to download.",
+    q: "What does PlayBound mean by 'worth the cost'?",
+    a: "The game is free, or it is regularly obtainable for $15 or less from an authorized source. Predatory monetization is out either way: no trial-locked campaign, no pay-to-win, no cosmetic treadmill designed to extract money over time. A $5.99 classic that you own outright can clear this bar. A 'free' game that bills you to finish it cannot.",
   },
   {
     q: "Why does PlayBound have so few games?",
@@ -75,9 +75,9 @@ export default async function StandardsPage() {
         The PlayBound Bar
       </h1>
       <p className="mt-4 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-        Free games are not scarce. There are tens of thousands of them, and most are
-        not worth your evening. What is scarce is a trustworthy answer to which ones
-        are actually good.
+        Great games are not scarce because they are free. They are scarce because most
+        titles — free or paid — are not worth your evening. What is scarce is a
+        trustworthy answer to which ones are actually good, and worth what they cost.
       </p>
       <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">
         So {SITE_NAME} is deliberately small. Every game is tested and played

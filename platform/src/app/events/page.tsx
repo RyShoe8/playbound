@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { Plus } from "lucide-react";
 import { authOptions } from "@/lib/auth";
+import { filterDiscoverableBySlug } from "@/lib/access/discover";
 import { getGame } from "@/lib/catalog";
 import { listPublicEvents } from "@/lib/events/service";
 import { listOpenPublicParties } from "@/lib/playTogether/party";
@@ -21,11 +22,16 @@ export const metadata: Metadata = pageMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
-  const [events, session, past, openParties] = await Promise.all([
+  const [eventsRaw, session, pastRaw, openPartiesRaw] = await Promise.all([
     listPublicEvents({ limit: 80 }),
     getServerSession(authOptions),
     listPublicEvents({ includePast: true, limit: 20 }),
     listOpenPublicParties(100),
+  ]);
+  const [events, past, openParties] = await Promise.all([
+    filterDiscoverableBySlug(eventsRaw, (e) => e.gameSlug),
+    filterDiscoverableBySlug(pastRaw, (e) => e.gameSlug),
+    filterDiscoverableBySlug(openPartiesRaw, (p) => p.gameSlug),
   ]);
   const isAdmin = session?.user?.role === "admin";
 

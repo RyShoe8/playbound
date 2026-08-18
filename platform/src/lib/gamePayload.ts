@@ -291,6 +291,75 @@ export function normalizeQualityBar(
   };
 }
 
+const optionalCents = z
+  .union([z.number().int().min(0).max(1_000_000), z.null()])
+  .optional()
+  .transform((v) => (typeof v === "number" ? v : null));
+
+const retailOfferSchema = z.object({
+  retailer: z.string().trim().min(1).max(80),
+  url: z.string().trim().max(2000),
+  priceCents: z.number().int().min(0).max(1_000_000),
+  affiliate: z.boolean().optional().default(true),
+  lastCheckedAt: z
+    .union([z.string().trim().max(40), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => {
+      if (!v) return null;
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    }),
+  isActive: z.boolean().optional().default(true),
+});
+
+function isHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export const gameAccessSchema = z
+  .object({
+    priceType: z.enum(["FREE", "PAID", "PAID_BASE_GAME_REQUIRED"]),
+    regularPriceCents: optionalCents,
+    currentPriceCents: optionalCents,
+    qualifyingPriceCents: optionalCents,
+    currency: z.literal("USD").optional(),
+    purchaseRequired: z.boolean().optional(),
+    requiresBaseGameAssets: z.boolean().optional(),
+    requiresOwnedBaseGame: z.boolean().optional(),
+    requiresGameSlugs: z.array(z.string().trim().min(1).max(80)).max(20).default([]),
+    offers: z.array(retailOfferSchema).max(20).optional().default([]),
+  })
+  .transform((a) => {
+    const purchaseRequired =
+      a.priceType !== "FREE" ||
+      Boolean(a.requiresBaseGameAssets) ||
+      Boolean(a.requiresOwnedBaseGame);
+    const offers =
+      a.priceType === "PAID"
+        ? (a.offers ?? []).filter((o) => o.retailer && o.priceCents > 0 && isHttpUrl(o.url))
+        : [];
+    const offerPrice = offers
+      .filter((o) => o.isActive && o.priceCents > 0)
+      .reduce<number | null>((best, o) => (best == null || o.priceCents < best ? o.priceCents : best), null);
+    return {
+      priceType: a.priceType,
+      regularPriceCents: a.regularPriceCents ?? null,
+      currentPriceCents: offerPrice ?? a.currentPriceCents ?? null,
+      qualifyingPriceCents: a.qualifyingPriceCents ?? null,
+      currency: "USD" as const,
+      purchaseRequired,
+      requiresBaseGameAssets: Boolean(a.requiresBaseGameAssets),
+      requiresOwnedBaseGame: Boolean(a.requiresOwnedBaseGame),
+      requiresGameSlugs: a.requiresGameSlugs ?? [],
+      offers,
+    };
+  });
+
 const optionalProse = (max: number) =>
   z
     .union([z.string().trim().max(max), z.literal(""), z.null()])
@@ -403,6 +472,7 @@ export const gamePayloadSchema = z.object({
   gameOfWeek: z.boolean().default(false),
   hiddenGem: z.boolean().default(false),
   complete: z.boolean().default(false),
+  access: gameAccessSchema.optional().nullable(),
   art: z
     .object({
       from: z.string().trim().min(1).max(40),
@@ -461,6 +531,26 @@ export const gamePayloadSchema = z.object({
 });
 
 export type GamePayload = z.infer<typeof gamePayloadSchema>;
+
+export type GameAccessPayload = NonNullable<GamePayload["access"]>;
+
+export function toPayloadAccess(
+  access: {
+    priceType?: string;
+    regularPriceCents?: number | null;
+    currentPriceCents?: number | null;
+    qualifyingPriceCents?: number | null;
+    currency?: string;
+    purchaseRequired?: boolean;
+    requiresBaseGameAssets?: boolean;
+    requiresOwnedBaseGame?: boolean;
+    requiresGameSlugs?: string[];
+    offers?: unknown;
+  } | null | undefined
+): GameAccessPayload | null {
+  if (!access?.priceType) return null;
+  return gameAccessSchema.parse(access);
+}
 
 export type GamePayloadLauncherInstall = NonNullable<GamePayload["launcherInstall"]>;
 

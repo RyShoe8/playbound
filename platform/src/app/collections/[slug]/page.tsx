@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCollection } from "@/lib/collections";
 import { gamesFor } from "@/lib/catalog";
+import { getDiscoveryContext } from "@/lib/access/discover";
+import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { CollectionGamesList } from "@/components/CollectionGamesList";
 import { Badge } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
@@ -33,18 +35,21 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   const collection = await getCollection(slug);
   if (!collection) notFound();
 
-  const games = await gamesFor(collection.gameSlugs);
+  const allGames = await gamesFor(collection.gameSlugs);
+  const { mode, tiers } = await getDiscoveryContext();
+  const games = filterGamesByMode(allGames, mode, tiers);
+  if (games.length === 0) notFound();
 
   const faq = [
     {
       q: `What is the best ${collection.title.toLowerCase().replace(/^best /, "")}?`,
       a: games[0]
-        ? `PlayBound's top pick is ${games[0].title} — ${games[0].tagline} It is free under ${games[0].license} and runs on ${games[0].platforms.join(", ")}.`
+        ? `PlayBound's top pick is ${games[0].title} — ${games[0].tagline} It runs on ${games[0].platforms.join(", ")}.`
         : collection.description,
     },
     {
-      q: `Are all ${games.length} of these games free?`,
-      a: "Yes. Every game in this collection is genuinely free — no trials, no paywalled content, no pay-to-win purchases — and each has been tested, played, and assessed against PlayBound's four published criteria.",
+      q: `Do these games clear the PlayBound Bar?`,
+      a: "Yes. Every game in this collection has been tested, played, and assessed against PlayBound's published criteria — worth playing, worth what it costs, and respectful of the player's time.",
     },
   ];
 
