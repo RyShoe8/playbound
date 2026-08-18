@@ -813,6 +813,80 @@ export const editorial: Record<string, GameEditorial> = {
     ],
   },
 
+  "dungeon-keeper-gold": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "You run the dungeon, slap the imps, and convert the heroes while a narrator enjoys every bad decision — the original Bullfrog campaign and Deeper Dungeons, still a complete nasty management sim.",
+      lastVerified: "2026-08-18",
+    },
+    longDescription:
+      "Dungeon Keeper Gold is the 1998 compilation of Bullfrog's dungeon-management sim: the original 1997 campaign plus The Deeper Dungeons, a set of harder self-contained realms. You do not drop into someone else's maze as a hero. You are the maze. Imps chip out the earth, a treasure room fills, a lair and hatchery keep the workforce alive, and the first wandering knight is a body to slap, cage, and talk into switching sides.\n\nThe joke is mean on purpose. Richard Ridings narrates as if he has been waiting all week for you to drop a boulder on a paladin, and the systems under that voice are tighter than the tone suggests. Creatures have appetites, wages, and grudges. A dungeon that trains nothing but warlocks still starves if nobody is eating. A Horned Reaper left idle will take the place apart from the inside. Rooms have jobs: the library researches spells, the workshop builds traps and doors, the temple and graveyard unlock the nastier recruits. You look down in isometric, pick units up with a hand, and slap them when they slack off. It is a management game that wants you to enjoy being cruel, and it does not pretend otherwise.\n\nGold is how most people buy this now. On GOG and Steam the compilation runs through DOSBox, which is enough to finish both campaigns on a current PC. It is a complete product — no live-service shop, no season pass, no second purchase to finish the story. It is not a full replica of every 1998 retail extra. The digital Gold build does not include the Windows level editor, the Direct3D executable, or the desktop theme that came in some boxes. What you get is the game and the expansion, which is what you actually play.\n\nPlayBound lists this separately from KeeperFX on purpose. This page is the commercial compilation: the legal data, the original campaigns, the DOSBox wrapper the stores ship. KeeperFX is a fan-made engine rebuild that needs those files and then replaces the 1997 binary with maintained code, widescreen, and a much sharper creature AI. If you already own Gold and you want that modernisation, use the KeeperFX listing and overlay it. If you want the original Gold experience as sold, stay here. Do not treat the two pages as the same download.\n\nPrice is the other honest part. Dungeon Keeper Gold is not freeware. It is a paid 1990s strategy game that usually sits well under PlayBound's $15 ceiling, with nothing predatory hanging off it. That clears worth-the-cost. It is not a free game, and calling it one would make the KeeperFX entry a lie too.",
+    whyWePickedIt:
+      "We keep a lot of 1990s strategy alive by pointing at fan rebuilds. Dungeon Keeper still needs a commercial copy, and Gold is the copy most people can actually buy today — campaign, expansion, done. Listing it as its own VALUE title means we can say what you are paying for without pretending KeeperFX is a complete free game, and without sending someone who wanted the original compilation into an engine overlay they did not ask for.",
+    bestFor: [
+      "Players who want the original Bullfrog campaign and Deeper Dungeons in one purchase",
+      "Anyone fine with a DOSBox classic rather than a fan rebuild",
+      "Management-sim fans who want to play the villain, not the hero",
+      "People looking for a complete game under $15 with no live-service hooks",
+    ],
+    notFor: [
+      "Anyone expecting native widescreen and rebuilt AI — that is KeeperFX, listed separately",
+      "Players who want Dungeon Keeper 2",
+      "Anyone unwilling to buy a 1990s game, even cheaply",
+      "People who bounce off DOS-era interfaces and low resolutions",
+    ],
+    comparableTo: ["War for the Overworld", "Dungeons 3", "Evil Genius", "Startopia"],
+    installSteps: [
+      {
+        platform: "all",
+        text: "Buy Dungeon Keeper Gold from the purchase link on this page. GOG is the usual source; Steam also sells the same compilation.",
+      },
+      {
+        platform: "all",
+        text: "Install it through that store's app (GOG Galaxy or Steam) and launch the Gold build. Digital Gold runs in DOSBox — that is expected, not a broken install.",
+      },
+      {
+        platform: "all",
+        text: "Play the original campaign first. The Deeper Dungeons levels are harder, unordered, and assume you already know the rooms and creatures.",
+      },
+      {
+        platform: "all",
+        text: "If you want native widescreen and the rebuilt creature AI after you own this, that is KeeperFX — a separate PlayBound listing that overlays a new engine on these files. It does not replace this page.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Dungeon Keeper Gold free?",
+        a: "No. It is a paid compilation of Dungeon Keeper and The Deeper Dungeons. It usually costs well under $15, with no extra shop or paywalled campaign, which is why it still clears PlayBound's worth-the-cost bar — but it is not freeware.",
+      },
+      {
+        q: "What is included in Dungeon Keeper Gold?",
+        a: "The original 1997 campaign and The Deeper Dungeons expansion. The current GOG and Steam builds run through DOSBox and do not include the 1998 CD's Windows level editor, Direct3D executable, or desktop theme.",
+      },
+      {
+        q: "Is this Dungeon Keeper 1 or 2?",
+        a: "The first game. Dungeon Keeper 2 is a sequel with a different engine; its fan reimplementation is OpenKeeper, not this listing and not KeeperFX.",
+      },
+      {
+        q: "Do I need KeeperFX to play Dungeon Keeper Gold?",
+        a: "No. Gold is a complete game on its own via DOSBox. KeeperFX is an optional fan engine that uses these data files for modern resolutions and AI. PlayBound lists it separately so the two downloads are not confused.",
+      },
+      {
+        q: "Does Dungeon Keeper Gold run on a modern PC?",
+        a: "Yes. The store builds wrap the original executable in DOSBox, which is how GOG and Steam ship it. It is playable today; it will not look or control like a 2020s strategy game unless you add KeeperFX.",
+      },
+      {
+        q: "Can I use this copy with KeeperFX?",
+        a: "Yes. KeeperFX needs a legal Dungeon Keeper install, and a GOG or Steam Gold copy is the straightforward source. Install Gold first, then follow the KeeperFX page — PlayBound does not mix the two installs on this listing.",
+      },
+    ],
+  },
+
   "space-station-14": {
     qualityBar: {
       genuinelyFree: true,

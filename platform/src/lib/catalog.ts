@@ -6,6 +6,7 @@ import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import type { Game, Genre, LaunchMethod } from "@/lib/data/types";
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import { games as seedGames } from "@/lib/data/games";
+import { editorial } from "@/lib/data/editorial";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { collections, collectionsBySlug } from "@/lib/data";
 import { listCollections } from "@/lib/collections";
@@ -65,6 +66,7 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
 
 function toGame(doc: LeanGame): Game {
   const seed = seedBySlug.get(String(doc.slug));
+  const extra = editorialForMongoOnly(String(doc.slug));
   const status = normalizeStatus(doc);
 
   const base: Game = {
@@ -116,28 +118,28 @@ function toGame(doc: LeanGame): Game {
       normalizeQualityBar(
         (doc.qualityBar && typeof doc.qualityBar === "object" && (doc.qualityBar as { verdict?: string }).verdict)
           ? (doc.qualityBar as Parameters<typeof normalizeQualityBar>[0])
-          : seed?.qualityBar
+          : seed?.qualityBar ?? extra?.qualityBar
       ) ?? undefined,
     longDescription:
-      (doc.longDescription as string) || seed?.longDescription,
+      (doc.longDescription as string) || seed?.longDescription || extra?.longDescription,
     whyWePickedIt:
-      (doc.whyWePickedIt as string) || seed?.whyWePickedIt,
+      (doc.whyWePickedIt as string) || seed?.whyWePickedIt || extra?.whyWePickedIt,
     installSteps:
       (doc.installSteps as Game["installSteps"])?.length
         ? (doc.installSteps as Game["installSteps"])
-        : seed?.installSteps,
+        : seed?.installSteps ?? extra?.installSteps,
     faq: (doc.faq as Game["faq"])?.length
       ? (doc.faq as Game["faq"])
-      : seed?.faq,
+      : seed?.faq ?? extra?.faq,
     bestFor: (doc.bestFor as string[])?.length
       ? (doc.bestFor as string[])
-      : seed?.bestFor,
+      : seed?.bestFor ?? extra?.bestFor,
     notFor: (doc.notFor as string[])?.length
       ? (doc.notFor as string[])
-      : seed?.notFor,
+      : seed?.notFor ?? extra?.notFor,
     comparableTo: (doc.comparableTo as string[])?.length
       ? (doc.comparableTo as string[])
-      : seed?.comparableTo,
+      : seed?.comparableTo ?? extra?.comparableTo,
     updatedAt: (doc as { updatedAt?: Date }).updatedAt
       ? new Date((doc as { updatedAt: Date }).updatedAt).toISOString()
       : undefined,
@@ -216,6 +218,12 @@ for (const g of seedGames) {
       }
     }
   }
+}
+
+/** Mongo-only titles that have writing in editorial.ts but no games.ts stub. */
+function editorialForMongoOnly(slug: string) {
+  if (slug !== "dungeon-keeper-gold") return undefined;
+  return editorial[slug];
 }
 
 function seedGameWithInstall(g: Game): Game {
