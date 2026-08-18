@@ -132,6 +132,31 @@ const CatalogGameSchema = new Schema(
     /** Admin checklist: catalog info for this title is fully entered. */
     complete: { type: Boolean, default: false },
     /*
+     * How the game is acquired. Absent on every existing document, and absent
+     * reads as free — which is what the catalog was when this was added, so
+     * nothing changes until a game is deliberately classified.
+     *
+     * Prices are cents. Nothing here decides Free vs Value on its own; the
+     * resolver in lib/access does, because it can see dependencies this
+     * document cannot.
+     */
+    access: {
+      priceType: {
+        type: String,
+        enum: ["FREE", "PAID", "PAID_BASE_GAME_REQUIRED"],
+      },
+      regularPriceCents: { type: Number, default: null },
+      currentPriceCents: { type: Number, default: null },
+      /** Judged against the ceiling — deliberately not the sale price. */
+      qualifyingPriceCents: { type: Number, default: null },
+      currency: { type: String, default: "USD" },
+      purchaseRequired: { type: Boolean, default: false },
+      requiresBaseGameAssets: { type: Boolean, default: false },
+      requiresOwnedBaseGame: { type: Boolean, default: false },
+      /** Slugs of games this one cannot be played without. */
+      requiresGameSlugs: { type: [String], default: [] },
+    },
+    /*
      * `opsHealth` used to live here — a stored triage light that failures set
      * to yellow and only a human click cleared. The admin lights are derived
      * from telemetry now (lib/admin/gameOpsHealth.ts), so the field is gone
