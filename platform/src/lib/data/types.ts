@@ -54,7 +54,7 @@ export interface GameArt {
  * claimed, and `lastVerified` supplies the recency signal LLMs weight heavily.
  */
 export interface QualityBar {
-  /** No trial, no paywalled campaign, no pay-to-win, no cosmetic treadmill. */
+  /** Worth the cost: free or exceptional value at $15 or less; no predatory monetization. */
   genuinelyFree: boolean;
   /** Playable and satisfying start to finish today. */
   finished: boolean;

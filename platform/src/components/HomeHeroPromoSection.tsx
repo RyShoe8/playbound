@@ -20,6 +20,7 @@ import { GameArt } from "@/components/GameArt";
 import { PlayCta } from "@/components/GameCard";
 import { Badge } from "@/components/ui/bits";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
 import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { CatalogStatsCard } from "@/components/ActivityStatsCard";
 import type { CatalogLiveStats } from "@/lib/liveActivity";
@@ -84,6 +85,7 @@ export function HomeHeroPromoSection({
 }: HomeHeroPromoSectionProps) {
   const { data: session, status } = useSession();
   const { mode, device } = useCompatibilityFilter();
+  const { mode: discoveryMode, setMode: setDiscoveryMode } = useDiscoveryMode();
   const [showPromo, setShowPromo] = useState<boolean>(true);
   const admin = session?.user?.role === "admin";
 
@@ -141,9 +143,9 @@ export function HomeHeroPromoSection({
   const promoPillars = [
     {
       icon: ShieldCheck,
-      title: "Curated Free-to-Play",
+      title: "Worth Playing",
       tagline: "Four-point quality standard",
-      desc: "Every title is tested and played before it is added: genuinely free, ready to play, curated through thorough testing, and high quality or showing strong potential.",
+      desc: "Every title is tested and played before it is added: worth your time, worth what it costs, curated through thorough testing, and high quality or showing strong potential.",
       color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     },
     {
@@ -203,10 +205,10 @@ export function HomeHeroPromoSection({
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="play">
-                  <Sparkles className="size-3" /> The Free PC Gaming Ecosystem
+                  <Sparkles className="size-3" /> Discover. Play. Connect.
                 </Badge>
                 <span className="text-xs font-semibold text-muted-foreground">
-                  Zero Pay-To-Win · 100% Free
+                  Free and exceptional value up to $15
                 </span>
               </div>
 
@@ -218,18 +220,49 @@ export function HomeHeroPromoSection({
               </h1>
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                PlayBound is a curated gaming platform built to make finding and playing great free
-                games easier. Every game is{" "}
-                <Link
-                  href="/standards"
-                  className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
-                >
-                  tested and played
-                </Link>{" "}
-                before we add it, with everything you need to get playing—from one-click game and
-                mod installation to hardware compatibility, live multiplayer, parties, events, and
-                cloud saves.
+                Great games don&apos;t have to cost $70. PlayBound finds exceptional free and affordable
+                games, tests them, improves them with the best community tools and mods, and makes
+                them easier to install and play together.
               </p>
+
+              <div className="mt-5 max-w-xl rounded-2xl border border-border bg-secondary/40 p-4">
+                <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                  Explore PlayBound
+                </p>
+                <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Discovery mode">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={discoveryMode === "FREE"}
+                    onClick={() => setDiscoveryMode("FREE")}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                      discoveryMode === "FREE"
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    FREE
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={discoveryMode === "ALL"}
+                    onClick={() => setDiscoveryMode("ALL")}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                      discoveryMode === "ALL"
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    ALL
+                  </button>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {discoveryMode === "FREE"
+                    ? "Only show me games I can play without spending anything."
+                    : "Show me every PlayBound-approved game up to $15."}
+                </p>
+              </div>
             </div>
 
             {/* 5 Core Pillars Grid */}

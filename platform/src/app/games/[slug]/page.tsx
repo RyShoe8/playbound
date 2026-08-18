@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
+import { GameCommerce } from "@/components/GameCommerce";
 import { FreeOfferBanner } from "@/components/FreeOfferBanner";
 import { offersForGame } from "@/lib/freeOffers/service";
 import { GameInstallContent } from "@/components/GameInstallContent";
@@ -407,7 +408,9 @@ function OverviewTab({
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
-        {/* Quality assessment leads the page — it is the reason to trust
+        <GameCommerce game={game} />
+
+        {/* Quality assessment leads the rest of the page — it is the reason to trust
             everything below it, and the block most likely to be cited. */}
         {game.qualityBar && (
           <QualityBarPanel bar={game.qualityBar} gameTitle={game.title} />

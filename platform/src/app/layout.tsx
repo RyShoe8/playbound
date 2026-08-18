@@ -13,6 +13,7 @@ import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/J
 import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
 import { PopoutDetector } from "@/components/PopoutDetector";
+import { gameAccessTiers } from "@/lib/access/tiers";
 import {
   SITE_URL,
   SITE_NAME,
@@ -76,11 +77,12 @@ export const metadata: Metadata = {
 const COOKIE_SCRIPT_SRC =
   "https://cdn.cookie-script.com/s/cd597c788ebcfd74bbccb96157b11d6b.js";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const accessTiers = await gameAccessTiers();
   return (
     <html
       lang="en"
@@ -129,7 +131,7 @@ export default function RootLayout({
                 users, and mounted once so only one session is ever opened. */}
             <PresenceProvider />
             <PopoutDetector />
-            <CompatibilityShell>
+            <CompatibilityShell accessTiers={accessTiers}>
               <div className="shell-sidebar"><Sidebar /></div>
               <div className="shell-main flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
                 <div className="shell-topbar"><TopBar /></div>

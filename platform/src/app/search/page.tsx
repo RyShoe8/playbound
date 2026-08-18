@@ -3,6 +3,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
 import { searchAll, searchGames, type GameFilter } from "@/lib/catalog";
+import { getDiscoveryContext } from "@/lib/access/discover";
+import {
+  filterCollectionsByMode,
+  filterGamesByMode,
+  filterGamesByPrice,
+  parsePriceFilter,
+} from "@/lib/access/discoveryMode";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { SearchGameResults } from "@/components/SearchGameResults";
@@ -27,6 +34,7 @@ export default async function SearchPage({
     feature?: string | string[];
     sort?: string;
     sortDir?: string;
+    price?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -43,8 +51,14 @@ export default async function SearchPage({
   const features = toArray(params.feature);
   const sort = (params.sort ?? "title") as GameFilter["sort"];
   const sortDir = (params.sortDir ?? "asc") as GameFilter["sortDir"];
+  const price = parsePriceFilter(params.price);
 
-  const hasFilters = genres.length > 0 || tags.length > 0 || platforms.length > 0 || features.length > 0;
+  const hasFilters =
+    genres.length > 0 ||
+    tags.length > 0 ||
+    platforms.length > 0 ||
+    features.length > 0 ||
+    price !== "any";
   const hasSearch = !!q;
   const hasAny = hasSearch || hasFilters;
   const includeTesting = await viewerCanSeeTesting();
@@ -65,21 +79,30 @@ export default async function SearchPage({
    * stats before searching, so every other sort keeps the parallel fetch.
    */
   const liveStatsPromise = getCatalogLiveStats();
-  const games = hasAny
+  const ctxPromise = getDiscoveryContext();
+  let games = hasAny
     ? await searchGames(filter, {
         includeTesting,
         playingNow: sort === "players" ? playingNowBySlug(await liveStatsPromise) : undefined,
       })
     : ([] as Awaited<ReturnType<typeof searchGames>>);
-  const liveStats = await liveStatsPromise;
+  const [liveStats, ctx] = await Promise.all([liveStatsPromise, ctxPromise]);
 
-  // Also search developers and collections when there's a text query
+  games = filterGamesByMode(games, ctx.mode, ctx.tiers);
+  if (ctx.mode === "ALL") {
+    games = filterGamesByPrice(games, price, ctx.tiers);
+  }
+
   const otherResults = hasSearch ? await searchAll(q, { includeTesting }) : null;
   const developerResults = otherResults?.developers ?? [];
-  const collectionResults = otherResults?.collections ?? [];
-  // Editions match on their own name, so "Turtle" finds Turtle WoW even though
-  // its game is called World of Warcraft and would not match the query itself.
-  const editionResults = otherResults?.editions ?? [];
+  const collectionResults = filterCollectionsByMode(
+    otherResults?.collections ?? [],
+    ctx.mode,
+    ctx.tiers
+  );
+  const editionResults = (otherResults?.editions ?? []).filter((hit) =>
+    filterGamesByMode([hit.game], ctx.mode, ctx.tiers).length > 0
+  );
 
   const total =
     games.length + developerResults.length + collectionResults.length + editionResults.length;
@@ -87,7 +110,7 @@ export default async function SearchPage({
   return (
     <div className="space-y-4 px-4 pt-2 pb-6 sm:px-6 lg:px-8">
       <Suspense fallback={null}>
-        <SearchFilters query={q} resultCount={hasAny ? total : null} />
+        <SearchFilters query={q} resultCount={hasAny ? total : null} discoveryMode={ctx.mode} />
       </Suspense>
 
       {!hasAny && (

@@ -3,8 +3,9 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import CatalogMod from "@/lib/models/CatalogMod";
 import PlatformEvent from "@/lib/models/PlatformEvent";
-import { accessId, type AccessGraph, type AccessNode, type GameAccess } from "./types";
+import { accessId, type AccessGraph, type AccessNode } from "./types";
 import { buildAccessGraph } from "./resolver";
+import { accessFromDoc, gameDependencies } from "./docs";
 
 /**
  * Assemble the whole dependency graph from the catalog.
@@ -16,30 +17,6 @@ import { buildAccessGraph } from "./resolver";
  * query rather than real gaps, which is exactly the noise the audit exists to
  * eliminate.
  */
-
-/** Absent access means free — the state every unclassified row is in. */
-function accessFromDoc(raw: unknown): GameAccess | undefined {
-  if (!raw || typeof raw !== "object") return undefined;
-  const a = raw as Record<string, unknown>;
-  if (!a.priceType) return undefined;
-  return {
-    priceType: a.priceType as GameAccess["priceType"],
-    regularPriceCents: (a.regularPriceCents as number) ?? null,
-    currentPriceCents: (a.currentPriceCents as number) ?? null,
-    qualifyingPriceCents: (a.qualifyingPriceCents as number) ?? null,
-    currency: "USD",
-    purchaseRequired: Boolean(a.purchaseRequired),
-    requiresBaseGameAssets: Boolean(a.requiresBaseGameAssets),
-    requiresOwnedBaseGame: Boolean(a.requiresOwnedBaseGame),
-  };
-}
-
-function gameDependencies(raw: unknown): string[] {
-  if (!raw || typeof raw !== "object") return [];
-  const slugs = (raw as { requiresGameSlugs?: unknown }).requiresGameSlugs;
-  if (!Array.isArray(slugs)) return [];
-  return slugs.filter((s): s is string => typeof s === "string" && s.length > 0).map(accessId.game);
-}
 
 export async function loadAccessGraph(): Promise<AccessGraph> {
   await dbConnect();

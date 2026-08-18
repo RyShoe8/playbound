@@ -1,4 +1,5 @@
 import type { Game, Developer, Collection } from "@/lib/data/types";
+import { bestPurchase } from "@/lib/access/offers";
 import {
   SITE_URL,
   SITE_NAME,
@@ -136,6 +137,7 @@ export function videoGameSchema(
   opts?: { aggregateRating?: { ratingValue: number; reviewCount: number } }
 ): Json {
   const priceCents = gamePriceCents(game);
+  const buy = priceCents > 0 ? bestPurchase(game.access) : null;
   const sameAs = [
     game.website,
     game.githubRepo ? `https://github.com/${game.githubRepo}` : undefined,
@@ -182,7 +184,7 @@ export function videoGameSchema(
       price: (priceCents / 100).toFixed(2),
       priceCurrency: game.access?.currency ?? "USD",
       availability: "https://schema.org/InStock",
-      url: absoluteUrl(`/games/${game.slug}`),
+      url: buy?.url ?? absoluteUrl(`/games/${game.slug}`),
       // Seller is PlayBound only when PlayBound is where you get it. For a
       // paid title we point at the store rather than claim to sell it.
       ...(priceCents === 0 ? { seller: { "@id": ORGANIZATION_ID } } : {}),

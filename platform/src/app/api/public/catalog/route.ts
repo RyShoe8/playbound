@@ -1,4 +1,5 @@
 import { listGames, collections } from "@/lib/catalog";
+import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { SITE_URL, QUALITY_BAR } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -11,7 +12,7 @@ export const revalidate = 3600;
  * they are a dataset that exists nowhere else in one shape. Open by design.
  */
 export async function GET() {
-  const games = await listGames();
+  const [games, tiers] = await Promise.all([listGames(), gameAccessTiers()]);
 
   return Response.json(
     {
@@ -46,7 +47,9 @@ export async function GET() {
         launchMethods: game.launchMethods,
         officialWebsite: game.website,
         sourceRepo: game.githubRepo ? `https://github.com/${game.githubRepo}` : null,
-        isFree: true,
+        accessTier: tierFor(tiers, game.slug).tier,
+        qualifyingPriceCents: tierFor(tiers, game.slug).qualifyingPriceCents,
+        currentPriceCents: tierFor(tiers, game.slug).fromPriceCents,
         qualityBar: game.qualityBar ?? null,
         bestFor: game.bestFor ?? [],
         notFor: game.notFor ?? [],

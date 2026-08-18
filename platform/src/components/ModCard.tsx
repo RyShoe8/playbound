@@ -3,6 +3,8 @@ import type { ModCardMod } from "@/lib/mods";
 import { cn } from "@/lib/utils";
 import { ModArt } from "@/components/ModArt";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
+import { useGameTier } from "@/components/AccessTiersProvider";
+import { requiresGamePriceLine } from "@/lib/access/discoveryMode";
 
 type BaseGameInfo = {
   slug?: string;
@@ -35,10 +37,21 @@ export function ModCard({
   href,
 }: Props) {
   const link = href ?? `/mods/${mod.slug}`;
+  const requireLine = requiresGamePriceLine(
+    baseGame?.title || mod.baseGameSlug,
+    useGameTier(mod.baseGameSlug).fromPriceCents
+  );
   const footer =
     meta ??
     [
-      baseGame?.title ? `For ${baseGame.title}` : mod.baseGameSlug ? `For ${mod.baseGameSlug}` : null,
+      requireLine,
+      requireLine
+        ? null
+        : baseGame?.title
+          ? `For ${baseGame.title}`
+          : mod.baseGameSlug
+            ? `For ${mod.baseGameSlug}`
+            : null,
       mod.sizeMB ? `~${mod.sizeMB} MB` : null,
     ]
       .filter(Boolean)

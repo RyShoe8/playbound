@@ -8,6 +8,8 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import Review from "@/lib/models/Review";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import { collectionsFeaturing, listGames } from "@/lib/catalog";
+import { getDiscoveryContext } from "@/lib/access/discover";
+import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { platformFromUserAgent, visiblePlatformsFor } from "@/lib/libraryPlatform";
 import { getDiscordPresence } from "@/lib/discordPresence";
 import {
@@ -22,6 +24,8 @@ import { issueForGame } from "@/lib/weekly";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
+import { GetGameCta } from "@/components/GameCommerce";
+import { bestPurchase } from "@/lib/access/offers";
 import { Badge } from "@/components/ui/bits";
 import { PlayingNowBadge } from "@/components/ActivityStats";
 import { ActivityStatsCard } from "@/components/ActivityStatsCard";
@@ -106,8 +110,11 @@ export async function GameHeroActions({
   choosable: boolean;
 }) {
   const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
+  const buy = bestPurchase(game.access);
+  const installEmphasis = buy ? "secondary" : "primary";
   return (
     <>
+      <GetGameCta game={game} size="lg" />
       {choosable ? (
         <Link
           href="#editions"
@@ -117,7 +124,7 @@ export async function GameHeroActions({
           Choose an edition
         </Link>
       ) : (
-        <PlayCta game={game} size="lg" />
+        <PlayCta game={game} size="lg" emphasis={installEmphasis} />
       )}
       {!initiallyInLibrary && <LocateGameButton slug={game.slug} size="lg" />}
       <AdaptiveAddToLibraryButton
@@ -137,8 +144,10 @@ export function GameHeroActionsFallback({
   game: Game;
   choosable: boolean;
 }) {
+  const buy = bestPurchase(game.access);
   return (
     <>
+      <GetGameCta game={game} size="lg" />
       {choosable ? (
         <Link
           href="#editions"
@@ -148,7 +157,7 @@ export function GameHeroActionsFallback({
           Choose an edition
         </Link>
       ) : (
-        <PlayCta game={game} size="lg" />
+        <PlayCta game={game} size="lg" emphasis={buy ? "secondary" : "primary"} />
       )}
       <LocateGameButton slug={game.slug} size="lg" />
       <AdaptiveAddToLibraryButton
@@ -237,13 +246,16 @@ export async function GameWhyIssueLink({ gameSlug }: { gameSlug: string }) {
 
 export async function GameSimilarBlock({ game }: { game: Game }) {
   const includeTesting = await viewerCanSeeTesting();
-  const [allGames, liveStats] = await Promise.all([
+  const [allGames, liveStats, { mode, tiers }] = await Promise.all([
     listGames({ includeTesting }),
     getCatalogLiveStats(),
+    getDiscoveryContext(),
   ]);
-  const similar = allGames
-    .filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre)))
-    .slice(0, 20);
+  const similar = filterGamesByMode(
+    allGames.filter((g) => g.slug !== game.slug && g.genres.some((genre) => game.genres.includes(genre))),
+    mode,
+    tiers
+  ).slice(0, 20);
   if (similar.length === 0) return null;
   return (
     <section>

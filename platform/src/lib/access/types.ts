@@ -29,11 +29,32 @@ export type Currency = "USD";
 /** Cents, so no float arithmetic ever touches money. */
 export type Cents = number;
 
+/**
+ * A place a player can buy this game.
+ *
+ * Affiliate availability never decides FREE vs VALUE — that is still the
+ * resolver looking at qualifying price and the dependency chain. Offers only
+ * answer "where, and for how much today".
+ */
+export interface RetailOffer {
+  retailer: string;
+  url: string;
+  priceCents: Cents;
+  affiliate: boolean;
+  lastCheckedAt: string | null;
+  isActive: boolean;
+}
+
 export interface GameAccess {
   priceType: PriceType;
   /** Typical undiscounted price. */
   regularPriceCents: Cents | null;
-  /** Best price we have observed recently. */
+  /**
+   * Lowest price among active purchase sources, when we have any.
+   *
+   * Derived from `offers` at read and save. Manual only when no sources are
+   * listed. Cards show this, not the qualifying price.
+   */
   currentPriceCents: Cents | null;
   /**
    * The price eligibility is judged against.
@@ -46,6 +67,8 @@ export interface GameAccess {
   currency: Currency;
   /** True when money must change hands somewhere to play this. */
   purchaseRequired: boolean;
+  /** Where to buy it. Empty on free games. */
+  offers?: RetailOffer[];
   /**
    * A free engine or port that cannot run without commercial data.
    *
@@ -55,6 +78,8 @@ export interface GameAccess {
    */
   requiresBaseGameAssets?: boolean;
   requiresOwnedBaseGame?: boolean;
+  /** Slugs of games this one cannot be played without. */
+  requiresGameSlugs?: string[];
 }
 
 export type AccessNodeKind =
@@ -110,8 +135,13 @@ export interface AccessResolution {
    * that it is VALUE — "Requires Morrowind — usually $5.99".
    */
   paidDependencies: PaidDependency[];
-  /** Cheapest qualifying price across the chain, for a "from $X" label. */
+  /**
+   * Cheapest price a player pays today across the chain — current (offer)
+   * first, qualifying as fallback. Card labels use this. Not eligibility.
+   */
   fromPriceCents: Cents | null;
+  /** Cheapest qualifying price across the chain. Eligibility, not the sale. */
+  qualifyingPriceCents: Cents | null;
   /** Referenced ids that are not in the graph. */
   unresolved: string[];
   /** True when the walk met a cycle; the tier is then not trustworthy. */
@@ -134,4 +164,5 @@ export const FREE_ACCESS: GameAccess = {
   qualifyingPriceCents: 0,
   currency: "USD",
   purchaseRequired: false,
+  requiresGameSlugs: [],
 };

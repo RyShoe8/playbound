@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { listDevelopers } from "@/lib/developers";
 import { emptyGameDraft, slugifyTitle, type GamePayload } from "@/lib/gamePayload";
+import { listGames } from "@/lib/catalog";
+import { gameAccessTiers } from "@/lib/access/tiers";
 import dbConnect from "@/lib/db";
 import GameSubmission from "@/lib/models/GameSubmission";
 import { GameEditorForm } from "@/components/admin/GameEditorForm";
@@ -51,6 +53,11 @@ export default async function AdminNewGamePage({
         mode="create"
         initial={initial}
         developers={(await listDevelopers()).map((d) => ({ slug: d.slug, name: d.name }))}
+        catalogGames={(await listGames({ includeTesting: true })).map((g) => ({
+          slug: g.slug,
+          title: g.title,
+        }))}
+        catalogTiers={await gameAccessTiers()}
       />
     </div>
   );

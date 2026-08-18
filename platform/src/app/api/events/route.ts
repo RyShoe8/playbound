@@ -12,6 +12,7 @@ import {
 } from "@/lib/events/service";
 import { serializeEvent } from "@/lib/events/serialize";
 import { getRsvpCounts } from "@/lib/events/rsvpCounts";
+import { filterDiscoverableBySlug } from "@/lib/access/discover";
 
 export async function GET(req: Request) {
   try {
@@ -25,11 +26,12 @@ export async function GET(req: Request) {
       includePast,
       limit: 80,
     });
+    const visible = await filterDiscoverableBySlug(events, (e) => e.gameSlug);
     return NextResponse.json(
-      { events },
+      { events: visible },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+          "Cache-Control": "private, no-store",
         },
       }
     );

@@ -49,6 +49,8 @@ import {
   StringListEditor,
 } from "@/components/admin/EditorialFields";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
+import { AccessPricingFields } from "@/components/admin/AccessPricingFields";
+import type { GameTierMap } from "@/lib/access/tiers";
 import { SizeInput } from "@/components/admin/SizeInput";
 import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
 
@@ -148,10 +150,14 @@ export function GameEditorForm({
   mode,
   initial,
   developers,
+  catalogGames = [],
+  catalogTiers = {},
 }: {
   mode: "create" | "edit";
   initial: GamePayload;
   developers: DevOption[];
+  catalogGames?: { slug: string; title: string }[];
+  catalogTiers?: GameTierMap;
 }) {
   const router = useRouter();
   const coverFileRef = useRef<HTMLInputElement>(null);
@@ -1031,6 +1037,15 @@ export function GameEditorForm({
             className={field}
           />
         </div>
+        </AdminCollapsibleSection>
+
+        <AdminCollapsibleSection title="Access & pricing" defaultOpen>
+          <AccessPricingFields
+            value={form.access}
+            catalogGames={catalogGames.filter((g) => g.slug !== form.slug)}
+            catalogTiers={catalogTiers}
+            onChange={(next) => patch("access", next)}
+          />
         </AdminCollapsibleSection>
 
         <AdminCollapsibleSection title="Cover & media" defaultOpen>

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Globe, MapPin, Newspaper } from "lucide-react";
 import { getDeveloper } from "@/lib/developers";
 import { gamesByDeveloper } from "@/lib/catalog";
+import { listDiscoverableGames } from "@/lib/access/discover";
 import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
@@ -50,10 +51,12 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
   const dev = await getDeveloper(slug);
   if (!dev) notFound();
 
-  const [devGames, liveStats] = await Promise.all([
+  const [allDevGames, liveStats] = await Promise.all([
     gamesByDeveloper(dev.slug),
     getCatalogLiveStats(),
   ]);
+  const discoverable = new Set((await listDiscoverableGames()).map((g) => g.slug));
+  const devGames = allDevGames.filter((g) => discoverable.has(g.slug));
   const repo = devGames.find((g) => g.githubRepo)?.githubRepo;
   const releases = repo ? await fetchGithubReleases(repo, 3) : [];
 

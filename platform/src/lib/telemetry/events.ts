@@ -287,6 +287,14 @@ export type TelemetryEventMap = {
     offerId?: string;
     offerType?: string;
   } & Extra;
+  /** Outbound click to buy a VALUE game from a listed store. */
+  purchase_clicked: {
+    gameSlug?: string;
+    retailer?: string;
+    affiliate?: boolean;
+    priceCents?: number;
+    surface?: string;
+  } & Extra;
 };
 
 export type TelemetryEventName = keyof TelemetryEventMap;

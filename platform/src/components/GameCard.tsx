@@ -24,6 +24,9 @@ import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredGames";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { useGameTier } from "@/components/AccessTiersProvider";
+import { accessPriceLabel } from "@/lib/access/discoveryMode";
+import { gameRequiresPurchase } from "@/lib/access/resolver";
 import {
   parseMobileOs,
   resolveMobileOutbound,
@@ -41,18 +44,31 @@ const ctaSizes = {
   lg: "h-12 px-7 text-base",
 };
 
-export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" | "lg" }) {
+export function PlayCta({
+  game,
+  size = "md",
+  emphasis = "primary",
+}: {
+  game: Game;
+  size?: "sm" | "md" | "lg";
+  emphasis?: "primary" | "secondary";
+}) {
   const { device } = useCompatibilityFilter();
   const { track } = useTelemetry();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const [os, setOs] = useState<LauncherOs>("windows");
+  const paid = gameRequiresPurchase(game.access);
+  const installLabel = paid ? "Install" : "Get It Free";
 
   useEffect(() => {
     setOs(detectLauncherOs());
   }, []);
 
   const className = cn(
-    "inline-flex items-center gap-2 rounded-full bg-play font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px cursor-pointer select-none",
+    "inline-flex items-center gap-2 rounded-full font-bold transition-all hover:brightness-110 active:translate-y-px cursor-pointer select-none",
+    emphasis === "secondary"
+      ? "border border-border bg-secondary text-foreground"
+      : "bg-play text-play-foreground shadow-[0_0_24px_-6px_var(--play)]",
     ctaSizes[size]
   );
   const iconClass = cn(size === "lg" ? "size-5" : "size-4");
@@ -87,7 +103,7 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
         properties={{ gameSlug: game.slug, url: href }}
       >
         <MonitorPlay className={iconClass} />
-        Play Free
+        {paid ? "Play" : "Play Free"}
       </TelemetryAnchor>
     );
   }
@@ -139,7 +155,7 @@ export function PlayCta({ game, size = "md" }: { game: Game; size?: "sm" | "md" 
       ) : (
         <>
           <Download className={iconClass} />
-          Get It Free
+          {installLabel}
         </>
       )}
     </button>
@@ -204,6 +220,7 @@ export function GameCard({
   playingNow?: number;
 }) {
   const count = playingNow ?? 0;
+  const price = accessPriceLabel(useGameTier(game.slug).fromPriceCents);
   return (
     <Link
       href={`/games/${game.slug}`}
@@ -220,12 +237,15 @@ export function GameCard({
         </div>
       </div>
       <div className="flex items-start justify-between gap-2 border-t border-border/70 bg-card/90 px-2.5 py-2">
-        <CardCategoryTags
-          genres={game.genres}
-          tags={game.tags}
-          size="md"
-          className="min-w-0 flex-1"
-        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-extrabold tracking-wide text-muted-foreground">{price}</p>
+          <CardCategoryTags
+            genres={game.genres}
+            tags={game.tags}
+            size="md"
+            className="mt-1 min-w-0"
+          />
+        </div>
         {count > 0 ? (
           <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-[11px] font-semibold text-muted-foreground">
             <span className="relative flex size-1.5">

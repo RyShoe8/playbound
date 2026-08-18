@@ -5,7 +5,8 @@ import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
-import { getGame, listGames } from "@/lib/catalog";
+import { getGame } from "@/lib/catalog";
+import { listDiscoverableGames } from "@/lib/access/discover";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
@@ -111,13 +112,15 @@ export default async function CommunityPage() {
     ]);
     unanswered = u.map((t) => ({ title: t.title, gameSlug: t.gameSlug, slug: t.slug }));
     solved = s.map((t) => ({ title: t.title, gameSlug: t.gameSlug, slug: t.slug }));
-    const games = await listGames({ includeTesting });
+    const games = await listDiscoverableGames({ includeTesting });
     const bySlug = new Map(games.map((g) => [g.slug, g.title]));
-    activeGames = agg.map((a) => ({
-      slug: a._id,
-      title: bySlug.get(a._id) ?? a._id,
-      count: a.count,
-    }));
+    activeGames = agg
+      .map((a) => ({
+        slug: a._id,
+        title: bySlug.get(a._id) ?? a._id,
+        count: a.count,
+      }))
+      .filter((g) => bySlug.has(g.slug));
   } catch {
     /* ignore */
   }

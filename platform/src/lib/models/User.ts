@@ -72,6 +72,15 @@ const UserSchema = new Schema({
     allowPlayInvites: { type: Boolean, default: true },
     /** When false, skip friend-started-playing / LFG notifications. */
     notifyFriendActivity: { type: Boolean, default: true },
+    /**
+     * Global discovery mode. ALL is the default — a first visit must not look
+     * secretly filtered. Cookie is what the request reads; this persists it
+     * across devices.
+     */
+    discoveryMode: {
+      type: String,
+      enum: ["FREE", "ALL"],
+    },
   },
   createdAt: { type: Date, default: Date.now },
 });

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
-import { listGames } from "@/lib/catalog";
+import { listDiscoverableGames } from "@/lib/access/discover";
 import { listDevelopers } from "@/lib/developers";
 import { pageMetadata } from "@/lib/seo";
 import { Avatar } from "@/components/ui/bits";
@@ -15,7 +15,7 @@ export const metadata = pageMetadata({
 });
 
 export default async function DevelopersIndexPage() {
-  const games = await listGames();
+  const games = await listDiscoverableGames();
   const countBySlug = new Map<string, number>();
   for (const game of games) {
     countBySlug.set(game.developerSlug, (countBySlug.get(game.developerSlug) ?? 0) + 1);

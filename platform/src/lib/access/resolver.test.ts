@@ -85,6 +85,20 @@ describe("the tier table from the spec", () => {
     const g = buildAccessGraph([game("tc", needsRetailAssets)]);
     expect(resolveAccess(accessId.game("tc"), g).tier).toBe("VALUE");
   });
+
+  it("cards use the live price, eligibility keeps qualifying", () => {
+    const g = buildAccessGraph([
+      game("fnv", {
+        ...paid(799),
+        currentPriceCents: 349,
+        qualifyingPriceCents: 799,
+      }),
+    ]);
+    const res = resolveAccess(accessId.game("fnv"), g);
+    expect(res.tier).toBe("VALUE");
+    expect(res.fromPriceCents).toBe(349);
+    expect(res.qualifyingPriceCents).toBe(799);
+  });
 });
 
 describe("inheritance down the chain", () => {
@@ -123,6 +137,7 @@ describe("inheritance down the chain", () => {
     const res = resolveAccess(accessId.event("gn2"), paidChain);
     expect(res.paidDependencies.map((d) => d.label)).toEqual(["morrowind"]);
     expect(res.fromPriceCents).toBe(599);
+    expect(res.qualifyingPriceCents).toBe(599);
   });
 
   it("every entity on a paid chain resolves VALUE, not just the leaf", () => {
