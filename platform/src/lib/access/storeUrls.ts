@@ -56,8 +56,35 @@ export function detectRetailer(url: string): string | null {
     if (host.endsWith("humblebundle.com") || host.endsWith("humble.com")) return "Humble Bundle";
     if (host.endsWith("itch.io")) return "itch.io";
     if (host.endsWith("greenmangaming.com")) return "Green Man Gaming";
+    if (host.endsWith("gamersgate.com")) return "GamersGate";
+    if (/(^|\.)ebay\./i.test(host)) return "eBay";
     return null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Append a store affiliate query param on paid outbound URLs.
+ * Leaves the URL alone when the offer is not affiliate, the id/param is
+ * missing, or the link already has that param (a pasted full affiliate URL).
+ */
+export function withStoreAffiliate(
+  url: string,
+  opts: { affiliate?: boolean; id?: string | null; param?: string | null }
+): string {
+  if (!opts.affiliate) return url;
+  const id = typeof opts.id === "string" ? opts.id.trim() : "";
+  const param = typeof opts.param === "string" ? opts.param.trim() : "";
+  if (!id || !param) return url;
+  if (!/^[A-Za-z0-9_-]+$/.test(param)) return url;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return url;
+    if (u.searchParams.has(param)) return url;
+    u.searchParams.set(param, id);
+    return u.toString();
+  } catch {
+    return url;
   }
 }

@@ -68,7 +68,7 @@ function toProviderRecord(doc: LeanDoc): StoreProviderRecord {
     logoUrl: (doc.logoUrl as string) || null,
     baseUrl: String(doc.baseUrl),
     color: (doc.color as string) || null,
-    active: doc.active !== false,
+    active: doc.freeOffersEnabled === true || (doc.freeOffersEnabled == null && doc.active !== false),
   };
 }
 

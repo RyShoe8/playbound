@@ -7,10 +7,13 @@ type StoreRow = {
   slug: string;
   name: string;
   baseUrl: string;
-  active: boolean;
   matchingEnabled: boolean;
   priceRefreshEnabled: boolean;
+  freeOffersEnabled: boolean;
   affiliateDefault: boolean;
+  affiliateId: string;
+  affiliateParam: string;
+  defaultAffiliateParam: string;
   discovery: string;
   feedUrl: string;
   capabilities: {
@@ -18,6 +21,7 @@ type StoreRow = {
     titleSearch: boolean;
     feedIngest: boolean;
     freeOfferIngest: boolean;
+    retailer: string | null;
     discovery: string;
   } | null;
   lastFeed: { startedAt: string; status: string } | null;
@@ -59,11 +63,14 @@ export function EcommerceStoresManager() {
 
   async function patch(slug: string, partial: Record<string, unknown>) {
     setBusy(slug);
-    await fetch("/api/admin/ecommerce/stores", {
+    setError(null);
+    const res = await fetch("/api/admin/ecommerce/stores", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ slug, ...partial }),
     });
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) setError(json.error || "Could not save.");
     await load();
     router.refresh();
     setBusy(null);
@@ -87,16 +94,17 @@ export function EcommerceStoresManager() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Stores do not all work the same way. Some expose a catalog API, some publish a product
-        feed you paste here, and some have neither — those stay manual: paste a product URL on
-        the game. This page cannot invent a new storefront protocol.
+        Free offers and paid purchase sources are separate. A store can ingest giveaways
+        without being an affiliate. Affiliate IDs are optional and only stamped on Get Game
+        links — not on free-offer claim URLs.
       </p>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <div className="space-y-3">
         {stores.map((store) => {
           const caps = store.capabilities;
+          const paid = Boolean(caps?.retailer);
           return (
-            <article key={store.slug} className="space-y-3 rounded-xl border border-border bg-card p-4">
+            <article key={store.slug} className="space-y-4 rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-base font-extrabold">{store.name}</h2>
@@ -110,81 +118,160 @@ export function EcommerceStoresManager() {
                   <Badge on={store.discovery === "manual"} label="Manual URL" />
                 </div>
               </div>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={store.active}
-                    disabled={busy === store.slug}
-                    onChange={(e) => void patch(store.slug, { active: e.target.checked })}
-                  />
-                  Active
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={store.matchingEnabled}
-                    disabled={busy === store.slug || (!caps?.titleSearch && !caps?.feedIngest)}
-                    onChange={(e) => void patch(store.slug, { matchingEnabled: e.target.checked })}
-                  />
-                  Auto-match
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={store.priceRefreshEnabled}
-                    disabled={busy === store.slug || !caps?.livePrice}
-                    onChange={(e) => void patch(store.slug, { priceRefreshEnabled: e.target.checked })}
-                  />
-                  Refresh prices
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={store.affiliateDefault}
-                    disabled={busy === store.slug}
-                    onChange={(e) => void patch(store.slug, { affiliateDefault: e.target.checked })}
-                  />
-                  Affiliate by default
-                </label>
-              </div>
-              {caps?.feedIngest ? (
+
+              {caps?.freeOfferIngest ? (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                    Product feed URL
-                  </label>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                    Free offers
+                  </p>
+                  <label className="flex items-center gap-2 text-sm">
                     <input
-                      type="url"
-                      className="min-w-[16rem] flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
-                      defaultValue={store.feedUrl}
-                      placeholder="https://… csv, json, or xml"
-                      onBlur={(e) => {
-                        const next = e.currentTarget.value.trim();
-                        if (next !== (store.feedUrl || "")) void patch(store.slug, { feedUrl: next });
-                      }}
+                      type="checkbox"
+                      checked={store.freeOffersEnabled}
+                      disabled={busy === store.slug}
+                      onChange={(e) =>
+                        void patch(store.slug, { freeOffersEnabled: e.target.checked })
+                      }
                     />
-                    <button
-                      type="button"
-                      disabled={busy === store.slug || !store.feedUrl}
-                      onClick={() => void ingest(store.slug)}
-                      className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-50"
-                    >
-                      Ingest feed
-                    </button>
+                    Ingest giveaways
+                  </label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Independent of affiliates. Last run{" "}
+                    {store.lastFreeOffers
+                      ? `${new Date(store.lastFreeOffers.startedAt).toLocaleString()} (${store.lastFreeOffers.status})`
+                      : "never"}
+                    .
+                  </p>
+                </div>
+              ) : null}
+
+              {paid ? (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                    Purchase sources
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={store.matchingEnabled}
+                        disabled={busy === store.slug || (!caps?.titleSearch && !caps?.feedIngest)}
+                        onChange={(e) =>
+                          void patch(store.slug, { matchingEnabled: e.target.checked })
+                        }
+                      />
+                      Auto-match
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={store.priceRefreshEnabled}
+                        disabled={busy === store.slug || !caps?.livePrice}
+                        onChange={(e) =>
+                          void patch(store.slug, { priceRefreshEnabled: e.target.checked })
+                        }
+                      />
+                      Refresh prices
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={store.affiliateDefault}
+                        disabled={busy === store.slug}
+                        onChange={(e) =>
+                          void patch(store.slug, { affiliateDefault: e.target.checked })
+                        }
+                      />
+                      Affiliate by default
+                    </label>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <label className="block text-sm">
+                      <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                        Affiliate ID
+                      </span>
+                      <input
+                        key={`aff-id-${store.slug}-${store.affiliateId}`}
+                        type="text"
+                        defaultValue={store.affiliateId}
+                        placeholder="optional"
+                        className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
+                        onBlur={(e) => {
+                          const next = e.currentTarget.value.trim();
+                          if (next !== (store.affiliateId || "")) {
+                            void patch(store.slug, { affiliateId: next });
+                          }
+                        }}
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                        Query param
+                      </span>
+                      <input
+                        key={`aff-param-${store.slug}-${store.affiliateParam}`}
+                        type="text"
+                        defaultValue={store.affiliateParam}
+                        placeholder={store.defaultAffiliateParam || "e.g. partner"}
+                        className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
+                        onBlur={(e) => {
+                          const next = e.currentTarget.value.trim();
+                          if (next !== (store.affiliateParam || "")) {
+                            void patch(store.slug, { affiliateParam: next });
+                          }
+                        }}
+                      />
+                    </label>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    CSV, JSON, or merchant XML. Matching uses the last ingested titles.
-                    {store.lastFeed
-                      ? ` Last ingest ${new Date(store.lastFeed.startedAt).toLocaleString()} (${store.lastFeed.status}).`
-                      : ""}
+                    Optional. Stamped on Get Game links when the source is marked affiliate.
+                    Leave the param blank to use {store.defaultAffiliateParam || "nothing until you set one"}.
                   </p>
+                  {caps?.feedIngest ? (
+                    <div className="space-y-1">
+                      <label className="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                        Product feed URL
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          type="url"
+                          className="min-w-[16rem] flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
+                          defaultValue={store.feedUrl}
+                          placeholder="https://… csv, json, or xml"
+                          onBlur={(e) => {
+                            const next = e.currentTarget.value.trim();
+                            if (next !== (store.feedUrl || "")) {
+                              void patch(store.slug, { feedUrl: next });
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          disabled={busy === store.slug || !store.feedUrl}
+                          onClick={() => void ingest(store.slug)}
+                          className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-50"
+                        >
+                          Ingest feed
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        CSV, JSON, or merchant XML. Matching uses the last ingested titles.
+                        {store.lastFeed
+                          ? ` Last ingest ${new Date(store.lastFeed.startedAt).toLocaleString()} (${store.lastFeed.status}).`
+                          : ""}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      {caps?.titleSearch
+                        ? "Matched from this store’s public catalog API. You can still paste a product URL on a game."
+                        : "No catalog API or feed. Paste a product URL on the game when you have one."}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
-                  {caps?.titleSearch
-                    ? "Matched from this store’s public catalog API. You can still paste a product URL on a game."
-                    : "No catalog API or feed. Paste a product URL on the game when you have one."}
+                  Promotions only. No purchase sources or affiliate ID on this store.
                 </p>
               )}
             </article>

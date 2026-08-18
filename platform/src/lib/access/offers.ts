@@ -21,6 +21,8 @@ export const KNOWN_RETAILERS = [
   "Humble Bundle",
   "itch.io",
   "Green Man Gaming",
+  "GamersGate",
+  "eBay",
 ] as const;
 
 function isRecord(raw: unknown): raw is Record<string, unknown> {

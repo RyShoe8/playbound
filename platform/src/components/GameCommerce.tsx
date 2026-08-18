@@ -7,9 +7,12 @@ import type { RetailOffer } from "@/lib/access/types";
 import { formatCents, gameRequiresPurchase } from "@/lib/access/resolver";
 import { activeOffers, bestPurchase } from "@/lib/access/offers";
 import { withOutboundUtm } from "@/lib/utm";
+import { withStoreAffiliate } from "@/lib/access/storeUrls";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
 import { useGameTier } from "@/components/AccessTiersProvider";
 import { cn } from "@/lib/utils";
+
+export type StoreAffiliateMap = Record<string, { id: string; param: string }>;
 
 const ctaSizes = {
   sm: "h-8 px-3 text-xs",
@@ -17,8 +20,14 @@ const ctaSizes = {
   lg: "h-12 px-7 text-base",
 };
 
-function purchaseHref(offer: RetailOffer, slug: string): string {
-  return withOutboundUtm(offer.url, { campaign: "game_get", content: slug });
+function purchaseHref(offer: RetailOffer, slug: string, affiliates: StoreAffiliateMap = {}): string {
+  const stamp = affiliates[offer.retailer];
+  const tagged = withStoreAffiliate(offer.url, {
+    affiliate: offer.affiliate,
+    id: stamp?.id,
+    param: stamp?.param,
+  });
+  return withOutboundUtm(tagged, { campaign: "game_get", content: slug });
 }
 
 export function GetGameCta({
@@ -26,15 +35,17 @@ export function GetGameCta({
   offer,
   size = "md",
   className,
+  affiliates,
 }: {
   game: Game;
   offer?: RetailOffer | null;
   size?: "sm" | "md" | "lg";
   className?: string;
+  affiliates?: StoreAffiliateMap;
 }) {
   const buy = offer ?? bestPurchase(game.access);
   if (!buy) return null;
-  const href = purchaseHref(buy, game.slug);
+  const href = purchaseHref(buy, game.slug, affiliates);
   return (
     <TelemetryAnchor
       href={href}
@@ -66,7 +77,13 @@ export function GetGameCta({
  * Free games render nothing. Engines that need a paid original point at that
  * game rather than pretending the engine is for sale.
  */
-export function GameCommerce({ game }: { game: Game }) {
+export function GameCommerce({
+  game,
+  affiliates,
+}: {
+  game: Game;
+  affiliates?: StoreAffiliateMap;
+}) {
   const paid = gameRequiresPurchase(game.access);
   const buy = bestPurchase(game.access);
   const sources = activeOffers(game.access).slice().sort((a, b) => a.priceCents - b.priceCents);
@@ -118,14 +135,14 @@ export function GameCommerce({ game }: { game: Game }) {
 
       {buy ? (
         <div className="mt-4">
-          <GetGameCta game={game} offer={buy} size="lg" />
+          <GetGameCta game={game} offer={buy} size="lg" affiliates={affiliates} />
         </div>
       ) : null}
 
       {sources.length > 0 ? (
         <ul className="mt-4 divide-y divide-border border-t border-border">
           {sources.map((source) => {
-            const href = purchaseHref(source, game.slug);
+            const href = purchaseHref(source, game.slug, affiliates);
             return (
               <li key={`${source.retailer}-${source.url}`}>
                 <TelemetryAnchor

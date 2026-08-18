@@ -5,6 +5,7 @@ import {
   parseGogSlug,
   parseSteamAppId,
   retailerHasLivePrice,
+  withStoreAffiliate,
 } from "./storeUrls";
 
 describe("detectRetailer", () => {
@@ -17,6 +18,9 @@ describe("detectRetailer", () => {
     expect(detectRetailer("https://www.fanatical.com/en/game/foo")).toBe("Fanatical");
     expect(detectRetailer("https://www.humblebundle.com/store/foo")).toBe("Humble Bundle");
     expect(detectRetailer("https://bar.itch.io/foo")).toBe("itch.io");
+    expect(detectRetailer("https://www.gamersgate.com/product/foo")).toBe("GamersGate");
+    expect(detectRetailer("https://www.ebay.com/itm/123")).toBe("eBay");
+    expect(detectRetailer("https://www.ebay.co.uk/itm/123")).toBe("eBay");
     expect(detectRetailer("https://example.com/x")).toBeNull();
   });
 });
@@ -25,6 +29,38 @@ describe("retailerHasLivePrice", () => {
   it("is true for stores with a public price API", () => {
     expect(retailerHasLivePrice("Steam")).toBe(true);
     expect(retailerHasLivePrice("Humble Bundle")).toBe(false);
+  });
+});
+
+describe("withStoreAffiliate", () => {
+  it("appends the param when the offer is affiliate", () => {
+    expect(
+      withStoreAffiliate("https://www.gog.com/game/morrowind", {
+        affiliate: true,
+        id: "playbound",
+        param: "pp",
+      })
+    ).toBe("https://www.gog.com/game/morrowind?pp=playbound");
+  });
+
+  it("leaves a pasted affiliate URL and a non-affiliate offer alone", () => {
+    const existing = "https://www.humblebundle.com/store/x?partner=other";
+    expect(
+      withStoreAffiliate(existing, { affiliate: true, id: "playbound", param: "partner" })
+    ).toBe(existing);
+    expect(
+      withStoreAffiliate("https://www.gog.com/game/x", {
+        affiliate: false,
+        id: "playbound",
+        param: "pp",
+      })
+    ).toBe("https://www.gog.com/game/x");
+  });
+
+  it("does nothing without an id or param", () => {
+    expect(
+      withStoreAffiliate("https://www.gog.com/game/x", { affiliate: true, id: "", param: "pp" })
+    ).toBe("https://www.gog.com/game/x");
   });
 });
 

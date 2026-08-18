@@ -27,7 +27,6 @@ async function run(req: Request) {
 
   const feeds: Array<{ store: string; found: number; error?: string }> = [];
   const feedStores = await StoreProvider.find({
-    active: true,
     feedUrl: { $type: "string", $ne: "" },
   })
     .select("slug")

@@ -22,6 +22,7 @@ import { getProvider } from "./providers";
 import { matchGame } from "./matching";
 import type { DiscoveredOffer } from "./providers/types";
 import type { IngestionResult, StoreSlug } from "./types";
+import { ensureCommerceStores } from "@/lib/commerce/ensureStores";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -35,7 +36,10 @@ function slugify(title: string): string {
 
 async function isProviderActive(store: StoreSlug): Promise<boolean> {
   const doc = await StoreProviderModel.findOne({ slug: store }).lean();
-  return doc ? (doc as { active?: boolean }).active !== false : true;
+  if (!doc) return true;
+  const flagged = (doc as { freeOffersEnabled?: boolean }).freeOffersEnabled;
+  if (typeof flagged === "boolean") return flagged;
+  return (doc as { active?: boolean }).active !== false;
 }
 
 // ── Per-provider ingestion ───────────────────────────────────────────────
@@ -271,6 +275,7 @@ export async function ingestFreeOffers(opts?: {
   stores?: StoreSlug[];
 }): Promise<IngestionResult[]> {
   await dbConnect();
+  await ensureCommerceStores();
 
   const stores = opts?.stores ?? (["epic", "steam", "gog", "prime_gaming"] as StoreSlug[]);
   const results: IngestionResult[] = [];
