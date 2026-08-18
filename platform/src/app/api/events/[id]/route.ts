@@ -15,6 +15,7 @@ import { getEventPresenceAggregates } from "@/lib/events/presenceAgg";
 import { syncEventAttendance } from "@/lib/events/attendance";
 import { eventUpdateSchema, validateGameSlug } from "@/lib/events/service";
 import {
+  cleanupEventDiscordVoice,
   placeEventDiscordVoice,
   renameEventDiscordVoice,
 } from "@/lib/events/discordEventProvision";
@@ -286,6 +287,26 @@ export async function DELETE(req: Request, ctx: Ctx) {
       return NextResponse.json(
         { error: "Forbidden: Only the organizer or admin can delete this event" },
         { status: 403 }
+      );
+    }
+
+    /*
+     * Before the document goes, not after: the channel ids live on it, so a
+     * delete-then-clean order would throw away the only record of what to
+     * remove and orphan the channel in Discord permanently.
+     *
+     * Awaited rather than fired off, for the same reason — the request must
+     * not return (and the serverless instance freeze) with the call in flight.
+     */
+    const cleaned = await cleanupEventDiscordVoice(event);
+    if (!cleaned) {
+      // The event still goes; deleting it must not depend on Discord being up.
+      console.error(
+        `[events] deleted ${id} but its Discord channels were not removed`,
+        {
+          voiceChannelId: event.discordVoiceChannelId,
+          textChannelId: event.discordTextChannelId,
+        }
       );
     }
 

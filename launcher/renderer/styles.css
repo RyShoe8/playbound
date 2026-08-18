@@ -887,6 +887,21 @@ body {
 .genre-pills::-webkit-scrollbar {
   display: none;
 }
+/*
+ * Narrow window: wrap instead of scroll.
+ *
+ * The row scrolls horizontally by design, but the scrollbar is hidden and a
+ * desktop window has no horizontal gesture to discover it with, so anything
+ * past the right edge was simply unreachable. Wrapping trades a taller filter
+ * row for every genre being visible, which is the right trade when the window
+ * is too narrow to show them in one line.
+ */
+@media (max-width: 960px) {
+  .genre-pills {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
 .genre-pill {
   flex-shrink: 0;
   display: flex;

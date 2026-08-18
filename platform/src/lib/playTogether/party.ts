@@ -401,7 +401,7 @@ export async function leaveParty(
       await doc.save();
       await setPresenceParty(userId, { partyId: null });
       await clearPresenceForParty(String(doc._id));
-      void cleanupPartyDiscordVoice(doc);
+      await cleanupPartyDiscordVoice(doc);
       trackPartyEvent("party_left", {
         partyId: String(doc._id),
         gameSlug: String(doc.gameSlug || "") || null,
@@ -434,7 +434,7 @@ export async function leaveParty(
   await setPresenceParty(userId, { partyId: null });
   if (doc.status === "ended") {
     await clearPresenceForParty(String(doc._id));
-    void cleanupPartyDiscordVoice(doc);
+    await cleanupPartyDiscordVoice(doc);
   }
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
@@ -1002,7 +1002,7 @@ export async function endParty(
   await releasePartyLan(doc);
   await doc.save();
   await clearPresenceForParty(String(doc._id));
-  void cleanupPartyDiscordVoice(doc);
+  await cleanupPartyDiscordVoice(doc);
   trackPartyEvent("party_ended", {
     partyId: String(doc._id),
     gameSlug: String(doc.gameSlug || "") || null,
@@ -1387,10 +1387,34 @@ export async function sweepStaleParties(now = new Date()) {
     await releasePartyHost(doc);
     await releasePartyLan(doc);
     await doc.save();
+    await cleanupPartyDiscordVoice(doc);
     ended += 1;
   }
 
-  return { ended };
+  /*
+   * Parties that ended but kept their channel.
+   *
+   * Timing out is how most parties actually die — people close the launcher
+   * rather than pressing End — and this sweep did not clean Discord up at all,
+   * so those channels accumulated. The pass below also catches the explicit
+   * end paths whose cleanup failed while the bot was unreachable, since
+   * `cleanedAt` stays null until one actually succeeds.
+   */
+  const orphaned = await Party.find({
+    status: "ended",
+    "discord.cleanedAt": null,
+    $or: [
+      { "discord.voiceChannelId": { $nin: [null, ""] } },
+      { "discord.textChannelId": { $nin: [null, ""] } },
+    ],
+  }).limit(200);
+
+  let channelsCleaned = 0;
+  for (const doc of orphaned) {
+    if (await cleanupPartyDiscordVoice(doc)) channelsCleaned += 1;
+  }
+
+  return { ended, channelsCleaned };
 }
 
 /* ─── legacy stubs (backward compat for Phase 3 tests) ───────────────────── */
