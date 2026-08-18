@@ -8859,11 +8859,7 @@ ipcMain.handle("invite-friend-by-email", async (_event, email) => {
 // ----------------------------
 ipcMain.handle("get-recently-played", () => listRecentlyPlayed());
 ipcMain.handle("get-game-detail", async (_event, slug) => {
-  const entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
-  if (!entry) return null;
-  const state = loadState();
-  const info = syncGameInstallSummary(ensureGameInstallRecord(state[slug]));
-  const editionsInstalled = installedEditionsPayload(slug);
+  let entry = (await ensureCatalogEntry(slug)) || catalog.find((e) => e.slug === slug);
 
   let rich = null;
   try {
@@ -8874,6 +8870,30 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
   } catch {
     /* offline */
   }
+
+  /*
+   * Paid Master Copies often have no PlayBound installer, so they never land
+   * in the bundled catalog. The live catalog lists them as external; if that
+   * refresh has not run yet, still open the page from the detail payload.
+   */
+  if (!entry && rich?.slug) {
+    entry = {
+      slug: rich.slug,
+      title: rich.title || slug,
+      blurb: rich.blurb || "",
+      kind: "external",
+      url: rich.website || null,
+      art: Array.isArray(rich.art) ? rich.art : ["#312e81", "#a78bfa"],
+      coverImage: rich.coverImage || null,
+      genres: Array.isArray(rich.genres) ? rich.genres : [],
+      tags: Array.isArray(rich.tags) ? rich.tags : [],
+      platforms: Array.isArray(rich.platforms) ? rich.platforms : [],
+    };
+  }
+  if (!entry) return null;
+  const state = loadState();
+  const info = syncGameInstallSummary(ensureGameInstallRecord(state[slug]));
+  const editionsInstalled = installedEditionsPayload(slug);
 
   const modsBag = state.__mods__ && typeof state.__mods__ === "object" ? state.__mods__ : {};
   const mods = Array.isArray(rich?.mods)
@@ -8913,6 +8933,11 @@ ipcMain.handle("get-game-detail", async (_event, slug) => {
     approxSize: rich?.approxSize || entry.approxSize || "",
     multiplayer: Boolean(rich?.multiplayer ?? entry.multiplayer),
     mods,
+    masterCopy: Boolean(rich?.masterCopy),
+    commerce: rich?.commerce || null,
+    unlocks: rich?.unlocks || { games: [], editions: [], mods: [] },
+    accessTier: rich?.accessTier || entry.accessTier || "FREE",
+    fromPriceCents: rich?.fromPriceCents ?? entry.fromPriceCents ?? null,
     installed:
       editionsInstalled.some((e) => e.exe) || Boolean(playableExePath(info)),
     installedPath: info?.dir || null,

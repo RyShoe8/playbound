@@ -520,7 +520,7 @@ body {
   color: #0c2416;
 }
 
-/* Footer: category tags on the left, live player count on the right. */
+/* Footer: price + category tags on the left, live player count on the right. */
 .card-meta {
   display: flex;
   align-items: flex-start;
@@ -528,6 +528,23 @@ body {
   gap: 8px;
   border-top: 1px solid var(--border);
   padding: 8px 10px;
+}
+
+.card-meta-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.card-price {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.card-meta-copy .card-tags {
+  margin-top: 4px;
 }
 
 .card-meta .card-tags {
@@ -1052,6 +1069,182 @@ body {
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+.pb-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.pb-check:hover {
+  color: var(--text-main);
+}
+.pb-check-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.pb-check-box {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.pb-check-box svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+.pb-check:hover .pb-check-box {
+  border-color: rgba(124, 92, 240, 0.5);
+}
+.pb-check-input:checked + .pb-check-box {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+.pb-check-input:focus-visible + .pb-check-box {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
+}
+
+.games-price-row {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.games-price-row.is-visible {
+  display: flex;
+}
+
+.unlock-game-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 240px;
+  max-width: 240px;
+}
+
+#detail-unlocks-body .game-grid,
+#detail-unlocks-body .unlocks-game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 240px);
+  justify-content: start;
+  gap: 20px;
+}
+
+#detail-unlocks-body .unlocks-editions-grid {
+  grid-template-columns: 1fr;
+  max-width: 42rem;
+  justify-content: start;
+}
+
+.detail-commerce {
+  margin-bottom: 20px;
+  max-width: 28rem;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+}
+.detail-commerce-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 12px 0 0;
+}
+.detail-commerce-amount {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.detail-commerce-usual {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.detail-commerce-requires {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.detail-commerce-requires button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.detail-commerce-cta {
+  margin-top: 16px;
+}
+.detail-commerce-sources {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+.detail-commerce-sources li + li {
+  border-top: 1px solid var(--border);
+}
+.detail-commerce-source {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.detail-commerce-source:hover {
+  color: var(--accent-light);
+}
+.detail-commerce-partner {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.detail-commerce-note {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 /*
@@ -3093,6 +3286,9 @@ textarea.input-text {
   padding: 4px 4px 0;
   flex-shrink: 0;
 }
+#sidebar-discovery {
+  margin-bottom: 10px;
+}
 .sidebar-compat-label {
   margin: 0 0 4px;
   font-size: 11px;
@@ -3158,6 +3354,51 @@ textarea.input-text {
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 8px;
+}
+.home-discover-card {
+  max-width: 420px;
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+}
+.home-discover-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.home-discover-pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.home-discover-pills button {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.home-discover-pills button:hover {
+  color: var(--text-main);
+}
+.home-discover-pills button.is-selected {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+.home-discover-caption {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 .home-top-left {
   flex: 1;

@@ -1,5 +1,27 @@
 /** Shared launcher UI state and helpers. Live bindings via the `state` object. */
 
+import {
+  accessPriceLabel,
+  filterByDiscovery as filterByDiscoveryMode,
+  filterGamesByPrice,
+  formatCents,
+  fromPriceBySlugFromCatalog,
+  parseDiscoveryMode,
+  parsePriceFilter,
+  requiresGamePriceLine,
+  scopeCatalogLiveStats,
+  tierBySlugFromCatalog,
+} from "./discovery.js";
+
+export {
+  accessPriceLabel,
+  filterGamesByPrice,
+  formatCents,
+  parseDiscoveryMode,
+  parsePriceFilter,
+  requiresGamePriceLine,
+};
+
 export const DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
 export const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 export const OPENCIV3_DATA_HINT =
@@ -34,6 +56,7 @@ export const state = {
     /** Only games with someone in them right now, per the live snapshot. */
     hasPlayersOnly: false,
     sort: "name",
+    price: "any",
   },
   searchQuery: "",
   searchFilters: {
@@ -44,12 +67,14 @@ export const state = {
     features: [],
     sort: "title",
     sortDir: "asc",
+    price: "any",
   },
   liveExtraStats: {
     openParties: 0,
     lookingToParty: 0,
   },
   compatibilityFilter: "compatible",
+  discoveryMode: "ALL",
   currentEditionDetail: null,
   catalogCache: [],
   recentCache: [],
@@ -342,6 +367,28 @@ export function filterByCompatibility(list) {
   return list.filter(isGameDesktopCompatible);
 }
 
+export function catalogTierBySlug() {
+  return tierBySlugFromCatalog(state.catalogCache);
+}
+
+export function catalogPriceBySlug() {
+  return fromPriceBySlugFromCatalog(state.catalogCache);
+}
+
+/** Games (and anything with accessTier / slug) under the current Discover mode. */
+export function filterByDiscovery(list, slugOf = (item) => item?.slug) {
+  return filterByDiscoveryMode(list, state.discoveryMode, slugOf, catalogTierBySlug());
+}
+
+/** Compatibility, then FREE vs ALL. Library of installed games does not use this. */
+export function filterCatalogGames(list) {
+  return filterByDiscovery(filterByCompatibility(list));
+}
+
+export function filterRelatedByDiscovery(list, slugOf) {
+  return filterByDiscovery(list, slugOf);
+}
+
 /** slug → playingNow, from the catalog-wide snapshot's byGame rows. */
 export function playingNowBySlug(raw) {
   const map = new Map();
@@ -386,12 +433,59 @@ export function applyCompatibilitySetting(settings) {
   syncCompatRadios();
 }
 
+export function syncDiscoveryControls() {
+  document.querySelectorAll('input[name="discovery-filter"]').forEach((input) => {
+    input.checked = input.value === state.discoveryMode;
+  });
+  document.querySelectorAll("[data-discovery-mode]").forEach((btn) => {
+    const selected = btn.dataset.discoveryMode === state.discoveryMode;
+    btn.setAttribute("aria-checked", selected ? "true" : "false");
+    btn.classList.toggle("is-selected", selected);
+  });
+  const caption = document.getElementById("home-discovery-caption");
+  if (caption) {
+    caption.textContent =
+      state.discoveryMode === "FREE"
+        ? "Only show me games I can play without spending anything."
+        : "Show me every PlayBound-approved game up to $15.";
+  }
+}
+
+export function applyDiscoverySetting(settings) {
+  state.discoveryMode = parseDiscoveryMode(settings?.discoveryMode);
+  syncDiscoveryControls();
+}
+
 export async function loadCompatibilitySetting() {
   try {
     const s = await window.playbound.getSettings();
     applyCompatibilitySetting(s);
+    applyDiscoverySetting(s);
   } catch {
     /* ignore */
+  }
+}
+
+function repaintFilteredViews({ includeLibrary = false } = {}) {
+  if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
+  else if (state.currentView === "games") api.paintGamesGrid?.(state.catalogCache);
+  else if (state.currentView === "mods") api.paintModsGrid?.();
+  else if (state.currentView === "search") api.paintSearchResults?.(state.catalogCache);
+  else if (state.currentView === "events") {
+    markViewDirty(views.events);
+    api.renderEventsView?.();
+  } else if (state.currentView === "servers") {
+    markViewDirty(views.servers);
+    api.renderServersView?.();
+  } else if (state.currentView === "editions") {
+    markViewDirty(views.editions);
+    api.renderEditionsView?.();
+  } else if (state.currentView === "friends") {
+    markViewDirty(views.friends);
+    api.renderFriendsView?.();
+  } else if (includeLibrary && state.currentView === "library") {
+    markViewDirty(views.library);
+    api.renderLibraryView?.();
   }
 }
 
@@ -404,13 +498,19 @@ export async function setCompatibilityFilter(mode) {
   } catch {
     /* ignore */
   }
-  if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
-  else if (state.currentView === "games") api.paintGamesGrid?.(state.catalogCache);
-  else if (state.currentView === "mods") api.paintModsGrid?.();
-  else if (state.currentView === "library") {
-    markViewDirty(views.library);
-    api.renderLibraryView?.();
+  repaintFilteredViews({ includeLibrary: true });
+}
+
+export async function setDiscoveryMode(mode) {
+  const next = parseDiscoveryMode(mode);
+  state.discoveryMode = next;
+  syncDiscoveryControls();
+  try {
+    await window.playbound.saveSettings({ discoveryMode: next });
+  } catch {
+    /* ignore */
   }
+  repaintFilteredViews();
 }
 
 export function formatStatNumber(n) {
@@ -486,10 +586,11 @@ export function buildCatalogStatsCardHtml(live, extra = {}) {
   if (!usable) {
     return `<aside class="catalog-stats-card"><p class="view-sub" style="margin:0">Live stats unavailable.</p></aside>`;
   }
+  const scoped = scopeCatalogLiveStats(live, state.discoveryMode, catalogTierBySlug());
   const openParties = extra.openParties ?? state.liveExtraStats?.openParties ?? 0;
   const lookingToParty = extra.lookingToParty ?? state.liveExtraStats?.lookingToParty ?? 0;
 
-  const popular = Array.isArray(live.mostPopular) ? live.mostPopular : [];
+  const popular = Array.isArray(scoped.mostPopular) ? scoped.mostPopular : [];
   const popularHtml =
     popular.length > 0
       ? `<div class="catalog-stats-popular">
@@ -507,10 +608,10 @@ export function buildCatalogStatsCardHtml(live, extra = {}) {
   return `
     <aside class="catalog-stats-card">
       <dl class="catalog-stats-grid">
-        <div><dt>Games</dt><dd>${formatStatNumber(live.gameCount)}</dd></div>
-        <div><dt>Mods</dt><dd>${formatStatNumber(live.modCount)}</dd></div>
-        <div><dt>Editions</dt><dd>${formatStatNumber(live.editionCount)}</dd></div>
-        <div><dt>Gamers Playing</dt><dd>${formatStatNumber(live.playingNow)}</dd></div>
+        <div><dt>Games</dt><dd>${formatStatNumber(scoped.gameCount)}</dd></div>
+        <div><dt>Mods</dt><dd>${formatStatNumber(scoped.modCount)}</dd></div>
+        <div><dt>Editions</dt><dd>${formatStatNumber(scoped.editionCount)}</dd></div>
+        <div><dt>Gamers Playing</dt><dd>${formatStatNumber(scoped.playingNow)}</dd></div>
         <div><dt><button type="button" class="linkish stat-label-btn" data-stats-nav="events">Open Parties</button></dt><dd>${formatStatNumber(openParties)}</dd></div>
         <div><dt><button type="button" class="linkish stat-label-btn" data-stats-nav="friends">Looking to Party</button></dt><dd>${formatStatNumber(lookingToParty)}</dd></div>
       </dl>

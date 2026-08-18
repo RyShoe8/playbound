@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { getGame } from "@/lib/catalog";
 import { absoluteMediaUrl, sizeLabelFromMB, hasServerBrowser, isMultiplayerGame } from "@/lib/launcherInstall";
 import { listMods } from "@/lib/mods";
+import { listUnlockedByMaster, toLauncherUnlocks } from "@/lib/masterCopy";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
+import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
+import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
+import { accessFieldsForLauncher, toLauncherCommerce } from "@/lib/launcherCommerce";
 
 export async function GET(
   req: Request,
@@ -12,10 +16,15 @@ export async function GET(
     const { slug } = await params;
     const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
-    const game = await getGame(slug, { includeTesting });
+    const [game, tiers, affiliates] = await Promise.all([
+      getGame(slug, { includeTesting }),
+      gameAccessTiers(),
+      getStoreAffiliateMap(),
+    ]);
     if (!game) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    const gameTier = tierFor(tiers, slug);
 
     const baseCover = absoluteMediaUrl(game.coverImage, origin);
     const mods = (await listMods({ baseGameSlug: slug, includeTesting, view: "card" })).map((m) => ({
@@ -31,6 +40,24 @@ export async function GET(
       status: m.status || "published",
       testing: m.status === "testing",
     }));
+
+    const rawUnlocks = game.masterCopy
+      ? await listUnlockedByMaster(slug, { includeTesting })
+      : { games: [], editions: [], mods: [] };
+    const unlocks = toLauncherUnlocks(rawUnlocks, origin, game);
+    const unlockBySlug = new Map(rawUnlocks.games.map((g) => [g.slug, g]));
+    const launcherUnlocks = {
+      ...unlocks,
+      games: unlocks.games.map((entry) => {
+        const full = unlockBySlug.get(entry.slug);
+        const t = tierFor(tiers, entry.slug);
+        return {
+          ...entry,
+          ...accessFieldsForLauncher(t),
+          commerce: toLauncherCommerce(full ?? { slug: entry.slug }, t, affiliates),
+        };
+      }),
+    };
 
     return NextResponse.json(
       {
@@ -65,6 +92,10 @@ export async function GET(
         steamDeck: Boolean(game.steamDeck),
         status: game.status || "published",
         testing: game.status === "testing",
+        masterCopy: Boolean(game.masterCopy),
+        ...accessFieldsForLauncher(gameTier),
+        commerce: toLauncherCommerce(game, gameTier, affiliates),
+        unlocks: launcherUnlocks,
         mods,
       },
       {
