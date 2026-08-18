@@ -111,7 +111,11 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
         mode="edit"
         initial={initial}
         developers={developers.map((d) => ({ slug: d.slug, name: d.name }))}
-        catalogGames={allGames.map((g) => ({ slug: g.slug, title: g.title }))}
+        catalogGames={allGames.map((g) => ({
+          slug: g.slug,
+          title: g.title,
+          priceType: g.access?.priceType,
+        }))}
         catalogTiers={catalogTiers}
       />
     </div>

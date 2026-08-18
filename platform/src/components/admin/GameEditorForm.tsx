@@ -51,6 +51,7 @@ import {
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import { AccessPricingFields } from "@/components/admin/AccessPricingFields";
 import type { GameTierMap } from "@/lib/access/tierMap";
+import type { PriceType } from "@/lib/access/types";
 import { SizeInput } from "@/components/admin/SizeInput";
 import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
 
@@ -156,7 +157,7 @@ export function GameEditorForm({
   mode: "create" | "edit";
   initial: GamePayload;
   developers: DevOption[];
-  catalogGames?: { slug: string; title: string }[];
+  catalogGames?: { slug: string; title: string; priceType?: PriceType }[];
   catalogTiers?: GameTierMap;
 }) {
   const router = useRouter();

@@ -60,7 +60,10 @@ sudo journalctl -u playbound-game-host -f
 ```
 
 `health.games` lists which dedicated binaries the agent found. A `false` game
-will fail party provision until you install it.
+will fail party provision until you install it. Freedoom needs `odamex-server`
+or `zandronum-server` on this box — `install.sh` does not install those, so
+party Join Game will say the PlayBound game server does not have Freedoom yet
+until they are apt-installed here. That is not a Vercel change.
 
 ## Games this host covers
 

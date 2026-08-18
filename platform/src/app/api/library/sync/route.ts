@@ -15,6 +15,7 @@ const syncSchema = z.object({
   baseGameSlug: z.string().min(1).max(80).optional(),
   action: z.enum(["install", "uninstall"]),
   version: z.string().max(80).optional(),
+  editionSlug: z.string().max(80).nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -98,6 +99,9 @@ export async function POST(req: Request) {
           $set: {
             installed: true,
             version: body.version || undefined,
+            ...(body.editionSlug !== undefined
+              ? { editionSlug: body.editionSlug || null }
+              : {}),
             installedAt: now,
             updatedAt: now,
           },

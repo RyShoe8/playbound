@@ -483,6 +483,8 @@ async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
 
+  void window.playbound.syncLibraryNow?.({ quiet: true });
+
   try {
     const [friendsData, requestsData, partiesData, upcomingEventsData] = await Promise.all([
       window.playbound.getFriends(),
@@ -1138,6 +1140,8 @@ const ICON = {
   phone: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
   play: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>`,
   logout: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
+  download: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`,
+  send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`,
 };
 
 /**
@@ -1281,7 +1285,9 @@ function buildPartyViewHtml(party) {
     ? `<div class="party-join-wrap">
          <button type="button" id="btn-party-join-game" class="party-btn btn-primary">${ICON.play} Join Game</button>
          ${
-           hostedReady
+           hosted.roomCode
+             ? `<p class="party-host-line party-room-code">Room Code: ${escapeHtml(String(hosted.roomCode))}</p>`
+             : hostedReady
              ? `<p class="party-host-line">${escapeHtml(hosted.host)}:${Number(hosted.port) || ""}</p>`
              : ""
          }
@@ -1292,9 +1298,26 @@ function buildPartyViewHtml(party) {
     hosted.enabled && hosted.status === "pending"
       ? `<p class="view-sub party-inline-note">Starting public server…</p>`
       : hosted.enabled && hosted.status === "failed"
-      ? `<p class="party-inline-note" style="color: var(--danger)">${escapeHtml(
+      ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
           hosted.error || "Could not start the PlayBound server."
         )}</p>`
+      : "";
+
+  const lan = party.lan || {};
+  const lanNoteHtml =
+    lan.enabled && lan.status === "pending"
+      ? `<p class="view-sub party-inline-note">Setting up the party network…</p>`
+      : lan.enabled && lan.status === "failed"
+      ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
+          lan.error ||
+            "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."
+        )}</p>`
+      : "";
+  const lanStepsHtml =
+    lan.enabled && Array.isArray(lan.steps) && lan.steps.length
+      ? `<ol class="party-lan-steps">${lan.steps
+          .map((s) => `<li>${escapeHtml(String(s))}</li>`)
+          .join("")}</ol>`
       : "";
 
   const playingPillHtml =
@@ -1335,14 +1358,12 @@ function buildPartyViewHtml(party) {
           <ul class="party-member-list">${membersHtml}</ul>
         </div>
 
-        ${buildPartyConfigSyncHtml(party, userId)}
-        ${buildPartyChatHtml(party)}
-
         <div class="party-actions">
           <div class="party-actions-group">
             ${readyHtml}
             ${joinGameHtml}
             ${hostedNoteHtml}
+            ${lanNoteHtml}
             ${playingPillHtml}
           </div>
           <div class="party-actions-group">
@@ -1351,59 +1372,121 @@ function buildPartyViewHtml(party) {
               party.id
             )}">${ICON.logout} ${leaveLabel}</button>
           </div>
+          ${lanStepsHtml}
           <p class="party-voice-error" id="party-voice-error" style="display: none;"></p>
         </div>
+
+        ${buildPartyChatHtml(party)}
       </div>
+      ${buildPartyConfigSyncHtml(party, userId)}
     </div>
   `;
+}
+
+function installHref(gameSlug, editionSlug, mods) {
+  const q = new URLSearchParams();
+  if (editionSlug && editionSlug !== "__base__") q.set("edition", editionSlug);
+  for (const mod of mods || []) q.append("mod", mod);
+  const qs = q.toString();
+  return `playbound://install/${gameSlug}${qs ? `?${qs}` : ""}`;
+}
+
+function missingSummary(m, editionSlug) {
+  const out = [];
+  if (!m.hasGame) out.push("the game");
+  else if (editionSlug && !m.hasEdition) out.push("a different edition");
+  if ((m.missingMods || []).length) {
+    out.push(`${m.missingMods.length} mod${m.missingMods.length === 1 ? "" : "s"}`);
+  }
+  return out;
 }
 
 function buildPartyConfigSyncHtml(party, userId) {
   const sync = party.configSync;
   if (!party.gameSlug) return "";
   if (!sync) {
-    return `<p class="view-sub party-inline-note">Checking who has the game…</p>`;
+    return `<div class="party-sync-card party-sync-pending"><p class="party-member-sub">Checking who has the game…</p></div>`;
   }
   if (sync.allReady) {
-    return `<p class="view-sub party-inline-note">Everyone is ready to play.</p>`;
+    const matchLine =
+      sync.referenceSource === "host" && sync.hostUsername
+        ? `Every member matches ${sync.hostUsername}'s setup.`
+        : "All members have the required game and editions installed.";
+    return `<div class="party-sync-card party-sync-ready">
+      <div>
+        <h4 class="party-sync-title">Everyone is ready to play</h4>
+        <p class="party-member-sub">${escapeHtml(matchLine)}</p>
+      </div>
+    </div>`;
   }
-  const out = (sync.members || []).filter((m) => {
-    if (!userId) return !m.hasGame || (sync.editionSlug && !m.hasEdition) || (m.missingMods || []).length;
-    return true;
-  }).filter((m) => !m.hasGame || (sync.editionSlug && !m.hasEdition) || (m.missingMods || []).length);
+
+  const out = (sync.members || []).filter((m) => missingSummary(m, sync.editionSlug).length > 0);
   if (out.length === 0) return "";
+
+  const hostMember = (sync.members || []).find((m) => m.isHost);
+  const hostHasGame = Boolean(hostMember?.hasGame) || sync.referenceSource === "host";
+  const installEdition =
+    (sync.editionSlug && sync.editionSlug !== "__base__" ? sync.editionSlug : null) ||
+    (hostMember?.installedEditionSlug && hostMember.installedEditionSlug !== "__base__"
+      ? hostMember.installedEditionSlug
+      : null);
+  const href = installHref(party.gameSlug, installEdition, sync.modSlugs || []);
+
   const rows = out
     .map((m) => {
-      const missing = [];
-      if (!m.hasGame) missing.push("the game");
-      else if (sync.editionSlug && !m.hasEdition) missing.push("a different edition");
-      if ((m.missingMods || []).length) missing.push("mods");
+      const missing = missingSummary(m, sync.editionSlug);
       const isYou = String(m.userId) === String(userId);
-      return `<li class="party-member-sub">${escapeHtml(isYou ? "You" : m.username)} ${
-        isYou ? "need" : "needs"
-      } ${escapeHtml(missing.join(" and "))}</li>`;
+      const showInstall = isYou;
+      return `<li class="party-sync-row">
+        <div class="party-sync-row-main">
+          <div class="party-member-avatar">${escapeHtml((m.username || "?").charAt(0).toUpperCase())}</div>
+          <span class="party-sync-who">${escapeHtml(isYou ? "You" : m.username)}</span>
+          <span class="party-member-sub">${escapeHtml(
+            isYou ? `need ${missing.join(" and ")}` : `needs ${missing.join(" and ")} — they can install it from their party panel`
+          )}</span>
+        </div>
+        ${
+          showInstall
+            ? `<button type="button" class="party-sync-install btn-party-install" data-href="${escapeHtml(
+                href
+              )}">${ICON.download} Install the right version</button>`
+            : ""
+        }
+      </li>`;
     })
     .join("");
-  return `<div class="party-inline-note"><p class="party-member-sub" style="color: var(--danger)">Not everyone can play yet</p><ul>${rows}</ul></div>`;
+
+  const intro =
+    hostHasGame && sync.hostUsername
+      ? `This party is playing ${sync.hostUsername}'s setup. Anyone who doesn't have it yet can install it from their own party panel.`
+      : "Some members are missing files this party needs. They won't be able to launch with the party until they install them.";
+
+  return `<div class="party-sync-card party-sync-blocked">
+    <div class="party-sync-blocked-head">Not everyone can play yet</div>
+    <p class="party-member-sub">${escapeHtml(intro)}</p>
+    <ul class="party-sync-list">${rows}</ul>
+  </div>`;
 }
 
 function buildPartyChatHtml(party) {
   const ready = Boolean(party.discord?.textChannelId);
   return `
     <div class="party-chat" id="party-chat">
-      <h4 class="party-section-label">Party chat</h4>
+      <div class="party-chat-header">
+        <h4 class="party-chat-title">Party chat</h4>
+        <span class="party-chat-discord">Opens in Discord too</span>
+      </div>
       <div class="party-chat-list" id="party-chat-list" data-party="${escapeHtml(party.id || "")}">
-        <p class="view-sub">${ready ? "No messages yet." : "Chat starts when the host launches voice."}</p>
+        <p class="view-sub">${ready ? "No messages yet. Say something." : "Chat starts when the host launches voice. Messages here are the same Discord channel."}</p>
       </div>
       <form class="party-chat-form" id="party-chat-form">
-        <input type="text" class="input-text" id="party-chat-input" maxlength="500" placeholder="${
+        <input type="text" class="input-text party-chat-input" id="party-chat-input" maxlength="500" placeholder="${
           ready ? "Message the party…" : "Voice first, then chat"
         }" ${ready ? "" : "disabled"} />
-        <button type="submit" class="party-btn btn-primary" id="party-chat-send" ${
+        <button type="submit" class="party-chat-send" id="party-chat-send" aria-label="Send" ${
           ready ? "" : "disabled"
-        }>Send</button>
+        }>${ICON.send}</button>
       </form>
-      <p class="view-sub">Opens in Discord too.</p>
     </div>
   `;
 }
@@ -1591,6 +1674,7 @@ function wirePartyView(slot, party) {
         await window.playbound.setPartyGame(partyId, gameSelect.value),
         "Couldn't set the party game."
       );
+      void window.playbound.syncLibraryNow?.({ quiet: true });
     });
     enhanceSelect(gameSelect);
   }
@@ -1639,6 +1723,15 @@ function wirePartyView(slot, party) {
       );
     });
   }
+
+  slot.querySelectorAll(".btn-party-install").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const href = btn.dataset.href;
+      if (!href || !window.playbound.openDeepLink) return;
+      void window.playbound.openDeepLink(href);
+      void window.playbound.syncLibraryNow?.({ quiet: true });
+    });
+  });
 
   const joinGameBtn = slot.querySelector("#btn-party-join-game");
   if (joinGameBtn) {
@@ -1753,6 +1846,7 @@ async function prepareVirtualLan(party, lan) {
   const res = await window.playbound.prepareVirtualLan({
     partyId: party.id,
     slug: party.gameSlug,
+    editionSlug: party.editionSlug || null,
     adapterFile: lan.adapterFile || null,
   });
 
@@ -1763,6 +1857,13 @@ async function prepareVirtualLan(party, lan) {
   }
   if (res?.error) {
     setStatus(res.error, true);
+    return false;
+  }
+  if (lan.adapterFile && !res?.pointed) {
+    setStatus(
+      "Could not point the game at the party network. Launching would open a LAN menu nobody else is on.",
+      true
+    );
     return false;
   }
 
@@ -1792,7 +1893,7 @@ async function launchPartyGame(party) {
         host: hosted.host,
         port: Number(hosted.port),
         name: hosted.name || party.gameTitle || "",
-      });
+      }, party.editionSlug || null);
       startGameSession(slug, party.gameTitle || slug);
       /*
        * A few clients have no command-line join and only take an address from
@@ -1848,7 +1949,7 @@ async function launchPartyGame(party) {
 
   try {
     setStatus("Checking Java / launching…");
-    await window.playbound.play(slug);
+    await window.playbound.play(slug, null, party.editionSlug || null);
     startGameSession(slug, party.gameTitle || slug);
     setStatus(`Launched ${party.gameTitle || slug}`);
   } catch {

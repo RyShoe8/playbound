@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Mail, UserPlus } from "lucide-react";
 import { AuthDivider, GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
-import { getRecaptchaToken } from "@/lib/recaptchaClient";
+import { RecaptchaBlockedNote } from "@/components/RecaptchaBlockedNote";
+import { getRecaptchaToken, recaptchaConfigured } from "@/lib/recaptchaClient";
 import { useTelemetry } from "@/lib/telemetry";
 import { storeInviteTokenFromSearch } from "@/components/friends/FriendInviteClaim";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -18,6 +19,7 @@ export default function SignupPage() {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [captchaBlocked, setCaptchaBlocked] = useState(false);
   const [fromInvite, setFromInvite] = useState(false);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function SignupPage() {
     setState("busy");
     try {
       const recaptchaToken = await getRecaptchaToken("signup");
+      if (!recaptchaToken && recaptchaConfigured()) setCaptchaBlocked(true);
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -147,6 +150,7 @@ export default function SignupPage() {
           />
         </div>
         {state === "error" && <p className="text-xs text-destructive">{message}</p>}
+        <RecaptchaBlockedNote blocked={captchaBlocked} />
         <button
           type="submit"
           disabled={state === "busy"}

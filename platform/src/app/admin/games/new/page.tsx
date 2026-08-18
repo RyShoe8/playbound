@@ -56,6 +56,7 @@ export default async function AdminNewGamePage({
         catalogGames={(await listGames({ includeTesting: true })).map((g) => ({
           slug: g.slug,
           title: g.title,
+          priceType: g.access?.priceType,
         }))}
         catalogTiers={await gameAccessTiers()}
       />

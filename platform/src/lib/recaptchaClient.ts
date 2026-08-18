@@ -32,6 +32,9 @@ export function recaptchaConfigured(): boolean {
   return Boolean(recaptchaSiteKey());
 }
 
+export const RECAPTCHA_BLOCKED_HINT =
+  "Google reCAPTCHA didn't load. If you use Brave Shields or an ad blocker, allow Google on this site, or sign in with Google.";
+
 function loadScript(siteKey: string): Promise<Grecaptcha | null> {
   if (loader) return loader;
 

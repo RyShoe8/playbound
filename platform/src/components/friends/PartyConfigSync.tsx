@@ -130,7 +130,7 @@ export function PartyConfigSync({
           {outOfSync.map((m) => {
             const missing = missingSummary(m, sync.editionSlug);
             const isYou = Boolean(currentUserId) && m.userId === currentUserId;
-            const showInstall = isYou && hostHasGame;
+            const showInstall = isYou;
 
             return (
               <li
@@ -170,7 +170,7 @@ export function PartyConfigSync({
           })}
         </ul>
 
-        {outOfSync.some((m) => Boolean(currentUserId) && m.userId === currentUserId && hostHasGame) && (
+        {outOfSync.some((m) => Boolean(currentUserId) && m.userId === currentUserId) && (
           <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
             Nothing happened?{" "}
             <Link

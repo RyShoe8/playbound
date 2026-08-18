@@ -320,6 +320,27 @@ export function PartyView({
             </p>
           )}
 
+          {party.lan?.enabled && party.lan.status === "pending" && (
+            <p className="text-xs text-muted-foreground self-center">
+              Setting up the party network…
+            </p>
+          )}
+
+          {party.lan?.enabled && party.lan.status === "failed" && (
+            <p className="text-xs text-destructive self-center">
+              {party.lan.error ||
+                "Could not set up the party network. The discovery reflector may not be running on the NetBird VPS."}
+            </p>
+          )}
+
+          {party.lan?.enabled && (party.lan.steps?.length ?? 0) > 0 && (
+            <ol className="w-full list-decimal pl-4 text-xs text-muted-foreground">
+              {party.lan.steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          )}
+
           {party.status === "playing" && !canJoinGame && (
             <div className="px-4 py-2 rounded-md bg-primary/20 text-primary font-bold text-sm flex items-center gap-2">
               <Play className="size-4 fill-current" /> Playing

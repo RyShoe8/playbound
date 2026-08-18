@@ -670,6 +670,7 @@ async function syncAllInstalledGames() {
     installs.push({
       slug,
       ...(game.version ? { version: String(game.version) } : {}),
+      ...(game.editionSlug ? { editionSlug: String(game.editionSlug) } : {}),
     });
   }
 
@@ -1894,7 +1895,12 @@ async function syncLibrary(slug, action, version, opts = {}) {
             action,
             version,
           }
-        : { slug, action, version };
+        : {
+            slug,
+            action,
+            version,
+            ...(opts.editionSlug ? { editionSlug: opts.editionSlug } : {}),
+          };
     const res = await fetch(`${getApiBase()}/api/library/sync`, {
       method: "POST",
       headers: {
@@ -3799,7 +3805,7 @@ function markInstalled(slug, { version, exe, dir, editionSlug, editionName, edit
   state[slug] = game;
   saveState(state);
   clearPendingInstaller(slug);
-  void syncLibrary(slug, "install", version);
+  void syncLibrary(slug, "install", version, { editionSlug: ed });
   notifyInstallDetected(slug);
 }
 
@@ -4379,7 +4385,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const destName = dl.name.toLowerCase().endsWith(".exe") ? dl.name : `${entry.slug}.exe`;
     const exe = path.join(gameDir, destName);
     await fsp.copyFile(downloadPath, exe);
-    await fsp.rm(downloadPath, { force: true });
+    await removeFileWithRetries(downloadPath);
     await processAddons(entry, gameDir, selectedAddons);
     markInstalled(slug, { version: dl.version, exe, dir: gameDir, ...editionExtra });
     sendProgress({ phase: "done" });
@@ -4393,7 +4399,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     await fsp.mkdir(gameDir, { recursive: true });
     const jarPath = path.join(gameDir, dl.name);
     await fsp.copyFile(downloadPath, jarPath);
-    await fsp.rm(downloadPath, { force: true });
+    await removeFileWithRetries(downloadPath);
     // Keep play.cmd for Explorer / shortcuts; Play Now launches the jar via javaw.
     await writeJarLauncher(gameDir, dl.name);
     await processAddons(entry, gameDir, selectedAddons);
@@ -4408,7 +4414,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   // Only wipe the edition-specific folder — never the parent game folder.
   await fsp.rm(gameDir, { recursive: true, force: true });
   await extractArchive(downloadPath, gameDir);
-  await fsp.rm(downloadPath, { force: true });
+  await removeFileWithRetries(downloadPath);
 
   if (entry.overlayUrl) {
     sendProgress({ phase: "downloading", addon: "Game Assets" });
@@ -4420,7 +4426,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
     await fsp.mkdir(overlayDir, { recursive: true });
     await extractArchive(overlayPath, overlayDir);
-    await fsp.rm(overlayPath, { force: true });
+    await removeFileWithRetries(overlayPath);
     await flattenWadFiles(gameDir);
   }
 
@@ -4912,7 +4918,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   sendProgress({ phase: "extracting" });
   // Merge overlay into the copied Titanium tree (do not delete gameDir).
   await extractArchive(downloadPath, gameDir);
-  await fsp.rm(downloadPath, { force: true });
+  await removeFileWithRetries(downloadPath);
 
   const exe = findExecutable(gameDir, entry.exeHint || "eqgame");
   if (!exe) throw new Error("Install copied, but eqgame.exe was not found.");
@@ -5113,7 +5119,7 @@ async function placeModFiles(slug, install, baseDirOverride) {
     }
     await fsp.copyFile(downloadPath, dest);
   }
-  await fsp.rm(downloadPath, { force: true });
+  await removeFileWithRetries(downloadPath);
 
   const exe = findExecutable(targetDir, null);
 
@@ -6155,6 +6161,38 @@ async function removeDirWithRetries(dir) {
   );
 }
 
+/**
+ * Zip cleanup after Expand-Archive. Windows often still holds the file
+ * (EBUSY). Extraction already succeeded, so a leftover zip must not fail
+ * the install.
+ */
+async function removeFileWithRetries(filePath, { required = false } = {}) {
+  if (!filePath || !fs.existsSync(filePath)) return;
+  const waits = [0, 350, 500, 500, 700];
+  let lastErr = null;
+  for (let i = 0; i < waits.length; i++) {
+    const wait = waits[i];
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    try {
+      await fsp.rm(filePath, { force: true });
+      return;
+    } catch (err) {
+      lastErr = err;
+      const code = err?.code;
+      if (!["EBUSY", "EPERM", "EACCES"].includes(code)) {
+        if (required) throw err;
+        console.warn(`[install] Could not remove "${filePath}":`, err?.message || err);
+        return;
+      }
+    }
+  }
+  const detail = lastErr?.message || lastErr?.code || "EBUSY";
+  if (required) {
+    throw lastErr || new Error(`Could not remove "${filePath}" (${detail})`);
+  }
+  console.warn(`[install] Zip still locked after extract, leaving "${filePath}" (${detail})`);
+}
+
 function notifyUninstalled(slug) {
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-detected", { slug, uninstalled: true });
@@ -7052,7 +7090,9 @@ ipcMain.handle("sign-in", () => {
   openAuthWindow();
   return true;
 });
-ipcMain.handle("sync-library-now", async () => syncLibraryNow({ quiet: false }));
+ipcMain.handle("sync-library-now", async (_event, opts) =>
+  syncLibraryNow({ quiet: Boolean(opts?.quiet) })
+);
 ipcMain.handle("report-bug", async (_event, payload = {}) => {
   const title = String(payload.title || "").trim();
   const description = String(payload.description || "").trim();
@@ -8020,7 +8060,7 @@ function resolveGameDirForSlug(slug, editionSlug = null) {
  * a reason the party window can show verbatim rather than a bare false.
  */
 ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
-  const { partyId, slug, adapterFile } = opts || {};
+  const { partyId, slug, adapterFile, editionSlug } = opts || {};
   try {
     const status = await virtualLan.overlayStatus();
     if (!status.installed) {
@@ -8058,8 +8098,14 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
 
     let pointed = false;
     if (adapterFile) {
-      const gameDir = resolveGameDirForSlug(slug);
+      const gameDir = resolveGameDirForSlug(slug, editionSlug || null);
       pointed = await virtualLan.writeAdapterFile(gameDir, adapterFile, adapterName);
+      if (!pointed) {
+        return {
+          error:
+            "Could not point the game at the party network adapter. Launching would open a LAN menu nobody else is on.",
+        };
+      }
     }
     return { ok: true, adapterName, pointed };
   } catch (err) {

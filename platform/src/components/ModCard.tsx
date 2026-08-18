@@ -1,3 +1,6 @@
+"use client";
+
+import type { ReactNode } from "react";
 import Link from "next/link";
 import type { ModCardMod } from "@/lib/mods";
 import { cn } from "@/lib/utils";
@@ -19,7 +22,7 @@ type Props = {
   /** Extra footer line (e.g. license · size) — defaults to base game + size. */
   meta?: string;
   /** Optional action row under the body (install buttons, etc.). */
-  actions?: React.ReactNode;
+  actions?: ReactNode;
   /** When true, card body is not wrapped in the main link (for action buttons). */
   href?: string;
 };

@@ -15,6 +15,7 @@ const batchSchema = z.object({
       z.object({
         slug: z.string().min(1).max(80),
         version: z.string().max(80).optional(),
+        editionSlug: z.string().max(80).nullable().optional(),
       })
     )
     .max(100)
@@ -58,6 +59,9 @@ export async function POST(req: Request) {
           $set: {
             installed: true,
             version: item.version || undefined,
+            ...(item.editionSlug !== undefined
+              ? { editionSlug: item.editionSlug || null }
+              : {}),
             installedAt: now,
             updatedAt: now,
           },
