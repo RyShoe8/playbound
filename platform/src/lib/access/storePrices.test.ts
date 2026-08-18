@@ -20,6 +20,7 @@ describe("detectRetailer", () => {
     expect(detectRetailer("https://bar.itch.io/foo")).toBe("itch.io");
     expect(detectRetailer("https://www.gamersgate.com/product/foo")).toBe("GamersGate");
     expect(detectRetailer("https://www.ebay.com/itm/123")).toBe("eBay");
+    expect(detectRetailer("https://www.ebay.com/sch/i.html?_nkw=morrowind")).toBe("eBay");
     expect(detectRetailer("https://www.ebay.co.uk/itm/123")).toBe("eBay");
     expect(detectRetailer("https://example.com/x")).toBeNull();
   });
@@ -28,6 +29,7 @@ describe("detectRetailer", () => {
 describe("retailerHasLivePrice", () => {
   it("is true for stores with a public price API", () => {
     expect(retailerHasLivePrice("Steam")).toBe(true);
+    expect(retailerHasLivePrice("eBay")).toBe(true);
     expect(retailerHasLivePrice("Humble Bundle")).toBe(false);
   });
 });

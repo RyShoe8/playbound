@@ -107,7 +107,7 @@ export const STORE_CAPABILITIES: Record<CommerceStoreSlug, StoreCapabilities> = 
   },
   ebay: {
     discovery: "manual",
-    livePrice: false,
+    livePrice: true,
     titleSearch: false,
     feedIngest: true,
     freeOfferIngest: false,
@@ -237,7 +237,7 @@ export const SEED_COMMERCE_STORES: Array<{
     baseUrl: "https://www.ebay.com",
     color: "oklch(0.62 0.19 30)",
     matchingEnabled: false,
-    priceRefreshEnabled: false,
+    priceRefreshEnabled: true,
     affiliateDefault: true,
     freeOffersEnabled: false,
     discovery: "manual",
