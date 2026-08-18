@@ -25,7 +25,7 @@ async function renderServersView() {
   container.innerHTML = `
     <div class="section-header" style="margin-top: 0">
       <div>
-        <h1 class="view-title" style="margin: 0">Servers</h1>
+        <h1 class="view-title" style="margin: 0">Servers <span class="servers-title-hint">Pick a game to see who&apos;s playing.</span></h1>
       </div>
       <button class="btn-secondary btn-sm" id="servers-refresh">
         <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
@@ -65,7 +65,7 @@ async function renderServersView() {
           <line x1="6" x2="6.01" y1="6" y2="6"/>
           <line x1="6" x2="6.01" y1="18" y2="18"/>
         </svg>
-        <p>Pick a game above to see who's playing right now.</p>
+        <p>Choose a game from the picker to browse its live servers.</p>
       </div>
     </div>
   `;
@@ -240,7 +240,7 @@ async function fetchAndShowServers(baseSlug, mod) {
           <line x1="6" x2="6.01" y1="6" y2="6"/>
           <line x1="6" x2="6.01" y1="18" y2="18"/>
         </svg>
-        <p>Pick a game above to see who's playing right now.</p>
+        <p>Choose a game from the picker to browse its live servers.</p>
       </div>`;
     return;
   }

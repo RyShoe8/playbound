@@ -830,6 +830,16 @@ body {
   color: var(--text-muted);
 }
 
+.servers-title-hint {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
 .servers-toolbar .input-text,
 .games-filters .input-text {
   width: 100%;
