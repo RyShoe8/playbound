@@ -50,7 +50,7 @@ import {
 } from "@/components/admin/EditorialFields";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import { AccessPricingFields } from "@/components/admin/AccessPricingFields";
-import type { GameTierMap } from "@/lib/access/tiers";
+import type { GameTierMap } from "@/lib/access/tierMap";
 import { SizeInput } from "@/components/admin/SizeInput";
 import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
 

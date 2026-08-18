@@ -11,7 +11,7 @@ import {
   accessPriceLabel,
   requiresGamePriceLine,
 } from "./discoveryMode";
-import type { GameTierMap } from "./tiers";
+import type { GameTierMap } from "./tierMap";
 
 const tiers: GameTierMap = {
   morrowind: {

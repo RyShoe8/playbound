@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { CompatibilityProvider } from "@/hooks/useCompatibilityFilter";
 import { DiscoveryModeProvider } from "@/hooks/useDiscoveryMode";
 import { AccessTiersProvider } from "@/components/AccessTiersProvider";
-import type { GameTierMap } from "@/lib/access/tiers";
+import type { GameTierMap } from "@/lib/access/tierMap";
 
 /**
  * Client-seeded device context. Intentionally does not call `headers()` —
