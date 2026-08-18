@@ -24,6 +24,8 @@ import {
   Activity,
   DownloadCloud,
   ShieldCheck,
+  ShoppingBag,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -61,7 +63,12 @@ export const links: NavItem[] = [
   { href: "/admin/developers", label: "Developers", icon: Building2 },
   { href: "/admin/community", label: "Community", icon: MessagesSquare },
   { href: "/admin/weekly", label: "Weekly", icon: Mail },
-  { href: "/admin/free-offers", label: "Free Offers", icon: Gift },
+  {
+    href: "/admin/ecommerce",
+    label: "eCommerce",
+    icon: ShoppingBag,
+    family: ["/admin/ecommerce", "/admin/free-offers"],
+  },
   { href: "/admin/submissions", label: "Submissions", icon: Inbox },
   {
     href: "/admin/ops",
@@ -158,6 +165,27 @@ function gamesChildren(gameSlug: string | null): NavChild[] {
   ];
 }
 
+const ECOMMERCE_CHILDREN: NavChild[] = [
+  {
+    label: "Overview",
+    icon: ShoppingBag,
+    href: "/admin/ecommerce",
+    match: (p) => p === "/admin/ecommerce",
+  },
+  {
+    label: "Stores",
+    icon: Store,
+    href: "/admin/ecommerce/stores",
+    match: (p) => p.startsWith("/admin/ecommerce/stores"),
+  },
+  {
+    label: "Free Offers",
+    icon: Gift,
+    href: "/admin/free-offers",
+    match: (p) => p.startsWith("/admin/free-offers") || p.startsWith("/admin/ecommerce/free-offers"),
+  },
+];
+
 const OPS_CHILDREN: NavChild[] = [
   {
     label: "Bugs",
@@ -187,6 +215,7 @@ const OPS_CHILDREN: NavChild[] = [
 
 export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] {
   if (item.href === "/admin/games") return gamesChildren(gameSlug);
+  if (item.href === "/admin/ecommerce") return ECOMMERCE_CHILDREN;
   if (item.href === "/admin/ops") return OPS_CHILDREN;
   return [];
 }

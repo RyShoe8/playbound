@@ -224,7 +224,9 @@ export function GameEditorForm({
   const platformSet = useMemo(() => new Set(form.platforms), [form.platforms]);
   const featureSet = useMemo(() => new Set(form.features), [form.features]);
   const tagSet = useMemo(() => new Set(form.tags), [form.tags]);
-  const extraTags = form.tags.filter((t) => !(TAGS as readonly string[]).includes(t));
+  const extraTags = form.tags.filter(
+    (t) => t !== "Multiplayer" && t !== "Singleplayer" && !(TAGS as readonly string[]).includes(t)
+  );
   const onPlayboundLauncher =
     isPcInstallCandidate(form) &&
     Boolean(form.launcherInstall?.kind) &&
@@ -1045,6 +1047,7 @@ export function GameEditorForm({
             value={form.access}
             catalogGames={catalogGames.filter((g) => g.slug !== form.slug)}
             catalogTiers={catalogTiers}
+            gameSlug={mode === "edit" ? form.slug : undefined}
             onChange={(next) => patch("access", next)}
           />
         </AdminCollapsibleSection>

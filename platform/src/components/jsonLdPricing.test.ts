@@ -106,6 +106,7 @@ describe("paid games", () => {
           affiliate: true,
           lastCheckedAt: null,
           isActive: true,
+          matchSource: "manual",
         },
       ],
     });

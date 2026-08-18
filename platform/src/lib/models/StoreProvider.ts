@@ -1,11 +1,12 @@
 import { Schema, model, models } from "mongoose";
+import { COMMERCE_STORE_SLUGS } from "@/lib/commerce/stores";
 
 /**
  * Configuration for an external game store / provider.
  *
- * Seeded once, referenced by ingestion adapters and the UI for display names,
- * colors, and icons. Editable through admin for operational changes without
- * a redeploy.
+ * Seeded once. Admin toggles matching, price refresh, and (for stores without
+ * a public API) a product feed URL. Adding a brand-new protocol still needs
+ * a code adapter — this document does not invent one.
  */
 const StoreProviderSchema = new Schema(
   {
@@ -13,17 +14,18 @@ const StoreProviderSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      enum: ["epic", "steam", "gog", "prime_gaming"],
+      enum: [...COMMERCE_STORE_SLUGS],
     },
     name: { type: String, required: true },
-    /** Path to logo under /public or an absolute URL. */
     logoUrl: { type: String, default: null },
-    /** Root store URL for link-building. */
     baseUrl: { type: String, required: true },
-    /** HSL / oklch accent for UI store badges. */
     color: { type: String, default: null },
-    /** Whether the cron job should ingest from this provider. */
     active: { type: Boolean, default: true, index: true },
+    matchingEnabled: { type: Boolean, default: false },
+    priceRefreshEnabled: { type: Boolean, default: false },
+    affiliateDefault: { type: Boolean, default: true },
+    discovery: { type: String, enum: ["api", "feed", "manual"], default: "manual" },
+    feedUrl: { type: String, default: null },
   },
   { timestamps: true }
 );

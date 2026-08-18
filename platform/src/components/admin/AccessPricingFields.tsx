@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { GamePayload } from "@/lib/gamePayload";
 import type { AccessTier, PriceType } from "@/lib/access/types";
 import { formatCents, gameRequiresPurchase } from "@/lib/access/resolver";
 import { bestPurchase, KNOWN_RETAILERS } from "@/lib/access/offers";
+import { detectRetailer, retailerHasLivePrice } from "@/lib/access/storeUrls";
 import { tierFor, type GameTierMap } from "@/lib/access/tierMap";
 import type { RetailOffer } from "@/lib/access/types";
 
@@ -47,11 +48,13 @@ export function AccessPricingFields({
   catalogGames,
   catalogTiers,
   onChange,
+  gameSlug,
 }: {
   value: Access | null | undefined;
   catalogGames: CatalogPick[];
   catalogTiers: GameTierMap;
   onChange: (next: Access | null) => void;
+  gameSlug?: string;
 }) {
   const access: Access = value ?? {
     priceType: "FREE",
@@ -150,30 +153,38 @@ export function AccessPricingFields({
           <div className="grid gap-3 sm:grid-cols-3">
             <DollarField
               label="Qualifying price"
-              hint="Regularly obtainable for this — eligibility, not a weekend sale."
+              hint="Regularly obtainable for this — defaults to the store list price."
               value={centsToInput(access.qualifyingPriceCents)}
               onChange={(v) => patch({ qualifyingPriceCents: inputToCents(v) })}
             />
             <DollarField
               label="Current price"
-              hint={
-                (access.offers?.length ?? 0) > 0
-                  ? "Lowest active purchase source. Edit sources below."
-                  : "Used on cards until purchase sources are added."
-              }
+              hint="Lowest live store price. Fetched from the store, not typed."
               value={centsToInput(access.currentPriceCents)}
               onChange={(v) => patch({ currentPriceCents: inputToCents(v) })}
-              readOnly={(access.offers?.length ?? 0) > 0}
+              readOnly
             />
             <DollarField
               label="Regular price"
+              hint="Store list price. Fetched with the source."
               value={centsToInput(access.regularPriceCents)}
               onChange={(v) => patch({ regularPriceCents: inputToCents(v) })}
+              readOnly
             />
           </div>
           <PurchaseSources
             offers={access.offers ?? []}
+            gameSlug={gameSlug}
             onChange={(offers) => patch({ offers })}
+            onLookedUp={(info) => {
+              patch({
+                offers: info.offers,
+                regularPriceCents: info.listPriceCents || info.priceCents,
+                qualifyingPriceCents:
+                  access.qualifyingPriceCents || info.listPriceCents || info.priceCents,
+              });
+            }}
+            onMatched={(nextAccess) => onChange(nextAccess)}
           />
         </>
       ) : null}
@@ -282,26 +293,93 @@ export function AccessPricingFields({
   );
 }
 
-function isoToDateInput(iso: string | null | undefined): string {
-  return iso ? iso.slice(0, 10) : "";
-}
-
-function dateInputToIso(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  const d = new Date(`${trimmed}T00:00:00.000Z`);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
 function PurchaseSources({
   offers,
+  gameSlug,
   onChange,
+  onLookedUp,
+  onMatched,
 }: {
   offers: RetailOffer[];
+  gameSlug?: string;
   onChange: (offers: RetailOffer[]) => void;
+  onLookedUp: (info: {
+    offers: RetailOffer[];
+    priceCents: number;
+    listPriceCents: number | null;
+  }) => void;
+  onMatched: (access: Access) => void;
 }) {
+  const [busyIndex, setBusyIndex] = useState<number | null>(null);
+  const [matching, setMatching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   function patchOffer(index: number, partial: Partial<RetailOffer>) {
     onChange(offers.map((offer, i) => (i === index ? { ...offer, ...partial } : offer)));
+  }
+
+  function setUrl(index: number, url: string) {
+    const detected = detectRetailer(url);
+    patchOffer(index, detected ? { url, retailer: detected, matchSource: "manual" } : { url, matchSource: "manual" });
+  }
+
+  async function fetchPrice(index: number, url: string) {
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed) || busyIndex != null) return;
+    setBusyIndex(index);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/offers/lookup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: trimmed }),
+      });
+      const json = (await res.json()) as {
+        error?: string;
+        retailer?: string;
+        url?: string;
+        priceCents?: number;
+        listPriceCents?: number | null;
+        lastCheckedAt?: string;
+      };
+      if (!res.ok) {
+        setError(json.error || "Could not look up that store price.");
+        return;
+      }
+      if (json.priceCents == null || json.priceCents <= 0) {
+        setError("The store did not return a price.");
+        return;
+      }
+      const next = offers.map((offer, i) =>
+        i === index
+          ? {
+              ...offer,
+              retailer: json.retailer || offer.retailer,
+              url: json.url || offer.url,
+              priceCents: json.priceCents!,
+              lastCheckedAt: json.lastCheckedAt ?? new Date().toISOString(),
+              isActive: true,
+              matchSource: "manual" as const,
+            }
+          : offer
+      );
+      onLookedUp({
+        offers: next,
+        priceCents: json.priceCents,
+        listPriceCents: json.listPriceCents ?? json.priceCents,
+      });
+    } catch {
+      setError("Could not look up that store price.");
+    } finally {
+      setBusyIndex(null);
+    }
+  }
+
+  const storeOptions: string[] = [...KNOWN_RETAILERS];
+  for (const offer of offers) {
+    if (offer.retailer && !storeOptions.includes(offer.retailer)) {
+      storeOptions.push(offer.retailer);
+    }
   }
 
   return (
@@ -310,109 +388,161 @@ function PurchaseSources({
         <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
           Purchase sources
         </p>
-        <button
-          type="button"
-          className="text-xs font-semibold text-primary hover:underline"
-          onClick={() =>
+        <span className="flex items-center gap-3">
+          {gameSlug ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+              disabled={matching}
+              onClick={() => {
+                void (async () => {
+                  setMatching(true);
+                  setError(null);
+                  try {
+                    const res = await fetch("/api/admin/ecommerce/match", {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({ slug: gameSlug }),
+                    });
+                    const json = (await res.json()) as { error?: string; access?: Access | null };
+                    if (!res.ok) {
+                      setError(json.error || "Could not match stores.");
+                      return;
+                    }
+                    if (json.access) onMatched(json.access);
+                  } catch {
+                    setError("Could not match stores.");
+                  } finally {
+                    setMatching(false);
+                  }
+                })();
+              }}
+            >
+              {matching ? "Matching…" : "Match stores"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="text-xs font-semibold text-primary hover:underline"
+            onClick={() =>
             onChange([
               ...offers,
               {
-                retailer: "GOG",
+                retailer: "",
                 url: "",
                 priceCents: 0,
                 affiliate: true,
-                lastCheckedAt: new Date().toISOString(),
+                lastCheckedAt: null,
                 isActive: true,
+                matchSource: "manual",
               },
             ])
           }
         >
           Add source
         </button>
+        </span>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Cards and Get Game use the lowest active price here. Affiliate links do not decide whether
-        the game is eligible — qualifying price still does.
+        Paste a product URL for any store — including ones without an API or feed — then fetch
+        the price when the store supports it. Match stores fills Steam, GOG, Epic, and feed-backed
+        stores automatically. Cards and Get Game use the lowest active price here.
       </p>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {offers.length === 0 ? (
         <p className="text-xs text-muted-foreground">No sources yet.</p>
       ) : (
         <ul className="space-y-3">
-          {offers.map((offer, index) => (
-            <li key={`${offer.retailer}-${index}`} className="space-y-2 rounded-lg border border-border p-3">
-              <div className="grid gap-2 sm:grid-cols-2">
+          {offers.map((offer, index) => {
+            const fetching = busyIndex === index;
+            const canFetch = /^https?:\/\//i.test(offer.url.trim());
+            return (
+              <li key={`${offer.retailer}-${index}`} className="space-y-2 rounded-lg border border-border p-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                      Store
+                    </span>
+                    <select
+                      className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2"
+                      value={offer.retailer}
+                      onChange={(e) => patchOffer(index, { retailer: e.target.value })}
+                    >
+                      <option value="">Select store…</option>
+                      {storeOptions.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                          {retailerHasLivePrice(name) ? "" : " — no live price yet"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <DollarField
+                    label="Price"
+                    hint={
+                      offer.matchSource === "auto"
+                        ? `Matched from ${offer.retailer}`
+                        : offer.priceCents > 0
+                          ? offer.lastCheckedAt
+                            ? `Fetched ${new Date(offer.lastCheckedAt).toLocaleString()}`
+                            : "From the pasted URL"
+                          : "Fetch price before saving"
+                    }
+                    value={centsToInput(offer.priceCents || null)}
+                    readOnly
+                  />
+                </div>
                 <label className="block text-sm">
                   <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                    Store
+                    Product URL
                   </span>
                   <input
-                    list="pb-retailers"
+                    type="url"
                     className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2"
-                    value={offer.retailer}
-                    onChange={(e) => patchOffer(index, { retailer: e.target.value })}
+                    value={offer.url}
+                    onChange={(e) => setUrl(index, e.target.value)}
+                    onBlur={(e) => void fetchPrice(index, e.currentTarget.value)}
+                    placeholder="https://store.steampowered.com/app/…"
                   />
                 </label>
-                <DollarField
-                  label="Price"
-                  value={centsToInput(offer.priceCents)}
-                  onChange={(v) => patchOffer(index, { priceCents: inputToCents(v) ?? 0 })}
-                />
-              </div>
-              <label className="block text-sm">
-                <span className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                  URL
-                </span>
-                <input
-                  type="url"
-                  className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2"
-                  value={offer.url}
-                  onChange={(e) => patchOffer(index, { url: e.target.value })}
-                  placeholder="https://"
-                />
-              </label>
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={offer.affiliate}
-                    onChange={(e) => patchOffer(index, { affiliate: e.target.checked })}
-                  />
-                  Affiliate
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={offer.isActive}
-                    onChange={(e) => patchOffer(index, { isActive: e.target.checked })}
-                  />
-                  Active
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Checked</span>
-                  <input
-                    type="date"
-                    className="rounded-lg border border-border bg-secondary px-2 py-1 text-xs"
-                    value={isoToDateInput(offer.lastCheckedAt)}
-                    onChange={(e) => patchOffer(index, { lastCheckedAt: dateInputToIso(e.target.value) })}
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="ml-auto text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  onClick={() => onChange(offers.filter((_, i) => i !== index))}
-                >
-                  Remove
-                </button>
-              </div>
-            </li>
-          ))}
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+                    disabled={!canFetch || busyIndex != null}
+                    onClick={() => void fetchPrice(index, offer.url)}
+                  >
+                    {fetching ? "Fetching…" : "Fetch price"}
+                  </button>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={offer.affiliate}
+                      onChange={(e) => patchOffer(index, { affiliate: e.target.checked })}
+                    />
+                    Affiliate
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={offer.isActive}
+                      onChange={(e) => patchOffer(index, { isActive: e.target.checked })}
+                    />
+                    Active
+                  </label>
+                  <button
+                    type="button"
+                    className="ml-auto text-xs font-semibold text-muted-foreground hover:text-foreground"
+                    onClick={() => onChange(offers.filter((_, i) => i !== index))}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
-      <datalist id="pb-retailers">
-        {KNOWN_RETAILERS.map((name) => (
-          <option key={name} value={name} />
-        ))}
-      </datalist>
     </div>
   );
 }
@@ -427,7 +557,7 @@ function DollarField({
   label: string;
   hint?: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange?: (v: string) => void;
   readOnly?: boolean;
 }) {
   return (
@@ -440,7 +570,7 @@ function DollarField({
           inputMode="decimal"
           className="w-full bg-transparent outline-none disabled:opacity-70"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange?.(e.target.value)}
           placeholder="0.00"
           readOnly={readOnly}
           disabled={readOnly}

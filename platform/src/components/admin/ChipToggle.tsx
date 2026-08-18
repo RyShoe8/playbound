@@ -58,7 +58,9 @@ export function ChipPicker({
   onChange: (next: string[]) => void;
 }) {
   const chosen = new Set(selected);
-  const extras = selected.filter((v) => !options.includes(v));
+  const extras = selected.filter(
+    (v) => v !== "Multiplayer" && v !== "Singleplayer" && !options.includes(v)
+  );
 
   const toggle = (value: string) => {
     onChange(

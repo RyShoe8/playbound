@@ -1,17 +1,15 @@
 import { Schema, model, models } from "mongoose";
 
 /**
- * Records each ingestion job run for debugging and admin visibility.
- *
- * One document per provider per run. Kept indefinitely — they are small and
- * the history is useful for diagnosing intermittent API issues.
+ * Records each ingestion / match job run for debugging and admin visibility.
  */
 const IngestionLogSchema = new Schema(
   {
-    provider: {
+    provider: { type: String, required: true, index: true },
+    jobKind: {
       type: String,
-      required: true,
-      enum: ["epic", "steam", "gog", "prime_gaming"],
+      enum: ["free_offers", "catalog_match", "price_refresh", "feed_ingest"],
+      default: "free_offers",
       index: true,
     },
     startedAt: { type: Date, required: true },
@@ -34,7 +32,6 @@ const IngestionLogSchema = new Schema(
   { timestamps: true }
 );
 
-// Recent-first per provider, for the admin dashboard.
 IngestionLogSchema.index({ provider: 1, startedAt: -1 });
 
 const IngestionLog = models.IngestionLog || model("IngestionLog", IngestionLogSchema);

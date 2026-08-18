@@ -43,6 +43,8 @@ export interface RetailOffer {
   affiliate: boolean;
   lastCheckedAt: string | null;
   isActive: boolean;
+  /** Auto-matched from a store catalog/feed, or pasted on the game. */
+  matchSource: "auto" | "manual";
 }
 
 export interface GameAccess {

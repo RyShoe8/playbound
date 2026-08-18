@@ -4,9 +4,11 @@ import { Gift, CheckCircle, Clock, AlertTriangle, ExternalLink } from "lucide-re
 import dbConnect from "@/lib/db";
 import FreeOffer from "@/lib/models/FreeOffer";
 import IngestionLog from "@/lib/models/IngestionLog";
+import CatalogGame from "@/lib/models/CatalogGame";
 import { FreeOffersIngestButton } from "@/components/admin/FreeOffersIngestButton";
+import { FreeOfferLinkControl } from "@/components/admin/FreeOfferLinkControl";
 import { LocalTime } from "@/components/LocalTime";
-import { storeDisplayName, offerTypeLabel } from "@/lib/freeOffers/labels";
+import { storeDisplayName } from "@/lib/freeOffers/labels";
 import type { StoreSlug } from "@/lib/freeOffers/types";
 
 export const metadata: Metadata = { title: "Free Offers | Admin" };
@@ -14,10 +16,12 @@ export const metadata: Metadata = { title: "Free Offers | Admin" };
 export default async function AdminFreeOffersPage() {
   await dbConnect();
 
-  const [offers, logs] = await Promise.all([
+  const [offers, logs, games] = await Promise.all([
     FreeOffer.find().sort({ isActive: -1, endDate: -1, createdAt: -1 }).limit(100).lean(),
-    IngestionLog.find().sort({ startedAt: -1 }).limit(20).lean(),
+    IngestionLog.find({ jobKind: { $in: ["free_offers", null] } }).sort({ startedAt: -1 }).limit(20).lean(),
+    CatalogGame.find().select("slug title").sort({ title: 1 }).limit(400).lean(),
   ]);
+  const gameOptions = games.map((g) => ({ slug: String(g.slug), title: String(g.title) }));
 
   const activeCount = offers.filter((o) => (o as { isActive?: boolean }).isActive).length;
   const unmatchedCount = offers.filter(
@@ -190,7 +194,10 @@ export default async function AdminFreeOffersPage() {
                             {offer.gameSlug}
                           </Link>
                         ) : (
-                          <span className="text-amber-400 font-medium">Unmatched</span>
+                          <div className="space-y-1">
+                            <span className="text-amber-400 font-medium">Unmatched</span>
+                            <FreeOfferLinkControl offerId={String(offer._id)} games={gameOptions} />
+                          </div>
                         )}
                         <span className="ml-1.5 text-[10px] text-muted-foreground">
                           ({offer.matchConfidence})

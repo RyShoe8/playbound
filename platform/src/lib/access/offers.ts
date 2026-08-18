@@ -5,18 +5,22 @@
  * FREE vs VALUE — the resolver still does that from qualifying price and the
  * dependency chain. A weekend sale on Fanatical does not make a paid game
  * eligible, and a missing affiliate link does not make it ineligible.
+ *
+ * Steam, GOG, Epic, and Fanatical can fill `priceCents` from a public API
+ * (`storePrices.ts`). Other names in this list are still valid stores; they
+ * just cannot be auto-priced yet.
  */
 
 import type { Cents, GameAccess, RetailOffer } from "./types";
 
 export const KNOWN_RETAILERS = [
-  "GOG",
   "Steam",
+  "GOG",
+  "Epic Games Store",
   "Fanatical",
   "Humble Bundle",
   "itch.io",
   "Green Man Gaming",
-  "Epic Games Store",
 ] as const;
 
 function isRecord(raw: unknown): raw is Record<string, unknown> {
@@ -58,6 +62,7 @@ export function offerFromUnknown(raw: unknown): RetailOffer | null {
     affiliate: raw.affiliate !== false,
     lastCheckedAt: toIso(raw.lastCheckedAt),
     isActive: raw.isActive !== false,
+    matchSource: raw.matchSource === "auto" ? "auto" : "manual",
   };
 }
 
