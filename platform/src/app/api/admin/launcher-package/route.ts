@@ -85,27 +85,55 @@ export async function POST(req: Request) {
     await dbConnect();
     const url = mirrorUrl(relativePath);
     if (input.editionSlug) {
-      let edition = await EditionModel.findOne({ gameSlug: input.gameSlug, slug: input.editionSlug }).select("_id").lean();
+      let edition = await EditionModel.findOne({ gameSlug: input.gameSlug, slug: input.editionSlug })
+        .select("_id installConfig")
+        .lean();
       if (!edition) edition = await materializeExactSeed(input.gameSlug, input.editionSlug);
       if (!edition) return NextResponse.json({ error: "Edition not found" }, { status: 404 });
+      // Older/watchlist records can explicitly store installConfig as null.
+      // Dotted $set paths cannot create children below null, so replace this
+      // one config object while preserving any other installer methods.
+      const installConfig =
+        edition.installConfig && typeof edition.installConfig === "object"
+          ? edition.installConfig
+          : {};
       const result = await EditionModel.updateOne(
         { _id: edition._id },
         { $set: {
           installMethod: "playbound_installer",
-          "installConfig.playbound_installer.kind": kind,
-          "installConfig.playbound_installer.url": url,
-          "installConfig.playbound_installer.fileName": input.fileName,
+          installConfig: {
+            ...installConfig,
+            playbound_installer: {
+              ...(installConfig.playbound_installer || {}),
+              kind,
+              url,
+              fileName: input.fileName,
+            },
+          },
         } }
       );
       if (!result.matchedCount) return NextResponse.json({ error: "Edition not found" }, { status: 404 });
     } else {
+      const game = await CatalogGame.findOne({ slug: input.gameSlug })
+        .select("_id launcherInstall")
+        .lean();
+      if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
+      // Watchlist imports commonly have launcherInstall: null. Merge at the
+      // object boundary instead of setting children beneath that null value.
+      const launcherInstall =
+        game.launcherInstall && typeof game.launcherInstall === "object"
+          ? game.launcherInstall
+          : {};
       const result = await CatalogGame.updateOne(
-        { slug: input.gameSlug },
+        { _id: game._id },
         { $set: {
-          "launcherInstall.enabled": true,
-          "launcherInstall.kind": kind,
-          "launcherInstall.url": url,
-          "launcherInstall.fileName": input.fileName,
+          launcherInstall: {
+            ...launcherInstall,
+            enabled: true,
+            kind,
+            url,
+            fileName: input.fileName,
+          },
         } }
       );
       if (!result.matchedCount) return NextResponse.json({ error: "Game not found" }, { status: 404 });
