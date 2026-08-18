@@ -75,6 +75,11 @@ export type LauncherInstall = {
   /** Relative destination inside the game's own install folder for an overlay archive. */
   overlayDest?: string | null;
   /**
+   * After extracting a zip that wraps everything in one folder, promote that
+   * folder so overlayDest and exeHint resolve next to the real payload.
+   */
+  unwrapSingleRoot?: boolean;
+  /**
    * Prompt for an existing install before doing anything else.
    *
    * Pairs with "locate-then-zip" for games PlayBound must not distribute: the
@@ -124,6 +129,7 @@ export type LauncherCatalogEntry = {
   overlayUrl?: string;
   overlayFileName?: string;
   overlayDest?: string;
+  unwrapSingleRoot?: boolean;
   /** Ask the player to locate a copy they own before installing anything. */
   requiresBaseDir?: boolean;
 };
@@ -305,6 +311,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.overlayUrl) entry.overlayUrl = li.overlayUrl;
   if (li.overlayFileName) entry.overlayFileName = li.overlayFileName;
   if (li.overlayDest) entry.overlayDest = li.overlayDest;
+  if (li.unwrapSingleRoot) entry.unwrapSingleRoot = true;
   /*
    * Without this the launcher never learns it must ask for an existing copy,
    * so an owner-supplied game would fall through to a normal install and fail

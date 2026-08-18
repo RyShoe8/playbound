@@ -11,6 +11,7 @@ import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { fetchGithubReleases } from "@/lib/github";
 import { getGame, canonicalSlugFor } from "@/lib/catalog";
+import { listUnlockedByMaster } from "@/lib/masterCopy";
 import { getDeveloper } from "@/lib/developers";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
@@ -37,6 +38,7 @@ import { modsForGame } from "@/lib/mods";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { QualityBarPanel } from "@/components/QualityBarPanel";
 import { GameCommerce } from "@/components/GameCommerce";
+import { MasterCopyUnlocks } from "@/components/MasterCopyUnlocks";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { FreeOfferBanner } from "@/components/FreeOfferBanner";
 import { offersForGame } from "@/lib/freeOffers/service";
@@ -326,7 +328,12 @@ export default async function GamePage({
 
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         {tab === "overview" && (
-          <OverviewTab game={game} developer={developer} editions={editions} />
+          <OverviewTab
+            game={game}
+            developer={developer}
+            editions={editions}
+            includeTesting={includeTesting}
+          />
         )}
         {tab === "install" && (
           <>
@@ -394,13 +401,18 @@ async function OverviewTab({
   game,
   developer,
   editions,
+  includeTesting,
 }: {
   game: Game;
   developer: Developer | undefined;
   editions: Edition[];
+  includeTesting: boolean;
 }) {
   if (!game) return null;
-  const affiliates = await getStoreAffiliateMap();
+  const [affiliates, unlocks] = await Promise.all([
+    getStoreAffiliateMap(),
+    game.masterCopy ? listUnlockedByMaster(game.slug, { includeTesting }) : Promise.resolve(null),
+  ]);
 
   const relatedComparisons = comparisonsFeaturing(game.slug);
   const relatedAlternatives = alternativePages.filter((p) =>
@@ -410,6 +422,8 @@ async function OverviewTab({
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
+        {unlocks ? <MasterCopyUnlocks game={game} unlocks={unlocks} affiliates={affiliates} /> : null}
+
         <GameCommerce game={game} affiliates={affiliates} />
 
         {/* Quality assessment leads the rest of the page — it is the reason to trust

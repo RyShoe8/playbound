@@ -1048,6 +1048,8 @@ export function GameEditorForm({
             catalogGames={catalogGames.filter((g) => g.slug !== form.slug)}
             catalogTiers={catalogTiers}
             gameSlug={mode === "edit" ? form.slug : undefined}
+            masterCopy={Boolean(form.masterCopy)}
+            onMasterCopyChange={(next) => patch("masterCopy", next)}
             onChange={(next) => patch("access", next)}
           />
         </AdminCollapsibleSection>

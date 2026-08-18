@@ -235,4 +235,10 @@ describe("parseFreeTextRequirements", () => {
     });
     expect(hasStructuredRequirements(block)).toBe(true);
   });
+
+  it("counts cpu/gpu text-only blocks as structured", () => {
+    expect(hasStructuredRequirements({ min: { cpuText: "1 GHz" } })).toBe(true);
+    expect(hasStructuredRequirements({ recommended: { gpuText: "DirectX 7-class GPU" } })).toBe(true);
+    expect(hasStructuredRequirements({ provenance: { source: "unverified" } })).toBe(false);
+  });
 });

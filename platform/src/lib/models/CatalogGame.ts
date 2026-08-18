@@ -142,6 +142,8 @@ const CatalogGameSchema = new Schema(
     githubRepo: { type: String, default: null },
     gameOfWeek: { type: Boolean, default: false },
     hiddenGem: { type: Boolean, default: false },
+    /** Overview leads with catalog content unlocked by owning this copy. */
+    masterCopy: { type: Boolean, default: false },
     /** Admin checklist: catalog info for this title is fully entered. */
     complete: { type: Boolean, default: false },
     /*

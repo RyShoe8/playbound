@@ -149,6 +149,7 @@ export const launcherInstallSchema = z
     overlayUrl: optionalTrimmed,
     overlayFileName: optionalTrimmed,
     overlayDest: optionalTrimmed,
+    unwrapSingleRoot: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
@@ -479,6 +480,7 @@ export const gamePayloadSchema = z.object({
     .nullable(),
   gameOfWeek: z.boolean().default(false),
   hiddenGem: z.boolean().default(false),
+  masterCopy: z.boolean().default(false),
   complete: z.boolean().default(false),
   access: gameAccessSchema.optional().nullable(),
   art: z
@@ -659,6 +661,7 @@ export function toPayloadLauncherInstall(
     overlayUrl: li.overlayUrl ?? null,
     overlayFileName: li.overlayFileName ?? null,
     overlayDest: li.overlayDest ?? null,
+    unwrapSingleRoot: li.unwrapSingleRoot || undefined,
   };
 }
 
@@ -724,6 +727,7 @@ export const emptyGameDraft = (): GamePayload => ({
   communityLinks: null,
   gameOfWeek: false,
   hiddenGem: false,
+  masterCopy: false,
   complete: false,
   art: defaultArtFor([], ""),
   coverImage: null,
