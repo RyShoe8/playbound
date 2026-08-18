@@ -48,8 +48,11 @@ export function MasterCopyUnlocks({
                 {unlocks.games.map((unlocked) => {
                   const paid = gameRequiresPurchase(unlocked.access);
                   return (
-                    <div key={unlocked.slug} className="flex w-[250px] shrink-0 flex-col gap-2 sm:w-[276px]">
-                      <GameCard game={unlocked} />
+                    <div
+                      key={unlocked.slug}
+                      className="flex w-[250px] shrink-0 flex-col gap-3 self-start sm:w-[276px]"
+                    >
+                      <GameCard game={unlocked} className="h-auto" />
                       <div className="flex flex-wrap gap-2">
                         <GetGameCta game={unlocked} size="sm" affiliates={affiliates} />
                         {paid ? null : <PlayCta game={unlocked} size="sm" />}
