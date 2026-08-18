@@ -175,7 +175,14 @@ export function AccessPricingFields({
           <PurchaseSources
             offers={access.offers ?? []}
             gameSlug={gameSlug}
-            onChange={(offers) => patch({ offers })}
+            onChange={(offers) => {
+              const derived = bestPurchase({ ...access, offers });
+              patch({
+                offers,
+                qualifyingPriceCents:
+                  access.qualifyingPriceCents || derived?.priceCents || access.qualifyingPriceCents,
+              });
+            }}
             onLookedUp={(info) => {
               patch({
                 offers: info.offers,
@@ -326,6 +333,8 @@ function PurchaseSources({
   async function fetchPrice(index: number, url: string) {
     const trimmed = url.trim();
     if (!/^https?:\/\//i.test(trimmed) || busyIndex != null) return;
+    const detected = detectRetailer(trimmed) || offers[index]?.retailer || "";
+    if (!retailerHasLivePrice(detected)) return;
     setBusyIndex(index);
     setError(null);
     try {
@@ -444,9 +453,9 @@ function PurchaseSources({
         </span>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Paste a product URL for any store — including ones without an API or feed — then fetch
-        the price when the store supports it. Match stores fills Steam, GOG, Epic, and feed-backed
-        stores automatically. Cards and Get Game use the lowest active price here.
+        Paste a product URL. Fetch the price when the store supports it (Steam, GOG, Epic,
+        Fanatical); otherwise type the price. Match stores fills Steam, GOG, Epic, and
+        feed-backed stores automatically. Cards and Get Game use the lowest active price here.
       </p>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {offers.length === 0 ? (
@@ -455,7 +464,9 @@ function PurchaseSources({
         <ul className="space-y-3">
           {offers.map((offer, index) => {
             const fetching = busyIndex === index;
-            const canFetch = /^https?:\/\//i.test(offer.url.trim());
+            const live = retailerHasLivePrice(offer.retailer);
+            const canTypePrice = !live;
+            const canFetch = live && /^https?:\/\//i.test(offer.url.trim());
             return (
               <li key={`${offer.retailer}-${index}`} className="space-y-2 rounded-lg border border-border p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -472,7 +483,7 @@ function PurchaseSources({
                       {storeOptions.map((name) => (
                         <option key={name} value={name}>
                           {name}
-                          {retailerHasLivePrice(name) ? "" : " — no live price yet"}
+                          {retailerHasLivePrice(name) ? "" : " — type price"}
                         </option>
                       ))}
                     </select>
@@ -480,16 +491,23 @@ function PurchaseSources({
                   <DollarField
                     label="Price"
                     hint={
-                      offer.matchSource === "auto"
-                        ? `Matched from ${offer.retailer}`
-                        : offer.priceCents > 0
-                          ? offer.lastCheckedAt
-                            ? `Fetched ${new Date(offer.lastCheckedAt).toLocaleString()}`
-                            : "From the pasted URL"
-                          : "Fetch price before saving"
+                      canTypePrice
+                        ? "Manual — this store has no live price"
+                        : offer.matchSource === "auto"
+                          ? `Matched from ${offer.retailer}`
+                          : offer.priceCents > 0
+                            ? offer.lastCheckedAt
+                              ? `Fetched ${new Date(offer.lastCheckedAt).toLocaleString()}`
+                              : "From the pasted URL"
+                            : "Fetch price before saving"
                     }
                     value={centsToInput(offer.priceCents || null)}
-                    readOnly
+                    readOnly={!canTypePrice}
+                    onChange={
+                      canTypePrice
+                        ? (v) => patchOffer(index, { priceCents: inputToCents(v) ?? 0, lastCheckedAt: null })
+                        : undefined
+                    }
                   />
                 </div>
                 <label className="block text-sm">
@@ -501,7 +519,9 @@ function PurchaseSources({
                     className="mt-1 w-full rounded-lg border border-border bg-secondary px-3 py-2"
                     value={offer.url}
                     onChange={(e) => setUrl(index, e.target.value)}
-                    onBlur={(e) => void fetchPrice(index, e.currentTarget.value)}
+                    onBlur={(e) => {
+                      if (canFetch) void fetchPrice(index, e.currentTarget.value);
+                    }}
                     placeholder="https://store.steampowered.com/app/…"
                   />
                 </label>

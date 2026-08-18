@@ -19,8 +19,6 @@ export async function ensureCommerceStores() {
       affiliateDefault?: boolean;
       freeOffersEnabled?: boolean;
       discovery?: string;
-      createdAt?: Date;
-      updatedAt?: Date;
     } | null;
     if (!existing) {
       await StoreProvider.create(seed);
@@ -29,15 +27,6 @@ export async function ensureCommerceStores() {
     const $set: Record<string, unknown> = {};
     if (typeof existing.matchingEnabled !== "boolean") $set.matchingEnabled = seed.matchingEnabled;
     if (typeof existing.priceRefreshEnabled !== "boolean") $set.priceRefreshEnabled = seed.priceRefreshEnabled;
-    // eBay was seeded with refresh off before search-page scrape existed.
-    // Flip untouched seed rows once; later admin toggles keep their timestamps.
-    if (seed.slug === "ebay" && existing.priceRefreshEnabled === false) {
-      const created = existing.createdAt ? new Date(existing.createdAt).getTime() : 0;
-      const updated = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
-      if (!created || !updated || Math.abs(updated - created) < 5 * 60 * 1000) {
-        $set.priceRefreshEnabled = true;
-      }
-    }
     if (typeof existing.affiliateDefault !== "boolean") $set.affiliateDefault = seed.affiliateDefault;
     if (typeof existing.discovery !== "string") $set.discovery = seed.discovery;
     if (typeof existing.freeOffersEnabled !== "boolean") {

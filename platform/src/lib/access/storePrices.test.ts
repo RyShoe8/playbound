@@ -29,7 +29,7 @@ describe("detectRetailer", () => {
 describe("retailerHasLivePrice", () => {
   it("is true for stores with a public price API", () => {
     expect(retailerHasLivePrice("Steam")).toBe(true);
-    expect(retailerHasLivePrice("eBay")).toBe(true);
+    expect(retailerHasLivePrice("eBay")).toBe(false);
     expect(retailerHasLivePrice("Humble Bundle")).toBe(false);
   });
 });

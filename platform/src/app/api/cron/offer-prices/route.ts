@@ -5,6 +5,7 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import { cronAuthorized } from "@/lib/cronAuth";
 import { lookupStorePrice, StorePriceError } from "@/lib/access/storePrices";
 import { bestPurchase, offersFromUnknown } from "@/lib/access/offers";
+import { retailerHasLivePrice } from "@/lib/access/storeUrls";
 import StoreProvider from "@/lib/models/StoreProvider";
 import { retailerToStoreSlug } from "@/lib/commerce/stores";
 import { ensureCommerceStores } from "@/lib/commerce/ensureStores";
@@ -53,7 +54,7 @@ async function run(req: Request) {
         continue;
       }
       const storeSlug = retailerToStoreSlug(offer.retailer);
-      if (storeSlug && refreshOff.has(storeSlug)) {
+      if (!retailerHasLivePrice(offer.retailer) || (storeSlug && refreshOff.has(storeSlug))) {
         nextOffers.push(offer);
         summary.skipped += 1;
         continue;
