@@ -574,7 +574,11 @@ export const editions: EditionSeed[] = [
         fileName: "etlegacy-v2.84.0-x86.zip",
         checksumMd5: "1507c7013f88fa9eb65dcf9d3d6a5031",
         exeHint: "etl",
-        note: "One-click official ET: Legacy archive with broad classic mod and server compatibility.",
+        knownExePaths: ["etl.exe", "ETL.exe"],
+        overlayUrl:
+          "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein-enemy-territory/ET-260b-Base-Data.zip",
+        overlayFileName: "ET-260b-Base-Data.zip",
+        note: "Installs ET: Legacy plus official free Enemy Territory etmain data (2.60b).",
       },
     },
     features: ["Multiplayer", "Dedicated Servers", "Mod Support", "Open Source", "Controller Support"],

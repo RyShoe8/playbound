@@ -140,6 +140,15 @@ module.exports = {
     createStartMenuShortcut: true,
     shortcutName: "PlayBound",
     artifactName: "PlayBound-Setup-${version}.${ext}",
+    /*
+     * Stated rather than inherited. electron-builder looks for these under
+     * build/ and only then falls back to the app icon, and our icons live in
+     * assets/ — every installer built before assets/icon.ico existed shipped
+     * NSIS's default globe instead of our mark. The fallback works today;
+     * naming the file means it cannot quietly stop working again.
+     */
+    installerIcon: "assets/icon.ico",
+    uninstallerIcon: "assets/icon.ico",
   },
 
   portable: {

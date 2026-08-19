@@ -35,9 +35,9 @@ function ensureGamesShell() {
     </div>
 
     <!--
-      Laid out like the website's discover filters: a scrolling row of genre
-      pills carrying their own counts, then one card holding sort and the
-      secondary toggles with the game count on the right.
+      Laid out like the website's discover filters: wrapping genre pills with
+      counts, then one card holding sort and the secondary toggles with the
+      game count on the right.
     -->
     <div class="genre-pills" id="games-genre-pills"></div>
 

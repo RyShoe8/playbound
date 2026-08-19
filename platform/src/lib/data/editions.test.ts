@@ -217,6 +217,18 @@ describe("edition seed integrity", () => {
     expect(vl.installConfig?.playbound_installer?.launchArgs).toEqual(["--gameid", "mineclone2"]);
     expect(editions.find((e) => e.gameSlug === "luanti" && e.isDefault)?.slug).toBe("official");
   });
+
+  it("packages ET: Legacy with official 2.60b etmain overlay", () => {
+    const etl = editions.find(
+      (e) => e.gameSlug === "wolfenstein-enemy-territory" && e.slug === "et-legacy"
+    )!;
+    const recipe = etl.installConfig?.playbound_installer;
+    expect(etl.isDefault).toBe(true);
+    expect(recipe?.overlayUrl).toContain("ET-260b-Base-Data.zip");
+    expect(recipe?.overlayFileName).toBe("ET-260b-Base-Data.zip");
+    expect(recipe?.knownExePaths).toContain("etl.exe");
+    expect(recipe?.url).toBe("https://www.etlegacy.com/download/file/720");
+  });
 });
 
 

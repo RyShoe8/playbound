@@ -874,33 +874,19 @@ body {
 
 /* ── Games page filters, laid out like the website's discover filters ── */
 
-/* Genre pills: a horizontally scrolling row, each carrying its own count. */
+/*
+ * Genre pills wrap onto extra rows. A hidden horizontal scroll clipped
+ * anything past the pane edge, and a window-width breakpoint missed the
+ * sidebar, so common launcher sizes still cut genres off.
+ */
 .genre-pills {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  overflow-x: auto;
+  overflow: visible;
   padding: 4px 2px;
   margin-top: 16px;
-  scrollbar-width: none;
-}
-.genre-pills::-webkit-scrollbar {
-  display: none;
-}
-/*
- * Narrow window: wrap instead of scroll.
- *
- * The row scrolls horizontally by design, but the scrollbar is hidden and a
- * desktop window has no horizontal gesture to discover it with, so anything
- * past the right edge was simply unreachable. Wrapping trades a taller filter
- * row for every genre being visible, which is the right trade when the window
- * is too narrow to show them in one line.
- */
-@media (max-width: 960px) {
-  .genre-pills {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
 }
 .genre-pill {
   flex-shrink: 0;
