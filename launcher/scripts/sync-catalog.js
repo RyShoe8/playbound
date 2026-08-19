@@ -17,12 +17,13 @@ async function main() {
   const args = process.argv.slice(2);
   const baseIdx = args.indexOf("--api-base");
   const apiBase = baseIdx !== -1 && args[baseIdx + 1] ? args[baseIdx + 1] : DEFAULT_API_BASE;
-  const url = `${apiBase}/api/launcher/catalog`;
+  const url = `${apiBase}/api/launcher/catalog?_t=${Date.now()}`;
 
   console.log(`[sync-catalog] Fetching ${url} …`);
 
   const res = await fetch(url, {
-    headers: { "user-agent": "playbound-sync-catalog", accept: "application/json" },
+    cache: "no-store",
+    headers: { "user-agent": "playbound-sync-catalog", accept: "application/json", "cache-control": "no-cache" },
   });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} from ${url}`);
