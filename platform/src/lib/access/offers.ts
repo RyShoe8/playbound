@@ -82,6 +82,46 @@ export function activeOffers(access: GameAccess | undefined | null): RetailOffer
   return (access?.offers ?? []).filter((o) => o.isActive && o.priceCents > 0 && o.url);
 }
 
+/** Displayed sources, cheapest first (affiliate wins a tie) — same order as Get Game. */
+export function displayedPurchases(access: GameAccess | undefined | null): RetailOffer[] {
+  return [...activeOffers(access)].sort((a, b) => {
+    if (a.priceCents !== b.priceCents) return a.priceCents - b.priceCents;
+    if (a.affiliate !== b.affiliate) return a.affiliate ? -1 : 1;
+    return 0;
+  });
+}
+
+/**
+ * Primary Get Game plus the other displayed stores for the hero.
+ *
+ * Inactive rows stay off the page; they remain on the game as unmatched inventory.
+ */
+export function heroPurchases(access: GameAccess | undefined | null): {
+  primary: RetailOffer | null;
+  secondary: RetailOffer[];
+} {
+  const displayed = displayedPurchases(access);
+  return { primary: displayed[0] ?? null, secondary: displayed.slice(1) };
+}
+
+/**
+ * Flip one source's Display flag by URL. Current price follows remaining
+ * displayed offers; with none left it clears so a hidden store is not advertised.
+ */
+export function setOfferDisplayed(
+  access: GameAccess,
+  url: string,
+  isActive: boolean
+): GameAccess | null {
+  const target = url.trim();
+  const offers = access.offers ?? [];
+  if (!offers.some((o) => o.url === target)) return null;
+  const nextOffers = offers.map((o) => (o.url === target ? { ...o, isActive } : o));
+  const next = { ...access, offers: nextOffers };
+  const best = bestPurchase(next);
+  return { ...next, currentPriceCents: best ? best.priceCents : null };
+}
+
 /**
  * The offer the player should take: cheapest active source, affiliate first
  * when two cost the same.

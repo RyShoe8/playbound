@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   bestPurchase,
   displayPriceCents,
+  heroPurchases,
   offerFromUnknown,
   offersFromUnknown,
+  setOfferDisplayed,
   withDerivedCurrentPrice,
 } from "./offers";
 import type { GameAccess, RetailOffer } from "./types";
@@ -162,5 +164,65 @@ describe("offersFromUnknown", () => {
         "nope",
       ])
     ).toHaveLength(1);
+  });
+});
+
+describe("setOfferDisplayed", () => {
+  const steam = offer({
+    retailer: "Steam",
+    url: "https://store.steampowered.com/app/22330",
+    priceCents: 999,
+  });
+  const gog = offer({
+    retailer: "GOG",
+    url: "https://www.gog.com/game/morrowind",
+    priceCents: 349,
+  });
+
+  it("hides one source and restamps current from what remains displayed", () => {
+    const next = setOfferDisplayed(paid([steam, gog], { currentPriceCents: 349 }), gog.url, false);
+    expect(next?.offers.find((o) => o.retailer === "GOG")?.isActive).toBe(false);
+    expect(next?.offers.find((o) => o.retailer === "Steam")?.isActive).toBe(true);
+    expect(next?.currentPriceCents).toBe(999);
+    expect(next?.qualifyingPriceCents).toBe(799);
+  });
+
+  it("clears current when nothing displayed remains", () => {
+    const next = setOfferDisplayed(paid([gog], { currentPriceCents: 349 }), gog.url, false);
+    expect(next?.currentPriceCents).toBeNull();
+  });
+
+  it("returns null when the URL is not on the game", () => {
+    expect(setOfferDisplayed(paid([gog]), "https://store.steampowered.com/app/1", false)).toBeNull();
+  });
+});
+
+describe("heroPurchases", () => {
+  it("puts the cheapest displayed source first and lists the rest", () => {
+    const access = paid([
+      offer({ retailer: "Steam", url: "https://store.steampowered.com/app/22330", priceCents: 999 }),
+      offer({ retailer: "GOG", url: "https://www.gog.com/game/morrowind", priceCents: 349 }),
+      offer({
+        retailer: "Epic Games Store",
+        url: "https://store.epicgames.com/p/morrowind",
+        priceCents: 599,
+        isActive: false,
+      }),
+    ]);
+    const hero = heroPurchases(access);
+    expect(hero.primary?.retailer).toBe("GOG");
+    expect(hero.secondary.map((o) => o.retailer)).toEqual(["Steam"]);
+  });
+
+  it("returns no buttons when every source is hidden", () => {
+    const access = paid([
+      offer({
+        retailer: "GOG",
+        url: "https://www.gog.com/game/morrowind",
+        priceCents: 349,
+        isActive: false,
+      }),
+    ]);
+    expect(heroPurchases(access)).toEqual({ primary: null, secondary: [] });
   });
 });
