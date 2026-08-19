@@ -44,7 +44,7 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
-      - name: Sync Ashes and ET: Legacy recipes
+      - name: "Sync Ashes and ET: Legacy recipes"
         run: npm run sync:edition-install -- freedoom/ashes-2063 wolfenstein-enemy-territory/et-legacy
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
