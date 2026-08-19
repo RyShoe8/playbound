@@ -4978,6 +4978,89 @@ async function maybeApplyEditionPostInstall(entry, gameDir) {
   } catch (err) {
     console.warn("eqw.dll post-install skipped:", err?.message || err);
   }
+
+  if (
+    entry?.slug === "wolfenstein-enemy-territory" ||
+    entry?.slug === "wolfenstein" ||
+    entry?.editionSlug === "et-legacy"
+  ) {
+    await maybeRepairWolfensteinEtInstall(entry.slug || "wolfenstein-enemy-territory", { dir: gameDir }, entry.editionSlug);
+  }
+}
+
+/**
+ * Wolfenstein / ET: Legacy self-repair:
+ * Ensures the archive's single root folder (if present) is promoted to the game root,
+ * and ensures that original game data pk3 files (pak0.pk3, pak1.pk3, pak2.pk3)
+ * reside inside the etmain/ directory where the engine looks for them.
+ */
+async function maybeRepairWolfensteinEtInstall(slug, info, edSlug) {
+  if (slug !== "wolfenstein-enemy-territory" && slug !== "wolfenstein" && edSlug !== "et-legacy") return info?.exe;
+  const gameDir = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
+  if (!gameDir || !fs.existsSync(gameDir)) return info?.exe;
+
+  try {
+    // Check for nested etlegacy directory (from older zip unpack without unwrapSingleRoot)
+    const entries = await fsp.readdir(gameDir);
+    const nestedEtl = entries.find((n) => /^etlegacy/i.test(n));
+    if (nestedEtl) {
+      const nestedPath = path.join(gameDir, nestedEtl);
+      const st = await fsp.stat(nestedPath).catch(() => null);
+      if (st && st.isDirectory()) {
+        const inner = await fsp.readdir(nestedPath);
+        for (const item of inner) {
+          const src = path.join(nestedPath, item);
+          const dst = path.join(gameDir, item);
+          if (!fs.existsSync(dst)) {
+            await fsp.rename(src, dst).catch(() => {});
+          } else {
+            const srcSt = await fsp.stat(src).catch(() => null);
+            const dstSt = await fsp.stat(dst).catch(() => null);
+            if (srcSt?.isDirectory() && dstSt?.isDirectory()) {
+              const subItems = await fsp.readdir(src);
+              for (const sub of subItems) {
+                const subSrc = path.join(src, sub);
+                const subDst = path.join(dst, sub);
+                if (!fs.existsSync(subDst)) {
+                  await fsp.rename(subSrc, subDst).catch(() => {});
+                }
+              }
+            }
+          }
+        }
+        await fsp.rm(nestedPath, { recursive: true, force: true }).catch(() => {});
+      }
+    }
+
+    // Ensure etmain exists and move any loose pak files from root into etmain
+    const etmainDir = path.join(gameDir, "etmain");
+    await fsp.mkdir(etmainDir, { recursive: true });
+
+    for (const pak of ["pak0.pk3", "pak1.pk3", "pak2.pk3"]) {
+      const loosePak = path.join(gameDir, pak);
+      const targetPak = path.join(etmainDir, pak);
+      if (fs.existsSync(loosePak) && !fs.existsSync(targetPak)) {
+        await fsp.rename(loosePak, targetPak).catch(() => {});
+      }
+    }
+
+    // Re-resolve exe if current exe is missing or nested
+    let currentExe = info?.exe;
+    if (!currentExe || !fs.existsSync(currentExe) || path.dirname(currentExe) !== gameDir) {
+      const runnable = findExecutable(gameDir, "etl.exe") || findExecutable(gameDir, "etl");
+      if (runnable && fs.existsSync(runnable)) {
+        if (edSlug) {
+          persistEditionExe(slug, edSlug, currentExe, runnable);
+        }
+        if (info) info.exe = runnable;
+        currentExe = runnable;
+      }
+    }
+    return currentExe;
+  } catch (err) {
+    console.warn("[wolfenstein-et-repair] skipped:", err?.message || err);
+    return info?.exe;
+  }
 }
 
 /**
@@ -5443,6 +5526,9 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   void telemetry.launchAttempted({ ...launchInfo(), phase: join?.host ? "join" : "play" });
 
   let info = game.editions?.[edSlug] || null;
+  if (info) {
+    await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
+  }
   if ((!info || !(info.exe && fs.existsSync(info.exe))) && game.exe && fs.existsSync(game.exe)) {
     info = {
       exe: game.exe,
@@ -5451,6 +5537,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       editionSlug: game.editionSlug,
       connectArgs: game.connectArgs,
     };
+    await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
   }
   if (!info || !info.exe || !fs.existsSync(info.exe)) {
     const message = editionSlug ? "That edition is not installed" : "Not installed";

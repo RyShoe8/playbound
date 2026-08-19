@@ -135,7 +135,9 @@ function toEdition(doc: LeanEdition): Edition {
         (gameSlugStr === "wolfenstein-enemy-territory" &&
           editionSlugStr === "et-legacy" &&
           (installConfig.playbound_installer?.kind === "external" ||
-            installConfig.playbound_installer?.kind === "github-zip")) ||
+            installConfig.playbound_installer?.kind === "github-zip" ||
+            !installConfig.playbound_installer?.overlayDest ||
+            !installConfig.playbound_installer?.unwrapSingleRoot)) ||
         (gameSlugStr === "tes-arena" &&
           (editionSlugStr === "official" || editionSlugStr === "opentesarena")) ||
         (gameSlugStr === "daggerfall" &&

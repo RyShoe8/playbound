@@ -226,6 +226,8 @@ describe("edition seed integrity", () => {
     expect(etl.isDefault).toBe(true);
     expect(recipe?.overlayUrl).toContain("ET-260b-Base-Data.zip");
     expect(recipe?.overlayFileName).toBe("ET-260b-Base-Data.zip");
+    expect(recipe?.overlayDest).toBe("etmain");
+    expect(recipe?.unwrapSingleRoot).toBe(true);
     expect(recipe?.knownExePaths).toContain("etl.exe");
     expect(recipe?.url).toBe("https://www.etlegacy.com/download/file/720");
   });

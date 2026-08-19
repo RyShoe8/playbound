@@ -575,9 +575,11 @@ export const editions: EditionSeed[] = [
         checksumMd5: "1507c7013f88fa9eb65dcf9d3d6a5031",
         exeHint: "etl",
         knownExePaths: ["etl.exe", "ETL.exe"],
+        unwrapSingleRoot: true,
         overlayUrl:
           "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein-enemy-territory/ET-260b-Base-Data.zip",
         overlayFileName: "ET-260b-Base-Data.zip",
+        overlayDest: "etmain",
         note: "Installs ET: Legacy plus official free Enemy Territory etmain data (2.60b).",
       },
     },
