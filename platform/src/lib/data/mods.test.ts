@@ -110,6 +110,7 @@ describe("verified mods wave", () => {
       "wesnoth-invasion-from-the-unknown",
       "wesnoth-after-the-storm",
       "wesnoth-legend-of-the-invincibles",
+      "wesnoth-era-of-magic",
     ].map(bySlug);
 
     for (const m of wesnoth) {
@@ -125,8 +126,44 @@ describe("verified mods wave", () => {
       "wesnoth-invasion-from-the-unknown",
       "wesnoth-after-the-storm",
       "wesnoth-legend-of-the-invincibles",
+      "wesnoth-era-of-magic",
     ]) {
       expect(developersBySlug.has(bySlug(slug).developerSlug)).toBe(true);
     }
+  });
+});
+
+describe("August 2026 catalog wave", () => {
+  const bySlug = (slug: string) => {
+    const found = all.find((m) => m.slug === slug);
+    if (!found) throw new Error(`missing seed mod: ${slug}`);
+    return found;
+  };
+
+  it("adds only the missing mods, not the retired av8 stub slug", () => {
+    const slugs = all.map((m) => String(m.slug));
+    for (const slug of [
+      "freedoom-project-brutality",
+      "dfu-distant-terrain",
+      "dfu-expanded-textures",
+      "openttd-cztr-graphics",
+      "openttd-av8-aircraft",
+      "wesnoth-era-of-magic",
+    ]) {
+      expect(slugs).toContain(slug);
+    }
+    expect(slugs).not.toContain("openttd-av8");
+  });
+
+  it("keeps BaNaNaS and Nexus rows as external downloads", () => {
+    expect(bySlug("openttd-cztr-graphics").downloadKind).toBe("external");
+    expect(bySlug("openttd-av8-aircraft").website).toContain("bananas.openttd.org");
+    expect(bySlug("dfu-distant-terrain").website).toContain("nexusmods.com");
+    expect(bySlug("dfu-expanded-textures").website).toContain("/mods/307");
+  });
+
+  it("does not re-add Shattered Paradise or the retired av8 slug as new rows", () => {
+    expect(all.some((m) => m.slug === "openra-shattered-paradise")).toBe(true);
+    expect(all.filter((m) => m.slug === "openra-shattered-paradise")).toHaveLength(1);
   });
 });

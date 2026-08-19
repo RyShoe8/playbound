@@ -3297,6 +3297,176 @@ export const editions: EditionSeed[] = [
     tags: ["Party", "Arcade", "Bomberman", "Local PvP"],
     verificationLevel: "community_verified",
   },
+  {
+    gameSlug: "freedoom",
+    slug: "ashes-2063",
+    name: "Ashes 2063 & Afterglow",
+    shortDescription:
+      "Post-apocalyptic GZDoom total conversion. Standalone pack includes Episode 1, Afterglow, and Hard Reset on Freedoom.",
+    description:
+      "Ashes 2063 is Vostyok's post-apocalyptic GZDoom campaign set in the southeastern United States in 2063. Maps lean Build-engine: tight interiors, outdoor wreckage, and a lot of looting. Combat stays Doom-fast, but the cast is raiders, mutants, and scavengers rather than demons, with retrofit firearms, a journal, and a motorcycle between set pieces. The tone sits between Fallout and STALKER without copying either plot.\n\nThe ModDB standalone (currently 1.51) is the edition PlayBound lists. It bundles a known-good GZDoom build with Freedoom assets, so Doom II is not required. Inside the pack, Episode 1 is the Enriched Edition of Ashes 2063 (the original campaign plus Dead Man Walking), Episode 2 is Afterglow, and Hard Reset is the Afterglow prequel. Each episode launches separately; inventory and map progress do not carry over.\n\nPK3-only downloads exist for players who already run GZDoom plus Freedoom or Doom II. Afterglow in particular is a large second campaign, not a map pack, and is the reason this edition's name includes both episodes.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 30,
+    links: {
+      website: "https://www.moddb.com/mods/ashes-2063",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.moddb.com/mods/ashes-2063/downloads",
+        fileName: "AshesStandalone.zip",
+        sizeMB: 656,
+      },
+    },
+    requirements: {
+      notes:
+        "Standalone zip from ModDB. Extract and run the episode launcher for 2063, Afterglow, or Hard Reset. PK3-only installs need GZDoom plus Freedoom Phase 2 or Doom II.",
+    },
+    features: ["Singleplayer", "Story Campaign", "Vehicles", "Freedoom Standalone"],
+    tags: ["Total Conversion", "GZDoom", "Post-Apocalyptic", "Freedoom"],
+    aliases: ["Ashes 2063", "Ashes Afterglow", "Ashes Standalone", "Ashes: Hard Reset"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Do I need Doom II?",
+        a: "Not for the standalone. That pack uses Freedoom. The PK3-only files need GZDoom plus Freedoom Phase 2 or a legal Doom II IWAD.",
+      },
+      {
+        q: "Is Afterglow included?",
+        a: "Yes, in the 1.51 standalone, along with Hard Reset. Afterglow is a separate episode with its own launch option; it does not continue a 2063 save.",
+      },
+    ],
+  },
+  {
+    gameSlug: "freedoom",
+    slug: "pirate-doom",
+    name: "Pirate Doom!",
+    shortDescription:
+      "GZDoom pirate total conversion: 18 maps, reskinned monsters, cutlasses and flintlocks. Runs on Freedoom or Doom II.",
+    description:
+      "Pirate Doom! is Arch's GZDoom total conversion that rebuilds Doom II as a Caribbean raid. Every stock monster gets a pirate pass — peg-leg Cyberdemon, hat-flipping imps, braided pain elementals — and the arsenal swaps to a cutlass, flintlock, cannons, and a dynamite thrower in place of the BFG. There is no chainsaw. Freelook is the intended way to play.\n\nThe campaign is 18 action maps plus a credits/epilogue map, moving through ships, islands, caves, temples, and a circus, with Caribbean music and full cooperative and deathmatch support. The conversion can also ride other mapsets because the monster and weapon replacements are not locked to the bundled levels.\n\nVersion 1.8 is the last upstream package. Sounds mute on many GZDoom 1.9+ builds; the community 1.8b fix on ModDB is the one to grab for current GZDoom. PlayBound's Freedoom + GZDoom edition is a valid IWAD host. This is a ModDB download, not a one-click PlayBound zip.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 40,
+    links: {
+      website: "https://www.moddb.com/mods/pirate-doom",
+      wiki: "https://www.doomworld.com/files/file/17722-pirate-doom/",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.moddb.com/mods/pirate-doom/downloads",
+        fileName: "PirateDoom.zip",
+        sizeMB: 27,
+      },
+    },
+    requirements: {
+      notes:
+        "Download PirateDoom v1.8b fixed for current GZDoom. Load with Freedoom Phase 2 or Doom II. Original v1.8 mutes many sounds on GZDoom 1.9 and newer.",
+    },
+    features: ["Singleplayer", "Co-Op", "Deathmatch", "Total Conversion"],
+    tags: ["GZDoom", "Pirate", "Freedoom", "Humour"],
+    aliases: ["Pirate Doom", "PirateDoom"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Which download should I use?",
+        a: "PirateDoom v1.8b fixed. The 2014 v1.8 package breaks sound on modern GZDoom. The standalone 'plays with other megawads' pack is optional if you want to drop the weapons and monsters onto a different mapset.",
+      },
+    ],
+  },
+  {
+    gameSlug: "openttd",
+    slug: "jgrpp",
+    name: "JGR's Patchpack",
+    shortDescription:
+      "Separate OpenTTD build with extra signals, programming, and map tools. Installs beside vanilla, not as a NewGRF.",
+    description:
+      "JGR's Patchpack is Jonathan Rennison's long-running fork of OpenTTD. It is a different executable you install next to vanilla OpenTTD, not a NewGRF, AI, or Game Script. Multiplayer requires every player on the same jgrpp version; vanilla clients cannot join a patchpack server.\n\nThe extra surface is large: programmable signals, more flexible stations, extra map sizes and height levels, cargo dest, improved logic for breakdowns and infrastructure, and a pile of smaller UI and construction tools the trunk game has not taken. Savegames are not a free round-trip with vanilla — treat it as its own game with OpenGFX/OpenSFX (or original TTD baseset files) the same way you would stock OpenTTD.\n\nPlayBound installs the 64-bit Windows zip from JGRennison/OpenTTD-patches. macOS ships a universal dmg on the same tag; Linux has distro packages and a generic tarball. OpenGFX downloads on first run when no original graphics are present.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://github.com/JGRennison/OpenTTD-patches",
+      github: "https://github.com/JGRennison/OpenTTD-patches",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "JGRennison/OpenTTD-patches",
+        assetPattern: "openttd-jgrpp-.*-windows-win64\\.zip$",
+        exeHint: "openttd",
+        note: "JGR's Patchpack 64-bit Windows build. Keep vanilla OpenTTD installed separately if you still play standard servers.",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "NewGRF Support", "Programmable Signals"],
+    tags: ["OpenTTD", "Fork", "Patchpack", "Simulation"],
+    aliases: ["JGRPP", "JGR Patchpack", "OpenTTD JGR"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Can I load this from OpenTTD's BaNaNaS menu?",
+        a: "No. This is a separate OpenTTD binary. NewGRFs you already use (CZTR, av8, eGRVTS) still install through the patchpack's own content download once this build is running.",
+      },
+      {
+        q: "Will my vanilla save open?",
+        a: "Often one way, not back. Keep vanilla OpenTTD for trunk saves and play JGRPP in its own folder.",
+      },
+    ],
+  },
+  {
+    gameSlug: "wolfenstein-enemy-territory",
+    slug: "truecombat-elite",
+    name: "TrueCombat: Elite",
+    shortDescription:
+      "Military-sim total conversion for Enemy Territory. Realistic weapons and objectives on ET: Legacy.",
+    description:
+      "TrueCombat: Elite (TC:E) is the long-running Enemy Territory conversion that throws out class-based Wolfenstein fantasy for a military simulator: weapon handling, hitboxes, and objective modes closer to early Call of Duty mixed with Counter-Strike, running on ET maps. Close Quarters Battle (CQB) is the companion indoor ruleset packaged with current community installers.\n\nThe live version is TC:E 0.49b. Classic 32-bit ET mods still matter here — ET: Legacy's x86 build is the engine community installers bundle, because x64 ETL will not load 32-bit mods. PlayBound's default ET: Legacy edition stays the stock etmain client; this edition is the TC:E installer path, not a replacement for vanilla ET.\n\nThere is no single upstream zip PlayBound can fetch. Community all-in-one installers (ET: Legacy + TC:E 0.49b + CQB 0.223 + optional maps) are what players actually use. This edition opens that download page.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 30,
+    links: {
+      website: "https://tc.oneladgames.com/",
+      github: "https://github.com/chuckie1992/ETLegacy-TCE-0.49b",
+    },
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://tc.oneladgames.com/",
+        fileName: "ETL-TCE-installer.exe",
+        sizeMB: 823,
+      },
+    },
+    requirements: {
+      notes:
+        "Community all-in-one installer. Prefer the ET: Legacy + TC:E package over dropping files into a Steam ET folder. 32-bit (x86) ET: Legacy is required for TC:E 0.49b.",
+    },
+    features: ["Multiplayer", "Objective Modes", "Realistic Weapons", "Community Servers"],
+    tags: ["Total Conversion", "Military Sim", "ET: Legacy", "Tactical"],
+    aliases: ["TC:E", "True Combat Elite", "TCE", "TrueCombat"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Does this replace ET: Legacy?",
+        a: "No. Keep PlayBound's ET: Legacy edition for vanilla etmain. TC:E is a separate install that bundles its own ETL x86 client plus the tcetest mod.",
+      },
+      {
+        q: "Can I use the 64-bit ET: Legacy build?",
+        a: "Not for this mod. TC:E 0.49b is 32-bit. Community installers ship ETL x86 for that reason.",
+      },
+    ],
+  },
 ];
+
 
 
