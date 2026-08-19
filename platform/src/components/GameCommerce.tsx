@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import type { RetailOffer } from "@/lib/access/types";
 import { formatCents, gameRequiresPurchase } from "@/lib/access/resolver";
-import { activeOffers, bestPurchase } from "@/lib/access/offers";
+import { activeOffers, bestPurchase, heroPurchases } from "@/lib/access/offers";
 import { withOutboundUtm } from "@/lib/utm";
 import { withStoreAffiliate } from "@/lib/access/storeUrls";
 import { TelemetryAnchor } from "@/components/TelemetryAnchor";
@@ -68,6 +68,69 @@ export function GetGameCta({
       <ExternalLink className={size === "lg" ? "size-5" : "size-4"} />
       Get Game — {formatCents(buy.priceCents)}
     </TelemetryAnchor>
+  );
+}
+
+function StoreOfferButton({
+  game,
+  offer,
+  size = "md",
+  affiliates,
+}: {
+  game: Game;
+  offer: RetailOffer;
+  size?: "sm" | "md" | "lg";
+  affiliates?: StoreAffiliateMap;
+}) {
+  const href = purchaseHref(offer, game.slug, affiliates);
+  return (
+    <TelemetryAnchor
+      href={href}
+      target="_blank"
+      rel={offer.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border border-border bg-background/80 font-bold text-foreground transition-all hover:border-play hover:text-play active:translate-y-px",
+        ctaSizes[size]
+      )}
+      event="purchase_clicked"
+      properties={{
+        gameSlug: game.slug,
+        retailer: offer.retailer,
+        affiliate: offer.affiliate,
+        priceCents: offer.priceCents,
+        surface: "get_game_store",
+      }}
+    >
+      {offer.retailer} — {formatCents(offer.priceCents)}
+    </TelemetryAnchor>
+  );
+}
+
+/** Cheapest Get Game plus every other displayed store. */
+export function GetGameStoreButtons({
+  game,
+  size = "md",
+  affiliates,
+}: {
+  game: Game;
+  size?: "sm" | "md" | "lg";
+  affiliates?: StoreAffiliateMap;
+}) {
+  const { primary, secondary } = heroPurchases(game.access);
+  if (!primary) return null;
+  return (
+    <>
+      <GetGameCta game={game} offer={primary} size={size} affiliates={affiliates} />
+      {secondary.map((offer) => (
+        <StoreOfferButton
+          key={`${offer.retailer}-${offer.url}`}
+          game={game}
+          offer={offer}
+          size={size}
+          affiliates={affiliates}
+        />
+      ))}
+    </>
   );
 }
 

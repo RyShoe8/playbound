@@ -475,7 +475,7 @@ function PurchaseSources({
       <p className="text-[11px] text-muted-foreground">
         Paste a product URL. Fetch the price when the store supports it (Steam, GOG, Epic,
         Fanatical); otherwise type the price. Match stores fills Steam, GOG, Epic, and
-        feed-backed stores automatically. Cards and Get Game use the lowest active price here.
+        feed-backed stores automatically. Cards and Get Game use the lowest displayed price here.
       </p>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       {offers.length === 0 ? (
@@ -568,7 +568,7 @@ function PurchaseSources({
                       checked={offer.isActive}
                       onChange={(e) => patchOffer(index, { isActive: e.target.checked })}
                     />
-                    Active
+                    Display
                   </label>
                   <button
                     type="button"

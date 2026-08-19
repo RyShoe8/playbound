@@ -24,7 +24,7 @@ import { issueForGame } from "@/lib/weekly";
 import { AdaptiveAddToLibraryButton } from "@/components/AdaptiveAddToLibraryButton";
 import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
-import { GetGameCta } from "@/components/GameCommerce";
+import { GetGameStoreButtons } from "@/components/GameCommerce";
 import { bestPurchase } from "@/lib/access/offers";
 import { gameRequiresPurchase } from "@/lib/access/resolver";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
@@ -117,7 +117,7 @@ export async function GameHeroActions({
   const affiliates = await getStoreAffiliateMap();
   return (
     <>
-      <GetGameCta game={game} size="lg" affiliates={affiliates} />
+      <GetGameStoreButtons game={game} size="lg" affiliates={affiliates} />
       {choosable ? (
         <Link
           href="#editions"
@@ -150,7 +150,7 @@ export function GameHeroActionsFallback({
   const buy = bestPurchase(game.access);
   return (
     <>
-      <GetGameCta game={game} size="lg" />
+      <GetGameStoreButtons game={game} size="lg" />
       {choosable ? (
         <Link
           href="#editions"
