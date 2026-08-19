@@ -14,6 +14,11 @@ const NEW_EDITION_KEYS = [
   "freedoom/pirate-doom",
   "openttd/jgrpp",
   "wolfenstein-enemy-territory/truecombat-elite",
+  "daggerfall/playbound-remastered",
+  "openra/official",
+  "openra/combined-arms",
+  "luanti/official",
+  "luanti/voxelibre",
 ];
 
 async function main() {
@@ -63,7 +68,7 @@ async function main() {
     }
     await Edition.create({
       ...seed,
-      isDefault: false,
+      isDefault: seed.isDefault === true,
       gameId: game._id,
     });
     console.log(`add  edition ${key}`);

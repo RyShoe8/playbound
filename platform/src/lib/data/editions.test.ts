@@ -9,10 +9,15 @@ describe("Daggerfall editions", () => {
   it("keeps the Unity package on the Unity edition only", () => {
     const unity = daggerfall.find((e) => e.slug === "daggerfall-unity")!;
     const classic = daggerfall.find((e) => e.slug === "classic-dos")!;
+    const playbound = daggerfall.find((e) => e.slug === "playbound-remastered")!;
     expect(unity.installConfig?.playbound_installer?.fileName).toBe(
       "Daggerfall-Unity-PlayBound-v1.1.1.zip"
     );
     expect(classic.installConfig?.playbound_installer?.fileName).toBe("DFInstall.zip");
+    expect(playbound.isDefault).toBe(false);
+    expect(playbound.installConfig?.playbound_installer?.url).toBe(
+      unity.installConfig?.playbound_installer?.url
+    );
   });
 
   it("launches Classic through DOSBox with its generated full-install config", () => {
@@ -190,6 +195,27 @@ describe("edition seed integrity", () => {
     expect(added.every((e) => e.isDefault === false)).toBe(true);
     expect(editions.some((e) => e.slug === "shattered-paradise")).toBe(false);
     expect(added.find((e) => e.slug === "jgrpp")?.gameSlug).toBe("openttd");
+  });
+
+  it("keeps flagship conversions off the default client", () => {
+    const ashes = editions.find((e) => e.gameSlug === "freedoom" && e.slug === "ashes-2063")!;
+    expect(ashes.installMethod).toBe("playbound_installer");
+    expect(ashes.installConfig?.playbound_installer?.kind).toBe("direct-zip");
+    expect(ashes.installConfig?.playbound_installer?.fileName).toBe("AshesStandalone_V1_51.zip");
+    expect(ashes.isDefault).toBe(false);
+    expect(editions.find((e) => e.gameSlug === "freedoom" && e.isDefault)?.slug).toBe("gzdoom");
+
+    const ca = editions.find((e) => e.gameSlug === "openra" && e.slug === "combined-arms")!;
+    expect(ca.isDefault).toBe(false);
+    expect(ca.installConfig?.playbound_installer?.assetPattern).toMatch(/winportable/);
+    expect(editions.find((e) => e.gameSlug === "openra" && e.isDefault)?.slug).toBe("official");
+
+    const vl = editions.find((e) => e.gameSlug === "luanti" && e.slug === "voxelibre")!;
+    expect(vl.isDefault).toBe(false);
+    expect(vl.installConfig?.playbound_installer?.overlayUrl).toContain("content.luanti.org");
+    expect(vl.installConfig?.playbound_installer?.overlayDest).toBe("games");
+    expect(vl.installConfig?.playbound_installer?.launchArgs).toEqual(["--gameid", "mineclone2"]);
+    expect(editions.find((e) => e.gameSlug === "luanti" && e.isDefault)?.slug).toBe("official");
   });
 });
 
