@@ -181,6 +181,16 @@ describe("edition seed integrity", () => {
     }
     expect(dupes).toEqual([]);
   });
+
+  it("does not make the new total conversions the default client", () => {
+    const added = editions.filter((e) =>
+      ["ashes-2063", "pirate-doom", "jgrpp", "truecombat-elite"].includes(e.slug)
+    );
+    expect(added).toHaveLength(4);
+    expect(added.every((e) => e.isDefault === false)).toBe(true);
+    expect(editions.some((e) => e.slug === "shattered-paradise")).toBe(false);
+    expect(added.find((e) => e.slug === "jgrpp")?.gameSlug).toBe("openttd");
+  });
 });
 
 

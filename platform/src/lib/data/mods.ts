@@ -32,6 +32,7 @@ import { strikersClubMods } from "./strikersClubMods";
 import { triggerRallyMods } from "./triggerRallyMods";
 import { brawlhallaMods } from "./brawlhallaMods";
 import { ysoccerMods } from "./ysoccerMods";
+import { catalogWaveAug2026Mods } from "./catalogWaveAug2026Mods";
 
 export type { ModSeed } from "./modSeedHelpers";
 
@@ -70,6 +71,7 @@ export const mods: ModSeed[] = [
   ...triggerRallyMods,
   ...brawlhallaMods,
   ...ysoccerMods,
+  ...catalogWaveAug2026Mods,
 ].map((m) =>
   COVER_OVERRIDES[m.slug] ? { ...m, coverImage: COVER_OVERRIDES[m.slug] } : m
 );
