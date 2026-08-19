@@ -1,0 +1,55 @@
+# Insert-only catalog apply on push.
+# Never runs seed:editions / seed:mods / seed:launcher-install.
+# Writes only named edition inserts, ashes recipe sync, and three named mod recipes.
+
+name: Apply catalog wave
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Require Mongo URI
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
+            echo "GitHub secret MONGODB_URI is missing or is not a mongodb:// / mongodb+srv:// URI."
+            echo "Add the production connection string at Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Install Platform Dependencies
+        run: npm install
+
+      - name: Insert missing flagship editions and wave mods
+        run: npm run insert:catalog-wave
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: Sync Ashes one-click recipe
+        run: npm run sync:edition-install -- freedoom/ashes-2063
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: Patch Combined Arms, VoxeLibre, and DREAM download fields
+        run: npm run patch:named-mods -- openra-combined-arms luanti-voxelibre dfu-dream
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}

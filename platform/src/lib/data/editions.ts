@@ -131,6 +131,54 @@ export const editions: EditionSeed[] = [
     verificationLevel: "official",
   },
   {
+    gameSlug: "daggerfall",
+    slug: "playbound-remastered",
+    name: "PlayBound Edition",
+    shortDescription:
+      "One-click Daggerfall Unity with Bethesda's freeware data. DREAM and Distant Terrain stay on the Mods tab.",
+    description:
+      "PlayBound Edition is the Daggerfall Unity client we already host — Unity remaster, freeware game data in the zip, DaggerfallUnity.exe ready to run. It is the same verified v1.1.1 package as the Daggerfall Unity edition, listed here as the PlayBound-flavoured install so you do not have to hunt the default remaster.\n\nIt does not pre-apply D.R.E.A.M. or Distant Terrain. Those packs live on Nexus, and Nexus forbids re-hosting them. After this edition installs, open the Mods tab: DREAM is the audiovisual overhaul, Distant Terrain pushes the Iliac Bay horizon. Both need a Nexus login.\n\nThe default Daggerfall Unity edition is unchanged. Classic DOS stays the 1996 freeware path.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 15,
+    links: {
+      website: "https://www.dfworkshop.net",
+      github: "https://github.com/Interkarma/daggerfall-unity",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/launcher-packages/games/daggerfall/1787010604732-Daggerfall-Unity-PlayBound-v1.1.1.zip",
+        fileName: "Daggerfall-Unity-PlayBound-v1.1.1.zip",
+        versionLabel: "v1.1.1",
+        exeHint: "DaggerfallUnity.exe",
+        knownExePaths: ["DaggerfallUnity.exe"],
+        note: "Same PlayBound Daggerfall Unity v1.1.1 zip as the default remaster, including freeware data. DREAM and Distant Terrain are separate Nexus mods.",
+      },
+    },
+    requirements: {
+      notes:
+        "One-click DFU plus freeware data. Install DREAM (Nexus mod 5) and Distant Terrain (Nexus mod 128) from the Mods tab — PlayBound cannot re-host those files.",
+    },
+    features: ["Singleplayer", "Mod Support", "Controller Support", "Freeware Data"],
+    tags: ["Remaster", "Open Source", "RPG", "PlayBound"],
+    aliases: ["PlayBound Daggerfall", "DFU PlayBound Edition", "Daggerfall Remastered"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Is DREAM included?",
+        a: "No. Nexus forbids uploading DREAM to other sites. Install this edition, then grab DREAM from the Mods tab (Nexus login).",
+      },
+      {
+        q: "How is this different from Daggerfall Unity?",
+        a: "Same zip and same exe. This row is the PlayBound-labelled install path; the default Daggerfall Unity edition is unchanged.",
+      },
+    ],
+  },
+  {
     gameSlug: "asherons-call",
     slug: "coldeve",
     name: "Coldeve (Default PvE)",
@@ -3304,7 +3352,7 @@ export const editions: EditionSeed[] = [
     shortDescription:
       "Post-apocalyptic GZDoom total conversion. Standalone pack includes Episode 1, Afterglow, and Hard Reset on Freedoom.",
     description:
-      "Ashes 2063 is Vostyok's post-apocalyptic GZDoom campaign set in the southeastern United States in 2063. Maps lean Build-engine: tight interiors, outdoor wreckage, and a lot of looting. Combat stays Doom-fast, but the cast is raiders, mutants, and scavengers rather than demons, with retrofit firearms, a journal, and a motorcycle between set pieces. The tone sits between Fallout and STALKER without copying either plot.\n\nThe ModDB standalone (currently 1.51) is the edition PlayBound lists. It bundles a known-good GZDoom build with Freedoom assets, so Doom II is not required. Inside the pack, Episode 1 is the Enriched Edition of Ashes 2063 (the original campaign plus Dead Man Walking), Episode 2 is Afterglow, and Hard Reset is the Afterglow prequel. Each episode launches separately; inventory and map progress do not carry over.\n\nPK3-only downloads exist for players who already run GZDoom plus Freedoom or Doom II. Afterglow in particular is a large second campaign, not a map pack, and is the reason this edition's name includes both episodes.",
+      "Ashes 2063 is Vostyok's post-apocalyptic GZDoom campaign set in the southeastern United States in 2063. Maps lean Build-engine: tight interiors, outdoor wreckage, and a lot of looting. Combat stays Doom-fast, but the cast is raiders, mutants, and scavengers rather than demons, with retrofit firearms, a journal, and a motorcycle between set pieces. The tone sits between Fallout and STALKER without copying either plot.\n\nPlayBound installs the ModDB standalone (currently 1.51) as a one-click zip. It bundles a known-good GZDoom build with Freedoom assets, so Doom II is not required. Inside the pack, Episode 1 is the Enriched Edition of Ashes 2063 (the original campaign plus Dead Man Walking), Episode 2 is Afterglow, and Hard Reset is the Afterglow prequel. Each episode launches separately; inventory and map progress do not carry over.\n\nPK3-only downloads still exist on ModDB for players who already run GZDoom plus Freedoom or Doom II. Afterglow is a large second campaign, not a map pack, and is the reason this edition's name includes both episodes.",
     type: "community",
     status: "active",
     visibility: "public",
@@ -3313,17 +3361,20 @@ export const editions: EditionSeed[] = [
     links: {
       website: "https://www.moddb.com/mods/ashes-2063",
     },
-    installMethod: "official_download",
+    installMethod: "playbound_installer",
     installConfig: {
-      official_download: {
-        url: "https://www.moddb.com/mods/ashes-2063/downloads",
-        fileName: "AshesStandalone.zip",
-        sizeMB: 656,
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/launcher-packages/editions/freedoom/ashes-2063/AshesStandalone_V1_51.zip",
+        fileName: "AshesStandalone_V1_51.zip",
+        versionLabel: "1.51",
+        exeHint: "gzdoom|Ashes|ashes",
+        note: "PlayBound mirror of the Ashes 2063 standalone 1.51 pack (GZDoom + Freedoom + Afterglow + Hard Reset). Sourced from ModDB; not scraped at install time.",
       },
     },
     requirements: {
       notes:
-        "Standalone zip from ModDB. Extract and run the episode launcher for 2063, Afterglow, or Hard Reset. PK3-only installs need GZDoom plus Freedoom Phase 2 or Doom II.",
+        "One-click standalone. Extracted pack includes GZDoom and Freedoom. Use the episode launcher for 2063, Afterglow, or Hard Reset. PK3-only installs on ModDB still need GZDoom plus Freedoom Phase 2 or Doom II.",
     },
     features: ["Singleplayer", "Story Campaign", "Vehicles", "Freedoom Standalone"],
     tags: ["Total Conversion", "GZDoom", "Post-Apocalyptic", "Freedoom"],
@@ -3337,6 +3388,10 @@ export const editions: EditionSeed[] = [
       {
         q: "Is Afterglow included?",
         a: "Yes, in the 1.51 standalone, along with Hard Reset. Afterglow is a separate episode with its own launch option; it does not continue a 2063 save.",
+      },
+      {
+        q: "Do I still go to ModDB?",
+        a: "Not for this edition. PlayBound installs the mirrored standalone zip. ModDB remains the project page for news and PK3-only files.",
       },
     ],
   },
@@ -3463,6 +3518,165 @@ export const editions: EditionSeed[] = [
       {
         q: "Can I use the 64-bit ET: Legacy build?",
         a: "Not for this mod. TC:E 0.49b is 32-bit. Community installers ship ETL x86 for that reason.",
+      },
+    ],
+  },
+  {
+    gameSlug: "openra",
+    slug: "official",
+    name: "OpenRA (Official)",
+    shortDescription:
+      "Stock OpenRA portable: Red Alert, Tiberian Dawn, and Dune 2000. Default client for this game.",
+    description:
+      "The official OpenRA Windows portable from OpenRA/OpenRA. Same recipe PlayBound already used when this game had no stored editions — Red Alert, Tiberian Dawn, and Dune 2000 in one client, with the project's own matchmaking.\n\nThis row exists so Combined Arms can be a choosable edition without replacing stock OpenRA. Keep this as the default if you want vanilla skirmish and the official servers.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.openra.net/",
+      github: "https://github.com/OpenRA/OpenRA",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "OpenRA/OpenRA",
+        assetPattern: "x64-winportable\\.zip$",
+        exeHint: "RedAlert|OpenRA",
+        connectArgs: ["Launch.Connect={host}:{port}"],
+        note: "Official OpenRA x64 Windows portable. Combined Arms is a separate edition.",
+      },
+    },
+    features: ["Multiplayer", "Skirmish", "Red Alert", "Tiberian Dawn", "Dune 2000"],
+    tags: ["OpenRA", "RTS", "Official", "Portable"],
+    aliases: ["OpenRA Official", "OpenRA Portable"],
+    verificationLevel: "playbound_verified",
+    faq: [
+      {
+        q: "Is this Combined Arms?",
+        a: "No. This is stock OpenRA. Combined Arms is its own edition and installs a different portable client.",
+      },
+    ],
+  },
+  {
+    gameSlug: "openra",
+    slug: "combined-arms",
+    name: "Combined Arms",
+    shortDescription:
+      "Cross-era Command & Conquer total conversion. Standalone OpenRA portable — stock OpenRA not required.",
+    description:
+      "Combined Arms mashes Tiberium, Red Alert, Dune, and later C&C factions into one competitive OpenRA client. It ships as its own Windows portable from Inq8/CAmod; you do not install stock OpenRA first.\n\nPlayBound's default OpenRA edition stays the official portable. This edition is the CA winportable: CombinedArms-*-x64-winportable.zip from GitHub releases. ModDB remains the project news page. The Combined Arms row on the Mods tab is left in place for anyone who already installed it that way.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://www.moddb.com/mods/command-conquer-combined-arms",
+      github: "https://github.com/Inq8/CAmod",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "Inq8/CAmod",
+        assetPattern: "CombinedArms-.*-x64-winportable\\.zip$",
+        exeHint: "CombinedArms|OpenRA",
+        note: "Combined Arms Windows portable. Does not need stock OpenRA.",
+      },
+    },
+    features: ["Multiplayer", "Skirmish", "Total Conversion", "Portable Client"],
+    tags: ["OpenRA", "Command & Conquer", "RTS", "Community"],
+    aliases: ["CA", "CAmod", "Command & Conquer Combined Arms"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Do I install OpenRA first?",
+        a: "No. The winportable zip is a self-contained client. Stock OpenRA is the other edition on this game.",
+      },
+    ],
+  },
+  {
+    gameSlug: "luanti",
+    slug: "official",
+    name: "Luanti (Official)",
+    shortDescription:
+      "Stock Luanti / Minetest engine. Pick a game from ContentDB or the Mods tab after install.",
+    description:
+      "The official Luanti Windows build from luanti-org/luanti. Same recipe PlayBound used when this game had no stored editions.\n\nThis row stays the default so VoxeLibre can be a choosable edition without replacing the engine-only client. After install, Minetest Game and other packs still land from ContentDB or the Mods tab.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://www.luanti.org/",
+      github: "https://github.com/luanti-org/luanti",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "luanti-org/luanti",
+        assetPattern: "-win64\\.zip$",
+        exeHint: "luanti|minetest",
+        connectArgs: ["--go", "--address", "{host}", "--port", "{port}"],
+        note: "Official Luanti 64-bit Windows build. VoxeLibre is a separate edition that overlays the game pack.",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "Mod Support", "Voxel Sandbox"],
+    tags: ["Luanti", "Minetest", "Official", "Engine"],
+    aliases: ["Minetest", "Luanti Official"],
+    verificationLevel: "playbound_verified",
+    faq: [
+      {
+        q: "Is VoxeLibre included?",
+        a: "No. This is the engine. Use the VoxeLibre edition for a one-click survival game, or install packs from the Mods tab.",
+      },
+    ],
+  },
+  {
+    gameSlug: "luanti",
+    slug: "voxelibre",
+    name: "VoxeLibre",
+    shortDescription:
+      "Luanti engine plus the VoxeLibre (MineClone2) survival game. One-click, no ContentDB browsing.",
+    description:
+      "VoxeLibre is the MineClone2 successor: a Minecraft-inspired survival sandbox on Luanti, GPL/CC-BY-SA, with no storefront monetisation. PlayBound installs the official Luanti win64 build, then overlays the ContentDB game package into games/mineclone2 and launches with --gameid mineclone2.\n\nStock Luanti stays the default edition. The VoxeLibre row on the Mods tab still one-clicks the same ContentDB zip into an existing Luanti install.",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://content.luanti.org/packages/Wuzzy/mineclone2/",
+      github: "https://github.com/VoxeLibre/VoxeLibre",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "luanti-org/luanti",
+        assetPattern: "-win64\\.zip$",
+        exeHint: "luanti|minetest",
+        overlayUrl: "https://content.luanti.org/packages/Wuzzy/mineclone2/download/",
+        overlayFileName: "mineclone2.zip",
+        overlayDest: "games",
+        launchArgs: ["--gameid", "mineclone2"],
+        connectArgs: ["--go", "--address", "{host}", "--port", "{port}"],
+        note: "Luanti 64-bit Windows plus VoxeLibre from ContentDB into games/. Launches mineclone2.",
+      },
+    },
+    features: ["Singleplayer", "Multiplayer", "Survival", "Crafting"],
+    tags: ["Luanti", "VoxeLibre", "MineClone2", "Sandbox"],
+    aliases: ["MineClone2", "MineClone 2", "Voxe Libre"],
+    verificationLevel: "community_verified",
+    faq: [
+      {
+        q: "Why mineclone2 in the launch args?",
+        a: "That is still the ContentDB technical name. The player-facing title is VoxeLibre.",
       },
     ],
   },

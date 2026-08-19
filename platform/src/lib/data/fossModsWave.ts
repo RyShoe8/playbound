@@ -16,6 +16,7 @@ type Def = {
   repo?: string;
   kind?: "github-zip" | "direct-zip" | "external";
   pattern?: string;
+  direct?: string;
   size?: number;
   year?: number;
   changes: string;
@@ -42,6 +43,7 @@ function m(d: Def): ModSeed {
     githubRepo: d.repo ?? null,
     downloadKind: kind,
     assetPattern: kind === "github-zip" ? d.pattern ?? "\\.zip$" : null,
+    directUrl: d.direct ?? null,
     installRelativePath: d.path,
     art: d.art ?? { from: "#1e293b", to: "#64748b", icon: "Package" },
     summary: d.summary,
@@ -51,7 +53,7 @@ function m(d: Def): ModSeed {
 }
 
 const openraMods: ModSeed[] = [
-  m({ slug: "openra-combined-arms", title: "Combined Arms", tagline: "Multi-faction C&C mega-mod.", desc: "Merges Tiberium and Red Alert eras.", base: "openra", baseTitle: "OpenRA", path: "mods", website: "https://github.com/Inq8/CAmod", repo: "Inq8/CAmod", pattern: "winportable\\.zip$|\\.zip$", size: 450, changes: "Adds a cross-era faction mashup.", summary: "One of the most played OpenRA conversions." }),
+  m({ slug: "openra-combined-arms", title: "Combined Arms", tagline: "Multi-faction C&C mega-mod.", desc: "Merges Tiberium and Red Alert eras.", base: "openra", baseTitle: "OpenRA", path: "mods", website: "https://github.com/Inq8/CAmod", repo: "Inq8/CAmod", pattern: "CombinedArms-.*-x64-winportable\\.zip$", size: 450, changes: "Adds a cross-era faction mashup.", summary: "One of the most played OpenRA conversions." }),
   m({ slug: "openra-tiberian-dawn-hd", title: "Tiberian Dawn HD", tagline: "Remastered TD assets.", desc: "OpenRA TD with Remastered art.", base: "openra", baseTitle: "OpenRA", path: "mods", website: "https://github.com/OpenRA/TiberianDawnHD", repo: "OpenRA/TiberianDawnHD", pattern: "x64-winportable\\.zip$", size: 620, changes: "Swaps in Remastered assets.", summary: "Keeps OpenRA netcode with modern art." }),
   m({ slug: "openra-ra2", title: "Red Alert 2", tagline: "RA2 on OpenRA.", desc: "Community RA2 port.", base: "openra", baseTitle: "OpenRA", path: "mods", website: "https://github.com/OpenRA/ra2", repo: "OpenRA/ra2", pattern: "\\.zip$", size: 800, changes: "Adds RA2-style rosters and maps.", summary: "Later Westwood RA on modern OpenRA." }),
   m({ slug: "openra-openhv", title: "OpenHV", tagline: "Original sci-fi RTS.", desc: "Hard Vacuum open-content RTS.", base: "openra", baseTitle: "OpenRA", path: "mods", website: "https://www.openhv.net/", repo: "OpenHV/OpenHV", pattern: "winportable\\.zip$", size: 200, changes: "Original factions and portable builds.", summary: "Wholly original art and setting." }),
@@ -124,7 +126,7 @@ const endless_skyMods: ModSeed[] = [
 const luantiMods: ModSeed[] = [
   m({ slug: "luanti-minetest-game", title: "Minetest Game", tagline: "Classic sandbox game.", desc: "Base sandbox game platform.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/Luanti/minetest_game/", repo: "luanti-org/minetest_game", pattern: "\\.zip$", size: 40, changes: "Installs classic Minetest Game.", summary: "Default sandbox many mods expect." }),
   m({ slug: "luanti-mineclonia", title: "Mineclonia", tagline: "MC-inspired survival.", desc: "Minecraft-inspired survival.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/ryvnf/mineclonia/", kind: "external", size: 120, changes: "Adds MC-like survival game.", summary: "Install into games/ from ContentDB." }),
-  m({ slug: "luanti-voxelibre", title: "VoxeLibre", tagline: "MineClone successor.", desc: "Minecraft-inspired survival extras.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/Wuzzy/mineclone2/", kind: "external", size: 150, changes: "Installs VoxeLibre gameplay.", summary: "Full alternate Luanti game." }),
+  m({ slug: "luanti-voxelibre", title: "VoxeLibre", tagline: "MineClone successor.", desc: "Minecraft-inspired survival extras.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/Wuzzy/mineclone2/", kind: "direct-zip", direct: "https://content.luanti.org/packages/Wuzzy/mineclone2/download/", size: 80, changes: "Installs VoxeLibre gameplay.", summary: "Full alternate Luanti game.", hint: "PlayBound drops the ContentDB zip into Luanti's games/ folder (technical name mineclone2). Prefer the VoxeLibre edition if you want engine plus game in one install." }),
   m({ slug: "luanti-asuna", title: "Asuna", tagline: "Biome sandbox.", desc: "Biome-focused exploration game.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/EmptyStar/asuna/", repo: "asuna-mt/asuna", pattern: "\\.zip$", size: 80, changes: "Biome exploration sandbox.", summary: "Install as a game package." }),
   m({ slug: "luanti-nodecore", title: "NodeCore", tagline: "Discovery sandbox.", desc: "Abstract discovery crafting world.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/Warr1024/nodecore/", kind: "external", size: 60, changes: "Unique discovery crafting loops.", summary: "ContentDB game install." }),
   m({ slug: "luanti-exile", title: "Exile", tagline: "Harsh survival.", desc: "Harsh wilderness survival.", base: "luanti", baseTitle: "Luanti", path: "games", website: "https://content.luanti.org/packages/Mantar/exile/", kind: "external", size: 70, changes: "Difficult survival gameplay.", summary: "ContentDB game." }),

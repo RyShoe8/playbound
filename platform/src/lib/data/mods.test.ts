@@ -166,4 +166,16 @@ describe("August 2026 catalog wave", () => {
     expect(all.some((m) => m.slug === "openra-shattered-paradise")).toBe(true);
     expect(all.filter((m) => m.slug === "openra-shattered-paradise")).toHaveLength(1);
   });
+
+  it("tightens Combined Arms, VoxeLibre, and DREAM install routes", () => {
+    expect(bySlug("openra-combined-arms").assetPattern).toBe(
+      "CombinedArms-.*-x64-winportable\\.zip$"
+    );
+    expect(bySlug("luanti-voxelibre").downloadKind).toBe("direct-zip");
+    expect(bySlug("luanti-voxelibre").directUrl).toContain("content.luanti.org");
+    expect(bySlug("dfu-dream").downloadKind).toBe("external");
+    expect(bySlug("dfu-dream").website).toContain("nexusmods.com");
+    expect(bySlug("dfu-dream").website).toContain("/mods/5");
+    expect(bySlug("dfu-dream").githubRepo ?? null).toBeNull();
+  });
 });

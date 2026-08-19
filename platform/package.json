@@ -16,6 +16,8 @@
     "seed:mod-classifications": "tsx scripts/seed-mod-classifications.ts",
     "seed:editions": "tsx scripts/seed-editions.ts",
     "insert:catalog-wave": "tsx scripts/insert-catalog-wave.ts",
+    "sync:edition-install": "tsx scripts/sync-edition-install.ts",
+    "patch:named-mods": "tsx scripts/patch-named-mods.ts",
     "fix:mod-media": "tsx scripts/fix-mod-media.ts",
     "fetch:mod-covers": "tsx scripts/fetch-mod-covers.ts",
     "compress:static-media": "tsx scripts/compress-static-media.ts",
