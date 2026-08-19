@@ -249,7 +249,7 @@ export function DiscoverFilters({
   return (
     <div className="space-y-5">
       {/* ── 1. Genre Quick-Select Buttons (Pills with count below) ──── */}
-      <div className="no-scrollbar -mx-1 flex snap-x items-center gap-2 overflow-x-auto px-1 py-1">
+      <div className="-mx-1 flex flex-wrap items-center gap-2 px-1 py-1">
         <button
           type="button"
           onClick={() => setSelectedGenre("")}
