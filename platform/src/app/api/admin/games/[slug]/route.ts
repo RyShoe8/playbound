@@ -83,9 +83,12 @@ export async function PATCH(
       developerName = developerName || developersBySlug.get(developerSlug)?.name || null;
     }
 
-    const previous = await CatalogGame.findOne({ slug }).select("published publishedAt status").lean();
+    const previous = await CatalogGame.findOne({ slug })
+      .select("published publishedAt status communityLinks")
+      .lean();
+    const wasPublished = (previous as { status?: string } | null)?.status === "published";
     let publishedAt = (previous as { publishedAt?: Date | null })?.publishedAt;
-    if (body.status === "published" && (!publishedAt || (previous as { status?: string })?.status !== "published")) {
+    if (body.status === "published" && (!publishedAt || !wasPublished)) {
       publishedAt = new Date();
     }
 
@@ -140,10 +143,11 @@ export async function PATCH(
       renameWarning = staticReferenceWarning(slug);
     }
 
-    if (doc.published && !hasPlayboundDiscordChannel(doc)) {
+    const isPublished = doc.status === "published" || Boolean(doc.published);
+    if (isPublished && !hasPlayboundDiscordChannel(doc)) {
       void requestDiscordProvision(doc.slug);
     }
-    if (doc.published && !previous?.published) {
+    if (isPublished && !wasPublished) {
       void requestNewGameDiscordAnnounce({
         slug: doc.slug,
         title: doc.title,

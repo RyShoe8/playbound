@@ -6,6 +6,11 @@ import CatalogGame from "@/lib/models/CatalogGame";
 import { getGame } from "@/lib/catalog";
 import { CATALOG_STATUSES, statusToPublished } from "@/lib/catalogStatus";
 import { requireAdminSession } from "@/lib/requireAdmin";
+import {
+  requestDiscordProvision,
+  hasPlayboundDiscordChannel,
+  requestNewGameDiscordAnnounce,
+} from "@/lib/discordProvision";
 import { firstZodErrorMessage } from "@/lib/zodError";
 
 const bodySchema = z.object({
@@ -29,6 +34,11 @@ export async function PATCH(
     await dbConnect();
     const status = body.status;
     const published = statusToPublished(status);
+
+    const previous = await CatalogGame.findOne({ slug })
+      .select("status communityLinks")
+      .lean();
+    const wasPublished = (previous as { status?: string } | null)?.status === "published";
 
     /*
      * Stamp the moment of publication. Without this the admin list had nothing
@@ -61,6 +71,20 @@ export async function PATCH(
         publishedAt: published ? new Date() : null,
       });
       doc = created.toObject();
+    }
+
+    if (published && !hasPlayboundDiscordChannel(doc)) {
+      void requestDiscordProvision(doc.slug);
+    }
+    if (published && !wasPublished) {
+      void requestNewGameDiscordAnnounce({
+        slug: doc.slug,
+        title: doc.title,
+        description: doc.description,
+        tagline: doc.tagline,
+        coverImage: doc.coverImage,
+        screenshots: doc.screenshots,
+      });
     }
 
     try {
