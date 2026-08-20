@@ -87,10 +87,10 @@ export async function POST(req: Request) {
 
     const isPublished = doc.status === "published" || Boolean(doc.published);
     if (isPublished && !hasPlayboundDiscordChannel(doc)) {
-      void requestDiscordProvision(doc.slug);
+      await requestDiscordProvision(doc.slug);
     }
     if (isPublished) {
-      void requestNewGameDiscordAnnounce({
+      await requestNewGameDiscordAnnounce({
         slug: doc.slug,
         title: doc.title,
         description: doc.description,

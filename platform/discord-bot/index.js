@@ -449,7 +449,10 @@ async function provisionFranchise(guild, game, publicEditions) {
  * Idempotent provision for one published game (flat or franchise).
  */
 async function provisionChannel(slug) {
-  const game = await games.findOne({ slug, published: true });
+  const game = await games.findOne({
+    slug,
+    $or: [{ status: "published" }, { published: true }],
+  });
   if (!game) throw new Error(`Unknown or unpublished game: ${slug}`);
 
   const guild = await client.guilds.fetch(GUILD_ID);
@@ -484,7 +487,7 @@ async function provisionMissing() {
 
   try {
     const list = await games
-      .find({ published: true })
+      .find({ $or: [{ status: "published" }, { published: true }] })
       .project({ slug: 1, title: 1, communityLinks: 1 })
       .toArray();
 
@@ -571,7 +574,7 @@ async function reconcileChannels(opts = {}) {
 
     /* ── published games: correct name + category ── */
     const published = await games
-      .find({ published: true })
+      .find({ $or: [{ status: "published" }, { published: true }] })
       .project({ slug: 1, title: 1, communityLinks: 1 })
       .toArray();
 
@@ -664,7 +667,10 @@ async function reconcileChannels(opts = {}) {
 }
 
 async function postGameOfTheWeek() {
-  const gotw = await games.findOne({ published: true, gameOfWeek: true });
+  const gotw = await games.findOne({
+    $or: [{ status: "published" }, { published: true }],
+    gameOfWeek: true,
+  });
   if (!gotw) return;
   const guild = await client.guilds.fetch(GUILD_ID);
   const channel =
@@ -774,7 +780,10 @@ client.on("error", (err) => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   const slug = interaction.options.getString("slug", true).toLowerCase();
-  const game = await games.findOne({ slug, published: true });
+  const game = await games.findOne({
+    slug,
+    $or: [{ status: "published" }, { published: true }],
+  });
   if (!game) {
     await interaction.reply({ content: `No published game \`${slug}\` on PlayBound.`, ephemeral: true });
     return;

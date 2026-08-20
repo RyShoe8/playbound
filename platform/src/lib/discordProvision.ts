@@ -53,12 +53,15 @@ async function postBot(path: string, body: Record<string, unknown>): Promise<unk
 }
 
 /** Provision (or link) a single published game's Discord channel. */
-export async function requestDiscordProvision(slug: string): Promise<void> {
-  if (!slug) return;
+export async function requestDiscordProvision(slug: string): Promise<unknown> {
+  if (!slug) return null;
   try {
-    await postBot("/provision", { slug });
+    const res = await postBot("/provision", { slug });
+    if (res) console.log(`[discordProvision] ${slug}: channel provisioned successfully`);
+    return res;
   } catch (err) {
     console.error(`[discordProvision] ${slug}:`, err instanceof Error ? err.message : err);
+    return null;
   }
 }
 
