@@ -28,11 +28,22 @@ describe("health thresholds", () => {
     expect(statusFor(1, 3)).toBe("red");
   });
 
-  it("goes red at or above a fifth of attempts", () => {
-    expect(statusFor(2, 10)).toBe("red");
-    expect(statusFor(1, 10)).toBe("yellow");
-    expect(statusFor(19, 100)).toBe("yellow");
-    expect(statusFor(20, 100)).toBe("red");
+  it("uses the 2.5% and 10% bands", () => {
+    /*
+     * Green under 2.5%, amber from 2.5% to 10%, red above 10% — the same bands
+     * for install, join and party, so a row reads consistently across columns.
+     */
+    expect(statusFor(2, 100)).toBe("green"); // 2%
+    expect(statusFor(3, 100)).toBe("yellow"); // 3%
+    expect(statusFor(10, 100)).toBe("yellow"); // 10% is the top of amber
+    expect(statusFor(11, 100)).toBe("red"); // above 10%
+  });
+
+  it("puts the boundaries where the labels say", () => {
+    expect(statusFor(25, 1000)).toBe("yellow"); // exactly 2.5%
+    expect(statusFor(24, 1000)).toBe("green"); // just under
+    expect(statusFor(100, 1000)).toBe("yellow"); // exactly 10%
+    expect(statusFor(101, 1000)).toBe("red"); // just over
   });
 });
 
