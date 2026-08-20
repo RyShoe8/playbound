@@ -570,9 +570,9 @@ export const editions: EditionSeed[] = [
         // chosen here because it remains compatible with classic 32-bit mods
         // and servers, while x64 only works with 64-bit mods.
         kind: "direct-zip",
-        url: "https://www.etlegacy.com/download/file/720",
-        fileName: "etlegacy-v2.84.0-x86.zip",
-        checksumMd5: "1507c7013f88fa9eb65dcf9d3d6a5031",
+        url: "https://www.etlegacy.com/download/file/736",
+        fileName: "etlegacy-v2.85.0-x64.zip",
+        checksumMd5: "da0f437f621ee7c682020bfaab45379a",
         exeHint: "etl",
         knownExePaths: ["etl.exe", "ETL.exe"],
         unwrapSingleRoot: true,

@@ -2070,12 +2070,12 @@ const facts: Game[] = [
       kind: "direct-zip",
       // ET: Legacy publishes its supported Windows archives from these official
       // per-release endpoints, not GitHub Releases (which is empty).
-      url: "https://www.etlegacy.com/download/file/720",
-      fileName: "etlegacy-v2.84.0-x86.zip",
-      checksumMd5: "1507c7013f88fa9eb65dcf9d3d6a5031",
+      url: "https://www.etlegacy.com/download/file/736",
+      fileName: "etlegacy-v2.85.0-x64.zip",
+      checksumMd5: "da0f437f621ee7c682020bfaab45379a",
       exeHint: "etl.exe",
       knownExePaths: ["etl.exe", "ETL.exe"],
-      versionLabel: "v2.84.0",
+      versionLabel: "v2.85.0",
       unwrapSingleRoot: true,
       // ET: Legacy ships only the GPL engine. Its upstream documentation
       // requires the three free original ET data files alongside it; this
