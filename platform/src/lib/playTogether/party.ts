@@ -33,7 +33,7 @@ import {
   normalizePartyName,
 } from "@/lib/playTogether/types";
 import { STALE_AFTER_MS } from "@/lib/presence/types";
-import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
+import { trackPartyEvent, trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
 import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
 import {
   cleanupPartyDiscordVoice,
@@ -201,7 +201,19 @@ async function attachConfigSync(
       readiness: readinessFor(party, result.sync),
     };
   } catch (err) {
-    console.warn("attachConfigSync failed", err);
+    /*
+     * Worth an event, not just a log line. A config-sync that throws leaves the
+     * panel with no idea who has what, which surfaces to players as "you do not
+     * have the game" — the exact complaint this system generates, and it was
+     * previously invisible to Ops.
+     */
+    trackPartyFailure("sync", {
+      op: "config-sync",
+      partyId: party.id,
+      gameSlug: party.gameSlug,
+      userId: viewerUserId ?? null,
+      message: err,
+    });
     return { ...party, readiness: readinessFor(party, null) };
   }
 }

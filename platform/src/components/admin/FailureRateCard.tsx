@@ -79,14 +79,27 @@ function Row({
         const tally = pick(w);
         return (
           <td key={w} className="py-2 pr-4 align-middle">
-            <span
-              className={`${emphasis ? "text-xl font-extrabold" : "text-base font-bold"} ${rateTone(tally)}`}
-            >
-              {formatRate(tally)}
-            </span>
-            <span className="ml-2 text-xs text-muted-foreground">
-              {tally.failed}/{tally.failed + tally.completed}
-            </span>
+            {/*
+              Stacked, not inline. Side by side these ran together as "17%4/23",
+              and the pair was written failed/total — which reads just as easily
+              as failed/succeeded. Both numbers are named now.
+            */}
+            <div className="flex flex-col leading-tight">
+              <span
+                className={`${emphasis ? "text-xl font-extrabold" : "text-base font-bold"} ${rateTone(tally)}`}
+              >
+                {formatRate(tally)}
+              </span>
+              {tally.failed + tally.completed > 0 ? (
+                <span className="mt-0.5 text-xs whitespace-nowrap text-muted-foreground">
+                  <span className="font-semibold text-red-500">{tally.failed}</span> failed
+                  <span className="mx-1">·</span>
+                  <span className="font-semibold text-emerald-500">{tally.completed}</span> ok
+                </span>
+              ) : (
+                <span className="mt-0.5 text-xs text-muted-foreground">no attempts</span>
+              )}
+            </div>
           </td>
         );
       })}
@@ -118,7 +131,7 @@ export function FailureRateCard({
             </span>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Share of finished installs and launches that failed. Counts are failed/total.
+            Share of finished installs and launches that failed.
           </p>
         </div>
         <Trend current={rates.d1.overall} baseline={rates.d30.overall} />

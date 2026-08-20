@@ -10,7 +10,7 @@ import {
   isHostableGame,
   type HostedStatus,
 } from "./catalog";
-import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
+import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyHostFields = {
   roomId?: string | null;
@@ -67,6 +67,12 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     hosted.status = "failed";
     hosted.error = result.error;
     await party.save();
+    trackPartyFailure("host", {
+      op: "provision",
+      partyId: String(party._id),
+      gameSlug: slug,
+      message: result.error,
+    });
     trackPartyEvent("party_hosted_failed", {
       partyId: String(party._id),
       gameSlug: slug,
@@ -84,6 +90,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.error = null;
   hosted.provisionedAt = new Date();
   await party.save();
+  trackPartyOk("host", { op: "provision", partyId: String(party._id), gameSlug: slug });
   trackPartyEvent("party_hosted_ready", {
     partyId: String(party._id),
     gameSlug: slug,

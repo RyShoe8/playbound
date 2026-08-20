@@ -6,12 +6,26 @@ import { AdminOpsConsole } from "@/components/admin/AdminOpsConsole";
 import { FailureRateCard } from "@/components/admin/FailureRateCard";
 import { familyForArea, type OpsFamily } from "@/lib/admin/opsEvents";
 import { getFailureRates } from "@/lib/admin/failureRates";
+import { PartyHealthCard } from "@/components/admin/PartyHealthCard";
+import { getPartyHealth } from "@/lib/admin/partyHealth";
 
 export const metadata: Metadata = { title: "Admin · Ops" };
 
-async function FailureRateSection({ gameSlug }: { gameSlug: string }) {
-  const rates = await getFailureRates({ gameSlug });
-  return <FailureRateCard rates={rates} gameSlug={gameSlug} />;
+/**
+ * Both top cards in one await, so the pair appears together rather than the
+ * layout shifting as the second resolves.
+ */
+async function TopStatsSection({ gameSlug }: { gameSlug: string }) {
+  const [rates, partyHealth] = await Promise.all([
+    getFailureRates({ gameSlug }),
+    getPartyHealth({ gameSlug }),
+  ]);
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <FailureRateCard rates={rates} gameSlug={gameSlug} />
+      <PartyHealthCard health={partyHealth} gameSlug={gameSlug} />
+    </div>
+  );
 }
 
 export default async function AdminOpsPage({
@@ -48,7 +62,7 @@ export default async function AdminOpsPage({
         key={params.game || "all"}
         fallback={<div className="h-40 animate-pulse rounded-xl border border-border bg-card/40" />}
       >
-        <FailureRateSection gameSlug={params.game || ""} />
+        <TopStatsSection gameSlug={params.game || ""} />
       </Suspense>
 
       <AdminOpsConsole initialFamily={family} initialGame={params.game || ""} />

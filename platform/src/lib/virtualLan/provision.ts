@@ -16,7 +16,7 @@ import {
   type NetBirdParty,
 } from "./client";
 import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
-import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
+import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
 
@@ -63,6 +63,12 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
     lan.status = "failed";
     lan.error = result.error;
     await party.save();
+    trackPartyFailure("lan", {
+      op: "provision",
+      partyId: String(party._id),
+      gameSlug: slug,
+      message: result.error,
+    });
     trackPartyEvent("party_lan_failed", {
       partyId: String(party._id),
       gameSlug: slug,
@@ -79,6 +85,7 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   lan.error = null;
   lan.provisionedAt = new Date();
   await party.save();
+  trackPartyOk("lan", { op: "provision", partyId: String(party._id), gameSlug: slug });
   trackPartyEvent("party_lan_ready", {
     partyId: String(party._id),
     gameSlug: slug,
