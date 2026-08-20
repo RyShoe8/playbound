@@ -72,6 +72,7 @@ export async function GET(req: Request) {
           genres: Array.isArray(g.genres) ? g.genres : [],
           tags: Array.isArray(g.tags) ? g.tags : [],
           launchMethods: Array.isArray(g.launchMethods) ? g.launchMethods : [],
+          features: Array.isArray(g.features) ? g.features : [],
           multiplayer: hasServerBrowser(g),
           hasServerBrowser: hasServerBrowser(g),
           isMultiplayer: isMultiplayerGame(g),

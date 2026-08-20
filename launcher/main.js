@@ -1843,6 +1843,7 @@ function mapCatalogList(entries = catalog) {
     coverImage: resolveMediaUrl(e.coverImage) || null,
     genres: Array.isArray(e.genres) ? e.genres : [],
     tags: Array.isArray(e.tags) ? e.tags : [],
+    features: Array.isArray(e.features) ? e.features : [],
     multiplayer: Boolean(e.multiplayer),
     isMultiplayer: e.isMultiplayer ?? Boolean(e.multiplayer),
     platforms: Array.isArray(e.platforms) ? e.platforms : [],

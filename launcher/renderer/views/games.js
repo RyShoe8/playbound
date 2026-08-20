@@ -96,82 +96,112 @@ function ensureGamesShell() {
 }
 
 /**
- * Tag chips beneath the genre pills, collapsed until asked for.
+ * Tag and Feature chips beneath the genre pills, each collapsed until asked for.
  *
- * Counts come from the same base list the genre pills use, so picking one tag
- * narrows the rest the way faceted filters are expected to. Selected tags are
- * always rendered even at zero — a tag that filtered everything out would
+ * Two facets over the same interaction, so they share one renderer rather than
+ * being written twice — the second copy is where they would drift apart in
+ * counting, spacing or clear behaviour.
+ *
+ * Counts come from the same base list the genre pills use, so picking one chip
+ * narrows the rest the way faceted filters are expected to. Selected chips are
+ * always rendered even at zero — one that filtered everything out would
  * otherwise disappear and leave no way to undo it.
+ *
+ * Both vocabularies come from the catalog rows themselves, never from a
+ * hardcoded list, so a tag renamed in the database renames here too.
  */
 function syncTagOptions(catalog) {
   const host = document.getElementById("games-tag-section");
   if (!host) return;
 
   const filters = state.gamesFilters;
-  const selected = Array.isArray(filters.tags) ? filters.tags : [];
 
   let base = filterCatalogGames(catalog);
   if (state.discoveryMode === "ALL") base = filterGamesByPrice(base, filters.price);
   if (filters.genre) base = base.filter((g) => (g.genres || []).includes(filters.genre));
 
-  const counts = new Map();
-  for (const g of base) {
-    for (const tag of g.tags || []) counts.set(tag, (counts.get(tag) || 0) + 1);
-  }
-  for (const t of selected) if (!counts.has(t)) counts.set(t, 0);
-  const ordered = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-  if (ordered.length === 0) {
-    host.innerHTML = "";
-    return;
+  function countsFor(field, selected) {
+    const counts = new Map();
+    for (const g of base) {
+      for (const value of g[field] || []) counts.set(value, (counts.get(value) || 0) + 1);
+    }
+    for (const v of selected) if (!counts.has(v)) counts.set(v, 0);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }
 
-  const open = Boolean(filters.tagsOpen);
-  const badge = selected.length
-    ? `<span class="games-tag-badge">${selected.length}</span>`
-    : "";
+  function sectionHtml({ id, label, ordered, selected, open }) {
+    if (ordered.length === 0) return "";
+    const badge = selected.length ? `<span class="games-tag-badge">${selected.length}</span>` : "";
+    const chips = ordered
+      .map(([value, count]) => {
+        const on = selected.includes(value);
+        return `<button type="button" class="games-tag-chip${on ? " selected" : ""}" data-facet="${id}" data-value="${escapeHtml(
+          value
+        )}" aria-pressed="${on}">${escapeHtml(value)}<span class="games-tag-count">${count}</span></button>`;
+      })
+      .join("");
+    const clear = selected.length
+      ? `<button type="button" class="games-tag-clear" data-clear="${id}">Clear</button>`
+      : "";
+    return `
+      <div class="games-tag-group">
+        <button type="button" class="games-tag-toggle" data-toggle="${id}" aria-expanded="${open}">
+          <span class="games-tag-caret${open ? " open" : ""}" aria-hidden="true">&#9656;</span>
+          ${label}${badge}
+        </button>
+        ${open ? `<div class="games-tag-chips">${chips}${clear}</div>` : ""}
+      </div>
+    `;
+  }
 
-  const chips = ordered
-    .map(([tag, count]) => {
-      const on = selected.includes(tag);
-      return `<button type="button" class="games-tag-chip${on ? " selected" : ""}" data-tag="${escapeHtml(
-        tag
-      )}" aria-pressed="${on}">${escapeHtml(tag)}<span class="games-tag-count">${count}</span></button>`;
-    })
-    .join("");
+  const selectedTags = Array.isArray(filters.tags) ? filters.tags : [];
+  const selectedFeatures = Array.isArray(filters.features) ? filters.features : [];
+  const sections = [
+    sectionHtml({
+      id: "tags",
+      label: "Tags",
+      ordered: countsFor("tags", selectedTags),
+      selected: selectedTags,
+      open: Boolean(filters.tagsOpen),
+    }),
+    sectionHtml({
+      id: "features",
+      label: "Features",
+      ordered: countsFor("features", selectedFeatures),
+      selected: selectedFeatures,
+      open: Boolean(filters.featuresOpen),
+    }),
+  ].join("");
 
-  const clear = selected.length
-    ? `<button type="button" class="games-tag-clear" id="games-tag-clear">Clear</button>`
-    : "";
+  host.innerHTML = sections;
 
-  host.innerHTML = `
-    <button type="button" class="games-tag-toggle" id="games-tag-toggle" aria-expanded="${open}">
-      <span class="games-tag-caret${open ? " open" : ""}" aria-hidden="true">&#9656;</span>
-      Tags${badge}
-    </button>
-    ${open ? `<div class="games-tag-chips">${chips}${clear}</div>` : ""}
-  `;
+  const openKey = { tags: "tagsOpen", features: "featuresOpen" };
 
-  host.querySelector("#games-tag-toggle")?.addEventListener("click", () => {
-    filters.tagsOpen = !filters.tagsOpen;
-    syncTagOptions(catalog);
-  });
-  host.querySelectorAll("[data-tag]").forEach((btn) => {
+  host.querySelectorAll("[data-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const tag = btn.dataset.tag || "";
-      const next = selected.includes(tag)
-        ? selected.filter((t) => t !== tag)
-        : [...selected, tag];
-      filters.tags = next;
+      const key = openKey[btn.dataset.toggle];
+      filters[key] = !filters[key];
+      syncTagOptions(catalog);
+    });
+  });
+  host.querySelectorAll("[data-facet]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const facet = btn.dataset.facet;
+      const value = btn.dataset.value || "";
+      const current = Array.isArray(filters[facet]) ? filters[facet] : [];
+      filters[facet] = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
       paintGamesGrid(catalog);
     });
   });
-  host.querySelector("#games-tag-clear")?.addEventListener("click", () => {
-    filters.tags = [];
-    paintGamesGrid(catalog);
+  host.querySelectorAll("[data-clear]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      filters[btn.dataset.clear] = [];
+      paintGamesGrid(catalog);
+    });
   });
 }
-
 /**
  * Genre pills with counts, matching the website's discover filters.
  *
@@ -274,6 +304,17 @@ export function paintGamesGrid(catalog = state.catalogCache) {
     list = list.filter((game) => {
       const has = new Set((game.tags || []).map((t) => t.toLowerCase()));
       return wanted.every((t) => has.has(t));
+    });
+  }
+
+  const selectedFeatures = Array.isArray(state.gamesFilters.features)
+    ? state.gamesFilters.features
+    : [];
+  if (selectedFeatures.length > 0) {
+    const wanted = selectedFeatures.map((f) => f.toLowerCase());
+    list = list.filter((game) => {
+      const has = new Set((game.features || []).map((f) => f.toLowerCase()));
+      return wanted.every((f) => has.has(f));
     });
   }
   if (state.gamesFilters.multiplayerOnly) {

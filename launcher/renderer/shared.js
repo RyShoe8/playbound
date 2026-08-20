@@ -56,6 +56,9 @@ export const state = {
     tags: [],
     /* The tag row starts closed — tags are a long tail beside a dozen genres. */
     tagsOpen: false,
+    /* Selected feature names, filtered the same way and kept separate from tags. */
+    features: [],
+    featuresOpen: false,
     multiplayerOnly: false,
     /** Only games with someone in them right now, per the live snapshot. */
     hasPlayersOnly: false,
