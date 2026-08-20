@@ -21,11 +21,11 @@ import {
 } from "../shared.js";
 
 let friendsPollInterval = null;
-let friendsPollMs = 30000;
+let friendsPollMs = 3000;
 let localPlaying = false;
 let playPollWired = false;
 
-const FRIENDS_POLL_MS = 30000;
+const FRIENDS_POLL_MS = 3000;
 const LIVE_PARTY_POLL_MS = 1000;
 
 /*
