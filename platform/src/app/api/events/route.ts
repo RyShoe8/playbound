@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import dbConnect from "@/lib/db";
-import { Tournament } from "@/lib/models/Tournament";
 import { userFromLauncherBearer } from "@/lib/library";
 import {
   createPlatformEvent,
@@ -60,16 +58,6 @@ export async function POST(req: Request) {
   try {
     const body = eventCreateSchema.parse(await req.json());
     const doc = await createPlatformEvent(body, userId);
-
-    if (body.eventType === "tournament") {
-      await dbConnect();
-      await Tournament.create({
-        eventId: doc._id,
-        format: body.tournamentFormat || "single_elim",
-        teamSize: body.teamSize || 1,
-        checkInRequired: body.checkInRequired !== false,
-      });
-    }
 
     const counts = await getRsvpCounts(doc._id);
     return NextResponse.json(

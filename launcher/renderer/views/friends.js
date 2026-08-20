@@ -26,7 +26,7 @@ let localPlaying = false;
 let playPollWired = false;
 
 const FRIENDS_POLL_MS = 30000;
-const LIVE_PARTY_POLL_MS = 2000;
+const LIVE_PARTY_POLL_MS = 1000;
 
 /*
  * Party constants, copied from platform/src/lib/playTogether/types.ts so the
@@ -442,7 +442,7 @@ function syncFriendsPoll() {
   }
   friendsPollMs = next;
   friendsPollInterval = setInterval(() => {
-    if (state.currentView === "friends" && state.accountState.connected) {
+    if ((state.currentView === "friends" || live) && state.accountState.connected) {
       api.refreshFriendsData();
     } else {
       clearInterval(friendsPollInterval);
@@ -1470,23 +1470,19 @@ function buildPartyConfigSyncHtml(party, userId) {
 }
 
 function buildPartyChatHtml(party) {
-  const ready = Boolean(party.discord?.textChannelId);
+  const hasDiscord = Boolean(party.discord?.textChannelId);
   return `
     <div class="party-chat" id="party-chat">
       <div class="party-chat-header">
         <h4 class="party-chat-title">Party chat</h4>
-        <span class="party-chat-discord">Opens in Discord too</span>
+        <span class="party-chat-discord">${hasDiscord ? "Synced with Discord" : "In-App Chat"}</span>
       </div>
       <div class="party-chat-list" id="party-chat-list" data-party="${escapeHtml(party.id || "")}">
-        <p class="view-sub">${ready ? "No messages yet. Say something." : "Chat starts when the host launches voice. Messages here are the same Discord channel."}</p>
+        <p class="view-sub">No messages yet. Say something to the party.</p>
       </div>
       <form class="party-chat-form" id="party-chat-form">
-        <input type="text" class="input-text party-chat-input" id="party-chat-input" maxlength="500" placeholder="${
-          ready ? "Message the party…" : "Voice first, then chat"
-        }" ${ready ? "" : "disabled"} />
-        <button type="submit" class="party-chat-send" id="party-chat-send" aria-label="Send" ${
-          ready ? "" : "disabled"
-        }>${ICON.send}</button>
+        <input type="text" class="input-text party-chat-input" id="party-chat-input" maxlength="500" placeholder="Message the party…" />
+        <button type="submit" class="party-chat-send" id="party-chat-send" aria-label="Send">${ICON.send}</button>
       </form>
     </div>
   `;
@@ -1494,16 +1490,21 @@ function buildPartyChatHtml(party) {
 
 async function refreshPartyChat(party) {
   const list = document.getElementById("party-chat-list");
-  if (!list || !party?.id || !party.discord?.textChannelId) return;
+  if (!list || !party?.id) return;
   if (!window.playbound.getPartyChat) return;
   try {
     const data = await window.playbound.getPartyChat(party.id);
     const messages = Array.isArray(data?.messages) ? data.messages : [];
-    if (!messages.length) return;
+    if (!messages.length) {
+      if (!list.querySelector(".view-sub")) {
+        list.innerHTML = `<p class="view-sub">No messages yet. Say something to the party.</p>`;
+      }
+      return;
+    }
     list.innerHTML = messages
       .map(
         (m) =>
-          `<div class="party-member-sub"><strong>${escapeHtml(m.username || "Player")}</strong> ${escapeHtml(
+          `<div class="party-member-sub"><strong>${escapeHtml(m.username || "Player")}</strong>: ${escapeHtml(
             m.content || ""
           )}</div>`
       )

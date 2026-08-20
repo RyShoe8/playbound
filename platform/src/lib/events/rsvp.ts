@@ -61,23 +61,70 @@ export async function setEventRsvp(opts: {
     if (new Date() > deadline && existing?.status !== "going") {
       return { ok: false, error: "Registration deadline has passed", code: 400 };
     }
+    // Optimistic upsert → verify capacity, roll back if exceeded.
+    // This narrows the race window to effectively zero compared to the
+    // previous read-count → upsert pattern, without requiring transactions.
     if (event.maxParticipants) {
-      const counts = await getRsvpCounts(event._id);
       const alreadyGoing = existing?.status === "going";
-      if (!alreadyGoing && counts.going >= event.maxParticipants) {
-        return { ok: false, error: "Event is at capacity", code: 409 };
+      if (!alreadyGoing) {
+        // Tentatively set the RSVP to "going"
+        await EventRsvp.findOneAndUpdate(
+          { eventId: event._id, userId: opts.userId },
+          {
+            $set: { status: "going" },
+            $setOnInsert: { eventId: event._id, userId: opts.userId },
+          },
+          { upsert: true }
+        );
+        // Now atomically count — if we just pushed past the cap, roll back.
+        const goingNow = await EventRsvp.countDocuments({
+          eventId: event._id,
+          status: "going",
+        });
+        if (goingNow > event.maxParticipants) {
+          // Roll back: revert to previous status or delete if brand new
+          if (existing) {
+            await EventRsvp.updateOne(
+              { eventId: event._id, userId: opts.userId },
+              { $set: { status: existing.status } }
+            );
+          } else {
+            await EventRsvp.deleteOne({ eventId: event._id, userId: opts.userId });
+          }
+          return { ok: false, error: "Event is at capacity", code: 409 };
+        }
+        // Already upserted above — skip the generic upsert below.
+      } else {
+        // Already going; the generic upsert below is a no-op re-set.
+        await EventRsvp.findOneAndUpdate(
+          { eventId: event._id, userId: opts.userId },
+          {
+            $set: { status: opts.status },
+            $setOnInsert: { eventId: event._id, userId: opts.userId },
+          },
+          { upsert: true, returnDocument: "after" }
+        );
       }
+    } else {
+      await EventRsvp.findOneAndUpdate(
+        { eventId: event._id, userId: opts.userId },
+        {
+          $set: { status: opts.status },
+          $setOnInsert: { eventId: event._id, userId: opts.userId },
+        },
+        { upsert: true, returnDocument: "after" }
+      );
     }
+  } else {
+    await EventRsvp.findOneAndUpdate(
+      { eventId: event._id, userId: opts.userId },
+      {
+        $set: { status: opts.status },
+        $setOnInsert: { eventId: event._id, userId: opts.userId },
+      },
+      { upsert: true, returnDocument: "after" }
+    );
   }
-
-  await EventRsvp.findOneAndUpdate(
-    { eventId: event._id, userId: opts.userId },
-    {
-      $set: { status: opts.status },
-      $setOnInsert: { eventId: event._id, userId: opts.userId },
-    },
-    { upsert: true, returnDocument: "after" }
-  );
 
   // Tournament: keep participant row in sync with going RSVP.
   if (event.eventType === "tournament") {

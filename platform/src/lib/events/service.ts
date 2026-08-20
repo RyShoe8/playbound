@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import PlatformEvent from "@/lib/models/PlatformEvent";
 import { getGame } from "@/lib/catalog";
 import { defaultEndsAt } from "@/lib/events/time";
+import { Tournament } from "@/lib/models/Tournament";
 import {
   EVENT_TYPES,
   EVENT_VISIBILITIES,
@@ -152,6 +153,17 @@ export async function createPlatformEvent(
     discordInviteUrl: body.discordInviteUrl || null,
     publishedAt: status === "draft" ? null : new Date(),
   });
+
+  // Auto-create the Tournament doc so callers outside the API route
+  // (admin scripts, future mobile API) don't silently miss it.
+  if ((body.eventType || EVENT_TYPES[0]) === "tournament") {
+    await Tournament.create({
+      eventId: doc._id,
+      format: body.tournamentFormat || "single_elim",
+      teamSize: body.teamSize || 1,
+      checkInRequired: body.checkInRequired !== false,
+    });
+  }
 
   return doc;
 }

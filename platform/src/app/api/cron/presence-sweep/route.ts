@@ -31,10 +31,11 @@ async function run(req: Request) {
       (result as { lfgCleared?: number }).lfgCleared ||
       invites.expired ||
       parties.ended ||
+      parties.messagesDeleted ||
       dropped.dropped
     ) {
       console.log(
-        `[presence-sweep] offline=${result.presenceMarkedOffline} sessionsEnded=${result.sessionsEnded} lfgCleared=${(result as { lfgCleared?: number }).lfgCleared || 0} invitesExpired=${invites.expired} partiesEnded=${parties.ended} partyMembersDropped=${dropped.dropped}`
+        `[presence-sweep] offline=${result.presenceMarkedOffline} sessionsEnded=${result.sessionsEnded} lfgCleared=${(result as { lfgCleared?: number }).lfgCleared || 0} invitesExpired=${invites.expired} partiesEnded=${parties.ended} messagesDeleted=${parties.messagesDeleted || 0} partyMembersDropped=${dropped.dropped}`
       );
     }
     return NextResponse.json({
@@ -42,6 +43,7 @@ async function run(req: Request) {
       ...result,
       invitesExpired: invites.expired,
       partiesEnded: parties.ended,
+      messagesDeleted: parties.messagesDeleted || 0,
       partyMembersDropped: dropped.dropped,
     });
   } catch (err) {

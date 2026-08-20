@@ -138,13 +138,13 @@ export function PartyChat({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={500}
-          placeholder={textChannelId ? "Message the party…" : "Voice first, then chat"}
-          disabled={!textChannelId || sending}
+          placeholder="Message the party…"
+          disabled={sending}
           className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring"
         />
         <button
           type="submit"
-          disabled={!textChannelId || sending || !draft.trim()}
+          disabled={sending || !draft.trim()}
           className="inline-flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
           aria-label="Send"
         >

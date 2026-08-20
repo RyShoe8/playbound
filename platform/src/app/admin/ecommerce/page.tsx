@@ -21,8 +21,8 @@ export default async function AdminEcommercePage() {
   await ensureCommerceStores();
 
   const [games, suggestions, unmatchedOffers] = await Promise.all([
-    CatalogGame.find()
-      .select("slug title access.priceType access.offers")
+    CatalogGame.find({ masterCopy: true })
+      .select("slug title access.priceType access.offers masterCopy")
       .sort({ title: 1 })
       .lean(),
     StoreMatchSuggestion.find({ status: "pending" }).sort({ updatedAt: -1 }).lean(),
@@ -79,8 +79,7 @@ export default async function AdminEcommercePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">eCommerce</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Master list of every catalog game and every store listing. Tick Display to show a
-            store on the public game page.
+            Master copies list and store purchase listings. Tick Display to show a store on the public game page.
           </p>
         </div>
         <EcommerceMatchButton />

@@ -25,7 +25,9 @@ import dbConnect from "@/lib/db";
 import Review from "@/lib/models/Review";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
+import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
+import { launcherPlayUrl } from "@/lib/launcher";
 import { ReviewList, type ReviewItem } from "@/components/reviews/ReviewList";
 import { ContentForm } from "@/components/ContentForm";
 import { DiscussionBoard } from "@/components/discussion/DiscussionBoard";
@@ -173,7 +175,7 @@ export default async function EditionPage({
 
   const ugcScope = editionScopedUgcFilter(edition.slug);
 
-  const [discussionCount, reviewCount] = await Promise.all([
+  const [discussionCount, reviewCount, isInstalled] = await Promise.all([
     safeQuery(
       () =>
         DiscussionTopic.countDocuments({
@@ -187,6 +189,24 @@ export default async function EditionPage({
       () => Review.countDocuments({ gameSlug: game.slug, ...ugcScope }),
       0
     ),
+    session?.user?.id
+      ? safeQuery(
+          async () => {
+            const entry = await LibraryEntry.findOne({
+              userId: session.user.id,
+              gameSlug: game.slug,
+              installed: true,
+              $or: [
+                { editionSlug: edition.slug },
+                { editionSlug: null },
+                { editionSlug: { $exists: false } },
+              ],
+            }).lean();
+            return Boolean(entry);
+          },
+          false
+        )
+      : Promise.resolve(false),
   ]);
 
   const siblings = (await listEditionsForGame(game)).filter((e) => e.id !== edition.id);
@@ -261,17 +281,28 @@ export default async function EditionPage({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <EditionInstallButton action={action} telemetryProps={telemetryProps} size="lg" />
-            <LocateGameButton slug={game.slug} size="lg" />
-            {secondary.map((alt) => (
-              <EditionInstallButton
-                key={alt.method}
-                action={alt}
-                telemetryProps={telemetryProps}
-                size="lg"
-                variant="secondary"
-              />
-            ))}
+            {isInstalled ? (
+              <a
+                href={launcherPlayUrl(game.slug)}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-play px-7 text-base font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px"
+              >
+                <Play className="size-5 fill-current" /> Play {edition.name}
+              </a>
+            ) : (
+              <>
+                <EditionInstallButton action={action} telemetryProps={telemetryProps} size="lg" />
+                <LocateGameButton slug={game.slug} size="lg" />
+                {secondary.map((alt) => (
+                  <EditionInstallButton
+                    key={alt.method}
+                    action={alt}
+                    telemetryProps={telemetryProps}
+                    size="lg"
+                    variant="secondary"
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
       </section>

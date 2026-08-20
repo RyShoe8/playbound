@@ -325,8 +325,7 @@ export default async function ModPage({
                     >
                       <Play className="size-4 fill-current" /> Play {base}
                     </a>
-                  ) : null}
-                  {mod.downloadKind === "external" ? (
+                  ) : mod.downloadKind === "external" ? (
                     <a
                       href={withOutboundUtm(mod.website, {
                         campaign: "mod_page",
@@ -342,12 +341,8 @@ export default async function ModPage({
                     <LauncherInstallButton
                       slug={mod.slug}
                       kind="install-mod"
-                      label={showPlay ? "Reinstall mod" : "Install mod"}
-                      className={
-                        showPlay
-                          ? "border border-border bg-secondary"
-                          : "border-transparent bg-play text-play-foreground"
-                      }
+                      label="Install mod"
+                      className="border-transparent bg-play text-play-foreground"
                     />
                   )}
                   {canOneClickBase && !showPlay && (

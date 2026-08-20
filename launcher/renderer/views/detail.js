@@ -2118,7 +2118,6 @@ async function renderModDetailView(slug) {
           : ""
       }
       <button class="btn-danger" id="mod-act-uninstall">Uninstall</button>
-      <button class="btn-secondary" id="mod-act-reinstall">Reinstall</button>
     `;
     document.getElementById("mod-act-play")?.addEventListener("click", async () => {
       try {
@@ -2309,14 +2308,12 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")}</p>
         </div>
         <div class="detail-hero-actions">
-          <button class="btn-primary" id="edition-install">${
-            editionInstalled ? "Reinstall this edition" : "Install this edition"
-          }</button>
           ${
             editionInstalled
               ? `<button class="btn-success" id="edition-play">Play</button>
                  <button class="btn-danger" id="edition-uninstall">Uninstall</button>`
-              : `<button class="btn-secondary" id="edition-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>`
+              : `<button class="btn-primary" id="edition-install">Install this edition</button>
+                 <button class="btn-secondary" id="edition-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>`
           }
         </div>
       </div>

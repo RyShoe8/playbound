@@ -13,6 +13,7 @@ const links = [
   { href: "/events", label: "Events" },
   { href: "/weekly", label: "Weekly" },
   { href: "/standards", label: "Our Standard" },
+  { href: "/open-platform", label: "Trust & Architecture" },
   { href: "/compare", label: "Compare" },
   { href: "/alternatives", label: "Alternatives" },
   { href: "/developers", label: "Developers" },
@@ -33,10 +34,13 @@ export function Footer() {
             Play<span className="text-primary">Bound</span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Discover. Play. Connect. Every title is tested and played before it is added, and
-            clears{" "}
+            Discover. Play. Connect. Every title clears{" "}
             <Link href="/standards" className="font-semibold text-foreground/80 hover:text-primary">
               the PlayBound Bar
+            </Link>{" "}
+            and runs on our{" "}
+            <Link href="/open-platform" className="font-semibold text-foreground/80 hover:text-primary">
+              open architecture
             </Link>
             .
           </p>

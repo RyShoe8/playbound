@@ -30,7 +30,11 @@ export async function GET(req: Request) {
 
   const status = new URL(req.url).searchParams.get("status");
   const filter =
-    status && isBugReportStatus(status) ? { status } : {};
+    status === "all"
+      ? {}
+      : status && isBugReportStatus(status)
+      ? { status }
+      : { status: { $ne: "resolved" } };
 
   await dbConnect();
   const items = await BugReport.find(filter).sort({ createdAt: -1 }).limit(200).lean();
