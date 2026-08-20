@@ -32,7 +32,7 @@ export type Genre =
   | "Sports"
   | "Fighting"
   | "Social Deduction"
-  | "Card Game"
+  | "Deck Builder"
   | "Idle"
   | "Horror"
   | "MOBA"
