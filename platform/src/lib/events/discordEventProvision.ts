@@ -24,8 +24,12 @@ type EventLike = Document & {
 };
 
 function botConfig() {
-  const url = process.env.DISCORD_BOT_WEBHOOK_URL?.replace(/\/$/, "");
+  const rawUrl = process.env.DISCORD_BOT_WEBHOOK_URL?.trim();
+  const url = rawUrl && (rawUrl.startsWith("http://") || rawUrl.startsWith("https://"))
+    ? rawUrl.replace(/\/$/, "")
+    : null;
   const secret = process.env.BOT_WEBHOOK_SECRET || process.env.DISCORD_BOT_WEBHOOK_SECRET;
+  if (!url || !secret) return { url: null, secret: null };
   return { url, secret };
 }
 
@@ -48,7 +52,7 @@ export async function provisionEventDiscordVoice(
         // never has to be moved afterwards.
         gameSlug: event.gameSlug || null,
       }),
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
       console.warn("discord event voice provision failed", res.status);

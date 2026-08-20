@@ -1288,30 +1288,40 @@ const server = http.createServer(async (req, res) => {
         return ch && ch.type === type ? ch : null;
       };
 
-      const voice =
-        (await reuse(existingVoiceChannelId, ChannelType.GuildVoice)) ||
-        (await guild.channels.create({
-          name: partyVoiceChannelName(name || gameSlug, partyId),
-          type: ChannelType.GuildVoice,
-          parent: category.id,
-          reason: `PlayBound party voice ${partyId || ""}`,
-        }));
-      const text =
-        (await reuse(existingTextChannelId, ChannelType.GuildText)) ||
-        (await guild.channels.create({
-          name: partyTextChannelName(name || gameSlug, partyId),
-          type: ChannelType.GuildText,
-          parent: category.id,
-          reason: `PlayBound party text ${partyId || ""}`,
-        }));
-      const invite = await voice.createInvite({
-        maxAge: 0,
-        maxUses: 0,
-        reason: "PlayBound party invite",
-      });
-      await text.send({
-        content: `Party chat for **${name || gameSlug || "PlayBound"}**. Messages from the site and launcher show up here too.`,
-      }).catch(() => null);
+      const [voice, text] = await Promise.all([
+        (async () => {
+          const existing = await reuse(existingVoiceChannelId, ChannelType.GuildVoice);
+          if (existing) return existing;
+          return guild.channels.create({
+            name: partyVoiceChannelName(name || gameSlug, partyId),
+            type: ChannelType.GuildVoice,
+            parent: category.id,
+            reason: `PlayBound party voice ${partyId || ""}`,
+          });
+        })(),
+        (async () => {
+          const existing = await reuse(existingTextChannelId, ChannelType.GuildText);
+          if (existing) return existing;
+          return guild.channels.create({
+            name: partyTextChannelName(name || gameSlug, partyId),
+            type: ChannelType.GuildText,
+            parent: category.id,
+            reason: `PlayBound party text ${partyId || ""}`,
+          });
+        })(),
+      ]);
+
+      const [invite] = await Promise.all([
+        voice.createInvite({
+          maxAge: 0,
+          maxUses: 0,
+          reason: "PlayBound party invite",
+        }),
+        text.send({
+          content: `Party chat for **${name || gameSlug || "PlayBound"}**. Messages from the site and launcher show up here too.`,
+        }).catch(() => null),
+      ]);
+
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
         JSON.stringify({

@@ -64,7 +64,7 @@ export async function provisionPartyDiscordVoice(
         existingVoiceChannelId: party.discord?.voiceChannelId ?? null,
         existingTextChannelId: party.discord?.textChannelId ?? null,
       }),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(20_000),
     });
 
     if (!res.ok) {
@@ -123,7 +123,7 @@ export async function renamePartyDiscordVoice(
         voiceChannelId,
         name: typeof name === "string" ? name : "",
       }),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
       trackPartyFailure("discord", { op: "rename", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
@@ -155,7 +155,7 @@ export async function placePartyDiscordVoice(party: PartyLike): Promise<boolean>
         textChannelId: party.discord?.textChannelId || null,
         gameSlug,
       }),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
       trackPartyFailure("discord", { op: "place", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
@@ -204,7 +204,7 @@ export async function cleanupPartyDiscordVoice(
         textChannelId: discord.textChannelId,
         categoryId: discord.categoryId,
       }),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(20_000),
     });
 
     if (!res.ok) {
@@ -244,7 +244,7 @@ export async function moveDiscordUsersToPartyVoice(
         authorization: `Bearer ${secret}`,
       },
       body: JSON.stringify({ voiceChannelId, discordUserIds }),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
       trackPartyFailure("discord", { op: "move", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
