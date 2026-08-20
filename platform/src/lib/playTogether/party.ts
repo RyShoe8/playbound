@@ -348,7 +348,7 @@ export async function joinParty(
 > {
   await dbConnect();
 
-  const doc = await Party.findById(partyId);
+  let doc = await Party.findById(partyId);
   if (!doc) return { error: "Party not found", status: 404 };
 
   const rp = toRuleParty(doc.toObject());
@@ -374,19 +374,46 @@ export async function joinParty(
   if (!check.ok) return { error: check.reason || "Cannot join", status: 403 };
 
   const now = new Date();
-  doc.members.push({
-    userId,
-    role: "member",
-    ready: false,
-    joinedAt: now,
-  });
-  doc.lastActivity = now;
+
+  /*
+   * The membership check and the write have to be one operation.
+   *
+   * Everything above reads from a snapshot taken by findById. Two clicks in
+   * quick succession both load a party they are not in, both pass
+   * canJoinParty, and both call save — and mongoose turns `.push()` on a
+   * document array into an atomic `$push`, so the two writes do not overwrite
+   * each other, they append twice. The member appears in the party twice.
+   *
+   * Pushing under a filter that excludes existing members closes the window:
+   * whichever write lands second matches nothing and changes nothing.
+   */
+  const claimed = await Party.updateOne(
+    { _id: doc._id, "members.userId": { $ne: userId } },
+    {
+      $push: { members: { userId, role: "member", ready: false, joinedAt: now } },
+      $set: { lastActivity: now },
+    }
+  );
+
+  /*
+   * Losing that race is not an error. The user asked to be in this party and
+   * they are, so the second click returns the party rather than a failure —
+   * anything else would surface a scary message for a duplicate click.
+   */
+  const refreshed = await Party.findById(partyId);
+  if (!refreshed) return { error: "Party not found", status: 404 };
+  if (!claimed.modifiedCount) {
+    console.warn(`[party] duplicate join ignored for ${userId} in ${partyId}`);
+  }
+  doc = refreshed;
 
   // Re-derive status (e.g., if everyone was ready and a new unready member joined).
   const newRp = toRuleParty(doc.toObject());
-  doc.status = derivePartyStatus(doc.status as PartyStatus, newRp.members);
-
-  await doc.save();
+  const nextStatus = derivePartyStatus(doc.status as PartyStatus, newRp.members);
+  if (nextStatus !== doc.status) {
+    doc.status = nextStatus;
+    await doc.save();
+  }
 
   await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
 
