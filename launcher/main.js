@@ -3977,6 +3977,45 @@ let lastKnownGamepads = [];
  * configured, unrecognised format and no pad all come back as null, so this
  * has one branch instead of four.
  */
+/**
+ * Whether to set this game's controller up, asked once per game.
+ *
+ * Auto-configuring silently would be the wrong default: it edits a file the
+ * player may care about, and someone playing on keyboard does not want their
+ * config touched at all. Asking every launch would be worse, so the answer is
+ * remembered and only a pad they have never been asked about prompts again.
+ */
+async function shouldConfigureController(slug, profile) {
+  const settings = loadSettings();
+  const answers = settings.controllerConfig || {};
+  const key = `${slug}:${profile.family}`;
+  if (Object.prototype.hasOwnProperty.call(answers, key)) return answers[key];
+
+  const entry = catalog.find((e) => e.slug === slug);
+  const title = entry?.title || slug;
+  const { response, checkboxChecked } = await dialog.showMessageBox(win || undefined, {
+    type: "question",
+    buttons: ["Set it up", "No thanks"],
+    defaultId: 0,
+    cancelId: 1,
+    title: "Controller detected",
+    message: `Set up your ${profile.label} for ${title}?`,
+    detail:
+      `PlayBound can write the button layout into ${title}'s settings so you do ` +
+      `not have to bind it in-game. You can still change any of it afterwards, ` +
+      `and PlayBound will not touch it again once you have.`,
+    checkboxLabel: "Remember for this game",
+    checkboxChecked: true,
+  });
+
+  const allow = response === 0;
+  if (checkboxChecked) {
+    settings.controllerConfig = { ...answers, [key]: allow };
+    saveSettings(settings);
+  }
+  return allow;
+}
+
 async function applyControllerConfig(slug, installDir) {
   if (!gameControllerConfig.supportsControllerConfig(slug)) return false;
   const configPath = gameControllerConfig.configPathFor(slug, installDir);
@@ -3993,8 +4032,18 @@ async function applyControllerConfig(slug, installDir) {
     current = "";
   }
 
+  /*
+   * Work out whether there is anything to do *before* asking. Prompting and
+   * then discovering the game is already configured would be a dialog that
+   * changes nothing, which is how players learn to dismiss dialogs.
+   */
   const next = gameControllerConfig.applyProfile(slug, current, profile);
   if (next == null) return false;
+
+  if (!(await shouldConfigureController(slug, profile))) {
+    console.log(`[controller] declined for ${slug}`);
+    return false;
+  }
 
   await fsp.writeFile(configPath, next, "utf8");
   console.log(`[controller] configured ${profile.label} for ${slug}`);

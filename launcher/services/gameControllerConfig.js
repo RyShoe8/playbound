@@ -61,7 +61,131 @@ function openTyrianJoystickBlock(profile) {
   return lines.join("\n");
 }
 
+/**
+ * idTech 3 / ioquake3 — OpenArena, Unvanquished, Enemy Territory.
+ *
+ * Verified against a real OpenArena q3config.cfg, which carries
+ * `seta in_joystick "0"` and `seta in_joystickThreshold`. Enabling a pad here
+ * is a cvar flip plus the axis mapping; buttons bind as JOY1..JOYn, 1-indexed
+ * against the Gamepad API's 0-indexed buttons.
+ *
+ * Deliberately additive. A q3config is rewritten wholesale by the engine on
+ * exit, so appending our lines at the end lets the engine keep ownership of
+ * the file and simply re-serialise what we set.
+ */
+function ioq3JoystickBlock(profile) {
+  const joy = (i) => `JOY${i + 1}`;
+  const b = profile.buttons;
+  return [
+    `seta in_joystick "1"`,
+    `seta in_joystickThreshold "0.15"`,
+    // Left stick: forward/back on the vertical axis, strafe on the horizontal.
+    `seta j_forward "-0.25"`,
+    `seta j_side "0.25"`,
+    `seta j_up "0"`,
+    `seta j_pitch "0.022"`,
+    `seta j_yaw "-0.022"`,
+    `bind ${joy(b.fire)} "+attack"`,
+    `bind ${joy(b.altFire)} "+moveup"`,
+    `bind ${joy(b.leftShoulder)} "weapprev"`,
+    `bind ${joy(b.rightShoulder)} "weapnext"`,
+    `bind ${joy(b.menu)} "togglemenu"`,
+    `bind ${joy(b.pause)} "+scores"`,
+  ].join("\n");
+}
+
+/**
+ * DarkPlaces — Xonotic.
+ *
+ * A different engine with a different vocabulary: `joy_enable` rather than
+ * `in_joystick`, and axis mapping through `joy_axis*` rather than `j_*`.
+ * Grouping it with the ioquake3 games because they are all "Quake-ish" would
+ * have written cvars this engine silently ignores.
+ */
+function darkPlacesJoystickBlock(profile) {
+  const joy = (i) => `JOY${i + 1}`;
+  const b = profile.buttons;
+  return [
+    `seta joy_enable "1"`,
+    `seta joy_detected "1"`,
+    `seta joy_axisforward "1"`,
+    `seta joy_axisside "0"`,
+    `seta joy_sensitivityyaw "-2.5"`,
+    `seta joy_sensitivitypitch "2"`,
+    `bind ${joy(b.fire)} "+attack"`,
+    `bind ${joy(b.altFire)} "+jump"`,
+    `bind ${joy(b.leftShoulder)} "weapprev"`,
+    `bind ${joy(b.rightShoulder)} "weapnext"`,
+    `bind ${joy(b.menu)} "togglemenu"`,
+  ].join("\n");
+}
+
+/**
+ * Shared entry builder for the console-config engines.
+ *
+ * `enabledCvar` is what "already configured" means for that engine — if the
+ * player has turned a pad on themselves, we leave the file alone.
+ */
+function consoleConfigEntry({ file, verified, enabledCvar, block }) {
+  return {
+    file,
+    verified,
+    needsConfig(text) {
+      const s = String(text || "");
+      // Already on. Their setting, their call.
+      return !new RegExp(`seta\\s+${enabledCvar}\\s+"1"`).test(s);
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      /*
+       * Only a file that looks like a real console config. An empty or
+       * unfamiliar file is left alone rather than replaced with just our
+       * lines, which would drop every other setting the engine had.
+       */
+      if (!/^(seta|bind|unbindall)\b/m.test(original)) return null;
+      // Drop any previous disabled flag so the engine does not read both.
+      const cleaned = original
+        .split(/\r?\n/)
+        .filter((line) => !new RegExp(`^seta\\s+${enabledCvar}\\s+"0"`).test(line))
+        .join("\n")
+        .replace(/\s*$/, "");
+      return `${cleaned}\n\n// PlayBound controller setup\n${block(profile)}\n`;
+    },
+  };
+}
+
 const GAMES = {
+  openarena: consoleConfigEntry({
+    file: path.join("baseoa", "q3config.cfg"),
+    verified: "read from a real OpenArena install — seta in_joystick / in_joystickThreshold",
+    enabledCvar: "in_joystick",
+    block: ioq3JoystickBlock,
+  }),
+  unvanquished: consoleConfigEntry({
+    file: path.join("config", "autogen.cfg"),
+    verified:
+      "UNVERIFIED — Daemon is an ioquake3 fork and should share in_joystick, " +
+      "but no real config has been read. The format guard declines anything " +
+      "that does not already look like a console config.",
+    enabledCvar: "in_joystick",
+    block: ioq3JoystickBlock,
+  }),
+  "wolfenstein-enemy-territory": consoleConfigEntry({
+    file: path.join("etmain", "etconfig.cfg"),
+    verified:
+      "UNVERIFIED — id Tech 3 variant, expected to share in_joystick. No real " +
+      "config read yet.",
+    enabledCvar: "in_joystick",
+    block: ioq3JoystickBlock,
+  }),
+  xonotic: consoleConfigEntry({
+    file: path.join("data", "config.cfg"),
+    verified:
+      "UNVERIFIED — DarkPlaces, so joy_enable rather than in_joystick. Kept " +
+      "separate from the ioquake3 games because their cvars do not apply here.",
+    enabledCvar: "joy_enable",
+    block: darkPlacesJoystickBlock,
+  }),
   opentyrian: {
     /** Relative to the install directory. */
     file: "opentyrian.cfg",

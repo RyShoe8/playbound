@@ -114,5 +114,63 @@ test("its own output is treated as already configured", () => {
   assert.strictEqual(applyProfile("opentyrian", once, dualsense), null);
 });
 
+/* ── console-config engines ────────────────────────────────────────────── */
+
+/** A real q3config, shortened. The engine rewrites this file wholesale. */
+const Q3 = [
+  "unbindall",
+  'bind TAB "+scores"',
+  'bind SPACE "+moveup"',
+  'seta in_joystickThreshold "0.15"',
+  'seta in_joystick "0"',
+  'seta name "Player"',
+].join("\n");
+
+test("enables the pad in an ioquake3 config", () => {
+  const out = applyProfile("openarena", Q3, dualsense);
+  assert.ok(out.includes('seta in_joystick "1"'));
+  assert.ok(out.includes('bind JOY1 "+attack"'), "fire is button 0, written JOY1");
+});
+
+test("removes the disabled flag rather than leaving both", () => {
+  // The engine reads the last value set, so a stale "0" could win.
+  const out = applyProfile("openarena", Q3, dualsense);
+  assert.ok(!out.includes('seta in_joystick "0"'));
+});
+
+test("keeps every other setting in the config", () => {
+  const out = applyProfile("openarena", Q3, dualsense);
+  assert.ok(out.includes('bind TAB "+scores"'));
+  assert.ok(out.includes('seta name "Player"'));
+});
+
+test("leaves it alone when the player already enabled a pad", () => {
+  const on = Q3.replace('seta in_joystick "0"', 'seta in_joystick "1"');
+  assert.strictEqual(applyProfile("openarena", on, dualsense), null);
+});
+
+test("declines an empty or unfamiliar console config", () => {
+  // Writing only our lines would drop everything else the engine had.
+  assert.strictEqual(applyProfile("openarena", "", dualsense), null);
+  assert.strictEqual(applyProfile("openarena", "garbage", dualsense), null);
+});
+
+test("Xonotic gets DarkPlaces cvars, not ioquake3 ones", () => {
+  /*
+   * The correction that matters. Treating these as one "Quake family" would
+   * have written in_joystick into an engine that ignores it — the games are
+   * related, their config vocabularies are not.
+   */
+  const dp = ['seta joy_enable "0"', 'bind SPACE "+jump"'].join("\n");
+  const out = applyProfile("xonotic", dp, dualsense);
+  assert.ok(out.includes('seta joy_enable "1"'));
+  assert.ok(!out.includes("in_joystick"), "DarkPlaces has no such cvar");
+});
+
+test("console entries are idempotent too", () => {
+  const once = applyProfile("openarena", Q3, dualsense);
+  assert.strictEqual(applyProfile("openarena", once, dualsense), null);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
