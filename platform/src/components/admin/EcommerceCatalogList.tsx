@@ -93,6 +93,33 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
     }
   }
 
+  async function removeOffer(slug: string, url: string) {
+    const key = `${slug}|${url}`;
+    const previous = rows;
+    setBusyUrl(key);
+    setRows((prev) =>
+      prev.map((g) =>
+        g.slug === slug
+          ? { ...g, offers: g.offers.filter((o) => o.url !== url) }
+          : g
+      )
+    );
+    try {
+      const res = await fetch("/api/admin/ecommerce/offers", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slug, url }),
+      });
+      if (!res.ok) {
+        setRows(previous);
+      }
+    } catch {
+      setRows(previous);
+    } finally {
+      setBusyUrl(null);
+    }
+  }
+
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -161,17 +188,27 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
                           >
                             {offer.url.replace(/^https?:\/\//, "")}
                           </a>
-                          <label className="ml-auto flex items-center gap-2 text-xs font-semibold">
-                            <input
-                              type="checkbox"
-                              checked={offer.isActive}
+                          <div className="ml-auto flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-xs font-semibold">
+                              <input
+                                type="checkbox"
+                                checked={offer.isActive}
+                                disabled={busy}
+                                onChange={(e) =>
+                                  void toggleDisplay(game.slug, offer.url, e.target.checked)
+                                }
+                              />
+                              Display
+                            </label>
+                            <button
+                              type="button"
                               disabled={busy}
-                              onChange={(e) =>
-                                void toggleDisplay(game.slug, offer.url, e.target.checked)
-                              }
-                            />
-                            Display
-                          </label>
+                              onClick={() => void removeOffer(game.slug, offer.url)}
+                              className="text-xs font-semibold text-muted-foreground hover:text-destructive disabled:opacity-50"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </li>
                       );
                     })}

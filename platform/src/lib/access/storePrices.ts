@@ -110,7 +110,7 @@ async function lookupGog(url: string): Promise<StorePriceLookup> {
     }>;
   };
   const products = json.products ?? [];
-  const hit = products.find((p) => p.slug === slug) ?? products[0];
+  const hit = products.find((p) => p.slug === slug);
   if (!hit) throw new StorePriceError("GOG has no listing matching that URL.");
   if (hit.price?.isFree) {
     throw new StorePriceError("That GOG listing is free — it is not a purchase source.");
@@ -184,8 +184,7 @@ async function lookupEpic(url: string): Promise<StorePriceLookup> {
   const want = slug.toLowerCase();
   const hit =
     elements.find((el) => epicSlugsOn(el).includes(want)) ??
-    elements.find((el) => epicSlugsOn(el).some((s) => s.startsWith(want) || want.startsWith(s))) ??
-    elements[0];
+    elements.find((el) => epicSlugsOn(el).some((s) => s.startsWith(want) || want.startsWith(s)));
   if (!hit) throw new StorePriceError("Epic has no listing matching that URL.");
   const live = centsInt(hit.price?.totalPrice?.discountPrice);
   const list = centsInt(hit.price?.totalPrice?.originalPrice);
