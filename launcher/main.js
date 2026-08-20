@@ -679,12 +679,37 @@ function persistLauncherToken(token, { notify = true } = {}) {
  * Callers share the in-flight promise instead, so N requests cost one sync.
  */
 let inFlightLibrarySync = null;
+let lastLibrarySyncResult = { synced: 0, skipped: [], error: null };
 
-function syncAllInstalledGames() {
+/**
+ * Minimum gap between syncs that nobody explicitly asked for.
+ *
+ * Single-flight alone was not enough. It collapses calls that overlap, but
+ * install detection fires this per located executable, and those arrive in
+ * sequence — each one starting a fresh sync the moment the last finished. The
+ * result is a launcher that syncs continuously and janks everything else,
+ * because each pass walks every install and posts the whole library.
+ *
+ * Anything within the window reuses the previous outcome. Sign-in and the
+ * account screen pass `force` because there the sync *is* the operation and a
+ * stale answer would be wrong.
+ */
+const LIBRARY_SYNC_MIN_INTERVAL_MS = 15_000;
+
+function syncAllInstalledGames(opts = {}) {
   if (inFlightLibrarySync) return inFlightLibrarySync;
-  inFlightLibrarySync = runLibrarySync().finally(() => {
-    inFlightLibrarySync = null;
-  });
+  if (!opts.force && Date.now() - lastLibrarySyncAt < LIBRARY_SYNC_MIN_INTERVAL_MS) {
+    return Promise.resolve(lastLibrarySyncResult);
+  }
+  inFlightLibrarySync = runLibrarySync()
+    .then((result) => {
+      lastLibrarySyncAt = Date.now();
+      lastLibrarySyncResult = result;
+      return result;
+    })
+    .finally(() => {
+      inFlightLibrarySync = null;
+    });
   return inFlightLibrarySync;
 }
 
@@ -1007,7 +1032,7 @@ async function connectWithToken(token) {
     clearLocalToken("Invalid session — sign in again from Settings.");
     return { connected: false, synced: 0, skipped: [], error: "unauthorized" };
   }
-  const { synced, skipped, error } = await syncAllInstalledGames();
+  const { synced, skipped, error } = await syncAllInstalledGames({ force: true });
   if (error === "unauthorized") {
     clearLocalToken("Session rejected — sign in again from Settings.");
     return { connected: false, synced: 0, skipped: [], error };
@@ -1085,7 +1110,7 @@ async function syncLibraryNow({ quiet = false, force = false } = {}) {
   }
 
   lastLibrarySyncAt = Date.now();
-  const { synced, skipped, error } = await syncAllInstalledGames();
+  const { synced, skipped, error } = await syncAllInstalledGames({ force: true });
   if (error === "unauthorized") {
     clearLocalToken("Session rejected — sign in again from Settings.");
     return { connected: false, error };
