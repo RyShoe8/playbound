@@ -277,7 +277,6 @@ export async function setPresenceParty(
   const set: Record<string, unknown> = {
     currentPartyId: opts.partyId || null,
   };
-  if (opts.gameSlug) set.currentGameId = opts.gameSlug;
   await Presence.findOneAndUpdate(
     { userId },
     {

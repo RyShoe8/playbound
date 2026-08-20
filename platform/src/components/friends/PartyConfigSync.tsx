@@ -98,13 +98,7 @@ export function PartyConfigSync({
   const hostHasGame =
     Boolean(hostMember?.hasGame) || sync.referenceSource === "host";
 
-  /*
-   * The host's own install picker lives under the game dropdown in PartyView.
-   * This card is for everyone else — and for the host watching who still needs
-   * to install on their machine.
-   */
   const outOfSync = sync.members.filter((m) => {
-    if (viewerIsHost && m.isHost) return false;
     return missingSummary(m, sync.editionSlug).length > 0;
   });
   if (outOfSync.length === 0) return null;

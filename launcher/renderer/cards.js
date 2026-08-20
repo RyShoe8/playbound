@@ -66,6 +66,38 @@ function launchBadgeHtml(game) {
   return `<span class="card-launch-badge">${ICON_DOWNLOAD}${label ? ` ${escapeHtml(label)}` : ""}</span>`;
 }
 
+function attachCardCover(art, coverUrl) {
+  if (!coverUrl) return;
+  const img = document.createElement("img");
+  img.className = "card-cover";
+  img.alt = "";
+  img.loading = "lazy";
+  img.decoding = "async";
+
+  let retried = false;
+  img.addEventListener("load", () => {
+    img.classList.add("is-loaded");
+  });
+  img.addEventListener("error", () => {
+    if (!retried) {
+      retried = true;
+      setTimeout(() => {
+        if (!img.isConnected) return;
+        const separator = coverUrl.includes("?") ? "&" : "?";
+        img.src = `${coverUrl}${separator}_r=${Date.now()}`;
+      }, 1200);
+    } else {
+      img.remove();
+    }
+  });
+
+  img.src = coverUrl;
+  if (img.complete && img.naturalWidth > 0) {
+    img.classList.add("is-loaded");
+  }
+  art.appendChild(img);
+}
+
 /**
  * A card for one game, structured like the website's GameCard: portrait art
  * carrying the title, an incompatibility corner and a launch badge over it,
@@ -93,15 +125,7 @@ export function createGameCard(game, playingNow) {
   fallback.textContent = (game.title || "?").charAt(0);
   art.appendChild(fallback);
 
-  if (game.coverImage) {
-    const img = document.createElement("img");
-    img.className = "card-cover";
-    img.src = game.coverImage;
-    img.alt = "";
-    img.loading = "lazy";
-    img.addEventListener("error", () => img.remove());
-    art.appendChild(img);
-  }
+  attachCardCover(art, game.coverImage);
 
   // The site's GameArt renders the title over the bottom of the cover, which
   // is why the card body below carries no title of its own.
@@ -179,15 +203,7 @@ export function createModCard(mod) {
   art.appendChild(fallback);
 
   const coverUrl = mod.coverImage || mod.baseGameCoverImage || "";
-  if (coverUrl) {
-    const img = document.createElement("img");
-    img.className = "card-cover";
-    img.src = coverUrl;
-    img.alt = "";
-    img.loading = "lazy";
-    img.addEventListener("error", () => img.remove());
-    art.appendChild(img);
-  }
+  attachCardCover(art, coverUrl);
 
   const titleOverlay = document.createElement("div");
   titleOverlay.className = "card-art-title";
@@ -298,15 +314,7 @@ export function createFreeOfferCard(offer) {
   fallback.textContent = (displayTitle || "?").charAt(0);
   art.appendChild(fallback);
 
-  if (offer.coverImage) {
-    const img = document.createElement("img");
-    img.className = "card-cover";
-    img.src = offer.coverImage;
-    img.alt = "";
-    img.loading = "lazy";
-    img.addEventListener("error", () => img.remove());
-    art.appendChild(img);
-  }
+  attachCardCover(art, offer.coverImage);
 
   const titleOverlay = document.createElement("div");
   titleOverlay.className = "card-art-title";

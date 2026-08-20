@@ -1,4 +1,14 @@
 const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session } = require("electron");
+
+// GPU Acceleration & Rendering Switches for silky-smooth scrolling on all hardware
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-zero-copy");
+app.commandLine.appendSwitch("ignore-gpu-blocklist");
+app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
+app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder,CanvasOopRasterization,SmoothScrolling");
+// Set disk cache to 256MB so cover images and assets are cached permanently on disk
+app.commandLine.appendSwitch("disk-cache-size", "268435456");
+
 const { spawn, exec, execFile, execFileSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");

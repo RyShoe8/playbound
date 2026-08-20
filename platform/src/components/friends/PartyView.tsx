@@ -23,6 +23,7 @@ import {
   openPlayboundDeepLink,
 } from "@/lib/openPlayboundDeepLink";
 import { withOutboundUtm } from "@/lib/utm";
+import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PartyChat } from "@/components/friends/PartyChat";
@@ -369,27 +370,29 @@ export function PartyView({
                 type="button"
                 disabled={voiceBusy}
                 onClick={() => {
-                  const pendingTab = window.open("about:blank", "_blank");
+                  const fallbackUrl = SITE_DISCORD_INVITE;
+                  const pendingTab = window.open("", "_blank");
                   void (async () => {
                     setVoiceBusy(true);
                     setVoiceError(null);
                     const result = await provisionDiscord(party.id);
-                    const url = result.inviteUrl;
+                    const url = result.inviteUrl || fallbackUrl;
                     if (url) {
                       if (pendingTab && !pendingTab.closed) {
                         try {
-                          pendingTab.location.replace(url);
+                          pendingTab.location.href = url;
                         } catch {
-                          pendingTab.close();
-                          window.location.assign(url);
+                          window.open(url, "_blank");
                         }
                       } else {
-                        window.location.assign(url);
+                        window.open(url, "_blank");
                       }
                       const code = parseDiscordInviteCode(url);
                       if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
                     } else {
-                      pendingTab?.close();
+                      if (pendingTab && !pendingTab.closed) {
+                        pendingTab.location.href = fallbackUrl;
+                      }
                       setVoiceError(result.error || "Couldn't open Discord voice.");
                       if (result.needsDiscordLink) {
                         setDiscordPrompt({ open: true, inviteUrl: null });

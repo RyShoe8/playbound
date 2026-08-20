@@ -1320,8 +1320,8 @@ export async function checkConfigSync(
     presences
       .filter((row) => {
         const status = String(row.status || "");
-        if (status === "offline") return false;
-        return String(row.currentGameId || "") === String(doc.gameSlug || "");
+        if (status !== "playing") return false;
+        return Boolean(doc.gameSlug) && String(row.currentGameId || "") === String(doc.gameSlug || "");
       })
       .map((row) => String(row.userId))
   );
