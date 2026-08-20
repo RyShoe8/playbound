@@ -40,6 +40,7 @@ import {
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import { SizeInput } from "@/components/admin/SizeInput";
 import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
+import { LAUNCHER_INSTALL_KINDS } from "@/lib/launcherInstall";
 
 export type { EditionDraft };
 
@@ -1386,11 +1387,18 @@ function InstallMethodFields({
     case "playbound_installer":
       return (
         <>
-          <Field
+          {/*
+            The same list the game editor offers and the payload schema
+            validates, so an edition cannot be given a kind the launcher has no
+            branch for — which as free text produced an edition that looked
+            configured and failed at install with nothing on screen to say why.
+          */}
+          <SelectField
             label="Recipe kind"
             value={config.playbound_installer?.kind ?? ""}
             onChange={(v) => patchConfig("playbound_installer", { kind: v })}
-            placeholder="github-zip · direct-installer · direct-exe …"
+            options={LAUNCHER_INSTALL_KINDS}
+            placeholder="Select how this installs…"
           />
           <Field
             label="GitHub repo"
@@ -1508,6 +1516,52 @@ function RecipeJsonField({
           )}
         </>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * A closed set of values, chosen rather than typed.
+ *
+ * An unrecognised stored value is kept as an option so opening an edition that
+ * predates this list cannot silently rewrite its kind to something else just by
+ * rendering the form.
+ */
+function SelectField({
+  label: text,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  placeholder?: string;
+}) {
+  const known = options.includes(value);
+  return (
+    <div>
+      <label className={label}>{text}</label>
+      <PremiumSelect
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={field}
+      >
+        <option value="">{placeholder ?? "—"}</option>
+        {/*
+          A stored value outside the list is kept as an option rather than
+          dropped, so opening an old edition cannot silently rewrite its kind
+          to something else just by rendering the form.
+        */}
+        {!known && value ? <option value={value}>{value} (unrecognised)</option> : null}
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </PremiumSelect>
     </div>
   );
 }

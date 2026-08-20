@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { zodFieldError } from "@/lib/zodFieldError";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
@@ -130,7 +131,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ success: true, id: String(existing._id), slug: existing.slug });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message ?? "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: zodFieldError(err) }, { status: 400 });
     }
     console.error("Update edition error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
