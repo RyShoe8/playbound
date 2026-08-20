@@ -24,6 +24,8 @@ const { createManagedJava } = require("./services/ManagedJava");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
+const controllerProfiles = require("./services/controllerProfiles");
+const gameControllerConfig = require("./services/gameControllerConfig");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
@@ -3959,6 +3961,46 @@ async function maybeResumePendingMod(justInstalledBaseSlug) {
   }
 }
 
+/**
+ * Pads last reported by the renderer.
+ *
+ * The Gamepad API only exists in a browser context, so detection happens there
+ * and the plain descriptors are sent here. Stale is fine: the worst case is
+ * configuring for a pad that was just unplugged, which the player can rebind.
+ */
+let lastKnownGamepads = [];
+
+/**
+ * Write the connected controller into a game's config, if it needs one.
+ *
+ * Every guard lives in the registry rather than here — unknown game, already
+ * configured, unrecognised format and no pad all come back as null, so this
+ * has one branch instead of four.
+ */
+async function applyControllerConfig(slug, installDir) {
+  if (!gameControllerConfig.supportsControllerConfig(slug)) return false;
+  const configPath = gameControllerConfig.configPathFor(slug, installDir);
+  if (!configPath) return false;
+
+  const profile = controllerProfiles.pickPrimary(lastKnownGamepads);
+  if (!profile) return false;
+
+  let current = "";
+  try {
+    current = await fsp.readFile(configPath, "utf8");
+  } catch {
+    // No config yet is normal on a first run; the game writes one at exit.
+    current = "";
+  }
+
+  const next = gameControllerConfig.applyProfile(slug, current, profile);
+  if (next == null) return false;
+
+  await fsp.writeFile(configPath, next, "utf8");
+  console.log(`[controller] configured ${profile.label} for ${slug}`);
+  return true;
+}
+
 function markInstalled(
   slug,
   { version, exe, dir, editionSlug, editionName, editionType, connectArgs, launchArgs }
@@ -5650,6 +5692,21 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     const notInstalledErr = new Error(message);
     notInstalledErr.__launchFailedReported = true;
     throw notInstalledErr;
+  }
+
+  /*
+   * Bind the player's controller before the game reads its config.
+   *
+   * Only for games in the registry, only when they have no controller
+   * configured yet, and only when a pad is actually connected — every one of
+   * those returns null and writes nothing. Failures are logged and never block
+   * a launch: a game that starts with an unconfigured pad is a nuisance, a
+   * game that refuses to start is a bug.
+   */
+  try {
+    await applyControllerConfig(slug, info.dir || path.dirname(info.exe || ""));
+  } catch (err) {
+    console.warn("[controller] auto-config skipped:", err?.message || err);
   }
 
   if (slug === OPENCIV3_SLUG) {
@@ -8383,6 +8440,26 @@ async function launcherJson(path, { method = "GET", body } = {}) {
   }
   return data;
 }
+
+/**
+ * The renderer reporting which pads are plugged in.
+ *
+ * Detection has to happen there — the Gamepad API is a browser API and does
+ * not exist in the main process. Only the fields the profile builder reads are
+ * kept, since a live Gamepad cannot cross IPC anyway.
+ */
+ipcMain.handle("report-gamepads", (_event, pads) => {
+  lastKnownGamepads = Array.isArray(pads)
+    ? pads
+        .filter((p) => p && p.id)
+        .map((p) => ({
+          id: String(p.id).slice(0, 200),
+          mapping: String(p.mapping || ""),
+          connected: p.connected !== false,
+        }))
+    : [];
+  return { count: lastKnownGamepads.length };
+});
 
 ipcMain.handle("get-parties", async () => {
   try {

@@ -264,7 +264,19 @@ body {
   min-height: 0;
   overflow-y: auto;
   position: relative;
-  padding-bottom: 40px;
+  /*
+   * Room for the status bar, and for a row's action menu beneath it.
+   *
+   * The bar is 32px and absolutely positioned, so 40px left 8px of real
+   * clearance — enough that a card looked fine, and not enough for the last
+   * one's action menu. That menu opens downward from inside this element, and
+   * overflow-y clips it here rather than letting it layer over the bar, so
+   * Uninstall on the final game was cut off and unclickable.
+   *
+   * Sized for the bar plus a full menu. Extra scroll room at the end of a list
+   * costs nothing; a button that cannot be pressed costs the feature.
+   */
+  padding-bottom: calc(32px + 10rem);
   background: radial-gradient(circle at top right, rgba(124, 92, 240, 0.08), transparent 40%);
   -webkit-overflow-scrolling: touch;
   will-change: scroll-position;

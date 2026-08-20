@@ -555,12 +555,42 @@ function wireMainEvents() {
   });
 }
 
+/**
+ * Tell the main process which controllers are connected.
+ *
+ * The Gamepad API lives only in this context, and it deliberately reports
+ * nothing until a pad has been interacted with — so this reports at startup,
+ * on connect/disconnect, and once more after a short delay to catch a pad that
+ * was already plugged in before the window existed.
+ *
+ * Main uses this to write bindings into games that keep them in a config file,
+ * so the player does not rebind the same pad in every game.
+ */
+function wireGamepadReporting() {
+  const report = () => {
+    try {
+      const pads = Array.from(navigator.getGamepads?.() || [])
+        .filter(Boolean)
+        .map((p) => ({ id: p.id, mapping: p.mapping, connected: p.connected }));
+      void window.playbound.reportGamepads?.(pads);
+    } catch {
+      /* Never block the UI over a controller. */
+    }
+  };
+  window.addEventListener("gamepadconnected", report);
+  window.addEventListener("gamepaddisconnected", report);
+  report();
+  // A pad connected before this window opened stays silent until it is used.
+  window.setTimeout(report, 3000);
+}
+
 async function boot() {
   document.querySelectorAll('link[href*="fonts.googleapis.com"]').forEach((el) => {
     el.media = "all";
   });
   wireShell();
   wireMainEvents();
+  wireGamepadReporting();
 
   let bootState = null;
   try {
