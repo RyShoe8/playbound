@@ -143,13 +143,23 @@ async function measureTree(dir, { skip = SKIP_ENTRIES, limitBytes = Infinity } =
 }
 
 /** Recursively copy `from` into `to`, skipping caches. Returns files copied. */
-async function copyTree(from, to, { skip = SKIP_ENTRIES } = {}) {
+/**
+ *  limits the copy to named files at the top level.
+ *
+ * For games that keep their save beside the executable, the directory also
+ * holds megabytes of unchanging game data. Copying all of it into every
+ * snapshot would be wasteful locally and expensive in the cloud, so those
+ * entries name the handful of files a session actually writes.
+ */
+async function copyTree(from, to, { skip = SKIP_ENTRIES, only = null } = {}) {
   let count = 0;
   let bytes = 0;
   const entries = await fsp.readdir(from, { withFileTypes: true });
   await fsp.mkdir(to, { recursive: true });
   for (const entry of entries) {
     if (skip.has(entry.name.toLowerCase())) continue;
+    // An allowlist applies to this level only, and never recurses.
+    if (only && !only.has(entry.name.toLowerCase())) continue;
     const src = path.join(from, entry.name);
     const dest = path.join(to, entry.name);
     if (entry.isDirectory()) {
@@ -188,7 +198,7 @@ function createSaveData({ snapshotRoot }) {
     gameSlug,
     editionSlug,
     saveDir,
-    { reason = "manual", now = new Date(), maxSnapshotMb = null } = {}
+    { reason = "manual", now = new Date(), maxSnapshotMb = null, only = null } = {}
   ) {
     const source = normalize(saveDir);
     if (isDangerousRoot(source)) {
@@ -222,7 +232,8 @@ function createSaveData({ snapshotRoot }) {
     // Never let a crafted slug escape the snapshot root.
     if (!isInside(dest, root)) throw new Error("Refusing to write a snapshot outside the save root");
 
-    const { files, bytes } = await copyTree(source, dest);
+    const onlySet = only && only.length ? new Set(only.map((f) => f.toLowerCase())) : null;
+    const { files, bytes } = await copyTree(source, dest, { only: onlySet });
     if (files === 0) {
       // An empty snapshot is noise in the history and would happily overwrite
       // real saves if restored, so it is removed rather than recorded.
