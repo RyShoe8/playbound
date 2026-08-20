@@ -7424,6 +7424,201 @@ textarea.input-text {
   #editions-grid,
   #mods-grid,
   #events-grid,
+    padding: 20px 8px 6px;
+  }
+  .card-art-fallback {
+    font-size: 32px;
+  }
+  .card-meta {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .card-price {
+    font-size: 10px;
+  }
+  .card-meta .chip,
+  .chip {
+    padding: 1.5px 5px;
+    font-size: 10px;
+  }
+
+  /* Home View Top Bar & Stats */
+  .home-discover-card {
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .home-top-stats {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .catalog-stat-pill {
+    padding: 4px 8px;
+  }
+
+  /* Detail Views / Hero Banners */
+  .detail-hero {
+    min-height: 180px !important;
+    padding: 18px 24px !important;
+  }
+  .detail-hero-title {
+    font-size: 24px !important;
+  }
+  .detail-hero-sub {
+    font-size: 13px !important;
+  }
+  .detail-section {
+    padding: 14px 20px !important;
+    margin-bottom: 12px !important;
+  }
+  .detail-section-title {
+    font-size: 16px !important;
+    margin-bottom: 10px !important;
+  }
+}
+
+@media (max-width: 960px), (max-height: 680px) {
+  /* Layout & Sidebar */
+  #sidebar {
+    width: 155px;
+    padding: 8px 6px;
+  }
+  .sidebar-brand {
+    padding: 0 4px 10px 4px;
+    gap: 6px;
+  }
+  .logo-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+  .brand-text {
+    font-size: 14px;
+  }
+  .nav-btn {
+    padding: 5px 8px;
+    font-size: 12px;
+    gap: 6px;
+    border-radius: 6px;
+  }
+
+  /* View Containers & Topbar */
+  .view {
+    padding: 10px 14px;
+  }
+  .launcher-topbar {
+    padding: 6px 14px;
+  }
+
+  /* Typography */
+  .view-title {
+    font-size: 18px;
+  }
+  .view-sub {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .section-header {
+    font-size: 14px;
+    margin: 12px 0 8px 0;
+  }
+
+  /* Grids & Cards (~50% compact footprint) */
+  .game-grid,
+  .editions-grid,
+  .mods-grid,
+  .servers-grid,
+  .events-grid,
+  .gear-grid,
+  .hardware-grid,
+  .community-grid,
+  .home-section-grid,
+  #library-grid,
+  #games-grid,
+  #editions-grid,
+  #mods-grid,
+  #events-grid,
+  #servers-grid,
+  #home-recent-grid,
+  #home-newest-grid,
+  #home-popular-grid,
+  #home-free-offers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .card-art-title {
+    font-size: 11.5px;
+    padding: 16px 6px 4px;
+  }
+  .card-launch-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .card-incompatible-corner {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  .card-meta {
+    padding: 4px 6px;
+  }
+  .card-playing {
+    font-size: 10px;
+  }
+
+  /* Detail Hero Banners */
+  .detail-hero {
+    min-height: 140px !important;
+    padding: 12px 16px !important;
+  }
+  .detail-hero-title {
+    font-size: 20px !important;
+  }
+  .detail-hero-sub {
+    font-size: 12px !important;
+  }
+  .detail-section {
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Ultra-compact mode */
+  #sidebar {
+    width: 52px;
+    padding: 8px 4px;
+    align-items: center;
+  }
+  .brand-text,
+  .sidebar-footer .sidebar-status span,
+  .sidebar-footer .btn-sidebar-user,
+  .sidebar-party-drawer,
+  .nav-group > .nav-sub {
+    display: none !important;
+  }
+  .sidebar-brand {
+    justify-content: center;
+    padding: 0 0 10px 0;
+  }
+  .nav-btn {
+    justify-content: center;
+    padding: 8px 0;
+    width: 40px;
+  }
+  .game-grid,
+  .editions-grid,
+  .mods-grid,
+  .servers-grid,
+  .events-grid,
+  .gear-grid,
+  .hardware-grid,
+  .community-grid,
+  .home-section-grid,
+  #library-grid,
+  #games-grid,
+  #editions-grid,
+  #mods-grid,
+  #events-grid,
   #servers-grid,
   #home-recent-grid,
   #home-newest-grid,
@@ -7432,4 +7627,139 @@ textarea.input-text {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
     gap: 6px !important;
   }
+}
+
+/* ── Party Chat Component ─────────────────────────────────────── */
+
+.party-chat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.party-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+.party-chat-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.party-chat-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.party-chat-list {
+  max-height: 200px;
+  min-height: 90px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.party-chat-empty {
+  margin: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.party-chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.party-chat-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.party-chat-author {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-play, #34d27b);
+}
+
+.party-chat-time {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.party-chat-content {
+  font-size: 13px;
+  color: var(--text-main);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.party-chat-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.party-chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.party-chat-input:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.party-chat-send {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.party-chat-send:hover {
+  filter: brightness(1.15);
+  transform: scale(1.04);
 }

@@ -689,6 +689,15 @@ async function syncAllInstalledGames() {
       ...(game.version ? { version: String(game.version) } : {}),
       ...(game.editionSlug ? { editionSlug: String(game.editionSlug) } : {}),
     });
+    for (const ed of editions) {
+      if (ed && ed.editionSlug && ed.editionSlug !== game.editionSlug) {
+        installs.push({
+          slug,
+          editionSlug: String(ed.editionSlug),
+          ...(ed.version ? { version: String(ed.version) } : {}),
+        });
+      }
+    }
   }
 
   const modInstalls = [];
@@ -3429,6 +3438,7 @@ function notifyInstallDetected(slug) {
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-detected", { slug });
   }
+  void syncAllInstalledGames();
   /*
    * Do not re-push an install deep-link here. markInstalled used to broadcast
    * the still-live `playbound://install/...` context, the renderer remounted
@@ -3452,6 +3462,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
     editionType: entry?.editionType,
     connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
   });
+  void syncAllInstalledGames();
   // Modded editions finish setting themselves up here — this is the one point
   // every detection path (known path, registry, drive scan) converges on.
   // Failures are reported but not fatal: the same routine runs again before
@@ -5548,6 +5559,15 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       connectArgs: game.connectArgs,
     };
     await maybeRepairWolfensteinEtInstall(slug, info, edSlug);
+  }
+  if ((!info || !(info.exe && fs.existsSync(info.exe))) && game.editions) {
+    for (const [key, ed] of Object.entries(game.editions)) {
+      if (ed && ed.exe && fs.existsSync(ed.exe)) {
+        info = { ...ed, editionSlug: key };
+        await maybeRepairWolfensteinEtInstall(slug, info, key);
+        break;
+      }
+    }
   }
   if (!info || !info.exe || !fs.existsSync(info.exe)) {
     const message = editionSlug ? "That edition is not installed" : "Not installed";
@@ -8293,7 +8313,12 @@ async function launcherJson(path, { method = "GET", body } = {}) {
   return data;
 }
 
+ipcMain.handle("sync-library-now", async () => {
+  return await syncAllInstalledGames();
+});
+
 ipcMain.handle("get-parties", async () => {
+  void syncAllInstalledGames();
   try {
     return await launcherJson("/api/parties");
   } catch (err) {
@@ -8302,6 +8327,7 @@ ipcMain.handle("get-parties", async () => {
 });
 
 ipcMain.handle("create-party", async (_event, opts = {}) => {
+  void syncAllInstalledGames();
   try {
     return await launcherJson("/api/parties", { method: "POST", body: opts });
   } catch (err) {
@@ -8310,6 +8336,7 @@ ipcMain.handle("create-party", async (_event, opts = {}) => {
 });
 
 ipcMain.handle("join-party", async (_event, partyId, password) => {
+  void syncAllInstalledGames();
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/join`, {
       method: "POST",
@@ -8345,6 +8372,7 @@ ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
  * its party panel could not show the same controls as the site.
  */
 ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
+  void syncAllInstalledGames();
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, {
       method: "PATCH",
