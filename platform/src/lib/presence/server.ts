@@ -340,13 +340,6 @@ export async function endPresence(ctx: PresenceContext, sessionId?: string | nul
   const filter: Record<string, unknown> = { userId: ctx.userId, status: "active" };
   if (sessionId) filter.sessionId = sessionId;
   await PlatformSession.updateMany(filter, closeSessionUpdate(now), { updatePipeline: true });
-
-  try {
-    const { leavePartiesOnDisconnect } = await import("@/lib/playTogether/party");
-    await leavePartiesOnDisconnect(ctx.userId);
-  } catch (err) {
-    console.error("[presence] leave party on disconnect failed:", err);
-  }
 }
 
 /**

@@ -150,6 +150,47 @@ export function PartyView({
     })();
   }
 
+  const handleLaunchVoice = async () => {
+    setVoiceBusy(true);
+    setVoiceError(null);
+    try {
+      let inviteUrl = party.discord?.inviteUrl;
+      if (!inviteUrl) {
+        const result = await provisionDiscord(party.id);
+        if (!result.inviteUrl) {
+          setVoiceError(result.error || "Could not launch Discord voice.");
+          if (result.needsDiscordLink) {
+            setDiscordPrompt({ open: true, inviteUrl: null });
+          }
+          return;
+        }
+        inviteUrl = result.inviteUrl;
+      } else {
+        void provisionDiscord(party.id);
+      }
+
+      const code = parseDiscordInviteCode(inviteUrl);
+      if (!code) {
+        window.open(inviteUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      // Fire desktop app deep link first without creating a blank tab
+      firePlayboundDeepLink(`discord://-/invite/${code}`);
+
+      // Fall back to opening browser tab if app did not take focus
+      window.setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          window.open(inviteUrl, "_blank", "noopener,noreferrer");
+        }
+      }, DISCORD_HANDOFF_MS);
+    } catch {
+      setVoiceError("Could not launch Discord voice.");
+    } finally {
+      setVoiceBusy(false);
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
@@ -358,99 +399,18 @@ export function PartyView({
             </p>
           )}
 
-          {party.lan?.enabled && (party.lan.steps?.length ?? 0) > 0 && (
-            <ol className="w-full list-decimal pl-4 text-xs text-muted-foreground">
-              {party.lan.steps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          )}
-
-          {party.status === "playing" && !canJoinGame && (
-            <div className="px-4 py-2 rounded-md bg-primary/20 text-primary font-bold text-sm flex items-center gap-2">
-              <Play className="size-4 fill-current" /> Playing
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-3">
           {party.voiceEnabled || party.discord.inviteUrl || party.discord.voiceChannelId ? (
-            party.discord.inviteUrl ? (
-              /*
-               * A button, not a target="_blank" link.
-               *
-               * As a link it did both things at once: the browser opened the
-               * invite in a new tab while the onClick handed off to the desktop
-               * app. The app wins, and the tab is left sitting there empty —
-               * which is what it looked like, an empty tab and nothing else,
-               * until Discord surfaced the invite seconds later.
-               *
-               * Now the deep link goes first and the web invite only opens if
-               * the page is still visible after the handoff window. If the app
-               * took focus, the document is hidden and no tab is created.
-               */
-              <button
-                type="button"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors"
-                onClick={() => {
-                  const inviteUrl = party.discord.inviteUrl!;
-                  const code = parseDiscordInviteCode(inviteUrl);
-                  void provisionDiscord(party.id);
-                  if (!code) {
-                    window.open(inviteUrl, "_blank", "noopener,noreferrer");
-                    return;
-                  }
-                  firePlayboundDeepLink(`discord://-/invite/${code}`);
-                  window.setTimeout(() => {
-                    if (document.visibilityState === "visible") {
-                      window.open(inviteUrl, "_blank", "noopener,noreferrer");
-                    }
-                  }, DISCORD_HANDOFF_MS);
-                }}
-              >
-                <Phone className="size-3.5" /> Launch Voice
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={voiceBusy}
-                onClick={() => {
-                  const fallbackUrl = SITE_DISCORD_INVITE;
-                  const pendingTab = window.open("", "_blank");
-                  void (async () => {
-                    setVoiceBusy(true);
-                    setVoiceError(null);
-                    const result = await provisionDiscord(party.id);
-                    const url = result.inviteUrl || fallbackUrl;
-                    if (url) {
-                      if (pendingTab && !pendingTab.closed) {
-                        try {
-                          pendingTab.location.href = url;
-                        } catch {
-                          window.open(url, "_blank");
-                        }
-                      } else {
-                        window.open(url, "_blank");
-                      }
-                      const code = parseDiscordInviteCode(url);
-                      if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
-                    } else {
-                      if (pendingTab && !pendingTab.closed) {
-                        pendingTab.location.href = fallbackUrl;
-                      }
-                      setVoiceError(result.error || "Couldn't open Discord voice.");
-                      if (result.needsDiscordLink) {
-                        setDiscordPrompt({ open: true, inviteUrl: null });
-                      }
-                    }
-                    setVoiceBusy(false);
-                  })();
-                }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors disabled:opacity-50"
-              >
-                <Phone className="size-3.5" /> {voiceBusy ? "Opening…" : "Launch Voice"}
-              </button>
-            )
+            <button
+              type="button"
+              disabled={voiceBusy}
+              onClick={() => void handleLaunchVoice()}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              <Phone className="size-3.5" /> {voiceBusy ? "Opening…" : "Launch Voice"}
+            </button>
           ) : null}
 
           <button

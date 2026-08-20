@@ -41,7 +41,7 @@ import { INSTALL_METHOD_LABELS, VERIFICATION_DESCRIPTIONS } from "@/lib/editionT
 import type { Edition } from "@/lib/editionTypes";
 import type { Game } from "@/lib/data/types";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
-import { pageMetadata, privateMetadata } from "@/lib/seo";
+import { pageMetadata, privateMetadata, editionTitle, editionDescription } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
 import { GameArt } from "@/components/GameArt";
 import { SectionHeader } from "@/components/ui/bits";
@@ -118,10 +118,8 @@ export async function generateMetadata({ params }: { params: Params }) {
   }
 
   return pageMetadata({
-    title: `${edition.name} — ${game.title}`,
-    description:
-      edition.shortDescription ||
-      `How to install and play ${edition.name}, an edition of ${game.title}.`,
+    title: editionTitle(edition, game),
+    description: editionDescription(edition, game),
     path: `/games/${game.slug}/editions/${edition.slug}`,
     images: edition.branding.heroImage
       ? [edition.branding.heroImage]

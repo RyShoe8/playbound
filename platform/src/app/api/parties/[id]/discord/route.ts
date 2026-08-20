@@ -42,7 +42,17 @@ export async function POST(req: Request, ctx: RouteContext) {
     }
 
     const voice = await syncPartyVoiceForMember(party, userId);
-    const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || SITE_DISCORD_INVITE;
+    const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || null;
+
+    if (!inviteUrl && !voice.moved) {
+      return NextResponse.json(
+        {
+          error: "Could not create Discord voice room. The bot service may be offline.",
+          needsDiscordLink: voice.needsDiscordLink,
+        },
+        { status: 503 }
+      );
+    }
 
     return NextResponse.json({
       party: {
