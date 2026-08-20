@@ -238,6 +238,90 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     checkedAt: "2026-08-15",
     note: "Blue Mammoth Games and Ubisoft actively maintain Brawlhalla with regular balance patches, new Legends, and seasonal esports circuits.",
   },
+  "rollercoaster-tycoon": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict: "RollerCoaster Tycoon turns tiny pricing decisions and hand-built hills into a park that feels alive, legible, and entirely yours.",
+      lastVerified: "2026-08-20",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://atari.com/pages/rollercoaster-tycoon",
+      checkedAt: "2026-08-20",
+      note: "Commercial classic; verify the official Windows release and modern launch reliability manually.",
+    },
+    longDescription:
+      "RollerCoaster Tycoon is a theme-park management simulation where the exciting part and the spreadsheet part are the same machine. Chris Sawyer designed and programmed the original around a remarkably clear chain of consequences: a ride draws guests, its queue changes foot traffic, hungry visitors find the nearest stall, litter creates complaints, and complaints tell you exactly where the park is failing. The Deluxe edition packages the 1999 game with Corkscrew Follies and Loopy Landscapes, giving the original scenario campaign a much broader set of rides, scenery, and increasingly strange plots of land.\n\nEach scenario starts with a concrete target—usually a guest count, park value, or ride requirement—and a deadline. You borrow carefully, set admission and ride prices, hire staff, research attractions, and shape paths around terrain that rarely cooperates. The famous coaster builder is only one piece of the puzzle, but it remains the star: lift hills, drops, banking, brakes, scenery, and station throughput all affect whether a design is profitable or simply an expensive nausea generator. Excitement, intensity, and nausea ratings turn visual design into a readable engineering problem.\n\nThe guest simulation is what keeps the park from becoming a static diorama. Every visitor has money, needs, tolerances, and visible thoughts. You can spot a crowd saying they cannot find a bathroom, trace the broken path layout that caused it, and fix the problem without consulting a hidden analytics screen. Mechanics inspect rides, handymen clean paths, security guards curb vandalism, and entertainers soften long waits. Nothing is individually complicated; the pleasure comes from dozens of understandable systems colliding.\n\nTime has left marks. The interface assumes a mouse, a modest resolution, and patience with stacked windows. The original executable can also need compatibility help on modern PCs. OpenRCT2 offers an excellent modern engine for players who also own the required RollerCoaster Tycoon 2 or Classic data; linking the original game then brings its scenarios and assets across. That route is optional and does not make the commercial game free.\n\nPlayBound recommends RollerCoaster Tycoon because its low price buys a complete, interruption-free design classic. There are no timers, premium currencies, or decorative shops asking for another payment. More importantly, its simulation still teaches by showing. When a park thrives, you understand why—and when it fails, the tiny furious guests usually told you first.",
+    whyWePickedIt:
+      "RollerCoaster Tycoon proves that depth does not require obscurity. Its guests, queues, finances, and ride physics expose their logic clearly enough for a new player to learn by watching, yet they combine into scenarios that remain absorbing decades later. It is not free, so we classify it as value rather than pretend otherwise: the standard edition is a modest one-time purchase and the game contains no recurring monetization. This is preservation with a point—a complete classic that still earns the space it occupies.",
+    thatOneThing:
+      "Click any guest, read one blunt little thought, and follow it back to a park-wide problem you can actually fix.",
+    bestFor: [
+      "Players who enjoy management games with visible cause and effect",
+      "Coaster builders who want track design tied to physics, throughput, and profit",
+      "Low-spec Windows PCs and short scenario-based play sessions",
+      "Anyone who prefers a complete one-time purchase over live-service progression",
+    ],
+    notFor: [
+      "Players who need a modern high-resolution interface out of the box",
+      "Anyone looking for first-person ride building or contemporary 3D presentation",
+      "Players who want a free game; RollerCoaster Tycoon is a paid commercial title",
+      "Mac or Linux users unwilling to configure a compatibility layer or OpenRCT2 with legally owned assets",
+    ],
+    comparableTo: [
+      "Parkitect",
+      "Planet Coaster",
+      "Theme Park",
+      "OpenTTD",
+      "Two Point Hospital",
+      "SimCity 2000",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Obtain a legitimate copy of RollerCoaster Tycoon: Deluxe, then download its Windows installer.",
+      },
+      {
+        platform: "windows",
+        text: "Run the installer, then launch the game once and confirm that the original scenarios load correctly.",
+      },
+      {
+        platform: "windows",
+        text: "If the original executable has display or compatibility trouble, apply Windows compatibility settings or use OpenRCT2 with legally owned RollerCoaster Tycoon 2 or Classic assets and link your RCT1 installation.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is RollerCoaster Tycoon free?",
+        a: "No. RollerCoaster Tycoon: Deluxe is a paid commercial game. It qualifies for PlayBound as a low-cost value pick with a complete game and no microtransactions, not as a free download.",
+      },
+      {
+        q: "What is included in the Deluxe edition?",
+        a: "Deluxe includes the original RollerCoaster Tycoon plus the Corkscrew Follies and Loopy Landscapes expansion content, adding scenarios, rides, shops, and scenery.",
+      },
+      {
+        q: "Does it work on modern Windows PCs?",
+        a: "The preserved release is available for Windows, but this remains a 1999 game and compatibility can vary. Windowed modes, compatibility settings, or the OpenRCT2 route can provide a smoother experience.",
+      },
+      {
+        q: "Can I use OpenRCT2 to play it?",
+        a: "OpenRCT2 can link an original RollerCoaster Tycoon installation for its scenarios and assets, but OpenRCT2 itself requires legally owned RollerCoaster Tycoon 2 or RollerCoaster Tycoon Classic game files.",
+      },
+      {
+        q: "Is RollerCoaster Tycoon a sandbox game?",
+        a: "It has strong sandbox-style building tools, but the core game is a scenario campaign with financial, attendance, and park-value objectives. That structure gives each map a distinct management problem.",
+      },
+      {
+        q: "What hardware does the Deluxe release require?",
+        a: "The published minimum asks for a 1.8 GHz processor, 512 MB RAM, a DirectX 7-compatible 3D graphics card, and 2 GB of storage. The bigger concern on a modern PC is operating-system compatibility, not performance.",
+      },
+    ],
+  },
+
   ysoccer: {
     kind: "manual",
     url: "https://ysoccer.sourceforge.io/",
