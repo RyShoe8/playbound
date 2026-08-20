@@ -266,6 +266,11 @@ body {
   position: relative;
   padding-bottom: 40px;
   background: radial-gradient(circle at top right, rgba(124, 92, 240, 0.08), transparent 40%);
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: paint;
 }
 
 .launcher-topbar {
@@ -397,16 +402,19 @@ body {
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
   display: flex;
   flex-direction: column;
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 260px;
 }
 
 .game-card:hover {
   transform: translateY(-4px);
   background: var(--bg-card-hover);
   border-color: var(--border-focus);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
 }
 
 .card-banner {
@@ -433,7 +441,6 @@ body {
   position: relative;
   aspect-ratio: 3 / 4;
   flex-shrink: 0;
-  /* Game cards, including the free-offer variant, override this below. */
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -470,7 +477,7 @@ body {
   gap: 6px;
   min-width: 0;
   padding: 32px 12px 10px;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4) 45%, transparent);
+  background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4) 45%, transparent);
   font-size: 16px;
   font-weight: 700;
   color: #fff;
@@ -484,12 +491,11 @@ body {
   z-index: 20;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(12, 10, 18, 0.88);
   padding: 2px 6px;
   font-size: 10px;
   font-weight: 700;
   color: #fff;
-  backdrop-filter: blur(4px);
 }
 
 .card-launch-badge-slot {
@@ -505,17 +511,16 @@ body {
   gap: 4px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(12, 10, 18, 0.88);
   padding: 3px 8px;
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  backdrop-filter: blur(4px);
   white-space: nowrap;
 }
 
 .card-launch-play {
-  background: rgba(52, 210, 123, 0.85);
+  background: rgba(52, 210, 123, 0.9);
   border-color: transparent;
   color: #0c2416;
 }
@@ -637,6 +642,13 @@ body {
   height: 100%;
   object-fit: cover;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  content-visibility: auto;
+}
+
+.card-cover.is-loaded {
+  opacity: 1;
 }
 
 .card-body {
@@ -7136,5 +7148,288 @@ textarea.input-text {
   margin: 0 0 4px 0;
 }
 
+/* ==========================================================================
+   Responsive Scaling for Smaller Viewports
+   Scales down margins, paddings, card sizes, hero heights, and typography
+   by up to 50% so significantly more content fits on smaller screens.
+   ========================================================================== */
 
+@media (max-width: 1200px), (max-height: 800px) {
+  /* Layout & Sidebar */
+  #sidebar {
+    width: 180px;
+    padding: 10px 8px;
+  }
+  .brand-text {
+    font-size: 16px;
+  }
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+  }
 
+  /* View Containers & Topbar */
+  .view {
+    padding: 16px 20px;
+  }
+  .launcher-topbar {
+    padding: 8px 20px;
+  }
+  .global-search-input {
+    height: 32px;
+    font-size: 12px;
+  }
+
+  /* Typography & Section Headers */
+  .view-title {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .view-sub {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .section-header {
+    font-size: 16px;
+    margin: 16px 0 10px 0;
+    gap: 8px;
+  }
+
+  /* Grids & Cards (50% scale-down on min-width) */
+  .game-grid,
+  .editions-grid,
+  .mods-grid,
+  .servers-grid,
+  .events-grid,
+  .gear-grid,
+  .hardware-grid,
+  .community-grid,
+  .home-section-grid,
+  #library-grid,
+  #games-grid,
+  #editions-grid,
+  #mods-grid,
+  #events-grid,
+  #servers-grid,
+  #home-recent-grid,
+  #home-newest-grid,
+  #home-popular-grid,
+  #home-free-offers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .game-card {
+    border-radius: 10px;
+  }
+  .card-art-title {
+    font-size: 13px;
+    padding: 20px 8px 6px;
+  }
+  .card-art-fallback {
+    font-size: 32px;
+  }
+  .card-meta {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .card-price {
+    font-size: 10px;
+  }
+  .card-meta .chip,
+  .chip {
+    padding: 1.5px 5px;
+    font-size: 10px;
+  }
+
+  /* Home View Top Bar & Stats */
+  .home-discover-card {
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .home-top-stats {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .catalog-stat-pill {
+    padding: 4px 8px;
+  }
+
+  /* Detail Views / Hero Banners */
+  .detail-hero {
+    min-height: 180px !important;
+    padding: 18px 24px !important;
+  }
+  .detail-hero-title {
+    font-size: 24px !important;
+  }
+  .detail-hero-sub {
+    font-size: 13px !important;
+  }
+  .detail-section {
+    padding: 14px 20px !important;
+    margin-bottom: 12px !important;
+  }
+  .detail-section-title {
+    font-size: 16px !important;
+    margin-bottom: 10px !important;
+  }
+}
+
+@media (max-width: 960px), (max-height: 680px) {
+  /* Layout & Sidebar */
+  #sidebar {
+    width: 155px;
+    padding: 8px 6px;
+  }
+  .sidebar-brand {
+    padding: 0 4px 10px 4px;
+    gap: 6px;
+  }
+  .logo-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+  .brand-text {
+    font-size: 14px;
+  }
+  .nav-btn {
+    padding: 5px 8px;
+    font-size: 12px;
+    gap: 6px;
+    border-radius: 6px;
+  }
+
+  /* View Containers & Topbar */
+  .view {
+    padding: 10px 14px;
+  }
+  .launcher-topbar {
+    padding: 6px 14px;
+  }
+
+  /* Typography */
+  .view-title {
+    font-size: 18px;
+  }
+  .view-sub {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .section-header {
+    font-size: 14px;
+    margin: 12px 0 8px 0;
+  }
+
+  /* Grids & Cards (~50% compact footprint) */
+  .game-grid,
+  .editions-grid,
+  .mods-grid,
+  .servers-grid,
+  .events-grid,
+  .gear-grid,
+  .hardware-grid,
+  .community-grid,
+  .home-section-grid,
+  #library-grid,
+  #games-grid,
+  #editions-grid,
+  #mods-grid,
+  #events-grid,
+  #servers-grid,
+  #home-recent-grid,
+  #home-newest-grid,
+  #home-popular-grid,
+  #home-free-offers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .card-art-title {
+    font-size: 11.5px;
+    padding: 16px 6px 4px;
+  }
+  .card-launch-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .card-incompatible-corner {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  .card-meta {
+    padding: 4px 6px;
+  }
+  .card-playing {
+    font-size: 10px;
+  }
+
+  /* Detail Hero Banners */
+  .detail-hero {
+    min-height: 140px !important;
+    padding: 12px 16px !important;
+  }
+  .detail-hero-title {
+    font-size: 20px !important;
+  }
+  .detail-hero-sub {
+    font-size: 12px !important;
+  }
+  .detail-section {
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Ultra-compact mode */
+  #sidebar {
+    width: 52px;
+    padding: 8px 4px;
+    align-items: center;
+  }
+  .brand-text,
+  .sidebar-footer .sidebar-status span,
+  .sidebar-footer .btn-sidebar-user,
+  .sidebar-party-drawer,
+  .nav-group > .nav-sub {
+    display: none !important;
+  }
+  .sidebar-brand {
+    justify-content: center;
+    padding: 0 0 10px 0;
+  }
+  .nav-btn {
+    justify-content: center;
+    padding: 8px 0;
+    width: 40px;
+  }
+  .game-grid,
+  .editions-grid,
+  .mods-grid,
+  .servers-grid,
+  .events-grid,
+  .gear-grid,
+  .hardware-grid,
+  .community-grid,
+  .home-section-grid,
+  #library-grid,
+  #games-grid,
+  #editions-grid,
+  #mods-grid,
+  #events-grid,
+  #servers-grid,
+  #home-recent-grid,
+  #home-newest-grid,
+  #home-popular-grid,
+  #home-free-offers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+    gap: 6px !important;
+  }
+}

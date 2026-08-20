@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { syncPartyVoiceForMember } from "@/lib/playTogether/discordPartyProvision";
+import { SITE_DISCORD_INVITE } from "@/lib/site";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 
@@ -41,13 +42,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     }
 
     const voice = await syncPartyVoiceForMember(party, userId);
-    const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || null;
-    if (!inviteUrl && !party.discord?.voiceChannelId) {
-      return NextResponse.json(
-        { error: "Discord voice provisioning unavailable" },
-        { status: 503 }
-      );
-    }
+    const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || SITE_DISCORD_INVITE;
 
     return NextResponse.json({
       party: {
