@@ -8,6 +8,7 @@ import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 import { revalidateLibraryPages } from "@/lib/libraryCascade";
+import { groupInstallsBySlug } from "@/lib/library/installedEditions";
 
 const batchSchema = z.object({
   installs: z
@@ -47,7 +48,15 @@ export async function POST(req: Request) {
     let synced = 0;
     const skipped: string[] = [];
 
-    for (const item of body.installs) {
+    /*
+     * One write per game, not per edition.
+     *
+     * The launcher sends a separate entry for every installed edition, and the
+     * unique index gives a game exactly one row — so writing per entry meant
+     * each edition's `$set` clobbered the one before it and only the last
+     * survived. Grouping first lets the row carry all of them.
+     */
+    for (const item of groupInstallsBySlug(body.installs)) {
       if (!(await resolveGameForSync(item.slug))) {
         skipped.push(item.slug);
         continue;
@@ -59,9 +68,10 @@ export async function POST(req: Request) {
           $set: {
             installed: true,
             version: item.version || undefined,
-            ...(item.editionSlug !== undefined
-              ? { editionSlug: item.editionSlug || null }
-              : {}),
+            editionSlug: item.editionSlug,
+            // Authoritative: this batch is the full picture for this device, so
+            // an edition the player removed disappears rather than lingering.
+            installedEditions: item.installedEditions,
             installedAt: now,
             updatedAt: now,
           },
@@ -135,7 +145,26 @@ export async function POST(req: Request) {
           userId: user._id,
           installed: true,
           gameSlug: { $nin: keepGames },
-          $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
+          $and: [
+            {
+              $or: [
+                { platform: "desktop" },
+                { platform: { $exists: false } },
+                { platform: null },
+              ],
+            },
+            /*
+             * Only revoke what the launcher could have installed.
+             *
+             * This pass says "the launcher did not report it, so it is gone",
+             * which is only true for rows the launcher owns. A store redirect
+             * or a browser install is not the launcher's to un-install, and
+             * sweeping them was marking games uninstalled that were never on
+             * this device in the first place. `manual` is included because it
+             * is the schema default every pre-`source` launcher row carries.
+             */
+            { $or: [{ source: "launcher" }, { source: "manual" }, { source: { $exists: false } }] },
+          ],
         };
         const gameRes = await LibraryEntry.updateMany(uninstalledFilter, {
           $set: { installed: false, saved: true, updatedAt: now },

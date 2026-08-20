@@ -57,6 +57,10 @@ import {
   libraryHasRequiredEdition,
 } from "@/lib/playTogether/editionMatch";
 import {
+  editionsFromRow,
+  primaryEditionFromRow,
+} from "@/lib/library/installedEditions";
+import {
   canJoinParty,
   canLeaveParty,
   canRemoveMember,
@@ -1253,7 +1257,7 @@ export async function checkConfigSync(
       userId: { $in: memberLookup },
       gameSlug: doc.gameSlug,
     })
-      .select("userId gameSlug editionSlug installed")
+      .select("userId gameSlug editionSlug installedEditions installed")
       .lean(),
     LibraryModEntry.find({
       userId: { $in: memberLookup },
@@ -1270,16 +1274,22 @@ export async function checkConfigSync(
       .lean(),
   ]);
 
-  // Build lookup: userId → set of installed edition slugs.
+  /*
+   * userId → every installed edition slug, plus the default they launch.
+   *
+   * Reads `installedEditions` rather than the single `editionSlug`, because a
+   * player can have several builds of one game and the row only ever recorded
+   * one of them. That is what made config-sync tell people they were missing an
+   * edition already on their disk.
+   */
   const installedByUser = new Map<string, Set<string>>();
+  const primaryByUser = new Map<string, string>();
   for (const entry of libraryEntries) {
     const uid = String(entry.userId);
     if (!installedByUser.has(uid)) installedByUser.set(uid, new Set());
-    if (entry.installed) {
-      installedByUser.get(uid)!.add(entry.editionSlug || BASE_EDITION_KEY);
-      // Any installed edition of the game confirms having the base game
-      installedByUser.get(uid)!.add(BASE_EDITION_KEY);
-    }
+    const editions = editionsFromRow(entry);
+    for (const slug of editions) installedByUser.get(uid)!.add(slug);
+    if (editions.size > 0) primaryByUser.set(uid, primaryEditionFromRow(entry));
   }
 
   // userId → set of installed mod slugs for this game.
@@ -1308,9 +1318,14 @@ export async function checkConfigSync(
   const declaredEdition = (doc.editionSlug as string) || null;
   const declaredMods = (doc.modSlugs as string[]) || [];
 
+  /*
+   * The host's *default* build, not whichever edition happens to sort first.
+   * With several installed, an arbitrary pick would point the party at a build
+   * the host is not actually launching.
+   */
   const hostEdition =
-    hostHasGame && hostEditions
-      ? [...hostEditions].find((e) => !isBaseEditionSlug(e)) ?? BASE_EDITION_KEY
+    hostHasGame && hostId
+      ? primaryByUser.get(hostId) ?? BASE_EDITION_KEY
       : null;
 
   const editionSlug = hostHasGame
@@ -1354,9 +1369,9 @@ export async function checkConfigSync(
       missingMods: hasGame ? modSlugs.filter((slug) => !theirMods.has(slug)) : modSlugs,
       isHost,
       playing,
-      installedEditionSlug:
-        [...editions].find((e) => !isBaseEditionSlug(e)) ??
-        (hasGame ? BASE_EDITION_KEY : null),
+      installedEditionSlug: hasGame
+        ? primaryByUser.get(uid) ?? BASE_EDITION_KEY
+        : null,
     };
   });
 
