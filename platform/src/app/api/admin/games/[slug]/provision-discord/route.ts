@@ -33,28 +33,54 @@ export async function POST(
     );
   }
 
-  const res = await fetch(webhook.replace(/\/$/, "") + "/provision", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      Authorization: `Bearer ${secret}`,
-    },
-    body: JSON.stringify({ slug }),
-  });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const res = await fetch(webhook.replace(/\/$/, "") + "/provision", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ slug }),
+      signal: controller.signal,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data?.error || data || `Provision failed (${res.status})` },
+        { status: 502 }
+      );
+    }
+
+    // Worker writes Mongo directly; re-read for response.
+    const updated = await CatalogGame.findOne({ slug })
+      .select("communityLinks")
+      .lean();
+    return NextResponse.json({
+      success: true,
+      playboundDiscord: updated?.communityLinks?.playboundDiscord ?? data?.playboundDiscord,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return NextResponse.json(
+        {
+          error:
+            "Discord bot worker timed out after 15s. Check that your Render bot service is deployed and running.",
+        },
+        { status: 504 }
+      );
+    }
     return NextResponse.json(
-      { error: data?.error || data || "Provision failed" },
+      {
+        error:
+          err instanceof Error
+            ? `Discord bot error: ${err.message}`
+            : "Could not reach Discord bot worker",
+      },
       { status: 502 }
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  // Worker writes Mongo directly; re-read for response.
-  const updated = await CatalogGame.findOne({ slug })
-    .select("communityLinks")
-    .lean();
-  return NextResponse.json({
-    success: true,
-    playboundDiscord: updated?.communityLinks?.playboundDiscord ?? data?.playboundDiscord,
-  });
 }

@@ -1561,45 +1561,48 @@ export function GameEditorForm({
             </div>
           </div>
           {mode === "edit" && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                setError("");
-                try {
-                  const res = await fetch(`/api/admin/games/${initial.slug}/provision-discord`, {
-                    method: "POST",
-                  });
-                  const data = await res.json().catch(() => null);
-                  if (!res.ok) {
-                    setError(data?.error ?? "Provision failed");
-                  } else if (data?.playboundDiscord) {
-                    patch(
-                      "communityLinks",
-                      patchCommunityLinks(form.communityLinks, {
-                        playboundDiscord: {
-                          guildId: data.playboundDiscord.guildId ?? null,
-                          channelId: data.playboundDiscord.channelId ?? null,
-                          channelName: data.playboundDiscord.channelName ?? null,
-                          inviteCode: data.playboundDiscord.inviteCode ?? null,
-                          inviteUrl: data.playboundDiscord.inviteUrl ?? null,
-                          provisionedAt: data.playboundDiscord.provisionedAt
-                            ? String(data.playboundDiscord.provisionedAt)
-                            : new Date().toISOString(),
-                        },
-                      })
-                    );
+            <div className="flex flex-col items-start gap-1">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setError("");
+                  setBusy(true);
+                  try {
+                    const res = await fetch(`/api/admin/games/${initial.slug}/provision-discord`, {
+                      method: "POST",
+                    });
+                    const data = await res.json().catch(() => null);
+                    if (!res.ok) {
+                      setError(data?.error ?? `Provision failed (${res.status})`);
+                    } else if (data?.playboundDiscord) {
+                      patch(
+                        "communityLinks",
+                        patchCommunityLinks(form.communityLinks, {
+                          playboundDiscord: {
+                            guildId: data.playboundDiscord.guildId ?? null,
+                            channelId: data.playboundDiscord.channelId ?? null,
+                            channelName: data.playboundDiscord.channelName ?? null,
+                            inviteCode: data.playboundDiscord.inviteCode ?? null,
+                            inviteUrl: data.playboundDiscord.inviteUrl ?? null,
+                            provisionedAt: data.playboundDiscord.provisionedAt
+                              ? String(data.playboundDiscord.provisionedAt)
+                              : new Date().toISOString(),
+                          },
+                        })
+                      );
+                    }
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "Couldn't reach the Discord bot webhook.");
+                  } finally {
+                    setBusy(false);
                   }
-                } catch {
-                  setError("Couldn't reach the Discord bot webhook.");
-                }
-                setBusy(false);
-              }}
-              className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-            >
-              Provision PlayBound Channel
-            </button>
+                }}
+                className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+              >
+                Provision PlayBound Channel
+              </button>
+            </div>
           )}
         </AdminCollapsibleSection>
 
