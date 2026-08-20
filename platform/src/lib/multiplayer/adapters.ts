@@ -254,7 +254,14 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       argsTemplate: ["Server.ListenPort={port}"],
     },
     client: {
-      launchArguments: ["Launch.Connect={host}:{port}"],
+      /*
+       * Game.Mod is not optional here. OpenRA's ra / cnc / d2k are separate
+       * games on one engine, the server is started with an explicit mod, and a
+       * client that does not name one joins with whatever it last had open —
+       * which the server then rejects as "running an incompatible mod", even
+       * when both sides are on the same engine version.
+       */
+      launchArguments: ["Game.Mod={mod}", "Launch.Connect={host}:{port}"],
     },
     notes: "Dedicated C&C server engine with settings argv CLI connect.",
   },

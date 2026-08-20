@@ -81,10 +81,12 @@ function applyConnectTemplates(templates, join) {
       .replaceAll("{host}", join.host)
       .replaceAll("{port}", String(join.port))
       .replaceAll("{name}", join.name || "")
+      // OpenRA needs the mod named or it joins with whatever it last had open.
+      .replaceAll("{mod}", join.mod || "")
   );
 }
 
-const TEMPLATE_TOKEN = /\{(host|port|name)\}/;
+const TEMPLATE_TOKEN = /\{(host|port|name|mod)\}/;
 
 /**
  * Args to pass on a plain launch — one with no server to join.
