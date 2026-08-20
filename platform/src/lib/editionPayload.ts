@@ -25,7 +25,7 @@ const optionalUrl = z
  * Artwork, which may be ours rather than somebody else's.
  *
  * Images are routinely served from `public/` — the HoloCure PlayBound edition
- * ships `/games/holocure/editions/playbound.jpg` — and requiring an absolute
+ * ships `/games/holocure/editions/playbound.webp` — and requiring an absolute
  * URL rejected those outright, so an edition with perfectly good local artwork
  * could not be saved at all. The game schema has always accepted a bare path
  * here; only editions were stricter, and only editions broke.
