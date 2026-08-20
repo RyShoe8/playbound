@@ -34,3 +34,6 @@ secrets/
 .env.signing
 .env.signing.local
 signing.env
+
+# Save snapshots written by SaveData when a test runs without an explicit root.
+*__official/
