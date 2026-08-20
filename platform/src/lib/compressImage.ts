@@ -15,6 +15,35 @@ import type Sharp from "sharp";
  */
 let sharpModule: typeof Sharp | null = null;
 
+/**
+ * Which of sharp's native packages actually made it into the bundle.
+ *
+ * sharp's own load error names the runtime it tried and the library it could
+ * not open, but not whether the package holding that library is on disk at all
+ * — and those are different faults with different fixes. A missing directory
+ * means the install or the file trace dropped it; a present directory with a
+ * failed dlopen means the wrong build for this platform.
+ *
+ * Best-effort by design: this only ever runs on a path that is already
+ * failing, so it must not be able to make things worse.
+ */
+async function nativePackageReport(): Promise<string> {
+  try {
+    const { existsSync } = await import("fs");
+    const { join } = await import("path");
+    const { platform, arch } = process;
+    const suffix = `${platform}-${arch}`;
+    const expected = [`@img/sharp-${suffix}`, `@img/sharp-libvips-${suffix}`];
+    const seen = expected.map((pkg) => {
+      const present = existsSync(join(process.cwd(), "node_modules", pkg));
+      return `${pkg}: ${present ? "present" : "MISSING"}`;
+    });
+    return `; runtime ${suffix}; ${seen.join(", ")}`;
+  } catch {
+    return "";
+  }
+}
+
 async function loadSharp(): Promise<typeof Sharp> {
   if (sharpModule) return sharpModule;
   try {
@@ -24,7 +53,8 @@ async function loadSharp(): Promise<typeof Sharp> {
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Image compression is unavailable on this deployment: sharp failed to load (${detail})`
+      `Image compression is unavailable on this deployment: sharp failed to load (${detail})` +
+        (await nativePackageReport())
     );
   }
 }
