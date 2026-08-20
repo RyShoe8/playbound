@@ -11,6 +11,17 @@ import {
  * Used by seed:launcher-install and as fallback when Mongo has no recipe yet.
  */
 export const launcherInstallBySlug: Record<string, LauncherInstall> = {
+  "volleyball-legends": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://playbound-five.vercel.app/installers/Install-Volleyball-Legends.cmd",
+    fileName: "Install-Volleyball-Legends.cmd",
+    versionLabel: "roblox",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\PlayBound\\Games\\volleyball-legends\\Play-Volleyball-Legends.cmd",
+    ],
+    note: "Installs the official Roblox Player if needed, then launches Volleyball Legends.",
+  },
   openra: {
     enabled: true,
     kind: "github-zip",
