@@ -106,3 +106,26 @@ describe("TES Arena freeware vs OpenTESArena", () => {
     expect(entry.needsDosBox).toBe(true);
   });
 });
+
+describe("first-party MMO launcher installs", () => {
+  const expectedHosts: Record<string, RegExp> = {
+    "albion-online": /(^|\.)albiononline\.com$/,
+    "lord-of-the-rings-online": /(^|\.)lotro\.com$/,
+    "guild-wars-2": /(^|\.)guildwars2\.com$/,
+    "dc-universe-online": /(^|\.)daybreakgames\.com$/,
+  };
+
+  for (const [slug, officialHost] of Object.entries(expectedHosts)) {
+    it(`${slug} downloads its publisher launcher without Steam`, () => {
+      const recipe = launcherInstallBySlug[slug];
+      expect(recipe).toBeDefined();
+      expect(recipe.enabled).toBe(true);
+      expect(recipe.kind).toBe("direct-installer");
+      expect(recipe.url).toBeTruthy();
+      expect(recipe.url).not.toMatch(/steam/i);
+      expect(new URL(recipe.url!).hostname).toMatch(officialHost);
+      expect(recipe.fileName).toMatch(/\.exe$/i);
+      expect(recipe.knownExePaths?.length).toBeGreaterThan(0);
+    });
+  }
+});

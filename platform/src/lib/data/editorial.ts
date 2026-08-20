@@ -260,6 +260,124 @@ function clearsAll(verdict: string): Game["qualityBar"] {
 }
 
 export const editorial: Record<string, GameEditorial> = {
+  "albion-online": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Albion turns gathering, trade, and territorial risk into one coherent machine; the free account is the real game, while Premium mostly changes how quickly you move through it.",
+      lastVerified: "2026-08-20",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://albiononline.com/news",
+      checkedAt: "2026-08-20",
+      note: "Official news and patch notes show active 2026 updates and live events.",
+    },
+    longDescription:
+      "Albion Online is a sandbox MMO with a refreshingly legible premise: your equipment is your class, and nearly every sword, saddle, potion, and plank in circulation was gathered and built by another player. Swapping from healer to tank is a matter of changing gear rather than rerolling a character. That makes experimentation cheap, while the Destiny Board gives long-term specialists plenty to pursue.\n\nThe world is arranged by risk. Safe zones let you learn the economy and combat without losing your kit. Red and black zones turn travel into a real decision because defeat can mean dropping what you carried. Full-loot PvP sounds brutal—and occasionally is—but it gives transport, scouting, crafting, and guild logistics a purpose most MMOs only pretend they have. A load of ore matters because getting it home is part of the job.\n\nCombat is compact and readable, built around short ability bars and clear area markers. The interesting decisions happen before and around the fight: which set you brought, whether your group should commit, and whether the stranger at the edge of the screen is bait. Beyond PvP, there are expeditions, open-world mobs, dungeons, gathering loops, personal islands, and a market deep enough to be somebody's entire game.\n\nPremium boosts progression and economic efficiency, so the monetization is not invisible. Still, the complete world is available without buying an expansion or routing the account through Steam. PlayBound installs Albion's own launcher because that is the cleanest path to the same cross-platform account used on mobile and desktop.",
+    whyWePickedIt:
+      "Albion belongs here because its systems respect player agency. Gathering is not filler, crafting is not a side menu, and danger is not painted scenery. The economy works because players make things other players can lose. It asks for patience and accepts that loss can sting, but few free MMOs make ordinary decisions feel this consequential.",
+    thatOneThing:
+      "A cart full of resources can turn a routine ride home into the tensest five minutes of your night.",
+    installSteps: [
+      { platform: "windows", text: "Choose Install in PlayBound; we download and open Albion's official standalone installer." },
+      { platform: "windows", text: "Choose an install location in the Albion launcher—an SSD is strongly recommended—then let it fetch the current client." },
+      { platform: "all", text: "Create or sign into an Albion account, select your region, and let the launcher finish patching before Play." },
+    ],
+    faq: [
+      { q: "Is Albion Online actually free?", a: "Yes. The world, economy, PvE, and PvP are playable without buying the game. Premium adds progression and economic bonuses but is not required to log in or reach the full map." },
+      { q: "Does PlayBound install the Steam version?", a: "No. PlayBound uses Albion's official standalone launcher, so an existing Albion account works without Steam." },
+      { q: "Do I lose equipment when I die?", a: "Only in full-loot zones. Blue and yellow areas provide safer progression; red and black zones are where carried gear can be lost to other players." },
+      { q: "Can I change classes?", a: "There are no permanent classes. Weapons and armor determine your abilities, so changing a loadout changes your role." },
+      { q: "Does Albion support cross-platform play?", a: "Yes. Windows, macOS, Linux, Android, and iOS players share the same world and account system." },
+    ],
+    bestFor: ["Players who want a real player-run economy", "Small groups and guilds that enjoy risk, logistics, and territory", "Gatherers and crafters who want their work to matter"],
+    notFor: ["Anyone who hates the possibility of losing carried equipment", "Players looking for a heavily scripted solo campaign", "People who want every progression boost to be cosmetic-only"],
+    comparableTo: ["EVE Online", "RuneScape", "Ultima Online", "New World"],
+  },
+  "guild-wars-2": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Guild Wars 2 makes cooperation feel natural instead of mandatory, and its free core world remains one of the strongest no-subscription MMO introductions available.",
+      lastVerified: "2026-08-20",
+    },
+    maintenanceCheck: { kind: "manual", url: "https://www.guildwars2.com/en/news/", checkedAt: "2026-08-20", note: "ArenaNet continues to publish live updates and expansion support in 2026." },
+    longDescription:
+      "Guild Wars 2 removes several habits that make older MMOs feel like office work. Players who attack the same creature share credit. Resource nodes are personal instead of first-come. Dynamic events pull everyone nearby toward a common problem without asking strangers to negotiate a party first. The result is an open world where seeing another player is usually good news.\n\nCombat mixes tab targeting with active movement, dodges, ground placement, and weapon-defined skill bars. A guardian with a greatsword behaves differently from one carrying a staff, and elite specializations in paid expansions push professions into new roles. The free core game still includes the original level journey, personal story, structured PvP, and World vs World: a persistent three-way siege mode built around keeps, supply lines, and very large groups.\n\nTyria rewards wandering. Maps hide jumping puzzles, event chains, world bosses, vistas, and small stories that are easy to miss if you treat the compass as an order. Level scaling keeps earlier zones useful, while the lack of a conventional gear treadmill means a good endgame set does not become rubbish every season. Paid expansions add major campaigns, masteries, mounts, and specializations; the free account is substantial, but it is not the entire modern game.\n\nPlayBound installs ArenaNet's standalone 64-bit client directly. That avoids Steam account boundaries and keeps the account path ArenaNet documents. Expect a large first download and CPU-heavy performance in crowded events—even strong graphics cards cannot brute-force every world boss pileup.",
+    whyWePickedIt:
+      "We picked Guild Wars 2 because it solves a social design problem most MMOs simply accept. It gives strangers reasons to help without making them form a committee first. The free core game is broad enough to judge the combat, exploration, PvP, and world structure honestly before paying for anything.",
+    thatOneThing: "A world event can turn twenty unrelated passersby into a functioning rescue party without a single invite.",
+    installSteps: [
+      { platform: "windows", text: "Choose Install in PlayBound to download ArenaNet's official Gw2Setup-64 client." },
+      { platform: "windows", text: "Select a folder with at least 80 GB free; an SSD helps loading and patching." },
+      { platform: "windows", text: "Create or sign into an ArenaNet account, let the launcher download the data archive, then choose Play." },
+    ],
+    faq: [
+      { q: "How much of Guild Wars 2 is free?", a: "The full original core game, leveling path, structured PvP, and World vs World are free. Expansions, their stories, masteries, mounts, and elite specializations are paid." },
+      { q: "Does Guild Wars 2 require a subscription?", a: "No. There is no monthly subscription; expansions are purchased separately." },
+      { q: "Does PlayBound use Steam?", a: "No. It installs ArenaNet's standalone 64-bit client so you can use a normal ArenaNet account." },
+      { q: "How large is the installation?", a: "ArenaNet currently lists 80 GB of available space. Leave extra room for patches and temporary download data." },
+      { q: "Is Guild Wars 2 friendly to solo players?", a: "Yes. Story and open-world exploration work well solo, while public events let you cooperate without maintaining a permanent group." },
+    ],
+    bestFor: ["Explorers who dislike rigid quest hubs", "Friends who want cooperative play without a subscription", "Large-scale PvP and world-boss groups"],
+    notFor: ["Players who want the entire modern game free", "Anyone who needs stable high frame rates in the largest crowds", "Fans of strict holy-trinity combat from level one"],
+    comparableTo: ["World of Warcraft", "Final Fantasy XIV", "The Elder Scrolls Online", "RIFT"],
+  },
+  "lord-of-the-rings-online": {
+    qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "LOTRO is old in visible ways, but its patient storytelling and extraordinary sense of place still make it the best digital walking tour of Middle-earth.", lastVerified: "2026-08-20" },
+    maintenanceCheck: { kind: "manual", url: "https://www.lotro.com/news", checkedAt: "2026-08-20", note: "Standing Stone Games continues active updates, events, and expansion support in 2026." },
+    longDescription:
+      "The Lord of the Rings Online has spent almost two decades filling the space between famous scenes. Its Middle-earth is not a sequence of movie sets. Roads take time, settlements have working farms, and the Shire is allowed to be quiet before the story sends you toward darker country. The scale is the point: reaching Bree after an evening on foot feels like arriving somewhere.\n\nUnder that landscape is a traditional hotbar MMO with classes, crafting professions, group instances, raids, and an enormous quest archive. Combat carries the rhythm and interface density of its era, though the 64-bit client keeps the current game practical on modern Windows. The strongest material is often writing rather than spectacle. Regional story arcs show what the War of the Ring costs people far from the Fellowship, while the Epic storyline lets your character move beside—not replace—the familiar heroes.\n\nThe free offering is generous at the beginning and more complicated later. Standing Stone has opened substantial older content over time, but expansions, quest packs, conveniences, and VIP benefits still form a dense store. It is possible to earn store currency through play; it is not honest to pretend the monetization disappears. The interface also arrives carrying years of accumulated systems.\n\nPlayBound uses the current Standing Stone installer, never an obsolete DVD build and never Steam. The launcher patches the full high-resolution client after the small bootstrap runs. LOTRO is not the MMO we recommend for sharp action combat. It is the one we recommend when the road, the text, and the place matter more than getting to endgame quickly.",
+    whyWePickedIt: "LOTRO made the list because preservation is not only about keeping executables alive. It is also about keeping a particular interpretation of a world available. No other game gives Middle-earth this much room to breathe, and few long-running MMOs are still adding to a map with this much history behind it.",
+    thatOneThing: "The first walk from the Shire to Bree still feels like a journey instead of a loading screen.",
+    installSteps: [
+      { platform: "windows", text: "Choose Install in PlayBound to open Standing Stone's current LOTRO installer." },
+      { platform: "windows", text: "Install the launcher, choose the 64-bit client, and allow at least 35 GB including language data." },
+      { platform: "windows", text: "Let the launcher patch completely, sign into a Standing Stone account, and select a world." },
+    ],
+    faq: [
+      { q: "Is LOTRO free to play?", a: "Yes, with a large free starting journey. Later regions, expansions, conveniences, and VIP benefits may require purchases or earned LOTRO Points." },
+      { q: "Does PlayBound install LOTRO through Steam?", a: "No. It uses Standing Stone Games' current standalone installer." },
+      { q: "Can I play LOTRO on Linux or Steam Deck?", a: "The publisher officially supports Windows. Proton setups can work, but PlayBound does not label them officially supported." },
+      { q: "Should I use the 64-bit client?", a: "Yes. The old unsupported legacy client is obsolete; choose the supported 64-bit client in launcher options." },
+      { q: "Is LOTRO good for solo play?", a: "Very. Most landscape and Epic story content can be followed solo, with fellowships useful for group instances and raids." },
+    ],
+    bestFor: ["Tolkien readers who want geography and atmosphere", "Solo players who read quest text", "Long-term explorers and completionists"],
+    notFor: ["Players who need modern action combat", "Anyone overwhelmed by old MMO interfaces and currencies", "People expecting every later expansion to be free"],
+    comparableTo: ["World of Warcraft Classic", "EverQuest II", "Dungeons & Dragons Online", "The Elder Scrolls Online"],
+  },
+  "dc-universe-online": {
+    qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "DCUO's interface shows its age, but movement powers, combo combat, and an absurdly deep DC costume box still give it an identity no newer superhero MMO has replaced.", lastVerified: "2026-08-20" },
+    maintenanceCheck: { kind: "manual", url: "https://www.dcuniverseonline.com/news", checkedAt: "2026-08-20", note: "Daybreak continues episodes, events, and maintenance updates in 2026." },
+    longDescription:
+      "DC Universe Online starts with the decision superhero games understand best: who do you want to become? Body type, morality, mentor, power set, weapon, costume, and movement are separate choices. A fire-powered acrobat with a bow feels different from an ice tank who flies, and movement is not merely travel. Superspeed, flight, and acrobatics shape how you cross cities and approach fights.\n\nCombat is more immediate than the hotbar MMOs around it. Mouse or controller combos handle basic attacks while powers, blocks, counters, and movement fill out the rhythm. It can become visually noisy in group content, but the physicality survives: enemies are launched, scenery can be picked up, and a good counter interrupts somebody who thought they had momentum. Episodes draw from a huge range of DC stories rather than staying trapped in one continuity.\n\nThe game carries fifteen years of systems, currencies, and interface decisions. New players will meet upgrade tracks and menus faster than the tutorial can explain them. Monetization includes membership, marketplace items, progression conveniences, and optional content structures that have shifted over time. The free game is substantial enough to establish a character and see the core loop, but this is a live service, not a sealed free campaign.\n\nPlayBound downloads Daybreak's own LaunchPad installer instead of sending you to Steam. LaunchPad then retrieves the current client and handles patches. The official requirements are remarkably low; in practice, a modern system and extra memory make crowded hubs and large fights less rough. What keeps DCUO worth installing is not technical polish. It is the rare pleasure of making an original hero and then sprinting up the side of a Metropolis skyscraper because that is simply how your hero gets around.",
+    whyWePickedIt: "We picked DCUO because no current alternative combines original-character creation, recognizable DC stories, and action-led MMO combat at this scale. It is messy, crowded with legacy systems, and unmistakably itself. Free players can discover whether that identity clicks before spending anything.",
+    thatOneThing: "Choosing a movement power changes the texture of the whole city, not just the speed of your commute.",
+    installSteps: [
+      { platform: "windows", text: "Choose Install in PlayBound to download Daybreak's official DCUO setup program." },
+      { platform: "windows", text: "Run LaunchPad, choose an install folder with at least 30 GB free, and let it download the current client." },
+      { platform: "windows", text: "Create or sign into a Daybreak account, finish patching, then choose your server and create a character." },
+    ],
+    faq: [
+      { q: "Is DC Universe Online free?", a: "Yes. You can create characters and play substantial story and group content free; membership, marketplace items, and convenience purchases remain available." },
+      { q: "Does PlayBound require Steam for DCUO?", a: "No. PlayBound downloads Daybreak's standalone LaunchPad installer." },
+      { q: "Can PC players play with console players?", a: "Cross-play availability depends on platform server groups. Do not assume every console shares the PC population." },
+      { q: "Does DCUO support controllers?", a: "Yes. Its combo combat and movement work well on a controller." },
+      { q: "How much storage does DCUO need?", a: "Daybreak lists 30 GB free. Keep additional room available for launcher staging and future updates." },
+    ],
+    bestFor: ["Players who love superhero character creation", "Controller users who prefer active MMO combat", "DC fans interested in broad comic-book storylines"],
+    notFor: ["Anyone who wants a clean modern interface", "Players allergic to live-service currencies and upgrade systems", "People expecting universal cross-play across every platform"],
+    comparableTo: ["City of Heroes", "Champions Online", "Marvel Heroes", "Neverwinter"],
+  },
   openarena: {
     qualityBar: {
       genuinelyFree: true,
