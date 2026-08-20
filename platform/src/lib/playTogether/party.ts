@@ -56,6 +56,7 @@ import {
   isBaseEditionSlug,
   libraryHasRequiredEdition,
 } from "@/lib/playTogether/editionMatch";
+import { computePartyReadiness } from "@/lib/playTogether/partyReadiness";
 import {
   editionsFromRow,
   primaryEditionFromRow,
@@ -184,18 +185,48 @@ async function attachConfigSync(
   party: PartyPayload,
   viewerUserId?: string
 ): Promise<PartyPayload> {
-  if (!party.gameSlug || party.status === "ended") return party;
+  if (!party.gameSlug || party.status === "ended") {
+    return { ...party, readiness: readinessFor(party, null) };
+  }
   try {
     const result = await checkConfigSync(party.id);
-    if ("error" in result) return party;
+    if ("error" in result) return { ...party, readiness: readinessFor(party, null) };
     const selfPlaying = viewerUserId
       ? Boolean(result.sync.members.find((m) => m.userId === viewerUserId)?.playing)
       : false;
-    return { ...party, configSync: result.sync, selfPlaying };
+    return {
+      ...party,
+      configSync: result.sync,
+      selfPlaying,
+      readiness: readinessFor(party, result.sync),
+    };
   } catch (err) {
     console.warn("attachConfigSync failed", err);
-    return party;
+    return { ...party, readiness: readinessFor(party, null) };
   }
+}
+
+/**
+ * Both clients render this instead of deciding for themselves, which is what
+ * stops the web panel and the launcher panel from disagreeing.
+ */
+function readinessFor(party: PartyPayload, sync: ConfigSyncResult | null) {
+  return computePartyReadiness({
+    gameSlug: party.gameSlug,
+    status: party.status,
+    members: party.members.map((m) => ({ userId: m.userId, ready: m.ready })),
+    sync: sync
+      ? {
+          allInSync: sync.allInSync,
+          members: sync.members.map((m) => ({
+            userId: m.userId,
+            hasGame: m.hasGame,
+            hasEdition: m.hasEdition,
+            missingMods: m.missingMods,
+          })),
+        }
+      : null,
+  });
 }
 
 /* ─── create (4B) ────────────────────────────────────────────────────────── */
@@ -1375,15 +1406,19 @@ export async function checkConfigSync(
     };
   });
 
+  const everyoneInSync = members.every(
+    (m) => m.hasGame && m.hasEdition && m.missingMods.length === 0
+  );
+
   return {
     sync: {
       gameSlug: String(doc.gameSlug),
       editionSlug,
       modSlugs,
       members,
-      allReady: members.every(
-        (m) => m.hasGame && m.hasEdition && m.missingMods.length === 0
-      ),
+      allInSync: everyoneInSync,
+      // Same value, old name — see the deprecation note on ConfigSyncResult.
+      allReady: everyoneInSync,
       referenceSource,
       hostUserId: hostId,
       hostUsername: hostId ? nameById.get(hostId) || "Host" : null,

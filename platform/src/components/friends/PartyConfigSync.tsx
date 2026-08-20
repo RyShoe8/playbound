@@ -56,6 +56,9 @@ export function PartyConfigSync({
   const storeSync = usePartyStore((s) =>
     s.activeParty?.id === partyId ? s.activeParty.configSync : undefined
   );
+  const readiness = usePartyStore((s) =>
+    s.activeParty?.id === partyId ? s.activeParty.readiness : undefined
+  );
   const sync = storeSync ?? null;
   const fetchParties = usePartyStore((s) => s.fetchParties);
 
@@ -66,12 +69,12 @@ export function PartyConfigSync({
 
   // Fast pulse check while party members are syncing or installing
   useEffect(() => {
-    if (sync?.allReady) return;
+    if (sync?.allInSync) return;
     const interval = setInterval(() => {
       void fetchParties();
     }, 1500);
     return () => clearInterval(interval);
-  }, [sync?.allReady, fetchParties]);
+  }, [sync?.allInSync, fetchParties]);
 
   if (!sync) {
     return <div className="h-24 animate-pulse rounded-xl border border-border bg-card p-4" />;
@@ -79,8 +82,15 @@ export function PartyConfigSync({
 
   const isYouHost = Boolean(currentUserId) && sync.hostUserId === currentUserId;
 
-  if (sync.allReady) {
-    const readyText =
+  if (sync.allInSync) {
+    /*
+     * Headline comes from the server so this panel and the launcher's say the
+     * same thing. It deliberately distinguishes "everyone has the files" from
+     * "everyone pressed Ready Up" — rendering the former as "everyone is ready"
+     * is what put a green banner above a member list reading "Not ready".
+     */
+    const headline = readiness?.headline ?? "Everyone has the right version";
+    const matchText =
       sync.referenceSource === "host"
         ? isYouHost
           ? "Every member matches your setup."
@@ -93,8 +103,11 @@ export function PartyConfigSync({
       <div className="flex items-start gap-3 rounded-xl border border-border bg-green-500/10 p-4 text-green-700 dark:text-green-400">
         <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
         <div>
-          <h4 className="text-sm font-bold">Everyone is ready to play</h4>
-          <p className="mt-1 text-xs opacity-90">{readyText}</p>
+          <h4 className="text-sm font-bold">{headline}</h4>
+          <p className="mt-1 text-xs opacity-90">{matchText}</p>
+          {readiness?.phase === "waiting_ready" && (
+            <p className="mt-1 text-xs opacity-90">{readiness.detail}</p>
+          )}
         </div>
       </div>
     );

@@ -3,6 +3,8 @@
  * Discord remains the chat layer; these types never model messaging.
  */
 
+import type { PartyReadiness } from "@/lib/playTogether/partyReadiness";
+
 export const PLAY_INVITE_STATUSES = [
   "pending",
   "accepted",
@@ -110,6 +112,15 @@ export type ConfigSyncResult = {
   editionSlug: string | null;
   modSlugs: string[];
   members: ConfigSyncMember[];
+  /**
+   * Every member has the game, edition and mods.
+   *
+   * Named for what it measures. `allReady` below is the same value under the
+   * old name, kept because shipped launcher builds read it — renaming it on the
+   * wire would make them think nobody is in sync.
+   */
+  allInSync: boolean;
+  /** @deprecated Wire-compatibility alias for `allInSync`. Read `allInSync`. */
   allReady: boolean;
   /**
    * Where the reference config came from.
@@ -163,6 +174,14 @@ export type PartyPayload = {
   };
   /** Present on the caller's live party when GET /api/parties (or GET :id) attaches it. */
   configSync?: ConfigSyncResult | null;
+  /**
+   * The party's overall state, decided server-side.
+   *
+   * Present so the web panel and the launcher panel cannot disagree: the
+   * launcher is a separate JS package that cannot import this logic, so
+   * anything left to the clients gets hand-ported and drifts.
+   */
+  readiness?: PartyReadiness | null;
   /** True when the requesting user is currently in a game (presence `playing`). */
   selfPlaying?: boolean;
   /** Public VPS room for games that cannot host from a home PC. */
