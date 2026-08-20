@@ -8314,7 +8314,6 @@ async function launcherJson(path, { method = "GET", body } = {}) {
 }
 
 ipcMain.handle("get-parties", async () => {
-  void syncAllInstalledGames();
   try {
     return await launcherJson("/api/parties");
   } catch (err) {
