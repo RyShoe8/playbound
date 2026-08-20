@@ -34,7 +34,14 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     const openra = getMultiplayerAdapter("openra");
     expect(openra.adapterType).toBe("managed-server");
     expect(openra.tier).toBe("tier1_improved");
-    expect(openra.client?.launchArguments?.[0]).toContain("Launch.Connect=");
+    /*
+     * Both arguments, not a positional check. OpenRA needs the mod named as
+     * well as the address — a client that omits Game.Mod joins with whatever
+     * it last had open and the server rejects it as an incompatible mod.
+     */
+    const openraArgs = openra.client?.launchArguments ?? [];
+    expect(openraArgs.some((a) => a.includes("Launch.Connect="))).toBe(true);
+    expect(openraArgs.some((a) => a.includes("Game.Mod="))).toBe(true);
 
     const wesnoth = getMultiplayerAdapter("battle-for-wesnoth");
     expect(wesnoth.adapterType).toBe("managed-server");
