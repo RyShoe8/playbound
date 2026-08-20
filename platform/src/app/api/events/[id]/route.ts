@@ -19,12 +19,18 @@ import {
   placeEventDiscordVoice,
   renameEventDiscordVoice,
 } from "@/lib/events/discordEventProvision";
+import {
+  notifyEventCancelled,
+  notifyEventTimeChanged,
+  notifyEventUpdated,
+} from "@/lib/events/notifications";
 import { defaultEndsAt } from "@/lib/events/time";
 import { isEventStatus } from "@/lib/events/types";
 import {
   Tournament,
   TournamentMatch,
   TournamentParticipant,
+  TournamentTeam,
 } from "@/lib/models/Tournament";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -41,8 +47,10 @@ export async function GET(_req: Request, ctx: Ctx) {
     if (!event) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    const session = await getServerSession(authOptions);
+
     if (event.visibility === "unlisted") {
-      const session = await getServerSession(authOptions);
       const isAdmin = session?.user?.role === "admin";
       const isOrg =
         session?.user?.id &&
@@ -58,14 +66,13 @@ export async function GET(_req: Request, ctx: Ctx) {
       }
     }
 
-    const [counts, presence, game, session] = await Promise.all([
+    const [counts, presence, game] = await Promise.all([
       getRsvpCounts(event._id),
       getEventPresenceAggregates({
         eventId: event._id,
         gameSlug: event.gameSlug,
       }),
       event.gameSlug ? getGame(event.gameSlug) : Promise.resolve(null),
-      getServerSession(authOptions),
     ]);
 
     let myRsvp: string | null = null;
@@ -189,6 +196,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
     if (body.cancel) {
       event.status = "cancelled";
       await event.save();
+      // Fire-and-forget: notify all going + maybe RSVPs about cancellation.
+      void notifyEventCancelled({ eventId: id, eventTitle: event.title });
       return NextResponse.json({ success: true, event: serializeEvent(event.toObject()) });
     }
 
@@ -204,6 +213,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
      */
     const previousTitle = event.title;
     const previousGameSlug = event.gameSlug || null;
+    const previousStartsAt = new Date(event.startsAt).toISOString();
+    const previousStatus = event.status;
 
     if (body.title != null) event.title = body.title;
     if (body.description != null) event.description = body.description;
@@ -252,6 +263,25 @@ export async function PATCH(req: Request, ctx: Ctx) {
     }
 
     const counts = await getRsvpCounts(event._id);
+
+    // --- Lifecycle notifications (fire-and-forget) ---
+    const eid = String(event._id);
+    if (event.status === "cancelled" && previousStatus !== "cancelled") {
+      void notifyEventCancelled({ eventId: eid, eventTitle: event.title });
+    }
+    if (body.startsAt && new Date(body.startsAt).toISOString() !== previousStartsAt) {
+      // Reset reminder flags so the new time gets fresh reminders.
+      event.set("remindersSent", { h24: false, h1: false, start: false });
+      await event.save();
+      void notifyEventTimeChanged({ eventId: eid, eventTitle: event.title });
+    }
+    if (
+      (event.gameSlug || null) !== previousGameSlug &&
+      event.status !== "cancelled"
+    ) {
+      void notifyEventUpdated({ eventId: eid, eventTitle: event.title, change: "game" });
+    }
+
     return NextResponse.json({ success: true, event: serializeEvent(event.toObject(), counts) });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -310,9 +340,20 @@ export async function DELETE(req: Request, ctx: Ctx) {
       );
     }
 
+    // Remove tournament sub-documents before the parent docs go,
+    // so we still have the tournament _id to cascade from.
+    const tournament = await Tournament.findOne({ eventId: event._id });
+    if (tournament) {
+      await Promise.all([
+        TournamentParticipant.deleteMany({ tournamentId: tournament._id }),
+        TournamentTeam.deleteMany({ tournamentId: tournament._id }),
+        TournamentMatch.deleteMany({ tournamentId: tournament._id }),
+      ]);
+      await Tournament.deleteOne({ _id: tournament._id });
+    }
+
     await PlatformEvent.findByIdAndDelete(id);
     await EventRsvp.deleteMany({ eventId: event._id });
-    await Tournament.deleteMany({ eventId: event._id });
 
     return NextResponse.json({ success: true, message: "Event removed" });
   } catch (err) {

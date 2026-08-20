@@ -106,7 +106,7 @@ export async function applyStoreHit(opts: {
 
   if (opts.writeOffer && opts.hit.priceCents && opts.hit.priceCents > 0) {
     const offers = offersFromUnknown(game.access?.offers);
-    if (!retailerOnGame(offers, opts.hit.retailer)) {
+    if (!offers.some((o) => o.url === opts.hit.url)) {
       let priceCents = opts.hit.priceCents;
       let listPriceCents = opts.hit.listPriceCents;
       let url = opts.hit.url;
@@ -174,7 +174,7 @@ async function suggest(game: LeanGame, hitList: StoreSearchHit[], store: Commerc
   const retailer = storeSlugToRetailer(store);
   if (!retailer || hitList.length === 0) return;
   await StoreMatchSuggestion.findOneAndUpdate(
-    { gameSlug: game.slug, store, status: "pending" },
+    { gameSlug: game.slug, store },
     {
       $set: {
         gameTitle: game.title,
@@ -215,10 +215,6 @@ export async function matchGameToStores(
       summary.skipped += 1;
       continue;
     }
-    if (retailer && retailerOnGame(offers, retailer)) {
-      summary.skipped += 1;
-      continue;
-    }
 
     let hits: StoreSearchHit[] = [];
     const knownUrl = existingUrl(game, store);
@@ -252,7 +248,15 @@ export async function matchGameToStores(
       hits = await searchStoreCatalog(store, game.aliases[0]);
     }
 
-    const unique = pickUniqueHit(game.title, hits);
+    const existingOfferUrls = new Set(offers.map((o) => o.url));
+    const unattachedHits = hits.filter((h) => !existingOfferUrls.has(h.url));
+
+    if (unattachedHits.length === 0) {
+      summary.skipped += 1;
+      continue;
+    }
+
+    const unique = offers.length === 0 ? pickUniqueHit(game.title, unattachedHits) : null;
     if (unique) {
       const result = await applyStoreHit({
         slug: game.slug,
@@ -266,8 +270,8 @@ export async function matchGameToStores(
       if (!result.wroteOffer && !result.wroteIds) summary.skipped += 1;
       continue;
     }
-    if (hits.length > 0 && retailer) {
-      await suggest(game, hits, store);
+    if (unattachedHits.length > 0 && retailer) {
+      await suggest(game, unattachedHits, store);
       summary.suggested += 1;
       continue;
     }

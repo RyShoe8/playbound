@@ -28,7 +28,6 @@ export async function runEventsCron(now = new Date()): Promise<{
         "registration_open",
         "registration_closed",
         "live",
-        "draft",
       ],
     },
   }).limit(200);
@@ -39,7 +38,7 @@ export async function runEventsCron(now = new Date()): Promise<{
   let discordActions = 0;
 
   for (const event of events) {
-    if (event.status === "draft" || event.status === "cancelled") continue;
+    if (event.status === "cancelled") continue;
 
     const startsAt = new Date(event.startsAt);
     const endsAt = event.endsAt ? new Date(event.endsAt) : defaultEndsAt(startsAt);

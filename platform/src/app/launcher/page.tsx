@@ -269,6 +269,22 @@ export default async function LauncherPage() {
         </p>
       </section>
 
+      <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-2xl border border-primary/30 bg-primary/10 p-6 sm:p-8">
+        <div className="space-y-1">
+          <Badge tone="brand">Open Source & Transparent</Badge>
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">Built on an open, auditable engine</h2>
+          <p className="text-sm text-muted-foreground max-w-xl">
+            Zero background bloatware, no crypto miners, and completely open manifest recipes. Anyone can inspect the code and submit source port recipes.
+          </p>
+        </div>
+        <Link
+          href="/open-platform"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
+        >
+          Explore Open Architecture →
+        </Link>
+      </section>
+
       <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
         <SectionHeader title="Questions worth answering up front" />
         <dl className="grid gap-6 sm:grid-cols-2">

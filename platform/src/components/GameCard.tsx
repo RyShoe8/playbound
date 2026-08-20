@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Download, Loader2, MonitorPlay } from "lucide-react";
+import { Download, Loader2, MonitorPlay, Play } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { launcherInstallUrl } from "@/lib/launcher";
+import { launcherInstallUrl, launcherPlayUrl } from "@/lib/launcher";
 import {
   launcherDownloadUrlForOs,
   launcherOsLabel,
@@ -48,17 +48,20 @@ export function PlayCta({
   game,
   size = "md",
   emphasis = "primary",
+  installed,
 }: {
   game: Game;
   size?: "sm" | "md" | "lg";
   emphasis?: "primary" | "secondary";
+  installed?: boolean;
 }) {
   const { device } = useCompatibilityFilter();
   const { track } = useTelemetry();
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const [os, setOs] = useState<LauncherOs>("windows");
+  const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
   const paid = gameRequiresPurchase(game.access);
-  const installLabel = paid ? "Install" : "Get It Free";
+  const installLabel = isInstalled ? "Play" : paid ? "Install" : "Get It Free";
 
   useEffect(() => {
     setOs(detectLauncherOs());
@@ -110,19 +113,19 @@ export function PlayCta({
 
   const downloadUrl = launcherDownloadUrlForOs(os);
   const osLabel = launcherOsLabel(os);
-  const deepLink = launcherInstallUrl(game.slug);
+  const deepLink = isInstalled ? launcherPlayUrl(game.slug) : launcherInstallUrl(game.slug);
 
   function handleInstall(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    void track("install_clicked", {
+    void track(isInstalled ? "play_clicked" : "install_clicked", {
       gameSlug: game.slug,
       source: "play_cta",
     });
     setStatus("trying");
     openPlayboundDeepLink(deepLink, {
       downloadUrl,
-      autoDownload: true,
+      autoDownload: !isInstalled,
       onResult: (result) => {
         if (result === "download") {
           setStatus("downloaded");
@@ -140,7 +143,7 @@ export function PlayCta({
       onClick={handleInstall}
       disabled={status === "trying"}
       className={className}
-      title={`Install ${game.title} with PlayBound Launcher`}
+      title={isInstalled ? `Play ${game.title}` : `Install ${game.title} with PlayBound Launcher`}
     >
       {status === "trying" ? (
         <>
@@ -151,6 +154,11 @@ export function PlayCta({
         <>
           <Download className={iconClass} />
           Downloading {osLabel}…
+        </>
+      ) : isInstalled ? (
+        <>
+          <Play className={cn(iconClass, "fill-current")} />
+          Play
         </>
       ) : (
         <>

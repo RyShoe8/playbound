@@ -34,6 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/servers`, changeFrequency: "hourly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/connect`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/launcher`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
+    { url: `${SITE_URL}/open-platform`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/developers`, changeFrequency: "monthly", priority: 0.6, lastModified: now },
     { url: `${SITE_URL}/community`, changeFrequency: "weekly", priority: 0.5, lastModified: now },
     { url: `${SITE_URL}/events`, changeFrequency: "weekly", priority: 0.5, lastModified: now },
@@ -43,29 +44,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/terms`, changeFrequency: "yearly", priority: 0.2, lastModified: now },
   ];
 
-  const gameRoutes: MetadataRoute.Sitemap = games.flatMap((g) => [
-    {
-      url: `${SITE_URL}/games/${g.slug}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-      lastModified: g.qualityBar?.lastVerified ? new Date(g.qualityBar.lastVerified) : now,
-    },
-    {
-      url: `${SITE_URL}/games/${g.slug}/install`,
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-      lastModified: now,
-    },
-  ]);
+  const gameRoutes: MetadataRoute.Sitemap = games.map((g) => ({
+    url: `${SITE_URL}/games/${g.slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+    lastModified: g.qualityBar?.lastVerified ? new Date(g.qualityBar.lastVerified) : now,
+  }));
 
-  // Only real editions are indexed. A game whose sole edition is the generated
+  // Only real, active editions are indexed. A game whose sole edition is the generated
   // Official one has no separate page worth listing — it would duplicate the
-  // game page it was derived from. Unlisted and hidden editions are excluded
-  // upstream by listAllPublicEditions().
+  // game page it was derived from. Unlisted, draft, and hidden editions are excluded.
   const knownGameSlugs = new Set(games.map((g) => g.slug));
   const developerSlugsWithGames = new Set(games.map((g) => g.developerSlug));
   const editionRoutes: MetadataRoute.Sitemap = editions
-    .filter((e) => knownGameSlugs.has(e.gameSlug))
+    .filter((e) => knownGameSlugs.has(e.gameSlug) && (e.status === "active" || e.status === "coming_soon"))
     .map((e) => ({
       url: `${SITE_URL}/games/${e.gameSlug}/editions/${e.slug}`,
       changeFrequency: "weekly" as const,

@@ -42,7 +42,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     matchSource: "manual",
     writeOffer: true,
   });
-  await StoreMatchSuggestion.updateOne({ _id: id }, { $set: { status: "accepted" } });
+  const remaining = candidates.filter((c) => c.url !== body.url);
+  if (remaining.length > 0) {
+    await StoreMatchSuggestion.updateOne(
+      { _id: id },
+      { $set: { candidates: remaining, status: "pending" } }
+    );
+  } else {
+    await StoreMatchSuggestion.updateOne(
+      { _id: id },
+      { $set: { status: "accepted", candidates: [] } }
+    );
+  }
   revalidateTag("catalog", { expire: 0 });
   return NextResponse.json({ ok: true });
 }

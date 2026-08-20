@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("playbound", {
   uninstall: (slug, editionSlug) => ipcRenderer.invoke("uninstall", slug, editionSlug || null),
   getInstalled: () => ipcRenderer.invoke("get-installed"),
   getInstalledMods: () => ipcRenderer.invoke("get-installed-mods"),
+  getCloudLibrary: () => ipcRenderer.invoke("get-cloud-library"),
   uninstallMod: (slug) => ipcRenderer.invoke("uninstall-mod", slug),
   createShortcut: (slug) => ipcRenderer.invoke("create-shortcut", slug),
   // Save backups. Local and versioned; see services/SaveData.js.

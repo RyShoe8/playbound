@@ -24,6 +24,7 @@ import {
   detectLauncherOsFromUa,
   launcherDownloadUrlForOs,
 } from "@/lib/launcherDownload";
+import { canAccessTesting } from "@/lib/requestIncludesTesting";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -131,7 +132,8 @@ export default async function LibraryPage() {
     modsByBase[entry.baseGameSlug] = list;
   }
 
-  const allGames = await listGames();
+  const canSeeTesting = canAccessTesting(session?.user);
+  const allGames = await listGames({ includeTesting: canSeeTesting });
   const installableGames = allGames
     .filter(isLauncherInstallable)
     .map((g) => ({ slug: g.slug, title: g.title }))

@@ -90,6 +90,12 @@ export function AdminEventsTable({
               <td className="px-3 py-2">{e.counts?.going ?? 0}</td>
               <td className="px-3 py-2">
                 <div className="flex flex-wrap gap-1.5">
+                  <Link
+                    href={`/admin/events/${e.id}/edit`}
+                    className="rounded-md border border-border px-2 py-1 text-xs font-semibold hover:bg-secondary"
+                  >
+                    Edit
+                  </Link>
                   <button
                     type="button"
                     disabled={busyId === e.id}

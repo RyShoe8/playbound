@@ -48,6 +48,14 @@ export default async function EventsPage() {
     (e) => e.status === "completed" || new Date(e.endsAt).getTime() < now
   );
 
+  // Collect ids of events already shown in a categorized section so the
+  // catch-all "Upcoming" list never duplicates a card.
+  const shownIds = new Set<string>();
+  for (const list of [featured, soon, gameNights, tournaments, scheduledParties]) {
+    for (const e of list) shownIds.add(e.id);
+  }
+  const upcoming = events.filter((e) => !shownIds.has(e.id));
+
   const titles = new Map<string, string>();
   await Promise.all(
     [...new Set(events.map((e) => e.gameSlug).filter(Boolean) as string[])].map(
@@ -109,7 +117,7 @@ export default async function EventsPage() {
           <Section title="Game Nights" items={gameNights} />
           <Section title="Tournaments" items={tournaments} />
           <Section title="Parties" items={scheduledParties} />
-          <Section title="Upcoming" items={events} />
+          <Section title="Upcoming" items={upcoming} />
           <Section title="Past events" items={pastOnly.slice(0, 6)} />
         </>
       )}

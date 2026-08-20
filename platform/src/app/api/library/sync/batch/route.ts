@@ -127,22 +127,31 @@ export async function POST(req: Request) {
     if (body.prune) {
       const keepGames = body.installs.map((i) => i.slug);
       const keepMods = (body.modInstalls || []).map((i) => i.slug);
-      const gameFilter: Record<string, unknown> = {
-        userId: user._id,
-        installed: true,
-        $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
-      };
-      if (keepGames.length) gameFilter.gameSlug = { $nin: keepGames };
-      const gameRes = await LibraryEntry.deleteMany(gameFilter);
-      pruned = gameRes.deletedCount || 0;
+      
+      if (keepGames.length) {
+        // Mark desktop games not in this batch as saved (in account library, but not installed on this specific machine)
+        // rather than deleting them from the user's account library.
+        const uninstalledFilter: Record<string, unknown> = {
+          userId: user._id,
+          installed: true,
+          gameSlug: { $nin: keepGames },
+          $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
+        };
+        const gameRes = await LibraryEntry.updateMany(uninstalledFilter, {
+          $set: { installed: false, saved: true, updatedAt: now },
+        });
+        pruned = gameRes.modifiedCount || 0;
+      }
 
-      const modFilter: Record<string, unknown> = {
-        userId: user._id,
-        installed: true,
-      };
-      if (keepMods.length) modFilter.modSlug = { $nin: keepMods };
-      const modRes = await LibraryModEntry.deleteMany(modFilter);
-      modsPruned = modRes.deletedCount || 0;
+      if (keepMods.length) {
+        const modFilter: Record<string, unknown> = {
+          userId: user._id,
+          installed: true,
+          modSlug: { $nin: keepMods },
+        };
+        const modRes = await LibraryModEntry.deleteMany(modFilter);
+        modsPruned = modRes.deletedCount || 0;
+      }
       if (pruned || modsPruned) revalidateLibraryPages();
     }
 

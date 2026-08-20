@@ -17,6 +17,7 @@ import User from "@/lib/models/User";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import Presence from "@/lib/models/Presence";
+import PartyMessage from "@/lib/models/PartyMessage";
 import { getGame } from "@/lib/catalog";
 import { listEditionsForGame } from "@/lib/editions";
 import {
@@ -1414,7 +1415,35 @@ export async function sweepStaleParties(now = new Date()) {
     if (await cleanupPartyDiscordVoice(doc)) channelsCleaned += 1;
   }
 
-  return { ended, channelsCleaned };
+  // Clean up chat messages older than 24 hours for ended/orphaned parties
+  const { deleted: messagesDeleted } = await sweepOldPartyMessages();
+
+  return { ended, channelsCleaned, messagesDeleted };
+}
+
+/**
+ * Deletes chat messages older than 24 hours for ended parties or orphaned records,
+ * while strictly preserving all messages for active/in-progress parties.
+ */
+export async function sweepOldPartyMessages(olderThanMs = 24 * 60 * 60 * 1000) {
+  await dbConnect();
+  const cutoff = new Date(Date.now() - olderThanMs);
+
+  // 1. Gather all active party IDs to guarantee they are never touched
+  const activeParties = await Party.find({
+    status: { $ne: "ended" },
+  })
+    .select("_id")
+    .lean();
+  const activePartyIds = activeParties.map((p) => p._id);
+
+  // 2. Delete messages created > 24 hours ago that belong to ended parties or deleted parties
+  const res = await PartyMessage.deleteMany({
+    createdAt: { $lt: cutoff },
+    partyId: { $nin: activePartyIds },
+  });
+
+  return { deleted: res.deletedCount || 0 };
 }
 
 /* ─── legacy stubs (backward compat for Phase 3 tests) ───────────────────── */

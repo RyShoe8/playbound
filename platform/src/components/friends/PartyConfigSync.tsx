@@ -57,10 +57,21 @@ export function PartyConfigSync({
     s.activeParty?.id === partyId ? s.activeParty.configSync : undefined
   );
   const sync = storeSync ?? null;
+  const fetchParties = usePartyStore((s) => s.fetchParties);
 
   useEffect(() => {
     telemetry.track("party_config_sync_viewed", { partyId, gameSlug });
-  }, [partyId, gameSlug]);
+    void fetchParties();
+  }, [partyId, gameSlug, editionSlug, fetchParties]);
+
+  // Fast pulse check while party members are syncing or installing
+  useEffect(() => {
+    if (sync?.allReady) return;
+    const interval = setInterval(() => {
+      void fetchParties();
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [sync?.allReady, fetchParties]);
 
   if (!sync) {
     return <div className="h-24 animate-pulse rounded-xl border border-border bg-card p-4" />;

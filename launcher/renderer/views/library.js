@@ -47,18 +47,31 @@ async function renderLibraryView() {
 }
 
 async function renderLibraryList() {
-  const [installed, installedMods, modsCat] = await Promise.all([
+  const [installed, installedMods, modsCat, cloudLib, catalog] = await Promise.all([
     window.playbound.getInstalled(),
     window.playbound.getInstalledMods?.() || Promise.resolve([]),
     window.playbound.getModsCatalog(),
+    window.playbound.getCloudLibrary?.() || Promise.resolve(null),
+    window.playbound.getCatalog?.() || Promise.resolve([]),
   ]);
   const modTitles = new Map((modsCat.mods || []).map((m) => [m.slug, m.title]));
   const list = document.getElementById("library-list");
   if (!list) return;
-  const hasGames = installed && installed.length > 0;
+  const hasLocalGames = installed && installed.length > 0;
   const hasMods = installedMods && installedMods.length > 0;
 
-  if (!hasGames && !hasMods) {
+  const catalogList = Array.isArray(catalog) ? catalog : catalog?.games || [];
+  const catalogBySlug = new Map(catalogList.map((g) => [g.slug, g]));
+
+  const installedSlugs = new Set((installed || []).map((g) => g.slug));
+  const cloudEntries = Array.isArray(cloudLib?.entries) ? cloudLib.entries : [];
+  const otherDeviceSlugs = cloudEntries
+    .filter((e) => !installedSlugs.has(e.gameSlug))
+    .map((e) => e.gameSlug);
+
+  const hasAnyGames = hasLocalGames || hasMods || otherDeviceSlugs.length > 0;
+
+  if (!hasAnyGames) {
     list.innerHTML = `
       <div style="text-align: center; padding: 40px 0; grid-column: 1 / -1;">
         <p class="view-sub">No games yet. Browse the catalog or add one you already installed.</p>
@@ -76,15 +89,36 @@ async function renderLibraryList() {
   }
 
   list.replaceChildren();
-  const installedSlugs = new Set((installed || []).map((g) => g.slug));
 
   for (const game of installed || []) {
     const gameMods = (installedMods || []).filter((m) => m.baseGameSlug === game.slug);
     list.appendChild(buildLibraryGameBlock(game, gameMods, modTitles));
   }
 
+  // Games installed on other devices or saved in account library
+  for (const slug of otherDeviceSlugs) {
+    const catEntry = catalogBySlug.get(slug);
+    const title =
+      catEntry?.title ||
+      slug.replace(/^custom-/, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const cloudGame = {
+      slug,
+      title,
+      blurb: catEntry?.blurb || "",
+      art: catEntry?.art || ["#1e1b4b", "#6366f1"],
+      coverImage: catEntry?.coverImage || null,
+      genres: catEntry?.genres || [],
+      approxSize: catEntry?.approxSize || "",
+      testing: Boolean(catEntry?.testing || catEntry?.status === "testing"),
+    };
+    list.appendChild(buildLibraryGameBlock(cloudGame, [], modTitles, { ownedElsewhere: true }));
+  }
+
   const orphanMods = (installedMods || []).filter(
-    (m) => m.baseGameSlug && !installedSlugs.has(m.baseGameSlug)
+    (m) =>
+      m.baseGameSlug &&
+      !installedSlugs.has(m.baseGameSlug) &&
+      !otherDeviceSlugs.includes(m.baseGameSlug)
   );
   const orphansByBase = new Map();
   for (const mod of orphanMods) {
@@ -413,14 +447,21 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
 
   const subtitle = opts.orphan
     ? "Installed mods only"
-    : game.pending
-      ? game.scanning
-        ? "Scanning for install…"
-        : `Install not found yet — ${selectExecutableLabel().toLowerCase()}`
-      : [game.genres?.[0], game.approxSize].filter(Boolean).join(" · ");
+    : opts.ownedElsewhere
+      ? [game.genres?.[0], `In your Library · Not on this ${isMacOS() ? "Mac" : "PC"}`].filter(Boolean).join(" · ")
+      : game.pending
+        ? game.scanning
+          ? "Scanning for install…"
+          : `Install not found yet — ${selectExecutableLabel().toLowerCase()}`
+        : [game.genres?.[0], game.approxSize].filter(Boolean).join(" · ");
+
+  const isTesting = Boolean(game.testing || game.status === "testing");
+  const testingBadge = isTesting
+    ? `<span class="badge card-testing-badge" style="margin-left: 6px; font-size: 10px; vertical-align: middle;">Testing</span>`
+    : "";
 
   copy.innerHTML = `
-    <div class="library-card-title">${escapeHtml(game.title)}</div>
+    <div class="library-card-title">${escapeHtml(game.title)}${testingBadge}</div>
     <div class="library-card-sub">${escapeHtml(subtitle || "")}</div>
   `;
   head.appendChild(copy);
@@ -435,7 +476,22 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
 
   const actions = document.createElement("div");
   actions.className = "library-card-actions";
-  if (game.pending && !(game.exe || (game.installedEditions || []).some((e) => e.exe))) {
+  if (opts.ownedElsewhere) {
+    const group = document.createElement("div");
+    group.className = "library-action-group";
+
+    const installBtn = document.createElement("button");
+    installBtn.type = "button";
+    installBtn.className = "btn-primary btn-sm btn-lib-install";
+    installBtn.textContent = "Install";
+    installBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      api.openGameDetail(game.slug, "library");
+    });
+    group.appendChild(installBtn);
+    actions.appendChild(group);
+    head.appendChild(actions);
+  } else if (game.pending && !(game.exe || (game.installedEditions || []).some((e) => e.exe))) {
     actions.innerHTML = `
       <button class="btn-primary btn-sm btn-lib-locate" type="button">${selectExecutableLabel()}</button>
       <button class="btn-secondary btn-sm btn-lib-dismiss" type="button">Dismiss</button>

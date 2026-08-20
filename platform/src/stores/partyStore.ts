@@ -62,11 +62,11 @@ interface PartyState {
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let pollSubscribers = 0;
-let pollMs = 15000;
-let requestedPollMs = 15000;
+let pollMs = 5000;
+let requestedPollMs = 5000;
 
-const DEFAULT_PARTY_POLL_MS = 15000;
-const FAST_PARTY_POLL_MS = 2000;
+const DEFAULT_PARTY_POLL_MS = 5000;
+const FAST_PARTY_POLL_MS = 1000;
 
 function viewerIsInGame(party: PartyPayload | null): boolean {
   if (presenceSnapshot().status === "playing") return true;

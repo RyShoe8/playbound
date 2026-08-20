@@ -139,11 +139,11 @@ export function buildLibraryUnionEntries(
     if (!state.remoteOwned) continue;
 
     const game = gamesBySlug.get(slug);
-    if (
-      game &&
-      isCrossPlatformGame(game) &&
-      gameCompatibleWithLibraryPlatform(game, viewerPlatform)
-    ) {
+    const compatible =
+      viewerPlatform === "web" ||
+      (game ? gameCompatibleWithLibraryPlatform(game, viewerPlatform) : false);
+
+    if (compatible) {
       entries.push({
         gameSlug: slug,
         installed: false,

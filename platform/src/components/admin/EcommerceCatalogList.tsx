@@ -97,9 +97,9 @@ export function EcommerceCatalogList({ games }: { games: EcommerceGameRow[] }) {
     <section className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold tracking-tight">Catalog ({filtered.length})</h2>
+          <h2 className="text-lg font-bold tracking-tight">Master Copies ({filtered.length})</h2>
           <p className="text-sm text-muted-foreground">
-            Every game and every purchase source. Display controls which stores appear on the game
+            Master copies and store purchase listings. Display controls which stores appear on the game
             page; Match fills Steam, GOG, Epic, and feed-backed stores.
           </p>
         </div>

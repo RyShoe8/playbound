@@ -634,7 +634,7 @@ const CONNECTED_LIBRARY_MSG = "Signed in. Your installs sync automatically.";
 let authWin = null;
 let lastLibrarySyncAt = 0;
 let librarySyncTimer = null;
-const LIBRARY_SYNC_COOLDOWN_MS = 30_000;
+const LIBRARY_SYNC_COOLDOWN_MS = 2_000;
 const LIBRARY_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 function notifyAccount(payload = {}) {
@@ -985,7 +985,7 @@ async function connectWithToken(token) {
   };
 }
 
-async function syncLibraryNow({ quiet = false } = {}) {
+async function syncLibraryNow({ quiet = false, force = false } = {}) {
   const settings = loadSettings();
   const token = settings.launcherToken;
   if (!token) {
@@ -997,7 +997,7 @@ async function syncLibraryNow({ quiet = false } = {}) {
   }
 
   const now = Date.now();
-  if (quiet && now - lastLibrarySyncAt < LIBRARY_SYNC_COOLDOWN_MS) {
+  if (!force && quiet && now - lastLibrarySyncAt < LIBRARY_SYNC_COOLDOWN_MS) {
     return { connected: true, skippedDueToCooldown: true };
   }
 
@@ -7143,6 +7143,22 @@ ipcMain.handle("uninstall", (_event, slug, editionSlug) =>
 );
 ipcMain.handle("get-installed", () => listInstalledGames());
 ipcMain.handle("get-installed-mods", () => listInstalledMods());
+ipcMain.handle("get-cloud-library", async () => {
+  const settings = loadSettings();
+  const token = settings.launcherToken;
+  if (!token) return { entries: [], connected: false };
+  try {
+    const res = await fetch(`${getApiBase()}/api/library`, {
+      headers: launcherApiHeaders(),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return { entries: [], connected: true };
+    const data = await res.json();
+    return { entries: Array.isArray(data.entries) ? data.entries : [], connected: true };
+  } catch {
+    return { entries: [], connected: true };
+  }
+});
 
 /* ── saves ─────────────────────────────────────────────────── */
 

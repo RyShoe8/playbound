@@ -181,8 +181,8 @@ describe("setOfferDisplayed", () => {
 
   it("hides one source and restamps current from what remains displayed", () => {
     const next = setOfferDisplayed(paid([steam, gog], { currentPriceCents: 349 }), gog.url, false);
-    expect(next?.offers.find((o) => o.retailer === "GOG")?.isActive).toBe(false);
-    expect(next?.offers.find((o) => o.retailer === "Steam")?.isActive).toBe(true);
+    expect(next?.offers?.find((o) => o.retailer === "GOG")?.isActive).toBe(false);
+    expect(next?.offers?.find((o) => o.retailer === "Steam")?.isActive).toBe(true);
     expect(next?.currentPriceCents).toBe(999);
     expect(next?.qualifyingPriceCents).toBe(799);
   });
