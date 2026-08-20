@@ -15,6 +15,14 @@ import { RecaptchaBlockedNote } from "@/components/RecaptchaBlockedNote";
 import { getRecaptchaToken, recaptchaConfigured } from "@/lib/recaptchaClient";
 import { useTelemetry } from "@/lib/telemetry";
 
+function formatAuthError(msg: string | null | undefined): string {
+  if (!msg) return "";
+  if (/ssl|tls|econn|fetch failed|alert internal error|certificate|socket/i.test(msg)) {
+    return "A secure connection error occurred. Please check your internet connection and try again.";
+  }
+  return msg;
+}
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -44,7 +52,7 @@ function LoginForm() {
     });
     setBusy(false);
     if (res?.error) {
-      setError(res.error);
+      setError(formatAuthError(res.error));
     } else {
       void track("login", { method: "credentials" });
       router.push(callbackUrl);
