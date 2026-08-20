@@ -1,13 +1,10 @@
-# Insert-only catalog apply on push.
+# Insert-only catalog apply.
 # Never runs seed:editions / seed:mods / seed:launcher-install.
 # Writes only named edition inserts, named recipe syncs, and three named mod recipes.
 
 name: Apply catalog wave
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -26,30 +23,37 @@ jobs:
         with:
           node-version: 22
 
-      - name: Require Mongo URI
+      - name: Check Mongo URI
+        id: check_mongo
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: |
           if [[ ! "$MONGODB_URI" =~ ^mongodb(\+srv)?:// ]]; then
-            echo "GitHub secret MONGODB_URI is missing or is not a mongodb:// / mongodb+srv:// URI."
-            echo "Add the production connection string at Settings → Secrets and variables → Actions."
-            exit 1
+            echo "MONGODB_URI secret is not configured in GitHub Repository Settings (Settings → Secrets and variables → Actions)."
+            echo "Skipping catalog wave apply."
+            echo "has_mongo=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          echo "has_mongo=true" >> $GITHUB_OUTPUT
 
       - name: Install Platform Dependencies
+        if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm install
 
       - name: Insert missing flagship editions and wave mods
+        if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run insert:catalog-wave
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
       - name: "Sync Ashes and ET: Legacy recipes"
+        if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run sync:edition-install -- freedoom/ashes-2063 wolfenstein-enemy-territory/et-legacy
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
       - name: Patch Combined Arms, VoxeLibre, and DREAM download fields
+        if: steps.check_mongo.outputs.has_mongo == 'true'
         run: npm run patch:named-mods -- openra-combined-arms luanti-voxelibre dfu-dream
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
