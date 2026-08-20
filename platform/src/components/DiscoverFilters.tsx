@@ -391,27 +391,74 @@ export function DiscoverFilters({
         })}
       </div>
 
-      {/* ── 1b. Tags and Features, each collapsed by default ─────────── */}
+      {/* ── 1b. Tags and Features, on the same line, opening into the space below ── */}
       {(allTagsWithCounts.length > 0 || allFeaturesWithCounts.length > 0) && (
         <div className="-mt-2 space-y-2">
-          <ChipSection
-            label="Tags"
-            open={tagsOpen}
-            onToggle={() => setTagsOpen((v) => !v)}
-            items={allTagsWithCounts}
-            selected={selectedTags}
-            onPick={toggleTag}
-            onClear={() => setSelectedTags([])}
-          />
-          <ChipSection
-            label="Features"
-            open={featuresOpen}
-            onToggle={() => setFeaturesOpen((v) => !v)}
-            items={allFeaturesWithCounts}
-            selected={selectedFeatures}
-            onPick={toggleFeature}
-            onClear={() => setSelectedFeatures([])}
-          />
+          <div className="flex items-center gap-4">
+            {allTagsWithCounts.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setTagsOpen((v) => !v)}
+                aria-expanded={tagsOpen}
+                className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <span
+                  className={cn("inline-block transition-transform duration-150", tagsOpen && "rotate-90")}
+                  aria-hidden
+                >
+                  ▸
+                </span>
+                Tags
+                {selectedTags.length > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground tabular-nums">
+                    {selectedTags.length}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {allFeaturesWithCounts.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFeaturesOpen((v) => !v)}
+                aria-expanded={featuresOpen}
+                className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <span
+                  className={cn("inline-block transition-transform duration-150", featuresOpen && "rotate-90")}
+                  aria-hidden
+                >
+                  ▸
+                </span>
+                Features
+                {selectedFeatures.length > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground tabular-nums">
+                    {selectedFeatures.length}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+
+          {tagsOpen && (
+            <ChipGrid
+              items={allTagsWithCounts}
+              selected={selectedTags}
+              onPick={toggleTag}
+              onClear={() => setSelectedTags([])}
+              clearLabel="Clear Tags"
+            />
+          )}
+
+          {featuresOpen && (
+            <ChipGrid
+              items={allFeaturesWithCounts}
+              selected={selectedFeatures}
+              onPick={toggleFeature}
+              onClear={() => setSelectedFeatures([])}
+              clearLabel="Clear Features"
+            />
+          )}
         </div>
       )}
 
@@ -517,96 +564,59 @@ export function DiscoverFilters({
 }
 
 /**
- * One collapsible row of filter chips.
- *
- * Tags and Features are the same interaction over different data, so they share
- * a component rather than being written twice — the second copy is where they
- * would drift apart in spacing, counts or clear behaviour.
- *
- * Chips are sized to be comfortably clickable rather than as small as the text
- * allows: these sit under the genre buttons and get tapped on touch screens,
- * where the previous 12px pill was an awkward target.
+ * Grid of clickable filter chips with counts.
  */
-function ChipSection({
-  label,
-  open,
-  onToggle,
+function ChipGrid({
   items,
   selected,
   onPick,
   onClear,
+  clearLabel = "Clear",
 }: {
-  label: string;
-  open: boolean;
-  onToggle: () => void;
   items: { name: string; count: number }[];
   selected: string[];
   onPick: (name: string) => void;
   onClear: () => void;
+  clearLabel?: string;
 }) {
   if (items.length === 0) return null;
   return (
-    <div>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <span
-          className={cn("inline-block transition-transform duration-150", open && "rotate-90")}
-          aria-hidden
-        >
-          ▸
-        </span>
-        {label}
-        {/* On the closed row, so an active filter cannot be forgotten while hidden. */}
-        {selected.length > 0 && (
-          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground tabular-nums">
-            {selected.length}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="-mx-1 mt-2 flex flex-wrap items-center gap-2 px-1">
-          {items.map(({ name, count }) => {
-            const isSelected = selected.includes(name);
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => onPick(name)}
-                aria-pressed={isSelected}
-                className={cn(
-                  "shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors",
-                  isSelected
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                    : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
-                )}
-              >
-                {name}
-                <span
-                  className={cn(
-                    "ml-2 tabular-nums",
-                    isSelected ? "text-primary-foreground/75" : "text-muted-foreground"
-                  )}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-          {selected.length > 0 && (
-            <button
-              type="button"
-              onClick={onClear}
-              className="shrink-0 rounded-xl px-3 py-2 text-sm font-bold text-primary hover:underline"
+    <div className="-mx-1 flex flex-wrap items-center gap-2 px-1">
+      {items.map(({ name, count }) => {
+        const isSelected = selected.includes(name);
+        return (
+          <button
+            key={name}
+            type="button"
+            onClick={() => onPick(name)}
+            aria-pressed={isSelected}
+            className={cn(
+              "shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors",
+              isSelected
+                ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
+            )}
+          >
+            {name}
+            <span
+              className={cn(
+                "ml-2 tabular-nums",
+                isSelected ? "text-primary-foreground/75" : "text-muted-foreground"
+              )}
             >
-              Clear
-            </button>
-          )}
-        </div>
+              {count}
+            </span>
+          </button>
+        );
+      })}
+      {selected.length > 0 && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="shrink-0 rounded-xl px-3 py-2 text-sm font-bold text-primary hover:underline"
+        >
+          {clearLabel}
+        </button>
       )}
     </div>
   );
