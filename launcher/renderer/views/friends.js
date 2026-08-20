@@ -426,6 +426,7 @@ async function renderFriendsView() {
 
   // Loaded before the first paint so the party window's game picker is
   // populated the moment an existing party renders.
+  if (window.playbound.syncLibraryNow) void window.playbound.syncLibraryNow();
   await ensurePartyGames();
   await api.refreshFriendsData();
   syncFriendsPoll();
@@ -1408,10 +1409,15 @@ function buildPartyConfigSyncHtml(party, userId) {
   if (!sync) {
     return `<div class="party-sync-card party-sync-pending"><p class="party-member-sub">Checking who has the game…</p></div>`;
   }
+  const isYouHost = Boolean(userId) && String(sync.hostUserId) === String(userId);
   if (sync.allReady) {
     const matchLine =
-      sync.referenceSource === "host" && sync.hostUsername
-        ? `Every member matches ${sync.hostUsername}'s setup.`
+      sync.referenceSource === "host"
+        ? isYouHost
+          ? "Every member matches your setup."
+          : sync.hostUsername
+          ? `Every member matches ${sync.hostUsername}'s setup.`
+          : "All members have the required game and editions installed."
         : "All members have the required game and editions installed.";
     return `<div class="party-sync-card party-sync-ready">
       <div>
@@ -1457,10 +1463,13 @@ function buildPartyConfigSyncHtml(party, userId) {
     })
     .join("");
 
-  const intro =
-    hostHasGame && sync.hostUsername
+  const intro = hostHasGame
+    ? isYouHost
+      ? "This party is playing your setup. Anyone who doesn't have it yet can install it from their own party panel."
+      : sync.hostUsername
       ? `This party is playing ${sync.hostUsername}'s setup. Anyone who doesn't have it yet can install it from their own party panel.`
-      : "Some members are missing files this party needs. They won't be able to launch with the party until they install them.";
+      : "Some members are missing files this party needs. They won't be able to launch with the party until they install them."
+    : "Some members are missing files this party needs. They won't be able to launch with the party until they install them.";
 
   return `<div class="party-sync-card party-sync-blocked">
     <div class="party-sync-blocked-head">Not everyone can play yet</div>
@@ -1469,20 +1478,27 @@ function buildPartyConfigSyncHtml(party, userId) {
   </div>`;
 }
 
+let partyChatTimer = null;
+
 function buildPartyChatHtml(party) {
   const hasDiscord = Boolean(party.discord?.textChannelId);
   return `
     <div class="party-chat" id="party-chat">
       <div class="party-chat-header">
-        <h4 class="party-chat-title">Party chat</h4>
-        <span class="party-chat-discord">${hasDiscord ? "Synced with Discord" : "In-App Chat"}</span>
+        <h4 class="party-chat-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Party Chat
+        </h4>
+        <span class="party-chat-badge">${hasDiscord ? "Synced with Discord" : "In-App Chat"}</span>
       </div>
       <div class="party-chat-list" id="party-chat-list" data-party="${escapeHtml(party.id || "")}">
-        <p class="view-sub">No messages yet. Say something to the party.</p>
+        <p class="view-sub party-chat-empty">Loading chat…</p>
       </div>
       <form class="party-chat-form" id="party-chat-form">
-        <input type="text" class="input-text party-chat-input" id="party-chat-input" maxlength="500" placeholder="Message the party…" />
-        <button type="submit" class="party-chat-send" id="party-chat-send" aria-label="Send">${ICON.send}</button>
+        <input type="text" class="party-chat-input" id="party-chat-input" maxlength="500" placeholder="Message the party…" autocomplete="off" />
+        <button type="submit" class="party-chat-send" id="party-chat-send" aria-label="Send">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
       </form>
     </div>
   `;
@@ -1496,22 +1512,35 @@ async function refreshPartyChat(party) {
     const data = await window.playbound.getPartyChat(party.id);
     const messages = Array.isArray(data?.messages) ? data.messages : [];
     if (!messages.length) {
-      if (!list.querySelector(".view-sub")) {
-        list.innerHTML = `<p class="view-sub">No messages yet. Say something to the party.</p>`;
+      if (!list.querySelector(".party-chat-empty")) {
+        list.innerHTML = `<p class="view-sub party-chat-empty">No messages yet. Say something to the party.</p>`;
       }
       return;
     }
-    list.innerHTML = messages
-      .map(
-        (m) =>
-          `<div class="party-member-sub"><strong>${escapeHtml(m.username || "Player")}</strong>: ${escapeHtml(
-            m.content || ""
-          )}</div>`
-      )
+    const html = messages
+      .map((m) => {
+        const time = m.createdAt
+          ? new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "";
+        return `
+          <div class="party-chat-msg">
+            <div class="party-chat-meta">
+              <span class="party-chat-author">${escapeHtml(m.username || "Player")}</span>
+              <span class="party-chat-time">${escapeHtml(time)}</span>
+            </div>
+            <div class="party-chat-content">${escapeHtml(m.content || "")}</div>
+          </div>
+        `;
+      })
       .join("");
-    list.scrollTop = list.scrollHeight;
-  } catch {
-    /* ignore */
+    
+    if (list.dataset.msgCount !== String(messages.length)) {
+      list.dataset.msgCount = String(messages.length);
+      list.innerHTML = html;
+      list.scrollTop = list.scrollHeight;
+    }
+  } catch (err) {
+    console.warn("refreshPartyChat error:", err);
   }
 }
 
@@ -1787,6 +1816,10 @@ function wirePartyView(slot, party) {
   const leaveBtn = slot.querySelector("#btn-party-leave");
   if (leaveBtn) {
     leaveBtn.addEventListener("click", async () => {
+      if (partyChatTimer) {
+        clearInterval(partyChatTimer);
+        partyChatTimer = null;
+      }
       leaveBtn.disabled = true;
       const isLeader = String(party.leaderId) === String(currentUserId(party));
       const alone = (party.members || []).length === 1;
@@ -1805,16 +1838,64 @@ function wirePartyView(slot, party) {
     });
   }
 
+  // Active polling timer for party chat
+  if (partyChatTimer) {
+    clearInterval(partyChatTimer);
+    partyChatTimer = null;
+  }
+  if (party?.id) {
+    void refreshPartyChat(party);
+    partyChatTimer = setInterval(() => {
+      const list = document.getElementById("party-chat-list");
+      if (!list || list.dataset.party !== String(party.id)) {
+        if (partyChatTimer) clearInterval(partyChatTimer);
+        partyChatTimer = null;
+        return;
+      }
+      void refreshPartyChat(party);
+    }, 2500);
+  }
+
   const chatForm = slot.querySelector("#party-chat-form");
   if (chatForm) {
+    const input = slot.querySelector("#party-chat-input");
+    if (input) {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          chatForm.requestSubmit();
+        }
+      });
+    }
+
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const input = slot.querySelector("#party-chat-input");
       const content = String(input?.value || "").trim();
       if (!content || !window.playbound.sendPartyChat) return;
-      input.value = "";
-      const res = await window.playbound.sendPartyChat(partyId, content);
+      if (input) input.value = "";
+
+      const list = slot.querySelector("#party-chat-list");
+      if (list) {
+        const empty = list.querySelector(".party-chat-empty");
+        if (empty) empty.remove();
+        const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const div = document.createElement("div");
+        div.className = "party-chat-msg";
+        div.innerHTML = `
+          <div class="party-chat-meta">
+            <span class="party-chat-author">You</span>
+            <span class="party-chat-time">${escapeHtml(time)}</span>
+          </div>
+          <div class="party-chat-content">${escapeHtml(content)}</div>
+        `;
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+      }
+
+      const activeId = String(party?.id || party?._id || partyId || "");
+      const res = await window.playbound.sendPartyChat(activeId, content);
       if (res?.error) {
+        console.warn("sendPartyChat error:", res.error);
         setStatus(res.error, true);
         return;
       }
@@ -1952,12 +2033,17 @@ async function launchPartyGame(party) {
 
   try {
     setStatus("Checking Java / launching…");
-    await window.playbound.play(slug, null, party.editionSlug || null);
+    const edition = party.editionSlug || party.installedEditionSlug || null;
+    await window.playbound.play(slug, null, edition);
     startGameSession(slug, party.gameTitle || slug);
     setStatus(`Launched ${party.gameTitle || slug}`);
-  } catch {
-    // Not installed yet — the game page is where installing happens.
-    api.navigateTo("gameDetail", { slug });
+  } catch (err) {
+    const msg = err?.message || String(err || "Launch failed");
+    console.warn("launchPartyGame failed:", msg);
+    setStatus(msg, true);
+    if (/not installed/i.test(msg)) {
+      api.navigateTo("gameDetail", { slug });
+    }
   }
 }
 

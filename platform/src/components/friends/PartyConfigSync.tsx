@@ -77,24 +77,30 @@ export function PartyConfigSync({
     return <div className="h-24 animate-pulse rounded-xl border border-border bg-card p-4" />;
   }
 
+  const isYouHost = Boolean(currentUserId) && sync.hostUserId === currentUserId;
+
   if (sync.allReady) {
+    const readyText =
+      sync.referenceSource === "host"
+        ? isYouHost
+          ? "Every member matches your setup."
+          : sync.hostUsername
+          ? `Every member matches ${sync.hostUsername}'s setup.`
+          : "All members have the required game and editions installed."
+        : "All members have the required game and editions installed.";
+
     return (
       <div className="flex items-start gap-3 rounded-xl border border-border bg-green-500/10 p-4 text-green-700 dark:text-green-400">
         <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
         <div>
           <h4 className="text-sm font-bold">Everyone is ready to play</h4>
-          <p className="mt-1 text-xs opacity-90">
-            {sync.referenceSource === "host" && sync.hostUsername
-              ? `Every member matches ${sync.hostUsername}'s setup.`
-              : "All members have the required game and editions installed."}
-          </p>
+          <p className="mt-1 text-xs opacity-90">{readyText}</p>
         </div>
       </div>
     );
   }
 
   const hostMember = sync.members.find((m) => m.isHost);
-  const viewerIsHost = Boolean(currentUserId) && sync.hostUserId === currentUserId;
   const hostHasGame =
     Boolean(hostMember?.hasGame) || sync.referenceSource === "host";
 
@@ -118,11 +124,23 @@ export function PartyConfigSync({
 
       <div className="p-4">
         <p className="mb-4 text-sm text-muted-foreground">
-          {hostHasGame && sync.hostUsername ? (
-            <>
-              This party is playing {sync.hostUsername}&apos;s setup. Anyone who doesn&apos;t
-              have it yet can install it from their own party panel.
-            </>
+          {hostHasGame ? (
+            isYouHost ? (
+              <>
+                This party is playing your setup. Anyone who doesn&apos;t have it yet can
+                install it from their own party panel.
+              </>
+            ) : sync.hostUsername ? (
+              <>
+                This party is playing {sync.hostUsername}&apos;s setup. Anyone who doesn&apos;t
+                have it yet can install it from their own party panel.
+              </>
+            ) : (
+              <>
+                Some members are missing files this party needs. They won&apos;t be able to
+                launch with the party until they install them.
+              </>
+            )
           ) : (
             <>
               Some members are missing files this party needs. They won&apos;t be able to

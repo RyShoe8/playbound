@@ -104,28 +104,22 @@ export function PartyChat({
           onClick={() => setPromptOpen(true)}
           className="text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
-          Opens in Discord too
+          {textChannelId ? "Synced with Discord" : "In-App Chat"}
         </button>
       </div>
 
-      {!textChannelId ? (
-        <p className="px-3 py-4 text-sm text-muted-foreground">
-          Chat starts when the host launches voice. Messages here are the same Discord channel.
-        </p>
-      ) : (
-        <div ref={scroller} className="max-h-56 space-y-2 overflow-y-auto px-3 py-3">
-          {messages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No messages yet. Say something.</p>
-          ) : (
-            messages.map((m) => (
-              <div key={m.id} className="text-sm">
-                <span className="font-semibold">{m.username}</span>
-                <span className="ml-2 text-muted-foreground">{m.content}</span>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      <div ref={scroller} className="max-h-56 space-y-2 overflow-y-auto px-3 py-3">
+        {messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No messages yet. Say something to the party.</p>
+        ) : (
+          messages.map((m) => (
+            <div key={m.id} className="text-sm">
+              <span className="font-semibold text-primary">{m.username}:</span>
+              <span className="ml-2 text-foreground">{m.content}</span>
+            </div>
+          ))
+        )}
+      </div>
 
       <form
         className="flex items-center gap-2 border-t border-border p-2"

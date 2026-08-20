@@ -31,6 +31,13 @@ export function PartyHostInstallPicker({
   const [editions, setEditions] = useState<EditionOption[] | null>(null);
   const [hostHasGame, setHostHasGame] = useState<boolean | null>(null);
 
+  const storeSync = usePartyStore((s) =>
+    s.activeParty?.id === partyId ? s.activeParty.configSync : undefined
+  );
+  const storeHostMember = storeSync?.members?.find((m) => m.isHost);
+  const storeHostHasGame =
+    Boolean(storeHostMember?.hasGame) || Boolean(storeSync?.allReady) || storeSync?.referenceSource === "host";
+
   useEffect(() => {
     let cancelled = false;
     async function loadEditions() {
@@ -73,21 +80,25 @@ export function PartyHostInstallPicker({
         const host = (data.sync?.members || []).find(
           (m: { isHost?: boolean }) => m.isHost
         );
-        setHostHasGame(Boolean(host?.hasGame) || data.sync?.referenceSource === "host");
+        setHostHasGame(
+          Boolean(host?.hasGame) ||
+            Boolean(data.sync?.allReady) ||
+            data.sync?.referenceSource === "host"
+        );
       } catch (err) {
         console.error("Failed to check host install for party picker", err);
       }
     }
     setHostHasGame(null);
     void check();
-    const timer = setInterval(() => void check(), 8000);
+    const timer = setInterval(() => void check(), 4000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
   }, [partyId, gameSlug, editionSlug]);
 
-  if (hostHasGame) return null;
+  if (storeHostHasGame || hostHasGame) return null;
 
   if (editions === null) {
     return <div className="mt-2 h-16 max-w-md animate-pulse rounded-lg border border-border bg-secondary/40" />;
