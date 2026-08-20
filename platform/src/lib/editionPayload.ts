@@ -21,6 +21,28 @@ const optionalUrl = z
     message: "Must be a full http:// or https:// URL",
   });
 
+/**
+ * Artwork, which may be ours rather than somebody else's.
+ *
+ * Images are routinely served from `public/` — the HoloCure PlayBound edition
+ * ships `/games/holocure/editions/playbound.jpg` — and requiring an absolute
+ * URL rejected those outright, so an edition with perfectly good local artwork
+ * could not be saved at all. The game schema has always accepted a bare path
+ * here; only editions were stricter, and only editions broke.
+ *
+ * Still refuses anything that is neither: a value like `kay-yu.itch.io/x`
+ * renders as a broken relative link rather than going where it meant to.
+ */
+const optionalMediaUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .default("")
+  .refine((v) => v === "" || /^https?:\/\/\S+$/.test(v) || /^\/[^/\s]\S*$/.test(v), {
+    message: "Must be a full http:// or https:// URL, or a site path like /games/…",
+  });
+
 const installStepSchema = z.object({
   platform: z.enum(["all", "windows", "macos", "linux"]).default("all"),
   text: z.string().trim().min(1).max(500),
@@ -116,8 +138,8 @@ export const editionPayloadSchema = z
 
     branding: z
       .object({
-        logo: optionalUrl,
-        heroImage: optionalUrl,
+        logo: optionalMediaUrl,
+        heroImage: optionalMediaUrl,
         screenshots: z.array(z.string().trim().max(500)).max(30).default([]),
         videos: z.array(z.string().trim().max(500)).max(20).default([]),
         artHue: z.number().int().min(0).max(360).optional(),

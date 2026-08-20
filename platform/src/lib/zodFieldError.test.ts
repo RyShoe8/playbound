@@ -97,3 +97,69 @@ describe("the real edition payload", () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe("edition artwork paths", () => {
+  const base = {
+    gameSlug: "holocure",
+    slug: "playbound",
+    name: "HoloCure: Multiplayer",
+    type: "community",
+    status: "active",
+    visibility: "public",
+    installMethod: "playbound_installer",
+    // Required by the schema when this method is selected; without it the
+    // save fails on installConfig and never reaches the branding check.
+    installConfig: {
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/games/holocure/HoloCure.zip",
+      },
+    },
+  };
+
+  it("accepts artwork served from public/", () => {
+    /*
+     * The reported failure. This exact path ships with the HoloCure PlayBound
+     * edition and the file really is at public/games/holocure/editions/, so
+     * demanding an absolute URL made the edition unsaveable.
+     */
+    const result = editionPayloadSchema.safeParse({
+      ...base,
+      branding: { heroImage: "/games/holocure/editions/playbound.jpg" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("still accepts an absolute URL", () => {
+    const result = editionPayloadSchema.safeParse({
+      ...base,
+      branding: { heroImage: "https://example.com/a.jpg" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("still rejects a bare domain", () => {
+    // Would render as a broken relative link rather than going anywhere.
+    expect(
+      errorFor(editionPayloadSchema, {
+        ...base,
+        branding: { heroImage: "kay-yu.itch.io/holocure.jpg" },
+      })
+    ).toContain("branding.heroImage");
+  });
+
+  it("still rejects a protocol-relative URL", () => {
+    expect(
+      errorFor(editionPayloadSchema, {
+        ...base,
+        branding: { heroImage: "//cdn.example.com/a.jpg" },
+      })
+    ).toContain("branding.heroImage");
+  });
+
+  it("keeps links absolute — a site path is not a website", () => {
+    expect(
+      errorFor(editionPayloadSchema, { ...base, links: { website: "/somewhere" } })
+    ).toContain("links.website");
+  });
+});
