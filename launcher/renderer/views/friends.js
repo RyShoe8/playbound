@@ -1160,6 +1160,16 @@ async function ensurePartyGames() {
     : await window.playbound.getCatalog().catch(() => []);
   const games = (Array.isArray(catalog) ? catalog : catalog?.games || []).filter((g) => g?.slug);
   partyGamesCache = games
+    /*
+     * Multiplayer only. The picker listed the whole catalog, so a leader could
+     * set a party to a singleplayer game — which then could never launch as a
+     * party. Uses the catalog's own flag, the same one the Games view filters
+     * on, rather than a second opinion about what counts as multiplayer.
+     *
+     * A party already pointing at something excluded here stays selectable:
+     * partyGameOptionsHtml appends the current slug when the list lacks it.
+     */
+    .filter((g) => g.isMultiplayer ?? g.multiplayer ?? false)
     .map((g) => ({ slug: g.slug, title: g.title || g.slug, kind: g.kind, url: g.url }))
     .sort((a, b) => a.title.localeCompare(b.title));
   return partyGamesCache;

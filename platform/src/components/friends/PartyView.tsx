@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Users, Crown, LogOut, Check, X, Phone, Play, HardDriveDownload } from "lucide-react";
@@ -15,6 +15,7 @@ import {
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
+import { isMultiplayerGame } from "@/lib/launcherInstall";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
@@ -36,6 +37,8 @@ export type PartyGameOption = {
   website?: string;
   launchMethods?: LaunchMethod[];
   browserPlayable?: boolean;
+  /** Only used to decide whether the game belongs in a party at all. */
+  features?: string[];
 };
 
 export function PartyView({
@@ -77,6 +80,20 @@ export function PartyView({
     party.status !== "ended" &&
     (isReady || party.status === "playing" || party.status === "launching");
   const catalogGame = games.find((g) => g.slug === party.gameSlug);
+  /*
+   * Only games a party could actually play together.
+   *
+   * The picker listed the whole catalog, so choosing a singleplayer game was
+   * possible and produced a party that could never launch as one.
+   *
+   * Uses launcherInstall's predicate — the one the catalog's own isMultiplayer
+   * flag is built from, and what the launcher filters on — so both pickers show
+   * the same games. playTogether/multiplayer.ts has a second, text-only rule
+   * that returns 16 of 61 where this returns 49: it misses OpenRA, Xonotic and
+   * OpenArena, whose tags never say "multiplayer" but which have server
+   * browsers.
+   */
+  const partyGames = useMemo(() => games.filter((g) => isMultiplayerGame(g)), [games]);
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
   const joinUrl = hostedReady
@@ -171,12 +188,18 @@ export function PartyView({
                   }}
                 >
                   <option value="">Select a game</option>
-                  {games.map((g) => (
+                  {partyGames.map((g) => (
                     <option key={g.slug} value={g.slug}>
                       {g.title}
                     </option>
                   ))}
-                  {party.gameSlug && !games.some((g) => g.slug === party.gameSlug) ? (
+                  {/*
+                    Keeps whatever is already selected visible, including a game
+                    the filter now excludes. A party set to a singleplayer title
+                    before this filter existed would otherwise render a blank
+                    selector and look broken rather than merely out of date.
+                  */}
+                  {party.gameSlug && !partyGames.some((g) => g.slug === party.gameSlug) ? (
                     <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
                   ) : null}
                 </PremiumSelect>
