@@ -667,8 +667,52 @@ function persistLauncherToken(token, { notify = true } = {}) {
   return { connected: Boolean(settings.launcherToken) };
 }
 
+/**
+ * One library sync at a time.
+ *
+ * Party create/join/update each await this so the party comes back describing
+ * a current library. Without a guard, a join that is retried — or a user
+ * clicking twice — starts a second full sync while the first is still running,
+ * and each new attempt adds another. That is the "constantly syncing installs"
+ * that never settles: the work is not idempotent in flight, only in outcome.
+ *
+ * Callers share the in-flight promise instead, so N requests cost one sync.
+ */
+let inFlightLibrarySync = null;
+
+function syncAllInstalledGames() {
+  if (inFlightLibrarySync) return inFlightLibrarySync;
+  inFlightLibrarySync = runLibrarySync().finally(() => {
+    inFlightLibrarySync = null;
+  });
+  return inFlightLibrarySync;
+}
+
+/**
+ * Wait for a sync, but never longer than the player will tolerate.
+ *
+ * Joining a party must not depend on the library sync finishing. The sync only
+ * sharpens the config-sync the server returns; the server recomputes it on
+ * every read and the launcher polls, so a late sync corrects itself within
+ * seconds. Blocking the join on it turned a slow network into a join that
+ * never happened.
+ */
+const PARTY_SYNC_WAIT_MS = 4000;
+
+async function syncInstallsBeforeParty() {
+  try {
+    await Promise.race([
+      syncAllInstalledGames(),
+      new Promise((resolve) => setTimeout(resolve, PARTY_SYNC_WAIT_MS)),
+    ]);
+  } catch (err) {
+    // Never blocks the party action — it is an optimisation, not a step.
+    console.warn("library sync before party action failed:", err?.message || err);
+  }
+}
+
 /** Sync every game + mod in installed.json to the library. */
-async function syncAllInstalledGames() {
+async function runLibrarySync() {
   const settings = loadSettings();
   const token = settings.launcherToken;
   if (!token) return { synced: 0, skipped: [], error: null };
@@ -714,7 +758,7 @@ async function syncAllInstalledGames() {
   }
 
   try {
-    const res = await fetch(`${getApiBase()}/api/library/sync/batch`, {
+    const res = await apiFetch(`${getApiBase()}/api/library/sync/batch`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -732,7 +776,7 @@ async function syncAllInstalledGames() {
       const skipped = [];
       for (const item of installs) {
         try {
-          const one = await fetch(`${getApiBase()}/api/library/sync`, {
+          const one = await apiFetch(`${getApiBase()}/api/library/sync`, {
             method: "POST",
             headers: {
               "content-type": "application/json",
@@ -756,7 +800,7 @@ async function syncAllInstalledGames() {
       }
       for (const item of modInstalls) {
         try {
-          const one = await fetch(`${getApiBase()}/api/library/sync`, {
+          const one = await apiFetch(`${getApiBase()}/api/library/sync`, {
             method: "POST",
             headers: {
               "content-type": "application/json",
@@ -8332,7 +8376,7 @@ ipcMain.handle("get-parties", async () => {
  * soft-fails internally, so waiting cannot block party creation.
  */
 ipcMain.handle("create-party", async (_event, opts = {}) => {
-  await syncAllInstalledGames();
+  await syncInstallsBeforeParty();
   try {
     return await launcherJson("/api/parties", { method: "POST", body: opts });
   } catch (err) {
@@ -8341,7 +8385,7 @@ ipcMain.handle("create-party", async (_event, opts = {}) => {
 });
 
 ipcMain.handle("join-party", async (_event, partyId, password) => {
-  await syncAllInstalledGames();
+  await syncInstallsBeforeParty();
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/join`, {
       method: "POST",
@@ -8379,7 +8423,7 @@ ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
 ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
   // Awaited for the same reason as create/join: the PATCH response carries a
   // freshly computed configSync, and picking a game is exactly when it matters.
-  await syncAllInstalledGames();
+  await syncInstallsBeforeParty();
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, {
       method: "PATCH",
