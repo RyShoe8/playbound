@@ -51,60 +51,80 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing email or password");
         }
 
-        // Rate-limits credential stuffing. Checked before the database lookup
-        // and the bcrypt compare, so a scripted attack cannot use this endpoint
-        // to burn CPU either.
-        const captcha = await verifyRecaptcha(credentials.recaptchaToken, "login");
-        if (!captcha.ok) {
-          console.warn(`[login] reCAPTCHA rejected: ${captcha.reason}`);
-          throw new Error(recaptchaErrorMessage(captcha.reason));
+        try {
+          // Rate-limits credential stuffing. Checked before the database lookup
+          // and the bcrypt compare, so a scripted attack cannot use this endpoint
+          // to burn CPU either.
+          const captcha = await verifyRecaptcha(credentials.recaptchaToken, "login");
+          if (!captcha.ok) {
+            console.warn(`[login] reCAPTCHA rejected: ${captcha.reason}`);
+            throw new Error(recaptchaErrorMessage(captcha.reason));
+          }
+
+          await dbConnect();
+
+          const user = await User.findOne({ email: credentials.email.toLowerCase() }).select("+password");
+
+          if (!user) {
+            throw new Error("Invalid email or password");
+          }
+
+          // Account exists but was created through Google, so there is nothing to
+          // compare against. Point them at the right button instead of the
+          // generic failure, which would otherwise be a dead end.
+          if (!user.password) {
+            const providers: string[] = user.authProviders ?? [];
+            throw new Error(
+              providers.includes("google")
+                ? "This account uses Google sign-in. Use the Sign in with Google button above."
+                : "Invalid email or password"
+            );
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          if (!isPasswordValid) {
+            throw new Error("Invalid email or password");
+          }
+
+          if (user.disabled) {
+            throw new Error("This account has been disabled. Contact support if you think this is a mistake.");
+          }
+
+          if (!user.emailVerified) {
+            throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+          }
+
+          if (isFounderAdminEmail(user.email) && user.role !== "admin") {
+            user.role = "admin";
+            await user.save();
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.username,
+            role: user.role,
+            tester: Boolean(user.tester),
+          };
+        } catch (err) {
+          const raw = err instanceof Error ? err.message : String(err);
+          const knownUserErrors = [
+            "Missing email or password",
+            "Invalid email or password",
+            "This account uses Google sign-in",
+            "This account has been disabled",
+            "Please verify your email",
+            "That took a little too long",
+            "Couldn't complete the bot check",
+            "Bot protection is temporarily unavailable",
+            "We couldn't verify this request",
+          ];
+          if (knownUserErrors.some((prefix) => raw.includes(prefix))) {
+            throw err;
+          }
+          console.error("[login] unexpected error in authorize:", err);
+          throw new Error("A connection error occurred while signing in. Please try again shortly.");
         }
-
-        await dbConnect();
-
-        const user = await User.findOne({ email: credentials.email.toLowerCase() }).select("+password");
-
-        if (!user) {
-          throw new Error("Invalid email or password");
-        }
-
-        // Account exists but was created through Google, so there is nothing to
-        // compare against. Point them at the right button instead of the
-        // generic failure, which would otherwise be a dead end.
-        if (!user.password) {
-          const providers: string[] = user.authProviders ?? [];
-          throw new Error(
-            providers.includes("google")
-              ? "This account uses Google sign-in. Use the Sign in with Google button above."
-              : "Invalid email or password"
-          );
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isPasswordValid) {
-          throw new Error("Invalid email or password");
-        }
-
-        if (user.disabled) {
-          throw new Error("This account has been disabled. Contact support if you think this is a mistake.");
-        }
-
-        if (!user.emailVerified) {
-          throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
-        }
-
-        if (isFounderAdminEmail(user.email) && user.role !== "admin") {
-          user.role = "admin";
-          await user.save();
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.username,
-          role: user.role,
-          tester: Boolean(user.tester),
-        };
       },
     }),
   ],

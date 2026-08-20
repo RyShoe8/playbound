@@ -8313,10 +8313,6 @@ async function launcherJson(path, { method = "GET", body } = {}) {
   return data;
 }
 
-ipcMain.handle("sync-library-now", async () => {
-  return await syncAllInstalledGames();
-});
-
 ipcMain.handle("get-parties", async () => {
   void syncAllInstalledGames();
   try {
