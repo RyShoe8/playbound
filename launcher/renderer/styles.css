@@ -951,6 +951,89 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Tags beneath the genre pills — closed by default, opened on demand. */
+.games-tag-section {
+  margin-top: 8px;
+}
+.games-tag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.games-tag-toggle:hover {
+  color: var(--text-main);
+}
+.games-tag-caret {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.games-tag-caret.open {
+  transform: rotate(90deg);
+}
+/* Sits on the toggle so an active filter stays visible while collapsed. */
+.games-tag-badge {
+  margin-left: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent, #7c5cf0);
+  color: #fff;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.games-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.games-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.games-tag-chip:hover {
+  border-color: var(--border-focus);
+  color: var(--text-main);
+}
+.games-tag-chip.selected {
+  border-color: var(--accent, #7c5cf0);
+  background: var(--accent, #7c5cf0);
+  color: #fff;
+}
+.games-tag-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+.games-tag-clear {
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  color: var(--accent, #7c5cf0);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.games-tag-clear:hover {
+  text-decoration: underline;
+}
+
 .games-filter-card {
   margin-top: 16px;
   display: flex;
