@@ -1410,7 +1410,18 @@ function buildPartyConfigSyncHtml(party, userId) {
     return `<div class="party-sync-card party-sync-pending"><p class="party-member-sub">Checking who has the game…</p></div>`;
   }
   const isYouHost = Boolean(userId) && String(sync.hostUserId) === String(userId);
-  if (sync.allReady) {
+  const readiness = party.readiness || null;
+  // `allInSync` is the current name; `allReady` is the wire-compatible alias a
+  // server older than this build still sends.
+  const inSync = sync.allInSync !== undefined ? sync.allInSync : sync.allReady;
+  if (inSync) {
+    /*
+     * Headline is the server's, so this card and the website's cannot disagree
+     * — the two panels are separately written and had already drifted. It also
+     * keeps "everyone has the files" distinct from "everyone pressed Ready Up",
+     * which is what made this card contradict the member list above it.
+     */
+    const headline = readiness?.headline || "Everyone has the right version";
     const matchLine =
       sync.referenceSource === "host"
         ? isYouHost
@@ -1419,10 +1430,15 @@ function buildPartyConfigSyncHtml(party, userId) {
           ? `Every member matches ${sync.hostUsername}'s setup.`
           : "All members have the required game and editions installed."
         : "All members have the required game and editions installed.";
+    const waiting =
+      readiness && readiness.phase === "waiting_ready"
+        ? `<p class="party-member-sub">${escapeHtml(readiness.detail)}</p>`
+        : "";
     return `<div class="party-sync-card party-sync-ready">
       <div>
-        <h4 class="party-sync-title">Everyone is ready to play</h4>
+        <h4 class="party-sync-title">${escapeHtml(headline)}</h4>
         <p class="party-member-sub">${escapeHtml(matchLine)}</p>
+        ${waiting}
       </div>
     </div>`;
   }
@@ -1614,7 +1630,9 @@ function partyAreaSignature(active, discoverable) {
       discord: active.discord || null,
       configSync: active.configSync
         ? [
-            active.configSync.allReady,
+            active.configSync.allInSync !== undefined
+              ? active.configSync.allInSync
+              : active.configSync.allReady,
             (active.configSync.members || []).map((m) => [
               m.userId,
               m.hasGame,
@@ -1623,6 +1641,9 @@ function partyAreaSignature(active, discoverable) {
             ]),
           ]
         : null,
+      // The card renders the server's headline, so a phase change has to repaint
+      // it even when the member and sync fields above are unchanged.
+      readiness: active.readiness ? [active.readiness.phase, active.readiness.headline] : null,
     },
     discoverable.map((p) => [p.id, p.status, p.members?.length, p.name, p.gameSlug]),
   ]);

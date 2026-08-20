@@ -8322,8 +8322,17 @@ ipcMain.handle("get-parties", async () => {
   }
 });
 
+/*
+ * Awaited, not fired off.
+ *
+ * The party response carries `configSync`, which the server computes from the
+ * library at request time. Starting the sync and posting in the same tick
+ * raced it — the party came back describing a library that had not been
+ * updated yet, so members were told they lacked a game already on disk. It
+ * soft-fails internally, so waiting cannot block party creation.
+ */
 ipcMain.handle("create-party", async (_event, opts = {}) => {
-  void syncAllInstalledGames();
+  await syncAllInstalledGames();
   try {
     return await launcherJson("/api/parties", { method: "POST", body: opts });
   } catch (err) {
@@ -8332,7 +8341,7 @@ ipcMain.handle("create-party", async (_event, opts = {}) => {
 });
 
 ipcMain.handle("join-party", async (_event, partyId, password) => {
-  void syncAllInstalledGames();
+  await syncAllInstalledGames();
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/join`, {
       method: "POST",
@@ -8368,7 +8377,9 @@ ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
  * its party panel could not show the same controls as the site.
  */
 ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
-  void syncAllInstalledGames();
+  // Awaited for the same reason as create/join: the PATCH response carries a
+  // freshly computed configSync, and picking a game is exactly when it matters.
+  await syncAllInstalledGames();
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, {
       method: "PATCH",

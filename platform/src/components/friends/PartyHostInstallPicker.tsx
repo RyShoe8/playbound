@@ -36,7 +36,7 @@ export function PartyHostInstallPicker({
   );
   const storeHostMember = storeSync?.members?.find((m) => m.isHost);
   const storeHostHasGame =
-    Boolean(storeHostMember?.hasGame) || Boolean(storeSync?.allReady) || storeSync?.referenceSource === "host";
+    Boolean(storeHostMember?.hasGame) || Boolean(storeSync?.allInSync) || storeSync?.referenceSource === "host";
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +82,7 @@ export function PartyHostInstallPicker({
         );
         setHostHasGame(
           Boolean(host?.hasGame) ||
-            Boolean(data.sync?.allReady) ||
+            Boolean(data.sync?.allInSync) ||
             data.sync?.referenceSource === "host"
         );
       } catch (err) {
