@@ -128,9 +128,17 @@ export function hostedPayloadFromDoc(
   hosted?: PartyHostFields | null
 ) {
   const base = emptyHostedPayload(gameSlug);
-  if (!hosted) return base;
+  /*
+   * Same reasoning as the virtual-LAN payload: without this the launcher
+   * cannot tell "the room is still starting" from "this deployment has no game
+   * host configured", so it blocked the launch and told the player to retry
+   * something that would never become ready.
+   */
+  const configured = isGameHostConfigured();
+  if (!hosted) return { ...base, configured };
   return {
     enabled: base.enabled,
+    configured,
     status: (hosted.status as HostedStatus) || "none",
     host: hosted.host || null,
     port: typeof hosted.port === "number" ? hosted.port : null,
