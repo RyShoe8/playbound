@@ -1422,6 +1422,31 @@ function InstallMethodFields({
             value={config.playbound_installer?.url ?? ""}
             onChange={(v) => patchConfig("playbound_installer", { url: v })}
           />
+          {/*
+            Not cosmetic. The launcher names the download from the URL, and an
+            endpoint like /download/file/736 has no extension — so it falls back
+            to <slug>.bin, and extraction dispatches on the extension. A direct
+            recipe whose URL ends in an id needs this or the archive is never
+            unpacked. It was only reachable through the raw JSON editor.
+          */}
+          <Field
+            label="File name"
+            value={config.playbound_installer?.fileName ?? ""}
+            onChange={(v) => patchConfig("playbound_installer", { fileName: v })}
+            placeholder="etlegacy-v2.85.0-x64.zip"
+          />
+          <Field
+            label="Version label"
+            value={config.playbound_installer?.versionLabel ?? ""}
+            onChange={(v) => patchConfig("playbound_installer", { versionLabel: v })}
+            placeholder="v2.85.0"
+          />
+          <Field
+            label="Checksum (MD5)"
+            value={config.playbound_installer?.checksumMd5 ?? ""}
+            onChange={(v) => patchConfig("playbound_installer", { checksumMd5: v })}
+            placeholder="Optional — verified after download"
+          />
           <Field
             label="Executable hint"
             value={config.playbound_installer?.exeHint ?? ""}
