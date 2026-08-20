@@ -5,6 +5,7 @@ import {
   heroPurchases,
   offerFromUnknown,
   offersFromUnknown,
+  removeOffer,
   setOfferDisplayed,
   withDerivedCurrentPrice,
 } from "./offers";
@@ -194,6 +195,36 @@ describe("setOfferDisplayed", () => {
 
   it("returns null when the URL is not on the game", () => {
     expect(setOfferDisplayed(paid([gog]), "https://store.steampowered.com/app/1", false)).toBeNull();
+  });
+});
+
+describe("removeOffer", () => {
+  const steam = offer({
+    retailer: "Steam",
+    url: "https://store.steampowered.com/app/22330",
+    priceCents: 999,
+  });
+  const gog = offer({
+    retailer: "GOG",
+    url: "https://www.gog.com/game/morrowind",
+    priceCents: 349,
+  });
+
+  it("removes the offer and restamps current from remaining offers", () => {
+    const next = removeOffer(paid([steam, gog], { currentPriceCents: 349 }), gog.url);
+    expect(next?.offers).toHaveLength(1);
+    expect(next?.offers?.[0]?.retailer).toBe("Steam");
+    expect(next?.currentPriceCents).toBe(999);
+  });
+
+  it("clears current price when the last offer is removed", () => {
+    const next = removeOffer(paid([gog], { currentPriceCents: 349 }), gog.url);
+    expect(next?.offers).toHaveLength(0);
+    expect(next?.currentPriceCents).toBeNull();
+  });
+
+  it("returns null when the URL is not found", () => {
+    expect(removeOffer(paid([gog]), "https://store.steampowered.com/app/999")).toBeNull();
   });
 });
 

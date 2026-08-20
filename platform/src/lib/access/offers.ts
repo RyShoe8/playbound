@@ -123,6 +123,20 @@ export function setOfferDisplayed(
 }
 
 /**
+ * Remove one source completely by URL. Current price follows remaining
+ * active displayed offers; with none left it clears.
+ */
+export function removeOffer(access: GameAccess, url: string): GameAccess | null {
+  const target = url.trim();
+  const offers = access.offers ?? [];
+  if (!offers.some((o) => o.url === target)) return null;
+  const nextOffers = offers.filter((o) => o.url !== target);
+  const next = { ...access, offers: nextOffers };
+  const best = bestPurchase(next);
+  return { ...next, currentPriceCents: best ? best.priceCents : null };
+}
+
+/**
  * The offer the player should take: cheapest active source, affiliate first
  * when two cost the same.
  */
