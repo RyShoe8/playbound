@@ -40,7 +40,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:maintenance": "tsx scripts/verify-maintenance.ts",
-    "check:auth-urls": "tsx scripts/check-auth-urls.ts"
+    "check:auth-urls": "tsx scripts/check-auth-urls.ts",
+    "upload:artifact": "tsx scripts/upload-game-artifact.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1111.0",

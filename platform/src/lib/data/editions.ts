@@ -1638,8 +1638,29 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "itch-zip",
-        url: "https://kay-yu.itch.io/holocure",
+        /*
+         * Our own mirror, not itch.io.
+         *
+         * The itch path was a page scrape for `data-upload_id`, a POST for a
+         * signed URL, then a download — and itch began returning 403 on that
+         * last step, which failed every install with no fallback. The scrape
+         * was always going to break; it depends on markup itch never promised
+         * us. This is the same 0.7 build (5/7/2025), checksummed.
+         */
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/games/holocure/HoloCure-0.7.1746645739.zip",
+        /*
+         * Checksum lives on the Artifact record, not here.
+         *
+         * The launcher verifies against `resolved.artifact.sha256` from
+         * /api/downloads — its one call site never passes an expected digest
+         * from the recipe — so a sha256 in this object would be silently
+         * ignored, which is worse than none. For this build it is
+         * e304d2a92e6e65b32f829f943448096c874977d55b5dbf2cea8fc808d9330f4c
+         * (226 MB); put it on the artifact so both the launcher download and
+         * the VPS archive transfer check it.
+         */
+        versionLabel: "0.7.1746645739",
         fileName: "HoloCure.zip",
         exeHint: "HoloCure|holocure",
         knownExePaths: [
@@ -1806,12 +1827,30 @@ export const editions: EditionSeed[] = [
         "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_f678c4dd81fd2c42b0682cba66317e6914bde75b.1920x1080.jpg",
       ],
     },
-    installMethod: "official_download",
+    /*
+     * One click, same as the multiplayer edition.
+     *
+     * This was `official_download`, which sends the player to itch.io to fetch
+     * and unpack the game themselves — a worse experience than the experimental
+     * edition beside it, on the edition most people should be choosing. It is
+     * the identical archive; the multiplayer edition is that plus a mod loader,
+     * so there is no reason the plain one should be the harder install.
+     */
+    installMethod: "playbound_installer",
     installConfig: {
-      official_download: {
-        url: "https://kay-yu.itch.io/holocure",
+      playbound_installer: {
+        kind: "direct-zip",
+        url: "https://mirror.playbound.club/games/holocure/HoloCure-0.7.1746645739.zip",
+        versionLabel: "0.7.1746645739",
         fileName: "HoloCure.zip",
-        sizeMB: 250,
+        exeHint: "HoloCure|holocure",
+        knownExePaths: [
+          "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES%\\HoloCure\\HoloCure.exe",
+          "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\HoloCure\\HoloCure.exe",
+          "~/PlayBound/Games/holocure/HoloCure.exe",
+        ],
+        note: "Downloads and extracts the official HoloCure standalone build in one click. No mods.",
       },
     },
     features: ["Singleplayer", "Controller Support", "Steam Deck Playable"],
