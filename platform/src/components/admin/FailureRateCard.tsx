@@ -131,7 +131,7 @@ export function FailureRateCard({
             </span>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Share of finished installs and launches that failed.
+            Share of finished installs, launches and party operations that failed.
           </p>
         </div>
         <Trend current={rates.d1.overall} baseline={rates.d30.overall} />
@@ -156,6 +156,7 @@ export function FailureRateCard({
               <Row label="Overall" pick={(w) => rates[w].overall} rates={rates} emphasis />
               <Row label="Installs" pick={(w) => rates[w].installs} rates={rates} />
               <Row label="Launches" pick={(w) => rates[w].launches} rates={rates} />
+              <Row label="Party" pick={(w) => rates[w].party} rates={rates} />
             </tbody>
           </table>
         </div>

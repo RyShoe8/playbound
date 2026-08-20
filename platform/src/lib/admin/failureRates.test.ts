@@ -98,6 +98,41 @@ describe("failure rate windows", () => {
     expect(rates.d30.launches.rate).toBeCloseTo(0.5);
   });
 
+  it("counts party operations as their own row", () => {
+    const rates = buildFailureRates(
+      rows({
+        [FAILURE_RATE_EVENTS.partyFailed]: { d1: 3, d7: 3, d30: 3 },
+        [FAILURE_RATE_EVENTS.partyCompleted]: { d1: 9, d7: 9, d30: 9 },
+      })
+    );
+    expect(rates.d1.party.failed).toBe(3);
+    expect(rates.d1.party.completed).toBe(9);
+    expect(rates.d1.party.rate).toBeCloseTo(25);
+  });
+
+  it("rolls party failures into overall", () => {
+    // Overall is the top-line number; a party outage has to move it or the
+    // card says everything is fine while parties are broken.
+    const rates = buildFailureRates(
+      rows({
+        [FAILURE_RATE_EVENTS.installCompleted]: { d1: 10, d7: 10, d30: 10 },
+        [FAILURE_RATE_EVENTS.partyFailed]: { d1: 10, d7: 10, d30: 10 },
+      })
+    );
+    expect(rates.d1.installs.rate).toBe(0);
+    expect(rates.d1.overall.failed).toBe(10);
+    expect(rates.d1.overall.rate).toBeCloseTo(50);
+  });
+
+  it("leaves party null when no party events exist", () => {
+    // Nothing recorded is not the same as nothing failing.
+    const rates = buildFailureRates(
+      rows({ [FAILURE_RATE_EVENTS.launchCompleted]: { d1: 4, d7: 4, d30: 4 } })
+    );
+    expect(rates.d1.party.rate).toBeNull();
+    expect(rates.d1.overall.rate).toBe(0);
+  });
+
   it("starts empty", () => {
     const empty = emptyFailureRates();
     for (const w of ["d1", "d7", "d30"] as const) {

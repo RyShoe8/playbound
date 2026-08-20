@@ -29,6 +29,15 @@ export const FAILURE_RATE_EVENTS = {
   installFailed: "install_failed",
   launchCompleted: "edition_launched",
   launchFailed: "launch_failed",
+  /*
+   * Party operations — Discord channels, config sync, hosting, virtual LAN.
+   *
+   * Sits in this card rather than its own because the question a reader has at
+   * the top of Ops is "is anything failing", and splitting it across two cards
+   * with separate conventions makes that harder to answer, not easier.
+   */
+  partyCompleted: "party_ok",
+  partyFailed: "party_failed",
 } as const;
 
 export type FailureWindow = "d1" | "d7" | "d30";
@@ -49,6 +58,7 @@ export type Tally = {
 export type FailureRates = Record<FailureWindow, {
   installs: Tally;
   launches: Tally;
+  party: Tally;
   overall: Tally;
 }>;
 
@@ -61,9 +71,9 @@ const EMPTY_TALLY: Tally = { failed: 0, completed: 0, rate: null };
 
 export function emptyFailureRates(): FailureRates {
   return {
-    d1: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, overall: EMPTY_TALLY },
-    d7: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, overall: EMPTY_TALLY },
-    d30: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, overall: EMPTY_TALLY },
+    d1: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY },
+    d7: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY },
+    d30: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY },
   };
 }
 
@@ -85,12 +95,17 @@ export function buildFailureRates(rows: EventCounts[]): FailureRates {
       count(FAILURE_RATE_EVENTS.launchFailed, w),
       count(FAILURE_RATE_EVENTS.launchCompleted, w)
     );
+    const party = tally(
+      count(FAILURE_RATE_EVENTS.partyFailed, w),
+      count(FAILURE_RATE_EVENTS.partyCompleted, w)
+    );
     out[w] = {
       installs,
       launches,
+      party,
       overall: tally(
-        installs.failed + launches.failed,
-        installs.completed + launches.completed
+        installs.failed + launches.failed + party.failed,
+        installs.completed + launches.completed + party.completed
       ),
     };
   }
