@@ -3,7 +3,8 @@
  * August 2026 seed files. Never $sets an existing document, never deletes,
  * never publishes parent games.
  *
- * Use this instead of seed:editions / seed:mods, which loop the whole catalog.
+ * Use this instead of seed:editions, which loops the whole catalog. (seed:mods
+ * was removed for the same reason.)
  */
 import { loadEnvConfig } from "@next/env";
 

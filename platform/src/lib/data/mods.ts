@@ -1,6 +1,8 @@
 /**
  * Curated seed catalog of community mods for games with Mod Support.
- * Seeded into Mongo via scripts/seed-mods.ts (upsert by slug).
+ * Seeded into Mongo by scripts/seed-missing-mods.ts, which only ever creates
+ * rows that are absent — the database is the source of truth and this file is
+ * potentially stale against it.
  *
  * Waves: fossModsWave (7 FOSS titles) + phase2 remasters/live hubs.
  */

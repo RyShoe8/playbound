@@ -4,17 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run check:auth-urls",
+    "build": "next build && npm run check:auth-urls && npm run seed:deploy",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "seed:games": "tsx scripts/seed-games.ts",
-    "fix:game-media": "tsx scripts/fix-game-media.ts",
-    "seed:launcher-install": "tsx scripts/seed-launcher-install.ts",
     "upload:launcher": "tsx scripts/upload-launcher.ts",
-    "seed:mods": "tsx scripts/seed-mods.ts",
     "seed:mod-classifications": "tsx scripts/seed-mod-classifications.ts",
-    "seed:editions": "tsx scripts/seed-editions.ts",
     "insert:catalog-wave": "tsx scripts/insert-catalog-wave.ts",
     "sync:edition-install": "tsx scripts/sync-edition-install.ts",
     "patch:named-mods": "tsx scripts/patch-named-mods.ts",
@@ -41,7 +37,11 @@
     "test:watch": "vitest",
     "verify:maintenance": "tsx scripts/verify-maintenance.ts",
     "check:auth-urls": "tsx scripts/check-auth-urls.ts",
-    "upload:artifact": "tsx scripts/upload-game-artifact.ts"
+    "upload:artifact": "tsx scripts/upload-game-artifact.ts",
+    "seed:missing-mods": "tsx scripts/seed-missing-mods.ts",
+    "seed:deploy": "npm run seed:missing-mods -- --games wolfenstein-enemy-territory",
+    "seed:missing-games": "tsx scripts/seed-missing-games.ts",
+    "seed:missing-editions": "tsx scripts/seed-missing-editions.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1111.0",
