@@ -224,8 +224,23 @@ async function ensureCategory(guild, name) {
   return guild.channels.create({ name, type: ChannelType.GuildCategory });
 }
 
+function isOfficialEdition(edition) {
+  if (!edition) return false;
+  const slug = String(edition.slug || "").toLowerCase().trim();
+  const name = String(edition.name || "").toLowerCase().trim();
+  return (
+    slug === "official" ||
+    slug === "base" ||
+    slug === "base-game" ||
+    slug === "default" ||
+    name === "official" ||
+    name === "base game" ||
+    name === "default"
+  );
+}
+
 async function listPublicEditions(gameSlug) {
-  return editions
+  const all = await editions
     .find({
       gameSlug,
       visibility: "public",
@@ -239,6 +254,7 @@ async function listPublicEditions(gameSlug) {
     })
     .sort({ sortOrder: 1, name: 1 })
     .toArray();
+  return all.filter((e) => !isOfficialEdition(e));
 }
 
 /**
@@ -308,7 +324,7 @@ async function inviteFor(channel) {
 }
 
 /**
- * Flat layout: #slug under A–M / N–Z letter bucket (games with <2 public editions).
+ * Flat layout: #slug under A–M / N–Z letter bucket (games with no custom editions).
  */
 async function provisionFlatChannel(guild, game) {
   const slug = game.slug;
@@ -345,43 +361,57 @@ async function provisionFlatChannel(guild, game) {
 }
 
 /**
- * Franchise layout: Category(title) → #general + #edition-slug…
+ * Franchise layout: Category(title) → #game-slug + #edition-slug…
  */
 async function provisionFranchise(guild, game, publicEditions) {
   const slug = game.slug;
+  const mainChannelName = discordChannelName(slug);
   const cat = await ensureCategory(guild, franchiseCategoryName(game.title));
   const topic = `${game.title} on PlayBound — ${SITE_URL}/games/${slug}`;
 
-  // Prefer stored id; also adopt a legacy flat #slug channel as #general.
-  let generalPreferredId = game.communityLinks?.playboundDiscord?.channelId || null;
+  // Prefer stored id; also adopt a legacy flat #slug channel or a legacy #general channel under this category.
+  let mainPreferredId = game.communityLinks?.playboundDiscord?.channelId || null;
   const legacyFlat = guild.channels.cache.find(
-    (c) => c.type === ChannelType.GuildText && c.name === discordChannelName(slug)
+    (c) => c.type === ChannelType.GuildText && c.name === mainChannelName
+  );
+  const legacyGeneral = guild.channels.cache.find(
+    (c) => c.type === ChannelType.GuildText && c.name === "general" && c.parentId === cat.id
   );
   const alsoAdoptIds = [];
-  if (legacyFlat && legacyFlat.id !== generalPreferredId) {
-    alsoAdoptIds.push(legacyFlat.id);
-  }
+  if (legacyFlat && legacyFlat.id !== mainPreferredId) alsoAdoptIds.push(legacyFlat.id);
+  if (legacyGeneral && legacyGeneral.id !== mainPreferredId) alsoAdoptIds.push(legacyGeneral.id);
 
-  const generalResult = await ensureTextChannel(guild, {
-    preferredId: generalPreferredId,
-    name: "general",
+  const mainResult = await ensureTextChannel(guild, {
+    preferredId: mainPreferredId,
+    name: mainChannelName,
     parentId: cat.id,
     topic,
     alsoAdoptIds,
   });
 
-  const generalInvite = await inviteFor(generalResult.channel);
-  if (generalResult.created) {
-    const msg = await generalResult.channel.send(welcomeBody(game));
+  // Clean up any redundant #official or extra #general under this category
+  for (const ch of guild.channels.cache.values()) {
+    if (ch && ch.parentId === cat.id && ch.type === ChannelType.GuildText) {
+      if (ch.name === "official" || ch.name === "base-game" || ch.name === "default") {
+        await ch.delete("PlayBound cleanup: remove redundant official channel").catch(() => {});
+      } else if (ch.name === "general" && ch.id !== mainResult.channel.id) {
+        await ch.delete("PlayBound cleanup: remove redundant general channel").catch(() => {});
+      }
+    }
+  }
+
+  const mainInvite = await inviteFor(mainResult.channel);
+  if (mainResult.created) {
+    const msg = await mainResult.channel.send(welcomeBody(game));
     await msg.pin().catch(() => {});
   }
 
-  const prevGeneral = game.communityLinks?.playboundDiscord;
+  const prevMain = game.communityLinks?.playboundDiscord;
   const playboundDiscord = {
-    ...playboundRecord(generalResult.channel, generalInvite, prevGeneral),
-    provisionedAt: generalResult.created
+    ...playboundRecord(mainResult.channel, mainInvite, prevMain),
+    provisionedAt: mainResult.created
       ? new Date()
-      : prevGeneral?.provisionedAt || new Date(),
+      : prevMain?.provisionedAt || new Date(),
   };
 
   await games.updateOne(
@@ -439,10 +469,45 @@ async function provisionFranchise(guild, game, publicEditions) {
 
   return {
     playboundDiscord,
-    created: generalResult.created || anyEditionCreated,
+    created: mainResult.created || anyEditionCreated,
     editions: editionResults,
     layout: "franchise",
   };
+}
+
+/**
+ * Clean up redundant #official and #general channels across all game categories.
+ */
+async function cleanupRedundantChannels(guild) {
+  const serverGeneral = await findServerGeneral(guild);
+  const channels = await guild.channels.fetch();
+
+  for (const channel of channels.values()) {
+    if (!channel || channel.type !== ChannelType.GuildText) continue;
+    if (serverGeneral && channel.id === serverGeneral.id) continue;
+
+    const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
+    if (!parent || isSharedCategoryName(parent.name)) continue;
+
+    if (channel.name === "official" || channel.name === "base-game" || channel.name === "default") {
+      console.log(`[cleanup] Deleting #${channel.name} in category "${parent.name}"`);
+      await channel.delete("PlayBound cleanup: redundant official channel").catch((err) => {
+        console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
+      });
+      await sleep(PROVISION_DELAY_MS);
+    } else if (channel.name === "general") {
+      const siblings = [...channels.values()].filter(
+        (c) => c && c.parentId === parent.id && c.id !== channel.id && c.type === ChannelType.GuildText
+      );
+      if (siblings.length > 0) {
+        console.log(`[cleanup] Deleting redundant #general in category "${parent.name}"`);
+        await channel.delete("PlayBound cleanup: redundant general channel").catch((err) => {
+          console.warn(`[cleanup] Failed to delete #general:`, err?.message || err);
+        });
+      }
+      await sleep(PROVISION_DELAY_MS);
+    }
+  }
 }
 
 /**
@@ -459,7 +524,7 @@ async function provisionChannel(slug) {
   await guild.channels.fetch();
 
   const publicEditions = await listPublicEditions(slug);
-  if (publicEditions.length >= 2) {
+  if (publicEditions.length >= 1) {
     return provisionFranchise(guild, game, publicEditions);
   }
   return provisionFlatChannel(guild, game);
@@ -467,11 +532,11 @@ async function provisionChannel(slug) {
 
 async function gameNeedsProvision(game) {
   const publicEds = await listPublicEditions(game.slug);
-  if (publicEds.length >= 2) {
-    const hasGeneral = Boolean(game.communityLinks?.playboundDiscord?.channelId);
+  const mainChannelName = discordChannelName(game.slug);
+  if (publicEds.length >= 1) {
+    const hasMain = Boolean(game.communityLinks?.playboundDiscord?.channelId);
     const edsMissing = publicEds.some((e) => !e.playboundDiscord?.channelId);
-    // Also re-run if general exists but isn't named general / franchise may be incomplete
-    return !hasGeneral || edsMissing;
+    return !hasMain || edsMissing;
   }
   return !game.communityLinks?.playboundDiscord?.channelId;
 }
@@ -486,6 +551,10 @@ async function provisionMissing() {
   const failed = [];
 
   try {
+    const guild = await client.guilds.fetch(GUILD_ID);
+    await guild.channels.fetch();
+    await cleanupRedundantChannels(guild);
+
     const list = await games
       .find({ $or: [{ status: "published" }, { published: true }] })
       .project({ slug: 1, title: 1, communityLinks: 1 })
@@ -532,9 +601,9 @@ let reconcileRunning = false;
 /** The name and category a game's primary channel should currently have. */
 async function expectedPlacement(game) {
   const publicEds = await listPublicEditions(game.slug);
-  const franchise = publicEds.length >= 2;
+  const franchise = publicEds.length >= 1;
   return {
-    name: franchise ? "general" : discordChannelName(game.slug),
+    name: discordChannelName(game.slug),
     category: franchise
       ? franchiseCategoryName(game.title)
       : categoryNameForSlug(game.slug),
@@ -571,6 +640,9 @@ async function reconcileChannels(opts = {}) {
   try {
     const guild = await client.guilds.fetch(GUILD_ID);
     await guild.channels.fetch();
+    if (!dryRun) {
+      await cleanupRedundantChannels(guild);
+    }
 
     /* ── published games: correct name + category ── */
     const published = await games
