@@ -1933,6 +1933,22 @@ function wirePartyView(slot, party) {
  * screen with no one to find.
  */
 async function prepareVirtualLan(party, lan) {
+  /*
+   * No overlay on this deployment. Launch anyway.
+   *
+   * `configured` false means the server has no NetBird credentials, so the
+   * status will never leave "none" — and blocking on it told the player to try
+   * again in a moment for something that could not happen, on repeat, while
+   * the party sat at "session in progress" because the server had already
+   * marked it playing. Starting the game and saying discovery is unavailable is
+   * both true and playable; refusing to start it is neither.
+   */
+  if (lan.configured === false) {
+    setStatus(
+      "Party network is unavailable — launching anyway. You may need to connect in-game yourself."
+    );
+    return true;
+  }
   if (lan.status === "failed") {
     setStatus(lan.error || "Could not set up the party network. Try Join Game again.", true);
     return false;
@@ -2022,7 +2038,16 @@ async function launchPartyGame(party) {
    * drop the player on the main menu with no server to join, which reads as a
    * broken button — better to say what is happening and let them retry.
    */
-  if (hosted.enabled && hosted.status !== "ready") {
+  /*
+   * `configured` false means this deployment has no game host, so the room will
+   * never come up and retrying cannot help. Fall through and launch rather than
+   * parking the player on a message that promises otherwise — the party is
+   * already marked playing by then, so blocking here produced "session in
+   * progress" beside a game that never started.
+   */
+  if (hosted.enabled && hosted.configured === false) {
+    setStatus("PlayBound server is unavailable — launching without it.");
+  } else if (hosted.enabled && hosted.status !== "ready") {
     setStatus(
       hosted.status === "failed"
         ? hosted.error || "Could not start the PlayBound server. Try Join Game again."

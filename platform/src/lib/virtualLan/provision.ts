@@ -144,6 +144,7 @@ export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null)
   if (!config) {
     return {
       enabled: false,
+      configured: isVirtualLanConfigured(),
       status: "none" as PartyLanStatus,
       adapterFile: null,
       steps: [],
@@ -152,6 +153,14 @@ export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null)
   }
   return {
     enabled: true,
+    /*
+     * Whether an overlay could ever be provisioned, as opposed to not having
+     * been yet. Without this the launcher cannot tell "still setting up" from
+     * "this deployment has no NetBird credentials", so it told players to try
+     * again in a moment for something that was never going to become ready —
+     * and refused to launch the game while it waited.
+     */
+    configured: isVirtualLanConfigured(),
     status: (lan?.status as PartyLanStatus) || "none",
     // The launcher writes the overlay adapter's name here so the player can
     // take the "use saved adapter" path instead of hunting a dropdown.
