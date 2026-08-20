@@ -312,19 +312,31 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
     const docs = await CatalogGame.find(filter).sort({ title: 1 }).lean();
     return docs.map((d) => toGame(d as LeanGame));
   } catch (err) {
-    /*
-     * Rethrow. Returning [] here made a failed read indistinguishable from an
-     * empty catalog, and the difference matters enormously: /games is
-     * prerendered, so one Mongo hiccup during a build baked a games page with
-     * no games into static HTML and served it to everyone until the next
-     * deploy. Silent and permanent.
-     *
-     * Throwing is better everywhere it lands. At build time the deploy fails
-     * loudly instead of shipping an empty catalog. During revalidation Next
-     * keeps serving the last good page rather than replacing it with nothing.
-     * Only a genuinely empty collection now renders as empty.
-     */
     console.error("[catalog] Mongo read failed:", err);
+
+    /*
+     * Two different failures, two different right answers.
+     *
+     * At build time the deploy must not depend on the database being up.
+     * Throwing here turned an Atlas wobble into a red build twice in one
+     * evening, and a deploy that cannot ship is worse than one shipping
+     * slightly stale content — especially since these pages revalidate within
+     * minutes of the first request. So the build falls back to seed, which is
+     * real content and never empty.
+     *
+     * At request time it rethrows. Returning [] made a failed read
+     * indistinguishable from an empty catalog, and that is how a games page
+     * with no games got served for hours: silently, with nothing to notice.
+     * Throwing makes Next keep serving the last good page instead of replacing
+     * it with nothing, and only a genuinely empty collection renders as empty.
+     */
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      console.warn(
+        `[catalog] Falling back to ${seedGames.length} seed games for this build.`
+      );
+      return seedGames.map(seedGameWithInstall);
+    }
+
     throw new Error(
       `Catalog read failed: ${err instanceof Error ? err.message : String(err)}`
     );
