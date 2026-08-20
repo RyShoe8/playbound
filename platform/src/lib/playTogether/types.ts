@@ -136,8 +136,20 @@ export type ConfigSyncResult = {
   hostUsername: string | null;
 };
 
-/** Auto-end parties with no heartbeat/activity older than this. */
-export const PARTY_IDLE_TIMEOUT_MS = 4 * 60 * 60 * 1000;
+/**
+ * Auto-end parties with no heartbeat/activity older than this.
+ *
+ * Fifteen minutes, not four hours. The offline-member sweep normally clears a
+ * party within about three minutes of everyone disconnecting, so this is the
+ * backstop for parties that sweep misses — and at four hours the backstop was
+ * long enough that a dead party looked permanent, showing up in friends-playing
+ * and party lists long after everyone had gone.
+ *
+ * Long enough to survive a reconnect: presence goes stale after two minutes, so
+ * this leaves considerable room for a launcher restart or a brief drop without
+ * ending a party someone is still in.
+ */
+export const PARTY_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 
 /** Serialised party member for API responses. */
 export type PartyMemberPayload = {
