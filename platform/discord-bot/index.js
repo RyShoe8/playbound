@@ -1271,13 +1271,7 @@ const server = http.createServer(async (req, res) => {
         partyId,
         gameSlug,
         name,
-        // Existing channels, when the caller is filling in what it is missing
-        // rather than starting fresh. A party provisioned before this endpoint
-        // made text channels has a voice channel and no chat, and creating a
-        // second voice channel to reach one would orphan the first and move
-        // everybody already sitting in it.
         existingVoiceChannelId,
-        existingTextChannelId,
       } = JSON.parse(body || "{}");
       const guild = await client.guilds.fetch(GUILD_ID);
       const category = await ensureCategory(guild, "PlayBound Parties");
@@ -1288,39 +1282,20 @@ const server = http.createServer(async (req, res) => {
         return ch && ch.type === type ? ch : null;
       };
 
-      const [voice, text] = await Promise.all([
-        (async () => {
-          const existing = await reuse(existingVoiceChannelId, ChannelType.GuildVoice);
-          if (existing) return existing;
-          return guild.channels.create({
-            name: partyVoiceChannelName(name || gameSlug, partyId),
-            type: ChannelType.GuildVoice,
-            parent: category.id,
-            reason: `PlayBound party voice ${partyId || ""}`,
-          });
-        })(),
-        (async () => {
-          const existing = await reuse(existingTextChannelId, ChannelType.GuildText);
-          if (existing) return existing;
-          return guild.channels.create({
-            name: partyTextChannelName(name || gameSlug, partyId),
-            type: ChannelType.GuildText,
-            parent: category.id,
-            reason: `PlayBound party text ${partyId || ""}`,
-          });
-        })(),
-      ]);
+      const voice =
+        (await reuse(existingVoiceChannelId, ChannelType.GuildVoice)) ||
+        (await guild.channels.create({
+          name: partyVoiceChannelName(name || gameSlug, partyId),
+          type: ChannelType.GuildVoice,
+          parent: category.id,
+          reason: `PlayBound party voice ${partyId || ""}`,
+        }));
 
-      const [invite] = await Promise.all([
-        voice.createInvite({
-          maxAge: 0,
-          maxUses: 0,
-          reason: "PlayBound party invite",
-        }),
-        text.send({
-          content: `Party chat for **${name || gameSlug || "PlayBound"}**. Messages from the site and launcher show up here too.`,
-        }).catch(() => null),
-      ]);
+      const invite = await voice.createInvite({
+        maxAge: 0,
+        maxUses: 0,
+        reason: "PlayBound party invite",
+      });
 
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
@@ -1328,7 +1303,6 @@ const server = http.createServer(async (req, res) => {
           success: true,
           inviteUrl: invite.url,
           voiceChannelId: voice.id,
-          textChannelId: text.id,
           categoryId: category.id,
         })
       );
@@ -1426,7 +1400,7 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { voiceChannelId, textChannelId, gameSlug } = JSON.parse(body || "{}");
+      const { voiceChannelId, gameSlug } = JSON.parse(body || "{}");
       if (!voiceChannelId) {
         res.writeHead(400, { "content-type": "application/json" });
         res.end(JSON.stringify({ error: "voiceChannelId required" }));
@@ -1444,12 +1418,6 @@ const server = http.createServer(async (req, res) => {
         (await resolveGameCategoryId(guild, slug)) ||
         (await ensureCategory(guild, categoryNameForSlug(slug || "a"))).id;
       await voice.setParent(categoryId, { reason: "PlayBound party under game category" });
-      if (textChannelId) {
-        const text = await guild.channels.fetch(String(textChannelId)).catch(() => null);
-        if (text?.type === ChannelType.GuildText) {
-          await text.setParent(categoryId, { reason: "PlayBound party chat under game category" });
-        }
-      }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ success: true, categoryId }));
     } catch (err) {
@@ -1465,15 +1433,14 @@ const server = http.createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     try {
-      const { voiceChannelId, textChannelId } = JSON.parse(body || "{}");
-      const guild = await client.guilds.fetch(GUILD_ID);
-      for (const id of [voiceChannelId, textChannelId]) {
-        if (!id) continue;
+      const { voiceChannelId } = JSON.parse(body || "{}");
+      if (voiceChannelId) {
+        const guild = await client.guilds.fetch(GUILD_ID);
         try {
-          const ch = await guild.channels.fetch(String(id));
+          const ch = await guild.channels.fetch(String(voiceChannelId));
           if (ch) await ch.delete("PlayBound party cleanup");
         } catch (err) {
-          console.warn("party cleanup channel", id, err?.message || err);
+          console.warn("party cleanup channel", voiceChannelId, err?.message || err);
         }
       }
       res.writeHead(200, { "content-type": "application/json" });
@@ -1485,89 +1452,6 @@ const server = http.createServer(async (req, res) => {
     }
     return;
   }
-
-  if (req.method === "GET" && String(req.url || "").startsWith("/parties/chat/messages")) {
-    if (!requireSecret(req, res)) return;
-    if (!client.isReady()) {
-      res.writeHead(503, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "Discord bot not ready" }));
-      return;
-    }
-    try {
-      const parsed = new URL(req.url, "http://localhost");
-      const textChannelId = parsed.searchParams.get("textChannelId");
-      const after = parsed.searchParams.get("after");
-      if (!textChannelId) {
-        res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "textChannelId required" }));
-        return;
-      }
-      const guild = await client.guilds.fetch(GUILD_ID);
-      const text = await guild.channels.fetch(String(textChannelId));
-      if (!text || text.type !== ChannelType.GuildText) {
-        res.writeHead(404, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "Text channel not found" }));
-        return;
-      }
-      const fetched = await text.messages.fetch({
-        limit: 50,
-        ...(after ? { after: String(after) } : {}),
-      });
-      const messages = [...fetched.values()]
-        .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
-        .map((m) => ({
-          id: m.id,
-          content: m.content || "",
-          username: m.author?.globalName || m.author?.username || "Player",
-          avatarUrl: m.author?.displayAvatarURL?.({ size: 64 }) || null,
-          createdAt: m.createdAt.toISOString(),
-          bot: Boolean(m.author?.bot),
-        }));
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ success: true, messages }));
-    } catch (err) {
-      console.error("parties/chat/messages", err);
-      res.writeHead(500);
-      res.end(String(err?.message || err));
-    }
-    return;
-  }
-
-  if (req.method === "POST" && req.url === "/parties/chat/send") {
-    if (!requireSecret(req, res)) return;
-    if (!client.isReady()) {
-      res.writeHead(503, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "Discord bot not ready" }));
-      return;
-    }
-    let body = "";
-    for await (const chunk of req) body += chunk;
-    try {
-      const { textChannelId, username, avatarUrl, content } = JSON.parse(body || "{}");
-      const textBody = String(content || "").trim().slice(0, 500);
-      if (!textChannelId || !textBody) {
-        res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "textChannelId and content required" }));
-        return;
-      }
-      const guild = await client.guilds.fetch(GUILD_ID);
-      const text = await guild.channels.fetch(String(textChannelId));
-      if (!text || text.type !== ChannelType.GuildText) {
-        res.writeHead(404, { "content-type": "application/json" });
-        res.end(JSON.stringify({ error: "Text channel not found" }));
-        return;
-      }
-      const hooks = await text.fetchWebhooks();
-      let webhook = hooks.find((w) => w.owner?.id === client.user.id);
-      if (!webhook) {
-        webhook = await text.createWebhook({
-          name: "PlayBound",
-          reason: "PlayBound party chat",
-        });
-      }
-      const sent = await webhook.send({
-        username: String(username || "Player").slice(0, 80),
-        avatarURL: typeof avatarUrl === "string" && avatarUrl.startsWith("http") ? avatarUrl : undefined,
         content: textBody,
         allowedMentions: { parse: [] },
       });

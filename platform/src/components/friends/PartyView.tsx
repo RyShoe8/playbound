@@ -430,8 +430,7 @@ export function PartyView({
       </div>
       <PartyChat
         partyId={party.id}
-        textChannelId={party.discord.textChannelId}
-        inviteUrl={party.discord.inviteUrl}
+        inviteUrl={party.discord?.inviteUrl}
       />
       <DiscordLinkPrompt
         open={discordPrompt.open}

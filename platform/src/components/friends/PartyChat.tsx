@@ -14,12 +14,10 @@ type ChatMessage = {
 
 export function PartyChat({
   partyId,
-  textChannelId,
   inviteUrl,
 }: {
   partyId: string;
-  textChannelId: string | null;
-  inviteUrl: string | null;
+  inviteUrl?: string | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -55,7 +53,7 @@ export function PartyChat({
     void load();
     const timer = setInterval(() => void load(lastIdRef.current), 2000);
     return () => clearInterval(timer);
-  }, [load, textChannelId]);
+  }, [load]);
 
   useEffect(() => {
     const el = scroller.current;
@@ -99,13 +97,6 @@ export function PartyChat({
         <h4 className="flex items-center gap-2 text-sm font-bold">
           <MessageCircle className="size-4" /> Party chat
         </h4>
-        <button
-          type="button"
-          onClick={() => setPromptOpen(true)}
-          className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          {textChannelId ? "Synced with Discord" : "In-App Chat"}
-        </button>
       </div>
 
       <div ref={scroller} className="max-h-56 space-y-2 overflow-y-auto px-3 py-3">

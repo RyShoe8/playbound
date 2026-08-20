@@ -5,11 +5,6 @@ import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import User from "@/lib/models/User";
 import PartyMessage from "@/lib/models/PartyMessage";
-import {
-  fetchPartyChatMessages,
-  sendPartyChatMessage,
-} from "@/lib/playTogether/discordPartyProvision";
-import { trackPartyEvent } from "@/lib/playTogether/partyTelemetry";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -44,10 +39,8 @@ export async function GET(req: Request, ctx: RouteContext) {
       return NextResponse.json({ error: loaded.error }, { status: loaded.status });
     }
 
-    const textChannelId = loaded.party.discord?.textChannelId || null;
     const after = new URL(req.url).searchParams.get("after");
 
-    // 1. Fetch native messages from MongoDB
     const filter: Record<string, unknown> = { partyId: loaded.party._id };
     if (after) {
       const afterMsg = await PartyMessage.findById(after).select("createdAt").lean();
@@ -56,51 +49,13 @@ export async function GET(req: Request, ctx: RouteContext) {
       }
     }
 
-    const localMessages = await PartyMessage.find(filter)
+    const messages = await PartyMessage.find(filter)
       .sort({ createdAt: 1 })
       .limit(100)
       .lean();
 
-    // 2. If Discord text channel is configured, optionally fetch and ingest remote messages
-    if (textChannelId) {
-      try {
-        const discordRes = await fetchPartyChatMessages(textChannelId, after);
-        if (!("error" in discordRes) && Array.isArray(discordRes.messages)) {
-          for (const dMsg of discordRes.messages) {
-            // Ingest Discord messages that are not already recorded
-            const exists = await PartyMessage.exists({
-              partyId: loaded.party._id,
-              $or: [{ discordMessageId: dMsg.id }, { id: dMsg.id }],
-            });
-            if (!exists) {
-              await PartyMessage.create({
-                partyId: loaded.party._id,
-                username: dMsg.username,
-                avatarUrl: dMsg.avatarUrl,
-                content: dMsg.content,
-                source: "discord",
-                bot: Boolean(dMsg.bot),
-                discordMessageId: dMsg.id,
-                createdAt: dMsg.createdAt ? new Date(dMsg.createdAt) : new Date(),
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Discord chat ingest warning:", err);
-      }
-    }
-
-    // Return combined native messages
-    const finalMessages = after
-      ? localMessages
-      : await PartyMessage.find({ partyId: loaded.party._id })
-          .sort({ createdAt: 1 })
-          .limit(100)
-          .lean();
-
     return NextResponse.json({
-      messages: finalMessages.map((m) => ({
+      messages: messages.map((m) => ({
         id: String(m._id),
         username: m.username,
         avatarUrl: m.avatarUrl || null,
@@ -109,7 +64,6 @@ export async function GET(req: Request, ctx: RouteContext) {
         source: m.source || "playbound",
         bot: Boolean(m.bot),
       })),
-      textChannelId,
     });
   } catch (err) {
     console.error("GET /api/parties/[id]/chat failed:", err);
@@ -145,7 +99,6 @@ export async function POST(req: Request, ctx: RouteContext) {
       if (typeof user?.image === "string") avatarUrl = user.image;
     }
 
-    // 1. Save message to native MongoDB store immediately
     const messageDoc = await PartyMessage.create({
       partyId: loaded.party._id,
       userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null,
@@ -157,35 +110,17 @@ export async function POST(req: Request, ctx: RouteContext) {
       createdAt: new Date(),
     });
 
-    const responsePayload = {
-      id: String(messageDoc._id),
-      username: messageDoc.username,
-      avatarUrl: messageDoc.avatarUrl || null,
-      content: messageDoc.content,
-      createdAt: messageDoc.createdAt.toISOString(),
-      source: messageDoc.source,
-      bot: false,
-    };
-
-    // 2. If Discord text channel is configured, mirror to Discord asynchronously
-    const textChannelId = loaded.party.discord?.textChannelId;
-    if (textChannelId) {
-      void sendPartyChatMessage({
-        textChannelId,
-        username,
-        avatarUrl,
-        content,
-      }).catch((err) => {
-        trackPartyEvent("party_chat_discord_mirror_failed", {
-          partyId: id,
-          gameSlug: String(loaded.party.gameSlug || "") || null,
-          userId,
-          message: String(err?.message || err),
-        });
-      });
-    }
-
-    return NextResponse.json({ message: responsePayload });
+    return NextResponse.json({
+      message: {
+        id: String(messageDoc._id),
+        username: messageDoc.username,
+        avatarUrl: messageDoc.avatarUrl || null,
+        content: messageDoc.content,
+        createdAt: messageDoc.createdAt.toISOString(),
+        source: messageDoc.source,
+        bot: false,
+      },
+    });
   } catch (err) {
     console.error("POST /api/parties/[id]/chat failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
