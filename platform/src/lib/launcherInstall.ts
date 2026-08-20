@@ -101,6 +101,8 @@ export type LauncherCatalogEntry = {
   slug: string;
   title: string;
   blurb: string;
+  /** Carried so the launcher can offer the same Features filter the site does. */
+  features?: string[];
   kind: LauncherInstallKind;
   repo?: string;
   assetPattern?: string;
@@ -297,6 +299,7 @@ export function toLauncherCatalogEntry(input: {
     genres: Array.isArray(input.genres) ? input.genres : [],
     tags: Array.isArray(input.tags) ? input.tags : [],
     launchMethods: Array.isArray(input.launchMethods) ? input.launchMethods : [],
+    features: Array.isArray(input.features) ? input.features : [],
     multiplayer: hasServerBrowser(input),
     hasServerBrowser: hasServerBrowser(input),
     isMultiplayer: isMultiplayerGame(input),

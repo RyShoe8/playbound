@@ -54,6 +54,8 @@ export function DiscoverFilters({
    */
   const [tagsOpen, setTagsOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   /** Only games with someone in them right now, per the shared live snapshot. */
@@ -124,6 +126,14 @@ export function DiscoverFilters({
      * ("Co-op", "Roguelite"), so narrowing is what picking a second one is
      * for — an "any" match would widen the results and read as broken.
      */
+    if (selectedFeatures.length > 0) {
+      const wanted = selectedFeatures.map((f) => f.toLowerCase());
+      list = list.filter((g) => {
+        const has = new Set(g.features.map((f) => f.toLowerCase()));
+        return wanted.every((f) => has.has(f));
+      });
+    }
+
     if (selectedTags.length > 0) {
       const wanted = selectedTags.map((t) => t.toLowerCase());
       list = list.filter((g) => {
@@ -182,6 +192,7 @@ export function DiscoverFilters({
   }, [
     serialized,
     selectedTags,
+    selectedFeatures,
     multiplayerOnly,
     hasPlayersOnly,
     hwFilter,
@@ -225,6 +236,36 @@ export function DiscoverFilters({
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([name, count]) => ({ name, count }));
   }, [baseFiltered, selectedTags]);
+
+  /*
+   * Features, counted the same way and kept separate from tags.
+   *
+   * They answer different questions — a tag says what a game is like, a feature
+   * says what it supports — and merging them into one list made "Co-op" and
+   * "Roguelite" look like the same kind of choice.
+   *
+   * Both lists are built from the games themselves, so they only ever offer
+   * values the catalog actually uses. Reading the canonical TAGS/FEATURES
+   * constants instead would advertise filters that match nothing.
+   */
+  const allFeaturesWithCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of baseFiltered) {
+      for (const f of g.features) {
+        counts.set(f, (counts.get(f) ?? 0) + 1);
+      }
+    }
+    for (const f of selectedFeatures) if (!counts.has(f)) counts.set(f, 0);
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [baseFiltered, selectedFeatures]);
+
+  function toggleFeature(name: string) {
+    setSelectedFeatures((prev) =>
+      prev.includes(name) ? prev.filter((f) => f !== name) : [...prev, name]
+    );
+  }
 
   function toggleTag(name: string) {
     setSelectedTags((prev) =>
@@ -350,74 +391,27 @@ export function DiscoverFilters({
         })}
       </div>
 
-      {/* ── 1b. Tags, collapsed by default ──────────────────────────── */}
-      {allTagsWithCounts.length > 0 && (
-        <div className="-mt-2">
-          <button
-            type="button"
-            onClick={() => setTagsOpen((v) => !v)}
-            aria-expanded={tagsOpen}
-            className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <span
-              className={cn(
-                "inline-block transition-transform duration-150",
-                tagsOpen && "rotate-90"
-              )}
-              aria-hidden
-            >
-              ▸
-            </span>
-            Tags
-            {/* The count goes on the closed row so a filter cannot be
-                forgotten about while it is hidden. */}
-            {selectedTags.length > 0 && (
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground tabular-nums">
-                {selectedTags.length}
-              </span>
-            )}
-          </button>
-
-          {tagsOpen && (
-            <div className="-mx-1 mt-1.5 flex flex-wrap items-center gap-1.5 px-1">
-              {allTagsWithCounts.map(({ name, count }) => {
-                const isSelected = selectedTags.includes(name);
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => toggleTag(name)}
-                    aria-pressed={isSelected}
-                    className={cn(
-                      "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border/70 bg-secondary/40 text-muted-foreground hover:border-border hover:text-foreground"
-                    )}
-                  >
-                    {name}
-                    <span
-                      className={cn(
-                        "ml-1.5 tabular-nums",
-                        isSelected ? "text-primary-foreground/75" : "text-muted-foreground/70"
-                      )}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-              {selectedTags.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedTags([])}
-                  className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold text-primary hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          )}
+      {/* ── 1b. Tags and Features, each collapsed by default ─────────── */}
+      {(allTagsWithCounts.length > 0 || allFeaturesWithCounts.length > 0) && (
+        <div className="-mt-2 space-y-2">
+          <ChipSection
+            label="Tags"
+            open={tagsOpen}
+            onToggle={() => setTagsOpen((v) => !v)}
+            items={allTagsWithCounts}
+            selected={selectedTags}
+            onPick={toggleTag}
+            onClear={() => setSelectedTags([])}
+          />
+          <ChipSection
+            label="Features"
+            open={featuresOpen}
+            onToggle={() => setFeaturesOpen((v) => !v)}
+            items={allFeaturesWithCounts}
+            selected={selectedFeatures}
+            onPick={toggleFeature}
+            onClear={() => setSelectedFeatures([])}
+          />
         </div>
       )}
 
@@ -517,6 +511,102 @@ export function DiscoverFilters({
             ))}
           </div>
         </CompatibleGamesFade>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One collapsible row of filter chips.
+ *
+ * Tags and Features are the same interaction over different data, so they share
+ * a component rather than being written twice — the second copy is where they
+ * would drift apart in spacing, counts or clear behaviour.
+ *
+ * Chips are sized to be comfortably clickable rather than as small as the text
+ * allows: these sit under the genre buttons and get tapped on touch screens,
+ * where the previous 12px pill was an awkward target.
+ */
+function ChipSection({
+  label,
+  open,
+  onToggle,
+  items,
+  selected,
+  onPick,
+  onClear,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  items: { name: string; count: number }[];
+  selected: string[];
+  onPick: (name: string) => void;
+  onClear: () => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <span
+          className={cn("inline-block transition-transform duration-150", open && "rotate-90")}
+          aria-hidden
+        >
+          ▸
+        </span>
+        {label}
+        {/* On the closed row, so an active filter cannot be forgotten while hidden. */}
+        {selected.length > 0 && (
+          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold text-primary-foreground tabular-nums">
+            {selected.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="-mx-1 mt-2 flex flex-wrap items-center gap-2 px-1">
+          {items.map(({ name, count }) => {
+            const isSelected = selected.includes(name);
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onPick(name)}
+                aria-pressed={isSelected}
+                className={cn(
+                  "shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors",
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    : "border-border/70 bg-secondary/50 text-foreground hover:border-border hover:bg-secondary/80"
+                )}
+              >
+                {name}
+                <span
+                  className={cn(
+                    "ml-2 tabular-nums",
+                    isSelected ? "text-primary-foreground/75" : "text-muted-foreground"
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="shrink-0 rounded-xl px-3 py-2 text-sm font-bold text-primary hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
