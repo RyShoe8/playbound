@@ -202,18 +202,16 @@ async function attachConfigSync(
     };
   } catch (err) {
     /*
-     * Worth an event, not just a log line. A config-sync that throws leaves the
-     * panel with no idea who has what, which surfaces to players as "you do not
-     * have the game" — the exact complaint this system generates, and it was
-     * previously invisible to Ops.
+     * Logged, not recorded.
+     *
+     * This catch fires on a failed database read, and the panel polls it every
+     * 1.5s. Writing an event here meant a struggling cluster generated a write
+     * per poll per viewer describing the fact that it was struggling — load
+     * caused by the reporting of load. trackPartyFailure now filters
+     * infrastructure errors for exactly this reason; keeping the call would
+     * still be misleading about where the failure gets seen.
      */
-    trackPartyFailure("sync", {
-      op: "config-sync",
-      partyId: party.id,
-      gameSlug: party.gameSlug,
-      userId: viewerUserId ?? null,
-      message: err,
-    });
+    console.warn("[party:sync] config-sync failed", err instanceof Error ? err.message : err);
     return { ...party, readiness: readinessFor(party, null) };
   }
 }
