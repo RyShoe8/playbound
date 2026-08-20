@@ -18,6 +18,7 @@ import { isBrowserGame } from "@/lib/gameLaunch";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
+  DISCORD_HANDOFF_MS,
   firePlayboundDeepLink,
   parseDiscordInviteCode,
   openPlayboundDeepLink,
@@ -352,19 +353,40 @@ export function PartyView({
         <div className="flex items-center gap-3">
           {party.voiceEnabled || party.discord.inviteUrl || party.discord.voiceChannelId ? (
             party.discord.inviteUrl ? (
-              <a
-                href={party.discord.inviteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              /*
+               * A button, not a target="_blank" link.
+               *
+               * As a link it did both things at once: the browser opened the
+               * invite in a new tab while the onClick handed off to the desktop
+               * app. The app wins, and the tab is left sitting there empty —
+               * which is what it looked like, an empty tab and nothing else,
+               * until Discord surfaced the invite seconds later.
+               *
+               * Now the deep link goes first and the web invite only opens if
+               * the page is still visible after the handoff window. If the app
+               * took focus, the document is hidden and no tab is created.
+               */
+              <button
+                type="button"
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#5865F2]/10 text-[#5865F2] hover:bg-[#5865F2]/20 text-sm font-semibold transition-colors"
                 onClick={() => {
-                  const code = parseDiscordInviteCode(party.discord.inviteUrl!);
-                  if (code) firePlayboundDeepLink(`discord://-/invite/${code}`);
+                  const inviteUrl = party.discord.inviteUrl!;
+                  const code = parseDiscordInviteCode(inviteUrl);
                   void provisionDiscord(party.id);
+                  if (!code) {
+                    window.open(inviteUrl, "_blank", "noopener,noreferrer");
+                    return;
+                  }
+                  firePlayboundDeepLink(`discord://-/invite/${code}`);
+                  window.setTimeout(() => {
+                    if (document.visibilityState === "visible") {
+                      window.open(inviteUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }, DISCORD_HANDOFF_MS);
                 }}
               >
                 <Phone className="size-3.5" /> Launch Voice
-              </a>
+              </button>
             ) : (
               <button
                 type="button"
