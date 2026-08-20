@@ -167,10 +167,6 @@ export function AdminGamesTable({
           aVal = a.installCount ?? 0;
           bVal = b.installCount ?? 0;
           break;
-        case "Version":
-          aVal = (a.launcherInstall?.detectedVersion || a.launcherInstall?.versionLabel || "").toLowerCase();
-          bVal = (b.launcherInstall?.detectedVersion || b.launcherInstall?.versionLabel || "").toLowerCase();
-          break;
         case "Install":
           aVal = HEALTH_RANK[healthOf(a, "install").status];
           bVal = HEALTH_RANK[healthOf(b, "install").status];
@@ -178,6 +174,10 @@ export function AdminGamesTable({
         case "Join":
           aVal = HEALTH_RANK[healthOf(a, "party").status];
           bVal = HEALTH_RANK[healthOf(b, "party").status];
+          break;
+        case "Party":
+          aVal = HEALTH_RANK[healthOf(a, "partyOps").status];
+          bVal = HEALTH_RANK[healthOf(b, "partyOps").status];
           break;
         case "Status":
           aVal = (a.status || "").toLowerCase();
@@ -281,9 +281,9 @@ export function AdminGamesTable({
               <SortableHeader label="Slug" />
               <SortableHeader label="Mods" />
               <SortableHeader label="Installs" />
-              <SortableHeader label="Version" />
               <SortableHeader label="Install" />
               <SortableHeader label="Join" />
+              <SortableHeader label="Party" />
               <SortableHeader label="Status" />
               <SortableHeader label="Complete" />
               <SortableHeader label="Published" />
@@ -321,12 +321,10 @@ export function AdminGamesTable({
                     <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
                       {g.installCount ?? 0}
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
-                      {g.launcherInstall?.detectedVersion || g.launcherInstall?.versionLabel || "—"}
-                    </td>
-                    {(["install", "party"] as const).map((area) => {
+                    {(["install", "party", "partyOps"] as const).map((area) => {
                       const health = healthOf(g, area);
-                      const label = area === "party" ? "Join" : "Install";
+                      const label =
+                        area === "party" ? "Join" : area === "partyOps" ? "Party" : "Install";
                       return (
                         <td key={area} className="px-4 py-2.5">
                           {/*

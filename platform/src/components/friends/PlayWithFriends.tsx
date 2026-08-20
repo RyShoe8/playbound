@@ -119,6 +119,15 @@ export function PlayWithFriends({
 
       {activeParties.length > 0 && (
         <div className="space-y-2">
+          {/*
+            Labelled. These are the viewer's own parties, and they were being
+            rendered directly beneath "Your Friends Are Playing" with no heading
+            of their own — so your own party read as a friend's. The two lists
+            below already say what they are; this one did not.
+          */}
+          <h3 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
+            {activeParties.length === 1 ? "Your Party" : "Your Parties"}
+          </h3>
           {activeParties.map((p) => (
             <PartyCard key={p.id} party={p} />
           ))}

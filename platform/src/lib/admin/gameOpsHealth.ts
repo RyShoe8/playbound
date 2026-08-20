@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
-import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
+import { GAME_HEALTH_AREAS, type GameHealthArea, type GameHealthStatus } from "@/lib/admin/gameHealth";
 
 /**
  * Per-game Install and Join lights, derived from telemetry.
@@ -21,12 +21,28 @@ import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
  * successes are attempts minus failures, since nothing emits "joined ok".
  */
 
-export const HEALTH_WINDOW_DAYS = 7;
+/**
+ * One day, not seven.
+ *
+ * A light is a "is this broken right now" signal. Averaged over a week, a game
+ * fixed on Tuesday still shows amber on Friday, and one bad day is diluted to
+ * invisibility by six good ones.
+ */
+export const HEALTH_WINDOW_DAYS = 1;
 
 /** At least this many attempts before a colour means anything. */
 const MIN_ATTEMPTS = 3;
-/** Failure share at or above this is red. */
-const RED_AT = 0.2;
+
+/**
+ * The bands.
+ *
+ * Under 2.5% is green, 2.5%–10% amber, above 10% red. Applied identically to
+ * install, join and party so one glance across the row means the same thing in
+ * every column — three columns with three different definitions of "amber" is
+ * a table that has to be re-learned per column.
+ */
+const YELLOW_AT = 0.025;
+const RED_AT = 0.1;
 
 export type AreaHealth = {
   status: GameHealthStatus;
@@ -39,7 +55,7 @@ export type GameHealth = Record<GameHealthArea, AreaHealth>;
 const HEALTHY: AreaHealth = { status: "green", failed: 0, attempts: 0 };
 
 export function emptyGameHealth(): GameHealth {
-  return { install: HEALTHY, party: HEALTHY };
+  return { install: HEALTHY, party: HEALTHY, partyOps: HEALTHY };
 }
 
 /**
@@ -53,7 +69,9 @@ export function emptyGameHealth(): GameHealth {
 export function statusFor(failed: number, attempts: number): GameHealthStatus {
   if (failed <= 0) return "green";
   if (attempts < MIN_ATTEMPTS) return "yellow";
-  return failed / attempts >= RED_AT ? "red" : "yellow";
+  const rate = failed / attempts;
+  if (rate > RED_AT) return "red";
+  return rate >= YELLOW_AT ? "yellow" : "green";
 }
 
 /**
@@ -82,6 +100,7 @@ export function buildGameHealth(rows: Row[]): Map<string, GameHealth> {
     const fresh: GameHealth = {
       install: { status: "green", failed: 0, attempts: 0 },
       party: { status: "green", failed: 0, attempts: 0 },
+      partyOps: { status: "green", failed: 0, attempts: 0 },
     };
     out.set(slug, fresh);
     return fresh;
@@ -89,14 +108,14 @@ export function buildGameHealth(rows: Row[]): Map<string, GameHealth> {
 
   for (const row of rows) {
     const { slug, area, outcome } = row._id || ({} as Row["_id"]);
-    if (!slug || (area !== "install" && area !== "party")) continue;
+    if (!slug || !GAME_HEALTH_AREAS.includes(area)) continue;
     const health = bump(slug);
     if (outcome === "failed" || outcome === "failure_only") health[area].failed += row.count;
     if (outcome === "failed" || outcome === "attempt") health[area].attempts += row.count;
   }
 
   for (const health of out.values()) {
-    for (const area of ["install", "party"] as const) {
+    for (const area of GAME_HEALTH_AREAS) {
       health[area].status = statusFor(health[area].failed, health[area].attempts);
     }
   }
@@ -125,6 +144,8 @@ export async function getGameHealth(
               "party_hosted_ready",
               "launch_attempted",
               "launch_failed",
+              "party_failed",
+              "party_ok",
             ],
           },
           createdAt: { $gte: since },
@@ -144,7 +165,12 @@ export async function getGameHealth(
         $project: {
           slug: 1,
           area: {
+            // Party-system events first: they are their own light, and must
+            // not be mistaken for the Join path below.
             $cond: [
+              { $in: ["$event", ["party_failed", "party_ok"]] },
+              "partyOps",
+              { $cond: [
               {
                 $or: [
                   { $in: ["$event", ["party_hosted_failed", "party_hosted_ready"]] },
@@ -158,6 +184,7 @@ export async function getGameHealth(
               },
               "party",
               "install",
+            ] },
             ],
           },
           outcome: {
@@ -166,7 +193,9 @@ export async function getGameHealth(
                 // Already counted as an attempt by its own launch_attempted.
                 { case: { $eq: ["$event", "launch_failed"] }, then: "failure_only" },
                 {
-                  case: { $in: ["$event", ["install_failed", "party_hosted_failed"]] },
+                  case: {
+                    $in: ["$event", ["install_failed", "party_hosted_failed", "party_failed"]],
+                  },
                   then: "failed",
                 },
               ],
