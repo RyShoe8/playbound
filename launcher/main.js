@@ -6069,6 +6069,7 @@ async function snapshotSavesAfterPlay(slug) {
 
     const policy = saveLocations.policyFor(slug);
     const result = await saveData.snapshot(slug, editionSlug, saveDir, {
+      only: policy.only,
       reason: "after-play",
       maxSnapshotMb: policy.maxSnapshotMb,
     });

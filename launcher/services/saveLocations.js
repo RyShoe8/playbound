@@ -167,6 +167,24 @@ const LOCATIONS = {
     verified: "documented — KeeperFX save directory inside install root",
     resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),
   },
+  opentyrian: {
+    verified:
+      "observed on a real install — tyrian.sav, opentyrian.cfg and tyrian.cfg " +
+      "were all rewritten in the install directory during a play session",
+    /*
+     * Beside the executable, not under a user-data root.
+     *
+     * Every other entry here resolves to %APPDATA% or Documents, which is why
+     * this game had no location at all: OpenTyrian keeps the save, the engine
+     * config and the original game config together in the install folder.
+     *
+     * The whole directory is not backed up — it holds several megabytes of
+     * unchanging game data. Only the three files a session actually writes.
+     */
+    resolve: (c) => c.installDir || null,
+    include: ["tyrian.sav", "opentyrian.cfg", "tyrian.cfg"],
+    note: "Save and settings live beside the executable.",
+  },
   "tes-arena": {
     verified: "documented — Arena save games directory",
     resolve: (c) => (c.installDir ? path.join(c.installDir, "SAVE") : null),
@@ -302,6 +320,12 @@ function policyFor(gameSlug) {
   return {
     maxSnapshotMb: entry?.maxSnapshotMb ?? DEFAULT_MAX_SNAPSHOT_MB,
     keep: entry?.keep ?? DEFAULT_KEEP_LOCAL,
+    /*
+     * Named files to copy, for games whose save sits in the install directory
+     * alongside megabytes of static game data. Null means take the directory,
+     * which is right everywhere the save has a folder of its own.
+     */
+    only: entry?.include ?? null,
   };
 }
 
