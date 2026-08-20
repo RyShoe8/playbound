@@ -20,6 +20,12 @@ export default async function FriendsPage() {
           website: g.website,
           launchMethods: g.launchMethods,
           browserPlayable: g.browserPlayable,
+          /*
+           * Carried so the party picker can drop singleplayer games. Passed
+           * rather than precomputed here because this same list also feeds
+           * AddFriends, which wants the whole catalog.
+           */
+          features: g.features,
         }))}
         genres={[...GENRES]}
       />
