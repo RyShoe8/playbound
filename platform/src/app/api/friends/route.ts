@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
+import Party from "@/lib/models/Party";
 import DiscordConnection from "@/lib/models/DiscordConnection";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listGames } from "@/lib/catalog";
@@ -66,6 +68,36 @@ export async function GET(req: Request) {
       listSharedLibraryByFriend(userId, friendIdStrings),
     ]);
 
+    /*
+     * Confirm the parties presence claims people are in still exist.
+     *
+     * `currentPartyId` is a denormalised copy written when someone joins and
+     * cleared when the party ends. Nothing validated it, so any cleanup that
+     * did not run — a party ended while the database was unreachable, a sweep
+     * that failed — left the flag set permanently, and the friend showed as
+     * "in a party" forever with no party to open.
+     *
+     * Deriving it from the parties that are actually live means a missed
+     * cleanup self-corrects on the next read instead of needing one.
+     */
+    const claimedPartyIds = [
+      ...new Set(
+        presences
+          .map((p) => (p.currentPartyId ? String(p.currentPartyId) : ""))
+          .filter((id) => id !== "" && Types.ObjectId.isValid(id))
+      ),
+    ];
+    const livePartyIds = new Set<string>();
+    if (claimedPartyIds.length > 0) {
+      const live = await Party.find({
+        _id: { $in: claimedPartyIds.map((id) => new Types.ObjectId(id)) },
+        status: { $nin: ["ended"] },
+      })
+        .select("_id")
+        .lean();
+      for (const p of live) livePartyIds.add(String(p._id));
+    }
+
     const titleBySlug = new Map(games.map((g) => [g.slug, g.title]));
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
     const discordLinkedSet = new Set(discordConnections.map((dc) => dc.userId.toString()));
@@ -85,7 +117,11 @@ export async function GET(req: Request) {
         currentGameTitle: slug ? titleBySlug.get(slug) || slug : null,
         currentEditionId: p.currentEditionId,
         currentPage: p.currentPage,
-        currentPartyId: p.currentPartyId ? String(p.currentPartyId) : null,
+        // Only when the party is still live — see the lookup above.
+        currentPartyId:
+          p.currentPartyId && livePartyIds.has(String(p.currentPartyId))
+            ? String(p.currentPartyId)
+            : null,
         lastHeartbeat: p.lastHeartbeat,
         lastSeen: p.lastHeartbeat,
         lookingForPlayers,
