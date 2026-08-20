@@ -239,6 +239,34 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
     note: "Blue Mammoth Games and Ubisoft actively maintain Brawlhalla with regular balance patches, new Legends, and seasonal esports circuits.",
   },
   "rollercoaster-tycoon": {
+    kind: "manual",
+    url: "https://atari.com/pages/rollercoaster-tycoon",
+    checkedAt: "2026-08-20",
+    note: "Commercial classic; verify the official Windows release and modern launch reliability manually.",
+  },
+  ysoccer: {
+    kind: "manual",
+    url: "https://ysoccer.sourceforge.io/",
+    checkedAt: "2026-08-15",
+    note: "Active open-source retro football simulation on SourceForge with preserved Windows 64-bit releases and community tournament databases.",
+  },
+};
+
+/** All published criteria met — the common case, since failing one means exclusion. */
+function clearsAll(verdict: string): Game["qualityBar"] {
+  return {
+    genuinelyFree: true,
+    finished: true,
+    activelyMaintained: true,
+    standsAlone: true,
+    highQuality: true,
+    verdict,
+    lastVerified: VERIFIED,
+  };
+}
+
+export const editorial: Record<string, GameEditorial> = {
+  "rollercoaster-tycoon": {
     qualityBar: {
       genuinelyFree: true,
       finished: true,
@@ -321,29 +349,6 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
       },
     ],
   },
-
-  ysoccer: {
-    kind: "manual",
-    url: "https://ysoccer.sourceforge.io/",
-    checkedAt: "2026-08-15",
-    note: "Active open-source retro football simulation on SourceForge with preserved Windows 64-bit releases and community tournament databases.",
-  },
-};
-
-/** All published criteria met — the common case, since failing one means exclusion. */
-function clearsAll(verdict: string): Game["qualityBar"] {
-  return {
-    genuinelyFree: true,
-    finished: true,
-    activelyMaintained: true,
-    standsAlone: true,
-    highQuality: true,
-    verdict,
-    lastVerified: VERIFIED,
-  };
-}
-
-export const editorial: Record<string, GameEditorial> = {
   "albion-online": {
     qualityBar: {
       genuinelyFree: true,
