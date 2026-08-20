@@ -1241,24 +1241,28 @@ export async function checkConfigSync(
     String(m.userId)
   );
   const hostId = doc.leaderId ? String(doc.leaderId) : null;
+  const memberObjectIds = memberIds
+    .filter((id) => Types.ObjectId.isValid(id))
+    .map((id) => new Types.ObjectId(id));
+  const memberLookup = [...new Set([...memberIds, ...memberObjectIds])];
 
   const [nameById, libraryEntries, modEntries, presences] = await Promise.all([
     resolveUsernames(memberIds),
     LibraryEntry.find({
-      userId: { $in: memberIds },
+      userId: { $in: memberLookup },
       gameSlug: doc.gameSlug,
     })
       .select("userId gameSlug editionSlug installed")
       .lean(),
     LibraryModEntry.find({
-      userId: { $in: memberIds },
+      userId: { $in: memberLookup },
       baseGameSlug: doc.gameSlug,
       installed: true,
     })
       .select("userId modSlug")
       .lean(),
     Presence.find({
-      userId: { $in: memberIds },
+      userId: { $in: memberLookup },
       lastHeartbeat: { $gte: new Date(Date.now() - STALE_AFTER_MS) },
     })
       .select("userId currentGameId status")
@@ -1272,6 +1276,8 @@ export async function checkConfigSync(
     if (!installedByUser.has(uid)) installedByUser.set(uid, new Set());
     if (entry.installed) {
       installedByUser.get(uid)!.add(entry.editionSlug || BASE_EDITION_KEY);
+      // Any installed edition of the game confirms having the base game
+      installedByUser.get(uid)!.add(BASE_EDITION_KEY);
     }
   }
 

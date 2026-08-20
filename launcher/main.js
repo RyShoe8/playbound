@@ -684,13 +684,14 @@ async function syncAllInstalledGames() {
       playableExePath(game) || game.pending || game.dir || editions.length
     );
     if (!listed) continue;
+    const primaryEditionSlug = game.editionSlug || (editions.length > 0 ? editions[0]?.editionSlug : null);
     installs.push({
       slug,
       ...(game.version ? { version: String(game.version) } : {}),
-      ...(game.editionSlug ? { editionSlug: String(game.editionSlug) } : {}),
+      ...(primaryEditionSlug ? { editionSlug: String(primaryEditionSlug) } : {}),
     });
     for (const ed of editions) {
-      if (ed && ed.editionSlug && ed.editionSlug !== game.editionSlug) {
+      if (ed && ed.editionSlug && ed.editionSlug !== primaryEditionSlug) {
         installs.push({
           slug,
           editionSlug: String(ed.editionSlug),
