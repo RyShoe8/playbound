@@ -1142,6 +1142,17 @@ export const developers: Developer[] = [
     artHue: 200,
   },
   {
+    slug: "chris-sawyer-productions",
+    name: "Chris Sawyer Productions",
+    tagline: "Small-team simulation design built around systems you can see working.",
+    about:
+      "Chris Sawyer Productions is the studio behind RollerCoaster Tycoon, the 1999 park-management landmark designed and programmed by Chris Sawyer. Its games are known for dense simulation, readable cause and effect, and intricate worlds assembled from deliberately simple tools.",
+    founded: 1999,
+    location: "Scotland, United Kingdom",
+    website: "https://www.chrissawyergames.com/",
+    artHue: 35,
+  },
+  {
     slug: "ysoccer-team",
     name: "The YSoccer Project",
     tagline: "Classic 16-bit retro top-down football preservation and modern continuation.",
