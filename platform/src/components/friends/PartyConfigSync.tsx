@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle2, Download, HardDriveDownload } from "lucide-r
 import type { ConfigSyncMember } from "@/lib/playTogether/types";
 import { usePartyStore } from "@/stores/partyStore";
 import { telemetry } from "@/lib/telemetry";
+import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 
 const BASE_EDITION_KEY = "__base__";
 
@@ -185,7 +186,21 @@ export function PartyConfigSync({
                   </span>
                 </div>
 
-                {showInstall && (
+                {showInstall && !m.hasGame && sync.referenceSource === "party" ? (
+                  /*
+                   * Nobody has established a version yet, so there is nothing to
+                   * match — show the actual editions rather than a single
+                   * "install the right version" link that cannot know which one
+                   * is right.
+                   */
+                  <PartyHostInstallPicker
+                    partyId={partyId}
+                    gameSlug={gameSlug}
+                    editionSlug={editionSlug}
+                    canSetEdition={isYouHost}
+                    viewerMissingGame
+                  />
+                ) : showInstall ? (
                   <a
                     href={href}
                     onClick={() =>
@@ -200,7 +215,7 @@ export function PartyConfigSync({
                   >
                     <Download className="size-3" /> Install the right version
                   </a>
-                )}
+                ) : null}
               </li>
             );
           })}

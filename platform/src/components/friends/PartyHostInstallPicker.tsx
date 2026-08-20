@@ -14,18 +14,34 @@ type EditionOption = {
 };
 
 /**
- * Edition install list for a party leader who picked a game they do not have.
- * Shown under the game dropdown immediately — sync is only used to hide it
- * once their library reports the game.
+ * Edition install list for someone in the party who does not have the game.
+ *
+ * Originally leader-only, which left everyone else with a single "install the
+ * right version" link and no way to see what the versions were. Any member
+ * missing the game gets the list now; only the leader's choice changes what the
+ * party is playing, because a member picking a build would silently redirect
+ * everyone else's install.
+ *
+ * Hidden once a reference exists — at that point there is nothing to choose,
+ * the party has a version and the job is to match it exactly.
  */
 export function PartyHostInstallPicker({
   partyId,
   gameSlug,
   editionSlug,
+  canSetEdition = true,
+  viewerMissingGame,
 }: {
   partyId: string;
   gameSlug: string;
   editionSlug?: string | null;
+  /** Only the leader's pick becomes the party's version. */
+  canSetEdition?: boolean;
+  /**
+   * Render for a non-leader who lacks the game. When omitted the component
+   * keeps its original behaviour and keys off the host's install.
+   */
+  viewerMissingGame?: boolean;
 }) {
   const setEdition = usePartyStore((s) => s.setEdition);
   const [editions, setEditions] = useState<EditionOption[] | null>(null);
@@ -98,7 +114,16 @@ export function PartyHostInstallPicker({
     };
   }, [partyId, gameSlug, editionSlug]);
 
-  if (storeHostHasGame || hostHasGame) return null;
+  /*
+   * A member asked to render explicitly shows the list whenever they are
+   * missing the game — the host having it is what gives the party a reference,
+   * not a reason to hide the versions from someone who still has to install.
+   */
+  if (viewerMissingGame === undefined) {
+    if (storeHostHasGame || hostHasGame) return null;
+  } else if (!viewerMissingGame) {
+    return null;
+  }
 
   if (editions === null) {
     return <div className="mt-2 h-16 max-w-md animate-pulse rounded-lg border border-border bg-secondary/40" />;
@@ -109,8 +134,9 @@ export function PartyHostInstallPicker({
   return (
     <div className="mt-2 max-w-md space-y-2">
       <p className="text-xs text-muted-foreground">
-        You don&apos;t have this installed yet. Pick a version for the party — then everyone
-        else can match it.
+        {canSetEdition
+          ? "You don't have this installed yet. Pick a version for the party — then everyone else can match it."
+          : "You don't have this installed yet. Install any version to join in — the party will match whoever sets it first."}
       </p>
       <ul className="space-y-2">
         {editions.map((edition) => {
@@ -132,7 +158,7 @@ export function PartyHostInstallPicker({
                   target={opensNewTab ? "_blank" : undefined}
                   rel={opensNewTab ? "noopener noreferrer" : undefined}
                   onClick={() => {
-                    void setEdition(partyId, edition.slug);
+                    if (canSetEdition) void setEdition(partyId, edition.slug);
                     telemetry.track("party_config_sync_edition_picked", {
                       partyId,
                       gameSlug,
@@ -148,7 +174,7 @@ export function PartyHostInstallPicker({
                 <button
                   type="button"
                   onClick={() => {
-                    void setEdition(partyId, edition.slug);
+                    if (canSetEdition) void setEdition(partyId, edition.slug);
                     telemetry.track("party_config_sync_edition_picked", {
                       partyId,
                       gameSlug,
