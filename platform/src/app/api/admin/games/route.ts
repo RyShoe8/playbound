@@ -85,10 +85,11 @@ export async function POST(req: Request) {
       ownerUserId: body.ownerUserId || null,
     });
 
-    if (doc.published && !hasPlayboundDiscordChannel(doc)) {
+    const isPublished = doc.status === "published" || Boolean(doc.published);
+    if (isPublished && !hasPlayboundDiscordChannel(doc)) {
       void requestDiscordProvision(doc.slug);
     }
-    if (doc.published) {
+    if (isPublished) {
       void requestNewGameDiscordAnnounce({
         slug: doc.slug,
         title: doc.title,
