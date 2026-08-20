@@ -52,6 +52,10 @@ export const state = {
   gamesFilters: {
     query: "",
     genre: "",
+    /* Selected tag names. Empty means no tag filter. */
+    tags: [],
+    /* The tag row starts closed — tags are a long tail beside a dozen genres. */
+    tagsOpen: false,
     multiplayerOnly: false,
     /** Only games with someone in them right now, per the live snapshot. */
     hasPlayersOnly: false,

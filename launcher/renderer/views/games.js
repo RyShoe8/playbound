@@ -41,6 +41,9 @@ function ensureGamesShell() {
     -->
     <div class="genre-pills" id="games-genre-pills"></div>
 
+    <!-- Tags, collapsed by default. Populated by syncTagOptions. -->
+    <div class="games-tag-section" id="games-tag-section"></div>
+
     <div class="games-filter-card">
       <div class="games-filter-row">
         <div class="games-filter-group">
@@ -90,6 +93,83 @@ function ensureGamesShell() {
     apply();
   });
   return true;
+}
+
+/**
+ * Tag chips beneath the genre pills, collapsed until asked for.
+ *
+ * Counts come from the same base list the genre pills use, so picking one tag
+ * narrows the rest the way faceted filters are expected to. Selected tags are
+ * always rendered even at zero — a tag that filtered everything out would
+ * otherwise disappear and leave no way to undo it.
+ */
+function syncTagOptions(catalog) {
+  const host = document.getElementById("games-tag-section");
+  if (!host) return;
+
+  const filters = state.gamesFilters;
+  const selected = Array.isArray(filters.tags) ? filters.tags : [];
+
+  let base = filterCatalogGames(catalog);
+  if (state.discoveryMode === "ALL") base = filterGamesByPrice(base, filters.price);
+  if (filters.genre) base = base.filter((g) => (g.genres || []).includes(filters.genre));
+
+  const counts = new Map();
+  for (const g of base) {
+    for (const tag of g.tags || []) counts.set(tag, (counts.get(tag) || 0) + 1);
+  }
+  for (const t of selected) if (!counts.has(t)) counts.set(t, 0);
+  const ordered = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  if (ordered.length === 0) {
+    host.innerHTML = "";
+    return;
+  }
+
+  const open = Boolean(filters.tagsOpen);
+  const badge = selected.length
+    ? `<span class="games-tag-badge">${selected.length}</span>`
+    : "";
+
+  const chips = ordered
+    .map(([tag, count]) => {
+      const on = selected.includes(tag);
+      return `<button type="button" class="games-tag-chip${on ? " selected" : ""}" data-tag="${escapeHtml(
+        tag
+      )}" aria-pressed="${on}">${escapeHtml(tag)}<span class="games-tag-count">${count}</span></button>`;
+    })
+    .join("");
+
+  const clear = selected.length
+    ? `<button type="button" class="games-tag-clear" id="games-tag-clear">Clear</button>`
+    : "";
+
+  host.innerHTML = `
+    <button type="button" class="games-tag-toggle" id="games-tag-toggle" aria-expanded="${open}">
+      <span class="games-tag-caret${open ? " open" : ""}" aria-hidden="true">&#9656;</span>
+      Tags${badge}
+    </button>
+    ${open ? `<div class="games-tag-chips">${chips}${clear}</div>` : ""}
+  `;
+
+  host.querySelector("#games-tag-toggle")?.addEventListener("click", () => {
+    filters.tagsOpen = !filters.tagsOpen;
+    syncTagOptions(catalog);
+  });
+  host.querySelectorAll("[data-tag]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tag = btn.dataset.tag || "";
+      const next = selected.includes(tag)
+        ? selected.filter((t) => t !== tag)
+        : [...selected, tag];
+      filters.tags = next;
+      paintGamesGrid(catalog);
+    });
+  });
+  host.querySelector("#games-tag-clear")?.addEventListener("click", () => {
+    filters.tags = [];
+    paintGamesGrid(catalog);
+  });
 }
 
 /**
@@ -165,6 +245,7 @@ function parseSizeMB(label) {
 
 export function paintGamesGrid(catalog = state.catalogCache) {
   syncGenreOptions(catalog);
+  syncTagOptions(catalog);
   syncPriceChips();
   const q = state.gamesFilters.query.trim().toLowerCase();
   let list = filterCatalogGames(catalog.slice());
@@ -182,6 +263,18 @@ export function paintGamesGrid(catalog = state.catalogCache) {
   }
   if (state.gamesFilters.genre) {
     list = list.filter((g) => (g.genres || []).includes(state.gamesFilters.genre));
+  }
+  /*
+   * Every selected tag must match. Tags describe what a game is, so a second
+   * one is meant to narrow — matching any would widen the results instead.
+   */
+  const selectedTags = Array.isArray(state.gamesFilters.tags) ? state.gamesFilters.tags : [];
+  if (selectedTags.length > 0) {
+    const wanted = selectedTags.map((t) => t.toLowerCase());
+    list = list.filter((game) => {
+      const has = new Set((game.tags || []).map((t) => t.toLowerCase()));
+      return wanted.every((t) => has.has(t));
+    });
   }
   if (state.gamesFilters.multiplayerOnly) {
     list = list.filter((g) => g.isMultiplayer ?? g.multiplayer);
@@ -226,6 +319,7 @@ async function renderGamesView() {
     state.catalogCache.length > 0 ? state.catalogCache : await window.playbound.getCatalog();
   if (!state.catalogCache.length && Array.isArray(catalog)) state.catalogCache = catalog;
   syncGenreOptions(catalog);
+  syncTagOptions(catalog);
   if (created) {
     // The genre select is a pill row now; sort is the only dropdown left.
     const sortSelect = document.getElementById("games-sort");

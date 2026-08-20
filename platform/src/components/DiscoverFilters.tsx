@@ -47,6 +47,13 @@ export function DiscoverFilters({
   const { track } = useTelemetry();
   const { mode, device } = useCompatibilityFilter();
   const [selectedGenre, setSelectedGenre] = useState<string>("");
+  /*
+   * Tags are a long tail — dozens of them against a dozen genres — so they
+   * start collapsed. Genre is the choice most people want; showing every tag
+   * by default would bury it under a wall of chips.
+   */
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("name");
   const [multiplayerOnly, setMultiplayerOnly] = useState(false);
   /** Only games with someone in them right now, per the shared live snapshot. */
@@ -112,6 +119,19 @@ export function DiscoverFilters({
   const baseFiltered = useMemo(() => {
     let list = serialized.slice();
 
+    /*
+     * Every selected tag must match, not any. Tags describe what a game is
+     * ("Co-op", "Roguelite"), so narrowing is what picking a second one is
+     * for — an "any" match would widen the results and read as broken.
+     */
+    if (selectedTags.length > 0) {
+      const wanted = selectedTags.map((t) => t.toLowerCase());
+      list = list.filter((g) => {
+        const has = new Set(g.tags.map((t) => t.toLowerCase()));
+        return wanted.every((t) => has.has(t));
+      });
+    }
+
     if (multiplayerOnly) {
       list = list.filter(
         (g) =>
@@ -161,6 +181,7 @@ export function DiscoverFilters({
     return list;
   }, [
     serialized,
+    selectedTags,
     multiplayerOnly,
     hasPlayersOnly,
     hwFilter,
@@ -184,6 +205,32 @@ export function DiscoverFilters({
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([name, count]) => ({ name, count }));
   }, [baseFiltered]);
+
+  /*
+   * Tags available to pick, counted within the current results.
+   *
+   * Selected tags are always included even at zero, because a tag that
+   * narrowed the list to nothing would otherwise vanish and leave no way to
+   * undo it.
+   */
+  const allTagsWithCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of baseFiltered) {
+      for (const t of g.tags) {
+        counts.set(t, (counts.get(t) ?? 0) + 1);
+      }
+    }
+    for (const t of selectedTags) if (!counts.has(t)) counts.set(t, 0);
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [baseFiltered, selectedTags]);
+
+  function toggleTag(name: string) {
+    setSelectedTags((prev) =>
+      prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]
+    );
+  }
 
   /* Group games by genre */
   const genreSections = useMemo(() => {
@@ -302,6 +349,77 @@ export function DiscoverFilters({
           );
         })}
       </div>
+
+      {/* ── 1b. Tags, collapsed by default ──────────────────────────── */}
+      {allTagsWithCounts.length > 0 && (
+        <div className="-mt-2">
+          <button
+            type="button"
+            onClick={() => setTagsOpen((v) => !v)}
+            aria-expanded={tagsOpen}
+            className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <span
+              className={cn(
+                "inline-block transition-transform duration-150",
+                tagsOpen && "rotate-90"
+              )}
+              aria-hidden
+            >
+              ▸
+            </span>
+            Tags
+            {/* The count goes on the closed row so a filter cannot be
+                forgotten about while it is hidden. */}
+            {selectedTags.length > 0 && (
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground tabular-nums">
+                {selectedTags.length}
+              </span>
+            )}
+          </button>
+
+          {tagsOpen && (
+            <div className="-mx-1 mt-1.5 flex flex-wrap items-center gap-1.5 px-1">
+              {allTagsWithCounts.map(({ name, count }) => {
+                const isSelected = selectedTags.includes(name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleTag(name)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border/70 bg-secondary/40 text-muted-foreground hover:border-border hover:text-foreground"
+                    )}
+                  >
+                    {name}
+                    <span
+                      className={cn(
+                        "ml-1.5 tabular-nums",
+                        isSelected ? "text-primary-foreground/75" : "text-muted-foreground/70"
+                      )}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+              {selectedTags.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTags([])}
+                  className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold text-primary hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── 2. Unified Filter Rows (Stacked in 2 Rows) ── */}
       <div className="relative z-30 flex flex-col gap-2.5 rounded-xl border border-border/70 bg-card/60 p-3 backdrop-blur-sm">
