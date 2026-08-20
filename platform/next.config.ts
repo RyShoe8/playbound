@@ -52,7 +52,45 @@ const securityHeaders = [
   },
 ];
 
+/**
+ * Routes that compress an upload with sharp.
+ *
+ * Listed rather than globbed to `/*` because the libvips shared object is tens
+ * of megabytes; copying it into every lambda would cost far more than the four
+ * that actually decode an image.
+ */
+const SHARP_ROUTES = [
+  "/api/admin/games/upload",
+  "/api/admin/games/capture",
+  "/api/admin/newsletter/media-download",
+  "/api/events/upload",
+];
+
+/**
+ * sharp's native library, which file tracing cannot find on its own.
+ *
+ * On Windows the addon and libvips ship in one package, so this never comes up
+ * locally. On Linux they are split: `@img/sharp-linux-x64` holds the .node,
+ * and it loads `libvips-cpp.so` from the sibling `@img/sharp-libvips-linux-x64`
+ * through the binary's rpath — a link only the dynamic loader can see, not a
+ * require() the tracer can follow. So the addon was bundled, the library it
+ * needs was not, and every upload failed at dlopen with a missing .so.
+ *
+ * Pinned to linux-x64 alone. Including all of @img would drag in every other
+ * platform's binaries and push the function past its size limit.
+ */
+const sharpTracingIncludes = Object.fromEntries(
+  SHARP_ROUTES.map((route) => [
+    route,
+    [
+      "node_modules/@img/sharp-linux-x64/**/*",
+      "node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+  ])
+);
+
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: sharpTracingIncludes,
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
