@@ -74,10 +74,10 @@ export async function PATCH(
     }
 
     if (published && !hasPlayboundDiscordChannel(doc)) {
-      void requestDiscordProvision(doc.slug);
+      await requestDiscordProvision(doc.slug);
     }
     if (published && !wasPublished) {
-      void requestNewGameDiscordAnnounce({
+      await requestNewGameDiscordAnnounce({
         slug: doc.slug,
         title: doc.title,
         description: doc.description,
