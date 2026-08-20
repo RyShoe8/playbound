@@ -1,4 +1,33 @@
-import sharp from "sharp";
+import type Sharp from "sharp";
+
+/**
+ * sharp is loaded on first use, not at module scope.
+ *
+ * As a top-level import, a failure to load it — a missing native binary for the
+ * deployment's platform, most often — throws while the route module is being
+ * evaluated. That is before any handler runs, so no try/catch in the route can
+ * see it and the response is Next's HTML error page rather than JSON. The
+ * symptom is an upload that fails instantly with a wall of markup and no
+ * reason, which is exactly what it did.
+ *
+ * Imported here instead, the same failure lands inside the handler's catch and
+ * comes back as a message naming what went wrong.
+ */
+let sharpModule: typeof Sharp | null = null;
+
+async function loadSharp(): Promise<typeof Sharp> {
+  if (sharpModule) return sharpModule;
+  try {
+    const mod = await import("sharp");
+    sharpModule = (mod.default ?? mod) as typeof Sharp;
+    return sharpModule;
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Image compression is unavailable on this deployment: sharp failed to load (${detail})`
+    );
+  }
+}
 
 export const IMAGE_MAX_EDGE = 2560;
 export const WEBP_QUALITY = 82;
@@ -37,6 +66,7 @@ export async function blobToDetachedBuffer(blob: Blob): Promise<Buffer> {
  */
 export async function compressImageBuffer(input: Buffer): Promise<CompressedImage> {
   try {
+    const sharp = await loadSharp();
     const buffer = await sharp(toDetachedBuffer(input), { failOn: "none" })
       .rotate()
       .resize({
