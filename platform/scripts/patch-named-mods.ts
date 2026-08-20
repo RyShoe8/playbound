@@ -3,7 +3,7 @@
  *
  * The launcher reads install recipes from MongoDB. Editing seed files does
  * nothing on its own. This is the narrow way to fix Combined Arms, VoxeLibre,
- * and DREAM without seed:mods.ts, which upserts the whole catalog.
+ * and DREAM without touching the whole catalog.
  *
  *   - You must name each slug. There is no "all" mode.
  *   - Only downloadKind, assetPattern, directUrl, githubRepo, and website

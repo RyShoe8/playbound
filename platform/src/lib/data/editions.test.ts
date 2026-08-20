@@ -229,7 +229,7 @@ describe("edition seed integrity", () => {
     expect(recipe?.overlayDest).toBe("etmain");
     expect(recipe?.unwrapSingleRoot).toBe(true);
     expect(recipe?.knownExePaths).toContain("etl.exe");
-    expect(recipe?.url).toBe("https://www.etlegacy.com/download/file/736");
+    expect(recipe?.url).toBe("https://www.etlegacy.com/download/file/734");
   });
 });
 

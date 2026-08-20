@@ -2068,11 +2068,23 @@ const facts: Game[] = [
     launcherInstall: {
       enabled: true,
       kind: "direct-zip",
-      // ET: Legacy publishes its supported Windows archives from these official
-      // per-release endpoints, not GitHub Releases (which is empty).
-      url: "https://www.etlegacy.com/download/file/736",
-      fileName: "etlegacy-v2.85.0-x64.zip",
-      checksumMd5: "da0f437f621ee7c682020bfaab45379a",
+      /*
+       * ET: Legacy publishes its supported Windows archives from these official
+       * per-release endpoints, not GitHub Releases (which is empty). The file
+       * ids are opaque and change every release, so nothing can follow them
+       * automatically — the version probe checks GitHub releases for direct*
+       * recipes with a repo, finds none here, and reports no update. This pin
+       * goes stale silently and has to be bumped by hand.
+       *
+       * x86 deliberately, not x64. ET's classic mods — ETPro, Jaymod,
+       * NoQuarter, silEnT, TJMod, ETNam — ship 32-bit game modules that a
+       * 64-bit client cannot load, and those mods are the reason people run
+       * this game. The x64 archive (file/736) is faster and useless to them.
+       * Map and HUD mods are .pk3 data and work on either.
+       */
+      url: "https://www.etlegacy.com/download/file/734",
+      fileName: "etlegacy-v2.85.0-x86.zip",
+      checksumMd5: "c03038ed28ff3a05e6aec0c5eeb45be1",
       exeHint: "etl.exe",
       knownExePaths: ["etl.exe", "ETL.exe"],
       versionLabel: "v2.85.0",

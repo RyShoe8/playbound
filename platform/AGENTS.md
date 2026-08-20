@@ -21,14 +21,21 @@ bestFor/notFor, communityLinks, `launcherInstall`, status and published flag
 with whatever the seed says. There is no merge and no "keep the newer value" —
 it is a deliberate overwrite, which is why bulk mode is refused.
 
-The same applies to any script that writes catalog content from seed across the
-whole catalog. `fix-game-media.ts`, `seed-editions.ts` (which also flips parent
-games to published) and `seed-launcher-install.ts` all loop every entry and must
-not be run against production. `seed-games.ts` is safe only because it counts
-documents first and exits if any exist.
+The global scripts that did this have been deleted rather than documented as
+dangerous: `seed-mods.ts`, `seed-editions.ts` (which also flipped parent games to
+published), `seed-launcher-install.ts` and `fix-game-media.ts` all looped every
+entry. Their replacements are scoped and insert-only —
+`seed:missing-games`, `seed:missing-editions` and `seed:missing-mods`, each of
+which refuses to run without explicit slugs. `seed-games.ts` remains, safe only
+because it counts documents first and exits if any exist.
 
-Editing `games.ts` or `editorial.ts` is fine and does nothing on its own —
-nothing seeds on build or deploy. The danger is only ever at sync time.
+See `docs/database-seeding.md` for the full contract and when each is
+appropriate.
+
+Editing `games.ts` or `editorial.ts` is fine and does nothing on its own. One
+thing does now run on deploy: `npm run build` ends with `seed:deploy`, which
+creates seed mods that are absent for a named game list and never touches a row
+that already exists. It is skipped unless `VERCEL_ENV` is `production`.
 
 ## What this does not restrict
 
