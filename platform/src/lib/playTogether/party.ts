@@ -10,6 +10,7 @@
  */
 
 import { createHash, randomBytes } from "crypto";
+import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import Friend from "@/lib/models/Friend";
