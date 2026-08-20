@@ -180,6 +180,52 @@ export function fetchBrawlhallaPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(291550, { label: "Brawlhalla" });
 }
 
+/** Albion Online — Steam app 761890. */
+export function fetchAlbionOnlinePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(761890, { label: "Albion Online" });
+}
 
+/** Guild Wars 2 — Steam app 1284210. */
+export function fetchGuildWars2Players(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1284210, { label: "Guild Wars 2" });
+}
 
+/** The Lord of the Rings Online — Steam app 212500. */
+export function fetchLotroPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(212500, { label: "The Lord of the Rings Online" });
+}
 
+/** DC Universe Online — Steam app 24200. */
+export function fetchDcUniverseOnlinePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(24200, { label: "DC Universe Online" });
+}
+
+/** Warframe — Steam app 230410. */
+export function fetchWarframePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(230410, { label: "Warframe" });
+}
+
+/** Apex Legends — Steam app 1172470. */
+export function fetchApexLegendsPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1172470, { label: "Apex Legends" });
+}
+
+/** RollerCoaster Tycoon: Deluxe — Steam app 285310. */
+export function fetchRollerCoasterTycoonPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(285310, { label: "RollerCoaster Tycoon: Deluxe" });
+}
+
+/** Endless Sky — Steam app 404410. */
+export function fetchEndlessSkyPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(404410, { label: "Endless Sky" });
+}
+
+/** Naev — Steam app 598530. */
+export function fetchNaevPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(598530, { label: "Naev" });
+}
+
+/** Asphalt Legends — Steam app 1815780. */
+export function fetchAsphaltLegendsPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1815780, { label: "Asphalt Legends" });
+}

@@ -30,6 +30,16 @@ import {
   fetchDota2Players,
   fetchStrikersClubPlayers,
   fetchBrawlhallaPlayers,
+  fetchAlbionOnlinePlayers,
+  fetchGuildWars2Players,
+  fetchLotroPlayers,
+  fetchDcUniverseOnlinePlayers,
+  fetchWarframePlayers,
+  fetchApexLegendsPlayers,
+  fetchRollerCoasterTycoonPlayers,
+  fetchEndlessSkyPlayers,
+  fetchNaevPlayers,
+  fetchAsphaltLegendsPlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
@@ -205,6 +215,46 @@ const providers: Record<string, ServerProvider> = {
   brawlhalla: {
     slug: "brawlhalla",
     fetchServers: fetchBrawlhallaPlayers,
+  },
+  "albion-online": {
+    slug: "albion-online",
+    fetchServers: fetchAlbionOnlinePlayers,
+  },
+  "guild-wars-2": {
+    slug: "guild-wars-2",
+    fetchServers: fetchGuildWars2Players,
+  },
+  "lord-of-the-rings-online": {
+    slug: "lord-of-the-rings-online",
+    fetchServers: fetchLotroPlayers,
+  },
+  "dc-universe-online": {
+    slug: "dc-universe-online",
+    fetchServers: fetchDcUniverseOnlinePlayers,
+  },
+  warframe: {
+    slug: "warframe",
+    fetchServers: fetchWarframePlayers,
+  },
+  "apex-legends": {
+    slug: "apex-legends",
+    fetchServers: fetchApexLegendsPlayers,
+  },
+  "rollercoaster-tycoon": {
+    slug: "rollercoaster-tycoon",
+    fetchServers: fetchRollerCoasterTycoonPlayers,
+  },
+  "endless-sky": {
+    slug: "endless-sky",
+    fetchServers: fetchEndlessSkyPlayers,
+  },
+  naev: {
+    slug: "naev",
+    fetchServers: fetchNaevPlayers,
+  },
+  "asphalt-legends": {
+    slug: "asphalt-legends",
+    fetchServers: fetchAsphaltLegendsPlayers,
   },
 };
 
