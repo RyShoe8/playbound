@@ -105,6 +105,14 @@ export async function POST(req: Request) {
             installedAt: now,
             updatedAt: now,
           },
+          /*
+           * Incremental, unlike the batch route: this reports one edition
+           * finishing, and says nothing about the others already on disk, so
+           * it adds rather than replaces.
+           */
+          ...(body.editionSlug
+            ? { $addToSet: { installedEditions: body.editionSlug } }
+            : {}),
           $setOnInsert: {
             userId: user._id,
             gameSlug: body.slug,
@@ -147,6 +155,31 @@ export async function POST(req: Request) {
     if (!entry) {
       await removeLibraryModsForGame(String(user._id), body.slug);
       return NextResponse.json({ success: true, deleted: false });
+    }
+
+    /*
+     * Removing one edition is not removing the game.
+     *
+     * Previously any uninstall deleted the whole row, so dropping a PlayBound
+     * edition also threw away the official build still sitting on disk — and
+     * the player then read as not owning a game they could still launch.
+     */
+    if (body.editionSlug) {
+      const remaining = (entry.installedEditions || []).filter(
+        (slug: string) => slug !== body.editionSlug
+      );
+      if (remaining.length > 0) {
+        entry.installedEditions = remaining;
+        // Hand the default to a build that is actually still installed.
+        if (entry.editionSlug === body.editionSlug) entry.editionSlug = remaining[0];
+        entry.updatedAt = now;
+        await entry.save();
+        return NextResponse.json({
+          success: true,
+          deleted: false,
+          installedEditions: remaining,
+        });
+      }
     }
 
     await entry.deleteOne();

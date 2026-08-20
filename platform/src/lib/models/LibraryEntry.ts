@@ -33,10 +33,25 @@ const LibraryEntrySchema = new Schema({
   installed: { type: Boolean, default: false },
   version: { type: String },
   /**
-   * Primary edition on this device. One library row per game, so this is the
-   * edition party config-sync compares — not a second unique key.
+   * Primary edition on this device — what Play launches by default.
+   *
+   * Kept single-valued because one row means one default. It is NOT the whole
+   * picture of what is installed; see `installedEditions`.
    */
   editionSlug: { type: String, default: null },
+  /**
+   * Every edition of this game installed on this device.
+   *
+   * The unique index is { userId, gameSlug, platform }, so a game gets exactly
+   * one row — which meant `editionSlug` alone could not say "I have both the
+   * official build and the PlayBound edition". The launcher sends one entry per
+   * installed edition, each `$set` overwrote the last, and party config-sync
+   * then told people they were missing an edition they actually had.
+   *
+   * Empty on legacy rows written before this field existed. Readers must fall
+   * back to `editionSlug` rather than treating empty as "nothing installed".
+   */
+  installedEditions: { type: [String], default: [] },
   installedAt: { type: Date },
   addedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -63,6 +78,7 @@ export type LibraryEntryDoc = {
   installed: boolean;
   version?: string;
   editionSlug?: string | null;
+  installedEditions?: string[];
   installedAt?: Date;
   addedAt: Date;
   updatedAt: Date;
