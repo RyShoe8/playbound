@@ -224,7 +224,7 @@ async function ensureCategory(guild, name) {
   return guild.channels.create({ name, type: ChannelType.GuildCategory });
 }
 
-function isOfficialEdition(edition) {
+function isExcludedEdition(edition) {
   if (!edition) return false;
   const slug = String(edition.slug || "").toLowerCase().trim();
   const name = String(edition.name || "").toLowerCase().trim();
@@ -233,9 +233,23 @@ function isOfficialEdition(edition) {
     slug === "base" ||
     slug === "base-game" ||
     slug === "default" ||
+    slug === "steam" ||
+    slug === "steam-edition" ||
+    slug === "steam-release" ||
+    slug === "gog" ||
+    slug === "gog-edition" ||
+    slug === "epic" ||
+    slug === "epic-games" ||
     name === "official" ||
     name === "base game" ||
-    name === "default"
+    name === "default" ||
+    name === "steam" ||
+    name === "steam edition" ||
+    name === "steam release" ||
+    name === "gog" ||
+    name === "gog edition" ||
+    name === "epic games" ||
+    edition.isDefault === true
   );
 }
 
@@ -249,12 +263,13 @@ async function listPublicEditions(gameSlug) {
     .project({
       slug: 1,
       name: 1,
+      isDefault: 1,
       playboundDiscord: 1,
       sortOrder: 1,
     })
     .sort({ sortOrder: 1, name: 1 })
     .toArray();
-  return all.filter((e) => !isOfficialEdition(e));
+  return all.filter((e) => !isExcludedEdition(e));
 }
 
 /**
@@ -389,11 +404,20 @@ async function provisionFranchise(guild, game, publicEditions) {
     alsoAdoptIds,
   });
 
-  // Clean up any redundant #official or extra #general under this category
+  // Clean up any redundant #official, #steam, or extra #general under this category
   for (const ch of guild.channels.cache.values()) {
     if (ch && ch.parentId === cat.id && ch.type === ChannelType.GuildText) {
-      if (ch.name === "official" || ch.name === "base-game" || ch.name === "default") {
-        await ch.delete("PlayBound cleanup: remove redundant official channel").catch(() => {});
+      if (
+        ch.name === "official" ||
+        ch.name === "base-game" ||
+        ch.name === "default" ||
+        ch.name === "steam" ||
+        ch.name === "steam-edition" ||
+        ch.name === "steam-release" ||
+        ch.name === "gog" ||
+        ch.name === "epic"
+      ) {
+        await ch.delete("PlayBound cleanup: remove redundant official/steam channel").catch(() => {});
       } else if (ch.name === "general" && ch.id !== mainResult.channel.id) {
         await ch.delete("PlayBound cleanup: remove redundant general channel").catch(() => {});
       }
@@ -527,9 +551,18 @@ async function cleanupRedundantChannels(guild) {
     const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
     if (!parent || isSharedCategoryName(parent.name)) continue;
 
-    if (channel.name === "official" || channel.name === "base-game" || channel.name === "default") {
+    if (
+      channel.name === "official" ||
+      channel.name === "base-game" ||
+      channel.name === "default" ||
+      channel.name === "steam" ||
+      channel.name === "steam-edition" ||
+      channel.name === "steam-release" ||
+      channel.name === "gog" ||
+      channel.name === "epic"
+    ) {
       console.log(`[cleanup] Deleting #${channel.name} in category "${parent.name}"`);
-      await channel.delete("PlayBound cleanup: redundant official channel").catch((err) => {
+      await channel.delete("PlayBound cleanup: redundant official/steam channel").catch((err) => {
         console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
       });
       await sleep(PROVISION_DELAY_MS);
