@@ -577,9 +577,22 @@ export function GameEditorForm({
     body.set("slug", form.slug || "upload");
     body.set("kind", kind);
     const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-    const data = await res.json().catch(() => null);
+    // Same reasoning as the edition editor: a non-JSON failure used to collapse
+    // to "Upload failed" and discard the only thing that said why.
+    const raw = await res.text().catch(() => "");
+    let data: { url?: string; error?: string } | null = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch {
+      data = null;
+    }
     if (!res.ok) {
-      throw new Error(data?.error ?? "Upload failed");
+      throw new Error(
+        data?.error ??
+          (raw
+            ? `${res.status} ${res.statusText}: ${raw.slice(0, 200)}`
+            : `${res.status} ${res.statusText}`)
+      );
     }
     if (!data?.url || typeof data.url !== "string") {
       throw new Error("Upload succeeded but no image URL was returned.");

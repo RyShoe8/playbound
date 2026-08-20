@@ -379,11 +379,27 @@ export function EditionEditorForm({
       body.set("slug", uploadSlugFor(form));
       body.set("kind", kind);
       const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-      const data = await res.json().catch(() => null);
+      /*
+       * Read the body once as text, then try JSON.
+       *
+       * A bare "Upload failed" was the outcome whenever the response was not
+       * JSON — a platform-level 413, a gateway timeout, a runtime crash before
+       * the handler — which is exactly when the reason matters most and is the
+       * one case the old code threw away.
+       */
+      const raw = await res.text().catch(() => "");
+      let data: { url?: string; error?: string } | null = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        data = null;
+      }
       if (!res.ok) {
-        const msg = data?.error ?? "Upload failed";
-        setError(msg);
-        setMediaNote(msg);
+        const detail =
+          data?.error ??
+          (raw ? `${res.status} ${res.statusText}: ${raw.slice(0, 200)}` : `${res.status} ${res.statusText}`);
+        setError(detail);
+        setMediaNote(detail);
         setBusy(false);
         return;
       }
@@ -709,27 +725,17 @@ export function EditionEditorForm({
           </button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={label}>Hero image URL</label>
-            <input
-              type="url"
-              value={form.branding.heroImage}
-              onChange={(e) => patchBranding({ heroImage: e.target.value })}
-              className={field}
-            />
-          </div>
-          <div>
-            <label className={label}>Logo URL</label>
-            <input
-              type="url"
-              value={form.branding.logo}
-              onChange={(e) => patchBranding({ logo: e.target.value })}
-              className={field}
-            />
-          </div>
-        </div>
+{/*
+          Hero and logo are set by uploading, or by promoting a screenshot
+          below — not by typing a URL.
 
+          The two inputs that were here were `type="url"`, which the browser
+          rejects for a site path like /games/holocure/…, so they could not
+          express the values this catalog actually uses even after the schema
+          learned to accept them. Removing them also means artwork now always
+          arrives through the upload route, which compresses it — the way a
+          1 MB JPEG got in was a URL pointing at a file nothing had processed.
+        */}
         {form.branding.heroImage ? (
           <div className="flex items-start gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}

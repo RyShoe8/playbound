@@ -52,6 +52,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: blob.url });
   } catch (err) {
     console.error("Upload error:", err);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    /*
+     * Say what actually broke.
+     *
+     * This returned a bare "Upload failed" and put the reason in the server
+     * console — so the person who could act on it saw nothing, and the message
+     * was indistinguishable whether the blob token was missing, sharp had
+     * failed to load, or the file was corrupt. The route is admin-only, so
+     * there is no one to leak to that is not already an operator.
+     */
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { error: `Upload failed: ${detail}`.slice(0, 300) },
+      { status: 500 }
+    );
   }
 }
