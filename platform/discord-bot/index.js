@@ -476,9 +476,47 @@ async function provisionFranchise(guild, game, publicEditions) {
 }
 
 /**
- * Clean up redundant #official and #general channels across all game categories.
+ * Clean up redundant #official and #general channels across all game categories,
+ * and delete any Archive categories and archived channels.
  */
+async function cleanupArchiveSection(guild) {
+  const channels = await guild.channels.fetch();
+  const archiveCategories = [...channels.values()].filter(
+    (c) => c && c.type === ChannelType.GuildCategory && /archive/i.test(c.name)
+  );
+
+  for (const cat of archiveCategories) {
+    const children = [...channels.values()].filter((c) => c && c.parentId === cat.id);
+    for (const child of children) {
+      console.log(`[cleanup] Deleting archived channel #${child.name}`);
+      await child.delete("PlayBound cleanup: deleting archived channel").catch((err) => {
+        console.warn(`[cleanup] Failed to delete archived #${child.name}:`, err?.message || err);
+      });
+      await sleep(PROVISION_DELAY_MS);
+    }
+    console.log(`[cleanup] Deleting archive category "${cat.name}"`);
+    await cat.delete("PlayBound cleanup: removing archive category").catch((err) => {
+      console.warn(`[cleanup] Failed to delete archive category:`, err?.message || err);
+    });
+    await sleep(PROVISION_DELAY_MS);
+  }
+
+  // Clear dead Discord references from unpublished games in MongoDB
+  await games.updateMany(
+    {
+      $and: [
+        { status: { $ne: "published" } },
+        { published: { $ne: true } },
+        { "communityLinks.playboundDiscord.channelId": { $nin: [null, ""] } },
+      ],
+    },
+    { $unset: { "communityLinks.playboundDiscord": "" } }
+  );
+}
+
 async function cleanupRedundantChannels(guild) {
+  await cleanupArchiveSection(guild);
+
   const serverGeneral = await findServerGeneral(guild);
   const channels = await guild.channels.fetch();
 
@@ -688,11 +726,14 @@ async function reconcileChannels(opts = {}) {
       }
     }
 
-    /* ── unpublished games that still hold a channel: archive, never delete ── */
+    /* ── unpublished games that still hold a channel: delete channel ── */
     const retired = await games
       .find({
-        published: { $ne: true },
-        "communityLinks.playboundDiscord.channelId": { $nin: [null, ""] },
+        $and: [
+          { status: { $ne: "published" } },
+          { published: { $ne: true } },
+          { "communityLinks.playboundDiscord.channelId": { $nin: [null, ""] } },
+        ],
       })
       .project({ slug: 1, title: 1, communityLinks: 1 })
       .toArray();
@@ -701,28 +742,17 @@ async function reconcileChannels(opts = {}) {
       try {
         const channelId = game.communityLinks?.playboundDiscord?.channelId;
         const channel = guild.channels.cache.get(channelId);
-        if (!channel || channel.type !== ChannelType.GuildText) continue;
-
-        const parent = channel.parentId ? guild.channels.cache.get(channel.parentId) : null;
-        if (parent?.name === ARCHIVE_CATEGORY_NAME) continue; // already archived
-
-        archived.push({ slug: game.slug, channel: channel.name });
-        if (!dryRun) {
-          const cat = await ensureCategory(guild, ARCHIVE_CATEGORY_NAME);
-          await channel.setParent(cat.id, { lockPermissions: false });
-          /*
-           * Readable forever, writable no longer. ViewChannel is deliberately
-           * not mentioned: leaving it untouched keeps whatever visibility the
-           * channel already had, so archiving never hides history from people
-           * who could previously read it.
-           */
-          await channel.permissionOverwrites.edit(guild.roles.everyone, {
-            SendMessages: false,
-            SendMessagesInThreads: false,
-            CreatePublicThreads: false,
-            CreatePrivateThreads: false,
-          });
-          await sleep(PROVISION_DELAY_MS);
+        if (channel && channel.type === ChannelType.GuildText) {
+          archived.push({ slug: game.slug, channel: channel.name });
+          if (!dryRun) {
+            console.log(`[reconcile] Deleting unpublished game channel #${channel.name}`);
+            await channel.delete("PlayBound reconcile: deleting unpublished game channel").catch(() => {});
+            await games.updateOne(
+              { slug: game.slug },
+              { $unset: { "communityLinks.playboundDiscord": "" } }
+            );
+            await sleep(PROVISION_DELAY_MS);
+          }
         }
       } catch (err) {
         failed.push({ slug: game.slug, error: String(err?.message || err) });
