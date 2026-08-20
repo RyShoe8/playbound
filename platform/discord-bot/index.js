@@ -602,15 +602,24 @@ async function cleanupRedundantChannels(guild) {
       });
       await sleep(PROVISION_DELAY_MS);
     } else if (channel.name === "general") {
-      const siblings = [...channels.values()].filter(
-        (c) => c && c.parentId === parent.id && c.id !== channel.id && c.type === ChannelType.GuildText
-      );
-      if (siblings.length > 0) {
-        console.log(`[cleanup] Deleting redundant #general in category "${parent.name}"`);
-        await channel.delete("PlayBound cleanup: redundant general channel").catch((err) => {
-          console.warn(`[cleanup] Failed to delete #general:`, err?.message || err);
-        });
-      }
+      console.log(`[cleanup] Deleting redundant #general in category "${parent.name}"`);
+      await channel.delete("PlayBound cleanup: redundant general channel in game category").catch((err) => {
+        console.warn(`[cleanup] Failed to delete #general in "${parent.name}":`, err?.message || err);
+      });
+      await sleep(PROVISION_DELAY_MS);
+    }
+  }
+
+  // Delete any abandoned empty categories
+  const updatedChannels = await guild.channels.fetch();
+  const categories = [...updatedChannels.values()].filter(
+    (c) => c && c.type === ChannelType.GuildCategory && !isSharedCategoryName(c.name)
+  );
+  for (const cat of categories) {
+    const children = [...updatedChannels.values()].filter((c) => c && c.parentId === cat.id);
+    if (children.length === 0) {
+      console.log(`[cleanup] Deleting empty category "${cat.name}"`);
+      await cat.delete("PlayBound cleanup: removing empty category").catch(() => {});
       await sleep(PROVISION_DELAY_MS);
     }
   }
