@@ -214,14 +214,49 @@ function playboundRecord(channel, invite, previous) {
   };
 }
 
+async function ensurePartiesCategoryAtBottom(guild) {
+  try {
+    const channels = await guild.channels.fetch();
+    const partiesCat = channels.find(
+      (c) => c && c.type === ChannelType.GuildCategory && c.name === "PlayBound Parties"
+    );
+    if (!partiesCat) return;
+
+    const categories = [...channels.values()].filter(
+      (c) => c && c.type === ChannelType.GuildCategory
+    );
+    const maxPos = categories.length + 10;
+    if (partiesCat.position < categories.length - 1) {
+      await partiesCat.setPosition(maxPos).catch(() => {});
+    }
+  } catch (err) {
+    console.warn("[parties] Failed to reposition PlayBound Parties to bottom:", err?.message || err);
+  }
+}
+
 async function ensureCategory(guild, name) {
   const match = (c) => c && c.type === ChannelType.GuildCategory && c.name === name;
   const cached = guild.channels.cache.find(match);
-  if (cached) return cached;
+  if (cached) {
+    if (name !== "PlayBound Parties") void ensurePartiesCategoryAtBottom(guild);
+    return cached;
+  }
   const fetched = await guild.channels.fetch();
   const existing = fetched.find(match);
-  if (existing) return existing;
-  return guild.channels.create({ name, type: ChannelType.GuildCategory });
+  if (existing) {
+    if (name !== "PlayBound Parties") void ensurePartiesCategoryAtBottom(guild);
+    return existing;
+  }
+  const created = await guild.channels.create({ name, type: ChannelType.GuildCategory });
+  if (name === "PlayBound Parties") {
+    const categories = [...guild.channels.cache.values()].filter(
+      (c) => c && c.type === ChannelType.GuildCategory
+    );
+    await created.setPosition(categories.length + 10).catch(() => {});
+  } else {
+    void ensurePartiesCategoryAtBottom(guild);
+  }
+  return created;
 }
 
 function isExcludedEdition(edition) {
@@ -579,6 +614,8 @@ async function cleanupRedundantChannels(guild) {
       await sleep(PROVISION_DELAY_MS);
     }
   }
+
+  await ensurePartiesCategoryAtBottom(guild);
 }
 
 /**
