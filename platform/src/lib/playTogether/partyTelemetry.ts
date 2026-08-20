@@ -48,6 +48,45 @@ export type PartyFailureArea =
  * detail, this just makes "how much of the party system is failing" a single
  * query instead of a growing list of event names to remember.
  */
+/**
+ * A database failure must never be reported *to the database*.
+ *
+ * Recording a failure costs a write. When the failure being recorded is the
+ * database itself, that write is more load on the thing that is already
+ * struggling — and the party panel polls every 1.5s, so it repeats. This is a
+ * feedback loop that turns a slow cluster into a hammered one, and it is the
+ * reason these events must be filtered rather than merely rate-limited.
+ */
+function isInfrastructureFailure(text: string | undefined): boolean {
+  if (!text) return false;
+  return /Mongo|mongoose|tlsv1 alert|ECONNRESET|ETIMEDOUT|ServerSelection|topology|pool|Catalog read failed/i.test(
+    text
+  );
+}
+
+/**
+ * Identical failures collapse for a while.
+ *
+ * A polling client retrying the same broken thing produces the same event
+ * several times a second. One row per problem per minute says everything the
+ * hundredth says, at a fraction of the cost.
+ */
+const FAILURE_DEDUPE_MS = 60_000;
+const recentFailures = new Map<string, number>();
+
+function shouldRecordFailure(key: string, now: number): boolean {
+  const last = recentFailures.get(key);
+  if (last && now - last < FAILURE_DEDUPE_MS) return false;
+  recentFailures.set(key, now);
+  // Bounded: this lives for the lifetime of a warm lambda.
+  if (recentFailures.size > 200) {
+    for (const [k, t] of recentFailures) {
+      if (now - t >= FAILURE_DEDUPE_MS) recentFailures.delete(k);
+    }
+  }
+  return true;
+}
+
 export function trackPartyFailure(
   area: PartyFailureArea,
   props: PartyTelemetryProps & { op: string; message?: unknown; status?: number }
@@ -55,13 +94,19 @@ export function trackPartyFailure(
   const { message, ...rest } = props;
   const text =
     message instanceof Error ? message.message : message == null ? undefined : String(message);
+
+  // Always free, always happens — the log line never costs a query.
+  console.warn(`[party:${area}] ${props.op} failed`, text ?? "");
+
+  if (isInfrastructureFailure(text)) return;
+  if (!shouldRecordFailure(`${area}:${props.op}:${rest.gameSlug ?? ""}`, Date.now())) return;
+
   trackPartyEvent("party_failed", {
     ...rest,
     area,
     // Truncated: a stack or an HTML error body would bloat every row.
     message: text ? text.slice(0, 300) : undefined,
   });
-  console.warn(`[party:${area}] ${props.op} failed`, text ?? "");
 }
 
 /** The counterpart, so a rate has a denominator. */
