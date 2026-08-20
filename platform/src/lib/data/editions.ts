@@ -1768,9 +1768,9 @@ export const editions: EditionSeed[] = [
     aliases: ["HoloCure PlayBound", "HoloCure Multiplayer", "HoloCure Enhanced"],
     verificationLevel: "playbound_verified",
     branding: {
-      heroImage: "/games/holocure/editions/playbound.jpg",
+      heroImage: "/games/holocure/editions/playbound.webp",
       screenshots: [
-        "/games/holocure/editions/playbound.jpg",
+        "/games/holocure/editions/playbound.webp",
         "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_0b4a50d12f737a522960ba3b3229546f536ff57f.1920x1080.jpg",
         "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2420510/ss_a393d743965dc088d53d97c493ee6728d74b384d.1920x1080.jpg",
       ],
