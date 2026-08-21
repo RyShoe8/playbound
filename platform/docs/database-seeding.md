@@ -38,25 +38,42 @@ Add `--dry-run` to any of them to print what would be created without writing.
 Do that first. It costs nothing and it is the only way to see the blast radius
 before it happens.
 
-### On deploy
+### On deploy: nothing
 
-`npm run build` ends with `seed:deploy`, which runs `seed:missing-mods` for a
-named game list.
+**A build writes nothing to the database.** `npm run build` is `next build`
+followed by `check:auth-urls`, which only reads.
 
-The production guard lives **inside** the scripts, not in the npm chain. Preview
-deploys on Vercel carry the same environment variables as production, so a
-branch build would otherwise write to the live catalog. The scripts skip unless
-`VERCEL_ENV === "production"`, and only when running under Vercel at all, so
-manual local runs still work.
+It used to end with `seed:deploy`. That was appropriate while the catalog was
+still being filled in and a deploy creating an absent row was useful. The
+catalog is curated now, so the right number of rows for a build to create is
+zero — and a build that *can* write is a build that can surprise you on a day
+you were only shipping a CSS change.
 
-Do not try to guard this in package.json. The obvious shape —
+`seed:deploy` is still defined and still works. It is a manual tool:
+
+```
+npm run seed:missing-mods -- --games <slug> --dry-run   # look first
+npm run seed:deploy                                     # then write
+```
+
+**Do not put it back in `build`.** If you ever need seeding on deploy again,
+argue for it explicitly rather than restoring it by reflex.
+
+The `VERCEL_ENV === "production"` guard inside each script stays regardless. It
+is now a second line of defence rather than the only one, and it is worth
+keeping because preview deploys carry production's environment variables — a
+branch build would otherwise write to the live catalog.
+
+And if you ever do reintroduce a deploy-time step, do not try to guard it in
+package.json. The obvious shape —
 
 ```
 node -e "if (notProduction) process.exit(0)" && npm run seed
 ```
 
 — runs the seed on success, which is backwards, and the mistake is invisible
-until a preview build writes to production.
+until a preview build writes to production. That is why the guard lives inside
+the scripts.
 
 ---
 
