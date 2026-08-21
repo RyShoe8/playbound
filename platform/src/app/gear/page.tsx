@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import dbConnect from "@/lib/db";
-import Gear from "@/lib/models/Gear";
 import { GearCard } from "@/components/gear/GearCard";
+import { groupGearByCategory } from "@/lib/gear";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 
@@ -14,20 +13,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function GearDirectoryPage() {
-  await dbConnect();
-  
-  // Find all published gear
-  const allGear = await Gear.find({ status: "published" }).lean();
-  
-  // Group by category
-  const grouped: Record<string, any[]> = {};
-  for (const item of allGear) {
-    if (!grouped[item.category]) {
-      grouped[item.category] = [];
-    }
-    grouped[item.category].push(item);
-  }
-
+  const grouped = await groupGearByCategory();
   const categories = Object.keys(grouped).sort();
 
   return (

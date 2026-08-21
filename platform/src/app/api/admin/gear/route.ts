@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
@@ -11,6 +12,8 @@ export async function POST(req: Request) {
     const data = await req.json();
     await dbConnect();
     const gear = await Gear.create(data);
+    // Publish immediately rather than after the 300s read window.
+    revalidateTag("gear", { expire: 0 });
     return NextResponse.json(gear);
   } catch (error: unknown) {
     console.error("Create gear failed:", error);

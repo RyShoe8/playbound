@@ -18,6 +18,7 @@ import { gearScopedUgcFilter } from "@/lib/ugcTarget";
 import { classifyMediaUrl, isPlayableVideoUrl } from "@/lib/mediaEmbed";
 import { HlsVideo } from "@/components/HlsVideo";
 import { cn } from "@/lib/utils";
+import { getGear } from "@/lib/gear";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, gearProductSchema, breadcrumbSchema } from "@/components/JsonLd";
 
@@ -34,8 +35,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string; category: string }>;
 }): Promise<Metadata> {
   const { slug, category } = await params;
-  await dbConnect();
-  const gear = await Gear.findOne({ slug }).lean();
+  const gear = await getGear(slug, { includeUnpublished: true });
 
   if (!gear) {
     return { title: "Not Found", robots: { index: false, follow: false } };
@@ -73,9 +73,7 @@ export default async function GearProductPage({
   const sp = await searchParams;
   const tab: Tab = TABS.includes(sp.tab as Tab) ? (sp.tab as Tab) : "overview";
 
-  await dbConnect();
-
-  const gear = await Gear.findOne({ slug, status: "published" }).lean();
+  const gear = await getGear(slug);
   if (!gear) {
     notFound();
   }
@@ -215,12 +213,14 @@ export default async function GearProductPage({
               )}
               {(gear.screenshots?.length ?? 0) > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {gear.screenshots!.slice(0, 8).map((url: string, i: number) => (
+                  {gear.screenshots.slice(0, 8).map((url: string, i: number) => (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       key={i}
                       src={url}
-                      alt={`${gear.name} photo ${i + 1}`}
+                      // `gear.name` until the read layer was typed — the model
+                      // has no such field, so every alt read "undefined photo 1".
+                      alt={`${gear.title} photo ${i + 1}`}
                       className="h-20 w-auto rounded-md border border-border object-cover"
                     />
                   ))}
