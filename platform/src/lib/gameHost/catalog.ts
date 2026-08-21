@@ -165,6 +165,20 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 20615,
     protocol: "udp",
   },
+  flightgear: {
+    slug: "flightgear",
+    title: "FlightGear",
+    defaultPort: 5000,
+    portEnd: 5020,
+    protocol: "udp",
+  },
+  mrboom: {
+    slug: "mrboom",
+    title: "Mr. Boom",
+    defaultPort: 27999,
+    portEnd: 28019,
+    protocol: "udp",
+  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);

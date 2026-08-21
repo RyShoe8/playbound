@@ -10,6 +10,7 @@ import type { AreaHealth, GameHealth } from "@/lib/admin/gameOpsHealth";
 import { GameArt } from "@/components/GameArt";
 import { LocalTime } from "@/components/LocalTime";
 import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
+import { supportsController } from "@/lib/controller/support";
 
 export type AdminGameRow = Game & {
   published: boolean;
@@ -185,6 +186,10 @@ export function AdminGamesTable({
           aVal = supportsMultiplayer(a) ? 1 : 0;
           bVal = supportsMultiplayer(b) ? 1 : 0;
           break;
+        case "Controller":
+          aVal = supportsController(a) ? 1 : 0;
+          bVal = supportsController(b) ? 1 : 0;
+          break;
         case "Status":
           aVal = (a.status || "").toLowerCase();
           bVal = (b.status || "").toLowerCase();
@@ -288,6 +293,7 @@ export function AdminGamesTable({
               <SortableHeader label="Mods" />
               <SortableHeader label="Installs" />
               <SortableHeader label="MP" />
+              <SortableHeader label="Controller" />
               <SortableHeader label="Install" />
               <SortableHeader label="Join" />
               <SortableHeader label="Party" />
@@ -301,7 +307,7 @@ export function AdminGamesTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={14} className="px-4 py-8 text-center text-muted-foreground">
                   No games match the current filters.
                 </td>
               </tr>
@@ -345,6 +351,27 @@ export function AdminGamesTable({
                             }`}
                           >
                             {mp ? "Yes" : "No"}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {(() => {
+                        const ctrl = supportsController(g);
+                        return (
+                          <span
+                            title={
+                              ctrl
+                                ? "Controller / Flightstick Support enabled"
+                                : "No controller support found in features or tags"
+                            }
+                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${
+                              ctrl
+                                ? "bg-emerald-500/15 text-emerald-500"
+                                : "bg-red-500/15 text-red-500"
+                            }`}
+                          >
+                            {ctrl ? "Yes" : "No"}
                           </span>
                         );
                       })()}

@@ -302,6 +302,45 @@ test("prefers the portable config beside the exe", () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+/* ── flightsticks & hotas profiles ─────────────────────────────────────── */
+
+test("detects flightstick and HOTAS hardware", () => {
+  const thrustmaster = pickPrimary([{ id: "T.16000M Joystick (Vendor: 044f Product: b10a)", connected: true }]);
+  assert.strictEqual(thrustmaster.isFlightstick, true);
+  assert.strictEqual(thrustmaster.family, "thrustmaster-hotas");
+
+  const logitechFlight = pickPrimary([{ id: "Logitech Extreme 3D Pro USB", connected: true }]);
+  assert.strictEqual(logitechFlight.isFlightstick, true);
+  assert.strictEqual(logitechFlight.family, "logitech-flight");
+
+  const vkb = pickPrimary([{ id: "VKBsim Gladiator EVO R", connected: true }]);
+  assert.strictEqual(vkb.isFlightstick, true);
+  assert.strictEqual(vkb.family, "vkb-flight");
+});
+
+test("auto-configures Naev with joystick/flightstick block", () => {
+  const t16k = pickPrimary([{ id: "T.16000M Joystick", connected: true }]);
+  const naevConf = "-- Naev default config\nname = 'Pilot'\n";
+  const out = applyProfile("naev", naevConf, t16k);
+  assert.ok(out.includes("enable = true"));
+  assert.ok(out.includes("Thrustmaster HOTAS"));
+});
+
+test("auto-configures Trigger Rally with joystick block", () => {
+  const t16k = pickPrimary([{ id: "T.16000M Joystick", connected: true }]);
+  const xml = "<trigger>\n <audio volume='1.0' />\n</trigger>";
+  const out = applyProfile("trigger-rally", xml, t16k);
+  assert.ok(out.includes("<joystick enable=\"yes\""));
+  assert.ok(out.includes("<axis name=\"steer\""));
+});
+
+test("auto-configures Privateer Gemini Gold with joystick block", () => {
+  const t16k = pickPrimary([{ id: "T.16000M Joystick", connected: true }]);
+  const conf = "# Privateer Gemini Gold config\n[general]\nfullscreen=true\n";
+  const out = applyProfile("privateer-gemini-gold", conf, t16k);
+  assert.ok(out.includes("joy_enabled = true"));
+  assert.ok(out.includes("Thrustmaster HOTAS"));
+});
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

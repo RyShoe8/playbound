@@ -403,6 +403,83 @@ const GAMES = {
       return trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
     },
   },
+  flightgear: {
+    resolve: (c) =>
+      firstExisting([
+        c.installDir && path.join(c.installDir, "fgfs.ini"),
+        path.join(c.appData, "flightgear.org", "autosaved.xml"),
+      ]),
+    verified: "FlightGear flightstick/gamepad property auto-configuration.",
+    needsConfig(text) {
+      return !/joysticks.*enabled=true/i.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      const block = `# PlayBound flightstick & controller setup\n--prop:/input/joysticks/js[0]/enabled=true\n`;
+      const trimmed = original.replace(/\s*$/, "");
+      return trimmed ? `${trimmed}\n\n${block}` : block;
+    },
+  },
+  naev: {
+    resolve: (c) =>
+      firstExisting([
+        c.installDir && path.join(c.installDir, "conf.lua"),
+        path.join(c.appData, "naev", "conf.lua"),
+        path.join(c.home, ".config", "naev", "conf.lua"),
+      ]),
+    verified: "Naev Lua joystick and controller auto-configuration.",
+    needsConfig(text) {
+      return !/joystick\s*=\s*\{[^}]*enable\s*=\s*true/m.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      if (!/--|naev|function|conf/i.test(original) && original.trim() !== "") return null;
+      const joyName = profile.label || "Controller";
+      const block = `-- PlayBound controller & flightstick setup\njoystick = {\n   enable = true,\n   name = "${joyName}",\n   deadzone = 0.15,\n}\n`;
+      const trimmed = original.replace(/\s*$/, "");
+      return trimmed ? `${trimmed}\n\n${block}` : block;
+    },
+  },
+  "trigger-rally": {
+    resolve: (c) =>
+      firstExisting([
+        c.installDir && path.join(c.installDir, "trigger.xml"),
+        path.join(c.appData, "trigger-rally", "trigger.xml"),
+        path.join(c.localAppData, "trigger-rally", "trigger.xml"),
+      ]),
+    verified: "Trigger Rally XML joystick/gamepad auto-configuration.",
+    needsConfig(text) {
+      return !/<joystick[^>]*enable="yes"/i.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      if (!/<trigger|<config|\?xml/i.test(original) && original.trim() !== "") return null;
+      const block = ` <!-- PlayBound auto-controller / flightstick setup -->\n <joystick enable="yes" deadzone="0.15">\n  <axis name="steer" index="0" />\n  <axis name="throttle" index="1" />\n </joystick>`;
+      if (original.includes("</trigger>")) {
+        return original.replace("</trigger>", `${block}\n</trigger>`);
+      }
+      const trimmed = original.replace(/\s*$/, "");
+      return trimmed ? `${trimmed}\n\n${block}\n` : `<trigger>\n${block}\n</trigger>\n`;
+    },
+  },
+  "privateer-gemini-gold": {
+    resolve: (c) =>
+      firstExisting([
+        c.installDir && path.join(c.installDir, "vegastrike.config"),
+        c.installDir && path.join(c.installDir, "geminigold.config"),
+      ]),
+    verified: "Vega Strike / Privateer Gemini Gold flightstick & joystick configuration.",
+    needsConfig(text) {
+      return !/joy_enabled\s*=\s*true/i.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      if (!/<vegastrike|\[joystick\]|#|general/i.test(original) && original.trim() !== "") return null;
+      const block = `# PlayBound Flightstick & Controller Setup\n[joystick]\njoy_enabled = true\njoy_name = ${profile.label}\n`;
+      const trimmed = original.replace(/\s*$/, "");
+      return trimmed ? `${trimmed}\n\n${block}` : block;
+    },
+  },
 };
 
 /**
@@ -427,6 +504,34 @@ const NO_CONFIG_NEEDED = {
   veloren: { kind: "native", note: "Analog movement, camera and combat are bound by default." },
   "shattered-pixel-dungeon": { kind: "native", note: "Ships D-pad navigation and action-bar mapping." },
   "endless-sky": { kind: "native", note: "Gamepad bindings are exposed in the game's own settings." },
+  hedgewars: { kind: "native", note: "Native gamepad input and binding menu in settings." },
+  "the-finals": { kind: "native", note: "Native controller support with aim assist options." },
+  "star-trek-online": { kind: "native", note: "Native gamepad layout for PC & console." },
+  "path-of-exile": { kind: "native", note: "Native controller detection and custom UI layout." },
+  "once-human": { kind: "native", note: "Native controller support for combat and inventory." },
+  palia: { kind: "native", note: "Native controller support for movement and tools." },
+  "call-of-duty-mobile": { kind: "native", note: "External Bluetooth and USB controller detection." },
+  warframe: { kind: "native", note: "Full native controller integration and customizable bindings." },
+  "albion-online": { kind: "native", note: "Native controller support across PC and mobile." },
+  "rainbow-six-siege": { kind: "native", note: "Native controller support with customizable deadzones." },
+  "where-winds-meet": { kind: "native", note: "Native controller support for combat and traversal." },
+  "war-thunder": { kind: "native", note: "Native controller, HOTAS, and flightstick configuration wizard." },
+  "team-fortress-2": { kind: "native", note: "Native Steam controller / gamepad input stack." },
+  "genshin-impact": { kind: "native", note: "Native controller support with dedicated button overlays." },
+  "counter-strike-2": { kind: "native", note: "Native Steam Input and controller support." },
+  "quake-champions": { kind: "native", note: "Native controller support." },
+  holocure: { kind: "native", note: "Native twin-stick and controller mapping." },
+  enlisted: { kind: "native", note: "Native controller support for infantry and vehicles." },
+  "world-of-sea-battle": { kind: "native", note: "Native gamepad steering and broadside firing." },
+  "asphalt-legends": { kind: "native", note: "Native arcade gamepad and steering support." },
+  "marathon-2": { kind: "native", note: "Aleph One source port binds controllers natively." },
+  openlara: { kind: "native", note: "Native Gamepad API and controller support." },
+  "villagers-and-heroes": { kind: "native", note: "Native cross-platform gamepad support." },
+  "strikers-club": { kind: "native", note: "Native controller support for stadium matches." },
+  brawlhalla: { kind: "native", note: "Native controller support with frame-perfect input." },
+  mrboom: { kind: "native", note: "Native multi-gamepad support for up to 8 simultaneous controllers." },
+  "dc-universe-online": { kind: "native", note: "Native gamepad layout for powers, combos, and flight." },
+  pixreveal: { kind: "native", note: "Companion smartphone / touchscreen controller support." },
   mindustry: {
     kind: "unwritable",
     note: "Settings live in a binary settings.bin, which we will not rewrite.",
