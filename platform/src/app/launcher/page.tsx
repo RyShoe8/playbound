@@ -26,7 +26,7 @@ import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/J
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-  title: "PlayBound Launcher — Install, Play, and Party Up in One Click",
+  title: "Launcher — Install, Play, Party Up in One Click",
   description:
     "A free desktop app for PlayBound's curated free and affordable games. Get one-click installs, cloud saves, mod management, and parties that land everyone in the same game.",
   path: "/launcher",

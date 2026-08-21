@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 import { withOutboundUtm } from "@/lib/utm";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Terms of Use — PlayBound",
+  title: "Terms of Use",
   description:
     "Terms governing the use of PlayBound's web services, desktop launcher, and community features.",
   path: "/terms",

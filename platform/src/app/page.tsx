@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Gem, Newspaper, Server } from "lucide-react";
@@ -89,6 +90,17 @@ function HomeLiveServersFallback() {
     </section>
   );
 }
+
+/**
+ * The homepage's own canonical, which used to live on the root layout.
+ *
+ * Only `alternates` is set here. Title, description and the social cards are
+ * already correct from the layout defaults, and re-stating them would mean two
+ * places to keep in sync for no gain.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   /*

@@ -18,6 +18,8 @@ import { gearScopedUgcFilter } from "@/lib/ugcTarget";
 import { classifyMediaUrl, isPlayableVideoUrl } from "@/lib/mediaEmbed";
 import { HlsVideo } from "@/components/HlsVideo";
 import { cn } from "@/lib/utils";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd, graph, gearProductSchema, breadcrumbSchema } from "@/components/JsonLd";
 
 const TABS = ["overview", "reviews", "discussion"] as const;
 type Tab = (typeof TABS)[number];
@@ -29,20 +31,29 @@ const GEAR_DISCUSSION_CATEGORIES = (
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; category: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, category } = await params;
   await dbConnect();
   const gear = await Gear.findOne({ slug }).lean();
 
   if (!gear) {
-    return { title: "Not Found" };
+    return { title: "Not Found", robots: { index: false, follow: false } };
   }
 
-  return {
-    title: `${gear.title} · Playbound Gear`,
-    description: gear.description,
-  };
+  /*
+   * The canonical is built from the stored category rather than the one in the
+   * URL. Both resolve to the same document, so without this a product reachable
+   * under two category paths would present each as its own canonical.
+   */
+  return pageMetadata({
+    title: `${gear.title} Review — Is It Worth It?`,
+    description:
+      gear.description ||
+      `${gear.title}${gear.manufacturer ? ` from ${gear.manufacturer}` : ""} — what it is good at, who it is not for, and where to get it.`,
+    path: `/gear/${gear.category || category}/${gear.slug}`,
+    images: gear.coverImage ? [gear.coverImage] : undefined,
+  });
 }
 
 export default async function GearProductPage({
@@ -107,8 +118,29 @@ export default async function GearProductPage({
     status: { $ne: "removed" },
   });
 
+  const productPath = `/gear/${categoryPath}/${gear.slug}`;
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <JsonLd
+        data={graph(
+          gearProductSchema({
+            slug: gear.slug,
+            title: gear.title,
+            path: productPath,
+            description: gear.description,
+            manufacturer: gear.manufacturer,
+            image: gear.coverImage,
+            offers: activeLinks,
+            rating: avg != null && reviewCount > 0 ? { value: avg, count: reviewCount } : null,
+          }),
+          breadcrumbSchema([
+            { name: "Gear", path: "/gear" },
+            { name: String(gear.category), path: `/gear/${categoryPath}` },
+            { name: gear.title, path: productPath },
+          ])
+        )}
+      />
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/gear" className="hover:text-foreground">
           Gear

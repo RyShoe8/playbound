@@ -18,7 +18,7 @@ import { listVirtualLanGames } from "@/lib/multiplayer/adapters";
 import { Badge } from "@/components/ui/bits";
 
 export const metadata: Metadata = pageMetadata({
-  title: "PlayBound Connect — Click Join Game, Land in the Same Game",
+  title: "Connect — Click Join, Land in the Same Game",
   description:
     "PlayBound Connect hosts the room for games that need a server, and puts your party on one shared network for games that only find friends over LAN. No port forwarding either way.",
   path: "/connect",

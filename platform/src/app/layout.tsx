@@ -46,7 +46,18 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  alternates: { canonical: "/" },
+  /*
+   * No `alternates` here on purpose — the homepage sets its own in app/page.tsx.
+   *
+   * Metadata is inherited key by key, so a canonical defined at the root is
+   * adopted by every page that does not set one, and those pages then declare
+   * the homepage to be their canonical version. Nine indexable routes were
+   * doing exactly that, /free-games and the whole /gear section among them.
+   *
+   * Leaving it off means a page that forgets its canonical emits none, and a
+   * crawler self-canonicalizes to the URL it requested. Both are mistakes; only
+   * one of them deindexes the page.
+   */
   openGraph: {
     type: "website",
     locale: "en_US",

@@ -4,6 +4,7 @@ import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { pageMetadata } from "@/lib/seo";
+import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
 
 export const metadata: Metadata = pageMetadata({
   title: "Games — Free and Affordable Catalog Worth Playing",
@@ -21,6 +22,22 @@ export default async function DiscoverPage() {
 
   return (
     <div className="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
+      {/*
+        The catalog as a list entity, built from the same array the page
+        renders — so what a crawler is told and what a visitor sees cannot
+        drift apart as the catalog changes.
+      */}
+      <JsonLd
+        data={graph(
+          itemListSchema(
+            "PlayBound Games",
+            "Free and affordable games that clear PlayBound's four published criteria.",
+            "/discover",
+            games
+          ),
+          breadcrumbSchema([{ name: "Games", path: "/discover" }])
+        )}
+      />
       {/* Header — matches app's section-header */}
       <div className="flex items-start justify-between gap-4">
         <div>

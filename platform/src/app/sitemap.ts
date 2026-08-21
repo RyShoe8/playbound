@@ -6,7 +6,30 @@ import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
 import { listWeeklyIssues } from "@/lib/weekly";
+import dbConnect from "@/lib/db";
+import Gear from "@/lib/models/Gear";
 import { SITE_URL } from "@/lib/site";
+
+type GearRow = { slug: string; category: string; updatedAt?: Date };
+
+/**
+ * Published gear, for the sitemap only.
+ *
+ * Read directly rather than through a lib helper because there is not one yet,
+ * and returning [] on failure rather than throwing: a database hiccup should
+ * cost the sitemap a section, not the whole file. An empty sitemap tells
+ * crawlers the site has no pages at all.
+ */
+async function listGearForSitemap(): Promise<GearRow[]> {
+  try {
+    await dbConnect();
+    return await Gear.find({ status: "published" })
+      .select("slug category updatedAt")
+      .lean<GearRow[]>();
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Sourced from the live catalog so it stays correct as games are added weekly.
@@ -15,11 +38,12 @@ import { SITE_URL } from "@/lib/site";
  * no standalone value that would compete with the game page itself.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [games, mods, weekly, editions] = await Promise.all([
+  const [games, mods, weekly, editions, gear] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
     listWeeklyIssues(),
     listAllPublicEditions(),
+    listGearForSitemap(),
   ]);
   const now = new Date();
 
@@ -31,6 +55,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover`, changeFrequency: "weekly", priority: 0.9, lastModified: now },
     { url: `${SITE_URL}/collections`, changeFrequency: "weekly", priority: 0.9, lastModified: now },
     { url: `${SITE_URL}/mods`, changeFrequency: "weekly", priority: 0.7, lastModified: now },
+    /*
+     * The hubs that link the /alternatives/* and /compare/* pages. Their
+     * children were submitted but the pages linking them were not, so the
+     * cluster had no crawlable entry point of its own.
+     */
+    { url: `${SITE_URL}/alternatives`, changeFrequency: "weekly", priority: 0.8, lastModified: now },
+    { url: `${SITE_URL}/compare`, changeFrequency: "weekly", priority: 0.8, lastModified: now },
+    { url: `${SITE_URL}/gear`, changeFrequency: "weekly", priority: 0.6, lastModified: now },
     { url: `${SITE_URL}/servers`, changeFrequency: "hourly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/connect`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     { url: `${SITE_URL}/launcher`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
@@ -117,6 +149,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
      * nothing than something; the pages stay reachable, just not advertised.
      * Mirrors the noIndex condition in developers/[slug]/page.tsx.
      */
+    // Category hubs, derived from what is actually published rather than from
+    // the full enum — an empty category 404s, and submitting a 404 wastes crawl.
+    ...[...new Set(gear.map((g) => String(g.category).toLowerCase()))].map((category) => ({
+      url: `${SITE_URL}/gear/${category}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+      lastModified: now,
+    })),
+    ...gear.map((g) => ({
+      url: `${SITE_URL}/gear/${String(g.category).toLowerCase()}/${g.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+      lastModified: g.updatedAt ? new Date(g.updatedAt) : now,
+    })),
     ...(await listDevelopers())
       .filter((d) => developerSlugsWithGames.has(d.slug))
       .map((d) => ({

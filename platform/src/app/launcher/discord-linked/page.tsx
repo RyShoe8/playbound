@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { privateMetadata } from "@/lib/seo";
+
+/*
+ * Not indexed. This is the landing spot for an OAuth round trip — it says
+ * "close this window" and nothing else, and it had been inheriting the
+ * homepage's title, description and canonical wholesale.
+ */
+export const metadata: Metadata = privateMetadata("Discord Linked");
+
 export default async function LauncherDiscordLinkedPage({
   searchParams,
 }: {

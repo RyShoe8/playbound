@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import { SITE_NAME } from "@/lib/site";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Free Games This Week | PlayBound",
+/**
+ * Built through pageMetadata rather than by hand.
+ *
+ * The hand-written version had three faults at once, all of which this fixes:
+ * no `alternates`, so it inherited the root canonical and told crawlers the
+ * homepage was its canonical version; a partial `openGraph` object with no
+ * `images`, which suppressed the opengraph-image.tsx fallback and left the
+ * most-shared page on the site with no social card at all; and the brand in
+ * the title, which the root layout's `%s · PlayBound` template then repeated.
+ */
+export const metadata: Metadata = pageMetadata({
+  title: "Free Games This Week",
   description:
     "Track all active and upcoming free game promotions from Epic Games Store, Steam, GOG, and Amazon Prime Gaming. Claim them before they expire.",
-  openGraph: {
-    title: "Free Games This Week | PlayBound",
-    description:
-      "Track all active and upcoming free game promotions from Epic Games Store, Steam, GOG, and Amazon Prime Gaming.",
-  },
-};
+  path: "/free-games",
+});
 
 export default function FreeGamesLayout({
   children,

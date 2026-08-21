@@ -345,6 +345,78 @@ export function articleSchema(opts: {
   };
 }
 
+/**
+ * Product entity for a gear listing.
+ *
+ * Gear is the only surface on the site that sells anything, and it shipped
+ * with no product markup at all — so price, availability and the star rating
+ * PlayBound already collects were invisible to search.
+ *
+ * `offers` is omitted rather than faked when no active retailer link has a
+ * price. Google treats a Product with an unpriced Offer as invalid and can
+ * apply a manual action for markup that contradicts the page, so the honest
+ * failure is to describe the product and stay quiet about the price.
+ */
+export function gearProductSchema(opts: {
+  slug: string;
+  title: string;
+  path: string;
+  description?: string | null;
+  manufacturer?: string | null;
+  image?: string | null;
+  offers?: { retailer: string; url: string; price?: string | null }[];
+  rating?: { value: number; count: number } | null;
+}): Json {
+  /*
+   * Prices arrive as display strings like "$59.99" because that is what the
+   * retailer feed gives us. Schema.org wants a bare number, and anything we
+   * cannot parse cleanly is dropped rather than guessed at.
+   */
+  const priced = (opts.offers ?? [])
+    .map((o) => {
+      const match = /([0-9]+(?:\.[0-9]{1,2})?)/.exec(o.price ?? "");
+      return match ? { ...o, amount: match[1] } : null;
+    })
+    .filter(Boolean) as { retailer: string; url: string; amount: string }[];
+
+  return {
+    "@type": "Product",
+    "@id": absoluteUrl(opts.path) + "#product",
+    name: opts.title,
+    url: absoluteUrl(opts.path),
+    ...(opts.description ? { description: opts.description } : {}),
+    ...(opts.manufacturer ? { brand: { "@type": "Brand", name: opts.manufacturer } } : {}),
+    ...(opts.image ? { image: absImage(opts.image) } : {}),
+    ...(priced.length
+      ? {
+          offers: priced.map((o) => ({
+            "@type": "Offer",
+            price: o.amount,
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+            url: o.url,
+            seller: { "@type": "Organization", name: o.retailer },
+          })),
+        }
+      : {}),
+    /*
+     * Only with at least one review. aggregateRating on zero ratings is a
+     * structured-data error, not an empty state.
+     */
+    ...(opts.rating && opts.rating.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: Number(opts.rating.value.toFixed(1)),
+            reviewCount: opts.rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+  };
+}
+
 /** Wraps entities in a @graph so they can cross-reference by @id. */
 export function graph(...entities: (Json | Json[] | null | undefined)[]): Json {
   const flat = entities

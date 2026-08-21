@@ -21,7 +21,7 @@ import { absoluteUrl } from "@/lib/site";
 import { listGames } from "@/lib/catalog";
 
 export const metadata: Metadata = pageMetadata({
-  title: "About PlayBound — Great Games on a Real-World Budget",
+  title: "Great Games on a Real-World Budget",
   description:
     "PlayBound curates exceptional free and affordable games, tests them ourselves, and makes the best editions, mods, and multiplayer easier to enjoy.",
   path: "/about",
