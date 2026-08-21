@@ -32,10 +32,23 @@ because it counts documents first and exits if any exist.
 See `docs/database-seeding.md` for the full contract and when each is
 appropriate.
 
-Editing `games.ts` or `editorial.ts` is fine and does nothing on its own. One
-thing does now run on deploy: `npm run build` ends with `seed:deploy`, which
-creates seed mods that are absent for a named game list and never touches a row
-that already exists. It is skipped unless `VERCEL_ENV` is `production`.
+Editing `games.ts` or `editorial.ts` is fine and does nothing on its own.
+
+**A deploy writes nothing to the database.** `npm run build` used to end with
+`seed:deploy`; it no longer does. The catalog is fully curated, so the correct
+number of rows for a build to create is zero, and a build that can write is a
+build that can surprise you.
+
+`seed:deploy` still exists and still works — it is a manual tool now. Run it by
+hand when a named game genuinely needs its seed mods created:
+
+```
+npm run seed:deploy
+npm run seed:missing-mods -- --games <slug> --dry-run
+```
+
+Do not put it back in `build`. The `VERCEL_ENV` guard inside each script stays
+as a second line of defence if someone does.
 
 ## What this does not restrict
 
