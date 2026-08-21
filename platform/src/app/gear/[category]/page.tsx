@@ -1,31 +1,31 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import dbConnect from "@/lib/db";
-import Gear from "@/lib/models/Gear";
 import { GearCard } from "@/components/gear/GearCard";
+import { listGearByCategory, resolveGearCategory } from "@/lib/gear";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params;
-  const name = category.charAt(0).toUpperCase() + category.slice(1);
+  /*
+   * The real category name, not a capitalised URL segment. An unknown segment
+   * 404s in the component below, so titling it from the raw param would only
+   * ever produce metadata for a page that does not exist.
+   */
+  const name = resolveGearCategory(category);
+  if (!name) return { title: "Not Found", robots: { index: false, follow: false } };
+
   return pageMetadata({
     title: `${name} — Gaming ${name} We Recommend`,
-    description: `Tested ${category} picks from PlayBound, matched to the games you already play. What each one is good at, and who it is not for.`,
-    path: `/gear/${category}`,
+    description: `Tested ${name.toLowerCase()} picks from PlayBound, matched to the games you already play. What each one is good at, and who it is not for.`,
+    path: `/gear/${name.toLowerCase()}`,
   });
 }
 
 export default async function GearCategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  await dbConnect();
-
-  // Mongoose case-insensitive query or just mapping since categories are finite
-  const items = await Gear.find({
-    category: new RegExp(`^${category}$`, "i"),
-    status: "published",
-  }).lean();
+  const items = await listGearByCategory(category);
 
   if (items.length === 0) {
     notFound();

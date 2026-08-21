@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
@@ -47,6 +48,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
       ]);
     }
 
+    revalidateTag("gear", { expire: 0 });
     return NextResponse.json(existing);
   } catch (error: unknown) {
     console.error("Update gear failed:", error);
@@ -73,6 +75,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ slug:
     if (!gear) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    revalidateTag("gear", { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete gear failed:", error);

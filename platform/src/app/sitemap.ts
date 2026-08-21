@@ -6,30 +6,8 @@ import { listMods } from "@/lib/mods";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
 import { listWeeklyIssues } from "@/lib/weekly";
-import dbConnect from "@/lib/db";
-import Gear from "@/lib/models/Gear";
+import { listPublishedGear } from "@/lib/gear";
 import { SITE_URL } from "@/lib/site";
-
-type GearRow = { slug: string; category: string; updatedAt?: Date };
-
-/**
- * Published gear, for the sitemap only.
- *
- * Read directly rather than through a lib helper because there is not one yet,
- * and returning [] on failure rather than throwing: a database hiccup should
- * cost the sitemap a section, not the whole file. An empty sitemap tells
- * crawlers the site has no pages at all.
- */
-async function listGearForSitemap(): Promise<GearRow[]> {
-  try {
-    await dbConnect();
-    return await Gear.find({ status: "published" })
-      .select("slug category updatedAt")
-      .lean<GearRow[]>();
-  } catch {
-    return [];
-  }
-}
 
 /**
  * Sourced from the live catalog so it stays correct as games are added weekly.
@@ -43,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listMods({ view: "card" }),
     listWeeklyIssues(),
     listAllPublicEditions(),
-    listGearForSitemap(),
+    listPublishedGear(),
   ]);
   const now = new Date();
 
@@ -141,6 +119,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.5,
         lastModified: now,
       })),
+    // Category hubs, derived from what is actually published rather than from
+    // the full enum — an empty category 404s, and submitting a 404 wastes crawl.
+    ...[...new Set(gear.map((g) => g.category.toLowerCase()))].map((category) => ({
+      url: `${SITE_URL}/gear/${category}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+      lastModified: now,
+    })),
+    ...gear.map((g) => ({
+      url: `${SITE_URL}/gear/${g.category.toLowerCase()}/${g.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+      lastModified: g.updatedAt ? new Date(g.updatedAt) : now,
+    })),
     /*
      * Only developers who actually have a published game. The page renders a
      * games list and nothing else, so the rest are empty pages — and they are
@@ -149,20 +141,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
      * nothing than something; the pages stay reachable, just not advertised.
      * Mirrors the noIndex condition in developers/[slug]/page.tsx.
      */
-    // Category hubs, derived from what is actually published rather than from
-    // the full enum — an empty category 404s, and submitting a 404 wastes crawl.
-    ...[...new Set(gear.map((g) => String(g.category).toLowerCase()))].map((category) => ({
-      url: `${SITE_URL}/gear/${category}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-      lastModified: now,
-    })),
-    ...gear.map((g) => ({
-      url: `${SITE_URL}/gear/${String(g.category).toLowerCase()}/${g.slug}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-      lastModified: g.updatedAt ? new Date(g.updatedAt) : now,
-    })),
     ...(await listDevelopers())
       .filter((d) => developerSlugsWithGames.has(d.slug))
       .map((d) => ({
