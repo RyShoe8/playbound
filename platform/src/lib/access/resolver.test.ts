@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   auditAccessGraph,
   buildAccessGraph,
+  directPurchaseRequired,
   filterByDiscoveryMode,
+  isBaseGameRequirement,
   isFreeToAccess,
   meetsPriceCeiling,
   resolveAccess,
@@ -317,5 +319,15 @@ describe("audit", () => {
       { id: "game:b", kind: "game", access: FREE_ACCESS, dependsOn: ["game:a"] },
     ]);
     expect(auditAccessGraph(g).map((i) => i.code)).toContain("CIRCULAR_DEPENDENCY");
+  });
+
+  it("distinguishes base-game-required engines from direct paid games", () => {
+    expect(isBaseGameRequirement(needsRetailAssets)).toBe(true);
+    expect(isBaseGameRequirement(paid(599))).toBe(false);
+    expect(isBaseGameRequirement(FREE_ACCESS)).toBe(false);
+
+    expect(directPurchaseRequired(needsRetailAssets)).toBe(false);
+    expect(directPurchaseRequired(paid(599))).toBe(true);
+    expect(directPurchaseRequired(FREE_ACCESS)).toBe(false);
   });
 });

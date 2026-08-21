@@ -91,10 +91,16 @@ export const mods: ModSeed[] = [
 export const modsBySlug = new Map(mods.map((m) => [m.slug, m]));
 
 export function modsForBaseGame(baseGameSlug: string): ModSeed[] {
-  const norm = baseGameSlug === "alephone" ? "marathon-2" : baseGameSlug;
+  const norm =
+    baseGameSlug === "alephone"
+      ? "marathon-2"
+      : baseGameSlug === "dungeon-keeper-gold" || baseGameSlug === "dungeon-keeper"
+        ? "keeperfx"
+        : baseGameSlug;
   return mods.filter(
     (m) =>
       m.baseGameSlug === baseGameSlug ||
-      (norm === "marathon-2" && (m.baseGameSlug === "alephone" || m.baseGameSlug === "marathon-2"))
+      (norm === "marathon-2" && (m.baseGameSlug === "alephone" || m.baseGameSlug === "marathon-2")) ||
+      (norm === "keeperfx" && (m.baseGameSlug === "keeperfx" || m.baseGameSlug === "dungeon-keeper-gold"))
   );
 }

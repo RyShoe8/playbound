@@ -7,6 +7,7 @@ import { LaunchBadge, PlayCta } from "@/components/GameCard";
 import { CardCategoryTags } from "@/components/CardCategoryTags";
 import { useGameTier } from "@/components/AccessTiersProvider";
 import { accessPriceLabel } from "@/lib/access/discoveryMode";
+import { isBaseGameRequirement } from "@/lib/access/resolver";
 import {
   CompatibleGamesFade,
   useFilteredGames,
@@ -15,7 +16,8 @@ import {
 
 function CollectionGameRow({ game, index }: { game: Game; index: number }) {
   const badge = useIncompatibilityLabel(game);
-  const price = accessPriceLabel(useGameTier(game.slug).fromPriceCents);
+  const isBaseGameReq = isBaseGameRequirement(game.access);
+  const price = isBaseGameReq ? "FREE" : accessPriceLabel(useGameTier(game.slug).fromPriceCents);
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40">
       <span className="w-6 text-center text-lg font-extrabold text-muted-foreground">

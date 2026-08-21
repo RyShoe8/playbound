@@ -30,6 +30,28 @@ export function gameRequiresPurchase(access: GameAccess | undefined): boolean {
   return true;
 }
 
+/**
+ * Is this game a free engine, mod, or source port requiring commercial base game assets?
+ */
+export function isBaseGameRequirement(access: GameAccess | undefined | null): boolean {
+  if (!access) return false;
+  return (
+    access.priceType === "PAID_BASE_GAME_REQUIRED" ||
+    Boolean(access.requiresBaseGameAssets) ||
+    Boolean(access.requiresOwnedBaseGame)
+  );
+}
+
+/**
+ * Does this software itself cost money to obtain (a commercial standalone game)?
+ * Community remasters and free engine reimplementations return false.
+ */
+export function directPurchaseRequired(access: GameAccess | undefined | null): boolean {
+  if (!access) return false;
+  if (access.priceType === "FREE" || isBaseGameRequirement(access)) return false;
+  return Boolean(access.purchaseRequired || access.priceType === "PAID");
+}
+
 function toPaidDependency(node: AccessNode): PaidDependency {
   const access = node.access;
   return {

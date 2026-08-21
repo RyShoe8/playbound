@@ -56,6 +56,8 @@ const CLIENT_CONNECT_ARGS = {
   "zero-k": ["--connect={host}:{port}"],
   flightgear: ["--multiplay=out,10,{host},{port}"],
   mrboom: ["-c", "{host}"],
+  morrowind: ["--connect={host}:{port}"],
+  tes3mp: ["--connect={host}:{port}"],
 
   // Source / Valve Engines
   "team-fortress-2": ["+connect", "{host}:{port}"],

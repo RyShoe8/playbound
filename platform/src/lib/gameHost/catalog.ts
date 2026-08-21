@@ -137,6 +137,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 4267,
     protocol: "udp",
   },
+  morrowind: {
+    slug: "morrowind",
+    title: "The Elder Scrolls III: Morrowind (TES3MP)",
+    defaultPort: 25565,
+    portEnd: 25585,
+    protocol: "both",
+  },
   triplea: {
     slug: "triplea",
     title: "TripleA",

@@ -26,7 +26,7 @@ import { useIncompatibilityLabel } from "@/components/compatibility/useFilteredG
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
 import { useGameTier } from "@/components/AccessTiersProvider";
 import { accessPriceLabel } from "@/lib/access/discoveryMode";
-import { gameRequiresPurchase } from "@/lib/access/resolver";
+import { directPurchaseRequired, isBaseGameRequirement } from "@/lib/access/resolver";
 import {
   parseMobileOs,
   resolveMobileOutbound,
@@ -60,7 +60,7 @@ export function PlayCta({
   const [status, setStatus] = useState<"idle" | "trying" | "downloaded">("idle");
   const [os, setOs] = useState<LauncherOs>("windows");
   const isInstalled = Boolean(installed || (game as { installed?: boolean }).installed);
-  const paid = gameRequiresPurchase(game.access);
+  const paid = directPurchaseRequired(game.access);
   const installLabel = isInstalled ? "Play" : paid ? "Install" : "Get It Free";
 
   useEffect(() => {
@@ -228,7 +228,8 @@ export function GameCard({
   playingNow?: number;
 }) {
   const count = playingNow ?? 0;
-  const price = accessPriceLabel(useGameTier(game.slug).fromPriceCents);
+  const isBaseGameReq = isBaseGameRequirement(game.access);
+  const price = isBaseGameReq ? "FREE" : accessPriceLabel(useGameTier(game.slug).fromPriceCents);
   return (
     <Link
       href={`/games/${game.slug}`}

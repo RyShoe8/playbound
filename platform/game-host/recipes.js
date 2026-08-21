@@ -228,6 +228,13 @@ export const recipes = {
     binaries: gameBin("aleph-one", ["alephone-server", "alephone"]),
     args: (port) => ["-port", String(port)],
   },
+  morrowind: {
+    portStart: 25565,
+    portEnd: 25585,
+    protocol: "both",
+    binaries: gameBin("tes3mp", ["tes3mp-server", "tes3mp"]),
+    args: (port) => ["--port", String(port)],
+  },
   triplea: {
     portStart: 3303,
     portEnd: 3323,

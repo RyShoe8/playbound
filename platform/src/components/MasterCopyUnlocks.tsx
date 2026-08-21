@@ -7,7 +7,7 @@ import { EditionCard } from "@/components/editions/EditionCard";
 import { ModCard } from "@/components/ModCard";
 import { LauncherInstallButton } from "@/components/LauncherInstallButton";
 import { EmptyHint } from "@/components/ui/bits";
-import { gameRequiresPurchase } from "@/lib/access/resolver";
+import { directPurchaseRequired } from "@/lib/access/resolver";
 import { masterCopyUnlocksEmpty, type MasterCopyUnlocks as Unlocks } from "@/lib/masterCopy";
 
 export function MasterCopyUnlocks({
@@ -17,15 +17,15 @@ export function MasterCopyUnlocks({
 }: {
   game: Game;
   unlocks: Unlocks;
-  affiliates: StoreAffiliateMap;
+  affiliates?: StoreAffiliateMap;
 }) {
   const empty = masterCopyUnlocksEmpty(unlocks);
   const baseBySlug = new Map<string, Game>(unlocks.games.map((g) => [g.slug, g]));
   baseBySlug.set(game.slug, game);
-  const titleCount = unlocks.games.length + unlocks.editions.length;
+  const titleCount = unlocks.games.length;
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6">
       <div>
         <h2 className="text-lg font-bold">
           What this copy unlocks{titleCount > 0 ? ` (${titleCount})` : ""}
@@ -46,7 +46,7 @@ export function MasterCopyUnlocks({
             <div className="space-y-4">
               <div className="flex flex-wrap gap-4">
                 {unlocks.games.map((unlocked) => {
-                  const paid = gameRequiresPurchase(unlocked.access);
+                  const paid = directPurchaseRequired(unlocked.access);
                   return (
                     <div
                       key={unlocked.slug}

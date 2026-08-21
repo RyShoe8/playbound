@@ -27,7 +27,7 @@ import { LocateGameButton } from "@/components/LocateGameButton";
 import { PlayCta } from "@/components/GameCard";
 import { GetGameStoreButtons } from "@/components/GameCommerce";
 import { bestPurchase } from "@/lib/access/offers";
-import { gameRequiresPurchase } from "@/lib/access/resolver";
+import { directPurchaseRequired, isBaseGameRequirement } from "@/lib/access/resolver";
 import { getStoreAffiliateMap } from "@/lib/commerce/affiliates";
 import { Badge } from "@/components/ui/bits";
 import { PlayingNowBadge } from "@/components/ActivityStats";
@@ -44,9 +44,28 @@ async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     await dbConnect();
     return await fn();
-  } catch (err) {
-    console.error("DB query failed:", err);
+  } catch {
     return fallback;
+  }
+}
+
+async function resolveInitiallyInLibrary(slug: string): Promise<{
+  signedIn: boolean;
+  initiallyInLibrary: boolean;
+}> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { signedIn: false, initiallyInLibrary: false };
+  try {
+    await dbConnect();
+    const row = await LibraryEntry.findOne({
+      userId: session.user.id,
+      gameSlug: slug,
+    })
+      .select("gameSlug")
+      .lean();
+    return { signedIn: true, initiallyInLibrary: Boolean(row) };
+  } catch {
+    return { signedIn: true, initiallyInLibrary: false };
   }
 }
 
@@ -69,34 +88,6 @@ export function GameHeroPlayingNowFallback() {
   return <Pulse className="h-6 w-28 rounded-full" />;
 }
 
-async function resolveInitiallyInLibrary(gameSlug: string): Promise<{
-  signedIn: boolean;
-  initiallyInLibrary: boolean;
-}> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return { signedIn: false, initiallyInLibrary: false };
-
-  try {
-    await dbConnect();
-    const viewerPlatform = platformFromUserAgent((await headers()).get("user-agent"));
-    const visible = visiblePlatformsFor(viewerPlatform);
-    const entry = await LibraryEntry.findOne({
-      userId: session.user.id,
-      gameSlug,
-      installed: true,
-      $or: [
-        { platform: { $in: visible } },
-        ...(viewerPlatform === "desktop"
-          ? [{ platform: { $exists: false } }, { platform: null }]
-          : []),
-      ],
-    }).lean();
-    return { signedIn: true, initiallyInLibrary: Boolean(entry) };
-  } catch {
-    return { signedIn: true, initiallyInLibrary: false };
-  }
-}
-
 /** Hero chip when this device already has an installed library row. */
 export async function GameHeroInLibraryBadge({ slug }: { slug: string }) {
   const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(slug);
@@ -114,11 +105,12 @@ export async function GameHeroActions({
 }) {
   const { signedIn, initiallyInLibrary } = await resolveInitiallyInLibrary(game.slug);
   const buy = bestPurchase(game.access);
-  const installEmphasis = buy ? "secondary" : "primary";
+  const isBaseGameReq = isBaseGameRequirement(game.access);
+  const isCommercialPurchaseOnly = directPurchaseRequired(game.access);
+  const installEmphasis = buy && !isBaseGameReq ? "secondary" : "primary";
   const affiliates = await getStoreAffiliateMap();
   return (
     <>
-      <GetGameStoreButtons game={game} size="lg" affiliates={affiliates} />
       {initiallyInLibrary ? (
         <a
           href={launcherPlayUrl(game.slug)}
@@ -135,9 +127,10 @@ export async function GameHeroActions({
           <Play className="size-5" />
           Choose an edition
         </Link>
-      ) : gameRequiresPurchase(game.access) ? null : (
+      ) : isCommercialPurchaseOnly ? null : (
         <PlayCta game={game} size="lg" emphasis={installEmphasis} />
       )}
+      <GetGameStoreButtons game={game} size="lg" affiliates={affiliates} />
       {!initiallyInLibrary && <LocateGameButton slug={game.slug} size="lg" />}
       <AdaptiveAddToLibraryButton
         game={game}
@@ -157,9 +150,10 @@ export function GameHeroActionsFallback({
   choosable: boolean;
 }) {
   const buy = bestPurchase(game.access);
+  const isBaseGameReq = isBaseGameRequirement(game.access);
+  const isCommercialPurchaseOnly = directPurchaseRequired(game.access);
   return (
     <>
-      <GetGameStoreButtons game={game} size="lg" />
       {choosable ? (
         <Link
           href="#editions"
@@ -168,9 +162,10 @@ export function GameHeroActionsFallback({
           <Play className="size-5" />
           Choose an edition
         </Link>
-      ) : gameRequiresPurchase(game.access) ? null : (
-        <PlayCta game={game} size="lg" emphasis={buy ? "secondary" : "primary"} />
+      ) : isCommercialPurchaseOnly ? null : (
+        <PlayCta game={game} size="lg" emphasis={buy && !isBaseGameReq ? "secondary" : "primary"} />
       )}
+      <GetGameStoreButtons game={game} size="lg" />
       <LocateGameButton slug={game.slug} size="lg" />
       <AdaptiveAddToLibraryButton
         game={game}
