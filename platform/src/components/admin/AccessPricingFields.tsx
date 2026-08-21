@@ -388,7 +388,18 @@ function PurchaseSources({
               priceCents: json.priceCents!,
               lastCheckedAt: json.lastCheckedAt ?? new Date().toISOString(),
               isActive: true,
-              matchSource: "manual" as const,
+              /*
+               * matchSource is deliberately carried over rather than set.
+               *
+               * It records how this URL came to be attached to this game, and
+               * refreshing a price does not re-answer that question — the URL
+               * is the same one it was. Overwriting it here relabelled every
+               * auto-matched offer as manual the first time anyone checked its
+               * price, which loses the only signal saying whether a human ever
+               * looked at the match. Editing the URL still sets it, because
+               * that genuinely is a new match.
+               */
+              matchSource: offer.matchSource,
             }
           : offer
       );
