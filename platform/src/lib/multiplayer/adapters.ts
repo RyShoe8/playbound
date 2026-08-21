@@ -134,6 +134,42 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Direct ENET/UDP and TCP/IP with automatic CLI session argument join.",
   },
 
+  morrowind: {
+    gameSlug: "morrowind",
+    title: "The Elder Scrolls III: Morrowind",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 25565,
+      protocol: "both",
+      binaryHint: "tes3mp-server",
+      argsTemplate: ["--port", "{port}"],
+    },
+    client: {
+      launchArguments: ["--connect={host}:{port}"],
+    },
+    notes: "TES3MP open-source server synchronization with synced quests, Lua scripting, and direct CLI join.",
+  },
+
+  tes3mp: {
+    gameSlug: "tes3mp",
+    title: "TES3MP",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 25565,
+      protocol: "both",
+      binaryHint: "tes3mp-server",
+      argsTemplate: ["--port", "{port}"],
+    },
+    client: {
+      launchArguments: ["--connect={host}:{port}"],
+    },
+    notes: "TES3MP open-source server synchronization with synced quests, Lua scripting, and direct CLI join.",
+  },
+
   "warzone-2100": {
     gameSlug: "warzone-2100",
     title: "Warzone 2100",

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import type { RetailOffer } from "@/lib/access/types";
-import { formatCents, gameRequiresPurchase } from "@/lib/access/resolver";
+import { formatCents, gameRequiresPurchase, isBaseGameRequirement } from "@/lib/access/resolver";
 import { activeOffers, bestPurchase, heroPurchases } from "@/lib/access/offers";
 import { withOutboundUtm } from "@/lib/utm";
 import { withStoreAffiliate } from "@/lib/access/storeUrls";
@@ -46,13 +46,17 @@ export function GetGameCta({
   const buy = offer ?? bestPurchase(game.access);
   if (!buy) return null;
   const href = purchaseHref(buy, game.slug, affiliates);
+  const isBaseGame = isBaseGameRequirement(game.access);
   return (
     <TelemetryAnchor
       href={href}
       target="_blank"
       rel={buy.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full bg-play font-bold text-play-foreground shadow-[0_0_24px_-6px_var(--play)] transition-all hover:brightness-110 active:translate-y-px",
+        "inline-flex items-center gap-2 rounded-full font-bold transition-all active:translate-y-px",
+        isBaseGame
+          ? "border border-border bg-background/80 text-foreground hover:border-play hover:text-play"
+          : "bg-play text-play-foreground shadow-[0_0_24px_-6px_var(--play)] hover:brightness-110",
         ctaSizes[size],
         className
       )}
@@ -66,7 +70,9 @@ export function GetGameCta({
       }}
     >
       <ExternalLink className={size === "lg" ? "size-5" : "size-4"} />
-      Get Game — {formatCents(buy.priceCents)}
+      {isBaseGame
+        ? `Buy Base Game (${buy.retailer}) — ${formatCents(buy.priceCents)}`
+        : `Get Game — ${formatCents(buy.priceCents)}`}
     </TelemetryAnchor>
   );
 }

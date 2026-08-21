@@ -603,6 +603,39 @@ export const developers: Developer[] = [
     artHue: 275,
   },
   {
+    slug: "bullfrog-productions",
+    name: "Bullfrog Productions",
+    tagline: "Visionary British strategy and god game studio.",
+    about:
+      "Bullfrog Productions was the legendary British video game developer founded by Peter Molyneux and Les Edgar, responsible for genre-defining strategy titles including Populous, Theme Park, Syndicate, and Dungeon Keeper.",
+    founded: 1987,
+    location: "Guildford, United Kingdom",
+    website: "https://www.ea.com",
+    artHue: 340,
+  },
+  {
+    slug: "bethesda-game-studios",
+    name: "Bethesda Game Studios",
+    tagline: "Pioneers of legendary open-world role-playing games.",
+    about:
+      "Bethesda Game Studios is the world-renowned developer behind The Elder Scrolls and Fallout franchises, pioneering deep immersive open worlds, emergent quest systems, and rich fantasy lore since Arena and Daggerfall.",
+    founded: 1986,
+    location: "Rockville, Maryland, USA",
+    website: "https://bethesdagamestudios.com",
+    artHue: 35,
+  },
+  {
+    slug: "openmw-team",
+    name: "OpenMW Team",
+    tagline: "Modern open-source engine recreation of The Elder Scrolls III: Morrowind.",
+    about:
+      "OpenMW is an open-source project aiming to reimplement the engine of The Elder Scrolls III: Morrowind in C++, offering modern graphics, high performance, cross-platform support, and expansive modding capabilities.",
+    founded: 2008,
+    location: "Distributed",
+    website: "https://openmw.org",
+    artHue: 215,
+  },
+  {
     slug: "space-wizards",
     name: "Space Wizards Federation",
     tagline: "The volunteer collective rebuilding Space Station 13 from scratch.",

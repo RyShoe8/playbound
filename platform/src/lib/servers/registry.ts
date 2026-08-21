@@ -95,6 +95,14 @@ const providers: Record<string, ServerProvider> = {
     slug: "starcraft",
     fetchServers: fetchStarCraftServers,
   },
+  morrowind: {
+    slug: "morrowind",
+    fetchServers: () => fetchRemoteMaster("morrowind"),
+  },
+  tes3mp: {
+    slug: "tes3mp",
+    fetchServers: () => fetchRemoteMaster("tes3mp"),
+  },
   "wolfenstein-enemy-territory": {
     slug: "wolfenstein-enemy-territory",
     fetchServers: fetchWolfensteinEnemyTerritoryServers,

@@ -179,6 +179,100 @@ export const editions: EditionSeed[] = [
     ],
   },
   {
+    gameSlug: "morrowind",
+    slug: "openmw",
+    name: "OpenMW (Modern Remaster)",
+    shortDescription:
+      "Modern 64-bit open-source engine recreation of Morrowind with widescreen, controller support, and uncapped performance.",
+    description:
+      "OpenMW is a free, modern 64-bit open-source engine reimplementation of The Elder Scrolls III: Morrowind. Built from scratch in C++ using OpenSceneGraph, OpenMW provides native widescreen rendering, modern physics, extended draw distance, full gamepad support, native macOS/Linux/Steam Deck compatibility, and an advanced Lua scripting engine without original engine memory crashes.\n\nRequires original Morrowind Game of the Year data files (Morrowind.esm, Tribunal, Bloodmoon).",
+    type: "remaster",
+    isDefault: true,
+    sortOrder: 10,
+    links: {
+      website: "https://openmw.org",
+      github: "https://github.com/OpenMW/openmw",
+      discord: "https://discord.gg/openmw",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-release",
+        repo: "OpenMW/openmw",
+        assetPattern: "openmw-.*-win64\\.zip$",
+        exeHint: "openmw.exe",
+        knownExePaths: ["openmw.exe", "openmw-launcher.exe"],
+        note: "Standalone OpenMW 64-bit engine package. Point to your legal Morrowind GOTY data folder.",
+      },
+    },
+    requirements: {
+      notes: "Requires legal Morrowind Game of the Year game files (GOG / Steam / CD).",
+    },
+    features: ["Singleplayer", "Mod Support", "Controller Support", "High Framerate", "Widescreen Support", "Steam Deck Verified"],
+    tags: ["Remaster", "Open Source", "RPG", "OpenMW", "Bethesda"],
+    aliases: ["OpenMW", "Morrowind OpenMW", "Morrowind Remastered"],
+    verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "morrowind",
+    slug: "tes3mp",
+    name: "TES3MP (Morrowind Multiplayer)",
+    shortDescription:
+      "Full multiplayer co-op and persistent server synchronization for Morrowind built on OpenMW.",
+    description:
+      "TES3MP brings true multiplayer to The Elder Scrolls III: Morrowind. Built on top of the open-source OpenMW engine, TES3MP synchronizes player movement, combat, NPC dialogue, quest progression, spells, world containers, and faction standing across dedicated servers.\n\nHost a private co-op party with friends or join public persistent RPG servers featuring custom Lua gameplay scripts, housing, PvP arenas, and faction wars.",
+    type: "community",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://tes3mp.com",
+      github: "https://github.com/TES3MP/TES3MP",
+      discord: "https://discord.gg/tes3mp",
+    },
+    installMethod: "playbound_installer",
+    installConfig: {
+      playbound_installer: {
+        kind: "github-release",
+        repo: "TES3MP/TES3MP",
+        assetPattern: "tes3mp-.*-windows.*\\.zip$",
+        exeHint: "tes3mp.exe",
+        knownExePaths: ["tes3mp.exe", "tes3mp-browser.exe"],
+        launchArgs: ["--connect={host}:{port}"],
+        note: "TES3MP multiplayer client. Connect to public PlayBound servers or host a party.",
+      },
+    },
+    requirements: {
+      notes: "Requires legal Morrowind Game of the Year game files.",
+    },
+    features: ["Multiplayer", "Dedicated Servers", "Co-op", "PvP", "Mod Support", "Controller Support", "Lua Scripting"],
+    tags: ["Multiplayer", "Co-op", "OpenMW", "TES3MP", "RPG", "Dedicated Servers"],
+    aliases: ["TES3MP", "Morrowind Multiplayer", "Morrowind Co-op"],
+    verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "morrowind",
+    slug: "classic-goty",
+    name: "Classic GOTY (Original Engine)",
+    shortDescription:
+      "Original 2002 Bethesda Gamebryo executable for Morrowind Code Patch (MCP) and MGE XE purists.",
+    description:
+      "The original 2002 32-bit Morrowind executable as published by Bethesda. Recommended for players who want to use original DirectX 8/9 code hooks like Morrowind Code Patch (MCP), Morrowind Script Extender (MWSE), and MGE XE graphics enhancer.",
+    type: "official",
+    isDefault: false,
+    sortOrder: 30,
+    links: {
+      website: "https://elderscrolls.bethesda.net/en/morrowind",
+    },
+    installMethod: "external",
+    requirements: {
+      notes: "Installed directly via GOG / Steam or retail installer.",
+    },
+    features: ["Singleplayer", "Classic Engine", "MWSE Support"],
+    tags: ["Classic", "Vanilla", "RPG", "Bethesda"],
+    aliases: ["Vanilla Morrowind", "Morrowind GOTY Classic"],
+    verificationLevel: "official",
+  },
+  {
     gameSlug: "asherons-call",
     slug: "coldeve",
     name: "Coldeve (Default PvE)",
@@ -2423,14 +2517,14 @@ export const editions: EditionSeed[] = [
     tags: ["Engine Port", "Remaster", "Modern Controls"],
     verificationLevel: "community_verified",
   },
-  // --- KeeperFX ---
+  // --- Dungeon Keeper Gold ---
   {
-    gameSlug: "keeperfx",
-    slug: "official",
-    name: "KeeperFX Complete Edition",
-    shortDescription: "The definitive open-source Dungeon Keeper rebuild.",
+    gameSlug: "dungeon-keeper-gold",
+    slug: "keeperfx",
+    name: "KeeperFX (Modern Remaster)",
+    shortDescription: "The definitive open-source 4K Dungeon Keeper rebuild.",
     description:
-      "The complete open-source overhaul of Dungeon Keeper with modern 4K resolutions, rewritten creature AI, custom campaign support, and multiplayer. Overlays onto your existing legal Dungeon Keeper install.",
+      "The complete open-source overhaul of Bullfrog's 1997 classic with modern widescreen and 4K resolutions, rewritten creature AI, custom campaign support, and direct multiplayer. Overlays onto your existing legal Dungeon Keeper install.",
     type: "remaster",
     status: "active",
     visibility: "public",
@@ -2451,9 +2545,29 @@ export const editions: EditionSeed[] = [
         note: "Requires legal Dungeon Keeper files.",
       },
     },
-    features: ["Singleplayer", "Multiplayer", "Mod Support", "High Resolution"],
-    tags: ["Strategy", "Management", "Remaster", "Official"],
+    features: ["Singleplayer", "Multiplayer", "Mod Support", "High Resolution", "Custom AI"],
+    tags: ["Strategy", "Management", "Remaster", "KeeperFX"],
     verificationLevel: "playbound_verified",
+  },
+  {
+    gameSlug: "dungeon-keeper-gold",
+    slug: "classic-dos",
+    name: "Classic DOS (1997)",
+    shortDescription: "Original 1997 MS-DOS Bullfrog release of Dungeon Keeper.",
+    description:
+      "The unaltered original 1997 MS-DOS release of Dungeon Keeper by Bullfrog Productions, running via DOSBox Staging.",
+    type: "official",
+    status: "active",
+    visibility: "public",
+    isDefault: false,
+    sortOrder: 20,
+    links: {
+      website: "https://www.gog.com/en/game/dungeon_keeper",
+    },
+    installMethod: "external",
+    features: ["Singleplayer", "Classic Engine"],
+    tags: ["Classic", "DOS", "Retro", "Bullfrog"],
+    verificationLevel: "official",
   },
   // --- StarCraft ---
   {
