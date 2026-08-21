@@ -149,6 +149,12 @@ if [[ ! -f "$MIN_DIR/server-release.jar" ]]; then
   curl -fL --retry 3 -o "$MIN_DIR/server-release.jar" "$MIN_URL"
 fi
 
+echo "==> YSoccer dedicated"
+YSOCCER_DIR="$GAMES_DIR/ysoccer"
+mkdir -p "$YSOCCER_DIR"
+curl -fL --retry 3 -o "$YSOCCER_DIR/ysoccer-server.jar" \
+  "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-server.jar"
+
 if [[ "$WITH_HEAVY" -eq 1 ]]; then
   echo "==> Xonotic dedicated (large download)"
   XON_DIR="$GAMES_DIR/xonotic"

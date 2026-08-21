@@ -4860,11 +4860,12 @@ const facts: Game[] = [
     launcherInstall: {
       enabled: true,
       kind: "direct-zip",
-      url: "https://sourceforge.net/projects/ysoccer/files/YSoccer19/ysoccer19_windows64.zip/download",
-      fileName: "ysoccer19_windows64.zip",
-      exeHint: "ysoccer|ysoccer19",
-      versionLabel: "v19",
-      note: "Standalone portable Windows 64-bit package with bundled runtime and team databases.",
+      url: "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-online-windows.zip",
+      fileName: "ysoccer-online-windows.zip",
+      exeHint: "ysoccer-online",
+      versionLabel: "PlayBound Online",
+      connectArgs: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
+      note: "Current upstream GPL build with direct PlayBound dedicated-server joining and automatic controller detection.",
     },
   },
 ];

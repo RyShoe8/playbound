@@ -25,6 +25,7 @@
     "test:catalog": "node services/catalogMerge.test.js",
     "test:exe-format": "node services/executableFormat.test.js",
     "test:dosbox": "node services/ManagedDosBox.test.js",
+    "test:retroarch": "node services/ManagedRetroArch.test.js",
     "test:controller": "node services/gameControllerConfig.test.js"
   },
   "author": "PlayBound",

@@ -418,6 +418,10 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
+  ysoccer: {
+    kind: "native",
+    note: "libGDX controller discovery supplies the connected pad; the PlayBound online build keeps its one-button layout.",
+  },
   supertux: { kind: "native", note: "SDL2 binds a pad on detection; defaults cover the whole game." },
   supertuxkart: { kind: "native", note: "Detects pads on first run and writes its own mapping." },
   veloren: { kind: "native", note: "Analog movement, camera and combat are bound by default." },

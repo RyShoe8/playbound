@@ -52,6 +52,7 @@ const CLIENT_CONNECT_ARGS = {
   // Mindustry takes `ip:port` as argv (same as the catalog recipe). Without
   // this, playGame's client-connect override launched the vanilla client.
   mindustry: ["{host}:{port}"],
+  ysoccer: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
 
   // In-game Room Code / Lobby Joins — no CLI join; show host:port to paste.
   holocure: null,

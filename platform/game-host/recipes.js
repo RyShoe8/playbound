@@ -102,6 +102,18 @@ export const recipes = {
     },
     stdin: (port, ctx) => `config name ${ctx.name}\nconfig port ${port}\nhost\n`,
   },
+  ysoccer: {
+    portStart: 54555,
+    portEnd: 54575,
+    protocol: "both",
+    binaries: ["/usr/bin/java"],
+    args: (port) => [
+      "-jar",
+      path.join(GAMES_ROOT, "ysoccer", "ysoccer-server.jar"),
+      String(port),
+      String(port),
+    ],
+  },
   hedgewars: {
     portStart: 46631,
     portEnd: 46650,

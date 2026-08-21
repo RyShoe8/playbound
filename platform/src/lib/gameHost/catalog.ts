@@ -53,6 +53,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 6587,
     protocol: "both",
   },
+  ysoccer: {
+    slug: "ysoccer",
+    title: "YSoccer",
+    defaultPort: 54555,
+    portEnd: 54575,
+    protocol: "both",
+  },
   hedgewars: {
     slug: "hedgewars",
     title: "Hedgewars",

@@ -1,0 +1,44 @@
+name: Build YSoccer Online
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-ysoccer-online.yml"
+      - ".github/scripts/patch-ysoccer.mjs"
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Fetch upstream
+        run: git clone --depth 1 https://git.code.sf.net/p/ysoccer/code upstream
+      - name: Add PlayBound direct-connect arguments
+        run: node .github/scripts/patch-ysoccer.mjs upstream
+      - name: Build client and dedicated server
+        working-directory: upstream/java
+        run: ./gradlew lwjgl3:jarWin server:jar
+      - name: Package client
+        run: |
+          mkdir -p out/client
+          cp upstream/java/lwjgl3/build/libs/*-win.jar out/client/ysoccer-online.jar
+          cp -R upstream/java/assets out/client/assets
+          cd out/client && zip -qr ../ysoccer-online-windows.zip .
+          cp upstream/java/server/build/libs/*.jar out/ysoccer-server.jar
+      - name: Publish rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ysoccer-online-latest --yes --cleanup-tag || true
+          gh release create ysoccer-online-latest out/ysoccer-online-windows.zip out/ysoccer-server.jar --title "YSoccer Online (PlayBound)" --notes "Automated GPL build from current upstream YSoccer source with direct-connect launcher arguments."
