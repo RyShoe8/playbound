@@ -576,6 +576,38 @@ body {
   border-radius: 6px;
 }
 
+.card-editions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.card-editions-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-primary, #6366f1);
+  opacity: 0.85;
+}
+
+.card-editions .edition-chip {
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--text-main, #f8fafc);
+  line-height: 1.2;
+}
+
+.card-editions-overflow {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 /* Mod Cards */
 .mod-card .card-art {
   aspect-ratio: 16 / 10;

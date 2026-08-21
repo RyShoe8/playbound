@@ -3755,7 +3755,7 @@ const facts: Game[] = [
     description:
       "The Elder Scrolls III: Morrowind is Bethesda Game Studios' landmark open-world fantasy action RPG. Step off the prison ship into the ash-swept province of Vvardenfell, fulfill the ancient Nerevarine prophecy, explore Dunmer ruins, join Great Houses and Guilds, craft custom spells and enchantments, and forge your legend with unmatched freedom.\n\nPlay with OpenMW for a modern, crash-free 64-bit engine with native widescreen and controller support, or jump into TES3MP for full online multiplayer with friends.",
     developerSlug: "bethesda-game-studios",
-    genres: ["RPG", "Adventure", "Open World"],
+    genres: ["RPG", "Adventure"],
     tags: ["Open World", "RPG", "Fantasy", "Lore-Rich", "Singleplayer", "Multiplayer", "Mod Support", "Classic", "First-Person", "Exploration"],
     aliases: ["Morrowind", "TES3", "The Elder Scrolls 3", "TES III", "Morrowind GOTY", "OpenMW", "TES3MP"],
     license: "Commercial (Proprietary / Bethesda Softworks)",
@@ -3787,7 +3787,7 @@ const facts: Game[] = [
       min: {
         ramMB: 256,
         storageMB: 1024,
-        apis: ["dx8"],
+        apis: ["dx9"],
         cpuText: "500 MHz CPU",
         gpuText: "32 MB Direct3D GPU",
       },

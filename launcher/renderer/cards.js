@@ -29,6 +29,19 @@ function categoryChipsHtml(item, { extra = [], max = 4 } = {}) {
     .join("")}</div>`;
 }
 
+/** Renders edition badges below tags if distinct community/remaster editions exist. */
+function editionChipsHtml(game, { max = 3 } = {}) {
+  const editions = Array.isArray(game.editions) ? game.editions : [];
+  if (!editions.length) return "";
+  const visible = editions.slice(0, max);
+  const overflow = editions.length - max;
+  return `<div class="card-editions">
+    <span class="card-editions-label">Editions:</span>
+    ${visible.map((e) => `<span class="chip edition-chip" title="${escapeHtml(e.name || e.slug)}">${escapeHtml(e.name || e.slug)}</span>`).join("")}
+    ${overflow > 0 ? `<span class="card-editions-overflow">+${overflow}</span>` : ""}
+  </div>`;
+}
+
 const ICON_DOWNLOAD = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
 const ICON_MONITOR_PLAY = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7.75a.75.75 0 0 1 1.142-.638l3.664 2.249a.75.75 0 0 1 0 1.278l-3.664 2.25a.75.75 0 0 1-1.142-.64z"/><path d="M12 17v4"/><path d="M8 21h8"/><rect x="2" y="3" width="20" height="14" rx="2"/></svg>`;
 
@@ -159,6 +172,7 @@ export function createGameCard(game, playingNow) {
     <div class="card-meta-copy">
       <p class="card-price">${escapeHtml(price)}</p>
       ${categoryChipsHtml(game)}
+      ${editionChipsHtml(game)}
     </div>
     ${
       typeof playingNow === "number"

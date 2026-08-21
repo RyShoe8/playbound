@@ -263,7 +263,12 @@ export const editions: EditionSeed[] = [
     links: {
       website: "https://elderscrolls.bethesda.net/en/morrowind",
     },
-    installMethod: "external",
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.gog.com/en/game/the_elder_scrolls_iii_morrowind_goty_edition",
+      },
+    },
     requirements: {
       notes: "Installed directly via GOG / Steam or retail installer.",
     },
@@ -2564,7 +2569,12 @@ export const editions: EditionSeed[] = [
     links: {
       website: "https://www.gog.com/en/game/dungeon_keeper",
     },
-    installMethod: "external",
+    installMethod: "official_download",
+    installConfig: {
+      official_download: {
+        url: "https://www.gog.com/en/game/dungeon_keeper",
+      },
+    },
     features: ["Singleplayer", "Classic Engine"],
     tags: ["Classic", "DOS", "Retro", "Bullfrog"],
     verificationLevel: "official",
@@ -4113,6 +4123,36 @@ export const editions: EditionSeed[] = [
     verificationLevel: "community_verified",
   },
 ];
+
+/** Clean display name for an edition pill/chip (e.g. removes trailing parenthesized subtitles). */
+export function formatEditionChipName(name: string): string {
+  if (!name) return "";
+  const cleaned = name.replace(/\s*\([^)]*\)/g, "").trim();
+  return cleaned || name;
+}
+
+/**
+ * Returns distinct / non-generic editions for a game (excluding purely standard/fallback "official"
+ * or "default" entries where no notable community/remaster/alternate editions exist).
+ * If a game only has a single generic "official" or "default" edition, it returns empty [].
+ */
+export function getDisplayEditionsForGame(gameSlug: string): EditionSeed[] {
+  const gameEditions = editions.filter(
+    (e) => e.gameSlug === gameSlug && e.visibility !== "hidden" && e.status !== "archived"
+  );
+  if (gameEditions.length === 0) return [];
+
+  // If the only edition is a generic official/default with no distinct custom branding
+  if (
+    gameEditions.length === 1 &&
+    (gameEditions[0].slug === "official" || gameEditions[0].slug === "default") &&
+    gameEditions[0].type === "official"
+  ) {
+    return [];
+  }
+
+  return gameEditions;
+}
 
 
 
