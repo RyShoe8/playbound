@@ -22,6 +22,7 @@ const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
+const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
@@ -2485,6 +2486,12 @@ const managedDosBox = createManagedDosBox({
   downloadTo,
   onProgress: (payload) => sendProgress(payload),
 });
+const managedRetroArch = createManagedRetroArch({
+  userDataPath: app.getPath("userData"),
+  downloadTo,
+  extractArchive,
+  onProgress: (payload) => sendProgress(payload),
+});
 GameLauncher.managedDosBoxResolver = () => managedDosBox.findManagedDosBoxBinary();
 
 /**
@@ -4496,6 +4503,25 @@ function installJobKey(slug, editionSlug) {
   return `${String(slug || "")}::${editionSlug || ""}`;
 }
 
+async function installSharedMrBoom(editionSlug) {
+  const runtime = await managedRetroArch.ensureCore("mrboom");
+  if (!runtime.ok || !runtime.binary || !runtime.corePath) {
+    throw new Error(runtime.error || "Could not prepare the shared RetroArch runtime.");
+  }
+  const dir = managedRetroArch.root();
+  markInstalled("mrboom", {
+    version: "shared-retroarch",
+    exe: runtime.binary,
+    dir,
+    editionSlug: editionSlug || "retroarch",
+    editionName: "Mr. Boom (RetroArch Edition)",
+    editionType: "enhanced",
+    launchArgs: ["-L", runtime.corePath, "-f"],
+  });
+  sendProgress({ phase: "done", message: "Mr. Boom is ready" });
+  return { status: "installed", version: "shared-retroarch", dir };
+}
+
 async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   const key = installJobKey(slug, editionSlug);
   const existing = gameInstallJobs.get(key);
@@ -4514,6 +4540,9 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
 }
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
+  if (slug === "mrboom" && editionSlug === "retroarch") {
+    return installSharedMrBoom(editionSlug);
+  }
   let entry =
     (await ensureCatalogEntry(slug, true)) ||
     catalog.find((e) => e.slug === slug) ||
@@ -5800,6 +5829,21 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     } catch {
       /* offline */
     }
+  }
+
+  if (slug === "mrboom" && (edSlug === "retroarch" || info.editionSlug === "retroarch")) {
+    const runtime = await managedRetroArch.ensureCore("mrboom");
+    if (!runtime.ok || !runtime.binary || !runtime.corePath) {
+      throw new Error(runtime.error || "Could not prepare the shared RetroArch runtime.");
+    }
+    // Migrate old per-game RetroArch installs without deleting their files.
+    if (info.exe !== runtime.binary) persistEditionExe(slug, edSlug, info.exe, runtime.binary);
+    info = {
+      ...info,
+      exe: runtime.binary,
+      dir: managedRetroArch.root(),
+      launchArgs: ["-L", runtime.corePath, "-f"],
+    };
   }
 
   const args = Array.isArray(info.launchArgs)

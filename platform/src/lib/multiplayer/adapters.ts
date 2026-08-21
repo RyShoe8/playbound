@@ -105,6 +105,19 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "Upstream mod, LAN-only for us. Connect supplies the shared segment; the mod does its own discovery.",
   },
 
+  ysoccer: {
+    gameSlug: "ysoccer",
+    title: "YSoccer",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: { port: 54555, protocol: "both" },
+    client: {
+      launchArguments: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
+    },
+    notes: "Current upstream KryoNet dedicated server; PlayBound builds the GPL client/server and joins directly.",
+  },
+
   keeperfx: {
     gameSlug: "keeperfx",
     title: "KeeperFX",
