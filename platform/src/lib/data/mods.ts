@@ -34,6 +34,11 @@ import { strikersClubMods } from "./strikersClubMods";
 import { triggerRallyMods } from "./triggerRallyMods";
 import { brawlhallaMods } from "./brawlhallaMods";
 import { ysoccerMods } from "./ysoccerMods";
+import { wesnothMods } from "./wesnothMods";
+import { supertuxkartMods } from "./supertuxkartMods";
+import { flightgearMods } from "./flightgearMods";
+import { zerokMods } from "./zerokMods";
+import { keeperfxMods } from "./keeperfxMods";
 import { catalogWaveAug2026Mods } from "./catalogWaveAug2026Mods";
 
 export type { ModSeed } from "./modSeedHelpers";
@@ -47,6 +52,11 @@ const COVER_OVERRIDES: Record<string, string> = {
 
 export const mods: ModSeed[] = [
   ...fossModsWave,
+  ...wesnothMods,
+  ...supertuxkartMods,
+  ...flightgearMods,
+  ...zerokMods,
+  ...keeperfxMods,
   ...phase2ModsRemasters,
   ...phase2ModsLive,
   ...verifiedModsWave,

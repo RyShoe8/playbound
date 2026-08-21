@@ -3910,6 +3910,34 @@ function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride,
   if (baseGameSlug === "naev") {
     return under(path.join(appData, "naev"));
   }
+  if (baseGameSlug === "supertuxkart") {
+    return under(path.join(appData, "supertuxkart", "addons"));
+  }
+  if (baseGameSlug === "battle-for-wesnoth") {
+    const wesnothDoc = path.join(documents, "My Games", "Wesnoth1.18");
+    if (fs.existsSync(wesnothDoc)) {
+      return under(path.join(wesnothDoc, "data", "add-ons"));
+    }
+    return under(path.join(appData, "Wesnoth1.18", "data", "add-ons"));
+  }
+  if (baseGameSlug === "zero-k") {
+    const zkData = path.join(appData, "Zero-K");
+    if (fs.existsSync(zkData)) {
+      return under(zkData);
+    }
+    const springData = path.join(appData, "spring");
+    if (fs.existsSync(springData)) {
+      return under(springData);
+    }
+    let baseDir = baseDirOverride || null;
+    if (!baseDir) {
+      const state = loadState();
+      const info = state[baseGameSlug];
+      if (info?.dir && fs.existsSync(info.dir)) baseDir = info.dir;
+    }
+    if (baseDir) return under(baseDir);
+    return under(zkData);
+  }
 
   let baseDir = baseDirOverride || null;
   if (!baseDir) {
@@ -3923,11 +3951,20 @@ function resolveModTargetDir(baseGameSlug, installRelativePath, baseDirOverride,
 
 function modUsesUserDataFolder(baseGameSlug, installRelativePath) {
   if (baseGameSlug === "flightgear") {
-    return !isFlightGearAircraftMod(installRelativePath);
+    return true;
   }
-  return ["mindustry", "0ad", "openttd", "endless-sky", "luanti", "minetest", "naev"].includes(
-    baseGameSlug
-  );
+  return [
+    "mindustry",
+    "0ad",
+    "openttd",
+    "endless-sky",
+    "luanti",
+    "minetest",
+    "naev",
+    "supertuxkart",
+    "battle-for-wesnoth",
+    "zero-k",
+  ].includes(baseGameSlug);
 }
 
 function isBaseGameReady(baseGameSlug) {
