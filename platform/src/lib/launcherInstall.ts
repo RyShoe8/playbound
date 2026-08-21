@@ -187,18 +187,8 @@ export function isPcInstallCandidate(game: {
  * give all twenty an empty tab until everyone updated. Once builds have aged
  * out it can go.
  */
-export function hasServerBrowser(game: { launchMethods?: string[] }): boolean {
-  return Boolean(game.launchMethods?.includes("server"));
-}
-
-/** Whether the game is played with other people, server list or not. */
-export function isMultiplayerGame(game: {
-  launchMethods?: string[];
-  features?: string[];
-}): boolean {
-  if (hasServerBrowser(game)) return true;
-  return (game.features ?? []).some((f) => /multiplayer|mmo|co-?op|pvp/i.test(f));
-}
+export { hasServerBrowser, supportsMultiplayer } from "@/lib/multiplayer/support";
+import { hasServerBrowser, supportsMultiplayer } from "@/lib/multiplayer/support";
 
 export function defaultLauncherInstallForWebsite(website: string): LauncherInstall {
   return {
@@ -302,7 +292,7 @@ export function toLauncherCatalogEntry(input: {
     features: Array.isArray(input.features) ? input.features : [],
     multiplayer: hasServerBrowser(input),
     hasServerBrowser: hasServerBrowser(input),
-    isMultiplayer: isMultiplayerGame(input),
+    isMultiplayer: supportsMultiplayer(input),
   };
   const cover = absoluteMediaUrl(input.coverImage, input.origin || "https://playbound.club");
   if (cover) entry.coverImage = cover;

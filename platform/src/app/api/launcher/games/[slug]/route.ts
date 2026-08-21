@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGame } from "@/lib/catalog";
-import { absoluteMediaUrl, sizeLabelFromMB, hasServerBrowser, isMultiplayerGame } from "@/lib/launcherInstall";
+import { absoluteMediaUrl, sizeLabelFromMB, hasServerBrowser, supportsMultiplayer } from "@/lib/launcherInstall";
 import { listMods } from "@/lib/mods";
 import { listUnlockedByMaster, toLauncherUnlocks } from "@/lib/masterCopy";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
@@ -85,7 +85,7 @@ export async function GET(
         qualityBar: game.qualityBar || null,
         multiplayer: hasServerBrowser(game),
         hasServerBrowser: hasServerBrowser(game),
-        isMultiplayer: isMultiplayerGame(game),
+        isMultiplayer: supportsMultiplayer(game),
         website: game.website || null,
         githubRepo: game.githubRepo || null,
         platforms: Array.isArray(game.platforms) ? game.platforms : [],

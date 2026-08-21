@@ -12,6 +12,7 @@ import { filterGamesForPreference } from "@/lib/compatibility/compatibility";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
 import { GenreGameRow } from "@/components/GenreGameRow";
 import { cn } from "@/lib/utils";
+import { supportsMultiplayer } from "@/lib/multiplayer/support";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -142,12 +143,14 @@ export function DiscoverFilters({
       });
     }
 
+    /*
+     * The shared rule, not a local one. This filter used to test for the
+     * literal substring "multiplayer", so a co-op-only game was multiplayer
+     * everywhere on the site except here — hidden by the very filter meant to
+     * surface it.
+     */
     if (multiplayerOnly) {
-      list = list.filter(
-        (g) =>
-          g.features.some((f) => f.toLowerCase().includes("multiplayer")) ||
-          g.tags.some((t) => t.toLowerCase().includes("multiplayer"))
-      );
+      list = list.filter((g) => supportsMultiplayer(g));
     }
 
     /*
