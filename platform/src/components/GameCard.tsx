@@ -33,6 +33,7 @@ import {
   shouldOfferLauncher,
 } from "@/lib/mobilePlay";
 import { withOutboundUtm } from "@/lib/utm";
+import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
 
 function sizeLabel(sizeMB: number) {
   return sizeMB >= 1000 ? `${(sizeMB / 1000).toFixed(1)} GB` : `${sizeMB} MB`;
@@ -230,6 +231,8 @@ export function GameCard({
   const count = playingNow ?? 0;
   const isBaseGameReq = isBaseGameRequirement(game.access);
   const price = isBaseGameReq ? "FREE" : accessPriceLabel(useGameTier(game.slug).fromPriceCents);
+  const displayEditions = getDisplayEditionsForGame(game.slug);
+
   return (
     <Link
       href={`/games/${game.slug}`}
@@ -254,6 +257,25 @@ export function GameCard({
             size="md"
             className="mt-1 min-w-0"
           />
+          {displayEditions.length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <span className="text-[10px] font-bold text-primary/75">Editions:</span>
+              {displayEditions.slice(0, 3).map((e) => (
+                <span
+                  key={e.slug}
+                  className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[9px] font-medium text-foreground/80 leading-none"
+                  title={e.name}
+                >
+                  {formatEditionChipName(e.name)}
+                </span>
+              ))}
+              {displayEditions.length > 3 ? (
+                <span className="text-[9px] font-medium text-muted-foreground">
+                  +{displayEditions.length - 3}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {count > 0 ? (
           <p className="mt-0.5 flex shrink-0 items-center gap-1.5 tabular-nums text-[11px] font-semibold text-muted-foreground">

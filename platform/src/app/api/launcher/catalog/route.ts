@@ -13,6 +13,7 @@ import {
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
+import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
 
 export async function GET(req: Request) {
   try {
@@ -24,6 +25,13 @@ export async function GET(req: Request) {
     ]);
     const entries = games
       .map((g) => {
+        const displayEditions = getDisplayEditionsForGame(g.slug).map((e) => ({
+          slug: e.slug,
+          name: formatEditionChipName(e.name),
+          type: e.type,
+          isDefault: e.isDefault,
+        }));
+
         // PC-installable games: full launcher recipe
         if (isPcInstallCandidate(g)) {
           const recipe =
@@ -54,6 +62,7 @@ export async function GET(req: Request) {
                 browserPlayable: Boolean(g.browserPlayable),
                 steamDeck: Boolean(g.steamDeck),
                 createdAt: g.createdAt || null,
+                editions: displayEditions,
                 ...accessFieldsForLauncher(tierFor(tiers, g.slug)),
               }
             : null;
@@ -82,6 +91,7 @@ export async function GET(req: Request) {
           browserPlayable: Boolean(g.browserPlayable),
           steamDeck: Boolean(g.steamDeck),
           createdAt: g.createdAt || null,
+          editions: displayEditions,
           ...(cover ? { coverImage: cover } : {}),
           ...accessFieldsForLauncher(tierFor(tiers, g.slug)),
         };
