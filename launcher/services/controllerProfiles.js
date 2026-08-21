@@ -60,14 +60,22 @@ const STANDARD = {
  * section the game will not read.
  */
 const FAMILIES = [
-  { id: "dualsense", label: "PS5 Controller", test: /dualsense|ps5|0ce6/i },
-  { id: "dualshock4", label: "PS4 Controller", test: /dualshock|ps4|09cc|05c4/i },
-  { id: "xbox", label: "Xbox Controller", test: /xbox|xinput|x-box/i },
-  { id: "switchpro", label: "Switch Pro Controller", test: /switch pro|nintendo/i },
+  // Flightsticks & HOTAS controllers
+  { id: "thrustmaster-hotas", label: "Thrustmaster HOTAS", deviceType: "flightstick", test: /t\.?16000|warthog|t-flight|tca stick|thrustmaster/i },
+  { id: "logitech-flight", label: "Logitech Flightstick", deviceType: "flightstick", test: /extreme 3d|x52|x56|flight yoke|logitech.*(stick|flight|hotas)/i },
+  { id: "vkb-flight", label: "VKB Flight Controller", deviceType: "flightstick", test: /vkb|gladiator|gunfighter/i },
+  { id: "virpil-flight", label: "VIRPIL Flightstick", deviceType: "flightstick", test: /virpil|mongoos|constellation/i },
+  { id: "flightstick-generic", label: "Flightstick / Joystick", deviceType: "flightstick", test: /flightstick|hotas|joystick|throttle|rudder|flight stick|yoke|vjoy/i },
+
+  // Standard Gamepads
+  { id: "dualsense", label: "PS5 Controller", deviceType: "gamepad", test: /dualsense|ps5|0ce6/i },
+  { id: "dualshock4", label: "PS4 Controller", deviceType: "gamepad", test: /dualshock|ps4|09cc|05c4/i },
+  { id: "xbox", label: "Xbox Controller", deviceType: "gamepad", test: /xbox|xinput|x-box/i },
+  { id: "switchpro", label: "Switch Pro Controller", deviceType: "gamepad", test: /switch pro|nintendo/i },
 ];
 
 /** Anything unrecognised still works — standard mapping, honest label. */
-const GENERIC = { id: "generic", label: "Gamepad" };
+const GENERIC = { id: "generic", label: "Gamepad", deviceType: "gamepad" };
 
 function familyFor(padId) {
   const id = String(padId || "");
@@ -83,9 +91,12 @@ function familyFor(padId) {
 function profileFromGamepad(pad) {
   if (!pad || typeof pad !== "object") return null;
   const family = familyFor(pad.id);
+  const isFlightstick = family.deviceType === "flightstick";
   return {
     family: family.id,
     label: family.label,
+    deviceType: family.deviceType || "gamepad",
+    isFlightstick,
     rawId: String(pad.id || ""),
     /*
      * Non-standard pads still get the standard layout. It is a guess, but a

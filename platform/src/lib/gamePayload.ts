@@ -105,6 +105,7 @@ export const FEATURES = [
   "Dedicated Servers",
   "Cross-play",
   "Controller Support",
+  "Flightstick Support",
   "Family Friendly",
   "Mod Support",
   "Map Editor",

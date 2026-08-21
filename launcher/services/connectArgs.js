@@ -42,21 +42,38 @@ const CLIENT_CONNECT_ARGS = {
   // RTS / Turn-based & Classic Engines
   "battle-for-wesnoth": ["--host", "{host}:{port}"],
   "0-ad": ["-autostart={host}:{port}"],
+  "0ad": ["-autostart={host}:{port}"],
   "warzone-2100": ["--connect={host}:{port}"],
   keeperfx: ["-connect", "{host}:{port}"],
   "marathon-2": ["-connect", "{host}:{port}"],
   "aleph-one": ["-connect", "{host}:{port}"],
   freedoom: ["-connect", "{host}:{port}"],
   triplea: ["-Dserver.address={host}", "-Dserver.port={port}"],
+  "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
+  veloren: ["--connect", "{host}:{port}"],
+  "wolfenstein-enemy-territory": ["+connect", "{host}:{port}"],
+  "beyond-all-reason": ["--connect={host}:{port}"],
+  "zero-k": ["--connect={host}:{port}"],
+  flightgear: ["--multiplay=out,10,{host},{port}"],
+  mrboom: ["-c", "{host}"],
+
+  // Source / Valve Engines
+  "team-fortress-2": ["+connect", "{host}:{port}"],
+  "counter-strike-2": ["+connect", "{host}:{port}"],
+  "dota-2": ["+connect", "{host}:{port}"],
 
   // Mindustry takes `ip:port` as argv (same as the catalog recipe). Without
   // this, playGame's client-connect override launched the vanilla client.
   mindustry: ["{host}:{port}"],
   ysoccer: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
 
-  // In-game Room Code / Lobby Joins — no CLI join; show host:port to paste.
+  // In-game Room Code / Lobby Joins / Direct Network — no CLI join; show host:port to paste.
   holocure: null,
   hedgewars: null,
+  openciv3: null,
+  "dungeon-keeper-gold": null,
+  starcraft: null,
+  openlara: null,
 };
 
 /** Templates for a slug, or null when the client cannot join from the CLI. */

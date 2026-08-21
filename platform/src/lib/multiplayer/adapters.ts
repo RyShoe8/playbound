@@ -423,6 +423,160 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Freeciv dedicated server. Client needs --autoconnect or GTK opens the start screen instead of joining.",
   },
 
+  supertuxkart: {
+    gameSlug: "supertuxkart",
+    title: "SuperTuxKart",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 2759,
+      protocol: "both",
+      binaryHint: "supertuxkart",
+      argsTemplate: ["--lan-server={name}", "--port={port}", "--no-graphics"],
+    },
+    client: {
+      launchArguments: ["--connect-now={host}:{port}"],
+    },
+    notes: "Automated dedicated server instance with --connect-now CLI connect.",
+  },
+
+  "0ad": {
+    gameSlug: "0ad",
+    title: "0 A.D.",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 20595,
+      protocol: "udp",
+      binaryHint: "pyrogenesis",
+      argsTemplate: ["-autostart-nonrandom=1", "--port={port}"],
+    },
+    client: {
+      launchArguments: ["-autostart={host}:{port}"],
+    },
+    notes: "Pyrogenesis headless host with -autostart CLI connection.",
+  },
+
+  "beyond-all-reason": {
+    gameSlug: "beyond-all-reason",
+    title: "Beyond All Reason",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 8452,
+      protocol: "udp",
+      binaryHint: "spring-dedicated",
+    },
+    client: {
+      launchArguments: ["--connect={host}:{port}"],
+    },
+    notes: "Recoil/Spring engine dedicated server and direct IP connect.",
+  },
+
+  "zero-k": {
+    gameSlug: "zero-k",
+    title: "Zero-K",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 8455,
+      protocol: "udp",
+      binaryHint: "spring-dedicated",
+    },
+    client: {
+      launchArguments: ["--connect={host}:{port}"],
+    },
+    notes: "Spring RTS engine dedicated server and lobby orchestration.",
+  },
+
+  flightgear: {
+    gameSlug: "flightgear",
+    title: "FlightGear",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 5000,
+      protocol: "udp",
+      binaryHint: "fgms",
+      argsTemplate: ["--port", "{port}"],
+    },
+    client: {
+      launchArguments: ["--multiplay=out,10,{host},{port}"],
+    },
+    notes: "fgms multiplayer server with multiplay CLI join.",
+  },
+
+  mrboom: {
+    gameSlug: "mrboom",
+    title: "Mr. Boom",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 27999,
+      protocol: "udp",
+      binaryHint: "mrboom",
+      argsTemplate: ["-p", "{port}"],
+    },
+    client: {
+      launchArguments: ["-c", "{host}"],
+    },
+    notes: "Mr. Boom dedicated server with -c connect CLI.",
+  },
+
+  starcraft: {
+    gameSlug: "starcraft",
+    title: "StarCraft",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      inGameJoinPrompt: true,
+    },
+    notes: "Direct peer-to-peer / LAN or Battle.net multiplayer.",
+  },
+
+  openciv3: {
+    gameSlug: "openciv3",
+    title: "OpenCiv3",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      inGameJoinPrompt: true,
+    },
+    notes: "Direct IP / LAN multiplayer connection.",
+  },
+
+  "dungeon-keeper-gold": {
+    gameSlug: "dungeon-keeper-gold",
+    title: "Dungeon Keeper Gold",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      inGameJoinPrompt: true,
+    },
+    notes: "LAN / IPX direct connect session.",
+  },
+
+  openlara: {
+    gameSlug: "openlara",
+    title: "OpenLara",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      inGameJoinPrompt: true,
+    },
+    notes: "P2P WebRTC multiplayer room coordination.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   "space-station-14": {
     gameSlug: "space-station-14",
@@ -460,7 +614,172 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Legacy idTech 3 multiplayer connect.",
   },
 
+  "team-fortress-2": {
+    gameSlug: "team-fortress-2",
+    title: "Team Fortress 2",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes: "Source engine dedicated server with +connect CLI argument.",
+  },
+
   // ─── TIER 3: Official / Proprietary (Party Orchestration Only) ───────────
+  "marvel-snap": {
+    gameSlug: "marvel-snap",
+    title: "MARVEL SNAP",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Hosted matchmaking / battle mode. PlayBound provides party launch & presence.",
+  },
+
+  "gamebuddies-io": {
+    gameSlug: "gamebuddies-io",
+    title: "GameBuddies.io",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Hosted party web platform. PlayBound coordinates party lobby launch.",
+  },
+
+  "wild-rift": {
+    gameSlug: "wild-rift",
+    title: "League of Legends: Wild Rift",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Riot servers only. PlayBound provides party & presence.",
+  },
+
+  "the-finals": {
+    gameSlug: "the-finals",
+    title: "THE FINALS",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official cloud servers only. PlayBound provides party & presence.",
+  },
+
+  "path-of-exile": {
+    gameSlug: "path-of-exile",
+    title: "Path of Exile",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official cloud instances only. PlayBound provides party & presence.",
+  },
+
+  "once-human": {
+    gameSlug: "once-human",
+    title: "Once Human",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official game servers only. PlayBound provides party & presence.",
+  },
+
+  palia: {
+    gameSlug: "palia",
+    title: "Palia",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official cloud servers only. PlayBound provides party & presence.",
+  },
+
+  "next-gen-chess": {
+    gameSlug: "next-gen-chess",
+    title: "Next-Gen Chess",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Hosted matchmaking. PlayBound provides party coordination.",
+  },
+
+  "call-of-duty-mobile": {
+    gameSlug: "call-of-duty-mobile",
+    title: "Call of Duty: Mobile",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Activision servers only. PlayBound provides party & presence.",
+  },
+
+  pixreveal: {
+    gameSlug: "pixreveal",
+    title: "PixReveal",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Hosted web platform. PlayBound coordinates party launch.",
+  },
+
+  "rainbow-six-siege": {
+    gameSlug: "rainbow-six-siege",
+    title: "Tom Clancy's Rainbow Six Siege",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Ubisoft servers only. PlayBound provides party launch & presence.",
+  },
+
+  "where-winds-meet": {
+    gameSlug: "where-winds-meet",
+    title: "Where Winds Meet",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official game servers only. PlayBound provides party launch & presence.",
+  },
+
+  "war-thunder": {
+    gameSlug: "war-thunder",
+    title: "War Thunder",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Gaijin servers only. PlayBound provides party launch & presence.",
+  },
+
+  "quake-champions": {
+    gameSlug: "quake-champions",
+    title: "Quake Champions",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Bethesda servers only. PlayBound provides party launch & presence.",
+  },
+
+  enlisted: {
+    gameSlug: "enlisted",
+    title: "Enlisted",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Gaijin servers only. PlayBound provides party launch & presence.",
+  },
+
+  "asphalt-legends": {
+    gameSlug: "asphalt-legends",
+    title: "Asphalt Legends",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official Gameloft servers only. PlayBound provides party launch & presence.",
+  },
+
+  "strikers-club": {
+    gameSlug: "strikers-club",
+    title: "Strikers Club",
+    tier: "tier3_official",
+    adapterType: "official",
+    protocol: "official",
+    notes: "Official game servers only. PlayBound provides party launch & presence.",
+  },
+
   brawlhalla: {
     gameSlug: "brawlhalla",
     title: "Brawlhalla",

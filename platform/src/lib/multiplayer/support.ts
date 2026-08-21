@@ -71,6 +71,9 @@ export function hasServerBrowser(game: { launchMethods?: string[] } | null | und
  */
 export function supportsMultiplayer(game: MultiplayerInput | null | undefined): boolean {
   if (!game) return false;
+  if (typeof (game as { isMultiplayer?: boolean })?.isMultiplayer === "boolean") {
+    return Boolean((game as { isMultiplayer?: boolean }).isMultiplayer);
+  }
   if (typeof game.multiplayer === "boolean") return game.multiplayer;
   if (hasServerBrowser(game)) return true;
 

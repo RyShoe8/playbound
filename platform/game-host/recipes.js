@@ -265,6 +265,20 @@ export const recipes = {
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
     args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
   },
+  flightgear: {
+    portStart: 5000,
+    portEnd: 5020,
+    protocol: "udp",
+    binaries: gameBin("flightgear", ["fgms"]),
+    args: (port) => ["--port", String(port)],
+  },
+  mrboom: {
+    portStart: 27999,
+    portEnd: 28019,
+    protocol: "udp",
+    binaries: gameBin("mrboom", ["mrboom-server", "mrboom"]),
+    args: (port) => ["-p", String(port)],
+  },
 };
 
 export function resolveRecipe(slug) {
