@@ -45,7 +45,7 @@ function GitHubIcon({ className }: { className?: string }) {
 }
 
 export const metadata: Metadata = pageMetadata({
-  title: "Open Platform & Architecture — Trust, Freedom, & Transparent Code | PlayBound",
+  title: "Open Platform — Auditable, Ad-Free, No Spyware",
   description:
     "Explore PlayBound's 100% open-source launcher architecture. Zero background spyware, no bloatware, open manifest recipes, and a clear boundary for exclusive community games.",
   path: "/open-platform",

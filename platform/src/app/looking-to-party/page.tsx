@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { LookingToPartyView } from "@/components/friends/LookingToPartyView";
+import { privateMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Looking to Party",
-  description: "Players who want a game right now, and what they have installed.",
-};
+/*
+ * Not indexed. The list is whoever is online this minute, so there is no
+ * stable content for a result to point at — by the time anyone clicked
+ * through from search the page would describe a different set of people.
+ */
+export const metadata: Metadata = privateMetadata("Looking to Party");
 
 export default function LookingToPartyPage() {
   return (

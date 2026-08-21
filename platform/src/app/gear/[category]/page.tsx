@@ -4,12 +4,17 @@ import { notFound } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
 import { GearCard } from "@/components/gear/GearCard";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params;
-  return {
-    title: `${category.charAt(0).toUpperCase() + category.slice(1)} · Playbound Gear`,
-  };
+  const name = category.charAt(0).toUpperCase() + category.slice(1);
+  return pageMetadata({
+    title: `${name} — Gaming ${name} We Recommend`,
+    description: `Tested ${category} picks from PlayBound, matched to the games you already play. What each one is good at, and who it is not for.`,
+    path: `/gear/${category}`,
+  });
 }
 
 export default async function GearCategoryPage({ params }: { params: Promise<{ category: string }> }) {
@@ -30,6 +35,14 @@ export default async function GearCategoryPage({ params }: { params: Promise<{ c
 
   return (
     <div className="space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <JsonLd
+        data={graph(
+          breadcrumbSchema([
+            { name: "Gear", path: "/gear" },
+            { name: categoryName, path: `/gear/${category.toLowerCase()}` },
+          ])
+        )}
+      />
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/gear" className="hover:text-foreground">Gear</Link>
         <span>/</span>

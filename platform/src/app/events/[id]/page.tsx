@@ -15,6 +15,8 @@ import { serializeEvent } from "@/lib/events/serialize";
 import { getEventPresenceAggregates } from "@/lib/events/presenceAgg";
 import { canRsvp } from "@/lib/events/types";
 import { pageMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site";
+import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { EventRsvpActions } from "@/components/events/EventRsvpActions";
 import { EventFriendsAttending } from "@/components/events/EventFriendsAttending";
 import { EventActionBar } from "@/components/events/EventActionBar";
@@ -38,11 +40,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   if (!Types.ObjectId.isValid(id)) return { title: "Event" };
   await dbConnect();
-  const event = await PlatformEvent.findById(id).select({ title: 1 }).lean();
+  const event = await PlatformEvent.findById(id)
+    .select({ title: 1, description: 1, startsAt: 1, visibility: 1, gameSlug: 1 })
+    .lean();
+
+  const when = event?.startsAt
+    ? new Date(event.startsAt).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+
   return pageMetadata({
     title: event?.title || "Event",
-    description: "PlayBound community event",
+    description:
+      event?.description?.trim() ||
+      `A PlayBound community event${when ? ` on ${when}` : ""}. See who is going and RSVP.`,
     path: `/events/${id}`,
+    /*
+     * Unlisted means reachable by link, not listed publicly — so it should not
+     * turn up in search either. Without this the only thing keeping an unlisted
+     * event out of results was nobody linking to it.
+     */
+    noIndex: event?.visibility === "unlisted",
   });
 }
 
@@ -184,6 +205,48 @@ export default async function EventDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+      {/*
+        Event markup, so a listing can carry its date in the result rather than
+        looking like any other page. Only for public events — an unlisted one is
+        noindexed above, and describing it here would work against that.
+      */}
+      {event.visibility !== "unlisted" && (
+        <JsonLd
+          data={graph(
+            {
+              "@type": "Event",
+              "@id": absoluteUrl(`/events/${event.id}`) + "#event",
+              name: event.title,
+              url: absoluteUrl(`/events/${event.id}`),
+              startDate: event.startsAt,
+              endDate: event.endsAt,
+              ...(event.description ? { description: event.description } : {}),
+              /*
+               * Online, always. PlayBound events happen in a game, so the
+               * "location" is the game itself rather than a place — Google
+               * treats a missing location as an error on an Event.
+               */
+              eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+              eventStatus:
+                event.status === "cancelled"
+                  ? "https://schema.org/EventCancelled"
+                  : "https://schema.org/EventScheduled",
+              location: {
+                "@type": "VirtualLocation",
+                url: absoluteUrl(
+                  event.gameSlug ? `/games/${event.gameSlug}` : `/events/${event.id}`
+                ),
+              },
+              organizer: { "@id": ORGANIZATION_ID },
+              isAccessibleForFree: true,
+            },
+            breadcrumbSchema([
+              { name: "Events", path: "/events" },
+              { name: event.title, path: `/events/${event.id}` },
+            ])
+          )}
+        />
+      )}
       <EventViewTracker
         eventId={event.id}
         eventType={String(event.eventType)}

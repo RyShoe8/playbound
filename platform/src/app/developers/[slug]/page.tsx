@@ -9,6 +9,8 @@ import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
 import { Avatar, Badge, SectionHeader, StatTile } from "@/components/ui/bits";
 import { withOutboundUtm } from "@/lib/utm";
 import { pageMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site";
+import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -16,12 +18,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!dev) return { title: "Developer Not Found", robots: { index: false, follow: false } };
 
   /*
-   * Built through pageMetadata rather than returned bare.
+   * Built through pageMetadata rather than returned bare, so this page states
+   * its own canonical and description instead of inheriting the site defaults.
    *
-   * A metadata object without `alternates` inherits the root layout's
-   * canonical, which is "/" — so every developer page was telling crawlers the
-   * homepage was its canonical version, and the whole section was eligible to
-   * be dropped from the index. It also inherited the generic site description.
+   * This used to be load-bearing in a stronger sense: the root layout declared
+   * `canonical: "/"`, which every page without its own adopted, and the whole
+   * developer section was telling crawlers the homepage was its canonical
+   * version. That declaration is gone, so a missing canonical now means no tag
+   * rather than a wrong one — but setting it here is still correct.
    */
   const games = await gamesByDeveloper(dev.slug);
   const titles = games.slice(0, 3).map((g) => g.title);
@@ -62,6 +66,35 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
 
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
+      {/*
+        The developer as an entity in its own right, linked to the games it
+        made. Without this the page was a list of VideoGames with nothing
+        saying who they belong to, which is the one fact the page exists for.
+      */}
+      <JsonLd
+        data={graph(
+          {
+            "@type": "Organization",
+            "@id": absoluteUrl(`/developers/${dev.slug}`) + "#developer",
+            name: dev.name,
+            url: absoluteUrl(`/developers/${dev.slug}`),
+            ...(dev.tagline || dev.about ? { description: dev.tagline || dev.about } : {}),
+            ...(dev.website ? { sameAs: [dev.website] } : {}),
+          },
+          devGames.length
+            ? itemListSchema(
+                `Games by ${dev.name}`,
+                `Games from ${dev.name} in the PlayBound catalog.`,
+                `/developers/${dev.slug}`,
+                devGames
+              )
+            : null,
+          breadcrumbSchema([
+            { name: "Developers", path: "/developers" },
+            { name: dev.name, path: `/developers/${dev.slug}` },
+          ])
+        )}
+      />
       <section
         className="relative overflow-hidden rounded-2xl border border-border p-6 sm:p-8"
         style={{ background: `linear-gradient(135deg, oklch(0.3 0.09 ${dev.artHue} / 60%), var(--card) 65%)` }}

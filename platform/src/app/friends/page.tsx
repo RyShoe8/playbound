@@ -2,11 +2,14 @@ import { Metadata } from "next";
 import { FriendsView } from "@/components/friends/FriendsView";
 import { listGames } from "@/lib/catalog";
 import { GENRES } from "@/lib/gamePayload";
+import { privateMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Friends",
-  description: "See who's playing and manage friend requests.",
-};
+/*
+ * Not indexed. Everything here is scoped to the signed-out visitor's empty
+ * session, so a crawler sees a friends list with no friends — a thin page that
+ * competes for nothing and dilutes the quality signal across the site.
+ */
+export const metadata: Metadata = privateMetadata("Friends");
 
 export default async function FriendsPage() {
   // Fetched here so the picker lists the real catalog rather than a hardcoded set.
