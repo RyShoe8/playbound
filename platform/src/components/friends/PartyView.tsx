@@ -15,7 +15,7 @@ import {
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { isMultiplayerGame } from "@/lib/launcherInstall";
+import { supportsMultiplayer } from "@/lib/multiplayer/support";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
@@ -93,7 +93,7 @@ export function PartyView({
    * OpenArena, whose tags never say "multiplayer" but which have server
    * browsers.
    */
-  const partyGames = useMemo(() => games.filter((g) => isMultiplayerGame(g)), [games]);
+  const partyGames = useMemo(() => games.filter((g) => supportsMultiplayer(g)), [games]);
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
   const joinUrl = hostedReady

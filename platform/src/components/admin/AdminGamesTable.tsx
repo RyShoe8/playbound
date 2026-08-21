@@ -9,6 +9,7 @@ import type { GameHealthArea, GameHealthStatus } from "@/lib/admin/gameHealth";
 import type { AreaHealth, GameHealth } from "@/lib/admin/gameOpsHealth";
 import { GameArt } from "@/components/GameArt";
 import { LocalTime } from "@/components/LocalTime";
+import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
 
 export type AdminGameRow = Game & {
   published: boolean;
@@ -179,6 +180,11 @@ export function AdminGamesTable({
           aVal = HEALTH_RANK[healthOf(a, "partyOps").status];
           bVal = HEALTH_RANK[healthOf(b, "partyOps").status];
           break;
+        case "MP":
+          // Unsupported first, since that is the exception worth finding.
+          aVal = supportsMultiplayer(a) ? 1 : 0;
+          bVal = supportsMultiplayer(b) ? 1 : 0;
+          break;
         case "Status":
           aVal = (a.status || "").toLowerCase();
           bVal = (b.status || "").toLowerCase();
@@ -281,6 +287,7 @@ export function AdminGamesTable({
               <SortableHeader label="Slug" />
               <SortableHeader label="Mods" />
               <SortableHeader label="Installs" />
+              <SortableHeader label="MP" />
               <SortableHeader label="Install" />
               <SortableHeader label="Join" />
               <SortableHeader label="Party" />
@@ -294,7 +301,7 @@ export function AdminGamesTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
                   No games match the current filters.
                 </td>
               </tr>
@@ -321,10 +328,54 @@ export function AdminGamesTable({
                     <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
                       {g.installCount ?? 0}
                     </td>
+                    <td className="px-4 py-2.5">
+                      {(() => {
+                        const mp = supportsMultiplayer(g);
+                        return (
+                          <span
+                            title={
+                              mp
+                                ? "Multiplayer — includes co-op, hotseat, LAN and split-screen"
+                                : "No multiplayer support found in features or tags"
+                            }
+                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${
+                              mp
+                                ? "bg-emerald-500/15 text-emerald-500"
+                                : "bg-red-500/15 text-red-500"
+                            }`}
+                          >
+                            {mp ? "Yes" : "No"}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     {(["install", "party", "partyOps"] as const).map((area) => {
                       const health = healthOf(g, area);
                       const label =
                         area === "party" ? "Join" : area === "partyOps" ? "Party" : "Install";
+                      /*
+                       * Party health only means something for a game the
+                       * launcher can actually party. For a browser game or a
+                       * singleplayer one it was a permanently green dot
+                       * measuring nothing — noise dressed as a signal.
+                       */
+                      if (area === "partyOps" && !supportsLauncherParty(g)) {
+                        return (
+                          <td key={area} className="px-4 py-2.5">
+                            <span
+                              title={
+                                supportsMultiplayer(g)
+                                  ? "Multiplayer, but not partyable through the launcher"
+                                  : "Not a multiplayer game"
+                              }
+                              className="text-muted-foreground"
+                              aria-label={`Party not applicable for ${g.title}`}
+                            >
+                              —
+                            </span>
+                          </td>
+                        );
+                      }
                       return (
                         <td key={area} className="px-4 py-2.5">
                           {/*

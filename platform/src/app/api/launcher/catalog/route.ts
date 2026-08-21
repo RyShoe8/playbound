@@ -8,7 +8,7 @@ import {
   absoluteMediaUrl,
   type LauncherInstall,
   hasServerBrowser,
-  isMultiplayerGame,
+  supportsMultiplayer,
 } from "@/lib/launcherInstall";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
@@ -75,7 +75,7 @@ export async function GET(req: Request) {
           features: Array.isArray(g.features) ? g.features : [],
           multiplayer: hasServerBrowser(g),
           hasServerBrowser: hasServerBrowser(g),
-          isMultiplayer: isMultiplayerGame(g),
+          isMultiplayer: supportsMultiplayer(g),
           status: g.status || "published",
           testing: g.status === "testing",
           platforms: Array.isArray(g.platforms) ? g.platforms : [],
