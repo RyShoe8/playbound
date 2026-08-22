@@ -1216,6 +1216,12 @@ function buildPartyViewHtml(party) {
   const canJoinGame = hasGame && !ended && (isReady || inFlight);
   const hosted = party.hosted || {};
   const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
+  const lan = party.lan || {};
+  const lanReady = lan.enabled && lan.status === "ready";
+  const joinConnectWaiting =
+    !inFlight &&
+    ((hosted.enabled && hosted.status !== "ready") || (lan.enabled && !lanReady));
+  const joinDisabled = joinConnectWaiting;
   const hasVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
 
   const titleHtml =
@@ -1296,7 +1302,17 @@ function buildPartyViewHtml(party) {
 
   const joinGameHtml = canJoinGame
     ? `<div class="party-join-wrap">
-         <button type="button" id="btn-party-join-game" class="party-btn btn-primary">${ICON.play} Join Game</button>
+         <button type="button" id="btn-party-join-game" class="party-btn btn-primary"${
+           joinDisabled
+             ? ` disabled title="${
+                 hosted.status === "pending" || lan.status === "pending"
+                   ? "Waiting for the PlayBound server"
+                   : hosted.status === "failed"
+                     ? "Could not start the PlayBound server"
+                     : "Ready up and wait for the server"
+               }"`
+             : ""
+         }>${ICON.play} Join Game</button>
          ${
            hosted.roomCode
              ? `<p class="party-host-line party-room-code">Room Code: ${escapeHtml(String(hosted.roomCode))}</p>`
@@ -1316,7 +1332,6 @@ function buildPartyViewHtml(party) {
         )}</p>`
       : "";
 
-  const lan = party.lan || {};
   const lanNoteHtml =
     lan.enabled && lan.status === "pending"
       ? `<p class="view-sub party-inline-note">Setting up the party network…</p>`
@@ -1799,16 +1814,33 @@ function wirePartyView(slot, party) {
   const joinGameBtn = slot.querySelector("#btn-party-join-game");
   if (joinGameBtn) {
     joinGameBtn.addEventListener("click", async () => {
+      if (joinGameBtn.disabled) return;
       joinGameBtn.disabled = true;
       const res = await window.playbound.partyJoinGame(partyId);
-      if (res?.error) setStatus(res.error, true);
-      /*
-       * Join-game is what provisions the dedicated server on first launch, so
-       * the response carries the host and port. Launching from the party we
-       * rendered from would use a payload captured before that happened and
-       * start the game unconnected.
-       */
-      await launchPartyGame(res?.party || party);
+      if (res?.error) {
+        setStatus(res.error, true);
+        joinGameBtn.disabled = false;
+        void api.refreshFriendsData();
+        return;
+      }
+      const updated = res?.party || party;
+      const hosted = updated.hosted || {};
+      const lan = updated.lan || {};
+      if (
+        (hosted.enabled && hosted.status !== "ready") ||
+        (lan.enabled && lan.status !== "ready")
+      ) {
+        setStatus(
+          hosted.error || lan.error || "Server not ready yet — wait a moment.",
+          true
+        );
+        joinGameBtn.disabled = false;
+        const areaSlot = document.getElementById("friends-party-area");
+        if (areaSlot) areaSlot.dataset.sig = "";
+        void api.refreshFriendsData();
+        return;
+      }
+      await launchPartyGame(updated);
       joinGameBtn.disabled = false;
       const areaSlot = document.getElementById("friends-party-area");
       if (areaSlot) areaSlot.dataset.sig = "";

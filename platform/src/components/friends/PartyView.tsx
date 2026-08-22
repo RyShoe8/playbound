@@ -129,8 +129,18 @@ export function PartyView({
    * players in single-player / an empty deep-link panel.
    */
   const waitForHostedRoom = Boolean(party.hosted?.enabled && !joinUrl && !browserHref);
+  const inFlight = party.status === "playing" || party.status === "launching";
+  const lanReady = Boolean(party.lan?.enabled && party.lan?.status === "ready");
+  const joinConnectBlocked =
+    !inFlight &&
+    ((Boolean(party.hosted?.enabled) && party.hosted?.status !== "ready") ||
+      (Boolean(party.lan?.enabled) && !lanReady));
 
   function handleJoinGame(e?: React.MouseEvent) {
+    if (joinConnectBlocked) {
+      e?.preventDefault();
+      return;
+    }
     if (waitForHostedRoom) {
       e?.preventDefault();
     }
@@ -140,6 +150,13 @@ export function PartyView({
      */
     void (async () => {
       const next = await joinGame(party.id);
+      if (
+        next &&
+        ((next.hosted?.enabled && next.hosted.status !== "ready") ||
+          (next.lan?.enabled && next.lan.status !== "ready"))
+      ) {
+        return;
+      }
       const nextJoin =
         next?.hosted?.status === "ready" && next.hosted.host && next.hosted.port
           ? launcherJoinUrl(
@@ -354,8 +371,9 @@ export function PartyView({
               {waitForHostedRoom || (!joinHref && !joinOpensBrowser) ? (
                 <button
                   type="button"
+                  disabled={joinConnectBlocked}
                   onClick={(e) => handleJoinGame(e)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm disabled:opacity-50"
                 >
                   <Play className="size-4 fill-current" />
                   Join Game
@@ -365,8 +383,17 @@ export function PartyView({
                   href={joinHref || "#"}
                   target={joinOpensBrowser ? "_blank" : undefined}
                   rel={joinOpensBrowser ? "noopener noreferrer" : undefined}
-                  onClick={(e) => handleJoinGame(e)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
+                  aria-disabled={joinConnectBlocked}
+                  onClick={(e) => {
+                    if (joinConnectBlocked) {
+                      e.preventDefault();
+                      return;
+                    }
+                    handleJoinGame(e);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm${
+                    joinConnectBlocked ? " pointer-events-none opacity-50" : ""
+                  }`}
                 >
                   <Play className="size-4 fill-current" />
                   Join Game

@@ -29,7 +29,11 @@ import {
   views,
   wireEnhanceSelect,
 } from "./shared.js";
-import { wireNotifications, onNotificationsAccountChanged } from "./notifications.js";
+import {
+  wireNotifications,
+  onNotificationsAccountChanged,
+  closeNotificationsPanel,
+} from "./notifications.js";
 
 const KEEP_ALIVE = new Set([
   "home",
@@ -137,6 +141,8 @@ export async function navigateTo(viewName, params = {}) {
   if (viewName === "editions" && !editionsContextSlug() && !params.gameSlug) {
     return navigateTo("games");
   }
+
+  closeNotificationsPanel();
 
   const force = Boolean(params.force);
   state.currentView = viewName;

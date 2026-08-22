@@ -66,6 +66,11 @@ function setPanelOpen(open) {
   if (open) void refresh();
 }
 
+export function closeNotificationsPanel() {
+  if (!panelOpen) return;
+  setPanelOpen(false);
+}
+
 async function refresh() {
   if (!window.playbound?.getNotifications) return;
   if (!state.accountState?.connected) {
@@ -247,9 +252,23 @@ export function wireNotifications() {
   });
   list?.addEventListener("click", (e) => void onListClick(e));
 
-  document.addEventListener("mousedown", (e) => {
-    if (!panelOpen) return;
-    if (wrap.contains(e.target)) return;
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (!panelOpen) return;
+      if (wrap.contains(e.target)) return;
+      setPanelOpen(false);
+    },
+    true
+  );
+
+  document.addEventListener("keydown", (e) => {
+    if (!panelOpen || e.key !== "Escape") return;
+    setPanelOpen(false);
+  });
+
+  document.getElementById("notif-panel-close")?.addEventListener("click", (e) => {
+    e.stopPropagation();
     setPanelOpen(false);
   });
 
