@@ -89,6 +89,7 @@ type PartyDoc = Document & {
   lan?: PartyLanFields;
   maxSize?: number;
   editionSlug?: string | null;
+  lastActivity?: Date;
   discord?: { voiceChannelId?: string | null; relocatedAt?: Date | null };
   save: () => Promise<unknown>;
 };

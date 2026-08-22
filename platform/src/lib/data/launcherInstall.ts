@@ -248,6 +248,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   freeciv: {
     enabled: true,
     kind: "direct-installer",
+    // Keep in sync with FREECIV_VERSION in platform/game-host/install.sh — party
+    // hosting rejects clients when the VPS apt server is older than this build.
     url: "https://files.freeciv.org/packages/windows/Freeciv-3.2.5-msys2-win64-10-gtk4-setup.exe",
     fileName: "Freeciv-3.2.5-msys2-win64-10-gtk4-setup.exe",
     versionLabel: "3.2.5",
