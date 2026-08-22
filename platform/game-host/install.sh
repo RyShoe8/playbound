@@ -186,6 +186,7 @@ if [[ ! -x "$FREECIV_DIR/run-server" ]]; then
     -Dclients=[] \
     -Dfcmp=[] \
     -Daudio=none \
+    -Dtools=[] \
     -Dserver=enabled
   meson compile -C "$FREECIV_SRC/build"
   meson install -C "$FREECIV_SRC/build"
