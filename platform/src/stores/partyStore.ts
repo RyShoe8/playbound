@@ -85,6 +85,44 @@ function viewerIsInGame(party: PartyPayload | null): boolean {
   return Boolean(party?.selfPlaying);
 }
 
+function normalizeCreatedParty(
+  data: Record<string, unknown>,
+  recovered?: PartyPayload | null
+): (PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null {
+  const base = (data.party as PartyPayload | undefined) || recovered;
+  if (!base?.id) return null;
+  const inviteUrl =
+    (typeof data.inviteUrl === "string" ? data.inviteUrl : null) ||
+    base.discord?.inviteUrl ||
+    null;
+  return {
+    ...base,
+    voiceEnabled: Boolean(base.voiceEnabled) || Boolean(inviteUrl),
+    discord: {
+      voiceChannelId: base.discord?.voiceChannelId || null,
+      textChannelId: base.discord?.textChannelId || null,
+      inviteUrl,
+    },
+    needsDiscordLink: Boolean(data.needsDiscordLink),
+    inviteUrl,
+  };
+}
+
+async function recoverActivePartyAfterCreate(
+  get: () => PartyState,
+  attempts = 3
+): Promise<PartyPayload | null> {
+  for (let i = 0; i < attempts; i += 1) {
+    await get().fetchParties();
+    const found = get().activeParty;
+    if (found?.id) return found;
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 200 * (i + 1)));
+    }
+  }
+  return null;
+}
+
 /** Live party, but only while this user is still in the lobby — not in-game. */
 function needsFastPartyPoll(party: PartyPayload | null): boolean {
   if (!party || party.status === "ended") return false;
@@ -144,10 +182,9 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       const data = await res.json();
       if (!res.ok) {
-        await get().fetchParties();
-        const recovered = get().activeParty;
+        const recovered = await recoverActivePartyAfterCreate(get);
         if (recovered) {
-          set({ loading: false, error: null });
+          set({ activeParty: recovered, loading: false, error: null });
           syncPartyPoll(get);
           refreshFriendsAfterPartyMutation();
           return {
@@ -159,23 +196,38 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         set({ error: data.error || "Failed to create party", loading: false });
         return null;
       }
-      const inviteUrl = data.inviteUrl || data.party?.discord?.inviteUrl || null;
-      const party = {
-        ...(data.party as PartyPayload),
-        voiceEnabled: Boolean(data.party?.voiceEnabled) || Boolean(inviteUrl),
-        discord: {
-          voiceChannelId: data.party?.discord?.voiceChannelId || null,
-          textChannelId: data.party?.discord?.textChannelId || null,
-          inviteUrl,
-        },
-        needsDiscordLink: Boolean(data.needsDiscordLink),
-        inviteUrl,
-      };
+      const party = normalizeCreatedParty(data);
+      if (!party) {
+        const recovered = await recoverActivePartyAfterCreate(get);
+        if (recovered) {
+          set({ activeParty: recovered, loading: false, error: null });
+          syncPartyPoll(get);
+          refreshFriendsAfterPartyMutation();
+          return {
+            ...recovered,
+            needsDiscordLink: false,
+            inviteUrl: recovered.discord?.inviteUrl || null,
+          };
+        }
+        set({ error: "Failed to create party", loading: false });
+        return null;
+      }
       set({ activeParty: party, loading: false });
       syncPartyPoll(get);
       refreshFriendsAfterPartyMutation();
       return party;
     } catch (err) {
+      const recovered = await recoverActivePartyAfterCreate(get);
+      if (recovered) {
+        set({ activeParty: recovered, loading: false, error: null });
+        syncPartyPoll(get);
+        refreshFriendsAfterPartyMutation();
+        return {
+          ...recovered,
+          needsDiscordLink: false,
+          inviteUrl: recovered.discord?.inviteUrl || null,
+        };
+      }
       set({ error: "Network error", loading: false });
       return null;
     }

@@ -2354,7 +2354,7 @@ async function fillCreatePartyPanel() {
         password: visibility === "password" ? password : null,
         wantVoice,
       });
-      if (res?.error || !res?.party) throw new Error(res?.error || "Failed to create party.");
+      if (res?.error || !res?.party?.id) throw new Error(res?.error || "Failed to create party.");
       if (friendIds.length && res.party.id) {
         await window.playbound.inviteToParty(res.party.id, friendIds);
       }
@@ -2378,11 +2378,16 @@ async function fillCreatePartyPanel() {
       if (slot) slot.dataset.sig = "";
       await api.refreshFriendsData();
     } catch (err) {
-      await api.refreshFriendsData();
-      if (state._activeParty?.id) {
-        document.getElementById("create-party-panel").style.display = "none";
-        if (nameInput) nameInput.value = "";
-        return;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await api.refreshFriendsData();
+        if (state._activeParty?.id) {
+          document.getElementById("create-party-panel").style.display = "none";
+          if (nameInput) nameInput.value = "";
+          return;
+        }
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+        }
       }
       if (msg) {
         msg.textContent = err.message || "Couldn't create party.";
