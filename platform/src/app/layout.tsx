@@ -9,6 +9,7 @@ import { MobileNav } from "@/components/shell/MobileNav";
 import { Footer } from "@/components/shell/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 import { PresenceProvider } from "@/components/PresenceProvider";
+import { PartySyncProvider } from "@/components/PartySyncProvider";
 import { JsonLd, graph, organizationSchema, websiteSchema } from "@/components/JsonLd";
 import { TelemetryProvider } from "@/components/TelemetryProvider";
 import { CompatibilityShell } from "@/components/CompatibilityShell";
@@ -141,6 +142,7 @@ export default async function RootLayout({
                 SessionProvider because presence only exists for signed-in
                 users, and mounted once so only one session is ever opened. */}
             <PresenceProvider />
+            <PartySyncProvider />
             <PopoutDetector />
             <CompatibilityShell accessTiers={accessTiers}>
               <div className="shell-sidebar"><Sidebar /></div>

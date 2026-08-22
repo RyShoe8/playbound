@@ -168,6 +168,32 @@ describe("party rules", () => {
       expect(canJoinParty(p, "user2", false).ok).toBe(false);
       expect(canJoinParty(p, "user2", false, true).ok).toBe(true);
     });
+
+    it("rejects duplicate join — server returns existing roster instead", () => {
+      const p = mockParty({
+        members: [
+          { userId: "user1", role: "leader", ready: false, joinedAt: new Date() },
+          { userId: "user2", role: "member", ready: false, joinedAt: new Date() },
+        ],
+      });
+      const check = canJoinParty(p, "user2", true);
+      expect(check.ok).toBe(false);
+      expect(check.reason).toBe("Already in this party");
+    });
+  });
+
+  describe("single active party membership", () => {
+    it("only one non-leader slot matters when switching parties — join rules still apply per party", () => {
+      const partyA = mockParty({ leaderId: "user1" });
+      const partyB = mockParty({
+        leaderId: "user3",
+        members: [
+          { userId: "user3", role: "leader", ready: false, joinedAt: new Date() },
+        ],
+      });
+      expect(canJoinParty(partyA, "user2", true).ok).toBe(true);
+      expect(canJoinParty(partyB, "user2", true).ok).toBe(true);
+    });
   });
 
   describe("nextLeader", () => {

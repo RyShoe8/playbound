@@ -505,17 +505,57 @@ async function notifyPartyGameClosed(slug) {
   void api.refreshFriendsData();
 }
 
+/** Ensure myParties matches viewer membership; one refetch on transient drift. */
+async function reconcilePartiesPayload(partiesData, retried = false) {
+  if (!partiesData || partiesData.error) return partiesData;
+
+  if (!state.accountState?.userId && window.playbound.getAccount) {
+    try {
+      const acc = await window.playbound.getAccount();
+      if (acc) state.accountState = { ...state.accountState, ...acc };
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const userId = state.accountState?.userId;
+  const mine = Array.isArray(partiesData.myParties) ? partiesData.myParties : [];
+  const active = mine[0] || null;
+
+  if (userId && active) {
+    const inRoster = (active.members || []).some((m) => String(m.userId) === String(userId));
+    if (!inRoster && !retried && window.playbound.getParties) {
+      console.warn("[friends] myParties roster missing viewer — refetching parties");
+      const retry = await window.playbound.getParties();
+      return reconcilePartiesPayload(retry, true);
+    }
+  }
+
+  if (!active && userId) {
+    const discoverable = Array.isArray(partiesData.discoverable) ? partiesData.discoverable : [];
+    const joined = discoverable.find((p) =>
+      (p.members || []).some((m) => String(m.userId) === String(userId))
+    );
+    if (joined) {
+      return { ...partiesData, myParties: [joined] };
+    }
+  }
+
+  return partiesData;
+}
+
 async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
 
   try {
-    const [friendsData, requestsData, partiesData, upcomingEventsData] = await Promise.all([
+    const [friendsData, requestsData, partiesRaw, upcomingEventsData] = await Promise.all([
       window.playbound.getFriends(),
       window.playbound.getFriendRequests(),
       window.playbound.getParties?.() ?? Promise.resolve(null),
       window.playbound.getFriendsUpcomingEvents?.() ?? Promise.resolve({ events: [] }),
     ]);
+    const partiesData = await reconcilePartiesPayload(partiesRaw);
     const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
     state._createPartyFriends = friends;
     paintPartyArea(partiesData);
@@ -2110,7 +2150,7 @@ async function launchPartyGame(party) {
       const res = await window.playbound.play(slug, {
         host: hosted.host,
         port: Number(hosted.port),
-        name: hosted.name || party.gameTitle || "",
+        name: state.accountState?.username || hosted.name || party.gameTitle || "",
       }, party.editionSlug || null);
       startGameSession(slug, party.gameTitle || slug);
       /*

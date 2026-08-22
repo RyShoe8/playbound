@@ -257,6 +257,52 @@ async function findActiveLeaderParty(userId: string) {
   }).lean();
 }
 
+/** Drop every live party except `keepPartyId` — one active membership per user. */
+async function leaveOtherActiveParties(userId: string, keepPartyId?: string) {
+  const filter: Record<string, unknown> = {
+    status: { $nin: ["ended"] },
+    "members.userId": userId,
+  };
+  if (keepPartyId) filter._id = { $ne: keepPartyId };
+  const docs = await Party.find(filter);
+  for (const doc of docs) {
+    await leaveParty(String(doc._id), userId);
+  }
+}
+
+type PartyDocLean = Record<string, unknown> & {
+  _id: unknown;
+  lastActivity?: Date;
+};
+
+/** One canonical party when legacy rows still have the user in multiple rosters. */
+async function pickCanonicalPartyDoc(
+  docs: PartyDocLean[],
+  userId: string
+): Promise<PartyDocLean | null> {
+  if (docs.length === 0) return null;
+  if (docs.length === 1) return docs[0];
+
+  const presence = await Presence.findOne({ userId }).select("currentPartyId").lean();
+  const presencePartyId = presence?.currentPartyId ? String(presence.currentPartyId) : null;
+
+  let canonical = docs[0];
+  if (presencePartyId) {
+    const match = docs.find((d) => String(d._id) === presencePartyId);
+    if (match) canonical = match;
+  }
+
+  for (const d of docs) {
+    if (String(d._id) !== String(canonical._id)) {
+      console.warn(
+        `[party] leaving stale party ${String(d._id)} for ${userId} (canonical ${String(canonical._id)})`
+      );
+      await leaveParty(String(d._id), userId);
+    }
+  }
+  return canonical;
+}
+
 async function partyPayloadForDoc(doc: Record<string, unknown>): Promise<PartyPayload> {
   const memberIds = [
     String(doc.leaderId),
@@ -408,9 +454,17 @@ export async function createParty(opts: {
   // One active party per leader — return it idempotently instead of 409/500 races.
   const existing = await findActiveLeaderParty(opts.userId);
   if (existing) {
+    const existingId = String(existing._id);
+    await leaveOtherActiveParties(opts.userId, existingId);
+    await setPresenceParty(opts.userId, {
+      partyId: existingId,
+      gameSlug: String(existing.gameSlug || "") || null,
+    });
     const party = await partyPayloadForDoc(existing as Record<string, unknown>);
     return { party, status: 200, existing: true, ...SKIP_VOICE };
   }
+
+  await leaveOtherActiveParties(opts.userId);
 
   const visibility = opts.visibility || "friends";
   const wantVoice = opts.wantVoice !== false;
@@ -455,6 +509,12 @@ export async function createParty(opts: {
     if (isMongoDuplicateKey(err)) {
       const raced = await findActiveLeaderParty(opts.userId);
       if (raced) {
+        const racedId = String(raced._id);
+        await leaveOtherActiveParties(opts.userId, racedId);
+        await setPresenceParty(opts.userId, {
+          partyId: racedId,
+          gameSlug: String(raced.gameSlug || "") || null,
+        });
         const party = await partyPayloadForDoc(raced as Record<string, unknown>);
         return { party, status: 200, existing: true, ...SKIP_VOICE };
       }
@@ -514,6 +574,23 @@ export async function joinParty(
       return { error: "Incorrect password", status: 403 };
     }
     passwordOk = true;
+  }
+
+  await leaveOtherActiveParties(userId, partyId);
+
+  const alreadyMember = rp.members.some((m) => m.userId === userId);
+  if (alreadyMember) {
+    await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
+    const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
+    const [nameById, game] = await Promise.all([
+      resolveUsernames(memberIds),
+      getGame(doc.gameSlug, { includeTesting: true }),
+    ]);
+    return {
+      party: serializeParty(doc.toObject(), nameById, game?.title || null),
+      status: 200,
+      ...SKIP_VOICE,
+    };
   }
 
   const check = canJoinParty(rp, userId, isFriend, passwordOk);
@@ -1369,9 +1446,12 @@ export async function listPartiesForUser(
 
   if (docs.length === 0) return [];
 
+  const canonical = await pickCanonicalPartyDoc(docs as PartyDocLean[], userId);
+  if (!canonical) return [];
+
   const allMemberIds = new Set<string>();
   const slugs = new Set<string>();
-  for (const d of docs) {
+  for (const d of [canonical]) {
     allMemberIds.add(String(d.leaderId));
     for (const m of d.members as Array<{ userId: unknown }>) {
       allMemberIds.add(String(m.userId));
@@ -1390,13 +1470,19 @@ export async function listPartiesForUser(
   ]);
   const titleBySlug = new Map(games);
 
-  const parties = docs.map((d) =>
-    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
-  );
-  if (parties[0]) {
-    parties[0] = await attachConfigSync(parties[0], userId);
+  let party = serializeParty(canonical, nameById, titleBySlug.get(String(canonical.gameSlug)) || null);
+  party = await attachConfigSync(party, userId);
+
+  const presence = await Presence.findOne({ userId }).select("currentPartyId").lean();
+  const presencePartyId = presence?.currentPartyId ? String(presence.currentPartyId) : null;
+  if (presencePartyId !== party.id) {
+    await setPresenceParty(userId, {
+      partyId: party.id,
+      gameSlug: party.gameSlug || null,
+    });
   }
-  return parties;
+
+  return [party];
 }
 
 /* ─── discover friend parties (4E) ───────────────────────────────────────── */
