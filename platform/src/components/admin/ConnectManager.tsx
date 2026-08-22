@@ -24,6 +24,33 @@ type LastSpawnTestEntry = {
   port?: number | null;
 };
 
+type ConnectAdminPartyRow = {
+  id: string;
+  name: string;
+  leaderUsername: string;
+  gameSlug: string;
+  gameTitle: string | null;
+  status: string;
+  visibility: string;
+  memberCount: number;
+  readyCount: number;
+  inGameCount: number;
+  hostedStatus: string;
+  hostedHost: string | null;
+  hostedPort: number | null;
+  hostedError: string | null;
+  vpsRoomActive: boolean;
+  vpsPort: number | null;
+  lastActivity: string;
+};
+
+type ConnectAdminPartySummary = {
+  partyCount: number;
+  playersInParties: number;
+  playersInGame: number;
+  totalPlayers: number;
+};
+
 type OverviewData = {
   configured: boolean;
   host: string | null;
@@ -56,6 +83,8 @@ type OverviewData = {
     port: number;
     createdAt?: number;
   }>;
+  activeParties?: ConnectAdminPartyRow[];
+  partySummary?: ConnectAdminPartySummary;
   games: Array<{
     slug: string;
     title: string;
@@ -156,6 +185,35 @@ function MetricCard({
       {children}
     </div>
   );
+}
+
+function statusTone(status: string) {
+  switch (status) {
+    case "playing":
+    case "launching":
+      return "text-emerald-400";
+    case "ready":
+      return "text-sky-400";
+    case "forming":
+      return "text-muted-foreground";
+    default:
+      return "text-foreground";
+  }
+}
+
+function hostedLabel(party: ConnectAdminPartyRow) {
+  if (party.hostedStatus === "n/a") return "—";
+  const parts = [party.hostedStatus];
+  if (party.hostedStatus === "ready" && party.hostedHost && party.hostedPort) {
+    parts.push(`${party.hostedHost}:${party.hostedPort}`);
+  }
+  if (party.vpsRoomActive && party.vpsPort) {
+    parts.push(`VPS :${party.vpsPort}`);
+  } else if (party.hostedStatus === "ready" && !party.vpsRoomActive) {
+    parts.push("VPS missing");
+  }
+  if (party.hostedError) parts.push(party.hostedError);
+  return parts.join(" · ");
 }
 
 export function ConnectManager() {
@@ -283,6 +341,13 @@ export function ConnectManager() {
   const rootDisk = metrics?.storage?.find((s) => s.path === "/");
   const hostDisk = metrics?.storage?.find((s) => s.path.includes("playbound-host"));
   const agentOutdated = data?.alerts?.some((a) => a.title === "VPS agent outdated") ?? false;
+  const parties = data?.activeParties ?? [];
+  const partySummary = data?.partySummary ?? {
+    partyCount: 0,
+    playersInParties: 0,
+    playersInGame: 0,
+    totalPlayers: 0,
+  };
 
   return (
     <div className="space-y-6">
@@ -355,6 +420,102 @@ export function ConnectManager() {
           </div>
         </div>
       ))}
+
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Active parties</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Live PlayBound parties from MongoDB — roster and in-game presence, not VPS processes alone.
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold tabular-nums">{partySummary.totalPlayers}</p>
+            <p className="text-xs text-muted-foreground">total players</p>
+          </div>
+        </div>
+        <div className="mb-4 grid gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground">Parties</p>
+            <p className="text-xl font-semibold tabular-nums">{partySummary.partyCount}</p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground">In parties</p>
+            <p className="text-xl font-semibold tabular-nums">{partySummary.playersInParties}</p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground">In game</p>
+            <p className="text-xl font-semibold tabular-nums">{partySummary.playersInGame}</p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground">Combined total</p>
+            <p className="text-xl font-semibold tabular-nums">{partySummary.totalPlayers}</p>
+          </div>
+        </div>
+        {parties.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No active parties right now.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[960px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Party</th>
+                  <th className="pb-2 pr-4 font-medium">Game</th>
+                  <th className="pb-2 pr-4 font-medium">Status</th>
+                  <th className="pb-2 pr-4 font-medium">Members</th>
+                  <th className="pb-2 pr-4 font-medium">In game</th>
+                  <th className="pb-2 pr-4 font-medium">Hosted</th>
+                  <th className="pb-2 font-medium">Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parties.map((party) => (
+                  <tr key={party.id} className="border-b border-border/50 align-top">
+                    <td className="py-2 pr-4">
+                      <p className="font-medium">{party.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {party.leaderUsername} · {party.visibility} ·{" "}
+                        <span className="font-mono">{party.id.slice(-8)}</span>
+                      </p>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <p>{party.gameTitle || party.gameSlug || "—"}</p>
+                      {party.gameSlug ? (
+                        <p className="font-mono text-xs text-muted-foreground">{party.gameSlug}</p>
+                      ) : null}
+                    </td>
+                    <td className={`py-2 pr-4 capitalize ${statusTone(party.status)}`}>
+                      {party.status}
+                    </td>
+                    <td className="py-2 pr-4 tabular-nums">
+                      {party.memberCount}
+                      <span className="text-xs text-muted-foreground">
+                        {" "}
+                        ({party.readyCount} ready)
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 tabular-nums">{party.inGameCount}</td>
+                    <td className="py-2 pr-4 text-xs text-muted-foreground">{hostedLabel(party)}</td>
+                    <td className="py-2 text-xs text-muted-foreground">{formatWhen(party.lastActivity)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {data?.roomsError ? (
+          <p className="mt-3 text-xs text-amber-400">VPS rooms: {data.roomsError}</p>
+        ) : null}
+        {data?.configured && (data.rooms?.length ?? 0) > 0 ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            {data.rooms.length} dedicated VPS room{data.rooms.length === 1 ? "" : "s"} running
+            {data.health?.maxRooms != null
+              ? ` (${data.health?.rooms ?? 0}/${data.health.maxRooms} slots)`
+              : ""}
+            .
+          </p>
+        ) : null}
+      </div>
 
       {!data?.configured ? null : (
         <>
@@ -440,49 +601,6 @@ export function ConnectManager() {
             </MetricCard>
           </div>
           ) : null}
-
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">Active rooms</h2>
-              <span className="text-sm text-muted-foreground">
-                {data.health?.rooms ?? 0} / {data.health?.maxRooms ?? "—"} slots
-              </span>
-            </div>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Dedicated processes stop when a party ends or everyone exits the game, when you run a
-              spawn test (stopped immediately after a successful test), or after about 4 hours if a
-              room is left running with no cleanup.
-            </p>
-            {data.roomsError && (
-              <p className="text-sm text-amber-400">{data.roomsError}</p>
-            )}
-            {data.rooms.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No dedicated rooms running.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="pb-2 pr-4 font-medium">Game</th>
-                      <th className="pb-2 pr-4 font-medium">Port</th>
-                      <th className="pb-2 pr-4 font-medium">Party</th>
-                      <th className="pb-2 font-medium">Name</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.rooms.map((room) => (
-                      <tr key={room.roomId} className="border-b border-border/50">
-                        <td className="py-2 pr-4 font-mono text-xs">{room.gameSlug}</td>
-                        <td className="py-2 pr-4">{room.port}</td>
-                        <td className="py-2 pr-4 font-mono text-xs">{room.partyId.slice(-8)}</td>
-                        <td className="py-2">{room.name || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
 
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
