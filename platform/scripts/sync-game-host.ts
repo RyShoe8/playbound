@@ -11,7 +11,7 @@
 
 const TIMEOUT_MS = 10 * 60 * 1000;
 
-async function main() {
+async function syncGameHost() {
   const base = process.env.GAME_HOST_URL?.replace(/\/$/, "");
   const secret = process.env.GAME_HOST_SECRET;
   if (!base || !secret) {
@@ -72,6 +72,8 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+void syncGameHost().catch((err) => {
   console.warn("[sync:game-host] unexpected error:", err);
 });
+
+export {};
