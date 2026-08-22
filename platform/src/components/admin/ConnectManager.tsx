@@ -188,8 +188,6 @@ export function ConnectManager() {
 
   useEffect(() => {
     void load();
-    const timer = setInterval(() => void load(true), 15_000);
-    return () => clearInterval(timer);
   }, [load]);
 
   async function runEnsureMissing() {

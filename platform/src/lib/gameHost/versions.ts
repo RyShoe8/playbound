@@ -27,7 +27,6 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   openarena: "Ubuntu apt",
   triplea: "Manual jar (if installed)",
   "0-ad": "Ubuntu apt",
-  mrboom: "Ubuntu apt",
   "wolfenstein-enemy-territory": "ET: Legacy (etlded)",
 };
 
@@ -104,7 +103,8 @@ export function expectedServerVersionForHostableGame(slug: string): string {
 
 export function versionsLikelyMismatch(
   clientVersion: string,
-  serverVersion: string
+  serverVersion: string,
+  slug?: string
 ): boolean {
   if (!hasComparableVersion(clientVersion) || !hasComparableVersion(serverVersion)) {
     return false;
@@ -120,6 +120,12 @@ export function versionsLikelyMismatch(
   const cMajorMinor = c.match(/^(\d+\.\d+)/)?.[1];
   const sMajorMinor = s.match(/^(\d+\.\d+)/)?.[1];
   if (cMajorMinor && cMajorMinor === sMajorMinor) return false;
+  // Mr Boom apt lags the launcher (5.4 vs 5.5) but major is compatible.
+  if (slug === "mrboom") {
+    const cMajor = c.match(/^(\d+)/)?.[1];
+    const sMajor = s.match(/^(\d+)/)?.[1];
+    if (cMajor && cMajor === sMajor) return false;
+  }
   return true;
 }
 
@@ -149,7 +155,9 @@ export function hostableGameVersionRows(
       clientVersion,
       serverVersion,
       serverVersionSource: detected ? "detected" : "expected",
-      versionMismatch: detected ? versionsLikelyMismatch(clientVersion, serverVersion) : false,
+      versionMismatch: detected
+        ? versionsLikelyMismatch(clientVersion, serverVersion, game.slug)
+        : false,
     };
   });
 }

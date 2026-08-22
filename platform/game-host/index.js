@@ -423,9 +423,19 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
   }
 
   const args = recipe.args(port, ctx);
+  const hostHome = process.env.HOME || "/var/lib/playbound-host";
+  const spawnEnv = {
+    ...process.env,
+    HOME: hostHome,
+    ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
+  };
+  const cwd =
+    typeof recipe.cwd === "function"
+      ? recipe.cwd(port, ctx)
+      : recipe.cwd || path.dirname(binary);
   const child = spawn(binary, args, {
-    cwd: path.dirname(binary),
-    env: { ...process.env, HOME: process.env.HOME || "/var/lib/playbound-host" },
+    cwd,
+    env: spawnEnv,
     stdio: ["pipe", "pipe", "pipe"],
   });
 

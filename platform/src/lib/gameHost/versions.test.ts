@@ -40,6 +40,10 @@ describe("gameHost versions", () => {
     expect(versionsLikelyMismatch("2.4.30", "2.4.26.20240416")).toBe(false);
   });
 
+  it("does not flag same major apt drift (Mr Boom 5.5 vs 5.4)", () => {
+    expect(versionsLikelyMismatch("v5.5", "5.4", "mrboom")).toBe(false);
+  });
+
   it("does not flag OpenTTD CDN latest against probed apt version", () => {
     expect(versionsLikelyMismatch("OpenTTD CDN latest", "13.4")).toBe(false);
   });

@@ -11,9 +11,14 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { verifyEtLegacyReady } from "./etLegacyInstall.js";
 
+const execFileAsync = promisify(execFile);
+
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
+const HOST_HOME = process.env.HOME || "/var/lib/playbound-host";
 const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/et";
 
 function firstExisting(candidates) {
@@ -62,21 +67,37 @@ export const recipes = {
     portEnd: 3999,
     protocol: "both",
     binaries: gameBin("openttd", ["openttd"]),
-    args: (port) => ["-D", `0.0.0.0:${port}`],
+    args: (port) => ["-D", `0.0.0.0:${port}`, "-f"],
+    spawnEnv: () => ({
+      HOME: HOST_HOME,
+      XDG_DATA_HOME: HOST_HOME,
+    }),
   },
   luanti: {
     portStart: 30000,
     portEnd: 30020,
     protocol: "udp",
     binaries: gameBin("luanti", ["luantiserver", "minetestserver"]),
-    args: (port, ctx) => [
-      "--port",
-      String(port),
-      "--worldname",
-      `pb-${ctx.partyId.slice(-8)}`,
-      "--gameid",
-      "minetest",
-    ],
+    args: (port, ctx) => {
+      const world = path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`);
+      return [
+        "--port",
+        String(port),
+        "--world",
+        world,
+        "--gameid",
+        "minetest",
+        "--logfile",
+        path.join(HOST_HOME, "logs", "minetest.log"),
+      ];
+    },
+    prepareSpawn: async (_port, ctx) => {
+      fs.mkdirSync(path.join(HOST_HOME, "logs"), { recursive: true });
+      fs.mkdirSync(path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`), {
+        recursive: true,
+      });
+    },
+    spawnEnv: () => ({ HOME: HOST_HOME }),
   },
   mindustry: {
     portStart: 6567,
@@ -138,6 +159,12 @@ export const recipes = {
     portEnd: 2120,
     protocol: "both",
     binaries: gameBin("warzone-2100", ["warzone2100"]),
+    resolveBinary: () =>
+      firstExisting([
+        "/usr/lib/warzone2100/warzone2100",
+        "/usr/lib/x86_64-linux-gnu/warzone2100/warzone2100",
+        ...gameBin("warzone-2100", ["warzone2100"]),
+      ]),
     args: (port) => ["--dedicated", `--port=${port}`],
   },
   freeciv: {
@@ -153,6 +180,13 @@ export const recipes = {
     protocol: "both",
     binaries: gameBin("bzflag", ["bzfs"]),
     args: (port) => ["-p", String(port), "-g", "-noTeamKills"],
+    prepareSpawn: async (port) => {
+      try {
+        await execFileAsync("fuser", ["-k", `${port}/tcp`, `${port}/udp`]);
+      } catch {
+        /* port was free */
+      }
+    },
   },
   supertuxkart: {
     portStart: 2759,
@@ -206,17 +240,11 @@ export const recipes = {
     portStart: 3303,
     portEnd: 3323,
     protocol: "tcp",
-    binaries: [
-      ...gameBin("triplea", ["run-server"]),
-      "/usr/bin/java",
-    ],
-    args: (port) => {
-      const jar = firstExisting([
-        path.join(GAMES_ROOT, "triplea", "triplea.jar"),
-      ]);
-      if (jar) return ["-jar", jar, "server", `--port=${port}`];
-      return [`--port=${port}`];
-    },
+    startupGraceMs: 5000,
+    binaries: gameBin("triplea", ["run-server"]),
+    resolveBinary: () => firstExisting([path.join(GAMES_ROOT, "triplea", "run-server")]),
+    args: (port) => [String(port)],
+    cwd: () => path.join(GAMES_ROOT, "triplea"),
   },
   "0-ad": {
     portStart: 20595,
@@ -224,13 +252,6 @@ export const recipes = {
     protocol: "udp",
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
     args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
-  },
-  mrboom: {
-    portStart: 27999,
-    portEnd: 28019,
-    protocol: "udp",
-    binaries: gameBin("mrboom", ["mrboom-server", "mrboom"]),
-    args: (port) => ["-p", String(port)],
   },
   "wolfenstein-enemy-territory": {
     portStart: 27950,
@@ -338,6 +359,19 @@ export function listGameHostStatus() {
       const gameDir = path.join(GAMES_ROOT, slug);
       const check = verifyEtLegacyReady(gameDir);
       ready = check.ok;
+    }
+    if (slug === "triplea" && hasBinary) {
+      ready = fs.existsSync(path.join(GAMES_ROOT, "triplea", "run-server"));
+    }
+    if (slug === "openttd" && hasBinary) {
+      const baseset = path.join(HOST_HOME, ".openttd", "baseset");
+      try {
+        ready =
+          fs.existsSync(baseset) &&
+          fs.readdirSync(baseset).some((f) => f.endsWith(".grf"));
+      } catch {
+        ready = false;
+      }
     }
     out[slug] = { installed: hasBinary, ready };
   }
