@@ -42,10 +42,14 @@ export async function GET() {
   const alerts: Array<{ type: "warning" | "error" | "info"; title: string; message: string }> = [];
 
   if (!healthResult.configured) {
+    const unreachableHint =
+      /fetch failed|timeout|ECONNREFUSED|ENOTFOUND|ETIMEDOUT/i.test(healthResult.error);
     alerts.push({
       type: "error",
       title: "Game host unreachable",
-      message: healthResult.error,
+      message: unreachableHint
+        ? `${healthResult.error} — Vercel cannot reach the VPS on port 8741. Open 8741/tcp in the Contabo firewall panel (in addition to ufw on the VM). Confirm GAME_HOST_URL=http://147.93.133.235:8741 and GAME_HOST_SECRET on Vercel Production.`
+        : healthResult.error,
     });
   }
 
@@ -97,13 +101,15 @@ export async function GET() {
     };
   });
 
-  for (const game of games) {
-    if (game.versionMismatch) {
-      alerts.push({
-        type: "warning",
-        title: `${game.title} version skew`,
-        message: `Launcher ships client ${game.clientVersion} but the VPS server reports ${game.serverVersion}. Party joins may fail until install.sh is re-run.`,
-      });
+  if (healthResult.configured) {
+    for (const game of games) {
+      if (game.versionMismatch) {
+        alerts.push({
+          type: "warning",
+          title: `${game.title} version skew`,
+          message: `Launcher ships client ${game.clientVersion} but the VPS server reports ${game.serverVersion}. Party joins may fail until install.sh is re-run.`,
+        });
+      }
     }
   }
 

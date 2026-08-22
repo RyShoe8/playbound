@@ -18,8 +18,8 @@ let refreshInFlight = null;
 const PROBES = {
   freeciv: { args: ["-v"], pick: pickFreeciv },
   openttd: { args: ["--version"], pick: pickFirstVersion },
+  // luanti recipe resolves luantiserver or minetestserver on Ubuntu 24.04.
   luanti: { args: ["--version"], pick: pickFirstVersion },
-  minetest: { args: ["--version"], pick: pickFirstVersion },
   hedgewars: { args: ["--version"], pick: pickFirstVersion },
   "warzone-2100": { args: ["--version"], pick: pickFirstVersion },
   bzflag: { args: ["-v"], pick: pickFirstVersion },
@@ -31,6 +31,15 @@ const PROBES = {
   mrboom: { args: ["-v"], pick: pickFirstVersion },
 };
 
+function looksLikeVersion(value) {
+  const s = String(value || "").trim();
+  if (!s || s.length > 32) return false;
+  if (/error|exception|unrecognized|permission denied|invalid option|unhandled|console mode|gamedir|user error|bwrap|fatal/i.test(s)) {
+    return false;
+  }
+  return /\d+\.\d+/.test(s);
+}
+
 function pickFirstVersion(text) {
   const line = String(text || "")
     .trim()
@@ -40,12 +49,16 @@ function pickFirstVersion(text) {
   const m =
     line.match(/(\d+\.\d+(?:\.\d+)?(?:\.\d+)?)/) ||
     line.match(/release[-_]?(\d{8}|\d+\.\d+)/i);
-  return m ? m[1] || m[0] : line.slice(0, 48);
+  const picked = m ? m[1] || m[0] : null;
+  return looksLikeVersion(picked) ? picked : null;
 }
 
 function pickFreeciv(text) {
-  const m = String(text || "").match(/(\d+\.\d+(?:\.\d+)?)/);
-  return m?.[1] || pickFirstVersion(text);
+  const raw = String(text || "");
+  const m =
+    raw.match(/freeciv[^\d]*(\d+\.\d+(?:\.\d+)?)/i) ||
+    raw.match(/(?:^|\s)(\d+\.\d+(?:\.\d+)?)(?:\s|$)/m);
+  return m?.[1] || null;
 }
 
 async function probeBinary(slug, binary) {
@@ -70,7 +83,8 @@ async function probeBinary(slug, binary) {
 async function refreshGameVersions() {
   const out = {};
   for (const slug of Object.keys(PROBES)) {
-    const { binary } = resolveRecipe(slug);
+    const resolved = resolveRecipe(slug);
+    const binary = resolved?.binary || null;
     out[slug] = binary ? await probeBinary(slug, binary) : null;
   }
   cache = out;
@@ -103,4 +117,6 @@ export function scheduleGameVersionRefresh() {
   }
 }
 
-void refreshGameVersions();
+void refreshGameVersions().catch((err) => {
+  console.warn("[gameVersions] initial refresh failed:", err?.message || err);
+});
