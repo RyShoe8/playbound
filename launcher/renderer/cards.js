@@ -37,7 +37,7 @@ function editionChipsHtml(game, { max = 3 } = {}) {
   const overflow = editions.length - max;
   return `<div class="card-editions">
     <span class="card-editions-label">Editions:</span>
-    ${visible.map((e) => `<span class="chip edition-chip" title="${escapeHtml(e.name || e.slug)}">${escapeHtml(e.name || e.slug)}</span>`).join("")}
+    ${visible.map((e) => `<span class="chip edition-chip" data-edition-slug="${escapeHtml(e.slug)}" title="${escapeHtml(e.name || e.slug)}">${escapeHtml(e.name || e.slug)}</span>`).join("")}
     ${overflow > 0 ? `<span class="card-editions-overflow">+${overflow}</span>` : ""}
   </div>`;
 }
@@ -190,6 +190,13 @@ export function createGameCard(game, playingNow) {
     },
     { once: true }
   );
+  card.querySelectorAll(".edition-chip[data-edition-slug]").forEach((chip) => {
+    chip.addEventListener("click", (e) => {
+      e.stopPropagation();
+      api.openEditionDetail?.(game.slug, chip.dataset.editionSlug);
+    });
+  });
+
   card.addEventListener("click", () => api.openGameDetail?.(game.slug, state.currentView));
   return card;
 }
