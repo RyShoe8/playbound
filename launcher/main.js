@@ -54,6 +54,7 @@ const {
   joinsFromInGameMenu,
   staticLaunchArgs,
 } = require("./services/connectArgs");
+const { createHostService } = require("./services/couch/hostService");
 
 function loadHardwareModule() {
   try {
@@ -8250,6 +8251,80 @@ ipcMain.handle("get-app-version", () => ({
     ? { version: pendingUpdate.version, releaseDate: pendingUpdate.releaseDate || null }
     : null,
 }));
+
+/* ── Couch Mode (phone → virtual controller) ───────────────────────── */
+const couchHost = createHostService({
+  getApiBase: () => getApiBase(),
+  broadcast: (channel, payload) => {
+    if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
+  },
+});
+
+ipcMain.handle("couch-start", async (_event, opts) => {
+  try {
+    return { ok: true, state: await couchHost.createSession(opts || {}) };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+ipcMain.handle("couch-stop", async () => {
+  try {
+    await couchHost.stopSession();
+    return { ok: true, state: couchHost.getState() };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+ipcMain.handle("couch-state", () => couchHost.getState());
+ipcMain.handle("couch-refresh", async () => {
+  await couchHost.refreshSnapshot();
+  return couchHost.getState();
+});
+ipcMain.handle("couch-controller-action", async (_event, action, controllerId, playerSlot) => {
+  try {
+    return {
+      ok: true,
+      state: await couchHost.controllerAction(action, controllerId, playerSlot),
+    };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+ipcMain.handle("couch-probe-driver", async () => couchHost.probeDriver());
+ipcMain.handle("couch-renderer-message", async (_event, payload) =>
+  couchHost.onRendererMessage(payload || {})
+);
+ipcMain.handle("couch-signal-post", async (_event, body) => {
+  const state = couchHost.getState();
+  const session = state.session;
+  if (!session) return { ok: false, error: "No session" };
+  const res = await fetch(`${getApiBase()}/api/couch/sessions/${session.sessionId}/signal`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...body,
+      hostToken: session.hostToken,
+      senderRole: "host",
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, ...data };
+});
+ipcMain.handle("couch-signal-poll", async (_event, since) => {
+  const state = couchHost.getState();
+  const session = state.session;
+  if (!session) return { messages: [] };
+  const qs = new URLSearchParams({
+    forRole: "host",
+    since: String(since || 0),
+    hostToken: session.hostToken,
+  });
+  const res = await fetch(
+    `${getApiBase()}/api/couch/sessions/${session.sessionId}/signal?${qs}`
+  );
+  if (!res.ok) return { messages: [] };
+  return res.json();
+});
 ipcMain.handle("check-for-updates", async () => {
   if (!app.isPackaged) {
     return { ok: false, reason: "dev", message: "Updates only run in packaged builds." };

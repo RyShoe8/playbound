@@ -142,6 +142,27 @@
 }
 
 
+body.is-controller-pwa .shell-sidebar,
+body.is-controller-pwa .shell-topbar,
+body.is-controller-pwa .shell-footer,
+body.is-controller-pwa .shell-mobilenav {
+  display: none !important;
+}
+
+body.is-controller-pwa .shell-main {
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 100dvh;
+}
+
+body.is-controller-pwa {
+  background: #0b0a10;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 body.is-popout .shell-sidebar,
 body.is-popout .shell-topbar,
 body.is-popout .shell-footer,

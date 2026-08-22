@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob: https: http:; frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://*.steamstatic.com https://*.akamai.steamstatic.com; connect-src 'self' https: http:;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: http:; media-src 'self' data: blob: https: http:; frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://*.steamstatic.com https://*.akamai.steamstatic.com; connect-src 'self' https: http: ws: wss:;" />
     <title>PlayBound</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -74,6 +74,10 @@
             <button class="nav-btn" data-view="library">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
               Library
+            </button>
+            <button class="nav-btn" data-view="couch">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="8" width="20" height="10" rx="2"/><path d="M6 18v2M18 18v2M2 12h20"/></svg>
+              Couch
             </button>
           </div>
           <a
@@ -215,6 +219,7 @@
         <div id="view-friends" class="view"></div>
         <div id="view-gear" class="view"></div>
         <div id="view-library" class="view"></div>
+        <div id="view-couch" class="view"></div>
         <div id="view-settings" class="view"></div>
         <div id="view-game-detail" class="view"></div>
         <div id="view-mod-detail" class="view"></div>

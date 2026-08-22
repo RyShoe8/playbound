@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.2.42",
+  "version": "0.2.43",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
@@ -26,7 +26,8 @@
     "test:exe-format": "node services/executableFormat.test.js",
     "test:dosbox": "node services/ManagedDosBox.test.js",
     "test:retroarch": "node services/ManagedRetroArch.test.js",
-    "test:controller": "node services/gameControllerConfig.test.js"
+    "test:controller": "node services/gameControllerConfig.test.js",
+    "test:couch": "node services/couch/protocol.test.js"
   },
   "author": "PlayBound",
   "license": "MIT",

@@ -1,0 +1,18 @@
+{
+  "name": "PlayBound Controller",
+  "short_name": "Controller",
+  "description": "Use your phone as a PlayBound Couch Mode controller",
+  "start_url": "/controller",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0b0a10",
+  "theme_color": "#0b0a10",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
