@@ -7,6 +7,7 @@ import {
   escapeHtml,
   executableNoun,
   filterByDiscovery,
+  filterByCompatibility,
   filterCatalogGames,
   gamePlayHintHtml,
   isGameDesktopCompatible,
@@ -446,7 +447,8 @@ function syncFriendsPoll() {
   }
   friendsPollMs = next;
   friendsPollInterval = setInterval(() => {
-    if ((state.currentView === "friends" || live) && state.accountState.connected) {
+    const inLiveParty = Boolean(state._activeParty && state._activeParty.status !== "ended");
+    if ((state.currentView === "friends" || inLiveParty) && state.accountState.connected) {
       api.refreshFriendsData();
     } else {
       clearInterval(friendsPollInterval);
@@ -479,9 +481,28 @@ if (!playPollWired) {
   playPollWired = true;
   void refreshLocalPlaying();
   window.playbound.onGameStarted?.(() => setLocalPlaying(true));
-  window.playbound.onGameExited?.(() => {
+  window.playbound.onGameExited?.((data) => {
     void refreshLocalPlaying();
+    if (data?.slug) void notifyPartyGameClosed(data.slug);
   });
+}
+
+/** Tell the server the local game closed; retry until presence catches up. */
+async function notifyPartyGameClosed(slug) {
+  const party = state._activeParty;
+  if (!party?.id || party.gameSlug !== slug) return;
+  if (party.status !== "playing" && party.status !== "launching") return;
+  if (!window.playbound.exitPartyGame) return;
+
+  for (const delay of [0, 2500, 6000]) {
+    if (delay) await new Promise((r) => setTimeout(r, delay));
+    const res = await window.playbound.exitPartyGame(party.id);
+    const status = res?.party?.status;
+    if (status && status !== "playing" && status !== "launching") break;
+  }
+  const areaSlot = document.getElementById("friends-party-area");
+  if (areaSlot) areaSlot.dataset.sig = "";
+  void api.refreshFriendsData();
 }
 
 async function refreshFriendsData() {
@@ -1153,9 +1174,11 @@ const ICON = {
  * than pre-filtering to multiplayer titles.
  */
 let partyGamesCache = null;
+let partyGamesCacheKey = null;
 
 async function ensurePartyGames() {
-  if (partyGamesCache) return partyGamesCache;
+  const cacheKey = `${state.compatibilityFilter || "compatible"}:${state.discoveryMode || "all"}`;
+  if (partyGamesCache && partyGamesCacheKey === cacheKey) return partyGamesCache;
   const catalog = state.catalogCache?.length
     ? state.catalogCache
     : await window.playbound.getCatalog().catch(() => []);
@@ -1171,8 +1194,11 @@ async function ensurePartyGames() {
      * partyGameOptionsHtml appends the current slug when the list lacks it.
      */
     .filter((g) => g.isMultiplayer ?? g.multiplayer ?? false)
+    .filter((g) => g.kind !== "external")
+    .filter((g) => filterByCompatibility([g]).length > 0)
     .map((g) => ({ slug: g.slug, title: g.title || g.slug, kind: g.kind, url: g.url }))
     .sort((a, b) => a.title.localeCompare(b.title));
+  partyGamesCacheKey = cacheKey;
   return partyGamesCache;
 }
 
@@ -1222,7 +1248,9 @@ function buildPartyViewHtml(party) {
     !inFlight &&
     ((hosted.enabled && hosted.status !== "ready") || (lan.enabled && !lanReady));
   const joinDisabled = joinConnectWaiting;
-  const hasVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
+  const voiceEnabled = party.voiceEnabled !== false;
+  const hasDiscordVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
+  const showLaunchVoice = voiceEnabled || hasDiscordVoice;
 
   const titleHtml =
     isLeader && !ended
@@ -1347,13 +1375,19 @@ function buildPartyViewHtml(party) {
           .map((s) => `<li>${escapeHtml(String(s))}</li>`)
           .join("")}</ol>`
       : "";
+  const hostedStepsHtml =
+    hosted.enabled && Array.isArray(hosted.steps) && hosted.steps.length
+      ? `<ol class="party-lan-steps party-hosted-steps">${hosted.steps
+          .map((s) => `<li>${escapeHtml(String(s))}</li>`)
+          .join("")}</ol>`
+      : "";
 
   const playingPillHtml =
     party.status === "playing" && !canJoinGame
       ? `<div class="party-playing-pill">${ICON.play} Playing</div>`
       : "";
 
-  const voiceHtml = hasVoice
+  const voiceHtml = showLaunchVoice
     ? `<button type="button" id="btn-party-voice" class="party-btn party-voice-btn" data-url="${escapeHtml(
         party.discord?.inviteUrl || ""
       )}">${ICON.phone} Launch Voice</button>`
@@ -1401,6 +1435,7 @@ function buildPartyViewHtml(party) {
             )}">${ICON.logout} ${leaveLabel}</button>
           </div>
           ${lanStepsHtml}
+          ${hostedStepsHtml}
           <p class="party-voice-error" id="party-voice-error" style="display: none;"></p>
         </div>
 
@@ -1415,8 +1450,13 @@ function installHref(gameSlug, editionSlug, mods) {
   const q = new URLSearchParams();
   if (editionSlug && editionSlug !== "__base__") q.set("edition", editionSlug);
   for (const mod of mods || []) q.append("mod", mod);
-  const qs = q.toString();
-  return `playbound://install/${gameSlug}${qs ? `?${qs}` : ""}`;
+  q.set("return", "friends");
+  return `playbound://install/${gameSlug}?${q.toString()}`;
+}
+
+function markPartyInstallReturn(gameSlug) {
+  state.returnToFriendsParty = true;
+  state.partyInstallReturnSlug = gameSlug || null;
 }
 
 function missingSummary(m, editionSlug) {
@@ -1654,6 +1694,7 @@ function partyAreaSignature(active, discoverable) {
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
       hosted: active.hosted || null,
       discord: active.discord || null,
+      voiceEnabled: active.voiceEnabled !== false,
       configSync: active.configSync
         ? [
             active.configSync.allInSync !== undefined
@@ -1675,7 +1716,27 @@ function partyAreaSignature(active, discoverable) {
   ]);
 }
 
-function paintPartyArea(partiesData) {
+function blurPartyFocus() {
+  const slot = document.getElementById("friends-party-area");
+  const active = document.activeElement;
+  if (slot && active && slot.contains(active) && typeof active.blur === "function") {
+    active.blur();
+  }
+}
+
+function clearPartyAreaOptimistic() {
+  const slot = document.getElementById("friends-party-area");
+  if (slot) {
+    slot.innerHTML = "";
+    slot.dataset.sig = "";
+  }
+  state._activeParty = null;
+  const startBtn = document.getElementById("btn-toggle-create-party");
+  if (startBtn) startBtn.style.display = "";
+  syncFriendsPoll();
+}
+
+function paintPartyArea(partiesData, { force = false } = {}) {
   const slot = document.getElementById("friends-party-area");
   if (!slot) return;
   if (partiesData?.error) {
@@ -1709,7 +1770,7 @@ function paintPartyArea(partiesData) {
    */
   const sig = partyAreaSignature(active, discoverable);
   if (slot.dataset.sig === sig) return;
-  if (slot.contains(document.activeElement)) return;
+  if (!force && slot.contains(document.activeElement)) return;
   slot.dataset.sig = sig;
 
   slot.innerHTML = active ? buildPartyViewHtml(active) : buildPartyDiscoveryHtml(discoverable);
@@ -1725,6 +1786,7 @@ function applyPartyResult(res, fallbackMessage) {
   }
   const slot = document.getElementById("friends-party-area");
   if (slot) slot.dataset.sig = "";
+  blurPartyFocus();
   void api.refreshFriendsData();
   return true;
 }
@@ -1795,10 +1857,11 @@ function wirePartyView(slot, party) {
     );
     readyBtn.addEventListener("click", async () => {
       readyBtn.disabled = true;
-      applyPartyResult(
+      const ok = applyPartyResult(
         await window.playbound.setPartyReady(partyId, !me?.ready),
         "Couldn't update your ready state."
       );
+      if (!ok) readyBtn.disabled = false;
     });
   }
 
@@ -1806,7 +1869,7 @@ function wirePartyView(slot, party) {
     btn.addEventListener("click", () => {
       const href = btn.dataset.href;
       if (!href || !window.playbound.openDeepLink) return;
-      /* Sync after install completes (install-detected), not before. */
+      markPartyInstallReturn(party.gameSlug);
       void window.playbound.openDeepLink(href);
     });
   });
@@ -1850,30 +1913,20 @@ function wirePartyView(slot, party) {
 
   const voiceBtn = slot.querySelector("#btn-party-voice");
   if (voiceBtn) {
-    voiceBtn.addEventListener("click", () => openPartyVoice(voiceBtn.dataset.url));
+    voiceBtn.addEventListener("click", () => {
+      void handleLaunchPartyVoice(partyId, party, voiceBtn, slot.querySelector("#party-voice-error"));
+    });
   }
 
   const enableVoiceBtn = slot.querySelector("#btn-party-enable-voice");
   if (enableVoiceBtn) {
-    enableVoiceBtn.addEventListener("click", async () => {
-      const errorEl = slot.querySelector("#party-voice-error");
-      enableVoiceBtn.disabled = true;
-      enableVoiceBtn.textContent = "Enabling…";
-      const res = await window.playbound.provisionPartyDiscord(partyId);
-      const inviteUrl = res?.inviteUrl || res?.party?.discord?.inviteUrl || null;
-      if (res?.error && !inviteUrl) {
-        if (errorEl) {
-          errorEl.textContent = res.error;
-          errorEl.style.display = "block";
-        }
-        enableVoiceBtn.disabled = false;
-        enableVoiceBtn.innerHTML = `${ICON.phone} Enable Voice`;
-        return;
-      }
-      handlePartyVoice(res);
-      const areaSlot = document.getElementById("friends-party-area");
-      if (areaSlot) areaSlot.dataset.sig = "";
-      void api.refreshFriendsData();
+    enableVoiceBtn.addEventListener("click", () => {
+      void handleLaunchPartyVoice(
+        partyId,
+        party,
+        enableVoiceBtn,
+        slot.querySelector("#party-voice-error")
+      );
     });
   }
 
@@ -1896,8 +1949,8 @@ function wirePartyView(slot, party) {
         setStatus(res.error, true);
         return;
       }
-      const areaSlot = document.getElementById("friends-party-area");
-      if (areaSlot) areaSlot.dataset.sig = "";
+      clearPartyAreaOptimistic();
+      setStatus(isLeader && alone ? "Party ended" : "Left party");
       void api.refreshFriendsData();
     });
   }
@@ -2068,7 +2121,11 @@ async function launchPartyGame(party) {
         void window.playbound.clipboardWrite?.(address);
         setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
       } else {
-        setStatus(`Joining ${party.gameTitle || slug} at ${address}…`);
+        const steps =
+          Array.isArray(hosted.steps) && hosted.steps.length
+            ? ` Then: ${hosted.steps.join(" → ")}.`
+            : "";
+        setStatus(`Joining ${party.gameTitle || slug} at ${address}…${steps}`);
       }
     } catch (err) {
       setStatus(err.message || String(err), true);
@@ -2089,7 +2146,11 @@ async function launchPartyGame(party) {
    * progress" beside a game that never started.
    */
   if (hosted.enabled && hosted.configured === false) {
-    setStatus("PlayBound server is unavailable — launching without it.");
+    setStatus(
+      "PlayBound server is unavailable — this game needs a hosted server to play together.",
+      true
+    );
+    return;
   } else if (hosted.enabled && hosted.status !== "ready") {
     setStatus(
       hosted.status === "failed"
@@ -2120,6 +2181,11 @@ async function launchPartyGame(party) {
     return;
   }
 
+  if (hosted.enabled) {
+    setStatus("Waiting for the PlayBound server — try Join Game again in a moment.");
+    return;
+  }
+
   try {
     setStatus("Checking Java / launching…");
     const edition = party.editionSlug || party.installedEditionSlug || null;
@@ -2131,6 +2197,7 @@ async function launchPartyGame(party) {
     console.warn("launchPartyGame failed:", msg);
     setStatus(msg, true);
     if (/not installed/i.test(msg)) {
+      markPartyInstallReturn(slug);
       api.navigateTo("gameDetail", { slug });
     }
   }
@@ -2283,6 +2350,56 @@ function openPartyVoice(inviteUrl) {
   void (window.playbound.openDiscordInvite?.(inviteUrl) ??
     window.playbound.openExternal(inviteUrl));
   setStatus("Opening party voice…");
+}
+
+async function handleLaunchPartyVoice(partyId, party, voiceBtn, errorEl) {
+  if (voiceBtn) {
+    voiceBtn.disabled = true;
+    voiceBtn.textContent = "Opening…";
+  }
+  if (errorEl) {
+    errorEl.textContent = "";
+    errorEl.style.display = "none";
+  }
+  try {
+    const res = await window.playbound.provisionPartyDiscord(partyId);
+    if (res?.needsDiscordLink) {
+      handlePartyVoice(res);
+      return;
+    }
+
+    const inviteUrl =
+      res?.inviteUrl || res?.party?.discord?.inviteUrl || party.discord?.inviteUrl || "";
+
+    if (!inviteUrl) {
+      if (res?.moved) {
+        setStatus("Moved to party voice in Discord — open Discord to join.");
+        void window.playbound.openDiscordInvite?.("https://discord.com/app");
+        return;
+      }
+      if (errorEl) {
+        errorEl.textContent = res?.error || "Could not launch Discord voice.";
+        errorEl.style.display = "block";
+      }
+      return;
+    }
+
+    openPartyVoice(inviteUrl);
+    const areaSlot = document.getElementById("friends-party-area");
+    if (areaSlot) areaSlot.dataset.sig = "";
+    blurPartyFocus();
+    void api.refreshFriendsData();
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = err instanceof Error ? err.message : "Could not launch Discord voice.";
+      errorEl.style.display = "block";
+    }
+  } finally {
+    if (voiceBtn) {
+      voiceBtn.disabled = false;
+      voiceBtn.innerHTML = `${ICON.phone} Launch Voice`;
+    }
+  }
 }
 
 function handlePartyVoice(res) {

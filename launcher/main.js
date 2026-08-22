@@ -2109,6 +2109,7 @@ function buildContextPayload() {
      * match their setup in one click. Already validated by parseDeepLink.
      */
     modSlugs: Array.isArray(context.modSlugs) ? context.modSlugs : [],
+    returnView: context.returnView === "friends" ? "friends" : null,
     installed: Boolean(installed),
     installedPath: installed?.dir ?? null,
     defaultDir: path.join(gamesRoot(), entry.slug),
@@ -3177,6 +3178,14 @@ function findNamedPortableExe(dir, expectedName) {
     }
   }
   return null;
+}
+
+/** PlayBound's online patch ships ysoccer-online.jar; the official portable exe ignores --connect. */
+function findYSoccerOnlineJar(dir) {
+  if (!dir || !fs.existsSync(dir)) return null;
+  const named = findNamedPortableExe(dir, "ysoccer-online.jar");
+  if (named) return named;
+  return findExecutable(dir, "ysoccer-online");
 }
 
 function expandWinPath(p) {
@@ -4815,7 +4824,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
   await prepareClassicDosInstall(entry, gameDir);
 
   const exe = entry.slug === "ysoccer"
-    ? findNamedPortableExe(gameDir, "ysoccer.exe") || findExecutable(gameDir, entry.exeHint)
+    ? findYSoccerOnlineJar(gameDir) || findExecutable(gameDir, entry.exeHint) || findNamedPortableExe(gameDir, "ysoccer.exe")
     : findExecutable(gameDir, entry.exeHint);
   if (!exe) throw new Error("Extracted, but no executable found");
 
@@ -5934,9 +5943,34 @@ async function playGameInner(slug, join = null, editionSlug = null) {
 
   // Legacy github-jar installs pointed at play.cmd — prefer the sidecar .jar.
   let launchPath = GameLauncher.preferJarBesideLauncher(info.exe);
+  const joiningHostedYs =
+    slug === "ysoccer" &&
+    (Boolean(join?.host && join?.port) || args.some((a) => /--connect/i.test(a)));
+  if (joiningHostedYs) {
+    const onlineJar = findYSoccerOnlineJar(info.dir);
+    if (!onlineJar) {
+      const message =
+        "YSoccer needs the PlayBound online build to join a party. Remove YSoccer from your library and install again from the party or game page.";
+      void telemetry.launchFailed({
+        ...launchInfo(),
+        code: "YSOCCER_OFFLINE_BUILD",
+        message,
+        phase: "resolve-install",
+      });
+      const offlineErr = new Error(message);
+      offlineErr.__launchFailedReported = true;
+      throw offlineErr;
+    }
+    if (launchPath !== onlineJar) {
+      persistEditionExe(slug, edSlug, launchPath, onlineJar);
+      launchPath = onlineJar;
+      info = { ...info, exe: onlineJar };
+    }
+  }
   // Repair copies installed before YSoccer's native launcher was preferred.
-  // This changes only the local installed-game pointer, never catalog data.
-  if (slug === "ysoccer" && /\.jar$/i.test(launchPath)) {
+  // Keep the online jar when joining a dedicated server — portable ysoccer.exe
+  // ignores --connect and breaks PlayBound party hosting.
+  else if (slug === "ysoccer" && /\.jar$/i.test(launchPath)) {
     const nativeLauncher = findNamedPortableExe(info.dir, "ysoccer.exe");
     if (nativeLauncher) {
       launchPath = nativeLauncher;
@@ -7652,29 +7686,45 @@ ipcMain.handle("clear-context", () => clearContext());
  * an arbitrary protocol URL through this path.
  */
 ipcMain.handle("open-discord-invite", async (_event, inviteUrl) => {
-  const httpsUrl = String(inviteUrl || "");
+  const httpsUrl = String(inviteUrl || "").trim();
+  if (!httpsUrl) {
+    return { ok: false, error: "Missing invite URL" };
+  }
   const code = parseDiscordInviteCode(httpsUrl);
+  let openedApp = false;
 
-  if (isDiscordInstalled()) {
-    // With an invite, join that channel; without one (the plain "open Discord"
-    // buttons), just bring the app up rather than a browser tab.
-    const deepLink = code ? `discord://-/invite/${code}` : isDiscordUrl(httpsUrl) ? "discord://" : null;
-    if (deepLink) {
+  if (isDiscordInstalled() && code) {
+    for (const deepLink of [`discord://-/invite/${code}`, `discord://invite/${code}`]) {
       try {
         await shell.openExternal(deepLink);
-        return { ok: true, openedApp: true };
+        openedApp = true;
+        break;
       } catch (err) {
-        console.warn("discord app handoff failed, falling back to web:", err?.message || err);
+        console.warn("discord app handoff failed, trying next format:", err?.message || err);
       }
+    }
+  } else if (isDiscordInstalled() && isDiscordUrl(httpsUrl) && !code) {
+    try {
+      await shell.openExternal("discord://");
+      openedApp = true;
+    } catch (err) {
+      console.warn("discord app open failed:", err?.message || err);
     }
   }
 
+  // Always open the https invite too — discord:// often brings the app up without
+  // joining the channel (blank home screen). The website opens this as a fallback.
   try {
-    await safeOpenExternal(httpsUrl, { campaign: "launcher_party_voice" });
-    return { ok: true, openedApp: false };
+    await safeOpenExternal(httpsUrl, {
+      campaign: "launcher_party_voice",
+      skipUtm: isDiscordUrl(httpsUrl),
+    });
+    return { ok: true, openedApp };
   } catch (err) {
     console.warn("open-discord-invite blocked:", err?.message || err);
-    return { ok: false, error: err?.message || String(err) };
+    return openedApp
+      ? { ok: true, openedApp: true }
+      : { ok: false, error: err?.message || String(err) };
   }
 });
 
@@ -8837,6 +8887,16 @@ ipcMain.handle("set-party-ready", async (_event, partyId, ready) => {
 ipcMain.handle("party-join-game", async (_event, partyId) => {
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/join-game`, {
+      method: "POST",
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("exit-party-game", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/exit-game`, {
       method: "POST",
     });
   } catch (err) {

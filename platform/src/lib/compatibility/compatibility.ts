@@ -54,6 +54,13 @@ export function isMobileDevice(device: DeviceType): boolean {
   return device === "mobile" || device === "tablet";
 }
 
+/** True when every listed platform is Android or iOS (mobile-store only). */
+export function isMobileOnlyPlatforms(platforms: string[] | undefined): boolean {
+  const normalized = (platforms ?? []).map(normalizePlatform).filter(Boolean);
+  if (normalized.length === 0) return false;
+  return normalized.every((p) => p === "android" || p === "ios");
+}
+
 /** Map UA parser device string → DeviceType (SSR seed only). */
 export function deviceTypeFromUaDevice(
   uaDevice: string | undefined | null,
@@ -119,8 +126,14 @@ export function isGameCompatible(game: GameLike, device: DeviceType): boolean {
 
   if (platforms.some((p) => allowed.has(p))) return true;
 
-  // Steam Deck titles count as desktop & linux compatible even without an explicit native OS.
-  if ((device === "desktop" || device === "linux") && game.steamDeck) return true;
+  // Steam Deck titles count as desktop & linux compatible unless mobile-only.
+  if (
+    (device === "desktop" || device === "linux") &&
+    game.steamDeck &&
+    !isMobileOnlyPlatforms(game.platforms)
+  ) {
+    return true;
+  }
 
   return false;
 }

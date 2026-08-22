@@ -3390,10 +3390,10 @@ export const editions: EditionSeed[] = [
   {
     gameSlug: "ysoccer",
     slug: "ysoccer-portable",
-    name: "YSoccer (Official Windows Portable Edition)",
-    shortDescription: "Official standalone 64-bit release with bundled runtime, full leagues, and team editors.",
+    name: "YSoccer (PlayBound Online)",
+    shortDescription: "PlayBound online build with direct dedicated-server join and controller detection.",
     description:
-      "The complete, official 64-bit Windows distribution of YSoccer. Features all international teams, domestic leagues, custom tactics board, and zero-installation portable execution.",
+      "The PlayBound-maintained online build of YSoccer, compiled from current upstream GPL source with direct-connect launcher arguments. Join a party server automatically — no manual IP entry — and use Assign Players to pick your slot before kickoff.",
     type: "official",
     status: "active",
     visibility: "public",
@@ -3406,20 +3406,21 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "direct-zip",
-        url: "https://sourceforge.net/projects/ysoccer/files/YSoccer19/ysoccer19_windows64.zip/download",
-        exeHint: "ysoccer|ysoccer19",
-        note: "Standalone portable 64-bit Windows distribution.",
+        url: "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-online-windows.zip",
+        exeHint: "ysoccer-online",
+        connectArgs: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
+        note: "PlayBound online build with direct dedicated-server join.",
       },
     },
     requirements: {
       min: "1.5 GHz CPU / 1 GB RAM / OpenGL 2.0 GPU / 200 MB storage",
       recommended: "Dual-Core 2.0 GHz CPU / 2 GB RAM / Dedicated GPU / USB Gamepads (1–4 players)",
     },
-    features: ["Singleplayer", "Local Multiplayer", "1–4 Players", "Custom Leagues", "Tactics Editor", "Team Editor", "DRM-Free", "Portable"],
+    features: ["Singleplayer", "Local Multiplayer", "Online Multiplayer", "1–4 Players", "Custom Leagues", "Tactics Editor", "Team Editor", "DRM-Free", "Portable"],
     tags: ["Sports", "Soccer", "Football", "Retro", "Pixel Art", "Open Source"],
-    aliases: ["YSoccer Windows", "YSoccer Portable"],
-    version: "v19",
-    verificationLevel: "official",
+    aliases: ["YSoccer Windows", "YSoccer Online"],
+    version: "PlayBound Online",
+    verificationLevel: "playbound_verified",
   },
   {
     gameSlug: "ysoccer",
@@ -3427,7 +3428,7 @@ export const editions: EditionSeed[] = [
     name: "YSoccer (Classic SWOS & Tournament Setup)",
     shortDescription: "Pre-configured classic 16-bit Sensible Soccer pitch layouts, custom formations, and 4-player controls.",
     description:
-      "A tournament-tailored profile for YSoccer featuring classic Sensible Soccer pitch textures, tuned camera follow speeds, calibrated 4-player gamepad mappings, and legendary retro tactical formations.",
+      "A tournament-tailored profile for YSoccer featuring classic Sensible Soccer pitch textures, tuned camera follow speeds, calibrated 4-player gamepad mappings, and legendary retro tactical formations. Uses the same PlayBound online build as the default edition so party play still works.",
     type: "enhanced",
     status: "active",
     visibility: "public",
@@ -3440,16 +3441,17 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "direct-zip",
-        url: "https://sourceforge.net/projects/ysoccer/files/YSoccer19/ysoccer19_windows64.zip/download",
-        exeHint: "ysoccer|ysoccer19",
-        note: "Standalone tournament preset package.",
+        url: "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-online-windows.zip",
+        exeHint: "ysoccer-online",
+        connectArgs: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
+        note: "PlayBound online build with tournament preset metadata.",
       },
     },
     requirements: {
       min: "1.5 GHz CPU / 1 GB RAM / OpenGL 2.0 GPU",
       recommended: "Dual-Core 2.0 GHz CPU / 2 GB RAM / 4x USB Gamepads",
     },
-    features: ["Local Multiplayer", "Tournament Ready", "Classic SWOS Pitches", "Calibrated 4-Player Controls"],
+    features: ["Local Multiplayer", "Online Multiplayer", "Tournament Ready", "Classic SWOS Pitches", "Calibrated 4-Player Controls"],
     tags: ["Sports", "Tournament", "Retro", "SWOS", "Local PvP"],
     verificationLevel: "playbound_verified",
   },

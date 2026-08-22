@@ -21,8 +21,8 @@ function installHref(gameSlug: string, editionSlug: string | null, mods: string[
   const q = new URLSearchParams();
   if (editionSlug && editionSlug !== BASE_EDITION_KEY) q.set("edition", editionSlug);
   for (const mod of mods) q.append("mod", mod);
-  const qs = q.toString();
-  return `playbound://install/${gameSlug}${qs ? `?${qs}` : ""}`;
+  q.set("return", "friends");
+  return `playbound://install/${gameSlug}?${q.toString()}`;
 }
 
 function usableEditionSlug(slug: string | null | undefined): string | null {

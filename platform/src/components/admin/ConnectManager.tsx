@@ -280,6 +280,7 @@ export function ConnectManager() {
   const cpuPct = metrics?.cpu?.usagePercent;
   const rootDisk = metrics?.storage?.find((s) => s.path === "/");
   const hostDisk = metrics?.storage?.find((s) => s.path.includes("playbound-host"));
+  const agentOutdated = data?.alerts?.some((a) => a.title === "VPS agent outdated") ?? false;
 
   return (
     <div className="space-y-6">
@@ -355,6 +356,23 @@ export function ConnectManager() {
 
       {!data?.configured ? null : (
         <>
+          {!metrics && agentOutdated ? (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+              <p className="font-semibold">Restore VPS usage stats</p>
+              <p className="mt-1 text-muted-foreground">
+                The game-host agent on your VPS is missing the <code className="text-xs">/metrics</code>{" "}
+                endpoint. Health, rooms, and spawn tests may still work — CPU, memory, disk, and bandwidth
+                require a one-time refresh after pulling latest code.
+              </p>
+              <ol className="mt-3 list-decimal space-y-1 pl-5 font-mono text-xs text-muted-foreground">
+                <li>cd /opt/playbound &amp;&amp; git fetch origin &amp;&amp; git reset --hard origin/main</li>
+                <li>cd platform/game-host &amp;&amp; sudo bash install.sh</li>
+                <li>sudo systemctl restart playbound-game-host</li>
+              </ol>
+            </div>
+          ) : null}
+
+          {metrics ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard title="CPU" icon={Cpu}>
               <p className="text-2xl font-bold">
@@ -419,6 +437,7 @@ export function ConnectManager() {
               </p>
             </MetricCard>
           </div>
+          ) : null}
 
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">

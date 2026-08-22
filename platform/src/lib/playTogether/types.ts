@@ -199,12 +199,14 @@ export type PartyPayload = {
   /** Public VPS room for games that cannot host from a home PC. */
   hosted: {
     enabled: boolean;
+    configured?: boolean;
     status: "none" | "pending" | "ready" | "failed";
     host: string | null;
     port: number | null;
     name: string | null;
     error: string | null;
     roomCode?: string | null;
+    steps?: string[];
   };
   /**
    * Shared L2 segment for games that only discover peers over LAN and offer

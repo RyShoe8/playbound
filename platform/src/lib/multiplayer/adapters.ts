@@ -35,6 +35,8 @@ export interface ClientLaunchConfig {
   launchArguments?: string[];
   inGameJoinPrompt?: boolean;
   requiresRoomCode?: boolean;
+  /** What the player still does in-game once Connect has joined them to the server. */
+  inGameSteps?: string[];
 }
 
 /**
@@ -114,6 +116,11 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     host: { port: 54555, protocol: "both" },
     client: {
       launchArguments: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
+      inGameSteps: [
+        "Wait for the online lobby to load after connect.",
+        "Open Assign Players and pick your side.",
+        "Press Ready when your slot is set — the match starts when everyone is ready.",
+      ],
     },
     notes: "Current upstream KryoNet dedicated server; PlayBound builds the GPL client/server and joins directly.",
   },
@@ -887,6 +894,13 @@ export function getVirtualLanConfig(gameSlug: string): VirtualLanConfig | null {
   const adapter = getMultiplayerAdapter(gameSlug);
   if (adapter.adapterType !== "virtual-lan") return null;
   return adapter.virtualLan || {};
+}
+
+/** In-game clicks still required after Connect joins a managed-server title. */
+export function getHostedInGameSteps(gameSlug: string): string[] {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  if (adapter.adapterType !== "managed-server") return [];
+  return adapter.client?.inGameSteps || [];
 }
 
 export function isVirtualLanGame(gameSlug: string): boolean {

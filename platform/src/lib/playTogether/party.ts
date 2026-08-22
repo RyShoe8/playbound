@@ -61,6 +61,7 @@ import {
   libraryHasRequiredEdition,
 } from "@/lib/playTogether/editionMatch";
 import { computePartyReadiness } from "@/lib/playTogether/partyReadiness";
+import { applyPresenceFreshness } from "@/lib/friends/presenceMask";
 import {
   editionsFromRow,
   primaryEditionFromRow,
@@ -1119,6 +1120,91 @@ export async function joinPartyGame(
   });
   return {
     party: joined,
+    status: 200,
+  };
+}
+
+/** True when any member's live presence still shows them in this party's game. */
+async function anyMemberStillPlayingPartyGame(
+  doc: { gameSlug?: string | null; members: Array<{ userId: unknown }> },
+  now = Date.now()
+): Promise<boolean> {
+  const gameSlug = String(doc.gameSlug || "");
+  if (!gameSlug) return false;
+  const memberIds = doc.members.map((m) => m.userId);
+  if (!memberIds.length) return false;
+
+  const presences = await Presence.find({ userId: { $in: memberIds } }).lean();
+  return presences.some((p) => {
+    const fresh = applyPresenceFreshness(
+      {
+        status: p.status,
+        lastHeartbeat: p.lastHeartbeat,
+        currentGameId: p.currentGameId,
+      },
+      now
+    );
+    return fresh.status === "playing" && String(fresh.currentGameId || "") === gameSlug;
+  });
+}
+
+/**
+ * Wind a party back out of playing/launching once nobody is in the game anymore.
+ *
+ * Party join marks `playing` on the server; without this, closing the game
+ * locally left "Session in progress" forever because nothing cleared it.
+ */
+async function tryEndPartySession(doc: PartyDoc): Promise<boolean> {
+  if (doc.status !== "playing" && doc.status !== "launching") return false;
+  if (await anyMemberStillPlayingPartyGame(doc)) return false;
+
+  await releasePartyHost(doc);
+  await releasePartyLan(doc);
+
+  const rp = toRuleParty(doc.toObject());
+  doc.status = derivePartyStatus("forming", rp.members);
+  doc.lastActivity = new Date();
+  await doc.save();
+
+  trackPartyEvent("party_session_ended", {
+    partyId: String(doc._id),
+    gameSlug: String(doc.gameSlug || "") || null,
+  });
+  return true;
+}
+
+export async function exitPartyGame(
+  partyId: string,
+  userId: string
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+
+  const member = doc.members.find(
+    (m: { userId: unknown }) => String(m.userId) === userId
+  );
+  if (!member) return { error: "Not in this party", status: 403 };
+
+  await tryEndPartySession(doc);
+
+  const refreshed = await Party.findById(partyId);
+  if (!refreshed) return { error: "Party not found", status: 404 };
+
+  const memberIds: string[] = refreshed.members.map((m: { userId: unknown }) =>
+    String(m.userId)
+  );
+  const [nameById, game] = await Promise.all([
+    resolveUsernames(memberIds),
+    refreshed.gameSlug
+      ? getGame(String(refreshed.gameSlug), { includeTesting: true })
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    party: serializeParty(refreshed.toObject(), nameById, game?.title || null),
     status: 200,
   };
 }

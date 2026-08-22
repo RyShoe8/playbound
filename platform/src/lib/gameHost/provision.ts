@@ -4,6 +4,7 @@
  */
 
 import type { Document } from "mongoose";
+import { getHostedInGameSteps } from "@/lib/multiplayer/adapters";
 import { createHostRoom, deleteHostRoom, isGameHostConfigured } from "./client";
 import {
   emptyHostedPayload,
@@ -135,7 +136,8 @@ export function hostedPayloadFromDoc(
    * something that would never become ready.
    */
   const configured = isGameHostConfigured();
-  if (!hosted) return { ...base, configured };
+  const steps = base.enabled ? getHostedInGameSteps(gameSlug) : [];
+  if (!hosted) return { ...base, configured, steps };
   return {
     enabled: base.enabled,
     configured,
@@ -145,5 +147,6 @@ export function hostedPayloadFromDoc(
     name: hosted.name || null,
     error: hosted.error || null,
     roomCode: hosted.roomCode || null,
+    steps,
   };
 }

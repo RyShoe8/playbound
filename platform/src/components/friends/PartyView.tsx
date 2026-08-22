@@ -15,7 +15,9 @@ import {
 import type { LaunchMethod } from "@/lib/data/types";
 import { launcherJoinUrl, launcherPlayUrl } from "@/lib/launcher";
 import { isBrowserGame } from "@/lib/gameLaunch";
-import { supportsMultiplayer } from "@/lib/multiplayer/support";
+import { supportsMultiplayer, supportsLauncherParty } from "@/lib/multiplayer/support";
+import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { isGameCompatible } from "@/lib/compatibility/compatibility";
 import { launcherDownloadUrlForOs } from "@/lib/launcherDownload";
 import {
   detectLauncherOs,
@@ -37,6 +39,9 @@ export type PartyGameOption = {
   website?: string;
   launchMethods?: LaunchMethod[];
   browserPlayable?: boolean;
+  platforms?: string[];
+  steamDeck?: boolean;
+  launcherInstall?: { enabled?: boolean; kind?: string } | null;
   /** Only used to decide whether the game belongs in a party at all. */
   features?: string[];
 };
@@ -68,6 +73,7 @@ export function PartyView({
     open: false,
     inviteUrl: null,
   });
+  const { mode, device } = useCompatibilityFilter();
 
   if (!userId) return null;
 
@@ -93,7 +99,14 @@ export function PartyView({
    * OpenArena, whose tags never say "multiplayer" but which have server
    * browsers.
    */
-  const partyGames = useMemo(() => games.filter((g) => supportsMultiplayer(g)), [games]);
+  const partyGames = useMemo(
+    () =>
+      games
+        .filter((g) => supportsMultiplayer(g))
+        .filter((g) => supportsLauncherParty(g))
+        .filter((g) => mode === "all" || isGameCompatible(g, device.type)),
+    [games, mode, device.type]
+  );
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
   const joinUrl = hostedReady
@@ -433,6 +446,16 @@ export function PartyView({
               {party.hosted.error || "Could not start the PlayBound server."}
             </p>
           )}
+
+          {party.hosted?.enabled &&
+            Array.isArray(party.hosted.steps) &&
+            party.hosted.steps.length > 0 && (
+              <ol className="w-full text-xs text-muted-foreground list-decimal list-inside space-y-0.5 self-start">
+                {party.hosted.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            )}
 
           {party.lan?.enabled && party.lan.status === "pending" && (
             <p className="text-xs text-muted-foreground self-center">

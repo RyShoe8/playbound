@@ -278,6 +278,7 @@ export const recipes = {
     },
     prepareSpawn: async (_port, ctx) => {
       const homePath = path.join(ET_HOME_ROOT, ctx.partyId.slice(-16) || "default");
+      fs.mkdirSync(ET_HOME_ROOT, { recursive: true });
       fs.mkdirSync(homePath, { recursive: true });
     },
   },

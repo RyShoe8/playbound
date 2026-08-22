@@ -23,6 +23,9 @@ export default async function FriendsPage() {
           website: g.website,
           launchMethods: g.launchMethods,
           browserPlayable: g.browserPlayable,
+          platforms: g.platforms,
+          steamDeck: g.steamDeck,
+          launcherInstall: g.launcherInstall,
           /*
            * Carried so the party picker can drop singleplayer games. Passed
            * rather than precomputed here because this same list also feeds

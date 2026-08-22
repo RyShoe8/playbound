@@ -75,6 +75,15 @@ eq("duplicate mods collapse", parseDeepLink("playbound://install/openra?mod=a&mo
   slug: "openra",
   modSlugs: ["a", "b"],
 });
+eq("return=friends is carried on install", parseDeepLink("playbound://install/openra?return=friends"), {
+  action: "install",
+  slug: "openra",
+  returnView: "friends",
+});
+eq("unknown return values are ignored", parseDeepLink("playbound://install/openra?return=library"), {
+  action: "install",
+  slug: "openra",
+});
 // The whole point of validating: these become paths and URLs downstream.
 eq(
   "a traversal mod slug is dropped, the good one survives",

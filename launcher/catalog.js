@@ -4712,16 +4712,16 @@ module.exports = [
     "hasServerBrowser": false,
     "isMultiplayer": true,
     "coverImage": "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/games/ysoccer/shot-1786843964449.webp",
-    "exeHint": "ysoccer|ysoccer19",
-    "url": "https://sourceforge.net/projects/ysoccer/files/YSoccer19/ysoccer19_windows64.zip/download",
-    "fileName": "ysoccer19_windows64.zip",
-    "versionLabel": "v19",
+    "exeHint": "ysoccer-online|ysoccer|ysoccer19",
+    "url": "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-online-windows.zip",
+    "fileName": "ysoccer-online-windows.zip",
+    "versionLabel": "PlayBound Online",
     "connectArgs": [
       "--connect={host}",
       "--tcp-port={port}",
       "--udp-port={port}"
     ],
-    "note": "Standalone portable Windows 64-bit package with bundled runtime and team databases.",
+    "note": "PlayBound online build with direct dedicated-server join and controller detection.",
     "status": "published",
     "testing": false,
     "platforms": [
