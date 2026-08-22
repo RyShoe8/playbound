@@ -18,8 +18,10 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { resolveRecipe, listInstalled, missingDedicatedBinaryMessage } from "./recipes.js";
+import { resolveRecipe, listInstalled, listGameHostStatus, missingDedicatedBinaryMessage } from "./recipes.js";
 import { canEnsure, ensureGame, ensureMissingGames, listEnsureableSlugs } from "./ensureGame.js";
+import { ET_SLUG, verifyEtLegacyReady } from "./etLegacyInstall.js";
+import { collectMetrics } from "./metrics.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -28,6 +30,7 @@ const MAX_ROOMS = Number(process.env.GAME_HOST_MAX_ROOMS || 8);
 const IDLE_MS = Number(process.env.GAME_HOST_IDLE_MS || 4 * 60 * 60 * 1000);
 const MIRROR_ARCHIVE_DIR = process.env.MIRROR_ARCHIVE_DIR || "/opt/playbound-host/archive";
 const MIRROR_ARCHIVE_MAX_BYTES = Number(process.env.MIRROR_ARCHIVE_MAX_BYTES || 20 * 1024 * 1024 * 1024);
+const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
 
 if (!SECRET) {
   console.error("GAME_HOST_SECRET is required");
@@ -362,6 +365,25 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
 
   let resolved = resolveRecipe(gameSlug);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
+
+  if (gameSlug === ET_SLUG) {
+    const gameDir = path.join(GAMES_ROOT, ET_SLUG);
+    let check = await verifyEtLegacyReady(gameDir);
+    if (!check.ok && canEnsure(ET_SLUG)) {
+      console.log(`[ensure] repairing ${ET_SLUG} before startRoom (${check.missing.join(", ")})`);
+      const ensured = await ensureGame(ET_SLUG);
+      if (!ensured.ok) {
+        return { error: ensured.error || missingDedicatedBinaryMessage(gameSlug, resolved.recipe) };
+      }
+      check = await verifyEtLegacyReady(gameDir);
+    }
+    if (!check.ok) {
+      return {
+        error: `Wolfenstein ET is not ready to host (missing ${check.missing.join(", ")})`,
+      };
+    }
+  }
+
   if (!resolved.binary && canEnsure(gameSlug)) {
     console.log(`[ensure] auto-installing ${gameSlug} before startRoom`);
     const ensured = await ensureGame(gameSlug);
@@ -387,6 +409,15 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     name: String(name || `PlayBound ${gameSlug}`).slice(0, 40),
     editionSlug: editionSlug || "",
   };
+
+  if (recipe.prepareSpawn) {
+    try {
+      await recipe.prepareSpawn(port, ctx);
+    } catch (err) {
+      console.warn("prepareSpawn failed", err);
+    }
+  }
+
   const args = recipe.args(port, ctx);
   const child = spawn(binary, args, {
     cwd: path.dirname(binary),
@@ -407,11 +438,20 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     createdAt: Date.now(),
   };
 
+  const startupLog = [];
+  const pushLog = (buf) => {
+    const line = String(buf).trim();
+    if (line) startupLog.push(line.slice(0, 400));
+    if (startupLog.length > 20) startupLog.shift();
+  };
+
   child.stdout?.on("data", (buf) => {
+    pushLog(buf);
     const line = String(buf).trim();
     if (line) console.log(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
   });
   child.stderr?.on("data", (buf) => {
+    pushLog(buf);
     const line = String(buf).trim();
     if (line) console.warn(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
   });
@@ -431,17 +471,23 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
   rooms.set(roomId, room);
   byParty.set(partyId, roomId);
 
-  // Dedicated binaries that reject unknown flags exit immediately.
+  const graceMs = Number(recipe.startupGraceMs) || 800;
+  let exitCode = null;
   const died = await new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(false), 800);
-    child.once("exit", () => {
+    const timer = setTimeout(() => resolve(false), graceMs);
+    child.once("exit", (code) => {
+      exitCode = code;
       clearTimeout(timer);
       resolve(true);
     });
   });
   if (died) {
     stopRoom(room);
-    return { error: `${gameSlug} dedicated process exited immediately` };
+    const tail = startupLog.at(-1);
+    const detail = tail ? `: ${tail}` : "";
+    return {
+      error: `${gameSlug} dedicated process exited immediately (code ${exitCode ?? "?"}${detail})`,
+    };
   }
 
   return { room };
@@ -455,6 +501,7 @@ function publicRoom(room) {
     name: room.name,
     host: room.host || PUBLIC_IP,
     port: room.port,
+    createdAt: room.createdAt,
   };
 }
 
@@ -468,6 +515,7 @@ const server = http.createServer(async (req, res) => {
       rooms: rooms.size,
       maxRooms: MAX_ROOMS,
       games: listInstalled(),
+      gameStatus: listGameHostStatus(),
     });
     return;
   }
@@ -485,6 +533,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
+    if (req.method === "GET" && url.pathname === "/metrics") {
+      const metrics = await collectMetrics(PUBLIC_IP);
+      json(res, 200, metrics);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/rooms") {
       json(res, 200, { rooms: [...rooms.values()].map(publicRoom) });
       return;

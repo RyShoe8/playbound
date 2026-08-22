@@ -52,6 +52,11 @@ apt-get install -y --no-install-recommends \
 # Optional on some mirrors — do not fail the whole install if missing.
 apt-get install -y --no-install-recommends mrboom || echo "WARN: mrboom package unavailable"
 
+# ET: Legacy etlded runtime libraries (Ubuntu 24.04).
+apt-get install -y --no-install-recommends \
+  libsdl2-2.0-0 libcurl4 libopenal1 libjpeg-turbo8 libpng16-16 libfreetype6 zlib1g \
+  || echo "WARN: some ET runtime packages unavailable"
+
 # Wesnoth uses its own lobby infrastructure and its old `wesnoth-server`
 # package is not available on Ubuntu 24.04. Do not let an optional game
 # server package prevent the agent itself (including archive transfers) from
@@ -78,7 +83,11 @@ chown -R playbound:playbound "$HOME_DIR" "$MIRROR_ARCHIVE_DIR"
 chmod 755 "$MIRROR_ARCHIVE_DIR"
 
 echo "==> copy agent"
-cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" "$AGENT_SRC/package.json" "$AGENT_DIR/"
+cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" \
+  "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" \
+  "$AGENT_SRC/package.json" "$AGENT_DIR/"
+mkdir -p "$AGENT_DIR/assets"
+cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || true
 chown -R playbound:playbound "$AGENT_DIR"
 
 if [[ -z "$PUBLIC_IP" ]]; then
@@ -259,9 +268,9 @@ if [[ ! -x "$ET_DIR/etlded" && ! -x "$ET_DIR/etlded.x86_64" ]]; then
   fi
   chmod +x "$ET_DIR"/etlded* "$ET_DIR"/etl* 2>/dev/null || true
 fi
-# Official 2.60b etmain assets (maps/paks) — same overlay the launcher ships.
+# Official 2.60b etmain assets — required pak0.pk3; overlay when missing, not when etmain merely non-empty.
 ET_OVERLAY_URL="${ET_LEGACY_OVERLAY_URL:-https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein-enemy-territory/ET-260b-Base-Data.zip}"
-if [[ ! -d "$ET_DIR/etmain" ]] || [[ -z "$(ls -A "$ET_DIR/etmain" 2>/dev/null || true)" ]]; then
+if [[ ! -f "$ET_DIR/etmain/pak0.pk3" ]]; then
   curl -fL --retry 3 -o /tmp/et-base.zip "$ET_OVERLAY_URL"
   mkdir -p "$ET_DIR/etmain"
   unzip -qo /tmp/et-base.zip -d /tmp/et-base-extract
@@ -272,6 +281,16 @@ if [[ ! -d "$ET_DIR/etmain" ]] || [[ -z "$(ls -A "$ET_DIR/etmain" 2>/dev/null ||
   fi
   rm -rf /tmp/et-base.zip /tmp/et-base-extract
 fi
+# Move loose paks into etmain and copy server cfg beside etlded.
+for pak in pak0.pk3 pak1.pk3 pak2.pk3; do
+  if [[ -f "$ET_DIR/$pak" && ! -f "$ET_DIR/etmain/$pak" ]]; then
+    mv -f "$ET_DIR/$pak" "$ET_DIR/etmain/$pak"
+  fi
+done
+if [[ -f "$AGENT_SRC/assets/et-playbound.cfg" ]]; then
+  cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$ET_DIR/et-playbound.cfg"
+fi
+mkdir -p "$HOME_DIR/et"
 
 chown -R playbound:playbound "$GAMES_DIR"
 

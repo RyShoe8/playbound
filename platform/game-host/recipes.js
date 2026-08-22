@@ -11,8 +11,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { verifyEtLegacyReady } from "./etLegacyInstall.js";
 
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
+const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/et";
 
 function firstExisting(candidates) {
   for (const p of candidates) {
@@ -234,30 +236,50 @@ export const recipes = {
     portStart: 27950,
     portEnd: 27959,
     protocol: "udp",
+    startupGraceMs: 3000,
     binaries: gameBin("wolfenstein-enemy-territory", [
       "etlded",
       "etlded.x86_64",
       "etl.x86_64.ded",
     ]),
-    args: (port, ctx) => [
-      "+set",
-      "dedicated",
-      "2",
-      "+set",
-      "net_port",
-      String(port),
-      "+set",
-      "sv_hostname",
-      ctx.name,
-      "+set",
-      "sv_master1",
-      '""',
-      "+set",
-      "sv_pure",
-      "0",
-      "+map",
-      "oasis",
-    ],
+    args: (port, ctx) => {
+      const gameDir = path.join(GAMES_ROOT, "wolfenstein-enemy-territory");
+      const homePath = path.join(ET_HOME_ROOT, ctx.partyId.slice(-16) || "default");
+      return [
+        "+set",
+        "fs_basepath",
+        gameDir,
+        "+set",
+        "fs_homepath",
+        homePath,
+        "+set",
+        "dedicated",
+        "2",
+        "+set",
+        "net_port",
+        String(port),
+        "+set",
+        "sv_hostname",
+        ctx.name,
+        "+set",
+        "sv_master1",
+        '""',
+        "+set",
+        "sv_pure",
+        "0",
+        "+set",
+        "omnibot_enable",
+        "0",
+        "+exec",
+        "et-playbound.cfg",
+        "+map",
+        "oasis",
+      ];
+    },
+    prepareSpawn: async (_port, ctx) => {
+      const homePath = path.join(ET_HOME_ROOT, ctx.partyId.slice(-16) || "default");
+      fs.mkdirSync(homePath, { recursive: true });
+    },
   },
 };
 
@@ -300,6 +322,23 @@ export function listInstalled() {
   for (const slug of Object.keys(recipes)) {
     const { binary } = resolveRecipe(slug);
     out[slug] = Boolean(binary);
+  }
+  return out;
+}
+
+/** Binary presence plus verified-ready state (ET needs pak0 in etmain). */
+export function listGameHostStatus() {
+  const out = {};
+  for (const slug of Object.keys(recipes)) {
+    const { binary } = resolveRecipe(slug);
+    const hasBinary = Boolean(binary);
+    let ready = hasBinary;
+    if (slug === "wolfenstein-enemy-territory" && hasBinary) {
+      const gameDir = path.join(GAMES_ROOT, slug);
+      const check = verifyEtLegacyReady(gameDir);
+      ready = check.ok;
+    }
+    out[slug] = { installed: hasBinary, ready };
   }
   return out;
 }

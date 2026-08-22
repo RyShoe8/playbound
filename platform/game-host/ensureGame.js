@@ -14,7 +14,6 @@ import {
   access,
   chmod,
   cp,
-  lstat,
   mkdir,
   readdir,
   rm,
@@ -24,6 +23,11 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { resolveRecipe } from "./recipes.js";
+import {
+  ET_SLUG,
+  prepareEtLegacyInstall,
+  verifyEtLegacyReady,
+} from "./etLegacyInstall.js";
 
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
 
@@ -122,6 +126,62 @@ async function flattenSingleRoot(extractDir) {
   return path.join(extractDir, entries[0].name);
 }
 
+async function needsEtOverlay(gameDir) {
+  const pak0 = path.join(gameDir, "etmain", "pak0.pk3");
+  return !(await exists(pak0));
+}
+
+async function ensureEtLegacyGame(gameDir, spec, work) {
+  const before = await verifyEtLegacyReady(gameDir);
+  if (before.ok) {
+    return { ok: true, skipped: true };
+  }
+
+  const hasBinary = await findBinary(gameDir, spec.binaryNames);
+  if (!hasBinary) {
+    const archivePath = path.join(work, "engine.bin");
+    console.log(`[ensure] ${ET_SLUG}: downloading engine…`);
+    await download(spec.archiveUrl, archivePath);
+    const extractDir = path.join(work, "extract");
+    await extractArchive(archivePath, extractDir);
+    const root = await flattenSingleRoot(extractDir);
+    await cp(root, gameDir, { recursive: true, force: true });
+
+    let binary = await findBinary(gameDir, spec.binaryNames);
+    if (binary && spec.linkAs) {
+      const linkPath = path.join(gameDir, spec.linkAs);
+      if (!(await exists(linkPath))) {
+        try {
+          await symlink(path.basename(binary), linkPath);
+        } catch {
+          await cp(binary, linkPath);
+        }
+      }
+    }
+  }
+
+  if (spec.overlayUrl && (await needsEtOverlay(gameDir))) {
+    console.log(`[ensure] ${ET_SLUG}: downloading etmain assets…`);
+    const overlayZip = path.join(work, "overlay.zip");
+    await download(spec.overlayUrl, overlayZip);
+    const overlayExtract = path.join(work, "overlay");
+    await extractArchive(overlayZip, overlayExtract);
+    const overlayDir = path.join(gameDir, spec.overlayDest || "etmain");
+    await mkdir(overlayDir, { recursive: true });
+    const overlayRoot = await flattenSingleRoot(overlayExtract);
+    const nested = path.join(overlayRoot, spec.overlayDest || "etmain");
+    const from = (await exists(nested)) ? nested : overlayRoot;
+    await cp(from, overlayDir, { recursive: true, force: true });
+  }
+
+  await prepareEtLegacyInstall(gameDir);
+  const after = await verifyEtLegacyReady(gameDir);
+  if (!after.ok) {
+    return { ok: false, error: `ET install incomplete: missing ${after.missing.join(", ")}` };
+  }
+  return { ok: true };
+}
+
 async function findBinary(dir, names) {
   for (const name of names) {
     const p = path.join(dir, name);
@@ -165,13 +225,34 @@ async function ensureGameUnlocked(slug) {
     return { ok: false, error: `No auto-install recipe for ${slug}` };
   }
 
+  const gameDir = path.join(GAMES_ROOT, slug);
+  const work = path.join("/tmp", `pb-ensure-${slug}-${Date.now()}`);
+
+  if (slug === ET_SLUG) {
+    try {
+      await mkdir(gameDir, { recursive: true });
+      await mkdir(work, { recursive: true });
+      const result = await ensureEtLegacyGame(gameDir, spec, work);
+      if (!result.ok) return result;
+      const after = resolveRecipe(slug);
+      if (!after?.binary) {
+        return { ok: false, error: "ET install finished but etlded not found" };
+      }
+      return { ok: true, skipped: result.skipped, binary: after.binary };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[ensure] ${slug} failed:`, message);
+      return { ok: false, error: message };
+    } finally {
+      await rm(work, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
   const before = resolveRecipe(slug);
   if (before?.binary) {
     return { ok: true, skipped: true, binary: before.binary };
   }
 
-  const gameDir = path.join(GAMES_ROOT, slug);
-  const work = path.join("/tmp", `pb-ensure-${slug}-${Date.now()}`);
   try {
     await mkdir(gameDir, { recursive: true });
     await mkdir(work, { recursive: true });
@@ -205,30 +286,18 @@ async function ensureGameUnlocked(slug) {
       }
     }
 
-    if (spec.overlayUrl && spec.overlayDest) {
+    if (spec.overlayUrl && spec.overlayDest && (await needsEtOverlay(gameDir))) {
+      console.log(`[ensure] ${slug}: downloading ${spec.overlayDest} assets…`);
+      const overlayZip = path.join(work, "overlay.zip");
+      await download(spec.overlayUrl, overlayZip);
+      const overlayExtract = path.join(work, "overlay");
+      await extractArchive(overlayZip, overlayExtract);
       const overlayDir = path.join(gameDir, spec.overlayDest);
-      let needsOverlay = true;
-      try {
-        const st = await lstat(overlayDir);
-        if (st.isDirectory()) {
-          const kids = await readdir(overlayDir);
-          needsOverlay = kids.length === 0;
-        }
-      } catch {
-        needsOverlay = true;
-      }
-      if (needsOverlay) {
-        console.log(`[ensure] ${slug}: downloading ${spec.overlayDest} assets…`);
-        const overlayZip = path.join(work, "overlay.zip");
-        await download(spec.overlayUrl, overlayZip);
-        const overlayExtract = path.join(work, "overlay");
-        await extractArchive(overlayZip, overlayExtract);
-        await mkdir(overlayDir, { recursive: true });
-        const overlayRoot = await flattenSingleRoot(overlayExtract);
-        const nested = path.join(overlayRoot, spec.overlayDest);
-        const from = (await exists(nested)) ? nested : overlayRoot;
-        await cp(from, overlayDir, { recursive: true, force: true });
-      }
+      await mkdir(overlayDir, { recursive: true });
+      const overlayRoot = await flattenSingleRoot(overlayExtract);
+      const nested = path.join(overlayRoot, spec.overlayDest);
+      const from = (await exists(nested)) ? nested : overlayRoot;
+      await cp(from, overlayDir, { recursive: true, force: true });
     }
 
     const after = resolveRecipe(slug);
@@ -254,11 +323,12 @@ async function ensureGameUnlocked(slug) {
  * or have no auto-install recipe.
  */
 export async function ensureMissingGames() {
-  const { listInstalled } = await import("./recipes.js");
-  const installed = listInstalled();
+  const { listGameHostStatus } = await import("./recipes.js");
+  const status = listGameHostStatus();
   const results = {};
   for (const slug of listEnsureableSlugs()) {
-    if (installed[slug]) {
+    const entry = status[slug];
+    if (entry?.ready) {
       results[slug] = { ok: true, skipped: true };
       continue;
     }
