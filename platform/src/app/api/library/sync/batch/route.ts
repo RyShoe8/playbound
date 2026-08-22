@@ -3,7 +3,7 @@ import { z } from "zod";
 import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
-import { resolveGameForSync } from "@/lib/catalog";
+import { gamesFor, resolveGameForSync } from "@/lib/catalog";
 import { getMod } from "@/lib/mods";
 import { userFromLauncherBearer } from "@/lib/library";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
@@ -48,6 +48,21 @@ export async function POST(req: Request) {
     let synced = 0;
     const skipped: string[] = [];
 
+    const uniqueGameSlugs = [...new Set(body.installs.map((i) => i.slug))];
+    const resolvedGames = await gamesFor(uniqueGameSlugs, { includeUnpublished: true });
+    const gameBySlug = new Map(resolvedGames.map((g) => [g.slug, g]));
+
+    const uniqueModSlugs = [...new Set((body.modInstalls || []).map((m) => m.slug))];
+    const modBySlug = new Map(
+      (
+        await Promise.all(
+          uniqueModSlugs.map(async (slug) => [slug, await getMod(slug)] as const)
+        )
+      ).filter((entry): entry is [string, NonNullable<Awaited<ReturnType<typeof getMod>>>] =>
+        Boolean(entry[1])
+      )
+    );
+
     /*
      * One write per game, not per edition.
      *
@@ -57,7 +72,7 @@ export async function POST(req: Request) {
      * survived. Grouping first lets the row carry all of them.
      */
     for (const item of groupInstallsBySlug(body.installs)) {
-      if (!(await resolveGameForSync(item.slug))) {
+      if (!gameBySlug.has(item.slug) && !(await resolveGameForSync(item.slug))) {
         skipped.push(item.slug);
         continue;
       }
@@ -92,7 +107,7 @@ export async function POST(req: Request) {
     let modsSynced = 0;
     const modsSkipped: string[] = [];
     for (const item of body.modInstalls || []) {
-      const mod = await getMod(item.slug);
+      const mod = modBySlug.get(item.slug);
       if (!mod || mod.baseGameSlug !== item.baseGameSlug) {
         modsSkipped.push(item.slug);
         continue;

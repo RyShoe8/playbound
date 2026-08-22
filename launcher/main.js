@@ -40,6 +40,7 @@ const {
   resolveGameDir,
 } = require("./openciv3Display");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
+const { ensureOpenTtdClientName } = require("./services/openTtdPlayerName");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
 const {
@@ -703,6 +704,31 @@ let lastLibrarySyncResult = { synced: 0, skipped: [], error: null };
  * stale answer would be wrong.
  */
 const LIBRARY_SYNC_MIN_INTERVAL_MS = 15_000;
+const LIBRARY_BATCH_TIMEOUT_MS = 45_000;
+const LIBRARY_ITEM_SYNC_TIMEOUT_MS = 12_000;
+
+let librarySyncRetryTimer = null;
+
+function formatLibrarySyncError(err) {
+  const msg = err?.message || String(err || "");
+  if (/aborted|timeout/i.test(msg)) {
+    return "Library sync timed out — will retry in the background";
+  }
+  return msg;
+}
+
+function isSyncTimeoutError(err) {
+  const msg = err?.message || String(err || "");
+  return /aborted|timeout/i.test(msg);
+}
+
+function scheduleQuietLibrarySyncRetry() {
+  if (librarySyncRetryTimer) return;
+  librarySyncRetryTimer = setTimeout(() => {
+    librarySyncRetryTimer = null;
+    void syncLibraryNow({ quiet: true, force: true });
+  }, 30_000);
+}
 
 function syncAllInstalledGames(opts = {}) {
   if (inFlightLibrarySync) return inFlightLibrarySync;
@@ -745,6 +771,83 @@ async function syncInstallsBeforeParty() {
 }
 
 /** Sync every game + mod in installed.json to the library. */
+async function syncLibraryItemsIndividually(token, installs, modInstalls) {
+  let synced = 0;
+  const skipped = [];
+  for (const item of installs) {
+    try {
+      const one = await apiFetch(
+        `${getApiBase()}/api/library/sync`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${token}`,
+            "user-agent": "playbound-launcher",
+          },
+          body: JSON.stringify({
+            slug: item.slug,
+            action: "install",
+            version: item.version,
+          }),
+        },
+        LIBRARY_ITEM_SYNC_TIMEOUT_MS
+      );
+      if (one.status === 401) {
+        return { synced: 0, skipped: [], error: "unauthorized" };
+      }
+      if (one.ok) synced += 1;
+      else skipped.push(item.slug);
+    } catch {
+      skipped.push(item.slug);
+    }
+  }
+  for (const item of modInstalls) {
+    try {
+      const one = await apiFetch(
+        `${getApiBase()}/api/library/sync`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${token}`,
+            "user-agent": "playbound-launcher",
+          },
+          body: JSON.stringify({
+            kind: "mod",
+            slug: item.slug,
+            baseGameSlug: item.baseGameSlug,
+            action: "install",
+            version: item.version,
+          }),
+        },
+        LIBRARY_ITEM_SYNC_TIMEOUT_MS
+      );
+      if (one.ok) synced += 1;
+      else skipped.push(item.slug);
+    } catch {
+      skipped.push(item.slug);
+    }
+  }
+  return { synced, skipped, error: null };
+}
+
+async function postLibraryBatch(token, installs, modInstalls) {
+  return apiFetch(
+    `${getApiBase()}/api/library/sync/batch`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+        "user-agent": "playbound-launcher",
+      },
+      body: JSON.stringify({ installs, modInstalls, prune: true }),
+    },
+    LIBRARY_BATCH_TIMEOUT_MS
+  );
+}
+
 async function runLibrarySync() {
   const settings = loadSettings();
   const token = settings.launcherToken;
@@ -791,70 +894,23 @@ async function runLibrarySync() {
   }
 
   try {
-    const res = await apiFetch(`${getApiBase()}/api/library/sync/batch`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-        "user-agent": "playbound-launcher",
-      },
-      body: JSON.stringify({ installs, modInstalls, prune: true }),
-    });
+    let res;
+    try {
+      res = await postLibraryBatch(token, installs, modInstalls);
+    } catch (err) {
+      if (isSyncTimeoutError(err)) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        res = await postLibraryBatch(token, installs, modInstalls);
+      } else {
+        throw err;
+      }
+    }
     if (res.status === 401) {
       return { synced: 0, skipped: [], error: "unauthorized" };
     }
     if (!res.ok) {
       console.warn(`Library batch sync failed: HTTP ${res.status}`);
-      let synced = 0;
-      const skipped = [];
-      for (const item of installs) {
-        try {
-          const one = await apiFetch(`${getApiBase()}/api/library/sync`, {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              authorization: `Bearer ${token}`,
-              "user-agent": "playbound-launcher",
-            },
-            body: JSON.stringify({
-              slug: item.slug,
-              action: "install",
-              version: item.version,
-            }),
-          });
-          if (one.status === 401) {
-            return { synced: 0, skipped: [], error: "unauthorized" };
-          }
-          if (one.ok) synced += 1;
-          else skipped.push(item.slug);
-        } catch {
-          skipped.push(item.slug);
-        }
-      }
-      for (const item of modInstalls) {
-        try {
-          const one = await apiFetch(`${getApiBase()}/api/library/sync`, {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              authorization: `Bearer ${token}`,
-              "user-agent": "playbound-launcher",
-            },
-            body: JSON.stringify({
-              kind: "mod",
-              slug: item.slug,
-              baseGameSlug: item.baseGameSlug,
-              action: "install",
-              version: item.version,
-            }),
-          });
-          if (one.ok) synced += 1;
-          else skipped.push(item.slug);
-        } catch {
-          skipped.push(item.slug);
-        }
-      }
-      return { synced, skipped, error: null };
+      return syncLibraryItemsIndividually(token, installs, modInstalls);
     }
     const data = await res.json();
     return {
@@ -867,7 +923,11 @@ async function runLibrarySync() {
     };
   } catch (err) {
     console.warn("Library batch sync error:", err?.message || err);
-    return { synced: 0, skipped: [], error: err?.message || String(err) };
+    const fallback = await syncLibraryItemsIndividually(token, installs, modInstalls);
+    if (fallback.synced > 0 || fallback.skipped.length > 0) {
+      return fallback;
+    }
+    return { synced: 0, skipped: [], error: formatLibrarySyncError(err) };
   }
 }
 
@@ -1143,14 +1203,26 @@ async function syncLibraryNow({ quiet = false, force = false } = {}) {
   }
   if (error) {
     message = `Library sync issue: ${error}`;
+    if (quiet) {
+      scheduleQuietLibrarySyncRetry();
+      console.warn(message);
+      return {
+        connected: true,
+        synced,
+        skipped,
+        error,
+        email: check.email,
+        username: check.username,
+        canUseAdminChannel: linkedCanUseAdminChannel,
+      };
+    }
   }
-  /* Quiet: notify only on real problems — synced>0 is not “something changed”. */
-  if (!quiet || error || skipped?.length) {
+  if (!quiet) {
     notifyAccount({
       connected: true,
       synced,
       skipped,
-      message: quiet && !error && !skipped?.length ? undefined : message,
+      message,
       email: check.email,
       username: check.username,
       canUseAdminChannel: linkedCanUseAdminChannel,
@@ -5865,6 +5937,21 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  if (slug === "openttd") {
+    try {
+      const settings = loadSettings();
+      let playerName = null;
+      if (settings.launcherToken) {
+        const check = await validateLauncherToken(settings.launcherToken);
+        playerName = check.username || null;
+      }
+      if (!playerName && join?.name) playerName = join.name;
+      if (playerName) await ensureOpenTtdClientName(playerName);
+    } catch (err) {
+      console.warn("[openttd] client name setup skipped:", err?.message || err);
+    }
+  }
+
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.
   let connectArgs = Array.isArray(info.connectArgs) ? info.connectArgs : null;
   const entry = catalog.find((e) => e.slug === slug);
@@ -7827,7 +7914,7 @@ ipcMain.handle("sign-in", () => {
   return true;
 });
 ipcMain.handle("sync-library-now", async (_event, opts) =>
-  syncLibraryNow({ quiet: Boolean(opts?.quiet) })
+  syncLibraryNow({ quiet: Boolean(opts?.quiet), force: Boolean(opts?.force) })
 );
 ipcMain.handle("report-bug", async (_event, payload = {}) => {
   const title = String(payload.title || "").trim();

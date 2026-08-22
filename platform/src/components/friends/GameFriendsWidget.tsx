@@ -4,7 +4,7 @@ import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useFriendsStore } from "@/stores/friendsStore";
-import { usePartyStore } from "@/stores/partyStore";
+import { usePartyStore, refreshPartyAndFriends } from "@/stores/partyStore";
 import { Avatar } from "@/components/ui/bits";
 import { InviteFriendsPanel } from "@/components/friends/InviteFriendsPanel";
 import { AcceptPlayInviteEffect } from "@/components/friends/AcceptPlayInviteEffect";
@@ -12,33 +12,23 @@ import { telemetry } from "@/lib/telemetry";
 
 export function GameFriendsWidget({ gameSlug }: { gameSlug: string }) {
   const { status } = useSession();
-  const { friends, fetchFriends, startPolling, stopPolling } = useFriendsStore();
+  const { friends, startPolling, stopPolling } = useFriendsStore();
   const {
     activeParty,
-    fetchParties,
     startPolling: startPartyPolling,
     stopPolling: stopPartyPolling,
   } = usePartyStore();
 
   useEffect(() => {
     if (status !== "authenticated") return;
-    void fetchFriends();
+    void refreshPartyAndFriends();
     startPolling(45000);
-    void fetchParties();
-    startPartyPolling(15000);
+    startPartyPolling(5000);
     return () => {
       stopPolling();
       stopPartyPolling();
     };
-  }, [
-    status,
-    fetchFriends,
-    startPolling,
-    stopPolling,
-    fetchParties,
-    startPartyPolling,
-    stopPartyPolling,
-  ]);
+  }, [status, startPolling, stopPolling, startPartyPolling, stopPartyPolling]);
 
   if (status !== "authenticated") return null;
 

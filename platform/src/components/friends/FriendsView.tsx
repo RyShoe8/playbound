@@ -11,7 +11,7 @@ import { Gamepad2, LogIn, UserMinus, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { telemetry } from "@/lib/telemetry";
-import { usePartyStore } from "@/stores/partyStore";
+import { usePartyStore, refreshPartyAndFriends } from "@/stores/partyStore";
 import { PartyView, type PartyGameOption } from "@/components/friends/PartyView";
 import { PartyDiscovery } from "@/components/friends/PartyDiscovery";
 import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
@@ -449,7 +449,8 @@ export function FriendsView({
         })
         .catch(() => {});
         
-      startPartyPolling(15000);
+      void refreshPartyAndFriends();
+      startPartyPolling(5000);
       if (partyParam) {
         void joinParty(partyParam);
       }

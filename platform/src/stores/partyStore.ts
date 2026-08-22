@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import type { PartyPayload, PartyVisibility } from "@/lib/playTogether/types";
 import { presenceSnapshot, usePresenceStore } from "@/stores/presenceStore";
+import { useFriendsStore } from "@/stores/friendsStore";
 
 /**
  * Client-side party state.
@@ -67,6 +68,17 @@ let requestedPollMs = 5000;
 
 const DEFAULT_PARTY_POLL_MS = 5000;
 const FAST_PARTY_POLL_MS = 1000;
+
+function refreshFriendsAfterPartyMutation() {
+  void useFriendsStore.getState().fetchFriends();
+}
+
+/** Refresh party roster and friend in-party badges together. */
+export async function refreshPartyAndFriends() {
+  const { fetchParties } = usePartyStore.getState();
+  const { fetchFriends } = useFriendsStore.getState();
+  await Promise.all([fetchParties(), fetchFriends()]);
+}
 
 function viewerIsInGame(party: PartyPayload | null): boolean {
   if (presenceSnapshot().status === "playing") return true;
@@ -137,6 +149,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         if (recovered) {
           set({ loading: false, error: null });
           syncPartyPoll(get);
+          refreshFriendsAfterPartyMutation();
           return {
             ...recovered,
             needsDiscordLink: false,
@@ -160,6 +173,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       };
       set({ activeParty: party, loading: false });
       syncPartyPoll(get);
+      refreshFriendsAfterPartyMutation();
       return party;
     } catch (err) {
       set({ error: "Network error", loading: false });
@@ -194,6 +208,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       };
       set({ activeParty: party, loading: false });
       syncPartyPoll(get);
+      refreshFriendsAfterPartyMutation();
       return party;
     } catch (err) {
       set({ error: "Network error", loading: false });
@@ -206,6 +221,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       await fetch(`/api/parties/${partyId}/leave`, { method: "POST" });
       set({ activeParty: null });
       await get().fetchParties();
+      refreshFriendsAfterPartyMutation();
     } catch (err) {
       console.error("Failed to leave party", err);
     }
@@ -221,6 +237,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to set ready", err);
@@ -235,6 +252,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to launch party", err);
@@ -251,6 +269,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         const party = (data.party as PartyPayload) || null;
         if (party) set({ activeParty: party });
         syncPartyPoll(get);
+        refreshFriendsAfterPartyMutation();
         return party;
       }
     } catch (err) {
@@ -264,6 +283,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       await fetch(`/api/parties/${partyId}`, { method: "DELETE" });
       set({ activeParty: null });
       syncPartyPoll(get);
+      refreshFriendsAfterPartyMutation();
     } catch (err) {
       console.error("Failed to end party", err);
     }
@@ -312,6 +332,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to set party game", err);
@@ -328,6 +349,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to set party edition", err);
@@ -344,6 +366,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to set party name", err);
@@ -358,6 +381,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to remove member", err);
@@ -374,6 +398,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to transfer leadership", err);
@@ -390,6 +415,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
       console.error("Failed to set visibility", err);
