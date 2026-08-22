@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllGames } from "@/lib/catalog";
-import { editionCountsByGame } from "@/lib/editions";
+import { editionCountsByGame, editionControllerSupportByGame } from "@/lib/editions";
 import { modCountsByGame } from "@/lib/mods";
 import { ProvisionDiscordAllButton } from "@/components/admin/ProvisionDiscordAllButton";
 import { AdminGamesTable } from "@/components/admin/AdminGamesTable";
@@ -11,11 +11,12 @@ import { getGameHealth, HEALTH_WINDOW_DAYS } from "@/lib/admin/gameOpsHealth";
 export const metadata: Metadata = { title: "Admin · Games" };
 
 export default async function AdminGamesPage() {
-  const [games, editionCounts, modCounts, health] = await Promise.all([
+  const [games, editionCounts, modCounts, health, editionControllerSupport] = await Promise.all([
     listAllGames(),
     editionCountsByGame(),
     modCountsByGame(),
     getGameHealth(),
+    editionControllerSupportByGame(),
   ]);
 
   // Attached per row rather than passed as a second map: a Map cannot cross
@@ -47,6 +48,7 @@ export default async function AdminGamesPage() {
         games={rows}
         editionCounts={Object.fromEntries(editionCounts)}
         modCounts={Object.fromEntries(modCounts)}
+        editionControllerSupport={editionControllerSupport}
         healthWindowDays={HEALTH_WINDOW_DAYS}
       />
     </div>
