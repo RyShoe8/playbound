@@ -76,8 +76,7 @@ export function clientVersionForHostableGame(slug: string): string {
   if (
     install?.kind === "github-zip" ||
     install?.kind === "github-jar" ||
-    install?.kind === "github-installer" ||
-    install?.kind === "github-release"
+    install?.kind === "github-installer"
   ) {
     return "GitHub latest";
   }
