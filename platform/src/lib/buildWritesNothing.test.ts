@@ -32,7 +32,7 @@ function stepsOf(script: string): string[] {
 describe("the build chain", () => {
   it("runs insert:catalog-wave after next build", () => {
     expect(pkg.scripts.build).toBe(
-      "next build && npm run check:auth-urls && npm run insert:catalog-wave"
+      "next build && npm run check:auth-urls && npm run insert:catalog-wave && npm run sync:game-host"
     );
   });
 
