@@ -358,7 +358,9 @@ export function HomeHeroPromoSection({
             <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-5">
               <div className="flex flex-wrap items-center gap-3">
                 <Link
-                  href="/download"
+                  /* /download has never existed. Every other launcher CTA on
+                     the site points here; this one 404'd. */
+                  href="/launcher"
                   className="inline-flex h-10 items-center gap-2 rounded-full bg-play px-5 text-sm font-bold text-play-foreground shadow-[0_0_20px_-5px_var(--play)] transition-all hover:brightness-110 active:translate-y-px"
                 >
                   <Download className="size-4" /> Get PlayBound Launcher
