@@ -32,6 +32,17 @@ npm run sync-catalog      # refresh the bundled offline catalog
 | `npm run dist:dev` | `dist/` | No — never, even with a certificate installed |
 | `npm run dist:prod` | `dist/` | Yes — required, and verified before the build succeeds |
 
+### Couch Mode
+
+Phone-as-controller host UI lives under **Couch** in the sidebar. See
+[`docs/couch-mode.md`](../docs/couch-mode.md) and
+[`docs/couch-input-protocol.md`](../docs/couch-input-protocol.md).
+
+Windows controller support is **bundled**: ViGEmBus setup and
+`PlayBound.VigemHost.exe` ship in `resources/vigem/`. Setup installs
+automatically with PlayBound Setup or on first **Start Couch Mode** (one UAC
+prompt possible). No separate driver download for players.
+
 Signing happens **only** via `dist:prod`. Signings are metered (see
 [Release Signing](#release-signing)), so no other command can spend them.
 

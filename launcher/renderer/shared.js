@@ -248,6 +248,7 @@ export function bindViews() {
   views.friends = document.getElementById("view-friends");
   views.gear = document.getElementById("view-gear");
   views.library = document.getElementById("view-library");
+  views.couch = document.getElementById("view-couch");
   views.settings = document.getElementById("view-settings");
   views.gameDetail = document.getElementById("view-game-detail");
   views.modDetail = document.getElementById("view-mod-detail");

@@ -40,6 +40,7 @@ const KEEP_ALIVE = new Set([
   "friends",
   "settings",
   "library",
+  "couch",
 ]);
 
 function isSameDeepLinkContext(a, b) {
@@ -62,6 +63,7 @@ const viewLoaders = {
   games: () => import("./views/games.js"),
   search: () => import("./views/search.js"),
   library: () => import("./views/library.js"),
+  couch: () => import("./views/couch.js"),
   friends: () => import("./views/friends.js"),
   gear: () => import("./views/gear.js"),
   gearDetail: () => import("./views/gear.js"),
@@ -168,6 +170,7 @@ export async function navigateTo(viewName, params = {}) {
     return api.renderEventDetailView?.(params.eventId);
   }
   if (viewName === "library") return api.renderLibraryView?.();
+  if (viewName === "couch") return api.renderCouchView?.();
   if (viewName === "friends") return api.renderFriendsView?.();
   if (viewName === "gear") return api.renderGearView?.();
   if (viewName === "gearDetail") {

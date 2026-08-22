@@ -90,6 +90,17 @@ module.exports = {
      */
     "!**/node_modules/7zip-bin/{mac,linux}/**",
   ],
+  /*
+   * ViGEmBus setup must sit beside the app (not inside asar) so Couch Mode and
+   * the NSIS post-install step can run the silent installer from disk.
+   */
+  extraResources: [
+    {
+      from: "resources/vigem",
+      to: "vigem",
+      filter: ["**/*"],
+    },
+  ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
   // assets is unpacked so Linux D-Bus/AppIndicator can read tray icons from real disk files.
   // 7zip-bin is an executable — it cannot be run from inside the asar.
@@ -149,6 +160,8 @@ module.exports = {
      */
     installerIcon: "assets/icon.ico",
     uninstallerIcon: "assets/icon.ico",
+    /** Best-effort silent ViGEmBus install during PlayBound Setup. */
+    include: "nsis/installer.nsh",
   },
 
   portable: {

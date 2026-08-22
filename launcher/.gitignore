@@ -1,3 +1,5 @@
 node_modules/
 dist/
-dist-build*/
+tools/vigem-host/nuget-tmp/
+tools/vigem-host/bin/
+*.user

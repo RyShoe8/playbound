@@ -152,6 +152,22 @@ contextBridge.exposeInMainWorld("playbound", {
   getOpenCiv3Display: () => ipcRenderer.invoke("get-openciv3-display"),
   setOpenCiv3Display: (payload) => ipcRenderer.invoke("set-openciv3-display", payload || {}),
 
+  // Couch Mode — phone as controller
+  couchStart: (opts) => ipcRenderer.invoke("couch-start", opts || {}),
+  couchStop: () => ipcRenderer.invoke("couch-stop"),
+  couchState: () => ipcRenderer.invoke("couch-state"),
+  couchRefresh: () => ipcRenderer.invoke("couch-refresh"),
+  couchControllerAction: (action, controllerId, playerSlot) =>
+    ipcRenderer.invoke("couch-controller-action", action, controllerId, playerSlot),
+  couchProbeDriver: () => ipcRenderer.invoke("couch-probe-driver"),
+  couchRendererMessage: (payload) => ipcRenderer.invoke("couch-renderer-message", payload || {}),
+  couchSignalPost: (body) => ipcRenderer.invoke("couch-signal-post", body || {}),
+  couchSignalPoll: (since) => ipcRenderer.invoke("couch-signal-poll", since || 0),
+  onCouchState: (cb) => ipcRenderer.on("couch-state", (_event, data) => cb(data || {})),
+  onCouchStatus: (cb) => ipcRenderer.on("couch-status", (_event, data) => cb(data || {})),
+  onCouchPeerSend: (cb) =>
+    ipcRenderer.on("couch-peer-send", (_event, data) => cb(data || {})),
+
   // Events
   onCatalogUpdated: (cb) => ipcRenderer.on("catalog-updated", (_event, data) => cb(data || [])),
   onLiveStatsUpdated: (cb) => ipcRenderer.on("live-stats-updated", (_event, data) => cb(data || {})),

@@ -75,16 +75,34 @@ function main() {
     console.log(`${TAG} Mode: PRODUCTION — signing required (WINDOWS_SIGNING_ENABLED=${env.WINDOWS_SIGNING_ENABLED}).`);
   }
 
-  // 1. Refresh the bundled offline catalog. This mirrors the `predist` hook,
+  // 1. Vendor ViGEmBus redistributable (skipped if already pinned).
+  run("Vendoring ViGEmBus setup", path.join(__dirname, "vendor-vigem.js"), [], env);
+
+  // 2. Vendor Nefarius.ViGEm.Client.dll for the PowerShell host (if missing).
+  run("Vendoring ViGEm client DLL", path.join(__dirname, "vendor-vigem-client.js"), [], env);
+
+  // 3. Optionally build .NET host when SDK is present (not required for shipping).
+  if (process.platform === "win32") {
+    const optional = spawnSync(process.execPath, [path.join(__dirname, "build-vigem-host.js")], {
+      cwd: launcherDir,
+      stdio: "inherit",
+      env,
+    });
+    if (optional.status !== 0) {
+      console.log(`${TAG} .NET ViGEm host build skipped/failed — using PowerShell host.`);
+    }
+  }
+
+  // 4. Refresh the bundled offline catalog. This mirrors the `predist` hook,
   //    which npm does not run for dist:dev / dist:prod.
   run("Syncing game catalog", path.join(__dirname, "sync-catalog.js"), [], env);
 
-  // 2. Build. electron-builder.config.js reads the same env vars and decides
+  // 5. Build. electron-builder.config.js reads the same env vars and decides
   //    whether to sign; forceCodeSigning makes a failed signing attempt fatal.
   const cliPath = require.resolve("electron-builder/cli.js", { paths: [launcherDir] });
   run("Building Windows artifacts", cliPath, ["--win"], env);
 
-  // 3. Prove it. A production build that somehow emitted unsigned binaries
+  // 6. Prove it. A production build that somehow emitted unsigned binaries
   //    must not be publishable.
   if (mode === "prod") {
     run(
