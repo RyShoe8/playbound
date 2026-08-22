@@ -28,7 +28,7 @@ export function HomeHero({ gamesNewestFirst }: { gamesNewestFirst: Game[] }) {
   if (!hero) return null;
 
   const isPaid = directPurchaseRequired(hero.access);
-  const price = accessPriceLabel(hero.access?.currentPriceCents);
+  const price = accessPriceLabel(hero.access?.currentPriceCents ?? null);
   const buyOffer = hero.access?.offers?.[0];
   const displayEditions = getDisplayEditionsForGame(hero.slug);
 

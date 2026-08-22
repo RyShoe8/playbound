@@ -42,7 +42,7 @@ function FeaturedGameHero({ hero, badge }: { hero: Game; badge: string }) {
     .filter(Boolean)
     .join(" · ");
   const isPaid = directPurchaseRequired(hero.access);
-  const price = accessPriceLabel(hero.access?.currentPriceCents);
+  const price = accessPriceLabel(hero.access?.currentPriceCents ?? null);
   const buyOffer = hero.access?.offers?.[0];
   const displayEditions = getDisplayEditionsForGame(hero.slug);
 

@@ -256,15 +256,33 @@ export default async function EditionPage({
           >
             ← {game.title}
           </Link>
-          <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <h1 className="max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
             {edition.name}
           </h1>
           {edition.serverName && (
             <p className="text-sm font-semibold text-white/70">Server: {edition.serverName}</p>
           )}
           {edition.shortDescription && (
-            <p className="max-w-2xl text-base text-white/85">{edition.shortDescription}</p>
+            <p className="max-w-3xl text-base leading-relaxed text-white/90 sm:text-lg">{edition.shortDescription}</p>
           )}
+          <p className="text-xs font-medium text-white/70">
+            {[
+              game.genres.filter(Boolean).join(" / "),
+              game.releaseYear,
+              edition.installConfig?.official_download?.sizeMB
+                ? edition.installConfig.official_download.sizeMB >= 1000
+                  ? `~${(edition.installConfig.official_download.sizeMB / 1000).toFixed(1)} GB`
+                  : `~${edition.installConfig.official_download.sizeMB} MB`
+                : game.sizeMB
+                  ? game.sizeMB >= 1000
+                    ? `~${(game.sizeMB / 1000).toFixed(1)} GB`
+                    : `~${game.sizeMB} MB`
+                  : "",
+              game.license,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <EditionTypeBadge edition={edition} />
             <VerificationBadge level={edition.verificationLevel} />
@@ -490,16 +508,34 @@ function OverviewTab({
   communityLinks: { href: string; label: string; icon: typeof Globe }[];
   siblings: Edition[];
 }) {
+  const sizeMB = edition.installConfig?.official_download?.sizeMB || game.sizeMB;
+  const sizeText = sizeMB
+    ? sizeMB >= 1000
+      ? `~${(sizeMB / 1000).toFixed(1)} GB`
+      : `~${sizeMB} MB`
+    : "—";
+
   return (
-    <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_320px]">
+    <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0 space-y-10">
-        {edition.description && (
-          <section>
-            <SectionHeader title="About this edition" />
-            <div className="mt-3 max-w-prose space-y-3 leading-relaxed text-muted-foreground">
-              {edition.description.split("\n\n").map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
+        {game.thatOneThing && (
+          <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm sm:p-7">
+            <div aria-hidden className="absolute -right-10 -top-12 size-36 rounded-full bg-primary/15 blur-3xl" />
+            <div className="relative flex gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/15 text-primary shadow-sm">
+                <Sparkles className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold tracking-[0.18em] text-primary uppercase">
+                  That One Thing
+                </p>
+                <h2 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">
+                  Why {edition.name} sticks with us
+                </h2>
+                <p className="mt-2 text-base leading-relaxed text-foreground/85 sm:text-lg">
+                  {game.thatOneThing}
+                </p>
+              </div>
             </div>
           </section>
         )}
@@ -507,24 +543,66 @@ function OverviewTab({
         {edition.features.length > 0 && (
           <section>
             <SectionHeader title="What makes it different" />
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
               {edition.features.map((feature) => (
                 <li
                   key={feature}
-                  className="flex items-start gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                  className="flex items-start gap-2.5 rounded-xl border border-border bg-card p-3.5 text-sm leading-relaxed"
                 >
-                  <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                  {feature}
+                  <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span className="font-medium text-foreground/90">{feature}</span>
                 </li>
               ))}
             </ul>
           </section>
         )}
 
+        {edition.description && (
+          <section>
+            <SectionHeader title={`About ${edition.name}`} />
+            <div className="mt-3 space-y-4 leading-relaxed text-muted-foreground">
+              {edition.description.split("\n\n").map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <SectionHeader title="Will this run on your PC?" />
+          <div className="mt-3">
+            <GameHardwareCompatibility gameSlug={game.slug} editionSlug={edition.slug} />
+          </div>
+        </section>
+
+        {requirements && (requirements.min || requirements.recommended) && (
+          <section>
+            <SectionHeader title="System requirements" />
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              {requirements.min && (
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                    <Monitor className="size-4 text-primary" /> Minimum Requirements
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/90">{requirements.min}</p>
+                </div>
+              )}
+              {requirements.recommended && (
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                    <Monitor className="size-4 text-primary" /> Recommended Requirements
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/90">{requirements.recommended}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {screenshots.length > 0 && (
           <section>
-            <SectionHeader title="Gallery" />
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <SectionHeader title="Gallery & Screenshots" />
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {screenshots.slice(0, 6).map((src) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -532,46 +610,18 @@ function OverviewTab({
                   src={src}
                   alt={`${edition.name} screenshot`}
                   loading="lazy"
-                  className="w-full rounded-xl border border-border object-cover"
+                  className="aspect-video w-full rounded-xl border border-border object-cover transition-transform hover:scale-[1.02]"
                 />
               ))}
             </div>
           </section>
         )}
 
-        <section>
-          <GameHardwareCompatibility gameSlug={game.slug} editionSlug={edition.slug} />
-        </section>
-
-        {requirements && (requirements.min || requirements.recommended) && (
-          <section>
-            <SectionHeader title="System requirements" />
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {requirements.min && (
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    <Monitor className="size-3.5" /> Minimum
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed">{requirements.min}</p>
-                </div>
-              )}
-              {requirements.recommended && (
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    <Monitor className="size-3.5" /> Recommended
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed">{requirements.recommended}</p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
         {edition.languages.length > 0 && (
           <section>
-            <SectionHeader title="Languages" />
-            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <Languages className="size-4" />
+            <SectionHeader title="Supported Languages" />
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Languages className="size-4 text-primary" />
               {edition.languages.join(", ")}
             </p>
           </section>
@@ -579,8 +629,8 @@ function OverviewTab({
 
         {communityLinks.length > 0 && (
           <section>
-            <SectionHeader title="Community" />
-            <div className="mt-3 flex flex-wrap gap-2">
+            <SectionHeader title="Community & Links" />
+            <div className="mt-3 flex flex-wrap gap-2.5">
               {communityLinks.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={`${label}-${href}`}
@@ -590,9 +640,9 @@ function OverviewTab({
                   })}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-secondary px-4 text-sm font-bold hover:bg-secondary/80"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-secondary px-4 text-sm font-bold transition-colors hover:border-primary/50 hover:bg-secondary/80"
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-4 text-primary" />
                   {label}
                 </Link>
               ))}
@@ -601,8 +651,8 @@ function OverviewTab({
         )}
 
         <section>
-          <SectionHeader title="Certification" />
-          <div className="mt-3 rounded-xl border border-border bg-card p-4">
+          <SectionHeader title="PlayBound Certification" />
+          <div className="mt-3 rounded-xl border border-border bg-card p-5">
             <div className="flex flex-wrap items-center gap-3">
               <VerificationBadge level={edition.verificationLevel} />
               {edition.verifiedAt && (
@@ -611,23 +661,26 @@ function OverviewTab({
                 </span>
               )}
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
               {VERIFICATION_DESCRIPTIONS[edition.verificationLevel]}
             </p>
             {edition.verificationNote && (
-              <p className="mt-2 text-sm leading-relaxed">{edition.verificationNote}</p>
+              <p className="mt-2 rounded-lg bg-secondary/50 p-3 text-sm leading-relaxed font-medium">{edition.verificationNote}</p>
             )}
           </div>
         </section>
 
         {edition.faq.length > 0 && (
           <section>
-            <SectionHeader title="FAQ" />
-            <div className="mt-3 space-y-2">
+            <SectionHeader title="Frequently Asked Questions" />
+            <div className="mt-3 space-y-2.5">
               {edition.faq.map((item, i) => (
-                <details key={i} className="rounded-xl border border-border bg-card p-4">
-                  <summary className="cursor-pointer text-sm font-bold">{item.q}</summary>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
+                <details key={i} className="group rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-foreground">
+                    {item.q}
+                    <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
                 </details>
               ))}
             </div>
@@ -639,7 +692,7 @@ function OverviewTab({
             <SectionHeader
               title="Other ways to play"
               href={`/games/${game.slug}#editions`}
-              linkLabel="All editions"
+              linkLabel="View all editions"
             />
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {siblings.slice(0, 4).map((sibling) => (
@@ -649,20 +702,20 @@ function OverviewTab({
           </section>
         )}
 
-        <section className="rounded-xl border border-border bg-secondary/30 p-4 text-sm">
-          <p className="flex items-center gap-2 font-semibold">
-            <Download className="size-4" /> Looking for the base game?
+        <section className="rounded-xl border border-border bg-secondary/30 p-5 text-sm">
+          <p className="flex items-center gap-2 font-bold text-foreground">
+            <Download className="size-4 text-primary" /> Looking for the base game?
           </p>
-          <p className="mt-1 text-muted-foreground">
-            <Link href={`/games/${game.slug}`} className="text-primary hover:underline">
+          <p className="mt-1.5 leading-relaxed text-muted-foreground">
+            <Link href={`/games/${game.slug}`} className="font-semibold text-primary hover:underline">
               {game.title}
             </Link>{" "}
-            has an overview, reviews and discussion covering every edition.
+            has an overview, reviews, guides, and discussions covering every edition.
           </p>
         </section>
       </div>
 
-      <aside className="min-w-0 space-y-4">
+      <aside className="min-w-0 space-y-6">
         <ActivityStatsCard
           playingNow={liveStats.playingNow}
           rows={[
@@ -670,20 +723,77 @@ function OverviewTab({
             { label: "Live servers", value: liveStats.serverCount },
           ]}
         />
-        <div className="rounded-xl border border-border bg-card p-4 text-sm">
-          <Link
-            href={serversHref(game.slug, edition.slug)}
-            className="inline-flex items-center gap-2 font-semibold text-primary hover:underline"
-          >
-            <Server className="size-4" />
-            Browse {edition.name} servers
-          </Link>
-          <p className="mt-1 text-muted-foreground">
-            {liveStats.serverCount > 0
-              ? `${liveStats.serverCount} server${liveStats.serverCount === 1 ? "" : "s"} · ${liveStats.playingNow} playing now`
-              : "Open the server browser for this game."}
-          </p>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-sm font-extrabold tracking-wider text-muted-foreground uppercase">
+            Edition Facts
+          </h2>
+          <dl className="mt-3.5 space-y-3 text-sm">
+            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+              <dt className="text-muted-foreground">Base Game</dt>
+              <dd className="font-semibold text-right">
+                <Link href={`/games/${game.slug}`} className="text-primary hover:underline">
+                  {game.title}
+                </Link>
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+              <dt className="text-muted-foreground">Type</dt>
+              <dd className="font-semibold capitalize text-right">{edition.type || "Community"}</dd>
+            </div>
+            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+              <dt className="text-muted-foreground">Install Method</dt>
+              <dd className="font-semibold text-right">{INSTALL_METHOD_LABELS[edition.installMethod]}</dd>
+            </div>
+            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+              <dt className="text-muted-foreground">Approx. Size</dt>
+              <dd className="font-semibold text-right">{sizeText}</dd>
+            </div>
+            <div className="flex justify-between gap-2 border-b border-border/50 pb-2">
+              <dt className="text-muted-foreground">License</dt>
+              <dd className="font-semibold text-right text-xs max-w-[160px] truncate">{game.license}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">Verification</dt>
+              <dd className="font-semibold capitalize text-right">{edition.verificationLevel.replace(/_/g, " ")}</dd>
+            </div>
+          </dl>
         </div>
+
+        {liveStats.serverCount > 0 && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <Link
+              href={serversHref(game.slug, edition.slug)}
+              className="inline-flex items-center gap-2 font-bold text-primary hover:underline"
+            >
+              <Server className="size-4" />
+              Browse {edition.name} Servers
+            </Link>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {liveStats.serverCount} live server{liveStats.serverCount === 1 ? "" : "s"} with {liveStats.playingNow} active player{liveStats.playingNow === 1 ? "" : "s"}.
+            </p>
+          </div>
+        )}
+
+        {siblings.length > 0 && (
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="text-sm font-extrabold tracking-wider text-muted-foreground uppercase">
+              Other Editions
+            </h2>
+            <div className="mt-3 space-y-2">
+              {siblings.slice(0, 3).map((sib) => (
+                <Link
+                  key={sib.id}
+                  href={`/games/${game.slug}/editions/${sib.slug}`}
+                  className="block rounded-xl border border-border/60 bg-secondary/30 p-2.5 transition-colors hover:border-primary/50 hover:bg-secondary/60"
+                >
+                  <p className="text-sm font-bold text-foreground truncate">{sib.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{sib.type || "edition"}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
     </div>
   );
@@ -699,11 +809,11 @@ function InstallTab({
   telemetryProps: ReturnType<typeof editionTelemetryProps>;
 }) {
   return (
-    <section id="install" className="mx-auto max-w-3xl">
-      <SectionHeader title="Installation" />
-      <div className="mt-3 rounded-xl border border-border bg-card p-4 sm:p-5">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Method — {INSTALL_METHOD_LABELS[edition.installMethod]}
+    <section id="install" className="space-y-6">
+      <SectionHeader title="Installation & Setup" />
+      <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+        <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+          Install Method — {INSTALL_METHOD_LABELS[edition.installMethod]}
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -711,17 +821,17 @@ function InstallTab({
         </div>
 
         {action.steps?.length ? (
-          <div className="mt-4">
-            <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              How to get playing
+          <div className="mt-6">
+            <p className="mb-3 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+              Step-by-Step Instructions
             </p>
             <EditionInstallSteps steps={action.steps} />
           </div>
         ) : null}
 
-        {action.note && <p className="mt-3 text-sm text-muted-foreground">{action.note}</p>}
+        {action.note && <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{action.note}</p>}
         {edition.requirements?.notes && (
-          <p className="mt-3 rounded-lg border border-amber-500/40 bg-amber-400/10 px-3 py-2 text-sm">
+          <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-400/10 p-4 text-sm font-medium">
             {edition.requirements.notes}
           </p>
         )}

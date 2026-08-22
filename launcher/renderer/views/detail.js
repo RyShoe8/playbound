@@ -47,8 +47,8 @@ function formatHwRam(mb) {
   return `${mb} MB`;
 }
 
-async function fillGameHardwareCompat(slug) {
-  const body = document.getElementById("detail-hw-compat-body");
+async function fillGameHardwareCompat(slug, targetId = "detail-hw-compat-body") {
+  const body = document.getElementById(targetId);
   if (!body) return;
   if (!state.accountState.connected) {
     body.innerHTML = `
@@ -77,7 +77,7 @@ async function fillGameHardwareCompat(slug) {
       document.getElementById("detail-hw-sync")?.addEventListener("click", async () => {
         body.textContent = "Syncing…";
         await window.playbound.syncHardwareProfile?.();
-        api.fillGameHardwareCompat(slug);
+        api.fillGameHardwareCompat(slug, targetId);
       });
       return;
     }
@@ -2202,13 +2202,16 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
   }
   container.innerHTML = `<p class="view-sub">Loading edition…</p>`;
 
+  state.editionDetailActiveTab = state.editionDetailActiveTab || "overview";
+
   const [editionsRes, liveStats, gameDetail] = await Promise.all([
     window.playbound.getEditions?.(gameSlug) || Promise.resolve({ editions: [] }),
     window.playbound.getLiveStats?.({ game: gameSlug, edition: editionSlug }) ||
       Promise.resolve(null),
     window.playbound.getGameDetail(gameSlug),
   ]);
-  const edition = (editionsRes?.editions || []).find((e) => e.editionSlug === editionSlug);
+  const allEditions = editionsRes?.editions || [];
+  const edition = allEditions.find((e) => e.editionSlug === editionSlug);
   if (!edition) {
     container.innerHTML = `
       <p class="view-sub" style="margin-top:12px">Edition not found.</p>
@@ -2216,8 +2219,8 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     return;
   }
 
-  // heroImage first, like the website's edition hero — a wide banner suits a
-  // full-bleed band, where a portrait cover gets cropped to its middle.
+  const siblings = allEditions.filter((e) => e.editionSlug !== editionSlug);
+
   const coverUrl =
     edition.heroImage || edition.coverImage || gameDetail?.heroImage || gameDetail?.coverImage || "";
   const art = Array.isArray(gameDetail?.art) ? gameDetail.art : null;
@@ -2226,12 +2229,12 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       ? `linear-gradient(135deg, ${art[0]}, ${art[1]})`
       : `linear-gradient(135deg, #312e81, #a78bfa)`;
 
-  const links = edition.links || {};
+  const links = edition.links || gameDetail?.links || {};
   const linkButtons = [
-    ["Website", links.website],
-    ["Discord", links.discord],
+    ["Website", links.website || gameDetail?.website],
+    ["Discord", links.discord || gameDetail?.discord || gameDetail?.discordInvite],
     ["Wiki", links.wiki],
-    ["GitHub", links.github],
+    ["GitHub", links.github || (gameDetail?.githubRepo ? `https://github.com/${gameDetail.githubRepo}` : null)],
     ["Forum", links.forum],
   ]
     .filter(([, url]) => url)
@@ -2278,19 +2281,61 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     )
     .join("");
 
+  const sizeText = edition.sizeMB
+    ? edition.sizeMB >= 1000
+      ? `~${(edition.sizeMB / 1000).toFixed(1)} GB`
+      : `~${edition.sizeMB} MB`
+    : gameDetail?.approxSize || "—";
+
+  const featureItems = (edition.features || [])
+    .map((f) => `<li><span class="feature-bullet">✦</span><span>${escapeHtml(f)}</span></li>`)
+    .join("");
+
+  const reqGridHtml =
+    edition.requirements && (edition.requirements.min || edition.requirements.recommended)
+      ? `<div class="req-grid">
+          <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(edition.requirements.min || "—")}</p></div>
+          <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(edition.requirements.recommended || "—")}</p></div>
+        </div>`
+      : "";
+
+  const shots = (Array.isArray(edition.screenshots || gameDetail?.screenshots)
+    ? edition.screenshots || gameDetail?.screenshots
+    : []
+  )
+    .filter(Boolean)
+    .slice(0, 6)
+    .map(
+      (src) =>
+        `<div class="shot-card"><img src="${escapeHtml(src)}" alt="${escapeHtml(edition.editionName)} screenshot" loading="lazy" /></div>`
+    )
+    .join("");
+
+  const thatOneThingHtml = gameDetail?.thatOneThing
+    ? `<section class="detail-section detail-tot-card">
+        <div class="tot-icon">✦</div>
+        <div class="tot-content">
+          <div class="tot-label">That One Thing</div>
+          <h3 class="tot-title">Why ${escapeHtml(edition.editionName)} sticks with us</h3>
+          <p class="tot-text">${escapeHtml(gameDetail.thatOneThing)}</p>
+        </div>
+      </section>`
+    : "";
+
+  const hasMultiplayer = Boolean(edition.hasServerBrowser ?? gameDetail?.hasServerBrowser ?? gameDetail?.multiplayer);
+  const hasMods = Boolean(gameDetail?.mods && gameDetail.mods.length > 0);
+
   container.innerHTML = `
-    <!--
-      Same hero as the website's edition page: the art fills the band, a scrim
-      keeps the type readable, edition name and tagline bottom-left, actions
-      bottom-right. Structurally identical to the game hero above so the three
-      pages can be changed together.
-    -->
+    <!-- ── Hero ─────────────────────────────────────────────── -->
     <section class="detail-hero" style="${
       coverUrl ? `background-image:url('${escapeHtml(coverUrl)}')` : `background:${bgGrad}`
     }">
       <div class="detail-hero-scrim"></div>
       <div class="detail-hero-inner">
         <div class="detail-hero-copy">
+          <a href="#" class="detail-back-link" id="edition-back-game" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.75);margin-bottom:8px;text-decoration:none;cursor:pointer;">
+            ← Back to ${escapeHtml(gameDetail?.title || "Game")}
+          </a>
           <div class="chip-row">
             <span class="chip">${escapeHtml(edition.editionType || "edition")}</span>
             ${
@@ -2305,7 +2350,7 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
             }
           </div>
           <h1 class="detail-hero-title">${escapeHtml(edition.editionName)}</h1>
-          <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")}</p>
+          <p class="detail-hero-sub">${escapeHtml(edition.shortDescription || "")} · ${escapeHtml(sizeText)}${edition.releaseYear ? ` · ${escapeHtml(String(edition.releaseYear))}` : ""}</p>
         </div>
         <div class="detail-hero-actions">
           ${
@@ -2315,56 +2360,294 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
               : `<button class="btn-primary" id="edition-install">Install this edition</button>
                  <button class="btn-secondary" id="edition-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>`
           }
+          <button type="button" class="btn-secondary" id="edition-open-site" title="View this edition on playbound.club">View on Web ↗</button>
         </div>
       </div>
     </section>
-    ${editionInstalled ? gamePlayHintHtml(gameSlug) : ""}
-    ${buildActivityPanelHtml(liveStats, "Edition activity")}
-    <section class="detail-section">
-      <h2 class="detail-section-title">About</h2>
-      ${(edition.description || edition.shortDescription || "")
-        .split(/\n\n+/)
-        .filter(Boolean)
-        .map((para) => `<p class="detail-prose">${escapeHtml(para)}</p>`)
-        .join("")}
-    </section>
-    ${
-      playStepsHtml
-        ? `<section class="detail-section"><h2 class="detail-section-title">How to get playing</h2>${playStepsHtml}${
-            installNote ? `<p class="view-sub" style="margin-top:10px">${escapeHtml(installNote)}</p>` : ""
-          }${
-            reqNotes
-              ? `<p class="edition-req-note">${escapeHtml(reqNotes)}</p>`
-              : ""
-          }</section>`
-        : ""
-    }
-    ${
-      edition.requirements && (edition.requirements.min || edition.requirements.recommended)
-        ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>
-        <div class="req-grid">
-          <div class="req-card"><div class="req-label">Minimum</div><p>${escapeHtml(edition.requirements.min || "—")}</p></div>
-          <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(edition.requirements.recommended || "—")}</p></div>
-        </div></section>`
-        : ""
-    }
-    ${
-      faqHtml
-        ? `<section class="detail-section"><h2 class="detail-section-title">FAQ</h2><div class="faq-list">${faqHtml}</div></section>`
-        : ""
-    }
-    ${
-      linkButtons
-        ? `<section class="detail-section"><h2 class="detail-section-title">Community</h2><div class="detail-web-tabs">${linkButtons}</div></section>`
-        : ""
-    }
+
+    <!-- ── Sticky Tabs ──────────────────────────────────────── -->
+    <nav class="detail-tabs" id="edition-detail-tabs">
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "overview" ? "active" : ""}" data-tab="overview">Overview</button>
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "install" ? "active" : ""}" data-tab="install">Install</button>
+      ${hasMultiplayer ? `<button type="button" class="detail-tab ${state.editionDetailActiveTab === "servers" ? "active" : ""}" data-tab="servers">Servers</button>` : ""}
+      ${hasMods ? `<button type="button" class="detail-tab ${state.editionDetailActiveTab === "mods" ? "active" : ""}" data-tab="mods">Mods</button>` : ""}
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "guides" ? "active" : ""}" data-tab="guides">Guides</button>
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "achievements" ? "active" : ""}" data-tab="achievements">Achievements</button>
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "news" ? "active" : ""}" data-tab="news">News</button>
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "discussion" ? "active" : ""}" data-tab="discussion">Discussion</button>
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "reviews" ? "active" : ""}" data-tab="reviews">Reviews</button>
+      <button type="button" class="detail-tab ${state.editionDetailActiveTab === "media" ? "active" : ""}" data-tab="media">Media</button>
+    </nav>
+
+    <!-- ── Tab Panels ───────────────────────────────────────── -->
+    <div class="detail-tab-panels">
+      <!-- Overview Panel -->
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "overview" ? "active" : ""}" data-panel="overview">
+        <div class="detail-overview-grid">
+          <div class="detail-overview-main">
+            ${thatOneThingHtml}
+
+            ${
+              featureItems
+                ? `<section class="detail-section detail-features-section">
+                     <div class="detail-section-heading">
+                       <div>
+                         <h2 class="detail-section-title">What Makes It Different</h2>
+                         <p>Unique enhancements and features in this edition.</p>
+                       </div>
+                       <span class="detail-section-count">${(edition.features || []).length}</span>
+                     </div>
+                     <ul class="feature-list">${featureItems}</ul>
+                   </section>`
+                : ""
+            }
+
+            <section class="detail-section">
+              <h2 class="detail-section-title">About ${escapeHtml(edition.editionName)}</h2>
+              ${(edition.description || edition.shortDescription || "")
+                .split(/\n\n+/)
+                .filter(Boolean)
+                .map((para) => `<p class="detail-prose">${escapeHtml(para)}</p>`)
+                .join("")}
+            </section>
+
+            ${
+              playStepsHtml
+                ? `<section class="detail-section"><h2 class="detail-section-title">How to get playing</h2>${playStepsHtml}${
+                    installNote ? `<p class="view-sub" style="margin-top:10px">${escapeHtml(installNote)}</p>` : ""
+                  }${
+                    reqNotes ? `<p class="edition-req-note">${escapeHtml(reqNotes)}</p>` : ""
+                  }</section>`
+                : ""
+            }
+
+            <section class="detail-section" id="edition-hw-compat">
+              <div class="detail-section-heading">
+                <div>
+                  <h2 class="detail-section-title">Will this run on your PC?</h2>
+                  <p>A quick comparison with the gaming PC saved in your settings.</p>
+                </div>
+              </div>
+              <div class="hardware-compat-panel" id="edition-hw-compat-body">
+                <span class="hardware-compat-loading" aria-hidden="true"></span>Checking compatibility with your hardware…
+              </div>
+            </section>
+
+            ${
+              reqGridHtml
+                ? `<section class="detail-section"><h2 class="detail-section-title">System Requirements</h2>${reqGridHtml}</section>`
+                : ""
+            }
+
+            ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots & Gallery</h2><div class="shot-row">${shots}</div></section>` : ""}
+
+            ${
+              faqHtml
+                ? `<section class="detail-section"><h2 class="detail-section-title">Frequently Asked Questions</h2><div class="faq-list">${faqHtml}</div></section>`
+                : ""
+            }
+
+            <section class="detail-section">
+              <h2 class="detail-section-title">PlayBound Certification</h2>
+              <div class="detail-sidebar-card" style="padding:16px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                  <span class="chip chip-accent">${escapeHtml(edition.verificationLevel ? edition.verificationLevel.replace(/_/g, " ") : "Verified")}</span>
+                  ${edition.verifiedAt ? `<span class="view-sub" style="font-size:12px">Last checked ${escapeHtml(edition.verifiedAt.slice(0, 10))}</span>` : ""}
+                </div>
+                ${edition.verificationNote ? `<p class="detail-prose" style="margin-top:6px">${escapeHtml(edition.verificationNote)}</p>` : ""}
+              </div>
+            </section>
+          </div>
+
+          <aside class="detail-overview-sidebar">
+            <div id="edition-activity-slot">${liveStats ? buildActivityPanelHtml(liveStats, "Edition Activity") : ""}</div>
+
+            <div class="detail-sidebar-card">
+              <div class="detail-sidebar-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
+                <span>Edition Facts</span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Base Game</span>
+                <span class="detail-sidebar-val"><a href="#" id="sidebar-base-game-link" style="color:var(--accent-light);text-decoration:none;font-weight:600">${escapeHtml(gameDetail?.title || gameSlug)}</a></span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Type</span>
+                <span class="detail-sidebar-val">${escapeHtml(edition.editionType || "Community")}</span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Install Method</span>
+                <span class="detail-sidebar-val">${escapeHtml(edition.installMethod || "Direct Download")}</span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Size</span>
+                <span class="detail-sidebar-val">${escapeHtml(sizeText)}</span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Release</span>
+                <span class="detail-sidebar-val">${escapeHtml(String(edition.releaseYear || gameDetail?.releaseYear || "—"))}</span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">License</span>
+                <span class="detail-sidebar-val">${escapeHtml(edition.license || gameDetail?.license || "Free")}</span>
+              </div>
+              <div class="detail-sidebar-row">
+                <span class="detail-sidebar-label">Verification</span>
+                <span class="detail-sidebar-val">${escapeHtml((edition.verificationLevel || "verified").replace(/_/g, " "))}</span>
+              </div>
+            </div>
+
+            ${
+              siblings.length > 0
+                ? `<div class="detail-sidebar-card">
+                     <div class="detail-sidebar-title">
+                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                       <span>Other Editions (${siblings.length})</span>
+                     </div>
+                     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                       ${siblings
+                         .slice(0, 4)
+                         .map(
+                           (sib) =>
+                             `<div class="edition-sidebar-item" data-sibling-slug="${escapeHtml(sib.editionSlug)}" style="padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;cursor:pointer;">
+                               <div style="font-weight:600;font-size:13px;color:var(--text-main);">${escapeHtml(sib.editionName)}</div>
+                               <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(sib.editionType || "edition")}</div>
+                             </div>`
+                         )
+                         .join("")}
+                     </div>
+                   </div>`
+                : ""
+            }
+
+            ${
+              linkButtons
+                ? `<div class="detail-sidebar-card">
+                     <div class="detail-sidebar-title">
+                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent-light)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                       <span>Links & Community</span>
+                     </div>
+                     <div class="detail-web-tabs" style="margin-top:10px">${linkButtons}</div>
+                   </div>`
+                : ""
+            }
+          </aside>
+        </div>
+      </div>
+
+      <!-- Install Panel -->
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "install" ? "active" : ""}" data-panel="install">
+        <div class="tab-panel-header"><h2>Installation &amp; Setup for ${escapeHtml(edition.editionName)}</h2></div>
+        <div class="install-header-card">
+          <p class="install-header-prose">
+            ${escapeHtml(edition.editionName)} is a ${escapeHtml(edition.editionType || "community")} edition for ${escapeHtml(gameDetail?.title || gameSlug)}.
+            ${edition.installMethod ? `It uses ${escapeHtml(edition.installMethod)}.` : ""}
+          </p>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            ${
+              editionInstalled
+                ? `<button class="btn-success" id="install-tab-play">Play Now</button>
+                   <button class="btn-danger" id="install-tab-uninstall">Uninstall</button>`
+                : `<button class="btn-primary" id="install-tab-install-btn">Install Edition</button>
+                   <button class="btn-secondary" id="install-tab-locate-btn">Already installed? Locate</button>`
+            }
+          </div>
+        </div>
+        ${
+          playStepsHtml
+            ? `<div class="detail-sidebar-card" style="margin-top:20px;padding:20px;">
+                 <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;">Step-by-Step Instructions</h3>
+                 ${playStepsHtml}
+                 ${installNote ? `<p class="view-sub" style="margin-top:12px">${escapeHtml(installNote)}</p>` : ""}
+               </div>`
+            : ""
+        }
+      </div>
+
+      <!-- Other Panels -->
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "servers" ? "active" : ""}" data-panel="servers" id="edition-servers-sec">
+        <div class="tab-panel-header"><h2>${escapeHtml(edition.editionName)} Servers</h2></div>
+        <p class="view-sub">Looking for dedicated servers for this edition...</p>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "mods" ? "active" : ""}" data-panel="mods" id="edition-mods-sec">
+        <div class="tab-panel-header"><h2>Compatible Mods &amp; Addons</h2></div>
+        <p class="view-sub">Loading mods for this edition…</p>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "guides" ? "active" : ""}" data-panel="guides" id="edition-guides-sec">
+        <p class="view-sub">Loading guides…</p>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "achievements" ? "active" : ""}" data-panel="achievements" id="edition-achievements-sec">
+        <div class="tab-panel-header"><h2>Achievements</h2></div>
+        <div class="tab-empty">
+          <div class="tab-empty-icon">🏆</div>
+          <h3>Achievements coming soon</h3>
+          <p>Community and in-game achievement tracking for ${escapeHtml(edition.editionName)} is in active development.</p>
+        </div>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "news" ? "active" : ""}" data-panel="news" id="edition-news-sec">
+        <p class="view-sub">Loading updates…</p>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "discussion" ? "active" : ""}" data-panel="discussion" id="edition-discussion-sec">
+        <p class="view-sub">Loading discussions…</p>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "reviews" ? "active" : ""}" data-panel="reviews" id="edition-reviews-sec">
+        <p class="view-sub">Loading reviews…</p>
+      </div>
+
+      <div class="detail-tab-panel ${state.editionDetailActiveTab === "media" ? "active" : ""}" data-panel="media" id="edition-media-sec">
+        <div class="tab-panel-header"><h2>Media Gallery</h2></div>
+        ${shots ? `<div class="shot-row" style="margin-top:16px;">${shots}</div>` : `<p class="view-sub">No media uploaded yet.</p>`}
+      </div>
+    </div>
   `;
 
-  document.getElementById("edition-install")?.addEventListener("click", async () => {
+  // ── Tab Switching ────────────────────────────────────────────────────────
+  document.getElementById("edition-detail-tabs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".detail-tab");
+    if (!btn) return;
+    const tabName = btn.dataset.tab;
+    if (!tabName) return;
+    state.editionDetailActiveTab = tabName;
+    container.querySelectorAll("#edition-detail-tabs .detail-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.tab === tabName);
+    });
+    container.querySelectorAll(".detail-tab-panel").forEach((p) => {
+      p.classList.toggle("active", p.dataset.panel === tabName);
+    });
+  });
+
+  // ── Hardware Compatibility ────────────────────────────────────────────────
+  void fillGameHardwareCompat(gameSlug, "edition-hw-compat-body");
+
+  // ── Sibling Edition Navigation ────────────────────────────────────────────
+  container.querySelectorAll("[data-sibling-slug]").forEach((el) => {
+    el.addEventListener("click", () => {
+      api.openEditionDetail(gameSlug, el.dataset.siblingSlug);
+    });
+  });
+
+  // ── Back Button & Base Game Links ────────────────────────────────────────
+  document.getElementById("edition-back-game")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    api.openGameDetail(gameSlug);
+  });
+  document.getElementById("sidebar-base-game-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    api.openGameDetail(gameSlug);
+  });
+
+  // ── Install Handlers ─────────────────────────────────────────────────────
+  const triggerInstall = async () => {
     const lockKey = `${gameSlug}::${editionSlug || ""}`;
     if (installingKeys.has(lockKey)) return;
     installingKeys.add(lockKey);
-    const btn = document.getElementById("edition-install");
+    const btn = document.getElementById("edition-install") || document.getElementById("install-tab-install-btn");
     if (btn) btn.disabled = true;
     setStatus("Starting install...");
     try {
@@ -2394,8 +2677,9 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     } finally {
       installingKeys.delete(lockKey);
     }
-  });
-  document.getElementById("edition-locate")?.addEventListener("click", async () => {
+  };
+
+  const triggerLocate = async () => {
     setStatus("Looking for install…");
     try {
       cacheInvalidate(`game:${gameSlug}`);
@@ -2415,8 +2699,9 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       setStatus(err.message || String(err), true);
       setProgress(null);
     }
-  });
-  document.getElementById("edition-play")?.addEventListener("click", async () => {
+  };
+
+  const triggerPlay = async () => {
     try {
       setStatus("Checking Java / launching…");
       await window.playbound.play(gameSlug, null, editionSlug);
@@ -2425,8 +2710,9 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     } catch (err) {
       setStatus(err.message || String(err), true);
     }
-  });
-  document.getElementById("edition-uninstall")?.addEventListener("click", async () => {
+  };
+
+  const triggerUninstall = async () => {
     try {
       cacheInvalidate(`game:${gameSlug}`);
       cacheInvalidate(`editions:${gameSlug}`);
@@ -2440,7 +2726,21 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     } catch (err) {
       setStatus(err.message || String(err), true);
     }
+  };
+
+  document.getElementById("edition-install")?.addEventListener("click", triggerInstall);
+  document.getElementById("install-tab-install-btn")?.addEventListener("click", triggerInstall);
+  document.getElementById("edition-locate")?.addEventListener("click", triggerLocate);
+  document.getElementById("install-tab-locate-btn")?.addEventListener("click", triggerLocate);
+  document.getElementById("edition-play")?.addEventListener("click", triggerPlay);
+  document.getElementById("install-tab-play")?.addEventListener("click", triggerPlay);
+  document.getElementById("edition-uninstall")?.addEventListener("click", triggerUninstall);
+  document.getElementById("install-tab-uninstall")?.addEventListener("click", triggerUninstall);
+
+  document.getElementById("edition-open-site")?.addEventListener("click", () => {
+    window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(gameSlug)}/editions/${encodeURIComponent(editionSlug)}`);
   });
+
   container.querySelectorAll("[data-ext]").forEach((btn) => {
     btn.addEventListener("click", () =>
       window.playbound.openExternal(btn.dataset.ext, {
@@ -2449,6 +2749,161 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
       })
     );
   });
+
+  // ── Lazy Load Tabs (Guides, News, Discussions, Reviews) ──────────────────
+  void (async () => {
+    const guidesSec = document.getElementById("edition-guides-sec");
+    const newsSec = document.getElementById("edition-news-sec");
+    const discussionSec = document.getElementById("edition-discussion-sec");
+    const reviewsSec = document.getElementById("edition-reviews-sec");
+    const [guidesRes, releasesRes, discussionsRes, reviewsRes] = await Promise.all([
+      window.playbound.getGameGuides?.(gameSlug) || Promise.resolve({ guides: [] }),
+      window.playbound.getGameReleases?.(gameSlug) || Promise.resolve({ releases: [] }),
+      window.playbound.getGameDiscussions?.(gameSlug) || Promise.resolve({ topics: [] }),
+      window.playbound.getGameReviews?.(gameSlug) || Promise.resolve({ reviews: [] }),
+    ]);
+
+    if (guidesSec) {
+      const guides = guidesRes?.guides || [];
+      if (!guides.length) {
+        guidesSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Guides for ${escapeHtml(edition.editionName)}</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">📖</div>
+            <h3>No guides published yet</h3>
+            <p>Share your tips, walkthroughs, and strategies with the PlayBound community.</p>
+            <button class="btn-primary btn-sm" id="edition-guides-open-site">Write a guide on playbound.club</button>
+          </div>
+        `;
+        document.getElementById("edition-guides-open-site")?.addEventListener("click", () => {
+          window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(gameSlug)}/editions/${encodeURIComponent(editionSlug)}?tab=guides`);
+        });
+      } else {
+        guidesSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Guides</h2></div>
+          <div class="guide-cards-grid">${guides
+            .map(
+              (g) =>
+                `<div class="guide-full-card" data-url="${escapeHtml(g.url)}">
+                  <div class="guide-card-title">📖 ${escapeHtml(g.title)}</div>
+                  <div class="guide-card-excerpt">${escapeHtml(g.excerpt || "")}</div>
+                  <div class="guide-card-footer">
+                    <span>${escapeHtml(g.username || "Community")} · ${escapeHtml(
+                  g.createdAt ? new Date(g.createdAt).toLocaleDateString() : ""
+                )}</span>
+                    <span style="color:var(--accent-light);font-weight:600">Read guide ↗</span>
+                  </div>
+                </div>`
+            )
+            .join("")}</div>`;
+        guidesSec.querySelectorAll("[data-url]").forEach((el) => {
+          el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+      }
+    }
+
+    if (newsSec) {
+      const releases = releasesRes?.releases || [];
+      if (!releases.length) {
+        newsSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Updates &amp; Changelogs</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">📰</div>
+            <h3>No release notes found</h3>
+            <p>Check the project website or repository for development updates.</p>
+          </div>
+        `;
+      } else {
+        newsSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Updates &amp; Changelogs</h2></div>
+          <div class="release-cards-list">${releases
+            .map(
+              (r) =>
+                `<div class="release-full-card">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <strong style="font-size:15px;color:var(--text-main)">${escapeHtml(r.name || r.tag || "Release")}</strong>
+                    <span style="font-size:12px;color:var(--text-dim)">${escapeHtml(r.publishedAt ? new Date(r.publishedAt).toLocaleDateString() : "")}</span>
+                  </div>
+                  <p class="detail-prose" style="margin-top:8px">${escapeHtml((r.body || "").slice(0, 300))}${(r.body || "").length > 300 ? "…" : ""}</p>
+                </div>`
+            )
+            .join("")}</div>`;
+      }
+    }
+
+    if (discussionSec) {
+      const topics = discussionsRes?.topics || [];
+      if (!topics.length) {
+        discussionSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Discussion</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">💬</div>
+            <h3>No topics yet</h3>
+            <p>Start a conversation about ${escapeHtml(edition.editionName)} on the website.</p>
+            <button class="btn-primary btn-sm" id="edition-discussion-open-site">Join Discussion on Site</button>
+          </div>
+        `;
+        document.getElementById("edition-discussion-open-site")?.addEventListener("click", () => {
+          window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(gameSlug)}/editions/${encodeURIComponent(editionSlug)}?tab=discussion`);
+        });
+      } else {
+        discussionSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Topics</h2></div>
+          <div class="discussion-topics-list">${topics
+            .map(
+              (t) =>
+                `<div class="topic-row-card" data-url="${escapeHtml(t.url)}">
+                  <div style="font-weight:600;font-size:14px;color:var(--text-main);">${escapeHtml(t.title)}</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${escapeHtml(t.username || "Community")} · ${escapeHtml(t.replyCount || 0)} replies</div>
+                </div>`
+            )
+            .join("")}</div>`;
+        discussionSec.querySelectorAll("[data-url]").forEach((el) => {
+          el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+      }
+    }
+
+    if (reviewsSec) {
+      const reviews = reviewsRes?.reviews || [];
+      if (!reviews.length) {
+        reviewsSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Reviews for ${escapeHtml(edition.editionName)}</h2></div>
+          <div class="tab-empty">
+            <div class="tab-empty-icon">⭐</div>
+            <h3>No reviews yet</h3>
+            <p>Be the first to review ${escapeHtml(edition.editionName)} on playbound.club!</p>
+            <button class="btn-primary btn-sm" id="edition-reviews-open-site">Write a review on playbound.club</button>
+          </div>
+        `;
+        document.getElementById("edition-reviews-open-site")?.addEventListener("click", () => {
+          window.playbound.openExternal(`https://playbound.club/games/${encodeURIComponent(gameSlug)}/editions/${encodeURIComponent(editionSlug)}?tab=reviews`);
+        });
+      } else {
+        reviewsSec.innerHTML = `
+          <div class="tab-panel-header"><h2>Community Reviews</h2></div>
+          <div class="reviews-list">${reviews
+            .map(
+              (r) =>
+                `<div class="review-full-card" data-url="${escapeHtml(r.url)}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="review-rating-stars">${"★".repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}${"☆".repeat(Math.max(0, 5 - (Number(r.rating) || 0)))}</span>
+                      <strong style="font-size:15px">${escapeHtml(r.title || "Review")}</strong>
+                    </div>
+                    <span style="font-size:11.5px;color:var(--text-dim)">${r.createdAt ? escapeHtml(new Date(r.createdAt).toLocaleDateString()) : ""}</span>
+                  </div>
+                  <p class="detail-prose" style="font-size:13.5px">${escapeHtml(r.body || "")}</p>
+                </div>`
+            )
+            .join("")}</div>`;
+        reviewsSec.querySelectorAll("[data-url]").forEach((el) => {
+          el.addEventListener("click", () => window.playbound.openExternal(el.dataset.url));
+        });
+      }
+    }
+  })();
+
   markViewReady(container, `${gameSlug}:${editionSlug}`);
 }
 
