@@ -195,13 +195,22 @@ if [[ ! -x "$FREECIV_DIR/run-server" ]]; then
     echo "ERROR: Freeciv ${FREECIV_VERSION} server build did not produce bin/freeciv-server"
     exit 1
   fi
+  echo "  installed Freeciv ${FREECIV_VERSION} server under $FREECIV_DIR"
+fi
+# Always refresh wrapper — meson installs libfreeciv.so under lib/, not on the default loader path.
+if [[ -x "$FREECIV_DIR/bin/freeciv-server" ]]; then
   cat > "$FREECIV_DIR/run-server" <<'EOF'
 #!/usr/bin/env bash
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+for libdir in "$ROOT/lib/x86_64-linux-gnu" "$ROOT/lib"; do
+  if [[ -d "$libdir" ]]; then
+    export LD_LIBRARY_PATH="$libdir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    break
+  fi
+done
 exec "$ROOT/bin/freeciv-server" "$@"
 EOF
   chmod +x "$FREECIV_DIR/run-server"
-  echo "  installed Freeciv ${FREECIV_VERSION} server under $FREECIV_DIR"
 fi
 
 echo "==> YSoccer dedicated"

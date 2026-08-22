@@ -57,9 +57,23 @@ function versionFromUrl(url: string): string | null {
 export function normalizeVersionLabel(label: string | null | undefined): string {
   return String(label || "")
     .toLowerCase()
+    .replace(/^v(?=\d)/, "")
     .replace(/[^a-z0-9.]+/g, "")
     .replace(/\.+/g, ".")
     .replace(/^\.|\.$/g, "");
+}
+
+const NON_VERSION_HINTS =
+  /error|exception|unrecognized|permission denied|invalid option|unhandled|console mode|gamedir|user error|bwrap|fatal/i;
+
+/** True when a probed label looks like a real semver-ish build (not apt/manual/error text). */
+export function hasComparableVersion(label: string | null | undefined): boolean {
+  const raw = String(label || "").trim();
+  if (!raw || raw === "—") return false;
+  if (NON_VERSION_HINTS.test(raw)) return false;
+  if (raw.length > 32) return false;
+  const normalized = normalizeVersionLabel(raw);
+  return /^\d+\.\d+(\.\d+)?(\.\d+)?$/.test(normalized);
 }
 
 export function clientVersionForHostableGame(slug: string): string {
@@ -92,6 +106,9 @@ export function versionsLikelyMismatch(
   clientVersion: string,
   serverVersion: string
 ): boolean {
+  if (!hasComparableVersion(clientVersion) || !hasComparableVersion(serverVersion)) {
+    return false;
+  }
   const c = normalizeVersionLabel(clientVersion);
   const s = normalizeVersionLabel(serverVersion);
   if (!c || !s || c === "—" || s === "—") return false;
@@ -100,6 +117,9 @@ export function versionsLikelyMismatch(
   if (c === s) return false;
   // Same major.minor prefix (e.g. 3.2.5 client vs 3.2.5 server probe)
   if (c.startsWith(s) || s.startsWith(c)) return false;
+  const cMajorMinor = c.match(/^(\d+\.\d+)/)?.[1];
+  const sMajorMinor = s.match(/^(\d+\.\d+)/)?.[1];
+  if (cMajorMinor && cMajorMinor === sMajorMinor) return false;
   return true;
 }
 
@@ -117,18 +137,19 @@ export function hostableGameVersionRows(
 ): HostableGameVersionRow[] {
   return Object.values(HOSTABLE_GAMES).map((game) => {
     const clientVersion = clientVersionForHostableGame(game.slug);
-    const detected = detectedServerVersions[game.slug];
-    const serverVersion =
-      detected && String(detected).trim()
-        ? String(detected).trim()
-        : expectedServerVersionForHostableGame(game.slug);
+    const detectedRaw = detectedServerVersions[game.slug];
+    const detected =
+      detectedRaw && hasComparableVersion(String(detectedRaw).trim())
+        ? String(detectedRaw).trim()
+        : null;
+    const serverVersion = detected ?? expectedServerVersionForHostableGame(game.slug);
     return {
       slug: game.slug,
       title: game.title,
       clientVersion,
       serverVersion,
-      serverVersionSource: detected && String(detected).trim() ? "detected" : "expected",
-      versionMismatch: versionsLikelyMismatch(clientVersion, serverVersion),
+      serverVersionSource: detected ? "detected" : "expected",
+      versionMismatch: detected ? versionsLikelyMismatch(clientVersion, serverVersion) : false,
     };
   });
 }
