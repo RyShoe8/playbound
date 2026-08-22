@@ -4,6 +4,7 @@ import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { hasServerProvider, isKnownServerGame } from "@/lib/servers/registry";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
+import { canonicalCatalogGameSlug } from "@/lib/catalogGameAliases";
 
 export async function GET(req: Request) {
   try {
@@ -22,18 +23,24 @@ export async function GET(req: Request) {
     ]);
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
 
+    const baseGameForMod = (modBaseGameSlug: string) => {
+      const canonical = canonicalCatalogGameSlug(modBaseGameSlug);
+      return gameBySlug.get(canonical) || gameBySlug.get(modBaseGameSlug) || null;
+    };
+
     // A mod's own status can be published while its base game is still a
     // draft — nothing enforces the two together. Drop those here: the
     // launcher has no page to show for a game that isn't live yet, so a mod
     // for one would be an install button that leads nowhere.
     const entries = mods
-      .filter((m) => gameBySlug.has(m.baseGameSlug))
+      .filter((m) => baseGameForMod(m.baseGameSlug))
       .map((m) => {
-        const base = gameBySlug.get(m.baseGameSlug);
+        const canonical = canonicalCatalogGameSlug(m.baseGameSlug);
+        const base = baseGameForMod(m.baseGameSlug);
         return {
           slug: m.slug,
           title: m.title,
-          baseGameSlug: m.baseGameSlug,
+          baseGameSlug: canonical,
           baseGameTitle: base?.title,
           tagline: m.tagline,
           whatItChanges: m.whatItChanges || m.tagline || null,
@@ -48,8 +55,8 @@ export async function GET(req: Request) {
           status: m.status || "published",
           testing: m.status === "testing",
           baseHasServers:
-            hasServerProvider(m.baseGameSlug) || isKnownServerGame(m.baseGameSlug),
-          baseSupported: hasServerProvider(m.baseGameSlug),
+            hasServerProvider(canonical) || isKnownServerGame(canonical),
+          baseSupported: hasServerProvider(canonical),
         };
       });
 

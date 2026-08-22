@@ -6,6 +6,7 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import { accessId, type AccessGraph, type AccessNode } from "./types";
 import { buildAccessGraph } from "./resolver";
 import { accessFromDoc, gameDependencies } from "./docs";
+import { canonicalCatalogGameSlug } from "@/lib/catalogGameAliases";
 
 /**
  * Assemble the whole dependency graph from the catalog.
@@ -44,7 +45,7 @@ export async function loadAccessGraph(): Promise<AccessGraph> {
 
   // An edition is a way of playing its parent game, so it inherits from it.
   for (const e of editions as Array<Record<string, unknown>>) {
-    const gameSlug = String(e.gameSlug || "");
+    const gameSlug = canonicalCatalogGameSlug(String(e.gameSlug || ""));
     const slug = String(e.slug || "");
     if (!gameSlug || !slug) continue;
     nodes.push({
@@ -59,7 +60,7 @@ export async function loadAccessGraph(): Promise<AccessGraph> {
   for (const m of mods as Array<Record<string, unknown>>) {
     const slug = String(m.slug || "");
     if (!slug) continue;
-    const base = String(m.baseGameSlug || "");
+    const base = canonicalCatalogGameSlug(String(m.baseGameSlug || ""));
     nodes.push({
       id: accessId.mod(slug),
       kind: "mod",
