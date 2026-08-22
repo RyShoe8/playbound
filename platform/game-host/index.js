@@ -569,6 +569,8 @@ function publicRoom(room) {
   };
 }
 
+const AGENT_GET_ROUTES = new Set(["/metrics", "/rooms"]);
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
 
@@ -588,9 +590,13 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // The mirror reverse-proxy sends public download paths to this agent. These
-  // files are only created through the authenticated archive workflow.
-  if ((req.method === "GET" || req.method === "HEAD") && !url.pathname.startsWith("/mirror/")) {
+  // Public mirror downloads — not agent API routes like /metrics or /rooms.
+  const normalizedPath = url.pathname.replace(/\/+$/, "") || "/";
+  if (
+    (req.method === "GET" || req.method === "HEAD") &&
+    !url.pathname.startsWith("/mirror/") &&
+    !AGENT_GET_ROUTES.has(normalizedPath)
+  ) {
     await serveArchivedFile(req, res, url.pathname.replace(/^\/+/, ""));
     return;
   }
