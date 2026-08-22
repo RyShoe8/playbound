@@ -146,6 +146,13 @@ const nextConfig: NextConfig = {
       { source: "/favicon.ico", destination: "/icon", permanent: false },
       { source: "/favicon.png", destination: "/icon", permanent: false },
       { source: "/parties", destination: "/events", permanent: true },
+      /*
+       * /download was linked from the homepage hero and never existed, so it
+       * has been handed out to anyone who copied that link. The page it always
+       * meant is /launcher.
+       */
+      { source: "/download", destination: "/launcher", permanent: true },
+      { source: "/downloads", destination: "/launcher", permanent: true },
     ];
   },
 };
