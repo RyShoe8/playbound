@@ -154,15 +154,16 @@ export function ControllerClient({ code }: { code: string }) {
   // Poll until approved + refresh endpoints
   useEffect(() => {
     if (!join) return;
-    if (join.status === "approved" && join.wsUrls.length > 0) return;
+    const session = join;
+    if (session.status === "approved" && session.wsUrls.length > 0) return;
     const id = window.setInterval(async () => {
       try {
         const qs = new URLSearchParams({
-          controllerId: join.controllerId,
-          controllerToken: join.controllerToken,
+          controllerId: session.controllerId,
+          controllerToken: session.controllerToken,
         });
         const res = await fetch(
-          `/api/couch/sessions/${encodeURIComponent(join.sessionId)}/join?${qs}`
+          `/api/couch/sessions/${encodeURIComponent(session.sessionId)}/join?${qs}`
         );
         const data = await res.json();
         if (!res.ok) return;
@@ -214,6 +215,7 @@ export function ControllerClient({ code }: { code: string }) {
   // Transport: prefer WebRTC, fall back to WebSocket
   useEffect(() => {
     if (!join || join.status !== "approved" || join.playerSlot == null) return;
+    const session = join;
 
     let closed = false;
     let pc: RTCPeerConnection | null = null;
@@ -261,22 +263,22 @@ export function ControllerClient({ code }: { code: string }) {
     }
 
     async function postSignal(payload: unknown) {
-      await fetch(`/api/couch/sessions/${encodeURIComponent(join.sessionId)}/signal`, {
+      await fetch(`/api/couch/sessions/${encodeURIComponent(session.sessionId)}/signal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           senderRole: "controller",
           recipientRole: "host",
-          senderPeerId: join.controllerId,
-          controllerId: join.controllerId,
-          controllerToken: join.controllerToken,
+          senderPeerId: session.controllerId,
+          controllerId: session.controllerId,
+          controllerToken: session.controllerToken,
           payload: JSON.stringify(payload),
         }),
       });
     }
 
     async function startWebRtc() {
-      pc = new RTCPeerConnection({ iceServers: join.iceServers });
+      pc = new RTCPeerConnection({ iceServers: session.iceServers });
       dc = pc.createDataChannel("input", { ordered: false, maxRetransmits: 0 });
       dc.binaryType = "arraybuffer";
       dc.onopen = () => {
@@ -284,9 +286,9 @@ export function ControllerClient({ code }: { code: string }) {
         setTransport("webrtc");
         send({
           type: "hello",
-          controllerId: join.controllerId,
-          sessionToken: join.sessionToken,
-          playerSlot: join.playerSlot,
+          controllerId: session.controllerId,
+          sessionToken: session.sessionToken,
+          playerSlot: session.playerSlot,
           profile: mode,
         });
       };
@@ -299,7 +301,7 @@ export function ControllerClient({ code }: { code: string }) {
 
       pc.onicecandidate = (ev) => {
         if (ev.candidate) {
-          void postSignal({ kind: "ice", candidate: ev.candidate, from: join.controllerId });
+          void postSignal({ kind: "ice", candidate: ev.candidate, from: session.controllerId });
         }
       };
 
@@ -308,8 +310,8 @@ export function ControllerClient({ code }: { code: string }) {
       await postSignal({
         kind: "offer",
         sdp: offer,
-        from: join.controllerId,
-        playerSlot: join.playerSlot,
+        from: session.controllerId,
+        playerSlot: session.playerSlot,
       });
 
       pollTimer = window.setInterval(async () => {
@@ -318,12 +320,12 @@ export function ControllerClient({ code }: { code: string }) {
           const qs = new URLSearchParams({
             forRole: "controller",
             since: String(signalSince),
-            controllerId: join.controllerId,
-            controllerToken: join.controllerToken,
-            peerId: join.controllerId,
+            controllerId: session.controllerId,
+            controllerToken: session.controllerToken,
+            peerId: session.controllerId,
           });
           const res = await fetch(
-            `/api/couch/sessions/${encodeURIComponent(join.sessionId)}/signal?${qs}`
+            `/api/couch/sessions/${encodeURIComponent(session.sessionId)}/signal?${qs}`
           );
           const data = await res.json();
           if (!res.ok) return;
@@ -340,7 +342,7 @@ export function ControllerClient({ code }: { code: string }) {
             } catch {
               continue;
             }
-            if (payload.to && payload.to !== join.controllerId) continue;
+            if (payload.to && payload.to !== session.controllerId) continue;
             if (payload.kind === "answer" && payload.sdp && pc.signalingState !== "stable") {
               await pc.setRemoteDescription(payload.sdp);
             }
@@ -365,8 +367,8 @@ export function ControllerClient({ code }: { code: string }) {
 
     async function startWsFallback() {
       if (ws || closed) return;
-      const urls = join.wsUrls || [];
-      if (!urls.length || !join.wsToken) {
+      const urls = session.wsUrls || [];
+      if (!urls.length || !session.wsToken) {
         setTransport("offline");
         return;
       }
@@ -388,17 +390,17 @@ export function ControllerClient({ code }: { code: string }) {
           ws?.send(
             JSON.stringify({
               type: "auth",
-              controllerId: join.controllerId,
-              sessionToken: join.sessionToken,
-              wsToken: join.wsToken,
-              playerSlot: join.playerSlot,
+              controllerId: session.controllerId,
+              sessionToken: session.sessionToken,
+              wsToken: session.wsToken,
+              playerSlot: session.playerSlot,
             })
           );
           send({
             type: "hello",
-            controllerId: join.controllerId,
-            sessionToken: join.sessionToken,
-            playerSlot: join.playerSlot,
+            controllerId: session.controllerId,
+            sessionToken: session.sessionToken,
+            playerSlot: session.playerSlot,
             profile: mode,
           });
         };

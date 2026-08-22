@@ -33,7 +33,7 @@ export const SHIPPED_INPUT_PROFILES = /** @type {const} */ ([
 ]);
 
 /** Xbox-layout button bitmasks for JSON v1 `buttons` field. */
-export const BUTTON = /** @type {const} */ ({
+export const BUTTON = {
   A: 1 << 0,
   B: 1 << 1,
   X: 1 << 2,
@@ -49,30 +49,25 @@ export const BUTTON = /** @type {const} */ ({
   DPAD_LEFT: 1 << 12,
   DPAD_RIGHT: 1 << 13,
   GUIDE: 1 << 14,
-});
+} as const;
 
-/**
- * @typedef {object} CouchInputPacketV1
- * @property {1} v
- * @property {number} seq
- * @property {number} t
- * @property {number} p
- * @property {number} buttons
- * @property {number} lx
- * @property {number} ly
- * @property {number} rx
- * @property {number} ry
- * @property {number} lt
- * @property {number} rt
- */
+export type CouchInputPacketV1 = {
+  v: 1;
+  seq: number;
+  t: number;
+  p: number;
+  buttons: number;
+  lx: number;
+  ly: number;
+  rx: number;
+  ry: number;
+  lt: number;
+  rt: number;
+};
 
-/**
- * @param {unknown} raw
- * @returns {CouchInputPacketV1 | null}
- */
-export function parseInputPacketV1(raw) {
+export function parseInputPacketV1(raw: unknown): CouchInputPacketV1 | null {
   if (!raw || typeof raw !== "object") return null;
-  const o = /** @type {Record<string, unknown>} */ (raw);
+  const o = raw as Record<string, unknown>;
   if (o.v !== 1) return null;
   const seq = Number(o.seq);
   const t = Number(o.t);
@@ -94,22 +89,20 @@ export function parseInputPacketV1(raw) {
   };
 }
 
-function clampAxis(n) {
+function clampAxis(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.max(-1, Math.min(1, n));
 }
 
-function clampTrigger(n) {
+function clampTrigger(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(1, n));
 }
 
 /**
  * Empty released pad state for a slot.
- * @param {number} p
- * @returns {CouchInputPacketV1}
  */
-export function emptyPadState(p) {
+export function emptyPadState(p: number): CouchInputPacketV1 {
   return {
     v: 1,
     seq: 0,

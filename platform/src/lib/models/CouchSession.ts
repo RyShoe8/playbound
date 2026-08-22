@@ -44,7 +44,7 @@ export interface ICouchSession {
   expiresAt: Date;
 }
 
-const CouchSessionSchema = new Schema<ICouchSession>(
+const CouchSessionSchema = new Schema(
   {
     sessionId: { type: String, required: true, unique: true, index: true },
     joinCode: { type: String, required: true, unique: true, index: true },

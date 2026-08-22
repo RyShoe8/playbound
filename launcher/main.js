@@ -646,14 +646,18 @@ if (!gotLock) {
 const CONNECTED_LIBRARY_MSG = "Signed in. Your installs sync automatically.";
 
 let authWin = null;
+let friendsWin = null;
+let isAppQuitting = false;
 let lastLibrarySyncAt = 0;
 let librarySyncTimer = null;
-const LIBRARY_SYNC_COOLDOWN_MS = 2_000;
 const LIBRARY_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 function notifyAccount(payload = {}) {
   if (win && !win.isDestroyed()) {
     win.webContents.send("account", payload);
+  }
+  if (friendsWin && !friendsWin.isDestroyed()) {
+    friendsWin.webContents.send("account", payload);
   }
 }
 
@@ -1090,7 +1094,12 @@ async function syncLibraryNow({ quiet = false, force = false } = {}) {
   }
 
   const now = Date.now();
-  if (!force && quiet && now - lastLibrarySyncAt < LIBRARY_SYNC_COOLDOWN_MS) {
+  /*
+   * Quiet background syncs honor the 15s library min-interval. The old 2s
+   * cooldown + force:true let Friends' 3s poll re-fire a full batch forever.
+   * Explicit force (login, install complete) still bypasses both.
+   */
+  if (!force && quiet && now - lastLibrarySyncAt < LIBRARY_SYNC_MIN_INTERVAL_MS) {
     return { connected: true, skippedDueToCooldown: true };
   }
 
@@ -1113,8 +1122,11 @@ async function syncLibraryNow({ quiet = false, force = false } = {}) {
     });
   }
 
-  lastLibrarySyncAt = Date.now();
-  const { synced, skipped, error } = await syncAllInstalledGames({ force: true });
+  /*
+   * Batch `synced` counts upserts, not deltas — so quiet callers must not
+   * force every time or Friends remounts on every notifyAccount tick.
+   */
+  const { synced, skipped, error } = await syncAllInstalledGames({ force: !quiet || force });
   if (error === "unauthorized") {
     clearLocalToken("Session rejected — sign in again from Settings.");
     return { connected: false, error };
@@ -1132,12 +1144,13 @@ async function syncLibraryNow({ quiet = false, force = false } = {}) {
   if (error) {
     message = `Library sync issue: ${error}`;
   }
-  if (!quiet || synced > 0 || error || skipped?.length) {
+  /* Quiet: notify only on real problems — synced>0 is not “something changed”. */
+  if (!quiet || error || skipped?.length) {
     notifyAccount({
       connected: true,
       synced,
       skipped,
-      message: quiet && !synced && !error && !skipped?.length ? undefined : message,
+      message: quiet && !error && !skipped?.length ? undefined : message,
       email: check.email,
       username: check.username,
       canUseAdminChannel: linkedCanUseAdminChannel,
@@ -3519,7 +3532,8 @@ function notifyInstallDetected(slug) {
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-detected", { slug });
   }
-  void syncAllInstalledGames();
+  /* Force so a stale pre-install prune batch cannot win the race. */
+  void syncAllInstalledGames({ force: true });
   /*
    * Do not re-push an install deep-link here. markInstalled used to broadcast
    * the still-live `playbound://install/...` context, the renderer remounted
@@ -3543,7 +3557,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
     editionType: entry?.editionType,
     connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
   });
-  void syncAllInstalledGames();
+  void syncAllInstalledGames({ force: true });
   // Modded editions finish setting themselves up here — this is the one point
   // every detection path (known path, registry, drive scan) converges on.
   // Failures are reported but not fatal: the same routine runs again before
@@ -7691,7 +7705,22 @@ ipcMain.handle("open-deep-link", (_event, url) => {
   handleDeepLink(parsed);
   return true;
 });
-ipcMain.handle("close-window", () => win?.close());
+ipcMain.handle("close-window", () => {
+  if (friendsPopoutOpen() && win && !win.isDestroyed()) {
+    win.hide();
+    win.setSkipTaskbar(true);
+    ensureTray();
+    return true;
+  }
+  win?.close();
+  return true;
+});
+ipcMain.handle("open-friends-popout", () => openFriendsPopout());
+ipcMain.handle("close-friends-popout", () => closeFriendsPopout());
+ipcMain.handle("show-main-window", (_event, opts) => {
+  showMainWindow(opts || {});
+  return true;
+});
 ipcMain.handle("clipboard-write", (_event, text) => {
   const { clipboard } = require("electron");
   clipboard.writeText(String(text || ""));
@@ -9614,9 +9643,91 @@ function setupAutoUpdater() {
 
 /* ── window ────────────────────────────────────────────────── */
 
-function showMainWindow() {
+function friendsPopoutOpen() {
+  return Boolean(friendsWin && !friendsWin.isDestroyed());
+}
+
+function openFriendsPopout() {
+  if (friendsPopoutOpen()) {
+    if (friendsWin.isMinimized()) friendsWin.restore();
+    friendsWin.show();
+    friendsWin.focus();
+    return { ok: true, focused: true };
+  }
+
+  const { height: workHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const appIconPath = resolveAssetPath(process.platform === "win32" ? "icon.ico" : "icon.png");
+  let appIcon = nativeImage.createFromPath(appIconPath);
+  if (appIcon.isEmpty()) {
+    const pngPath = resolveAssetPath("icon.png");
+    try {
+      if (fs.existsSync(pngPath)) {
+        appIcon = nativeImage.createFromBuffer(fs.readFileSync(pngPath));
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  friendsWin = new BrowserWindow({
+    width: 350,
+    height: Math.min(750, workHeight),
+    minWidth: 300,
+    minHeight: 500,
+    resizable: true,
+    backgroundColor: "#0c0a12",
+    title: "Friends",
+    icon: !appIcon.isEmpty() ? appIcon : appIconPath,
+    autoHideMenuBar: true,
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#0a0a0a",
+      symbolColor: "#ffffff",
+      height: 36,
+    },
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  if (!appIcon.isEmpty()) friendsWin.setIcon(appIcon);
+
+  friendsWin.loadFile(path.join(__dirname, "renderer", "friends-popout.html"));
+  friendsWin.on("closed", () => {
+    friendsWin = null;
+    /*
+     * If the main launcher was already closed, closing the pop-out is the last
+     * window — quit (except macOS, which keeps the app until dock Quit).
+     */
+    if ((!win || win.isDestroyed()) && process.platform !== "darwin" && !isAppQuitting) {
+      app.quit();
+    }
+  });
+  ensureTray();
+  return { ok: true };
+}
+
+function closeFriendsPopout() {
+  if (friendsPopoutOpen()) {
+    friendsWin.close();
+  }
+  return { ok: true };
+}
+
+function showMainWindow(opts = {}) {
+  const navigate = opts?.navigate || null;
+  const sendNavigate = (target) => {
+    if (!navigate || !target || target.isDestroyed()) return;
+    target.webContents.send("navigate", navigate);
+  };
+
   if (!win || win.isDestroyed()) {
     createWindow();
+    if (navigate && win && !win.isDestroyed()) {
+      win.webContents.once("did-finish-load", () => sendNavigate(win));
+    }
     return;
   }
   win.setSkipTaskbar(false);
@@ -9624,6 +9735,7 @@ function showMainWindow() {
   win.show();
   win.focus();
   void syncLibraryNow({ quiet: true });
+  sendNavigate(win);
 }
 
 function resolveAssetPath(filename) {
@@ -9773,6 +9885,22 @@ function createWindow() {
     win.hide();
     win.setSkipTaskbar(true);
     ensureTray();
+  });
+  win.on("close", (e) => {
+    /*
+     * Closing the main window must not tear down a friends pop-out. Hide to
+     * tray instead of destroying when the pop-out is open so presence + the
+     * list keep running until the user closes the pop-out or Quits.
+     */
+    if (!isAppQuitting && friendsPopoutOpen()) {
+      e.preventDefault();
+      win.hide();
+      win.setSkipTaskbar(true);
+      ensureTray();
+    }
+  });
+  win.on("closed", () => {
+    win = null;
   });
   win.on("focus", () => {
     void syncLibraryNow({ quiet: true });
@@ -10009,10 +10137,16 @@ if (gotLock) {
   });
 
   app.on("window-all-closed", () => {
+    /* Friends pop-out (or a hidden main kept for it) keeps the process alive. */
+    if (friendsPopoutOpen()) {
+      ensureTray();
+      return;
+    }
     if (process.platform !== "darwin") app.quit();
   });
 
   app.on("before-quit", () => {
+    isAppQuitting = true;
     // Close any play session still open. Fire-and-forget: quitting must not
     // wait on the network, and an unreported session is better than a hang.
     void telemetry.flushOpenSessions();
@@ -10023,6 +10157,10 @@ if (gotLock) {
     if (authWin && !authWin.isDestroyed()) {
       authWin.destroy();
       authWin = null;
+    }
+    if (friendsWin && !friendsWin.isDestroyed()) {
+      friendsWin.destroy();
+      friendsWin = null;
     }
     if (tray) {
       tray.destroy();

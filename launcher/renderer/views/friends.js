@@ -297,6 +297,7 @@ async function renderFriendsView() {
           <button class="btn-secondary friends-action-btn" id="btn-lfg">Look for party</button>
           <button class="btn-secondary friends-action-btn" id="btn-appear-offline">Loading…</button>
           <button class="btn-secondary friends-action-btn" id="btn-toggle-add-friend">Add Friend</button>
+          <button class="btn-secondary friends-action-btn" id="btn-friends-popout" title="Open friends list in a separate window">Pop out</button>
         </div>
       </div>
 
@@ -422,11 +423,13 @@ async function renderFriendsView() {
     document.getElementById("btn-toggle-create-party").onclick = () => toggleCreatePartyPanel();
     wireFriendsAppearOfflineButton();
     wireLfgButton();
+    document.getElementById("btn-friends-popout")?.addEventListener("click", () => {
+      void window.playbound.openFriendsPopout?.();
+    });
+    // One library sync when the Friends shell first mounts — not on every remount/poll.
+    if (window.playbound.syncLibraryNow) void window.playbound.syncLibraryNow({ quiet: true });
   }
 
-  // Loaded before the first paint so the party window's game picker is
-  // populated the moment an existing party renders.
-  if (window.playbound.syncLibraryNow) void window.playbound.syncLibraryNow();
   await ensurePartyGames();
   await api.refreshFriendsData();
   syncFriendsPoll();
@@ -484,8 +487,6 @@ if (!playPollWired) {
 async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
-
-  void window.playbound.syncLibraryNow?.({ quiet: true });
 
   try {
     const [friendsData, requestsData, partiesData, upcomingEventsData] = await Promise.all([
@@ -1790,8 +1791,8 @@ function wirePartyView(slot, party) {
     btn.addEventListener("click", () => {
       const href = btn.dataset.href;
       if (!href || !window.playbound.openDeepLink) return;
+      /* Sync after install completes (install-detected), not before. */
       void window.playbound.openDeepLink(href);
-      void window.playbound.syncLibraryNow?.({ quiet: true });
     });
   });
 

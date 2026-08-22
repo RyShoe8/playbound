@@ -52,6 +52,9 @@ contextBridge.exposeInMainWorld("playbound", {
   openExternal: (url, opts) => ipcRenderer.invoke("open-external", url, opts || null),
   openDeepLink: (url) => ipcRenderer.invoke("open-deep-link", url),
   closeWindow: () => ipcRenderer.invoke("close-window"),
+  openFriendsPopout: () => ipcRenderer.invoke("open-friends-popout"),
+  closeFriendsPopout: () => ipcRenderer.invoke("close-friends-popout"),
+  showMainWindow: (opts) => ipcRenderer.invoke("show-main-window", opts || {}),
   clipboardWrite: (text) => ipcRenderer.invoke("clipboard-write", text),
   /** Report connected gamepads so games can be auto-configured at launch. */
   reportGamepads: (pads) => ipcRenderer.invoke("report-gamepads", pads),
