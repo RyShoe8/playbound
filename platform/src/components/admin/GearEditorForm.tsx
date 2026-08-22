@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Link2, Plus, X } from "lucide-react";
 import { GENRES, GEAR_PLATFORMS, slugifyTitle } from "@/lib/gamePayload";
 import { GEAR_CATEGORIES } from "@/lib/amazonGear";
+import { uploadAdminMediaFile } from "@/lib/adminUploadHelper";
 
 const label = "block text-xs font-semibold text-muted-foreground";
 const field =
@@ -128,8 +129,8 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     Boolean(initial.title.trim() || initial.coverImage || initial.description.trim())
   );
 
-  const fileRef = useRef<HTMLInputElement>(null);
-  const pendingImageKindRef = useRef<"cover" | "shot">("cover");
+  const coverFileRef = useRef<HTMLInputElement>(null);
+  const shotsFileRef = useRef<HTMLInputElement>(null);
 
   const hasProductFill = useMemo(
     () => productFilled || Boolean(form.title.trim() || form.coverImage || form.description.trim()),
@@ -313,59 +314,82 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     }
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onCoverFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const kind = pendingImageKindRef.current;
-
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Upload a JPG, PNG, or WebP image.");
-      return;
-    }
 
     setBusy(true);
     setError("");
-    setMediaNote(kind === "cover" ? "Uploading cover…" : "Uploading screenshot…");
+    setMediaNote("Uploading cover…");
 
     try {
-      const body = new FormData();
-      body.set("file", file);
-      body.set("slug", `gear-${form.slug || "upload"}`);
-      body.set("kind", kind);
-
-      const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        const msg = data?.error ?? "Upload failed";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-
-      if (!data?.url || typeof data.url !== "string") {
-        const msg = "Upload succeeded but no image URL was returned.";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-
-      if (kind === "cover") {
-        patch("coverImage", data.url);
-        setMediaNote("Cover uploaded — save the gear to persist.");
-      } else {
-        setForm((prev) => ({
-          ...prev,
-          screenshots: [...(prev.screenshots ?? []), data.url].slice(0, 20),
-        }));
-        setMediaNote("Screenshot uploaded — save the gear to persist.");
-      }
+      const url = await uploadAdminMediaFile(file, {
+        slug: `gear-${form.slug || "upload"}`,
+        kind: "cover",
+        prefix: "gear",
+      });
+      patch("coverImage", url);
+      setMediaNote("Cover uploaded — save the gear to persist.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Image upload failed";
       setError(msg);
       setMediaNote(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onShotFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!picked.length) return;
+
+    const existing = form.screenshots ?? [];
+    const remaining = Math.max(0, 20 - existing.length);
+    if (remaining === 0) {
+      setMediaNote("Screenshot gallery is full (20). Remove some before uploading more.");
+      return;
+    }
+
+    const files = picked.slice(0, remaining);
+    const skipped = picked.length - files.length;
+    setBusy(true);
+    setError("");
+    const urls: string[] = [];
+    const failures: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      setMediaNote(`Uploading screenshots… ${i + 1}/${files.length}`);
+      try {
+        const url = await uploadAdminMediaFile(files[i], {
+          slug: `gear-${form.slug || "upload"}`,
+          kind: "shot",
+          prefix: "gear",
+        });
+        urls.push(url);
+      } catch (err) {
+        failures.push(`${files[i].name}: ${err instanceof Error ? err.message : "upload failed"}`);
+      }
+    }
+
+    if (urls.length) {
+      setForm((prev) => ({
+        ...prev,
+        screenshots: [...(prev.screenshots ?? []), ...urls].slice(0, 20),
+      }));
+    }
+
+    const parts = [
+      urls.length ? `Added ${urls.length} screenshot${urls.length === 1 ? "" : "s"}.` : null,
+      skipped > 0 ? `${skipped} skipped (gallery max 20).` : null,
+      failures.length ? `Failed: ${failures.join(", ")}.` : null,
+      urls.length ? "Save to persist." : null,
+    ].filter(Boolean);
+
+    setMediaNote(parts.join(" ") || "No screenshots added.");
+    if (failures.length && !urls.length) {
+      setError(failures.join(", "));
     }
     setBusy(false);
   }
@@ -430,10 +454,18 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
     <div className="space-y-8 pb-12">
       <input
         type="file"
-        ref={fileRef}
-        onChange={handleImageUpload}
+        ref={coverFileRef}
+        onChange={onCoverFileSelected}
         className="hidden"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
+      />
+      <input
+        type="file"
+        ref={shotsFileRef}
+        multiple
+        onChange={onShotFilesSelected}
+        className="hidden"
+        accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
       />
 
       <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
@@ -599,10 +631,7 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             <button
               type="button"
               disabled={busy}
-              onClick={() => {
-                pendingImageKindRef.current = "cover";
-                fileRef.current?.click();
-              }}
+              onClick={() => coverFileRef.current?.click()}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
             >
               Upload Cover
@@ -610,13 +639,10 @@ export function GearEditorForm({ mode, initial }: { mode: "create" | "edit"; ini
             <button
               type="button"
               disabled={busy}
-              onClick={() => {
-                pendingImageKindRef.current = "shot";
-                fileRef.current?.click();
-              }}
+              onClick={() => shotsFileRef.current?.click()}
               className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
             >
-              Upload Screenshot
+              Upload Screenshots
             </button>
           </div>
         </div>
