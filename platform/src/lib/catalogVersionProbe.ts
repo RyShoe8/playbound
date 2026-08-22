@@ -16,6 +16,7 @@ export type ProbeResult = {
     versionLabel?: string;
     directUrl?: string;
     assetPattern?: string;
+    kind?: string;
   };
 };
 
@@ -209,9 +210,12 @@ export async function probeDirectUrl(url: string, currentVersion?: string | null
      * egress while serving the identical URL to a browser, which is what put
      * the FlightGear Blacklist add-on in the broken list while it downloaded
      * fine for every actual player. A file that is gone answers 404.
+     *
+     * 421 is used by retired hosts (e.g. mrboom.mumble.info) that no longer
+     * serve the vhost — not evidence our RetroArch/buildbot install is broken.
      */
     const status = last.status ?? 0;
-    if (status === 429 || status === 406 || status === 403 || status >= 500) {
+    if (status === 429 || status === 406 || status === 403 || status === 421 || status >= 500) {
       return { status: "skipped", detectedVersion: currentVersion || null, note: last.detail };
     }
 

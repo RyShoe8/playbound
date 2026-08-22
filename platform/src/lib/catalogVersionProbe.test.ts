@@ -80,6 +80,11 @@ describe("probeDirectUrl", () => {
     expect((await probeDirectUrl("https://down.test/a.zip")).status).toBe("skipped");
   });
 
+  it("treats a retired vhost (421) as skipped, not broken", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => response({ ok: false, status: 421 })));
+    expect((await probeDirectUrl("https://mrboom.mumble.info/")).status).toBe("skipped");
+  });
+
   it("still reports a genuine 404 as broken", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => response({ ok: false, status: 404 })));
     expect((await probeDirectUrl("https://gone.test/a.zip")).status).toBe("broken");

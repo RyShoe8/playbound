@@ -46,7 +46,8 @@ export async function POST(
       | "url"
       | "fileName"
       | "versionLabel"
-      | "assetPattern";
+      | "assetPattern"
+      | "kind";
     if (typeof value === "string") {
       doc.launcherInstall[field] = value;
       applied[field] = value;

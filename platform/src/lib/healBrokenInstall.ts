@@ -160,6 +160,27 @@ async function healFromWebsite(website: string): Promise<ProbeResult | null> {
   }
 }
 
+const RETIRED_MRBOOM_HOST = /mrboom\.mumble\.info/i;
+const MRBOOM_RETROARCH_URL =
+  "https://buildbot.libretro.com/stable/1.19.1/windows/x86_64/RetroArch.7z";
+
+async function healRetiredMrBoomHost(): Promise<ProbeResult | null> {
+  const reach = await probeDirectUrl(MRBOOM_RETROARCH_URL, "1.19.1");
+  if (reach.status === "broken") return null;
+  return {
+    status: "updated",
+    detectedVersion: "1.19.1",
+    note: "auto-healed: standalone host retired (HTTP 421); switched to RetroArch buildbot",
+    patch: {
+      kind: "direct-7z",
+      url: MRBOOM_RETROARCH_URL,
+      fileName: "RetroArch.7z",
+      versionLabel: "1.19.1",
+      directUrl: MRBOOM_RETROARCH_URL,
+    },
+  };
+}
+
 export async function healBrokenGameInstall(opts: {
   kind?: string | null;
   repo?: string | null;
@@ -171,6 +192,11 @@ export async function healBrokenGameInstall(opts: {
   const kind = opts.kind || "";
   if (opts.enabled === false) return null;
   if (!kind || kind === "external") return null;
+
+  if (opts.url && RETIRED_MRBOOM_HOST.test(opts.url)) {
+    const fromRetired = await healRetiredMrBoomHost();
+    if (fromRetired) return fromRetired;
+  }
 
   const preferZip = kind.includes("zip") || kind === "github-jar";
   const repo = opts.repo?.trim() || null;
