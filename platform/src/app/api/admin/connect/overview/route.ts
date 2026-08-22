@@ -8,6 +8,7 @@ import {
   isGameHostConfigured,
   listHostRooms,
 } from "@/lib/gameHost/client";
+import { hostableGameVersionRows } from "@/lib/gameHost/versions";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -75,10 +76,13 @@ export async function GET() {
 
   const health = healthResult.configured ? healthResult.health : null;
   const gameStatus = health?.gameStatus || {};
+  const versionRows = hostableGameVersionRows(health?.gameVersions || {});
+  const versionBySlug = Object.fromEntries(versionRows.map((v) => [v.slug, v]));
   const games = Object.values(HOSTABLE_GAMES).map((game) => {
     const status = gameStatus[game.slug];
     const installed = status?.installed ?? health?.games?.[game.slug] ?? false;
     const ready = status?.ready ?? installed;
+    const versions = versionBySlug[game.slug];
     return {
       slug: game.slug,
       title: game.title,
@@ -86,8 +90,22 @@ export async function GET() {
       ready,
       defaultPort: game.defaultPort,
       protocol: game.protocol,
+      clientVersion: versions?.clientVersion ?? "—",
+      serverVersion: versions?.serverVersion ?? "—",
+      serverVersionSource: versions?.serverVersionSource ?? "expected",
+      versionMismatch: versions?.versionMismatch ?? false,
     };
   });
+
+  for (const game of games) {
+    if (game.versionMismatch) {
+      alerts.push({
+        type: "warning",
+        title: `${game.title} version skew`,
+        message: `Launcher ships client ${game.clientVersion} but the VPS server reports ${game.serverVersion}. Party joins may fail until install.sh is re-run.`,
+      });
+    }
+  }
 
   for (const game of games) {
     if (game.slug === "wolfenstein-enemy-territory" && game.installed && !game.ready) {
