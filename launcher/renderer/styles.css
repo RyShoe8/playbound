@@ -663,6 +663,10 @@ body {
   text-align: center;
 }
 
+.notif-panel[hidden] {
+  display: none !important;
+}
+
 .notif-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -698,6 +702,33 @@ body {
 .notif-panel-title {
   font-size: 13px;
   font-weight: 800;
+}
+
+.notif-panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.notif-panel-close:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .notif-mark-all,

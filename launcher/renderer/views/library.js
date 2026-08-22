@@ -18,6 +18,7 @@ import {
   state,
   views,
 } from "../shared.js";
+import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
 async function renderLibraryView() {
   const container = views.library;
@@ -92,7 +93,11 @@ async function renderLibraryList() {
 
   for (const game of installed || []) {
     const gameMods = (installedMods || []).filter((m) => m.baseGameSlug === game.slug);
-    list.appendChild(buildLibraryGameBlock(game, gameMods, modTitles));
+    list.appendChild(
+      buildLibraryGameBlock(game, gameMods, modTitles, {
+        catalogEntry: catalogBySlug.get(game.slug),
+      })
+    );
   }
 
   // Games installed on other devices or saved in account library
@@ -581,11 +586,22 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     play.addEventListener("click", async (e) => {
       e.stopPropagation();
       const ed = editions.length > 1 ? selected : selected || null;
+      const catalogEntry = opts.catalogEntry;
+      const detail = {
+        title: game.title,
+        features: catalogEntry?.features || game.features,
+        tags: catalogEntry?.tags || game.tags,
+        controllerSupport: catalogEntry?.controllerSupport || game.controllerSupport,
+        hasControllerSupport: catalogEntry?.hasControllerSupport ?? game.hasControllerSupport,
+      };
       try {
-        setStatus(`Checking Java / launching ${game.title}…`);
-        await window.playbound.play(game.slug, null, ed);
-        startGameSession(game.slug, game.title);
-        setStatus(`Launched ${game.title}`);
+        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
+          setStatus(`Checking Java / launching ${game.title}…`);
+          await window.playbound.play(game.slug, null, ed);
+          startGameSession(game.slug, game.title);
+          setStatus(`Launched ${game.title}`);
+        });
+        if (!launched) return;
       } catch (err) {
         setStatus(err.message || String(err), true);
       }

@@ -10,7 +10,7 @@
  */
 
 import { createHash, randomBytes } from "crypto";
-import { Types } from "mongoose";
+import { Types, type Document } from "mongoose";
 import dbConnect from "@/lib/db";
 import Party from "@/lib/models/Party";
 import Friend from "@/lib/models/Friend";
@@ -45,12 +45,16 @@ import {
   hostedPayloadFromDoc,
   provisionPartyHost,
   releasePartyHost,
+  type PartyHostFields,
 } from "@/lib/gameHost/provision";
 import {
   lanPayloadFromDoc,
   provisionPartyLan,
   releasePartyLan,
+  type PartyLanFields,
 } from "@/lib/virtualLan/provision";
+import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
+import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import {
   BASE_EDITION_KEY,
   isBaseEditionSlug,
@@ -74,6 +78,119 @@ import {
   type RuleParty,
   type RuleMember,
 } from "@/lib/playTogether/partyRules";
+
+type PartyDoc = Document & {
+  _id: Types.ObjectId;
+  gameSlug: string;
+  status: PartyStatus;
+  members: RuleMember[];
+  hosted?: PartyHostFields;
+  lan?: PartyLanFields;
+  maxSize?: number;
+  editionSlug?: string | null;
+  discord?: { voiceChannelId?: string | null; relocatedAt?: Date | null };
+  save: () => Promise<unknown>;
+};
+
+function resetPartyConnectState(doc: PartyDoc) {
+  if (doc.hosted) {
+    doc.hosted.status = "none";
+    doc.hosted.error = null;
+    doc.hosted.host = null;
+    doc.hosted.port = null;
+    doc.hosted.roomId = null;
+    doc.hosted.name = null;
+    doc.hosted.roomCode = null;
+  }
+  if (doc.lan) {
+    doc.lan.status = "none";
+    doc.lan.error = null;
+    doc.lan.groupId = undefined;
+    doc.lan.policyId = undefined;
+    doc.lan.setupKeyId = undefined;
+    doc.lan.setupKey = undefined;
+  }
+}
+
+function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
+  const { allReady: allReadyUp } = readySummary(doc.members);
+  const soloReady = doc.members.length === 1 && Boolean(doc.members[0]?.ready);
+  if (!allReadyUp && !soloReady) return false;
+  if (doc.status === "ended" || doc.status === "launching" || doc.status === "playing") {
+    return false;
+  }
+  return true;
+}
+
+async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
+  if (!doc.gameSlug || !partyConnectCanAutoProvision(doc)) return;
+  const slug = String(doc.gameSlug);
+
+  if (isHostableGame(slug)) {
+    const hs = (doc.hosted?.status || "none") as HostedStatus;
+    if (hs === "none" || hs === "failed") {
+      await provisionPartyHost(doc);
+    }
+  }
+  if (isVirtualLanGame(slug)) {
+    const ls = doc.lan?.status || "none";
+    if (ls === "none" || ls === "failed") {
+      await provisionPartyLan(doc);
+    }
+  }
+}
+
+async function ensurePartyConnectReady(
+  doc: PartyDoc
+): Promise<{ ok: true } | { error: string }> {
+  const slug = String(doc.gameSlug || "");
+
+  if (isHostableGame(slug)) {
+    let hs = (doc.hosted?.status || "none") as HostedStatus;
+    if (hs === "ready" && doc.hosted?.host && doc.hosted?.port) {
+      /* ready */
+    } else if (hs === "pending") {
+      return { error: "Server is still starting — wait a moment" };
+    } else {
+      if (hs === "failed" || hs === "none") {
+        await provisionPartyHost(doc);
+      }
+      hs = (doc.hosted?.status || "none") as HostedStatus;
+      if (hs === "pending") {
+        return { error: "Server is still starting — wait a moment" };
+      }
+      if (hs !== "ready" || !doc.hosted?.host || !doc.hosted?.port) {
+        return {
+          error: doc.hosted?.error || "Could not start the PlayBound server.",
+        };
+      }
+    }
+  }
+
+  if (isVirtualLanGame(slug)) {
+    let ls = doc.lan?.status || "none";
+    if (ls === "ready" && doc.lan?.setupKey) {
+      /* ready */
+    } else if (ls === "pending") {
+      return { error: "Party network is still starting — wait a moment" };
+    } else {
+      if (ls === "failed" || ls === "none") {
+        await provisionPartyLan(doc);
+      }
+      ls = doc.lan?.status || "none";
+      if (ls === "pending") {
+        return { error: "Party network is still starting — wait a moment" };
+      }
+      if (ls !== "ready") {
+        return {
+          error: doc.lan?.error || "Could not set up the party network.",
+        };
+      }
+    }
+  }
+
+  return { ok: true };
+}
 
 /* ─── helpers ────────────────────────────────────────────────────────────── */
 
@@ -313,10 +430,6 @@ export async function createParty(opts: {
     partyId: String(doc._id),
     gameSlug: gameSlug || null,
   });
-  if (gameSlug) {
-    await provisionPartyHost(doc);
-    await provisionPartyLan(doc);
-  }
   const nameById = await resolveUsernames([opts.userId]);
   const party = serializeParty(
     doc.toObject ? doc.toObject() : doc,
@@ -746,11 +859,10 @@ export async function setPartyGame(
   if (switchingGame) {
     doc.editionSlug = null;
     doc.modSlugs = [];
+    resetPartyConnectState(doc);
   }
   doc.lastActivity = new Date();
   await doc.save();
-  await provisionPartyHost(doc);
-  await provisionPartyLan(doc);
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   await Promise.all(
@@ -938,6 +1050,7 @@ export async function setReady(
   doc.status = derivePartyStatus(doc.status as PartyStatus, rp.members);
 
   await doc.save();
+  await maybeProvisionPartyConnect(doc);
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const [nameById, game] = await Promise.all([
@@ -976,8 +1089,10 @@ export async function joinPartyGame(
 
   const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
   if (firstLaunch) {
-    await provisionPartyHost(doc);
-    await provisionPartyLan(doc);
+    const connect = await ensurePartyConnectReady(doc);
+    if ("error" in connect) {
+      return { error: connect.error, status: 400 };
+    }
     doc.status = "playing";
     doc.lastActivity = new Date();
     await doc.save();
@@ -1024,9 +1139,12 @@ export async function launchParty(
   const check = canLaunch(rp, leaderId);
   if (!check.ok) return { error: check.reason || "Cannot launch", status: 403 };
 
+  const connect = await ensurePartyConnectReady(doc as unknown as PartyDoc);
+  if ("error" in connect) {
+    return { error: connect.error, status: 400 };
+  }
+
   const now = new Date();
-  await provisionPartyHost(doc);
-  await provisionPartyLan(doc);
   doc.status = "playing";
   doc.lastActivity = now;
   await doc.save();
