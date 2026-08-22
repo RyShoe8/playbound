@@ -43,7 +43,6 @@ apt-get install -y --no-install-recommends \
   openttd \
   hedgewars \
   warzone2100 \
-  freeciv-server \
   bzflag-server \
   supertuxkart \
   openarena-server \
@@ -162,6 +161,43 @@ if [[ ! -f "$MIN_DIR/server-release.jar" ]]; then
     MIN_URL="https://github.com/Anuken/Mindustry/releases/download/v146/server-release.jar"
   fi
   curl -fL --retry 3 -o "$MIN_DIR/server-release.jar" "$MIN_URL"
+fi
+
+echo "==> Freeciv dedicated (match PlayBound client ${FREECIV_VERSION:-3.2.5})"
+FREECIV_VERSION="${FREECIV_VERSION:-3.2.5}"
+FREECIV_DIR="$GAMES_DIR/freeciv"
+mkdir -p "$FREECIV_DIR"
+if [[ ! -x "$FREECIV_DIR/run-server" ]]; then
+  apt-get install -y --no-install-recommends \
+    meson ninja-build pkg-config \
+    libcurl4-gnutls-dev libssl-dev libsqlite3-dev \
+    libicu-dev libreadline-dev zlib1g-dev libxml2-dev
+  FREECIV_TAR="/tmp/freeciv-${FREECIV_VERSION}.tar.xz"
+  curl -fL --retry 3 -o "$FREECIV_TAR" \
+    "https://files.freeciv.org/stable/freeciv-${FREECIV_VERSION}.tar.xz"
+  FREECIV_SRC="/tmp/freeciv-build-${FREECIV_VERSION}"
+  rm -rf "$FREECIV_SRC"
+  mkdir -p "$FREECIV_SRC"
+  tar -xJf "$FREECIV_TAR" -C "$FREECIV_SRC" --strip-components=1
+  meson setup "$FREECIV_SRC/build" "$FREECIV_SRC" \
+    --prefix="$FREECIV_DIR" \
+    -Dclients=[] \
+    -Dfcmp=[] \
+    -Dserver=enabled
+  meson compile -C "$FREECIV_SRC/build"
+  meson install -C "$FREECIV_SRC/build"
+  rm -rf "$FREECIV_TAR" "$FREECIV_SRC"
+  if [[ ! -x "$FREECIV_DIR/bin/freeciv-server" ]]; then
+    echo "ERROR: Freeciv ${FREECIV_VERSION} server build did not produce bin/freeciv-server"
+    exit 1
+  fi
+  cat > "$FREECIV_DIR/run-server" <<'EOF'
+#!/usr/bin/env bash
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+exec "$ROOT/bin/freeciv-server" "$@"
+EOF
+  chmod +x "$FREECIV_DIR/run-server"
+  echo "  installed Freeciv ${FREECIV_VERSION} server under $FREECIV_DIR"
 fi
 
 echo "==> YSoccer dedicated"
