@@ -19,6 +19,7 @@ import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { resolveRecipe, listInstalled, missingDedicatedBinaryMessage } from "./recipes.js";
+import { canEnsure, ensureGame, ensureMissingGames, listEnsureableSlugs } from "./ensureGame.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -359,8 +360,20 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     return { error: `Host is at capacity (${MAX_ROOMS} rooms)` };
   }
 
-  const resolved = resolveRecipe(gameSlug);
+  let resolved = resolveRecipe(gameSlug);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
+  if (!resolved.binary && canEnsure(gameSlug)) {
+    console.log(`[ensure] auto-installing ${gameSlug} before startRoom`);
+    const ensured = await ensureGame(gameSlug);
+    if (!ensured.ok) {
+      return {
+        error:
+          ensured.error ||
+          missingDedicatedBinaryMessage(gameSlug, resolved.recipe),
+      };
+    }
+    resolved = resolveRecipe(gameSlug);
+  }
   const { recipe, binary } = resolved;
   if (!binary) {
     return { error: missingDedicatedBinaryMessage(gameSlug, recipe) };
@@ -496,6 +509,34 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       json(res, 201, publicRoom(result.room));
+      return;
+    }
+
+    // Install missing downloadable dedicated binaries (e.g. etlded). Called from
+    // Vercel production build / cron — does not replace install.sh bootstrap.
+    if (req.method === "POST" && url.pathname === "/ensure-missing") {
+      const results = await ensureMissingGames();
+      json(res, 200, {
+        ok: Object.values(results).every((r) => r.ok),
+        ensureable: listEnsureableSlugs(),
+        games: listInstalled(),
+        results,
+      });
+      return;
+    }
+
+    const ensureMatch = url.pathname.match(/^\/ensure\/([^/]+)$/);
+    if (req.method === "POST" && ensureMatch) {
+      const slug = decodeURIComponent(ensureMatch[1]);
+      if (!canEnsure(slug)) {
+        json(res, 400, { error: `No auto-install recipe for ${slug}` });
+        return;
+      }
+      const result = await ensureGame(slug);
+      json(res, result.ok ? 200 : 500, {
+        ...result,
+        games: listInstalled(),
+      });
       return;
     }
 

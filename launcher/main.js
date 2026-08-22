@@ -7916,6 +7916,49 @@ ipcMain.handle("get-friends-upcoming-events", async () => {
     return { events: [] };
   }
 });
+ipcMain.handle("get-notifications", async () => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/notifications`, {
+      headers: launcherApiHeaders({ accept: "application/json" }),
+    });
+    if (!res.ok) return { items: [], unreadCount: 0, error: `HTTP ${res.status}` };
+    return await res.json();
+  } catch (err) {
+    return { items: [], unreadCount: 0, error: err?.message || "Network error" };
+  }
+});
+ipcMain.handle("mark-notifications-read", async (_event, opts = {}) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/notifications/read`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(opts?.all ? { all: true } : { id: opts?.id }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `HTTP ${res.status}`, unreadCount: null };
+    }
+    return { ok: true, unreadCount: Number(data?.unreadCount) || 0 };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error", unreadCount: null };
+  }
+});
+ipcMain.handle("play-invite-action", async (_event, inviteId, action) => {
+  try {
+    const res = await fetch(`${getApiBase()}/api/play-invites/${encodeURIComponent(inviteId)}`, {
+      method: "POST",
+      headers: launcherApiHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ action }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { ok: false, error: data?.error || `HTTP ${res.status}` };
+    }
+    return { ok: true, ...data };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Network error" };
+  }
+});
 ipcMain.handle("get-event-detail", async (_event, eventId) => {
   try {
     const res = await fetch(`${getApiBase()}/api/events/${encodeURIComponent(eventId)}`, {

@@ -259,18 +259,18 @@ export function GameCard({
           />
           {displayEditions.length > 0 ? (
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
-              <span className="text-[10px] font-bold text-primary/75">Editions:</span>
+              <span className="text-[12px] font-bold text-primary/75">Editions:</span>
               {displayEditions.slice(0, 3).map((e) => (
                 <span
                   key={e.slug}
-                  className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[9px] font-medium text-foreground/80 leading-none"
+                  className="rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[12px] font-semibold text-foreground/80 leading-none"
                   title={e.name}
                 >
                   {formatEditionChipName(e.name)}
                 </span>
               ))}
               {displayEditions.length > 3 ? (
-                <span className="text-[9px] font-medium text-muted-foreground">
+                <span className="text-[12px] font-medium text-muted-foreground">
                   +{displayEditions.length - 3}
                 </span>
               ) : null}

@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Notification from "@/lib/models/Notification";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+export async function GET(req: Request) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     await dbConnect();
-    const userId = session.user.id;
     const [items, unreadCount] = await Promise.all([
       Notification.find({ userId })
         .sort({ createdAt: -1 })

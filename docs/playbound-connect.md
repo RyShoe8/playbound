@@ -147,11 +147,23 @@ Limits (defaults): max concurrent VPS rooms `GAME_HOST_MAX_ROOMS` (8), idle part
 
 ## How to add a hostable game
 
-1. Adapter row in `adapters.ts` (`managed-server` or `direct-ip`).
-2. Entry in `HOSTABLE_GAMES` (`catalog.ts`) with port range and protocol.
-3. Matching spawn recipe in `game-host/recipes.js` and install the dedicated binary on the VPS.
+Worked example: **Wolfenstein: Enemy Territory** (ET: Legacy `etlded`).
+
+1. Adapter row in `adapters.ts` with `adapterType: "managed-server"` and client `+connect` / equivalent CLI.
+2. Entry in `HOSTABLE_GAMES` (`catalog.ts`) with port range and protocol (ET uses UDP `27950–27959`).
+3. Matching spawn recipe in `game-host/recipes.js` and install the dedicated binary on the VPS (`install.sh` for ET downloads `etlded` + `etmain`).
 4. CLI template in `launcher/services/connectArgs.js` (`null` if the client has no argv join).
 5. Party Join Game from two machines. Confirm the process listens and the client lands in the room, not the main menu.
+
+### Not yet VPS-hostable (connect templates only — follow-up)
+
+These stay `direct-ip` (or lobby) until a dedicated Linux binary is installed
+and tested on the game-host VPS:
+
+- `space-station-14`, `veloren`, `team-fortress-2`
+- `beyond-all-reason`, `zero-k` (Spring/Recoil lobbies)
+- `keeperfx`, `marathon-2`, `aleph-one`, `morrowind` / `tes3mp`
+- `battle-for-wesnoth`, `freedoom`, `flightgear`, `unvanquished`
 
 ## Related admin
 

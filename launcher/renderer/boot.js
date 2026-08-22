@@ -29,6 +29,7 @@ import {
   views,
   wireEnhanceSelect,
 } from "./shared.js";
+import { wireNotifications, onNotificationsAccountChanged } from "./notifications.js";
 
 const KEEP_ALIVE = new Set([
   "home",
@@ -360,7 +361,7 @@ function wireMainEvents() {
 
   window.playbound.onAccount((data) => {
     if (data?.message) setStatus(data.message, data.connected === false);
-    void refreshAccountStatus();
+    void refreshAccountStatus().then(() => onNotificationsAccountChanged());
     if (data?.connected) void loadCompatibilitySetting();
     markViewDirty(views.settings);
     if (state.currentView === "settings") api.renderSettingsView?.();
@@ -615,6 +616,7 @@ async function boot() {
   wireShell();
   wireMainEvents();
   wireGamepadReporting();
+  wireNotifications();
 
   let bootState = null;
   try {

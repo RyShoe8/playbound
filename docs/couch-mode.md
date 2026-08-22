@@ -4,13 +4,23 @@ Phone → PC controller bridge for PlayBound. Phones are input devices; the PC h
 
 ## Quick start
 
-1. Open **Couch** in the PlayBound launcher.
-2. Click **Start Couch Mode** (Windows may ask once for permission to enable controllers — choose Allow).
-3. Friends scan the QR code (or open `https://playbound.club/controller/CODE`) on any modern phone browser — **no PlayBound account**.
-4. Use **Touch** controls or switch to **Physical pad** to bridge a controller connected to the phone.
-5. Launch a controller-supported game (e.g. SuperTuxKart). The game should see standard Xbox pads.
+### From Play (single-player or local)
 
-No separate driver download or configuration. PlayBound bundles and installs what it needs.
+1. Install a **controller-supported** game in the launcher.
+2. Click **Play**. When the game supports a controller, choose:
+   - **Play normally** — keyboard/mouse or a pad already on this PC
+   - **Use phone as controller** — optional; scan the QR, then play
+3. You do **not** need to open Controllers / Couch Mode first.
+
+### Controllers page (friends / several phones)
+
+1. Open **Controllers** in the PlayBound launcher.
+2. Click **Start phone controllers** (Windows may ask once — choose Allow).
+3. Friends scan the QR code (or open `https://playbound.club/controller/CODE`) — **no PlayBound account**.
+4. Use **Touch** or **Physical pad** on the phone.
+5. Launch the game. It should see standard Xbox pads.
+
+No separate driver download. PlayBound bundles and installs what it needs.
 
 ## Architecture (Milestone 1)
 

@@ -26,8 +26,15 @@ sudo GAME_HOST_SECRET='your-long-random-string' bash install.sh
 ```
 
 Contabo’s customer panel has a **browser console / VNC** if you cannot SSH
-from your PC. Paste the install there once. Git push to Vercel does not
-install anything on the VPS.
+from your PC. Paste the install there once.
+
+Git push to Vercel cannot SSH into the VPS or replace apt/systemd. After the
+agent on the box includes `ensureGame.js` (one `install.sh` + restart), each
+**production build** runs `npm run sync:game-host`, which calls
+`POST /ensure-missing` so downloadable dedicated binaries (ET: Legacy
+`etlded`, …) install without another SSH. A daily cron
+(`/api/cron/game-host-ensure`) is the backup. Apt packages and firewall rules
+still need `install.sh`.
 
 ## Vercel env (Production)
 
@@ -49,7 +56,30 @@ If Contabo shows a network firewall, allow:
 - `8741/tcp` agent
 - `3478/udp` and `3478/tcp` coturn STUN/TURN
 - `49152:50152/udp` coturn TURN relay fallback range
-- UDP/TCP ranges printed at the end of `install.sh` (OpenRA 1234–1250/udp, etc.)
+- UDP/TCP ranges printed at the end of `install.sh` (OpenRA 1234–1250/tcp, OpenArena 27960–27980/udp, ET 27950–27959/udp, …)
+
+## Wolfenstein: Enemy Territory
+
+Preferred path once the agent supports ensure:
+
+1. Deploy site code that includes `ensureGame.js` + `/ensure-missing`.
+2. On the VPS **once**: copy the updated agent (`install.sh` or manual `cp` of
+   `index.js` / `recipes.js` / `ensureGame.js`) and
+   `sudo systemctl restart playbound-game-host`.
+3. Next production Vercel build (or `POST /api/cron/game-host-ensure`) downloads
+   `etlded` + `etmain` if missing. Confirm
+   `curl …/health` shows `wolfenstein-enemy-territory: true`.
+
+First party Join Game can also trigger ensure if the binary is still missing
+(room create waits up to ~5 minutes).
+
+`install.sh` still installs ET the same way for a full bootstrap. Override URLs
+if a new release bumps the download file ids:
+
+```bash
+sudo ET_LEGACY_LINUX_URL='https://www.etlegacy.com/download/file/728' \
+     bash install.sh
+```
 
 ## Check
 
@@ -67,11 +97,15 @@ until they are apt-installed here. That is not a Vercel change.
 
 ## Games this host covers
 
-Installed by default: OpenRA, OpenTTD, Luanti/Minetest, Mindustry, Hedgewars,
-Warzone 2100, Freeciv, BZFlag, SuperTuxKart, OpenArena.
+Installed by default (must show `true` in `/health` after `install.sh`):
+OpenRA, OpenTTD, Luanti/Minetest, Mindustry, YSoccer (built from source if the
+GitHub release asset is missing), Hedgewars (`hedgewars-server`), Warzone 2100,
+Freeciv, BZFlag, SuperTuxKart, OpenArena, TripleA, 0 A.D., Mr. Boom, Xonotic,
+Wolfenstein: Enemy Territory (`etlded`).
 
-Optional (`--with-heavy`): Xonotic. Unvanquished is registered but not
-auto-installed (large updater-based tree).
+Skip Xonotic with `SKIP_XONOTIC=1`. Unvanquished stays manual (updater tree).
 
-Not hosted here: official/closed platforms, 0 A.D. / BAR / Zero-K / Wesnoth
-lobbies (those use their own matchmaking).
+**Not VPS-hosted** (adapters are `direct-ip` / lobby — party Join Game will not
+spawn a dedicated process): KeeperFX, Marathon / Aleph One, TES3MP, Wesnoth,
+Freedoom, FlightGear, Unvanquished, Beyond All Reason, Zero-K, and closed
+platforms.

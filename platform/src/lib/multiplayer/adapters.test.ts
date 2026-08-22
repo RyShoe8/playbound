@@ -44,7 +44,7 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     expect(openraArgs.some((a) => a.includes("Game.Mod="))).toBe(true);
 
     const wesnoth = getMultiplayerAdapter("battle-for-wesnoth");
-    expect(wesnoth.adapterType).toBe("managed-server");
+    expect(wesnoth.adapterType).toBe("direct-ip");
     expect(wesnoth.client?.launchArguments).toContain("--host");
   });
 

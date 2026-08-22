@@ -28,7 +28,8 @@ let activeDeepLinkJob = null;
 
 function deepLinkJobKey(ctx) {
   if (!ctx) return "";
-  return `${ctx.action || ""}:${ctx.slug || ""}:${ctx.editionSlug || ""}`;
+  const join = ctx.join?.host && ctx.join?.port ? `:${ctx.join.host}:${ctx.join.port}` : "";
+  return `${ctx.action || ""}:${ctx.slug || ""}:${ctx.editionSlug || ""}${join}`;
 }
 
 function renderDeepLinkView(ctx) {
@@ -182,39 +183,89 @@ function renderDeepLinkView(ctx) {
     void startInstall();
   } else if (ctx.action === "play") {
     actions.innerHTML = `
-      <button class="btn-success" id="dl-act-run">Launch Game</button>
+      <button class="btn-success" id="dl-act-run" disabled>Launching…</button>
       <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
     `;
-    document.getElementById("dl-act-run").addEventListener("click", async () => {
+
+    const startPlay = async () => {
+      const key = deepLinkJobKey(ctx);
+      if (activeDeepLinkJob === key) return;
+      activeDeepLinkJob = key;
+      setStatus(`Launching ${title}…`);
       try {
         await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
+        try {
+          await window.playbound.clearContext();
+        } catch {
+          /* panel can still finish even if the context clear fails */
+        }
         startGameSession(ctx.slug, title);
         api.navigateTo("home");
       } catch (err) {
         setStatus(err.message || String(err), true);
+        const btn = document.getElementById("dl-act-run");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Retry Launch";
+        }
+      } finally {
+        if (activeDeepLinkJob === key) activeDeepLinkJob = null;
       }
+    };
+
+    document.getElementById("dl-act-run")?.addEventListener("click", () => {
+      void startPlay();
     });
+    void startPlay();
   } else if (ctx.action === "join") {
     const host = ctx.join?.host || "";
     const port = Number(ctx.join?.port || 0);
+    const canJoin = Boolean(host && port);
     actions.innerHTML = `
-      <button class="btn-success" id="dl-act-run" ${host && port ? "" : "disabled"}>Join Server</button>
+      <button class="btn-success" id="dl-act-run" disabled>
+        ${canJoin ? "Joining…" : "Join Server"}
+      </button>
       <button class="btn-secondary" id="dl-act-cancel">Cancel</button>
     `;
-    document.getElementById("dl-act-run")?.addEventListener("click", async () => {
+
+    const startJoin = async () => {
+      if (!canJoin) {
+        setStatus("Missing server address — wait for the party room, then try again.", true);
+        return;
+      }
+      const key = deepLinkJobKey(ctx);
+      if (activeDeepLinkJob === key) return;
+      activeDeepLinkJob = key;
+      setStatus(`Joining ${host}:${port}…`);
       try {
-        setStatus(`Joining ${host}:${port}…`);
         await window.playbound.play(
           ctx.slug,
           { host, port, name: ctx.join?.name || "" },
           ctx.editionSlug || null
         );
+        try {
+          await window.playbound.clearContext();
+        } catch {
+          /* panel can still finish even if the context clear fails */
+        }
         startGameSession(ctx.slug, title);
         api.navigateTo("home");
       } catch (err) {
         setStatus(err.message || String(err), true);
+        const btn = document.getElementById("dl-act-run");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Retry Join";
+        }
+      } finally {
+        if (activeDeepLinkJob === key) activeDeepLinkJob = null;
       }
+    };
+
+    document.getElementById("dl-act-run")?.addEventListener("click", () => {
+      void startJoin();
     });
+    if (canJoin) void startJoin();
   } else if (ctx.action === "install-mod") {
     if (ctx.modError) {
       actions.innerHTML = `

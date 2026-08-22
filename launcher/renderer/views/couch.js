@@ -1,6 +1,8 @@
 /**
  * Couch Mode host UI + WebRTC answerer.
  * Phones send offers via cloud signaling; we answer and forward input to main.
+ * The host bridge can run in the background (Play → phone controller) without
+ * opening this view.
  */
 
 import { escapeHtml, setStatus, views, api } from "../shared.js";
@@ -18,6 +20,10 @@ function pb() {
   return window.playbound;
 }
 
+function couchViewVisible() {
+  return Boolean(views.couch?.classList.contains("active"));
+}
+
 export function renderCouchView() {
   ensureWired();
   const root = views.couch;
@@ -27,13 +33,45 @@ export function renderCouchView() {
 
 api.renderCouchView = renderCouchView;
 
+/** Keep WebRTC answering alive while a session is active (any launcher view). */
+export function ensureCouchBackground() {
+  ensureWired();
+  void (async () => {
+    const state = await pb().couchState();
+    lastState = state;
+    if (state?.active) startSignalPoll();
+    else stopSignalPoll();
+  })();
+}
+
+/** Start a phone-controller session without painting the Couch page. */
+export async function startCouchSessionQuiet() {
+  ensureWired();
+  const existing = await pb().couchState();
+  if (existing?.active) {
+    lastState = existing;
+    startSignalPoll();
+    return existing;
+  }
+  const res = await pb().couchStart({ hostLabel: "PlayBound" });
+  if (!res?.ok) {
+    setStatus(res?.error || "Failed to start phone controller", true);
+    return null;
+  }
+  lastState = res.state;
+  startSignalPoll();
+  return res.state;
+}
+
 function ensureWired() {
   if (wired) return;
   wired = true;
 
   pb().onCouchState?.((state) => {
     lastState = state;
-    paint(state);
+    if (state?.active) startSignalPoll();
+    else stopSignalPoll();
+    if (couchViewVisible()) paint(state);
   });
 
   pb().onCouchStatus?.((payload) => {
@@ -201,13 +239,14 @@ function paint(state) {
         <p class="couch-eyebrow">PlayBound Couch Mode</p>
         <h1>Phone Controllers</h1>
         <p class="couch-lead">
-          Turn phones into gamepads for this PC. Friends scan a QR code — no PlayBound account on the phone.
-          Display (TV/HDMI) stays separate; this is input only.
+          Turn a phone into a gamepad for this PC — solo or with friends.
+          For single-player, you can also pick <strong>Use phone as controller</strong> when you hit Play on a controller-supported game.
+          No PlayBound account on the phone. Display (TV/HDMI) stays separate; this is input only.
         </p>
         <div class="couch-actions">
-          <button type="button" class="btn-primary" id="couch-start-btn">Start Couch Mode</button>
+          <button type="button" class="btn-primary" id="couch-start-btn">Start phone controllers</button>
         </div>
-        <p class="couch-hint">Controllers are set up automatically the first time you start. Windows may ask once for permission.</p>
+        <p class="couch-hint">Optional. Controllers are set up automatically the first time. Windows may ask once for permission.</p>
       </div>
     `;
     root.querySelector("#couch-start-btn")?.addEventListener("click", () => void startSession());
@@ -319,16 +358,14 @@ async function startSession() {
   setStatus("Setting up controllers…");
   const btn = document.getElementById("couch-start-btn");
   if (btn) btn.disabled = true;
-  const res = await pb().couchStart({ hostLabel: "PlayBound" });
+  const state = await startCouchSessionQuiet();
   if (btn) btn.disabled = false;
-  if (!res?.ok) {
-    setStatus(res?.error || "Failed to start Couch Mode");
+  if (!state?.active) {
+    setStatus("Failed to start phone controllers");
     return;
   }
-  lastState = res.state;
-  paint(res.state);
-  startSignalPoll();
-  setStatus("Couch Mode live — scan the QR code");
+  paint(state);
+  setStatus("Phone controllers live — scan the QR code");
 }
 
 async function stopSession() {
