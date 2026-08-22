@@ -246,6 +246,30 @@ const SKIP_VOICE: PartyVoiceFollowup = {
   moved: false,
 };
 
+function isMongoDuplicateKey(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
+}
+
+async function findActiveLeaderParty(userId: string) {
+  return Party.findOne({
+    leaderId: userId,
+    status: { $nin: ["ended"] },
+  }).lean();
+}
+
+async function partyPayloadForDoc(doc: Record<string, unknown>): Promise<PartyPayload> {
+  const memberIds = [
+    String(doc.leaderId),
+    ...((doc.members as Array<{ userId: unknown }>) || []).map((m) => String(m.userId)),
+  ];
+  const gameSlug = String(doc.gameSlug || "");
+  const [nameById, game] = await Promise.all([
+    resolveUsernames([...new Set(memberIds)]),
+    gameSlug ? getGame(gameSlug, { includeTesting: true }) : Promise.resolve(null),
+  ]);
+  return serializeParty(doc, nameById, game?.title || null);
+}
+
 function hashPartyPassword(password: string, salt: string): string {
   return createHash("sha256").update(`${salt}:${password}`).digest("hex");
 }
@@ -372,8 +396,8 @@ export async function createParty(opts: {
   password?: string | null;
   wantVoice?: boolean;
 }): Promise<
-  | ({ party: PartyPayload; status: 201 } & PartyVoiceFollowup)
-  | { error: string; status: 400 | 409 | 404 }
+  | ({ party: PartyPayload; status: 201 | 200; existing?: boolean } & PartyVoiceFollowup)
+  | { error: string; status: 400 | 404 }
 > {
   await dbConnect();
 
@@ -381,13 +405,11 @@ export async function createParty(opts: {
   const game = gameSlug ? await getGame(gameSlug, { includeTesting: true }) : null;
   if (gameSlug && !game) return { error: "Game not found", status: 404 };
 
-  // One active party per leader.
-  const existing = await Party.findOne({
-    leaderId: opts.userId,
-    status: { $nin: ["ended"] },
-  }).lean();
+  // One active party per leader — return it idempotently instead of 409/500 races.
+  const existing = await findActiveLeaderParty(opts.userId);
   if (existing) {
-    return { error: "You already have an active party", status: 409 };
+    const party = await partyPayloadForDoc(existing as Record<string, unknown>);
+    return { party, status: 200, existing: true, ...SKIP_VOICE };
   }
 
   const visibility = opts.visibility || "friends";
@@ -404,39 +426,48 @@ export async function createParty(opts: {
   }
 
   const now = new Date();
-  const doc = await Party.create({
-    leaderId: opts.userId,
-    members: [
-      {
-        userId: opts.userId,
-        role: "leader",
-        ready: false,
-        joinedAt: now,
-      },
-    ],
-    name: normalizePartyName(opts.name),
-    gameSlug,
-    editionSlug: opts.editionSlug || null,
-    modSlugs: opts.modSlugs || [],
-    status: "forming",
-    visibility,
-    passwordSalt,
-    passwordHash,
-    voiceEnabled: wantVoice,
-    maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), 20),
-    eventId: opts.eventId || null,
-    lastActivity: now,
-  });
+  let doc;
+  try {
+    doc = await Party.create({
+      leaderId: opts.userId,
+      members: [
+        {
+          userId: opts.userId,
+          role: "leader",
+          ready: false,
+          joinedAt: now,
+        },
+      ],
+      name: normalizePartyName(opts.name),
+      gameSlug,
+      editionSlug: opts.editionSlug || null,
+      modSlugs: opts.modSlugs || [],
+      status: "forming",
+      visibility,
+      passwordSalt,
+      passwordHash,
+      voiceEnabled: wantVoice,
+      maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), 20),
+      eventId: opts.eventId || null,
+      lastActivity: now,
+    });
+  } catch (err) {
+    if (isMongoDuplicateKey(err)) {
+      const raced = await findActiveLeaderParty(opts.userId);
+      if (raced) {
+        const party = await partyPayloadForDoc(raced as Record<string, unknown>);
+        return { party, status: 200, existing: true, ...SKIP_VOICE };
+      }
+    }
+    throw err;
+  }
 
   await setPresenceParty(opts.userId, {
     partyId: String(doc._id),
     gameSlug: gameSlug || null,
   });
-  const nameById = await resolveUsernames([opts.userId]);
-  const party = serializeParty(
-    doc.toObject ? doc.toObject() : doc,
-    nameById,
-    game?.title || null
+  const party = await partyPayloadForDoc(
+    (doc.toObject ? doc.toObject() : doc) as Record<string, unknown>
   );
   trackPartyEvent("party_created", {
     partyId: party.id,

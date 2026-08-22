@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePartyStore } from "@/stores/partyStore";
 import { useFriendsStore } from "@/stores/friendsStore";
 import {
@@ -26,6 +26,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
   const [busy, setBusy] = useState(false);
   const [voicePhase, setVoicePhase] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const creatingRef = useRef(false);
 
   const [visibility, setVisibility] = useState<PartyVisibility>("friends");
   const [name, setName] = useState("");
@@ -34,10 +35,12 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
 
   async function handleCreate() {
+    if (creatingRef.current) return;
     if (visibility === "password" && password.trim().length < 4) {
       setError("Password must be at least 4 characters.");
       return;
     }
+    creatingRef.current = true;
     setBusy(true);
     setVoicePhase(false);
     setError(null);
@@ -64,9 +67,18 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
           await provisionDiscord(party.id);
         }
       } else {
-        setError("Failed to create party. You might already have one active.");
+        const { activeParty, fetchParties } = usePartyStore.getState();
+        if (!activeParty) await fetchParties();
+        const recovered = usePartyStore.getState().activeParty;
+        if (recovered) {
+          onCreated?.();
+          closed = true;
+        } else {
+          setError("Failed to create party. You might already have one active.");
+        }
       }
     } finally {
+      creatingRef.current = false;
       if (!closed) {
         setBusy(false);
         setVoicePhase(false);

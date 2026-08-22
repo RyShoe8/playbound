@@ -70,8 +70,9 @@ export async function POST(req: Request) {
         needsDiscordLink: result.needsDiscordLink,
         inviteUrl: result.inviteUrl,
         moved: result.moved,
+        existing: result.existing ?? false,
       },
-      { status: 201 }
+      { status: result.status }
     );
   } catch (err) {
     console.error("POST /api/parties failed:", err);
