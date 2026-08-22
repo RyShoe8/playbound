@@ -61,6 +61,10 @@ type OverviewData = {
     title: string;
     installed: boolean;
     ready: boolean;
+    clientVersion: string;
+    serverVersion: string;
+    serverVersionSource: "detected" | "expected";
+    versionMismatch: boolean;
   }>;
   alerts: Alert[];
   roomsError?: string | null;
@@ -446,6 +450,11 @@ export function ConnectManager() {
                 {data.health?.rooms ?? 0} / {data.health?.maxRooms ?? "—"} slots
               </span>
             </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Dedicated processes stop when a party ends or everyone exits the game, when you run a
+              spawn test (stopped immediately after a successful test), or after about 4 hours if a
+              room is left running with no cleanup.
+            </p>
             {data.roomsError && (
               <p className="text-sm text-amber-400">{data.roomsError}</p>
             )}
@@ -481,7 +490,8 @@ export function ConnectManager() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Dedicated games on VPS</h2>
               <p className="text-xs text-muted-foreground">
-                Green/red dot = last spawn test · install icon = files on disk
+                Green/red dot = last spawn test · install icon = files on disk · client vs server
+                version on each card
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -505,6 +515,19 @@ export function ConnectManager() {
                       <p className="truncate text-sm font-medium">{game.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {game.ready ? "Ready" : game.installed ? "Binary only" : "Missing"}
+                      </p>
+                      <p
+                        className={`mt-0.5 text-xs ${
+                          game.versionMismatch ? "text-amber-400" : "text-muted-foreground"
+                        }`}
+                        title={
+                          game.serverVersionSource === "detected"
+                            ? "Server version probed on the VPS"
+                            : "Server version from install.sh pin (re-run install to refresh probe)"
+                        }
+                      >
+                        Client {game.clientVersion} · Server {game.serverVersion}
+                        {game.versionMismatch ? " · mismatch" : ""}
                       </p>
                     </div>
                     <button

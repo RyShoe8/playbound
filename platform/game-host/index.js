@@ -23,6 +23,7 @@ import { canEnsure, ensureGame, ensureMissingGames, listEnsureableSlugs } from "
 import { ET_SLUG, verifyEtLegacyReady } from "./etLegacyInstall.js";
 import { collectMetrics } from "./metrics.js";
 import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
+import { getCachedGameVersions } from "./gameVersions.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -572,6 +573,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
 
   if (req.method === "GET" && url.pathname === "/health") {
+    const { versions: gameVersions, cachedAt: gameVersionsCachedAt } = getCachedGameVersions();
     json(res, 200, {
       ok: true,
       publicIp: PUBLIC_IP || null,
@@ -580,6 +582,8 @@ const server = http.createServer(async (req, res) => {
       games: listInstalled(),
       gameStatus: listGameHostStatus(),
       lastSpawnTest: getLastSpawnTests(),
+      gameVersions,
+      gameVersionsCachedAt,
     });
     return;
   }

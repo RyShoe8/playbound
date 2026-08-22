@@ -26,6 +26,8 @@ export type GameHostHealth = {
   maxRooms?: number;
   games?: Record<string, boolean>;
   gameStatus?: Record<string, { installed: boolean; ready: boolean }>;
+  gameVersions?: Record<string, string | null>;
+  gameVersionsCachedAt?: number | null;
   lastSpawnTest?: Record<string, LastSpawnTestEntry>;
 };
 
