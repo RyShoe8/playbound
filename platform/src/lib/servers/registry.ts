@@ -296,6 +296,81 @@ const providers: Record<string, ServerProvider> = {
  */
 export const UNSUPPORTED_SERVER_SLUGS = [] as const;
 
+const DEDICATED_SERVER_GAMES: ReadonlySet<string> = new Set([
+  "openra",
+  "luanti",
+  "openttd",
+  "veloren",
+  "beyond-all-reason",
+  "supertuxkart",
+  "xonotic",
+  "unvanquished",
+  "mindustry",
+  "hedgewars",
+  "battle-for-wesnoth",
+  "warzone-2100",
+  "zero-k",
+  "0ad",
+  "everquest",
+  "asherons-call",
+  "space-station-14",
+  "starcraft",
+  "morrowind",
+  "tes3mp",
+  "wolfenstein-enemy-territory",
+  "wolfenstein",
+  "counter-strike-2",
+  "freeciv",
+  "openarena",
+  "flightgear",
+  "team-fortress-2",
+  "old-school-runescape",
+  "star-wars-galaxies",
+  "triplea",
+]);
+
+/**
+ * Games whose provider reports exactly one row that is not a server you pick.
+ *
+ * TripleA has a single global community lobby, and Star Wars Galaxies reports
+ * one shard because it is the only one of the four that publishes a live count
+ * (see the provider). Offering either in the game selector asks the player to
+ * choose from a list of one, which is not a choice.
+ *
+ * They keep their providers, so their players still count toward the totals —
+ * those are summed from `hasServerProvider`, not from this set. Only the
+ * browser drops them.
+ *
+ * This is for structurally single sources, not quiet ones. A game that happens
+ * to have one server online tonight belongs in the browser; it will have five
+ * tomorrow. Counter-Strike 2 and Team Fortress 2 look single when the Steam
+ * key is missing, because their provider falls back to a concurrent total —
+ * that is an environment artifact, not a property of the game, and neither
+ * belongs here.
+ */
+const SINGLE_MASTER_GAMES: ReadonlySet<string> = new Set(["triplea", "star-wars-galaxies"]);
+
+/**
+ * Returns true if the game has an active, browseable dedicated server list.
+ * Games with only a master/concurrent count (like Albion Online) return false,
+ * as do the single-master games above.
+ */
+export function hasServerBrowser(slug: string): boolean {
+  return DEDICATED_SERVER_GAMES.has(slug) && !SINGLE_MASTER_GAMES.has(slug);
+}
+
+/** Structurally single-source games — counted in totals, absent from the browser. */
+export function isSingleMasterGame(slug: string): boolean {
+  return SINGLE_MASTER_GAMES.has(slug);
+}
+
+/** List of game slugs that have full dedicated server browser support. */
+export function listServerBrowserSlugs(): string[] {
+  // Same exclusion as hasServerBrowser — a list that disagreed with the
+  // predicate is how a dropped game reappears in the launcher's index.
+  return Array.from(DEDICATED_SERVER_GAMES).filter((slug) => !SINGLE_MASTER_GAMES.has(slug));
+}
+
 export function listProviderSlugs(): string[] {
   return Object.keys(providers);
 }
@@ -305,7 +380,7 @@ export function hasServerProvider(slug: string): boolean {
 }
 
 export function isKnownServerGame(slug: string): boolean {
-  return hasServerProvider(slug) || (UNSUPPORTED_SERVER_SLUGS as readonly string[]).includes(slug);
+  return hasServerBrowser(slug) || (UNSUPPORTED_SERVER_SLUGS as readonly string[]).includes(slug);
 }
 
 export async function listServersForGame(slug: string): Promise<ServerListResult> {

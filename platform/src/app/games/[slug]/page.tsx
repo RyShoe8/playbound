@@ -15,7 +15,7 @@ import { listUnlockedByMaster } from "@/lib/masterCopy";
 import { getDeveloper } from "@/lib/developers";
 import { listPublicEditionsForGame, hasChoosableEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
-import { hasServerProvider } from "@/lib/servers/registry";
+import { hasServerBrowser } from "@/lib/servers/registry";
 import { EditionsSection } from "@/components/editions/EditionsSection";
 import type { Game, Developer } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
@@ -286,7 +286,7 @@ export default async function GamePage({
 
         {/* Real URLs — these can rank. */}
         {PROMOTED_ROUTES.filter((r) => {
-          if (r.key === "servers" && !hasServerProvider(game.slug)) return false;
+          if (r.key === "servers" && !hasServerBrowser(game.slug)) return false;
           return true;
         }).map((r) => (
           <Link

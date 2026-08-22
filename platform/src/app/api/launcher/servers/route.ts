@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { listGames } from "@/lib/catalog";
 import { absoluteMediaUrl } from "@/lib/launcherInstall";
 import {
-  hasServerProvider,
-  isKnownServerGame,
-  listProviderSlugs,
+  hasServerBrowser,
+  listServerBrowserSlugs,
 } from "@/lib/servers/registry";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 
@@ -13,17 +12,14 @@ export async function GET(req: Request) {
     const includeTesting = await requestIncludesTesting(req);
     const origin = new URL(req.url).origin || "https://playbound.club";
     const games = await listGames({ includeTesting });
-    const providers = listProviderSlugs();
+    const providers = listServerBrowserSlugs();
 
     const entries = games
-      .filter(
-        (g) =>
-          g.launchMethods?.includes("server") || isKnownServerGame(g.slug)
-      )
+      .filter((g) => hasServerBrowser(g.slug))
       .map((g) => ({
         slug: g.slug,
         title: g.title,
-        supported: hasServerProvider(g.slug),
+        supported: true,
         coverImage: absoluteMediaUrl(g.coverImage, origin),
         art: [g.art.from, g.art.to] as [string, string],
         tagline: g.tagline,
@@ -33,10 +29,7 @@ export async function GET(req: Request) {
         status: g.status || "published",
         testing: g.status === "testing",
       }))
-      .sort((a, b) => {
-        if (a.supported !== b.supported) return a.supported ? -1 : 1;
-        return a.title.localeCompare(b.title);
-      });
+      .sort((a, b) => a.title.localeCompare(b.title));
 
     const authPresent =
       Boolean(req.headers.get("authorization")) || Boolean(req.headers.get("cookie"));
