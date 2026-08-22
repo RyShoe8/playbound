@@ -382,6 +382,29 @@ BWRAP
   systemctl reload apparmor 2>/dev/null || true
 fi
 
+echo "==> Warzone 2100 (run-server wrapper — skip apt bwrap, no /dev/dri on VPS)"
+WZ_DIR="$GAMES_DIR/warzone-2100"
+mkdir -p "$WZ_DIR"
+WZ_REAL=""
+for cand in /usr/games/warzone2100.real \
+            /usr/lib/warzone2100/warzone2100.real \
+            /usr/lib/x86_64-linux-gnu/warzone2100/warzone2100.real; do
+  if [[ -x "$cand" ]]; then
+    WZ_REAL="$cand"
+    break
+  fi
+done
+if [[ -n "$WZ_REAL" ]]; then
+  cat > "$WZ_DIR/run-server" <<EOF
+#!/usr/bin/env bash
+exec "$WZ_REAL" "\$@"
+EOF
+  chmod +x "$WZ_DIR/run-server"
+  echo "  Warzone run-server -> $WZ_REAL"
+else
+  echo "  WARN: warzone2100.real not found — dedicated hosting may fail on headless VPS"
+fi
+
 systemctl disable --now bzflag-server 2>/dev/null || true
 systemctl mask bzflag-server 2>/dev/null || true
 pkill -x bzfs 2>/dev/null || true
@@ -423,12 +446,15 @@ if [[ -n "$HEADLESS_JAR" && -x "$TRIPLEA_JAVA_DIR/bin/java" ]]; then
 ROOT="\$(cd "\$(dirname "\$0")" && pwd)"
 JAR="\$(find "\$ROOT" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
 PORT="\${1:?port required}"
+export BOT_COMMENT=automated_host
 exec "${TRIPLEA_JAVA_DIR}/bin/java" -server -Xmx512M -Djava.awt.headless=true -jar "\$JAR" \\
-  -Ptriplea.lobby.uri="https://prod2-lobby.triplea-game.org" \\
+  -Ptriplea.lobby.uri=https://prod2-lobby.triplea-game.org \\
+  -Ptriplea.lobby.game.comments=automated_host \\
   -Ptriplea.map.folder="\$ROOT/downloadedMaps" \\
-  -Ptriplea.name="PlayBound" \\
+  -Ptriplea.name=BotPlayBound \\
   -Ptriplea.port="\$PORT" \\
-  -Ptriplea.server.password=""
+  -Ptriplea.server=true \\
+  -Ptriplea.server.password=
 EOF
   chmod +x "$TRIPLEA_DIR/run-server"
   echo "  TripleA headless ready under $TRIPLEA_DIR"
