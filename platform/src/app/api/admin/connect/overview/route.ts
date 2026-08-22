@@ -52,7 +52,7 @@ export async function GET() {
   if (!metricsResult.ok) {
     alerts.push({
       type: "warning",
-      title: "Metrics unavailable",
+      title: metricsResult.outdatedAgent ? "VPS agent outdated" : "Metrics unavailable",
       message: metricsResult.error,
     });
   } else if (metrics) {
@@ -105,6 +105,7 @@ export async function GET() {
     host: getGameHostPublicIp() || health?.publicIp || null,
     health,
     metrics,
+    lastSpawnTest: health?.lastSpawnTest ?? {},
     rooms: roomsResult.ok ? roomsResult.rooms : [],
     roomsError: roomsResult.ok ? null : roomsResult.error,
     games,

@@ -23,6 +23,7 @@ import {
   Gift,
   Activity,
   DownloadCloud,
+  Plug,
   Server,
   ShieldCheck,
   ShoppingBag,
@@ -72,10 +73,10 @@ export const links: NavItem[] = [
   },
   { href: "/admin/submissions", label: "Submissions", icon: Inbox },
   {
-    href: "/admin/game-servers",
-    label: "Game Servers",
-    icon: Server,
-    family: ["/admin/game-servers", "/admin/connect"],
+    href: "/admin/connect",
+    label: "Connect",
+    icon: Plug,
+    family: ["/admin/connect"],
   },
   {
     href: "/admin/ops",
@@ -220,19 +221,21 @@ const OPS_CHILDREN: NavChild[] = [
   },
 ];
 
-const GAME_SERVERS_CHILDREN: NavChild[] = [
+const CONNECT_CHILDREN: NavChild[] = [
   {
-    label: "Connect",
+    label: "Game Servers",
     icon: Server,
-    href: "/admin/connect",
-    match: (p) => p.startsWith("/admin/connect") || p.startsWith("/admin/game-servers"),
+    href: "/admin/connect/game-servers",
+    match: (p) =>
+      p.startsWith("/admin/connect/game-servers") ||
+      p.startsWith("/admin/game-servers"),
   },
 ];
 
 export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] {
   if (item.href === "/admin/games") return gamesChildren(gameSlug);
   if (item.href === "/admin/ecommerce") return ECOMMERCE_CHILDREN;
-  if (item.href === "/admin/game-servers") return GAME_SERVERS_CHILDREN;
+  if (item.href === "/admin/connect") return CONNECT_CHILDREN;
   if (item.href === "/admin/ops") return OPS_CHILDREN;
   return [];
 }

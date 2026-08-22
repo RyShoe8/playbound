@@ -49,9 +49,8 @@ describe("admin nav structure", () => {
     expect(top).not.toContain("Editions");
     expect(top).not.toContain("Free Offers");
     expect(top).not.toContain("Stores");
-    expect(top).not.toContain("Connect");
+    expect(top).not.toContain("Game Servers");
     expect(top).toContain("Games");
-    expect(top).toContain("Game Servers");
     expect(top).toContain("Ops");
     expect(top).toContain("eCommerce");
   });
@@ -72,6 +71,7 @@ describe("admin nav structure", () => {
       "/admin/ecommerce/stores",
       "/admin/free-offers",
       "/admin/connect",
+      "/admin/connect/game-servers",
       "/admin/game-servers",
     ]) {
       expect(topRow(path).map((i) => i.label), `for ${path}`).toEqual(baseline);
@@ -101,10 +101,10 @@ describe("admin nav structure", () => {
     });
   });
 
-  it("puts connect under Game Servers", () => {
-    expect(subRow("/admin/connect")).toMatchObject({
-      section: "Game Servers",
-      children: [{ label: "Connect", href: "/admin/connect" }],
+  it("puts game servers under Connect", () => {
+    expect(subRow("/admin/connect/game-servers")).toMatchObject({
+      section: "Connect",
+      children: [{ label: "Game Servers", href: "/admin/connect/game-servers" }],
     });
   });
 
@@ -160,7 +160,7 @@ describe("admin nav active state", () => {
     expect(lit("/admin/free-offers")).toEqual({ top: ["eCommerce"], sub: ["Free Offers"] });
     expect(lit("/admin/ecommerce/stores")).toEqual({ top: ["eCommerce"], sub: ["Stores"] });
     expect(lit("/admin/ecommerce")).toEqual({ top: ["eCommerce"], sub: ["Overview"] });
-    expect(lit("/admin/connect")).toEqual({ top: ["Game Servers"], sub: ["Connect"] });
+    expect(lit("/admin/connect/game-servers")).toEqual({ top: ["Connect"], sub: ["Game Servers"] });
   });
 
   it("lights exactly one top-row section per route", () => {

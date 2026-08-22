@@ -18,10 +18,11 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { resolveRecipe, listInstalled, listGameHostStatus, missingDedicatedBinaryMessage } from "./recipes.js";
+import { resolveRecipe, listInstalled, listGameHostStatus, missingDedicatedBinaryMessage, recipes } from "./recipes.js";
 import { canEnsure, ensureGame, ensureMissingGames, listEnsureableSlugs } from "./ensureGame.js";
 import { ET_SLUG, verifyEtLegacyReady } from "./etLegacyInstall.js";
 import { collectMetrics } from "./metrics.js";
+import { getLastSpawnTests, recordSpawnTest } from "./spawnTests.js";
 
 const SECRET = process.env.GAME_HOST_SECRET || "";
 const PUBLIC_IP = process.env.GAME_HOST_PUBLIC_IP || "";
@@ -493,6 +494,66 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
   return { room };
 }
 
+function testPartyId(gameSlug) {
+  return `pb-admin-test-${gameSlug}`;
+}
+
+async function runTestSpawn(gameSlug) {
+  const started = Date.now();
+  const partyId = testPartyId(gameSlug);
+  const existingId = byParty.get(partyId);
+  if (existingId && rooms.has(existingId)) {
+    stopRoom(rooms.get(existingId));
+  }
+
+  const resolved = resolveRecipe(gameSlug);
+  if (!resolved) {
+    const error = `Game ${gameSlug} is not hostable`;
+    recordSpawnTest(gameSlug, { ok: false, error, durationMs: Date.now() - started });
+    return { ok: false, error, durationMs: Date.now() - started };
+  }
+  if (!resolved.binary) {
+    const error = missingDedicatedBinaryMessage(gameSlug, resolved.recipe);
+    recordSpawnTest(gameSlug, { ok: false, error, durationMs: Date.now() - started });
+    return { ok: false, error, durationMs: Date.now() - started };
+  }
+
+  const result = await startRoom({
+    gameSlug,
+    partyId,
+    name: `PlayBound test ${gameSlug}`.slice(0, 40),
+  });
+  const durationMs = Date.now() - started;
+
+  if (result.error) {
+    recordSpawnTest(gameSlug, { ok: false, error: result.error, durationMs });
+    return { ok: false, error: result.error, durationMs };
+  }
+
+  const port = result.room?.port ?? null;
+  stopRoom(result.room);
+  recordSpawnTest(gameSlug, { ok: true, durationMs, port });
+  return { ok: true, durationMs, port };
+}
+
+async function runTestSpawnAll() {
+  const slugs = Object.keys(recipes);
+  const results = {};
+  for (const slug of slugs) {
+    const { binary } = resolveRecipe(slug);
+    if (!binary) {
+      results[slug] = {
+        ok: false,
+        skipped: true,
+        error: "Binary not installed — skipped",
+      };
+      continue;
+    }
+    results[slug] = await runTestSpawn(slug);
+  }
+  return results;
+}
+
 function publicRoom(room) {
   return {
     roomId: room.roomId,
@@ -516,6 +577,7 @@ const server = http.createServer(async (req, res) => {
       maxRooms: MAX_ROOMS,
       games: listInstalled(),
       gameStatus: listGameHostStatus(),
+      lastSpawnTest: getLastSpawnTests(),
     });
     return;
   }
@@ -566,8 +628,28 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Install missing downloadable dedicated binaries (e.g. etlded). Called from
-    // Vercel production build / cron — does not replace install.sh bootstrap.
+    // Admin spawn test — verifies dedicated binary starts and passes grace window.
+    if (req.method === "POST" && url.pathname === "/test-spawn") {
+      const body = await readBody(req);
+      if (body.all) {
+        const results = await runTestSpawnAll();
+        json(res, 200, { ok: true, results, lastSpawnTest: getLastSpawnTests() });
+        return;
+      }
+      const gameSlug = String(body.gameSlug || "").trim();
+      if (!gameSlug) {
+        json(res, 400, { error: "gameSlug or all:true is required" });
+        return;
+      }
+      const result = await runTestSpawn(gameSlug);
+      json(res, result.ok ? 200 : 409, {
+        ...result,
+        gameSlug,
+        lastSpawnTest: getLastSpawnTests(),
+      });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/ensure-missing") {
       const results = await ensureMissingGames();
       json(res, 200, {
