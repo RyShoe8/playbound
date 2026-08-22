@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Cpu,
   HardDrive,
+  Loader2,
   Network,
   RefreshCw,
   Server,
@@ -14,6 +15,14 @@ import {
 } from "lucide-react";
 
 type Alert = { type: "warning" | "error" | "info"; title: string; message: string };
+
+type LastSpawnTestEntry = {
+  ok: boolean;
+  error?: string | null;
+  at: string;
+  durationMs?: number | null;
+  port?: number | null;
+};
 
 type OverviewData = {
   configured: boolean;
@@ -23,6 +32,7 @@ type OverviewData = {
     maxRooms?: number;
     publicIp?: string | null;
   } | null;
+  lastSpawnTest?: Record<string, LastSpawnTestEntry>;
   metrics: {
     uptimeSec?: number;
     cpu?: { cores?: number; load1?: number; usagePercent?: number | null };
@@ -75,6 +85,41 @@ function formatUptime(sec?: number) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function formatWhen(iso?: string) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
+function SpawnStatusDot({
+  entry,
+}: {
+  entry?: LastSpawnTestEntry;
+}) {
+  if (!entry) {
+    return (
+      <span
+        className="inline-block size-2.5 shrink-0 rounded-full bg-muted-foreground/40"
+        title="No spawn test yet"
+      />
+    );
+  }
+  const title = entry.ok
+    ? `Last spawn OK · ${formatWhen(entry.at)}${entry.durationMs ? ` · ${entry.durationMs}ms` : ""}`
+    : `Last spawn failed · ${formatWhen(entry.at)}${entry.error ? ` · ${entry.error}` : ""}`;
+  return (
+    <span
+      className={`inline-block size-2.5 shrink-0 rounded-full ${
+        entry.ok ? "bg-emerald-500" : "bg-red-500"
+      }`}
+      title={title}
+    />
+  );
+}
+
 function ProgressBar({ percent, tone }: { percent: number; tone?: "default" | "warn" | "danger" }) {
   const bar =
     tone === "danger"
@@ -114,6 +159,10 @@ export function ConnectManager() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [ensureBusy, setEnsureBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
+  const [testAllBusy, setTestAllBusy] = useState(false);
+  const [testingSlug, setTestingSlug] = useState<string | null>(null);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (silent = false) => {
@@ -155,6 +204,73 @@ export function ConnectManager() {
     }
   }
 
+  async function runTestSpawn(gameSlug: string) {
+    setTestBusy(true);
+    setTestingSlug(gameSlug);
+    setTestStatus(`Starting ${gameSlug}…`);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/connect/test-spawn", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ gameSlug }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        result?: { ok?: boolean; error?: string };
+      };
+      if (!json.ok) {
+        setTestStatus(json.message || json.result?.error || `Spawn test failed for ${gameSlug}`);
+        setError(json.message || json.result?.error || `Spawn test failed for ${gameSlug}`);
+      } else {
+        setTestStatus(`${gameSlug} spawn OK`);
+      }
+      await load(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Spawn test failed";
+      setTestStatus(message);
+      setError(message);
+    } finally {
+      setTestBusy(false);
+      setTestingSlug(null);
+    }
+  }
+
+  async function runTestAll() {
+    setTestAllBusy(true);
+    setTestStatus("Testing all installed games…");
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/connect/test-spawn", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        result?: { results?: Record<string, { ok?: boolean; skipped?: boolean }> };
+      };
+      if (!json.ok) {
+        setTestStatus(json.message || "Test all failed");
+        setError(json.message || "Test all failed");
+      } else {
+        const results = json.result?.results || {};
+        const tested = Object.values(results).filter((r) => !r.skipped).length;
+        const passed = Object.values(results).filter((r) => r.ok).length;
+        setTestStatus(`Finished: ${passed}/${tested} passed`);
+      }
+      await load(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Test all failed";
+      setTestStatus(message);
+      setError(message);
+    } finally {
+      setTestAllBusy(false);
+    }
+  }
+
   if (loading && !data) {
     return <p className="text-sm text-muted-foreground">Loading Connect status…</p>;
   }
@@ -186,9 +302,28 @@ export function ConnectManager() {
           <Server className="size-4" />
           {ensureBusy ? "Ensuring…" : "Ensure missing games"}
         </button>
+        <button
+          type="button"
+          onClick={() => void runTestAll()}
+          disabled={testAllBusy || testBusy || !data?.configured}
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+        >
+          {testAllBusy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="size-4" />
+          )}
+          {testAllBusy ? "Testing all…" : "Test all games"}
+        </button>
         {data?.host && (
           <span className="text-sm text-muted-foreground">
             VPS <span className="font-mono text-foreground">{data.host}</span>
+          </span>
+        )}
+        {testStatus && (
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            {(testBusy || testAllBusy) && <Loader2 className="size-4 animate-spin" />}
+            {testStatus}
           </span>
         )}
       </div>
@@ -324,7 +459,12 @@ export function ConnectManager() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Dedicated games on VPS</h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Dedicated games on VPS</h2>
+              <p className="text-xs text-muted-foreground">
+                Green/red dot = last spawn test · install icon = files on disk
+              </p>
+            </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {data.games.map((game) => {
                 const Icon = game.ready ? CheckCircle2 : game.installed ? AlertTriangle : XCircle;
@@ -333,18 +473,33 @@ export function ConnectManager() {
                   : game.installed
                     ? "text-amber-400"
                     : "text-red-400";
+                const spawnEntry = data.lastSpawnTest?.[game.slug];
+                const isTesting = testingSlug === game.slug;
                 return (
                   <div
                     key={game.slug}
                     className="flex items-center gap-3 rounded-lg border border-border/60 bg-background/40 px-3 py-2"
                   >
                     <Icon className={`size-4 shrink-0 ${tone}`} />
-                    <div className="min-w-0">
+                    <SpawnStatusDot entry={spawnEntry} />
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{game.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {game.ready ? "Ready" : game.installed ? "Binary only" : "Missing"}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => void runTestSpawn(game.slug)}
+                      disabled={testBusy || testAllBusy || !game.installed || isTesting}
+                      className="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+                    >
+                      {isTesting ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        "Test"
+                      )}
+                    </button>
                   </div>
                 );
               })}

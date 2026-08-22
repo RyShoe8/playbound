@@ -84,7 +84,7 @@ chmod 755 "$MIRROR_ARCHIVE_DIR"
 
 echo "==> copy agent"
 cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" \
-  "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" \
+  "$AGENT_SRC/etLegacyInstall.js" "$AGENT_SRC/metrics.js" "$AGENT_SRC/spawnTests.js" \
   "$AGENT_SRC/package.json" "$AGENT_DIR/"
 mkdir -p "$AGENT_DIR/assets"
 cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$AGENT_DIR/assets/" 2>/dev/null || true

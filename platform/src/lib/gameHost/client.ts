@@ -7,6 +7,7 @@ const TIMEOUT_MS = 12_000;
 /** Room create may auto-download a dedicated binary (e.g. etlded) on first use. */
 const CREATE_ROOM_TIMEOUT_MS = 5 * 60 * 1000;
 const ENSURE_TIMEOUT_MS = 10 * 60 * 1000;
+const TEST_SPAWN_TIMEOUT_MS = 15 * 60 * 1000;
 
 export type GameHostRoom = {
   roomId: string;
@@ -25,6 +26,26 @@ export type GameHostHealth = {
   maxRooms?: number;
   games?: Record<string, boolean>;
   gameStatus?: Record<string, { installed: boolean; ready: boolean }>;
+  lastSpawnTest?: Record<string, LastSpawnTestEntry>;
+};
+
+export type LastSpawnTestEntry = {
+  ok: boolean;
+  error?: string | null;
+  at: string;
+  durationMs?: number | null;
+  port?: number | null;
+};
+
+export type SpawnTestResult = {
+  ok: boolean;
+  error?: string;
+  durationMs?: number;
+  port?: number | null;
+  skipped?: boolean;
+  gameSlug?: string;
+  results?: Record<string, SpawnTestResult>;
+  lastSpawnTest?: Record<string, LastSpawnTestEntry>;
 };
 
 export type GameHostMetrics = {
@@ -104,13 +125,22 @@ export async function fetchGameHostHealth(): Promise<
 }
 
 export async function fetchGameHostMetrics(): Promise<
-  { ok: true; metrics: GameHostMetrics } | { ok: false; error: string }
+  | { ok: true; metrics: GameHostMetrics }
+  | { ok: false; error: string; outdatedAgent?: boolean }
 > {
   try {
     const res = await hostFetch("/metrics", { method: "GET" });
     if (!res) return { ok: false, error: "Game host is not configured" };
     const metrics = (await res.json().catch(() => ({}))) as GameHostMetrics;
     if (!res.ok) {
+      if (res.status === 404) {
+        return {
+          ok: false,
+          outdatedAgent: true,
+          error:
+            "VPS agent is outdated — SSH in and run `sudo bash install.sh` in platform/game-host after git pull",
+        };
+      }
       return { ok: false, error: `Game host metrics returned ${res.status}` };
     }
     return { ok: true, metrics };
@@ -207,6 +237,58 @@ export async function createHostRoom(opts: {
     const message = err instanceof Error ? err.message : "Game host unreachable";
     console.warn("[gameHost] create room failed:", message);
     return { error: message };
+  }
+}
+
+export async function triggerTestSpawn(opts: {
+  gameSlug?: string;
+  all?: boolean;
+}): Promise<
+  | { ok: true; result: SpawnTestResult; lastSpawnTest?: Record<string, LastSpawnTestEntry> }
+  | { ok: false; message: string; result?: SpawnTestResult; lastSpawnTest?: Record<string, LastSpawnTestEntry> }
+> {
+  try {
+    const body = opts.all ? { all: true } : { gameSlug: opts.gameSlug };
+    if (!opts.all && !opts.gameSlug) {
+      return { ok: false, message: "gameSlug or all is required" };
+    }
+    const res = await hostFetch(
+      "/test-spawn",
+      { method: "POST", body: JSON.stringify(body) },
+      TEST_SPAWN_TIMEOUT_MS
+    );
+    if (!res) {
+      return { ok: false, message: "Game host is not configured" };
+    }
+    if (res.status === 404) {
+      return {
+        ok: false,
+        message:
+          "Agent missing /test-spawn — run updated install.sh on the VPS after git pull",
+      };
+    }
+    const data = (await res.json().catch(() => ({}))) as SpawnTestResult & {
+      error?: string;
+      lastSpawnTest?: Record<string, LastSpawnTestEntry>;
+    };
+    if (!res.ok) {
+      return {
+        ok: false,
+        message: data.error || `Game host returned ${res.status}`,
+        result: data,
+        lastSpawnTest: data.lastSpawnTest,
+      };
+    }
+    return {
+      ok: true,
+      result: data,
+      lastSpawnTest: data.lastSpawnTest,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "Game host unreachable",
+    };
   }
 }
 
