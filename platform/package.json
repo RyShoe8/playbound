@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run check:auth-urls && npm run insert:catalog-wave",
+    "build": "next build && npm run check:auth-urls && npm run insert:catalog-wave && npm run sync:game-host",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/seed-admin.ts",
@@ -12,6 +12,7 @@
     "upload:launcher": "tsx scripts/upload-launcher.ts",
     "seed:mod-classifications": "tsx scripts/seed-mod-classifications.ts",
     "insert:catalog-wave": "tsx scripts/insert-catalog-wave.ts",
+    "sync:game-host": "tsx scripts/sync-game-host.ts",
     "sync:edition-install": "tsx scripts/sync-edition-install.ts",
     "patch:named-mods": "tsx scripts/patch-named-mods.ts",
     "fix:mod-media": "tsx scripts/fix-mod-media.ts",

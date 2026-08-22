@@ -32,10 +32,11 @@ npm run sync-catalog      # refresh the bundled offline catalog
 | `npm run dist:dev` | `dist/` | No — never, even with a certificate installed |
 | `npm run dist:prod` | `dist/` | Yes — required, and verified before the build succeeds |
 
-### Couch Mode
+### Couch Mode / phone controllers
 
-Phone-as-controller host UI lives under **Couch** in the sidebar. See
-[`docs/couch-mode.md`](../docs/couch-mode.md) and
+Phone-as-controller host UI lives under **Controllers** in the sidebar. Play on a
+controller-supported game also offers an optional **Use phone as controller**
+choice. See [`docs/couch-mode.md`](../docs/couch-mode.md) and
 [`docs/couch-input-protocol.md`](../docs/couch-input-protocol.md).
 
 Windows controller support is **bundled**: ViGEmBus setup and

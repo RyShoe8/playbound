@@ -2,7 +2,10 @@
 # Install the PlayBound game-host agent and dedicated binaries on Ubuntu 24.04.
 # Run as root on the Contabo VPS:
 #   sudo bash install.sh
-# Optional: sudo bash install.sh --with-heavy   (Xonotic + Unvanquished)
+# Optional: sudo bash install.sh --with-heavy   (legacy; Xonotic installs by default)
+# Skip Xonotic with: sudo SKIP_XONOTIC=1 bash install.sh
+# ET: Legacy dedicated is installed by default (etlded + etmain assets).
+# YSoccer: downloads the PlayBound release jar, or builds from upstream if 404.
 
 set -euo pipefail
 
@@ -35,7 +38,7 @@ echo "==> packages"
 apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates curl wget unzip tar xz-utils \
-  ufw jq coturn \
+  ufw jq coturn git \
   openjdk-17-jre-headless \
   openttd \
   hedgewars \
@@ -45,6 +48,9 @@ apt-get install -y --no-install-recommends \
   supertuxkart \
   openarena-server \
   0ad
+
+# Optional on some mirrors — do not fail the whole install if missing.
+apt-get install -y --no-install-recommends mrboom || echo "WARN: mrboom package unavailable"
 
 # Wesnoth uses its own lobby infrastructure and its old `wesnoth-server`
 # package is not available on Ubuntu 24.04. Do not let an optional game
@@ -72,7 +78,7 @@ chown -R playbound:playbound "$HOME_DIR" "$MIRROR_ARCHIVE_DIR"
 chmod 755 "$MIRROR_ARCHIVE_DIR"
 
 echo "==> copy agent"
-cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/package.json" "$AGENT_DIR/"
+cp -f "$AGENT_SRC/index.js" "$AGENT_SRC/recipes.js" "$AGENT_SRC/ensureGame.js" "$AGENT_SRC/package.json" "$AGENT_DIR/"
 chown -R playbound:playbound "$AGENT_DIR"
 
 if [[ -z "$PUBLIC_IP" ]]; then
@@ -152,19 +158,119 @@ fi
 echo "==> YSoccer dedicated"
 YSOCCER_DIR="$GAMES_DIR/ysoccer"
 mkdir -p "$YSOCCER_DIR"
-curl -fL --retry 3 -o "$YSOCCER_DIR/ysoccer-server.jar" \
-  "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-server.jar"
+YSOCCER_JAR_URL="${YSOCCER_SERVER_JAR_URL:-https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-server.jar}"
+if [[ -s "$YSOCCER_DIR/ysoccer-server.jar" ]]; then
+  echo "  (keeping existing ysoccer-server.jar)"
+elif curl -fL --retry 2 -o "$YSOCCER_DIR/ysoccer-server.jar" "$YSOCCER_JAR_URL"; then
+  echo "  downloaded ysoccer-server.jar"
+else
+  rm -f "$YSOCCER_DIR/ysoccer-server.jar"
+  echo "  release asset missing — building dedicated server from upstream source"
+  apt-get install -y --no-install-recommends openjdk-21-jdk-headless 2>/dev/null \
+    || apt-get install -y --no-install-recommends openjdk-17-jdk-headless
+  YBUILD="/tmp/ysoccer-build-$$"
+  rm -rf "$YBUILD"
+  mkdir -p "$YBUILD"
+  git clone --depth 1 https://git.code.sf.net/p/ysoccer/code "$YBUILD/upstream"
+  PATCH_JS=""
+  for cand in \
+    "$SCRIPT_DIR/../../.github/scripts/patch-ysoccer.mjs" \
+    "$SCRIPT_DIR/../../../.github/scripts/patch-ysoccer.mjs" \
+    "/opt/playbound/.github/scripts/patch-ysoccer.mjs"; do
+    if [[ -f "$cand" ]]; then PATCH_JS="$cand"; break; fi
+  done
+  if [[ -n "$PATCH_JS" ]]; then
+    node "$PATCH_JS" "$YBUILD/upstream"
+  else
+    echo "  WARN: patch-ysoccer.mjs not found; building unpatched upstream server"
+  fi
+  (cd "$YBUILD/upstream/java" && ./gradlew --no-daemon server:jar)
+  BUILT="$(find "$YBUILD/upstream/java/server/build/libs" -name '*.jar' ! -name '*-sources.jar' | head -n1)"
+  if [[ -z "$BUILT" || ! -s "$BUILT" ]]; then
+    echo "ERROR: YSoccer server jar build produced no artifact"
+    rm -rf "$YBUILD"
+    exit 1
+  fi
+  cp -f "$BUILT" "$YSOCCER_DIR/ysoccer-server.jar"
+  rm -rf "$YBUILD"
+  echo "  built ysoccer-server.jar from source"
+fi
 
-if [[ "$WITH_HEAVY" -eq 1 ]]; then
-  echo "==> Xonotic dedicated (large download)"
-  XON_DIR="$GAMES_DIR/xonotic"
-  mkdir -p "$XON_DIR"
+echo "==> Xonotic dedicated (large download; skip with SKIP_XONOTIC=1)"
+XON_DIR="$GAMES_DIR/xonotic"
+mkdir -p "$XON_DIR"
+if [[ "${SKIP_XONOTIC:-0}" == "1" ]]; then
+  echo "  SKIP_XONOTIC=1 — leaving xonotic untouched"
+elif [[ "$WITH_HEAVY" -eq 1 || ! -x "$XON_DIR/xonotic-linux64-dedicated" ]]; then
   if [[ ! -x "$XON_DIR/xonotic-linux64-dedicated" ]]; then
     curl -fL --retry 3 -o /tmp/xonotic.zip "https://dl.xonotic.org/xonotic-0.8.6.zip"
     unzip -q /tmp/xonotic.zip -d /tmp/xonotic-extract
     cp -a /tmp/xonotic-extract/Xonotic/. "$XON_DIR/"
     rm -rf /tmp/xonotic.zip /tmp/xonotic-extract
   fi
+fi
+
+# Legacy flag still accepted for ops who used --with-heavy only for Xonotic.
+if [[ "$WITH_HEAVY" -eq 1 ]]; then
+  echo "==> --with-heavy: Xonotic handled above (Unvanquished still manual)"
+fi
+
+echo "==> Wolfenstein: Enemy Territory (ET: Legacy dedicated)"
+ET_DIR="$GAMES_DIR/wolfenstein-enemy-territory"
+mkdir -p "$ET_DIR"
+# Linux x86_64 archive from https://www.etlegacy.com/download (file id may bump on new releases).
+ET_URL="${ET_LEGACY_LINUX_URL:-https://www.etlegacy.com/download/file/728}"
+if [[ ! -x "$ET_DIR/etlded" && ! -x "$ET_DIR/etlded.x86_64" ]]; then
+  curl -fL --retry 3 -o /tmp/etlegacy-linux.tar.gz "$ET_URL" || \
+    curl -fL --retry 3 -o /tmp/etlegacy-linux.zip "$ET_URL"
+  mkdir -p /tmp/etlegacy-extract
+  if [[ -f /tmp/etlegacy-linux.tar.gz ]]; then
+    # Archive may be tar.gz or a zip mislabeled by Content-Disposition.
+    if tar -tzf /tmp/etlegacy-linux.tar.gz &>/dev/null; then
+      tar -xzf /tmp/etlegacy-linux.tar.gz -C /tmp/etlegacy-extract
+    else
+      unzip -q /tmp/etlegacy-linux.tar.gz -d /tmp/etlegacy-extract
+    fi
+    rm -f /tmp/etlegacy-linux.tar.gz
+  else
+    unzip -q /tmp/etlegacy-linux.zip -d /tmp/etlegacy-extract
+    rm -f /tmp/etlegacy-linux.zip
+  fi
+  # Flatten a single top-level folder if present.
+  if [[ "$(find /tmp/etlegacy-extract -mindepth 1 -maxdepth 1 | wc -l)" -eq 1 ]]; then
+    INNER="$(find /tmp/etlegacy-extract -mindepth 1 -maxdepth 1 -type d | head -n1)"
+    if [[ -n "$INNER" ]]; then
+      cp -a "$INNER"/. "$ET_DIR/"
+    else
+      cp -a /tmp/etlegacy-extract/. "$ET_DIR/"
+    fi
+  else
+    cp -a /tmp/etlegacy-extract/. "$ET_DIR/"
+  fi
+  rm -rf /tmp/etlegacy-extract
+  # Prefer a stable name the recipe looks for first.
+  if [[ ! -x "$ET_DIR/etlded" ]]; then
+    for cand in etlded.x86_64 etl.x86_64.ded; do
+      if [[ -x "$ET_DIR/$cand" ]]; then
+        ln -sfn "$cand" "$ET_DIR/etlded"
+        break
+      fi
+    done
+  fi
+  chmod +x "$ET_DIR"/etlded* "$ET_DIR"/etl* 2>/dev/null || true
+fi
+# Official 2.60b etmain assets (maps/paks) — same overlay the launcher ships.
+ET_OVERLAY_URL="${ET_LEGACY_OVERLAY_URL:-https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher-packages/games/wolfenstein-enemy-territory/ET-260b-Base-Data.zip}"
+if [[ ! -d "$ET_DIR/etmain" ]] || [[ -z "$(ls -A "$ET_DIR/etmain" 2>/dev/null || true)" ]]; then
+  curl -fL --retry 3 -o /tmp/et-base.zip "$ET_OVERLAY_URL"
+  mkdir -p "$ET_DIR/etmain"
+  unzip -qo /tmp/et-base.zip -d /tmp/et-base-extract
+  if [[ -d /tmp/et-base-extract/etmain ]]; then
+    cp -a /tmp/et-base-extract/etmain/. "$ET_DIR/etmain/"
+  else
+    cp -a /tmp/et-base-extract/. "$ET_DIR/etmain/"
+  fi
+  rm -rf /tmp/et-base.zip /tmp/et-base-extract
 fi
 
 chown -R playbound:playbound "$GAMES_DIR"
@@ -195,9 +301,17 @@ ufw allow 49152:50152/udp comment "coturn-relay" || true
 ufw --force enable || true
 
 echo "==> coturn STUN/TURN configuration"
-cat <<'EOF' > /etc/turnserver.conf
+# Ubuntu's package fails if TLS ports are enabled without certs, or if the
+# turnserver user cannot write the log file. Use syslog + plain 3478 only.
+EXTERNAL_IP_LINE=""
+if [[ -n "${PUBLIC_IP:-}" ]]; then
+  EXTERNAL_IP_LINE="external-ip=${PUBLIC_IP}"
+fi
+cat > /etc/turnserver.conf <<EOF
 listening-port=3478
-tls-listening-port=5349
+listening-ip=0.0.0.0
+relay-ip=0.0.0.0
+${EXTERNAL_IP_LINE}
 min-port=49152
 max-port=50152
 fingerprint
@@ -205,9 +319,11 @@ lt-cred-mech
 user=playbound_guest:guest_session_token
 realm=playbound.club
 total-quota=100
-max-bps=0
 no-cli
-log-file=/var/log/turnserver.log
+no-tls
+no-dtls
+no-multicast-peers
+syslog
 simple-log
 EOF
 
@@ -219,14 +335,63 @@ MemoryHigh=400M
 CPUQuota=100%
 EOF
 
-sed -i 's/TURNSERVER_ENABLED=0/TURNSERVER_ENABLED=1/' /etc/default/coturn || true
+# Package enable flag — sed is not enough when the line is commented differently.
+if [[ -f /etc/default/coturn ]]; then
+  if grep -q '^TURNSERVER_ENABLED=' /etc/default/coturn; then
+    sed -i 's/^TURNSERVER_ENABLED=.*/TURNSERVER_ENABLED=1/' /etc/default/coturn
+  else
+    echo 'TURNSERVER_ENABLED=1' >> /etc/default/coturn
+  fi
+else
+  echo 'TURNSERVER_ENABLED=1' > /etc/default/coturn
+fi
 
 echo "==> systemd"
 cp -f "$AGENT_SRC/playbound-game-host.service" /etc/systemd/system/playbound-game-host.service
 systemctl daemon-reload
-systemctl enable --now coturn || true
-systemctl restart coturn || true
-systemctl enable --now playbound-game-host
+
+# Free :3478 — a leftover turnserver from a prior config probe (or a failed
+# unit) will make systemd start fail with errno=98 (EADDRINUSE).
+systemctl stop coturn 2>/dev/null || true
+pkill -x turnserver 2>/dev/null || true
+sleep 1
+if ss -ulnp 2>/dev/null | grep -q ':3478'; then
+  echo "  WARN: something still listening on UDP 3478:"
+  ss -ulnp | grep ':3478' || true
+  fuser -k 3478/udp 2>/dev/null || true
+  fuser -k 3478/tcp 2>/dev/null || true
+  sleep 1
+fi
+
+# Config sanity check without leaving a process behind.
+if timeout 2s turnserver -c /etc/turnserver.conf --log-file=stdout -n >/tmp/coturn-check.log 2>&1; then
+  echo "  coturn config OK"
+else
+  # timeout exits 124 on success-path (still running when killed) — that is fine.
+  code=$?
+  if [[ "$code" -eq 124 ]]; then
+    echo "  coturn config OK"
+  else
+    echo "  WARN: coturn config check exited $code:"
+    head -n 40 /tmp/coturn-check.log || true
+  fi
+fi
+pkill -x turnserver 2>/dev/null || true
+
+systemctl reset-failed coturn 2>/dev/null || true
+if ! systemctl enable coturn; then
+  echo "  WARN: could not enable coturn"
+fi
+if ! systemctl restart coturn; then
+  echo "  WARN: coturn failed to start — party WebRTC TURN may be degraded."
+  journalctl -u coturn -n 40 --no-pager || true
+  ss -ulnp | grep ':3478' || true
+else
+  systemctl --no-pager --full status coturn | head -n 15 || true
+fi
+
+systemctl enable playbound-game-host
+systemctl restart playbound-game-host
 
 sleep 1
 systemctl --no-pager --full status playbound-game-host || true

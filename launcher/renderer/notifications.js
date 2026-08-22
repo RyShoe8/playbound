@@ -1,0 +1,266 @@
+/**
+ * Launcher notification bell — same Mongo notifications as the site, with
+ * readAt synced through /api/notifications/read so web + launcher stay aligned.
+ */
+import { api, state } from "./shared.js";
+
+const POLL_MS = 45_000;
+
+let pollTimer = null;
+let items = [];
+let unreadCount = 0;
+let panelOpen = false;
+let wired = false;
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatWhen(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60_000) return "Just now";
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+    return d.toLocaleString();
+  } catch {
+    return "";
+  }
+}
+
+function els() {
+  return {
+    btn: document.getElementById("notif-bell-btn"),
+    badge: document.getElementById("notif-bell-badge"),
+    panel: document.getElementById("notif-panel"),
+    list: document.getElementById("notif-panel-list"),
+    markAll: document.getElementById("notif-mark-all"),
+    wrap: document.getElementById("notif-bell-wrap"),
+  };
+}
+
+function setBadge(count) {
+  unreadCount = Number(count) || 0;
+  const { badge } = els();
+  if (!badge) return;
+  if (unreadCount <= 0) {
+    badge.hidden = true;
+    badge.textContent = "";
+    return;
+  }
+  badge.hidden = false;
+  badge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
+}
+
+function setPanelOpen(open) {
+  panelOpen = open;
+  const { panel, btn } = els();
+  if (panel) panel.hidden = !open;
+  if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) void refresh();
+}
+
+async function refresh() {
+  if (!window.playbound?.getNotifications) return;
+  if (!state.accountState?.connected) {
+    items = [];
+    setBadge(0);
+    paintList();
+    return;
+  }
+  try {
+    const data = await window.playbound.getNotifications();
+    items = Array.isArray(data?.items) ? data.items : [];
+    setBadge(data?.unreadCount ?? items.filter((n) => !n.readAt).length);
+    paintList();
+  } catch {
+    /* ignore */
+  }
+}
+
+async function markRead(id, all = false) {
+  if (!window.playbound?.markNotificationsRead) return;
+  const res = await window.playbound.markNotificationsRead(all ? { all: true } : { id });
+  if (!res?.ok) return;
+  if (typeof res.unreadCount === "number") setBadge(res.unreadCount);
+  const now = new Date().toISOString();
+  if (all) {
+    items = items.map((n) => ({ ...n, readAt: n.readAt || now }));
+  } else if (id) {
+    items = items.map((n) => (n.id === id ? { ...n, readAt: n.readAt || now } : n));
+  }
+  paintList();
+}
+
+/**
+ * Map a site notification href onto launcher navigation when we can.
+ * Falls back to opening the site in the browser.
+ */
+async function openHref(href, meta = {}) {
+  const path = String(href || "/friends").split("?")[0];
+  const editionMatch = path.match(/^\/games\/([^/]+)\/editions\/([^/]+)/);
+  if (editionMatch) {
+    await api.openEditionDetail?.(decodeURIComponent(editionMatch[1]), decodeURIComponent(editionMatch[2]));
+    return;
+  }
+  const gameMatch = path.match(/^\/games\/([^/]+)/);
+  if (gameMatch) {
+    await api.openGameDetail?.(decodeURIComponent(gameMatch[1]), "home");
+    return;
+  }
+  const eventMatch = path.match(/^\/events\/([^/]+)/);
+  if (eventMatch) {
+    await api.openEventDetail?.(decodeURIComponent(eventMatch[1]), "events");
+    return;
+  }
+  if (path.startsWith("/friends") || path.startsWith("/party") || meta?.partyId) {
+    await api.navigateTo?.("friends");
+    return;
+  }
+  if (path.startsWith("/events")) {
+    await api.navigateTo?.("events");
+    return;
+  }
+  const base = (await window.playbound.getAccount?.())?.apiBase || "https://playbound.club";
+  const url = path.startsWith("http") ? path : `${String(base).replace(/\/$/, "")}${path}`;
+  void window.playbound.openExternal?.(url);
+}
+
+function paintList() {
+  const { list, markAll } = els();
+  if (!list) return;
+  if (markAll) markAll.hidden = unreadCount <= 0;
+
+  if (!state.accountState?.connected) {
+    list.innerHTML = `<li class="notif-empty">Sign in to see notifications.</li>`;
+    return;
+  }
+  if (!items.length) {
+    list.innerHTML = `<li class="notif-empty">No notifications yet.</li>`;
+    return;
+  }
+
+  list.innerHTML = items
+    .map((n) => {
+      const unread = !n.readAt;
+      const inviteId = n.meta?.inviteId || "";
+      const actions = Array.isArray(n.meta?.actions) ? n.meta.actions : [];
+      let actionHtml = "";
+      if (n.type === "play_invite" && inviteId) {
+        actionHtml = `<div class="notif-actions">
+          <button type="button" class="notif-action primary" data-action="accept-invite" data-invite="${escapeHtml(
+            inviteId
+          )}" data-id="${escapeHtml(n.id)}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(
+          n.meta?.gameSlug || ""
+        )}">Play</button>
+          <button type="button" class="notif-action" data-action="decline-invite" data-invite="${escapeHtml(
+            inviteId
+          )}" data-id="${escapeHtml(n.id)}">Decline</button>
+        </div>`;
+      } else if (actions.includes("join")) {
+        actionHtml = `<div class="notif-actions">
+          <button type="button" class="notif-action primary" data-action="open" data-id="${escapeHtml(
+            n.id
+          )}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(
+          n.meta?.gameSlug || ""
+        )}">Join</button>
+        </div>`;
+      }
+      return `<li class="notif-item${unread ? " unread" : ""}" data-id="${escapeHtml(n.id)}">
+        <button type="button" class="notif-item-main" data-action="open" data-id="${escapeHtml(
+          n.id
+        )}" data-href="${escapeHtml(n.href || "/friends")}" data-slug="${escapeHtml(n.meta?.gameSlug || "")}">
+          <span class="notif-title">${escapeHtml(n.title)}</span>
+          ${n.body ? `<span class="notif-body">${escapeHtml(n.body)}</span>` : ""}
+          <span class="notif-when">${escapeHtml(formatWhen(n.createdAt))}</span>
+        </button>
+        ${actionHtml}
+      </li>`;
+    })
+    .join("");
+}
+
+async function onListClick(e) {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  const href = btn.dataset.href || "/friends";
+  const inviteId = btn.dataset.invite;
+  const slug = btn.dataset.slug;
+  const item = items.find((n) => n.id === id);
+
+  if (action === "accept-invite" && inviteId) {
+    await window.playbound.playInviteAction?.(inviteId, "accept");
+    if (item && !item.readAt) await markRead(id);
+    setPanelOpen(false);
+    await openHref(href || (slug ? `/games/${slug}` : "/friends"), item?.meta);
+    return;
+  }
+  if (action === "decline-invite" && inviteId) {
+    await window.playbound.playInviteAction?.(inviteId, "decline");
+    if (item && !item.readAt) await markRead(id);
+    await refresh();
+    return;
+  }
+  if (action === "open") {
+    if (item && !item.readAt) await markRead(id);
+    setPanelOpen(false);
+    await openHref(href || (slug ? `/games/${slug}` : "/friends"), item?.meta);
+  }
+}
+
+function syncPoll() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  if (!state.accountState?.connected) {
+    items = [];
+    setBadge(0);
+    paintList();
+    return;
+  }
+  void refresh();
+  pollTimer = setInterval(() => void refresh(), POLL_MS);
+}
+
+export function wireNotifications() {
+  if (wired) return;
+  wired = true;
+  const { btn, markAll, wrap, list } = els();
+  if (!btn || !wrap) return;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setPanelOpen(!panelOpen);
+  });
+  markAll?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void markRead(undefined, true);
+  });
+  list?.addEventListener("click", (e) => void onListClick(e));
+
+  document.addEventListener("mousedown", (e) => {
+    if (!panelOpen) return;
+    if (wrap.contains(e.target)) return;
+    setPanelOpen(false);
+  });
+
+  document.getElementById("notif-open-friends")?.addEventListener("click", () => {
+    setPanelOpen(false);
+    void api.navigateTo?.("friends");
+  });
+
+  syncPoll();
+}
+
+export function onNotificationsAccountChanged() {
+  syncPoll();
+}

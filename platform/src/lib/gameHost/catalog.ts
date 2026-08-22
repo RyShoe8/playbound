@@ -109,61 +109,12 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 27980,
     protocol: "udp",
   },
-  unvanquished: {
-    slug: "unvanquished",
-    title: "Unvanquished",
-    defaultPort: 27990,
-    portEnd: 28010,
-    protocol: "udp",
-  },
-  keeperfx: {
-    slug: "keeperfx",
-    title: "KeeperFX",
-    defaultPort: 5500,
-    portEnd: 5520,
-    protocol: "both",
-  },
-  "marathon-2": {
-    slug: "marathon-2",
-    title: "Marathon 2",
-    defaultPort: 4226,
-    portEnd: 4246,
-    protocol: "udp",
-  },
-  "aleph-one": {
-    slug: "aleph-one",
-    title: "Aleph One",
-    defaultPort: 4247,
-    portEnd: 4267,
-    protocol: "udp",
-  },
-  morrowind: {
-    slug: "morrowind",
-    title: "The Elder Scrolls III: Morrowind (TES3MP)",
-    defaultPort: 25565,
-    portEnd: 25585,
-    protocol: "both",
-  },
   triplea: {
     slug: "triplea",
     title: "TripleA",
     defaultPort: 3303,
     portEnd: 3323,
     protocol: "tcp",
-  },
-  "battle-for-wesnoth": {
-    slug: "battle-for-wesnoth",
-    title: "Battle for Wesnoth",
-    defaultPort: 15000,
-    portEnd: 15020,
-    protocol: "tcp",
-  },
-  freedoom: {
-    slug: "freedoom",
-    title: "Freedoom",
-    defaultPort: 10666,
-    portEnd: 10686,
-    protocol: "udp",
   },
   "0-ad": {
     slug: "0-ad",
@@ -172,18 +123,22 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 20615,
     protocol: "udp",
   },
-  flightgear: {
-    slug: "flightgear",
-    title: "FlightGear",
-    defaultPort: 5000,
-    portEnd: 5020,
-    protocol: "udp",
-  },
   mrboom: {
     slug: "mrboom",
     title: "Mr. Boom",
     defaultPort: 27999,
     portEnd: 28019,
+    protocol: "udp",
+  },
+  "wolfenstein-enemy-territory": {
+    slug: "wolfenstein-enemy-territory",
+    title: "Wolfenstein: Enemy Territory",
+    /*
+     * Below OpenArena's 27960–27980 range so party rooms do not collide when
+     * both idTech titles are hosted on the same VPS.
+     */
+    defaultPort: 27950,
+    portEnd: 27959,
     protocol: "udp",
   },
 };

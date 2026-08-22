@@ -89,6 +89,10 @@ contextBridge.exposeInMainWorld("playbound", {
   sendFriendRequest: (targetUserId) => ipcRenderer.invoke("send-friend-request", targetUserId),
   inviteFriendByEmail: (email) => ipcRenderer.invoke("invite-friend-by-email", email),
   getFriendsUpcomingEvents: () => ipcRenderer.invoke("get-friends-upcoming-events"),
+  getNotifications: () => ipcRenderer.invoke("get-notifications"),
+  markNotificationsRead: (opts) => ipcRenderer.invoke("mark-notifications-read", opts || {}),
+  playInviteAction: (inviteId, action) =>
+    ipcRenderer.invoke("play-invite-action", inviteId, action),
   getParties: () => ipcRenderer.invoke("get-parties"),
   createParty: (opts) => ipcRenderer.invoke("create-party", opts || {}),
   joinParty: (partyId, password) => ipcRenderer.invoke("join-party", partyId, password),

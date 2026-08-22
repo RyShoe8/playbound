@@ -25,6 +25,7 @@ import {
   views,
   setProgress,
 } from "../shared.js";
+import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
 /** Sort state for game-detail servers table */
 const detailServersSort = { sort: "players", sortDir: "desc" };
@@ -1492,10 +1493,13 @@ async function renderGameDetailView(slug, opts = {}) {
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
       try {
-        setStatus("Checking Java / launching…");
-        await window.playbound.play(slug);
-        startGameSession(slug, detail.title || slug);
-        setStatus(`Launched ${detail.title || slug}`);
+        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
+          setStatus("Checking Java / launching…");
+          await window.playbound.play(slug);
+          startGameSession(slug, detail.title || slug);
+          setStatus(`Launched ${detail.title || slug}`);
+        });
+        if (!launched) return;
       } catch (err) {
         setStatus(err.message || String(err), true);
       }
@@ -2701,10 +2705,24 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
 
   const triggerPlay = async () => {
     try {
-      setStatus("Checking Java / launching…");
-      await window.playbound.play(gameSlug, null, editionSlug);
-      startGameSession(gameSlug, edition.gameTitle || gameSlug);
-      setStatus(`Launched ${edition.editionName || edition.gameTitle || gameSlug}`);
+      const launched = await maybeOfferPhoneControllerThenPlay(
+        {
+          title: edition.gameTitle || edition.editionName,
+          editionName: edition.editionName,
+          features: edition.features || gameDetail?.features,
+          tags: edition.tags || gameDetail?.tags,
+          controllerSupport: edition.controllerSupport || gameDetail?.controllerSupport,
+          hasControllerSupport:
+            edition.hasControllerSupport ?? gameDetail?.hasControllerSupport,
+        },
+        async () => {
+          setStatus("Checking Java / launching…");
+          await window.playbound.play(gameSlug, null, editionSlug);
+          startGameSession(gameSlug, edition.gameTitle || gameSlug);
+          setStatus(`Launched ${edition.editionName || edition.gameTitle || gameSlug}`);
+        }
+      );
+      if (!launched) return;
     } catch (err) {
       setStatus(err.message || String(err), true);
     }

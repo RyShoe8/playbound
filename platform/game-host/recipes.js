@@ -26,6 +26,8 @@ function gameBin(slug, names) {
   return [
     path.join(dir, "run-server"),
     ...names.map((n) => path.join(dir, n)),
+    ...names.map((n) => `/usr/lib/${slug}/bin/${n}`),
+    ...names.map((n) => `/usr/lib/hedgewars/bin/${n}`),
     ...names.map((n) => `/usr/games/${n}`),
     ...names.map((n) => `/usr/bin/${n}`),
     ...names.map((n) => `/usr/local/bin/${n}`),
@@ -106,7 +108,15 @@ export const recipes = {
     portStart: 54555,
     portEnd: 54575,
     protocol: "both",
-    binaries: ["/usr/bin/java"],
+    binaries: [
+      path.join(GAMES_ROOT, "ysoccer", "ysoccer-server.jar"),
+      "/usr/bin/java",
+    ],
+    resolveBinary: () => {
+      const jar = path.join(GAMES_ROOT, "ysoccer", "ysoccer-server.jar");
+      if (fs.existsSync(jar) && fs.existsSync("/usr/bin/java")) return "/usr/bin/java";
+      return null;
+    },
     args: (port) => [
       "-jar",
       path.join(GAMES_ROOT, "ysoccer", "ysoccer-server.jar"),
@@ -190,51 +200,6 @@ export const recipes = {
       '""',
     ],
   },
-  unvanquished: {
-    portStart: 27990,
-    portEnd: 28010,
-    protocol: "udp",
-    binaries: gameBin("unvanquished", ["daemon", "unvanquished-server"]),
-    args: (port, ctx) => [
-      "+set",
-      "dedicated",
-      "2",
-      "+set",
-      "net_port",
-      String(port),
-      "+set",
-      "sv_hostname",
-      ctx.name,
-    ],
-  },
-  keeperfx: {
-    portStart: 5500,
-    portEnd: 5520,
-    protocol: "both",
-    binaries: gameBin("keeperfx", ["keeperfx-server", "keeperfx"]),
-    args: (port) => ["-p", String(port)],
-  },
-  "marathon-2": {
-    portStart: 4226,
-    portEnd: 4246,
-    protocol: "udp",
-    binaries: gameBin("marathon-2", ["alephone-server", "alephone"]),
-    args: (port) => ["-port", String(port)],
-  },
-  "aleph-one": {
-    portStart: 4247,
-    portEnd: 4267,
-    protocol: "udp",
-    binaries: gameBin("aleph-one", ["alephone-server", "alephone"]),
-    args: (port) => ["-port", String(port)],
-  },
-  morrowind: {
-    portStart: 25565,
-    portEnd: 25585,
-    protocol: "both",
-    binaries: gameBin("tes3mp", ["tes3mp-server", "tes3mp"]),
-    args: (port) => ["--port", String(port)],
-  },
   triplea: {
     portStart: 3303,
     portEnd: 3323,
@@ -251,20 +216,6 @@ export const recipes = {
       return [`--port=${port}`];
     },
   },
-  "battle-for-wesnoth": {
-    portStart: 15000,
-    portEnd: 15020,
-    protocol: "tcp",
-    binaries: gameBin("battle-for-wesnoth", ["wesnothd", "wesnothd-1.18", "wesnothd-1.16"]),
-    args: (port) => ["-p", String(port)],
-  },
-  freedoom: {
-    portStart: 10666,
-    portEnd: 10686,
-    protocol: "udp",
-    binaries: gameBin("freedoom", ["odamex-server", "zandronum-server"]),
-    args: (port) => ["-port", String(port)],
-  },
   "0-ad": {
     portStart: 20595,
     portEnd: 20615,
@@ -272,19 +223,41 @@ export const recipes = {
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
     args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
   },
-  flightgear: {
-    portStart: 5000,
-    portEnd: 5020,
-    protocol: "udp",
-    binaries: gameBin("flightgear", ["fgms"]),
-    args: (port) => ["--port", String(port)],
-  },
   mrboom: {
     portStart: 27999,
     portEnd: 28019,
     protocol: "udp",
     binaries: gameBin("mrboom", ["mrboom-server", "mrboom"]),
     args: (port) => ["-p", String(port)],
+  },
+  "wolfenstein-enemy-territory": {
+    portStart: 27950,
+    portEnd: 27959,
+    protocol: "udp",
+    binaries: gameBin("wolfenstein-enemy-territory", [
+      "etlded",
+      "etlded.x86_64",
+      "etl.x86_64.ded",
+    ]),
+    args: (port, ctx) => [
+      "+set",
+      "dedicated",
+      "2",
+      "+set",
+      "net_port",
+      String(port),
+      "+set",
+      "sv_hostname",
+      ctx.name,
+      "+set",
+      "sv_master1",
+      '""',
+      "+set",
+      "sv_pure",
+      "0",
+      "+map",
+      "oasis",
+    ],
   },
 };
 
@@ -298,9 +271,9 @@ export function resolveRecipe(slug) {
 }
 
 const HOST_TITLES = {
-  freedoom: "Freedoom",
   "0-ad": "0 A.D.",
-  "battle-for-wesnoth": "Battle for Wesnoth",
+  "wolfenstein-enemy-territory": "Wolfenstein: Enemy Territory",
+  ysoccer: "YSoccer",
 };
 
 /**

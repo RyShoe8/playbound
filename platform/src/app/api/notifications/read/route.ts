@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Notification from "@/lib/models/Notification";
+import { getFriendsUserId } from "@/lib/friendsAuth";
 
 const bodySchema = z.object({
   id: z.string().min(1).optional(),
@@ -11,8 +10,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const userId = await getFriendsUserId(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,7 +27,6 @@ export async function POST(req: Request) {
     }
 
     await dbConnect();
-    const userId = session.user.id;
     const now = new Date();
 
     if (all) {

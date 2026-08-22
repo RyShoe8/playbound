@@ -123,12 +123,20 @@ export function PartyView({
     // local client with no server, so both players sit in single-player.
     (party.hosted?.enabled ? undefined : launcherPlayUrl(party.gameSlug));
   const joinOpensBrowser = Boolean(browserHref && !joinUrl);
+  /*
+   * When Connect will provision a room, do not navigate via href until we have
+   * host:port. A premature playbound://play or "#" races provision and lands
+   * players in single-player / an empty deep-link panel.
+   */
+  const waitForHostedRoom = Boolean(party.hosted?.enabled && !joinUrl && !browserHref);
 
-  function handleJoinGame() {
+  function handleJoinGame(e?: React.MouseEvent) {
+    if (waitForHostedRoom) {
+      e?.preventDefault();
+    }
     /*
-     * Do not preventDefault — the <a href> is the launcher/browser handoff.
-     * After join-game returns a hosted room, follow up with the join deep link
-     * so the first clicker is not stuck on playbound://play with no server.
+     * For non-hosted / browser titles the <a href> is the handoff. For hosted
+     * titles we only open playbound://join after join-game returns a ready room.
      */
     void (async () => {
       const next = await joinGame(party.id);
@@ -141,11 +149,13 @@ export function PartyView({
               next.hosted.name || next.gameTitle || undefined
             )
           : null;
-      if (nextJoin && nextJoin !== joinUrl) {
+      if (nextJoin && (waitForHostedRoom || nextJoin !== joinUrl)) {
         openPlayboundDeepLink(nextJoin, {
           autoDownload: true,
           downloadUrl: launcherDownloadUrlForOs(detectLauncherOs()),
         });
+      } else if (waitForHostedRoom && next?.hosted?.status === "failed") {
+        /* Store already surfaces hosted.error on the party payload. */
       }
     })();
   }
@@ -341,16 +351,27 @@ export function PartyView({
 
           {canJoinGame && (
             <div className="flex flex-col gap-1">
-              <a
-                href={joinHref || "#"}
-                target={joinOpensBrowser ? "_blank" : undefined}
-                rel={joinOpensBrowser ? "noopener noreferrer" : undefined}
-                onClick={handleJoinGame}
-                className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
-              >
-                <Play className="size-4 fill-current" />
-                Join Game
-              </a>
+              {waitForHostedRoom || (!joinHref && !joinOpensBrowser) ? (
+                <button
+                  type="button"
+                  onClick={(e) => handleJoinGame(e)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
+                >
+                  <Play className="size-4 fill-current" />
+                  Join Game
+                </button>
+              ) : (
+                <a
+                  href={joinHref || "#"}
+                  target={joinOpensBrowser ? "_blank" : undefined}
+                  rel={joinOpensBrowser ? "noopener noreferrer" : undefined}
+                  onClick={(e) => handleJoinGame(e)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm"
+                >
+                  <Play className="size-4 fill-current" />
+                  Join Game
+                </a>
+              )}
               {party.hosted?.roomCode ? (
                 <p className="text-xs text-primary font-mono font-bold">
                   Room Code: {party.hosted.roomCode}

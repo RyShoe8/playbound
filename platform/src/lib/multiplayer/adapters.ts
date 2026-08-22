@@ -124,50 +124,34 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     tier: "tier1_improved",
     adapterType: "direct-ip",
     protocol: "enet",
-    host: {
-      port: 5500,
-      protocol: "both",
-    },
     client: {
       launchArguments: ["-connect", "{host}:{port}"],
     },
-    notes: "Direct ENET/UDP and TCP/IP with automatic CLI session argument join.",
+    notes: "ENET/UDP CLI -connect. No Linux dedicated on the PlayBound VPS yet — peer host.",
   },
 
   morrowind: {
     gameSlug: "morrowind",
     title: "The Elder Scrolls III: Morrowind",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "custom",
-    host: {
-      port: 25565,
-      protocol: "both",
-      binaryHint: "tes3mp-server",
-      argsTemplate: ["--port", "{port}"],
-    },
     client: {
       launchArguments: ["--connect={host}:{port}"],
     },
-    notes: "TES3MP open-source server synchronization with synced quests, Lua scripting, and direct CLI join.",
+    notes: "TES3MP needs game data on the host; not auto-provisioned on the VPS yet.",
   },
 
   tes3mp: {
     gameSlug: "tes3mp",
     title: "TES3MP",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "custom",
-    host: {
-      port: 25565,
-      protocol: "both",
-      binaryHint: "tes3mp-server",
-      argsTemplate: ["--port", "{port}"],
-    },
     client: {
       launchArguments: ["--connect={host}:{port}"],
     },
-    notes: "TES3MP open-source server synchronization with synced quests, Lua scripting, and direct CLI join.",
+    notes: "TES3MP needs game data on the host; not auto-provisioned on the VPS yet.",
   },
 
   "warzone-2100": {
@@ -211,14 +195,10 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     tier: "tier1_improved",
     adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 4226,
-      protocol: "udp",
-    },
     client: {
       launchArguments: ["-connect", "{host}:{port}"],
     },
-    notes: "Open-source Aleph One UDP engine with CLI connect join.",
+    notes: "Aleph One peer host with CLI -connect. No VPS dedicated recipe yet.",
   },
 
   "aleph-one": {
@@ -227,14 +207,10 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     tier: "tier1_improved",
     adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 4247,
-      protocol: "udp",
-    },
     client: {
       launchArguments: ["-connect", "{host}:{port}"],
     },
-    notes: "Aleph One engine UDP multiplayer.",
+    notes: "Aleph One peer host with CLI -connect. No VPS dedicated recipe yet.",
   },
 
   hedgewars: {
@@ -298,7 +274,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     protocol: "custom",
     host: {
       port: 1234,
-      protocol: "udp",
+      protocol: "tcp",
       binaryHint: "OpenRA.Server",
       argsTemplate: ["Server.ListenPort={port}"],
     },
@@ -337,18 +313,12 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "battle-for-wesnoth",
     title: "Battle for Wesnoth",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "tcp",
-    host: {
-      port: 15000,
-      protocol: "tcp",
-      binaryHint: "wesnothd",
-      argsTemplate: ["-p", "{port}"],
-    },
     client: {
       launchArguments: ["--host", "{host}:{port}"],
     },
-    notes: "Automated wesnothd daemon with --host CLI connect.",
+    notes: "Uses Wesnoth's own lobby / wesnothd; not apt-installable on Ubuntu 24.04 VPS.",
   },
 
   openarena: {
@@ -391,18 +361,12 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "unvanquished",
     title: "Unvanquished",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "quake",
-    host: {
-      port: 27990,
-      protocol: "udp",
-      binaryHint: "daemon",
-      argsTemplate: ["+set", "dedicated", "2", "+set", "net_port", "{port}"],
-    },
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
-    notes: "Daemon engine dedicated server with +connect CLI argument.",
+    notes: "Daemon engine +connect. VPS tree is updater-based; not auto-installed yet.",
   },
 
   luanti: {
@@ -427,18 +391,12 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "freedoom",
     title: "Freedoom",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "doom",
-    host: {
-      port: 10666,
-      protocol: "udp",
-      binaryHint: "odamex-server",
-      argsTemplate: ["-port", "{port}"],
-    },
     client: {
       launchArguments: ["-connect", "{host}:{port}"],
     },
-    notes: "Doom engine dedicated server (Odamex / Zandronum).",
+    notes: "Odamex/Zandronum peer host. No plain Linux odasrv package on Ubuntu 24.04 VPS yet.",
   },
 
   freeciv: {
@@ -499,52 +457,36 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "beyond-all-reason",
     title: "Beyond All Reason",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 8452,
-      protocol: "udp",
-      binaryHint: "spring-dedicated",
-    },
     client: {
       launchArguments: ["--connect={host}:{port}"],
     },
-    notes: "Recoil/Spring engine dedicated server and direct IP connect.",
+    notes: "Recoil/Spring lobby — not VPS-provisioned yet.",
   },
 
   "zero-k": {
     gameSlug: "zero-k",
     title: "Zero-K",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 8455,
-      protocol: "udp",
-      binaryHint: "spring-dedicated",
-    },
     client: {
       launchArguments: ["--connect={host}:{port}"],
     },
-    notes: "Spring RTS engine dedicated server and lobby orchestration.",
+    notes: "Spring RTS lobby — not VPS-provisioned yet.",
   },
 
   flightgear: {
     gameSlug: "flightgear",
     title: "FlightGear",
     tier: "tier1_improved",
-    adapterType: "managed-server",
+    adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 5000,
-      protocol: "udp",
-      binaryHint: "fgms",
-      argsTemplate: ["--port", "{port}"],
-    },
     client: {
       launchArguments: ["--multiplay=out,10,{host},{port}"],
     },
-    notes: "fgms multiplayer server with multiplay CLI join.",
+    notes: "fgms multiplayer; no Ubuntu 24.04 fgms package on the VPS yet.",
   },
 
   mrboom: {
@@ -642,12 +584,28 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "wolfenstein-enemy-territory",
     title: "Wolfenstein: Enemy Territory",
     tier: "tier2_automated_server",
-    adapterType: "direct-ip",
+    adapterType: "managed-server",
     protocol: "quake",
+    host: {
+      port: 27950,
+      protocol: "udp",
+      binaryHint: "etlded",
+      argsTemplate: [
+        "+set",
+        "dedicated",
+        "2",
+        "+set",
+        "net_port",
+        "{port}",
+        "+set",
+        "sv_hostname",
+        "{name}",
+      ],
+    },
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
-    notes: "Legacy idTech 3 multiplayer connect.",
+    notes: "ET: Legacy dedicated (etlded) on PlayBound Connect; clients +connect.",
   },
 
   "team-fortress-2": {

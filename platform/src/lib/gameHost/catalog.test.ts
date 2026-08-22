@@ -17,13 +17,12 @@ describe("game host catalog", () => {
     expect(isHostableGame("freeciv")).toBe(true);
     expect(isHostableGame("bzflag")).toBe(true);
     expect(isHostableGame("supertuxkart")).toBe(true);
-    expect(isHostableGame("keeperfx")).toBe(true);
-    expect(isHostableGame("battle-for-wesnoth")).toBe(true);
-    expect(isHostableGame("0-ad")).toBe(true);
-    expect(isHostableGame("freedoom")).toBe(true);
-    expect(isHostableGame("marathon-2")).toBe(true);
-    expect(isHostableGame("aleph-one")).toBe(true);
     expect(isHostableGame("triplea")).toBe(true);
+    expect(isHostableGame("wolfenstein-enemy-territory")).toBe(true);
+    expect(isHostableGame("openarena")).toBe(true);
+    expect(isHostableGame("ysoccer")).toBe(true);
+    expect(isHostableGame("mrboom")).toBe(true);
+    expect(isHostableGame("xonotic")).toBe(true);
   });
 
   it("does not host closed platforms or lobby-only titles", () => {
@@ -31,6 +30,11 @@ describe("game host catalog", () => {
     expect(isHostableGame("league-of-legends")).toBe(false);
     expect(isHostableGame("beyond-all-reason")).toBe(false);
     expect(isHostableGame("0ad")).toBe(false);
+    expect(isHostableGame("keeperfx")).toBe(false);
+    expect(isHostableGame("battle-for-wesnoth")).toBe(false);
+    expect(isHostableGame("marathon-2")).toBe(false);
+    expect(isHostableGame("flightgear")).toBe(false);
+    expect(isHostableGame("freedoom")).toBe(false);
     expect(isHostableGame("")).toBe(false);
     expect(isHostableGame(null)).toBe(false);
   });

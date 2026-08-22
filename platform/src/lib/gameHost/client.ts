@@ -4,6 +4,9 @@
  */
 
 const TIMEOUT_MS = 12_000;
+/** Room create may auto-download a dedicated binary (e.g. etlded) on first use. */
+const CREATE_ROOM_TIMEOUT_MS = 5 * 60 * 1000;
+const ENSURE_TIMEOUT_MS = 10 * 60 * 1000;
 
 export type GameHostRoom = {
   roomId: string;
@@ -31,7 +34,8 @@ export function isGameHostConfigured(): boolean {
 
 async function hostFetch(
   path: string,
-  init: RequestInit
+  init: RequestInit,
+  timeoutMs = TIMEOUT_MS
 ): Promise<Response | null> {
   const cfg = hostConfig();
   if (!cfg) return null;
@@ -42,7 +46,7 @@ async function hostFetch(
       authorization: `Bearer ${cfg.secret}`,
       ...(init.headers || {}),
     },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 }
 
@@ -57,16 +61,20 @@ export async function createHostRoom(opts: {
   if (!cfg) return { error: "Game host is not configured" };
 
   try {
-    const res = await hostFetch("/rooms", {
-      method: "POST",
-      body: JSON.stringify({
-        gameSlug: opts.gameSlug,
-        partyId: opts.partyId,
-        name: opts.name,
-        maxPlayers: opts.maxPlayers,
-        editionSlug: opts.editionSlug || null,
-      }),
-    });
+    const res = await hostFetch(
+      "/rooms",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          gameSlug: opts.gameSlug,
+          partyId: opts.partyId,
+          name: opts.name,
+          maxPlayers: opts.maxPlayers,
+          editionSlug: opts.editionSlug || null,
+        }),
+      },
+      CREATE_ROOM_TIMEOUT_MS
+    );
     if (!res) return { error: "Game host is not configured" };
     const data = (await res.json().catch(() => ({}))) as GameHostRoom & {
       error?: string;
@@ -90,6 +98,51 @@ export async function createHostRoom(opts: {
     const message = err instanceof Error ? err.message : "Game host unreachable";
     console.warn("[gameHost] create room failed:", message);
     return { error: message };
+  }
+}
+
+export async function ensureMissingHostGames(): Promise<{
+  ok: boolean;
+  skipped?: boolean;
+  games?: Record<string, boolean>;
+  results?: Record<string, { ok?: boolean; skipped?: boolean; error?: string }>;
+  message?: string;
+}> {
+  try {
+    const res = await hostFetch(
+      "/ensure-missing",
+      { method: "POST", body: "{}" },
+      ENSURE_TIMEOUT_MS
+    );
+    if (!res) {
+      return { ok: true, skipped: true, message: "Game host is not configured" };
+    }
+    if (res.status === 404) {
+      return {
+        ok: false,
+        message:
+          "Agent missing /ensure-missing — run updated install.sh on the VPS once",
+      };
+    }
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      games?: Record<string, boolean>;
+      results?: Record<string, { ok?: boolean; skipped?: boolean; error?: string }>;
+      error?: string;
+    };
+    if (!res.ok) {
+      return { ok: false, message: data.error || `Game host returned ${res.status}` };
+    }
+    return {
+      ok: Boolean(data.ok),
+      games: data.games,
+      results: data.results,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "Game host unreachable",
+    };
   }
 }
 
