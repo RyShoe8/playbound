@@ -171,7 +171,13 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       port: 2100,
       protocol: "both",
       binaryHint: "warzone2100",
-      argsTemplate: ["--dedicated", "--port={port}"],
+      argsTemplate: [
+        "--autohost=playbound",
+        "--gameport={port}",
+        "--startplayers=1",
+        "--headless",
+        "--nosound",
+      ],
     },
     client: {
       launchArguments: ["--connect={host}:{port}"],

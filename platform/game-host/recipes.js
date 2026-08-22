@@ -21,6 +21,38 @@ const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games
 const HOST_ROOT = path.dirname(GAMES_ROOT);
 const HOST_HOME = process.env.HOME || "/var/lib/playbound-host";
 const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/et";
+const WZ_CONFIG_DIR = path.join(HOST_HOME, "warzone");
+const WZ_AUTOHOST_DIR = path.join(WZ_CONFIG_DIR, "autohost");
+
+function warzoneAutohostId(ctx) {
+  const raw = String(ctx.partyId || "default")
+    .replace(/[^a-zA-Z0-9_-]/g, "")
+    .slice(-16);
+  return raw ? `pb-${raw}` : "pb-default";
+}
+
+function buildWarzoneAutohostConfig(ctx) {
+  return {
+    locked: {
+      alliances: true,
+      scavengers: true,
+      bases: true,
+    },
+    challenge: {
+      map: "Sk-Mountain",
+      maxPlayers: 8,
+      scavengers: 0,
+      alliances: 0,
+      powerLevel: 1,
+      bases: 2,
+      name: String(ctx.name || "PlayBound Warzone").slice(0, 40),
+      techLevel: 1,
+      spectatorHost: true,
+      openSpectatorSlots: 4,
+      blindMode: "none",
+    },
+  };
+}
 
 function firstExisting(candidates) {
   for (const p of candidates) {
@@ -171,7 +203,24 @@ export const recipes = {
         "/usr/lib/x86_64-linux-gnu/warzone2100/warzone2100",
         ...gameBin("warzone-2100", ["warzone2100"]),
       ]),
-    args: (port) => ["--dedicated", `--port=${port}`],
+    prepareSpawn: async (_port, ctx) => {
+      fs.mkdirSync(WZ_AUTOHOST_DIR, { recursive: true });
+      const autohostId = warzoneAutohostId(ctx);
+      fs.writeFileSync(
+        path.join(WZ_AUTOHOST_DIR, `${autohostId}.json`),
+        JSON.stringify(buildWarzoneAutohostConfig(ctx), null, 2)
+      );
+    },
+    args: (port, ctx) => [
+      `--configdir=${WZ_CONFIG_DIR}`,
+      `--autohost=${warzoneAutohostId(ctx)}`,
+      `--gameport=${port}`,
+      "--startplayers=1",
+      "--headless",
+      "--nosound",
+    ],
+    startupGraceMs: 2500,
+    spawnEnv: () => ({ HOME: HOST_HOME }),
   },
   freeciv: {
     portStart: 5556,
@@ -257,7 +306,16 @@ export const recipes = {
     resolveBinary: () => firstExisting([path.join(GAMES_ROOT, "triplea", "run-server")]),
     args: (port) => [String(port)],
     cwd: () => path.join(GAMES_ROOT, "triplea"),
-    spawnEnv: () => ({ BOT_COMMENT: "automated_host" }),
+    prepareSpawn: async () => {
+      fs.mkdirSync(path.join(GAMES_ROOT, "triplea", "downloadedMaps"), { recursive: true });
+    },
+    spawnEnv: (port) => ({
+      BOT_COMMENT: "automated_host",
+      BOT_NAME: `Bot_PB_${port}`,
+      BOT_PORT: String(port),
+      BOT_LOBBY_URI: "https://prod2-lobby.triplea-game.org",
+      MAPS_FOLDER: path.join(GAMES_ROOT, "triplea", "downloadedMaps"),
+    }),
   },
   "0-ad": {
     portStart: 20595,

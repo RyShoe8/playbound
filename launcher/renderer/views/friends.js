@@ -918,6 +918,7 @@ function buildFriendsSectionHtml(title, list) {
 state._addFriendsMode = "username";
 state._addFriendsSent = state._addFriendsSent || {};
 state._createPartyFriends = [];
+let createPartyInFlight = false;
 
 async function toggleAddFriendsPanel(forceShow) {
   const panel = document.getElementById("add-friends-panel");
@@ -2285,6 +2286,7 @@ async function fillCreatePartyPanel() {
           .join("");
 
   submit.onclick = async () => {
+    if (createPartyInFlight) return;
     const name = nameInput?.value?.trim() || "";
     const visibility = document.getElementById("create-party-visibility")?.value || "friends";
     const password = document.getElementById("create-party-password")?.value?.trim() || "";
@@ -2297,6 +2299,7 @@ async function fillCreatePartyPanel() {
       }
       return;
     }
+    createPartyInFlight = true;
     submit.disabled = true;
     submit.textContent = "Creating…";
     if (msg) msg.style.display = "none";
@@ -2331,13 +2334,20 @@ async function fillCreatePartyPanel() {
       }
       const slot = document.getElementById("friends-party-area");
       if (slot) slot.dataset.sig = "";
-      api.refreshFriendsData();
+      await api.refreshFriendsData();
     } catch (err) {
+      await api.refreshFriendsData();
+      if (state._activeParty?.id) {
+        document.getElementById("create-party-panel").style.display = "none";
+        if (nameInput) nameInput.value = "";
+        return;
+      }
       if (msg) {
         msg.textContent = err.message || "Couldn't create party.";
         msg.style.display = "block";
       }
     } finally {
+      createPartyInFlight = false;
       submit.disabled = false;
       submit.textContent = "Create Party";
     }

@@ -132,6 +132,17 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       const data = await res.json();
       if (!res.ok) {
+        await get().fetchParties();
+        const recovered = get().activeParty;
+        if (recovered) {
+          set({ loading: false, error: null });
+          syncPartyPoll(get);
+          return {
+            ...recovered,
+            needsDiscordLink: false,
+            inviteUrl: recovered.discord?.inviteUrl || null,
+          };
+        }
         set({ error: data.error || "Failed to create party", loading: false });
         return null;
       }

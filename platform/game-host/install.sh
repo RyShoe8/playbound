@@ -405,6 +405,37 @@ else
   echo "  WARN: warzone2100.real not found — dedicated hosting may fail on headless VPS"
 fi
 
+echo "==> Warzone 2100 autohost config"
+WZ_CONFIG="$HOME_DIR/warzone"
+mkdir -p "$WZ_CONFIG/autohost"
+cat > "$WZ_CONFIG/config" <<'EOF'
+masterserver_name=nomasterserverplease
+UPnP=0
+EOF
+cat > "$WZ_CONFIG/autohost/playbound-default.json" <<'EOF'
+{
+  "locked": {
+    "alliances": true,
+    "scavengers": true,
+    "bases": true
+  },
+  "challenge": {
+    "map": "Sk-Mountain",
+    "maxPlayers": 8,
+    "scavengers": 0,
+    "alliances": 0,
+    "powerLevel": 1,
+    "bases": 2,
+    "name": "PlayBound Warzone",
+    "techLevel": 1,
+    "spectatorHost": true,
+    "openSpectatorSlots": 4,
+    "blindMode": "none"
+  }
+}
+EOF
+chown -R playbound:playbound "$WZ_CONFIG"
+
 systemctl disable --now bzflag-server 2>/dev/null || true
 systemctl mask bzflag-server 2>/dev/null || true
 pkill -x bzfs 2>/dev/null || true
@@ -446,13 +477,14 @@ if [[ -n "$HEADLESS_JAR" && -x "$TRIPLEA_JAVA_DIR/bin/java" ]]; then
 ROOT="\$(cd "\$(dirname "\$0")" && pwd)"
 JAR="\$(find "\$ROOT" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
 PORT="\${1:?port required}"
+MAPS="\$ROOT/downloadedMaps"
+mkdir -p "\$MAPS"
 export BOT_COMMENT=automated_host
+export BOT_NAME="Bot_PB_\$PORT"
+export BOT_PORT="\$PORT"
+export BOT_LOBBY_URI=https://prod2-lobby.triplea-game.org
+export MAPS_FOLDER="\$MAPS"
 exec "${TRIPLEA_JAVA_DIR}/bin/java" -server -Xmx512M -Djava.awt.headless=true -jar "\$JAR" \\
-  -Ptriplea.lobby.uri=https://prod2-lobby.triplea-game.org \\
-  -Ptriplea.lobby.game.comments=automated_host \\
-  -Ptriplea.map.folder="\$ROOT/downloadedMaps" \\
-  -Ptriplea.name=BotPlayBound \\
-  -Ptriplea.port="\$PORT" \\
   -Ptriplea.server=true \\
   -Ptriplea.server.password=
 EOF
