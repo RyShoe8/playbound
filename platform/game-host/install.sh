@@ -170,6 +170,7 @@ FREECIV_DIR="$GAMES_DIR/freeciv"
 mkdir -p "$FREECIV_DIR"
 if [[ ! -x "$FREECIV_DIR/run-server" ]]; then
   apt-get install -y --no-install-recommends \
+    build-essential \
     meson ninja-build pkg-config \
     libcurl4-gnutls-dev libssl-dev libsqlite3-dev \
     libicu-dev libreadline-dev zlib1g-dev libxml2-dev
