@@ -32,12 +32,14 @@ export function AdminGamesTable({
   games,
   editionCounts,
   modCounts,
+  editionControllerSupport,
   healthWindowDays = 7,
 }: {
   games: AdminGameRow[];
   /** Plain object rather than a Map — this crosses the server/client boundary. */
   editionCounts: Record<string, number>;
   modCounts?: Record<string, number>;
+  editionControllerSupport?: Record<string, boolean>;
   /** Window the health lights were computed over, for the tooltips. */
   healthWindowDays?: number;
 }) {
@@ -187,8 +189,8 @@ export function AdminGamesTable({
           bVal = supportsMultiplayer(b) ? 1 : 0;
           break;
         case "Controller":
-          aVal = supportsController(a) ? 1 : 0;
-          bVal = supportsController(b) ? 1 : 0;
+          aVal = (supportsController(a) || Boolean(editionControllerSupport?.[a.slug])) ? 1 : 0;
+          bVal = (supportsController(b) || Boolean(editionControllerSupport?.[b.slug])) ? 1 : 0;
           break;
         case "Status":
           aVal = (a.status || "").toLowerCase();
@@ -357,13 +359,17 @@ export function AdminGamesTable({
                     </td>
                     <td className="px-4 py-2.5">
                       {(() => {
-                        const ctrl = supportsController(g);
+                        const directCtrl = supportsController(g);
+                        const editionCtrl = Boolean(editionControllerSupport?.[g.slug]);
+                        const ctrl = directCtrl || editionCtrl;
                         return (
                           <span
                             title={
                               ctrl
-                                ? "Controller / Flightstick Support enabled"
-                                : "No controller support found in features or tags"
+                                ? editionCtrl && !directCtrl
+                                  ? "Controller Support enabled via edition (e.g. OpenMW)"
+                                  : "Controller / Flightstick Support enabled"
+                                : "No controller support found in game or editions"
                             }
                             className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${
                               ctrl

@@ -16,6 +16,7 @@ import {
   type InstallMethod,
   type VerificationLevel,
 } from "@/lib/editionTypes";
+import { supportsController } from "@/lib/controller/support";
 
 export type { Edition };
 export { editionTelemetryProps, hasChoosableEditions } from "@/lib/editionTypes";
@@ -566,6 +567,39 @@ export async function editionCountsByGame(): Promise<Map<string, number>> {
     console.error("[editions] counts failed:", err);
   }
   return counts;
+}
+
+/**
+ * Returns a map of gameSlug -> boolean for whether any of the game's editions
+ * provide controller / gamepad / flightstick support.
+ */
+export async function editionControllerSupportByGame(): Promise<Record<string, boolean>> {
+  const map: Record<string, boolean> = {};
+  for (const s of seedEditions) {
+    if (supportsController(s)) {
+      map[s.gameSlug] = true;
+    }
+  }
+  try {
+    await dbConnect();
+    const docs = await EditionModel.find({
+      $or: [
+        { features: { $regex: /controller|gamepad|flightstick|joystick|wheel|hotas/i } },
+        { tags: { $regex: /controller|gamepad|flightstick|joystick|wheel|hotas/i } },
+      ],
+    })
+      .select({ gameSlug: 1, features: 1, tags: 1 })
+      .lean();
+
+    for (const d of docs) {
+      if (d.gameSlug && supportsController(d as unknown as Parameters<typeof supportsController>[0])) {
+        map[d.gameSlug] = true;
+      }
+    }
+  } catch (err) {
+    console.error("[editions] controller support check failed:", err);
+  }
+  return map;
 }
 
 /**
