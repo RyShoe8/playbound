@@ -160,9 +160,13 @@ export const recipes = {
     portStart: 2100,
     portEnd: 2120,
     protocol: "both",
-    binaries: gameBin("warzone-2100", ["warzone2100"]),
+    binaries: gameBin("warzone-2100", ["run-server", "warzone2100"]),
     resolveBinary: () =>
       firstExisting([
+        path.join(GAMES_ROOT, "warzone-2100", "run-server"),
+        "/usr/games/warzone2100.real",
+        "/usr/lib/warzone2100/warzone2100.real",
+        "/usr/lib/x86_64-linux-gnu/warzone2100/warzone2100.real",
         "/usr/lib/warzone2100/warzone2100",
         "/usr/lib/x86_64-linux-gnu/warzone2100/warzone2100",
         ...gameBin("warzone-2100", ["warzone2100"]),
@@ -253,6 +257,7 @@ export const recipes = {
     resolveBinary: () => firstExisting([path.join(GAMES_ROOT, "triplea", "run-server")]),
     args: (port) => [String(port)],
     cwd: () => path.join(GAMES_ROOT, "triplea"),
+    spawnEnv: () => ({ BOT_COMMENT: "automated_host" }),
   },
   "0-ad": {
     portStart: 20595,
