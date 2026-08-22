@@ -9,6 +9,7 @@ import {
   listHostRooms,
 } from "@/lib/gameHost/client";
 import { hostableGameVersionRows } from "@/lib/gameHost/versions";
+import { listActivePartiesForConnectAdmin } from "@/lib/playTogether/adminActiveParties";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -16,6 +17,7 @@ export async function GET() {
 
   const configured = isGameHostConfigured();
   if (!configured) {
+    const activeParties = await listActivePartiesForConnectAdmin([]);
     return NextResponse.json({
       configured: false,
       host: null,
@@ -23,6 +25,8 @@ export async function GET() {
       metrics: null,
       rooms: [],
       games: [],
+      activeParties: activeParties.parties,
+      partySummary: activeParties.summary,
       alerts: [
         {
           type: "info",
@@ -124,14 +128,24 @@ export async function GET() {
     }
   }
 
+  const vpsRooms = roomsResult.ok ? roomsResult.rooms : [];
+  const activeParties = await listActivePartiesForConnectAdmin(
+    vpsRooms.map((room) => ({
+      partyId: room.partyId,
+      port: room.port,
+    }))
+  );
+
   return NextResponse.json({
     configured: true,
     host: getGameHostPublicIp() || health?.publicIp || null,
     health,
     metrics,
     lastSpawnTest: health?.lastSpawnTest ?? {},
-    rooms: roomsResult.ok ? roomsResult.rooms : [],
+    rooms: vpsRooms,
     roomsError: roomsResult.ok ? null : roomsResult.error,
+    activeParties: activeParties.parties,
+    partySummary: activeParties.summary,
     games,
     alerts,
   });
