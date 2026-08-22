@@ -1,4 +1,4 @@
-import { hasServerProvider } from "@/lib/servers/registry";
+import { hasServerBrowser } from "@/lib/servers/registry";
 import { isMultiplayerGame } from "@/lib/playTogether/multiplayer";
 import type { JoinCapabilityResult } from "@/lib/playTogether/types";
 import type { Game } from "@/lib/data/types";
@@ -35,7 +35,7 @@ export function resolveJoinCapability(opts: {
 
   const editionQ = editionId ? `&edition=${encodeURIComponent(editionId)}` : "";
 
-  if (hasServerProvider(slug)) {
+  if (hasServerBrowser(slug)) {
     return {
       capability: "supported",
       label: "Join Game",

@@ -5,6 +5,10 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  choosablePublicEditions,
+  type EditionOption,
+} from "@/lib/servers/editionOptions";
 import { Lock, RefreshCw, Server, Users } from "lucide-react";
 import { launcherJoinUrl, launcherPlayUrl, isOneClickSlug } from "@/lib/launcher";
 import type { GameServer } from "@/lib/servers/types";
@@ -47,12 +51,6 @@ type CatalogMod = {
   baseHasServers?: boolean;
 };
 
-type EditionOption = {
-  slug: string;
-  name: string;
-  virtual?: boolean;
-  visibility?: string;
-};
 
 type Props = {
   installedGameSlugs: string[];
@@ -127,18 +125,6 @@ function filterServersForMod(servers: GameServer[], mod: CatalogMod): {
   return { matched: false, servers };
 }
 
-/** Real public editions (≥2) → edition browser mode instead of mods. */
-function choosablePublicEditions(list: EditionOption[]): EditionOption[] {
-  const publicReal = list.filter(
-    (e) => e.visibility !== "hidden" && e.visibility !== "unlisted" && !e.virtual
-  );
-  // API already filters hidden; keep public + active-ish. Unlisted stay off the dropdown.
-  const usable =
-    publicReal.length > 0
-      ? publicReal
-      : list.filter((e) => !e.virtual && e.visibility !== "hidden");
-  return usable.length >= 2 ? usable : [];
-}
 
 export function GlobalServerBrowser({
   installedGameSlugs,
@@ -279,7 +265,7 @@ export function GlobalServerBrowser({
   }, [effectiveGameSlug]);
 
   const editionOptions = useMemo(() => choosablePublicEditions(editions), [editions]);
-  const editionMode = editionOptions.length >= 2;
+  const editionMode = editionOptions.length >= 1;
 
   const editionNameBySlug = useMemo(() => {
     const map = new Map<string, string>();
