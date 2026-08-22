@@ -34,6 +34,10 @@ function deepLinkJobKey(ctx) {
 
 function renderDeepLinkView(ctx) {
   if (!ctx) return;
+  if (ctx.returnView === "friends" && ctx.slug) {
+    state.returnToFriendsParty = true;
+    state.partyInstallReturnSlug = ctx.slug;
+  }
   const jobKey = deepLinkJobKey(ctx);
   if (activeDeepLinkJob && activeDeepLinkJob === jobKey) {
     state.deepLinkCtx = ctx;
@@ -145,7 +149,7 @@ function renderDeepLinkView(ctx) {
           }
           setStatus("Installer opened — waiting for installer to finish…");
           setProgress(null);
-          api.openGameDetail(ctx.slug, "deepLink");
+          api.openGameDetail(ctx.slug, state.returnToFriendsParty ? "friends" : "deepLink");
           return;
         }
         if (res.status === "installed") {
@@ -161,7 +165,11 @@ function renderDeepLinkView(ctx) {
             await new Promise((r) => setTimeout(r, 2500));
           }
         }
-        api.navigateTo("library");
+        if (await api.finishPartyInstallReturn?.(ctx.slug)) {
+          /* install-detected may also fire; first caller wins. */
+        } else {
+          api.navigateTo("library");
+        }
       } catch (err) {
         setStatus(err.message || String(err), true);
         setProgress(null);

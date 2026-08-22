@@ -22,7 +22,20 @@ import {
   Info,
   Flame,
   Archive,
+  Network,
 } from "lucide-react";
+
+function formatDataVolume(bytes: number) {
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(unitIndex === 0 ? 0 : value >= 100 ? 0 : 1)} ${units[unitIndex]}`;
+}
 
 interface OverviewData {
   r2StorageGB: number;
@@ -33,6 +46,12 @@ interface OverviewData {
   vpsUsedGB: number;
   vpsAllocatedGB: number;
   vpsFreeGB: number;
+  vpsBandwidthServedBytes: number;
+  vpsBandwidthServedGB: number;
+  vpsFilesystemUsedGB: number | null;
+  vpsFilesystemTotalGB: number | null;
+  vpsFilesystemUsedPercent: number | null;
+  vpsMetricsAvailable: boolean;
   publicMirrorsCount: number;
   healthyCount: number;
   degradedCount: number;
@@ -508,7 +527,7 @@ export function DownloadMirrorsManager() {
 
       {/* Top Overview Cards */}
       {overview && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {/* Card 1: R2 Storage & Budget Gauge */}
           <div className="rounded-xl border border-border bg-card p-5 space-y-3 relative overflow-hidden shadow-lg backdrop-blur">
             <div className="flex items-center justify-between">
@@ -567,7 +586,39 @@ export function DownloadMirrorsManager() {
             </div>
           </div>
 
-          {/* Card 3: Public Mirror Health Matrix */}
+          {/* Card 3: VPS filesystem bandwidth served */}
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-lg backdrop-blur">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Network className="w-4 h-4 text-cyan-400" /> VPS Bandwidth Served
+              </span>
+              {overview.vpsFilesystemUsedPercent != null ? (
+                <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                  FS {overview.vpsFilesystemUsedPercent}%
+                </span>
+              ) : null}
+            </div>
+            <div>
+              <div className="text-2xl font-black tracking-tight text-foreground">
+                {formatDataVolume(overview.vpsBandwidthServedBytes ?? 0)}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Lifetime egress from VPS archive downloads
+              </p>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground pt-1">
+              <span>
+                {overview.vpsFilesystemUsedGB != null && overview.vpsFilesystemTotalGB != null
+                  ? `${overview.vpsFilesystemUsedGB} / ${overview.vpsFilesystemTotalGB} GB on disk`
+                  : overview.vpsMetricsAvailable
+                    ? "Filesystem stats unavailable"
+                    : "Live FS stats need updated VPS agent"}
+              </span>
+              <span>{(overview.vpsBandwidthServedGB ?? 0).toFixed(2)} GB logged</span>
+            </div>
+          </div>
+
+          {/* Card 4: Public Mirror Health Matrix */}
           <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-lg backdrop-blur">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -594,7 +645,7 @@ export function DownloadMirrorsManager() {
             </div>
           </div>
 
-          {/* Card 4: Cost & Projections */}
+          {/* Card 5: Cost & Projections */}
           {costEstimates && projections && (
             <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-lg backdrop-blur">
               <div className="flex items-center justify-between">

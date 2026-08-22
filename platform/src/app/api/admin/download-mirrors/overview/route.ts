@@ -3,8 +3,9 @@ import { requireAdminSession } from "@/lib/requireAdmin";
 import dbConnect from "@/lib/db";
 import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
-import MirrorEvent from "@/lib/models/MirrorEvent";
+import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import { getMirrorSettings } from "@/lib/mirrors/cacheManager";
+import { fetchGameHostMetrics } from "@/lib/gameHost/client";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -89,6 +90,29 @@ export async function GET() {
     const estimatedClassB = 342190;
     const estimatedGbMonth = Number((r2StorageGB * 0.95).toFixed(2));
 
+    const vpsBandwidthAgg = await MirrorAttempt.aggregate<{ totalBytes: number }>([
+      { $match: { sourceType: "playbound_vps", result: "success" } },
+      { $group: { _id: null, totalBytes: { $sum: "$bytesDownloaded" } } },
+    ]);
+    const vpsBandwidthServedBytes = vpsBandwidthAgg[0]?.totalBytes ?? 0;
+    const vpsBandwidthServedGB = Number((vpsBandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
+
+    const metricsResult = await fetchGameHostMetrics();
+    const hostStorage = metricsResult.ok
+      ? metricsResult.metrics.storage?.find(
+          (entry) =>
+            entry.path.includes("playbound-host") ||
+            entry.path === "/opt/playbound-host"
+        )
+      : null;
+    const vpsFilesystemUsedGB = hostStorage
+      ? Number((hostStorage.usedBytes / (1024 * 1024 * 1024)).toFixed(2))
+      : null;
+    const vpsFilesystemTotalGB = hostStorage
+      ? Number((hostStorage.totalBytes / (1024 * 1024 * 1024)).toFixed(2))
+      : null;
+    const vpsFilesystemUsedPercent = hostStorage?.usedPercent ?? null;
+
     return NextResponse.json({
       overview: {
         r2StorageGB,
@@ -99,6 +123,12 @@ export async function GET() {
         vpsUsedGB,
         vpsAllocatedGB,
         vpsFreeGB,
+        vpsBandwidthServedBytes,
+        vpsBandwidthServedGB,
+        vpsFilesystemUsedGB,
+        vpsFilesystemTotalGB,
+        vpsFilesystemUsedPercent,
+        vpsMetricsAvailable: metricsResult.ok,
         publicMirrorsCount: allSources.length,
         healthyCount,
         degradedCount,

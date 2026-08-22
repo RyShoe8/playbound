@@ -291,6 +291,8 @@ if [[ -f "$AGENT_SRC/assets/et-playbound.cfg" ]]; then
   cp -f "$AGENT_SRC/assets/et-playbound.cfg" "$ET_DIR/et-playbound.cfg"
 fi
 mkdir -p "$HOME_DIR/et"
+chown playbound:playbound "$HOME_DIR/et"
+chmod 755 "$HOME_DIR/et"
 
 chown -R playbound:playbound "$GAMES_DIR"
 

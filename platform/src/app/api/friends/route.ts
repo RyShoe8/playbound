@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
@@ -61,41 +60,37 @@ export async function GET(req: Request) {
 
     const friendIds = friendUsers.map((u) => u.id);
     const friendIdStrings = friendIds.map((id) => String(id));
-    const [presences, discordConnections, games, sharedByFriend] = await Promise.all([
+    const [presences, discordConnections, games, sharedByFriend, liveMemberParties] =
+      await Promise.all([
       Presence.find({ userId: { $in: friendIds } }).lean(),
       DiscordConnection.find({ userId: { $in: friendIds } }).select("userId").lean(),
       listGames({ includeTesting: true }),
       listSharedLibraryByFriend(userId, friendIdStrings),
+      Party.find({
+        status: { $nin: ["ended"] },
+        "members.userId": { $in: friendIds },
+      })
+        .select("_id members.userId")
+        .lean(),
     ]);
 
     /*
-     * Confirm the parties presence claims people are in still exist.
+     * Party membership is the source of truth for "in a party".
      *
-     * `currentPartyId` is a denormalised copy written when someone joins and
-     * cleared when the party ends. Nothing validated it, so any cleanup that
-     * did not run — a party ended while the database was unreachable, a sweep
-     * that failed — left the flag set permanently, and the friend showed as
-     * "in a party" forever with no party to open.
+     * `currentPartyId` on Presence is a denormalised copy written on join and
+     * cleared on leave, but it can drift — leave/rejoin races, a missed write,
+     * or applyPresenceFreshness stripping it when the heartbeat is stale all
+     * leave friends lists showing someone as out of a party while the roster
+     * already has them back.
      *
-     * Deriving it from the parties that are actually live means a missed
-     * cleanup self-corrects on the next read instead of needing one.
+     * Reading live party documents self-corrects on every friends fetch.
      */
-    const claimedPartyIds = [
-      ...new Set(
-        presences
-          .map((p) => (p.currentPartyId ? String(p.currentPartyId) : ""))
-          .filter((id) => id !== "" && Types.ObjectId.isValid(id))
-      ),
-    ];
-    const livePartyIds = new Set<string>();
-    if (claimedPartyIds.length > 0) {
-      const live = await Party.find({
-        _id: { $in: claimedPartyIds.map((id) => new Types.ObjectId(id)) },
-        status: { $nin: ["ended"] },
-      })
-        .select("_id")
-        .lean();
-      for (const p of live) livePartyIds.add(String(p._id));
+    const partyIdByMember = new Map<string, string>();
+    for (const doc of liveMemberParties) {
+      const partyId = String(doc._id);
+      for (const member of doc.members || []) {
+        partyIdByMember.set(String(member.userId), partyId);
+      }
     }
 
     const titleBySlug = new Map(games.map((g) => [g.slug, g.title]));
@@ -117,11 +112,7 @@ export async function GET(req: Request) {
         currentGameTitle: slug ? titleBySlug.get(slug) || slug : null,
         currentEditionId: p.currentEditionId,
         currentPage: p.currentPage,
-        // Only when the party is still live — see the lookup above.
-        currentPartyId:
-          p.currentPartyId && livePartyIds.has(String(p.currentPartyId))
-            ? String(p.currentPartyId)
-            : null,
+        currentPartyId: partyIdByMember.get(p.userId.toString()) || null,
         lastHeartbeat: p.lastHeartbeat,
         lastSeen: p.lastHeartbeat,
         lookingForPlayers,
@@ -140,13 +131,16 @@ export async function GET(req: Request) {
     }
 
     const friends = friendUsers.map((user) => {
+      const userIdStr = user.id.toString();
       const raw = applyPresenceFreshness(
-        presenceMap.get(user.id.toString()) || {
+        presenceMap.get(userIdStr) || {
           status: "offline",
           lookingForPlayers: false,
         },
         now
       );
+      const membershipPartyId = partyIdByMember.get(userIdStr);
+      if (membershipPartyId) raw.currentPartyId = membershipPartyId;
       const presence = maskPresenceForOthers(raw, user.appearOffline, user.hideActivity);
       const game = presence.currentGameId
         ? gameBySlug.get(String(presence.currentGameId))

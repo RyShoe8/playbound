@@ -40,6 +40,10 @@ export const state = {
   currentView: "home",
   accountState: { connected: false },
   deepLinkCtx: null,
+  /** After installing from the party panel, return to Friends when the install finishes. */
+  returnToFriendsParty: false,
+  /** Slug we expect to finish installing before returning to the party. */
+  partyInstallReturnSlug: null,
   currentDetailSlug: null,
   /** Editions on the game in context — drives whether the Editions nav shows. */
   currentDetailEditionCount: 0,
@@ -122,6 +126,19 @@ export const state = {
   _addFriendsSent: {},
   statusAction: null,
 };
+
+export function shouldReturnToFriendsAfterPartyInstall(slug, ctx = state.deepLinkCtx) {
+  const wantsReturn = state.returnToFriendsParty || ctx?.returnView === "friends";
+  if (!wantsReturn || !slug) return false;
+  const waiting = state.partyInstallReturnSlug;
+  if (waiting && waiting !== slug) return false;
+  return true;
+}
+
+export function clearPartyInstallReturn() {
+  state.returnToFriendsParty = false;
+  state.partyInstallReturnSlug = null;
+}
 
 /** Cross-module function registry — assigned from boot / view modules at runtime. */
 export const api = {};
@@ -319,13 +336,21 @@ export function desktopPlatformAllowedSet() {
     : new Set(["windows", "macos", "linux", "web"]);
 }
 
+function isMobileOnlyPlatforms(platforms) {
+  const normalized = (platforms || []).map(normalizePlatform).filter(Boolean);
+  if (normalized.length === 0) return false;
+  return normalized.every((p) => p === "android" || p === "ios");
+}
+
 export function isGameDesktopCompatible(game) {
   if (game?.browserPlayable) return true;
 
   const currentOS = window.playbound.platform.getOS();
-  if (currentOS !== "macos" && game?.steamDeck) return true;
-
   const platforms = (game?.platforms || []).map(normalizePlatform).filter(Boolean);
+  if (currentOS !== "macos" && game?.steamDeck && !isMobileOnlyPlatforms(game.platforms)) {
+    return true;
+  }
+
   if (platforms.length === 0) return true;
 
   const allowed = desktopPlatformAllowedSet();

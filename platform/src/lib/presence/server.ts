@@ -274,8 +274,10 @@ export async function setPresenceParty(
   opts: { partyId: string | null; gameSlug?: string | null }
 ) {
   await dbConnect();
+  const now = new Date();
   const set: Record<string, unknown> = {
     currentPartyId: opts.partyId || null,
+    lastHeartbeat: now,
   };
   await Presence.findOneAndUpdate(
     { userId },

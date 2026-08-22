@@ -415,7 +415,9 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     try {
       await recipe.prepareSpawn(port, ctx);
     } catch (err) {
-      console.warn("prepareSpawn failed", err);
+      freePort(gameSlug, port);
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: `Could not prepare ${gameSlug} server directory: ${message}` };
     }
   }
 

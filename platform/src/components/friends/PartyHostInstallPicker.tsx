@@ -7,6 +7,12 @@ import type { InstallAction } from "@/lib/editionInstall";
 import { telemetry } from "@/lib/telemetry";
 import { usePartyStore } from "@/stores/partyStore";
 
+function withPartyInstallReturn(href: string): string {
+  if (!href.startsWith("playbound://install/")) return href;
+  if (/[?&]return=friends(?:&|$)/.test(href)) return href;
+  return `${href}${href.includes("?") ? "&" : "?"}return=friends`;
+}
+
 type EditionOption = {
   slug: string;
   name: string;
@@ -141,7 +147,7 @@ export function PartyHostInstallPicker({
       <ul className="space-y-2">
         {editions.map((edition) => {
           const action = edition.installAction;
-          const href = action.href;
+          const href = action.href ? withPartyInstallReturn(action.href) : null;
           const opensNewTab =
             action.kind === "browser" || Boolean(action.kind === "link" && action.external);
           return (

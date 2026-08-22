@@ -147,6 +147,11 @@ function createDeepLinks(protocol) {
         }
         if (seen.size) parsed.modSlugs = [...seen];
       }
+      /*
+       * Party install buttons ask to land back on Friends once the game is in
+       * library. Only "friends" is accepted — anything else is ignored.
+       */
+      if (u.searchParams.get("return") === "friends") parsed.returnView = "friends";
       return parsed;
     } catch {
       return null;

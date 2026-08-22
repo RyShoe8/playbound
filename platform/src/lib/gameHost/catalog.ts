@@ -155,12 +155,16 @@ export function getHostableGame(slug: string): HostableGame | null {
 
 export type PartyHostedPayload = {
   enabled: boolean;
+  /** False when this deployment has no game-host credentials — rooms will never start. */
+  configured?: boolean;
   status: HostedStatus;
   host: string | null;
   port: number | null;
   name: string | null;
   error: string | null;
   roomCode?: string | null;
+  /** What the player still does in-game once Connect has joined them to the server. */
+  steps?: string[];
 };
 
 export function emptyHostedPayload(slug: string): PartyHostedPayload {

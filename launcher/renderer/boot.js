@@ -24,6 +24,8 @@ import {
   setProgress,
   setStatus,
   setStatusAction,
+  shouldReturnToFriendsAfterPartyInstall,
+  clearPartyInstallReturn,
   state,
   updateGamesFamilyNav,
   views,
@@ -32,8 +34,18 @@ import {
 import {
   wireNotifications,
   onNotificationsAccountChanged,
-  closeNotificationsPanel,
+  clearNotificationsPanel,
 } from "./notifications.js";
+
+async function finishPartyInstallReturn(slug) {
+  if (!shouldReturnToFriendsAfterPartyInstall(slug)) return false;
+  clearPartyInstallReturn();
+  setStatus("Install complete — back in your party.");
+  const areaSlot = document.getElementById("friends-party-area");
+  if (areaSlot) areaSlot.dataset.sig = "";
+  await navigateTo("friends", { force: true });
+  return true;
+}
 
 const KEEP_ALIVE = new Set([
   "home",
@@ -230,6 +242,7 @@ export async function openEventDetail(eventId, fromView) {
 }
 
 api.navigateTo = navigateTo;
+api.finishPartyInstallReturn = finishPartyInstallReturn;
 api.openGameDetail = openGameDetail;
 api.openModDetail = openModDetail;
 /*
@@ -470,7 +483,7 @@ function wireMainEvents() {
     }
   });
 
-  window.playbound.onInstallDetected((data) => {
+  window.playbound.onInstallDetected(async (data) => {
     setProgress(null);
     if (data?.uninstalled) {
       setStatus("Removed from this PC.");
@@ -481,6 +494,10 @@ function wireMainEvents() {
     } else {
       setStatus("Installs updated.");
     }
+
+    const returnToParty =
+      !data?.uninstalled && data?.slug && (await finishPartyInstallReturn(data.slug));
+
     if (data?.slug) {
       cacheInvalidate(`game:${data.slug}`);
       cacheInvalidate(`editions:${data.slug}`);
@@ -489,7 +506,9 @@ function wireMainEvents() {
       cacheInvalidate("editions");
     }
     markViewDirty(views.library, views.gameDetail, views.editionDetail);
-    if (state.currentView === "library") api.renderLibraryView?.();
+    if (returnToParty) {
+      /* navigateTo("friends") above already refreshed the party panel. */
+    } else if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
     else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {
       api.renderGameDetailView?.(data.slug, { force: true });
@@ -507,7 +526,7 @@ function wireMainEvents() {
       );
     }
     /* Party config-sync needs a fresh poll after install so “wrong version” clears. */
-    if (state.currentView === "friends" || state._activeParty) {
+    if (returnToParty || state.currentView === "friends" || state._activeParty) {
       const areaSlot = document.getElementById("friends-party-area");
       if (areaSlot) areaSlot.dataset.sig = "";
       void api.refreshFriendsData?.();
