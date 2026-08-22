@@ -26,7 +26,6 @@ async function run(req: Request) {
   const result = await ensureMissingHostGames();
   return NextResponse.json(
     {
-      ok: result.ok,
       at: new Date().toISOString(),
       ...result,
     },
