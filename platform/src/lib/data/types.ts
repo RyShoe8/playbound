@@ -23,7 +23,6 @@ export type Genre =
   | "Tower Defense"
   | "Space"
   | "Arcade"
-  | "Pirate"
   | "MMO"
   | "Survival"
   | "Shooter"

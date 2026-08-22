@@ -263,7 +263,7 @@ export function PartyView({
               <label className="block">
                 <span className="sr-only">Party game</span>
                 <PremiumSelect
-                  value={party.gameSlug}
+                  value={party.gameSlug || ""}
                   onChange={(e) => {
                     if (e.target.value) void setGame(party.id, e.target.value);
                   }}

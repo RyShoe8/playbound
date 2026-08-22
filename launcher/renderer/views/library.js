@@ -2,6 +2,8 @@ import { createFreeOfferCard, createGameCard } from "../cards.js";
 import {
   api,
   buildActivityPanelHtml,
+  cacheInvoke,
+  CACHE_TTL,
   editionsContextSlug,
   enhanceSelect,
   escapeHtml,
@@ -20,8 +22,10 @@ import {
 } from "../shared.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
-async function renderLibraryView() {
+function ensureLibraryShell() {
   const container = views.library;
+  if (container.querySelector("#library-list")) return false;
+
   container.innerHTML = `
     <div class="section-header" style="margin-top: 0">
       <div>
@@ -42,29 +46,48 @@ async function renderLibraryView() {
     void window.playbound.syncLibraryNow?.();
   });
 
-  // Without this the Library view rendered its shell and never filled in.
-  await renderLibraryList();
-  markViewReady(container);
+  return true;
 }
 
-async function renderLibraryList() {
-  const [installed, installedMods, modsCat, cloudLib, catalog] = await Promise.all([
-    window.playbound.getInstalled(),
-    window.playbound.getInstalledMods?.() || Promise.resolve([]),
-    window.playbound.getModsCatalog(),
-    window.playbound.getCloudLibrary?.() || Promise.resolve(null),
-    window.playbound.getCatalog?.() || Promise.resolve([]),
-  ]);
-  const modTitles = new Map((modsCat.mods || []).map((m) => [m.slug, m.title]));
-  const list = document.getElementById("library-list");
-  if (!list) return;
-  const hasLocalGames = installed && installed.length > 0;
-  const hasMods = installedMods && installedMods.length > 0;
+function catalogListFrom(raw) {
+  return Array.isArray(raw) ? raw : raw?.games || [];
+}
 
-  const catalogList = Array.isArray(catalog) ? catalog : catalog?.games || [];
+async function loadLibraryLocalData() {
+  const catalog =
+    state.catalogCache.length > 0
+      ? state.catalogCache
+      : (await window.playbound.getCatalog?.()) || [];
+  if (!state.catalogCache.length && Array.isArray(catalog)) {
+    state.catalogCache = catalog;
+  }
+
+  const [installed, installedMods] = await Promise.all([
+    cacheInvoke("installed", CACHE_TTL.installed, () => window.playbound.getInstalled()),
+    cacheInvoke("installedMods", CACHE_TTL.installedMods, () =>
+      window.playbound.getInstalledMods?.() || Promise.resolve([])
+    ),
+  ]);
+
+  return {
+    catalog,
+    installed: installed || [],
+    installedMods: installedMods || [],
+  };
+}
+
+function paintLibraryLoading(list) {
+  list.innerHTML = `<p class="view-sub" style="grid-column:1/-1;text-align:center;padding:40px 0">Loading library…</p>`;
+}
+
+function paintLibraryList(list, { installed, installedMods, modTitles, catalog, cloudLib }) {
+  const hasLocalGames = installed.length > 0;
+  const hasMods = installedMods.length > 0;
+
+  const catalogList = catalogListFrom(catalog);
   const catalogBySlug = new Map(catalogList.map((g) => [g.slug, g]));
 
-  const installedSlugs = new Set((installed || []).map((g) => g.slug));
+  const installedSlugs = new Set(installed.map((g) => g.slug));
   const cloudEntries = Array.isArray(cloudLib?.entries) ? cloudLib.entries : [];
   const otherDeviceSlugs = cloudEntries
     .filter((e) => !installedSlugs.has(e.gameSlug))
@@ -91,8 +114,8 @@ async function renderLibraryList() {
 
   list.replaceChildren();
 
-  for (const game of installed || []) {
-    const gameMods = (installedMods || []).filter((m) => m.baseGameSlug === game.slug);
+  for (const game of installed) {
+    const gameMods = installedMods.filter((m) => m.baseGameSlug === game.slug);
     list.appendChild(
       buildLibraryGameBlock(game, gameMods, modTitles, {
         catalogEntry: catalogBySlug.get(game.slug),
@@ -119,7 +142,7 @@ async function renderLibraryList() {
     list.appendChild(buildLibraryGameBlock(cloudGame, [], modTitles, { ownedElsewhere: true }));
   }
 
-  const orphanMods = (installedMods || []).filter(
+  const orphanMods = installedMods.filter(
     (m) =>
       m.baseGameSlug &&
       !installedSlugs.has(m.baseGameSlug) &&
@@ -147,6 +170,68 @@ async function renderLibraryList() {
     };
     list.appendChild(buildLibraryGameBlock(fakeGame, mods, modTitles, { orphan: true }));
   }
+}
+
+async function enrichLibraryList(list, local) {
+  const needsMods = local.installedMods.length > 0;
+  const [modsCat, cloudLib] = await Promise.all([
+    needsMods
+      ? cacheInvoke("mods", CACHE_TTL.mods, () => window.playbound.getModsCatalog())
+      : Promise.resolve({ mods: [] }),
+    cacheInvoke("cloudLibrary", CACHE_TTL.cloudLibrary, () =>
+      window.playbound.getCloudLibrary?.() || Promise.resolve(null)
+    ),
+  ]);
+
+  if (state.currentView !== "library" || !document.getElementById("library-list")) return;
+
+  const modTitles = new Map((modsCat?.mods || []).map((m) => [m.slug, m.title]));
+  paintLibraryList(list, {
+    ...local,
+    modTitles,
+    cloudLib,
+  });
+}
+
+async function renderLibraryList() {
+  const list = document.getElementById("library-list");
+  if (!list) return;
+
+  const local = await loadLibraryLocalData();
+  const hasLocal = local.installed.length > 0 || local.installedMods.length > 0;
+
+  if (hasLocal) {
+    paintLibraryList(list, {
+      ...local,
+      modTitles: new Map(),
+      cloudLib: null,
+    });
+  } else {
+    paintLibraryLoading(list);
+  }
+
+  await enrichLibraryList(list, local);
+}
+
+async function renderLibraryView() {
+  const container = views.library;
+  ensureLibraryShell();
+  const list = document.getElementById("library-list");
+  const local = await loadLibraryLocalData();
+  const hasLocal = local.installed.length > 0 || local.installedMods.length > 0;
+
+  if (hasLocal) {
+    paintLibraryList(list, {
+      ...local,
+      modTitles: new Map(),
+      cloudLib: null,
+    });
+  } else {
+    paintLibraryLoading(list);
+  }
+
+  markViewReady(container);
+  void enrichLibraryList(list, local);
 }
 
 async function toggleLibraryAddPanel(forceOpen = false) {

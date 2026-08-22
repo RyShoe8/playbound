@@ -65,6 +65,8 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 let pollSubscribers = 0;
 let pollMs = 5000;
 let requestedPollMs = 5000;
+/** While > 0, polling must not overwrite activeParty with stale roster data. */
+let partyMutationInFlight = 0;
 
 const DEFAULT_PARTY_POLL_MS = 5000;
 const FAST_PARTY_POLL_MS = 1000;
@@ -161,11 +163,15 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (!res.ok) return;
       const data = await res.json();
       const myParties: PartyPayload[] = data.myParties || [];
-      set({
-        activeParty: myParties[0] || null,
+      const nextActive = myParties[0] || null;
+      set((state) => ({
+        activeParty:
+          partyMutationInFlight > 0 && state.activeParty?.id === nextActive?.id
+            ? state.activeParty
+            : nextActive,
         discoverableParties: data.discoverable || [],
         loading: false,
-      });
+      }));
       syncPartyPoll(get);
     } catch (err) {
       console.error("Failed to fetch parties", err);
@@ -375,19 +381,37 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   },
 
   setGame: async (partyId, gameSlug) => {
+    const previous = get().activeParty;
+    partyMutationInFlight += 1;
+    if (previous?.id === partyId) {
+      set({
+        activeParty: {
+          ...previous,
+          gameSlug,
+          gameTitle: previous.gameTitle || gameSlug,
+          editionSlug: null,
+          modSlugs: [],
+        },
+      });
+    }
     try {
       const res = await fetch(`/api/parties/${partyId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ gameSlug }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        set({ activeParty: data.party });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.party) {
+        set({ activeParty: data.party as PartyPayload });
         refreshFriendsAfterPartyMutation();
+      } else if (previous?.id === partyId) {
+        set({ activeParty: previous, error: data.error || "Failed to set party game" });
       }
     } catch (err) {
+      if (previous?.id === partyId) set({ activeParty: previous });
       console.error("Failed to set party game", err);
+    } finally {
+      partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
     }
   },
 

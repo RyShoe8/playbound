@@ -40,7 +40,7 @@ const GENRE_ALIASES: Record<string, (typeof GENRES)[number]> = {
   space: "Space",
   arcade: "Arcade",
   casual: "Arcade",
-  pirate: "Pirate",
+  pirate: "Adventure",
   mmo: "MMO",
   mmorpg: "MMO",
   "massively multiplayer": "MMO",

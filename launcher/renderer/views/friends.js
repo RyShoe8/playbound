@@ -549,6 +549,7 @@ async function refreshFriendsData() {
   if (!content) return;
 
   try {
+    await ensurePartyGames();
     const [friendsData, requestsData, partiesRaw, upcomingEventsData] = await Promise.all([
       window.playbound.getFriends(),
       window.playbound.getFriendRequests(),
@@ -1216,6 +1217,8 @@ const ICON = {
  */
 let partyGamesCache = null;
 let partyGamesCacheKey = null;
+/** Blocks poll repaints from undoing an in-flight party game pick. */
+let partyMutationInFlight = 0;
 
 async function ensurePartyGames() {
   const cacheKey = `${state.compatibilityFilter || "compatible"}:${state.discoveryMode || "all"}`;
@@ -1789,6 +1792,9 @@ function paintPartyArea(partiesData, { force = false } = {}) {
   const mine = Array.isArray(partiesData?.myParties) ? partiesData.myParties : [];
   const discoverable = Array.isArray(partiesData?.discoverable) ? partiesData.discoverable : [];
   const active = mine[0] || null;
+
+  if (!force && partyMutationInFlight > 0) return;
+
   state._activeParty = active;
 
   // The site hides "Start Party" while you are already in one.
@@ -1852,12 +1858,32 @@ function wirePartyView(slot, party) {
   const gameSelect = slot.querySelector("#party-game-select");
   if (gameSelect) {
     gameSelect.addEventListener("change", async () => {
-      if (!gameSelect.value) return;
-      applyPartyResult(
-        await window.playbound.setPartyGame(partyId, gameSelect.value),
-        "Couldn't set the party game."
-      );
-      void window.playbound.syncLibraryNow?.({ quiet: true });
+      const slug = gameSelect.value;
+      if (!slug) return;
+      const pickedTitle =
+        partyGamesCache?.find((g) => g.slug === slug)?.title || slug;
+      partyMutationInFlight += 1;
+      if (state._activeParty?.id === partyId) {
+        state._activeParty = {
+          ...state._activeParty,
+          gameSlug: slug,
+          gameTitle: pickedTitle,
+          editionSlug: null,
+          modSlugs: [],
+        };
+        slot.dataset.sig = "";
+        paintPartyArea({ myParties: [state._activeParty], discoverable: [] }, { force: true });
+      }
+      try {
+        const res = await window.playbound.setPartyGame(partyId, slug);
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        applyPartyResult(res, "Couldn't set the party game.");
+        void window.playbound.syncLibraryNow?.({ quiet: true });
+      } catch (err) {
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        setStatus(err.message || "Couldn't set the party game.", true);
+        void api.refreshFriendsData();
+      }
     });
     enhanceSelect(gameSelect);
   }

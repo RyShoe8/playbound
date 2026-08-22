@@ -25,7 +25,6 @@ export const GENRES = [
   "Tower Defense",
   "Space",
   "Arcade",
-  "Pirate",
   "MMO",
   "Survival",
   "Shooter",
