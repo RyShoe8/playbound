@@ -18,6 +18,7 @@ import { verifyEtLegacyReady } from "./etLegacyInstall.js";
 const execFileAsync = promisify(execFile);
 
 const GAMES_ROOT = process.env.GAME_HOST_GAMES_DIR || "/opt/playbound-host/games";
+const HOST_ROOT = path.dirname(GAMES_ROOT);
 const HOST_HOME = process.env.HOME || "/var/lib/playbound-host";
 const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/et";
 
@@ -67,7 +68,8 @@ export const recipes = {
     portEnd: 3999,
     protocol: "both",
     binaries: gameBin("openttd", ["openttd"]),
-    args: (port) => ["-D", `0.0.0.0:${port}`, "-f"],
+    args: (port) => ["-D", `0.0.0.0:${port}`],
+    startupGraceMs: 1500,
     spawnEnv: () => ({
       HOME: HOST_HOME,
       XDG_DATA_HOME: HOST_HOME,
@@ -181,6 +183,12 @@ export const recipes = {
     binaries: gameBin("bzflag", ["bzfs"]),
     args: (port) => ["-p", String(port), "-g", "-noTeamKills"],
     prepareSpawn: async (port) => {
+      try {
+        await execFileAsync("pkill", ["-x", "bzfs"]);
+      } catch {
+        /* none running */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
       try {
         await execFileAsync("fuser", ["-k", `${port}/tcp`, `${port}/udp`]);
       } catch {
@@ -361,7 +369,9 @@ export function listGameHostStatus() {
       ready = check.ok;
     }
     if (slug === "triplea" && hasBinary) {
-      ready = fs.existsSync(path.join(GAMES_ROOT, "triplea", "run-server"));
+      const runServer = path.join(GAMES_ROOT, "triplea", "run-server");
+      const java25 = path.join(HOST_ROOT, "jre", "temurin-25", "bin", "java");
+      ready = fs.existsSync(runServer) && fs.existsSync(java25);
     }
     if (slug === "openttd" && hasBinary) {
       const baseset = path.join(HOST_HOME, ".openttd", "baseset");
