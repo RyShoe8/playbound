@@ -23,6 +23,7 @@ import {
   Gift,
   Activity,
   DownloadCloud,
+  Server,
   ShieldCheck,
   ShoppingBag,
   Store,
@@ -70,6 +71,12 @@ export const links: NavItem[] = [
     family: ["/admin/ecommerce", "/admin/free-offers"],
   },
   { href: "/admin/submissions", label: "Submissions", icon: Inbox },
+  {
+    href: "/admin/game-servers",
+    label: "Game Servers",
+    icon: Server,
+    family: ["/admin/game-servers", "/admin/connect"],
+  },
   {
     href: "/admin/ops",
     label: "Ops",
@@ -213,9 +220,19 @@ const OPS_CHILDREN: NavChild[] = [
   },
 ];
 
+const GAME_SERVERS_CHILDREN: NavChild[] = [
+  {
+    label: "Connect",
+    icon: Server,
+    href: "/admin/connect",
+    match: (p) => p.startsWith("/admin/connect") || p.startsWith("/admin/game-servers"),
+  },
+];
+
 export function childrenFor(item: NavItem, gameSlug: string | null): NavChild[] {
   if (item.href === "/admin/games") return gamesChildren(gameSlug);
   if (item.href === "/admin/ecommerce") return ECOMMERCE_CHILDREN;
+  if (item.href === "/admin/game-servers") return GAME_SERVERS_CHILDREN;
   if (item.href === "/admin/ops") return OPS_CHILDREN;
   return [];
 }

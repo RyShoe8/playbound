@@ -15,6 +15,51 @@ export type GameHostRoom = {
   gameSlug: string;
   name?: string;
   roomCode?: string | null;
+  createdAt?: number;
+};
+
+export type GameHostHealth = {
+  ok?: boolean;
+  publicIp?: string | null;
+  rooms?: number;
+  maxRooms?: number;
+  games?: Record<string, boolean>;
+  gameStatus?: Record<string, { installed: boolean; ready: boolean }>;
+};
+
+export type GameHostMetrics = {
+  collectedAt?: string;
+  uptimeSec?: number;
+  publicIp?: string | null;
+  agentVersion?: string;
+  cpu?: {
+    cores?: number;
+    load1?: number;
+    load5?: number;
+    load15?: number;
+    usagePercent?: number | null;
+  };
+  memory?: {
+    totalBytes?: number;
+    usedBytes?: number;
+    freeBytes?: number;
+    usedPercent?: number;
+  };
+  storage?: Array<{
+    path: string;
+    totalBytes: number;
+    usedBytes: number;
+    freeBytes: number;
+    usedPercent: number;
+    error?: string;
+  }>;
+  bandwidth?: {
+    iface?: string | null;
+    rxMbps?: number;
+    txMbps?: number;
+    rxBytesTotal?: number;
+    txBytesTotal?: number;
+  };
 };
 
 function hostConfig(): { base: string; secret: string; publicIp: string } | null {
@@ -30,6 +75,70 @@ function hostConfig(): { base: string; secret: string; publicIp: string } | null
 
 export function isGameHostConfigured(): boolean {
   return hostConfig() !== null;
+}
+
+export function getGameHostPublicIp(): string | null {
+  return hostConfig()?.publicIp || null;
+}
+
+export async function fetchGameHostHealth(): Promise<
+  { configured: true; health: GameHostHealth } | { configured: false; error: string }
+> {
+  const cfg = hostConfig();
+  if (!cfg) return { configured: false, error: "Game host is not configured" };
+  try {
+    const res = await fetch(`${cfg.base}/health`, {
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const health = (await res.json().catch(() => ({}))) as GameHostHealth;
+    if (!res.ok) {
+      return { configured: false, error: `Game host health returned ${res.status}` };
+    }
+    return { configured: true, health };
+  } catch (err) {
+    return {
+      configured: false,
+      error: err instanceof Error ? err.message : "Game host unreachable",
+    };
+  }
+}
+
+export async function fetchGameHostMetrics(): Promise<
+  { ok: true; metrics: GameHostMetrics } | { ok: false; error: string }
+> {
+  try {
+    const res = await hostFetch("/metrics", { method: "GET" });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const metrics = (await res.json().catch(() => ({}))) as GameHostMetrics;
+    if (!res.ok) {
+      return { ok: false, error: `Game host metrics returned ${res.status}` };
+    }
+    return { ok: true, metrics };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Game host unreachable",
+    };
+  }
+}
+
+export async function listHostRooms(): Promise<
+  { ok: true; rooms: GameHostRoom[] } | { ok: false; error: string }
+> {
+  try {
+    const res = await hostFetch("/rooms", { method: "GET" });
+    if (!res) return { ok: false, error: "Game host is not configured" };
+    const data = (await res.json().catch(() => ({}))) as { rooms?: GameHostRoom[]; error?: string };
+    if (!res.ok) {
+      return { ok: false, error: data.error || `Game host returned ${res.status}` };
+    }
+    return { ok: true, rooms: data.rooms || [] };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Game host unreachable",
+    };
+  }
 }
 
 async function hostFetch(
