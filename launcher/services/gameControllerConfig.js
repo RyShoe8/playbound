@@ -403,23 +403,153 @@ const GAMES = {
       return trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
     },
   },
+  /**
+   * FlightGear — `fgfsrc`, a list of the same options you would pass on the
+   * command line, one per line.
+   *
+   * The file matters. This entry used to resolve `fgfs.ini` or an
+   * `autosaved.xml`, neither of which is a name FlightGear uses: the options
+   * file is `fgfsrc` and the saved-property file is `autosave_<major>_<minor>.xml`.
+   * It was inert because nothing matched — but it appended `--prop:` lines with
+   * no format check, so the day a name did match it would have written
+   * command-line syntax into the middle of an XML document and taken the
+   * player's saved settings with it.
+   *
+   * FlightGear already ships bindings for most sticks under Input/Joysticks and
+   * binds a recognised one on sight, so the useful pre-launch action is making
+   * sure the subsystem is on and the first stick is enabled rather than
+   * inventing axis mappings that would override a better profile.
+   */
   flightgear: {
+    verified:
+      "UNVERIFIED against a real install — fgfsrc is FlightGear's documented " +
+      "options file and takes the same --prop: switches as the command line. " +
+      "The guard below declines anything that is not already one.",
     resolve: (c) =>
       firstExisting([
-        c.installDir && path.join(c.installDir, "fgfs.ini"),
-        path.join(c.appData, "flightgear.org", "autosaved.xml"),
+        path.join(c.appData, "flightgear.org", "fgfsrc"),
+        c.installDir && path.join(c.installDir, "fgfsrc"),
+        c.installDir && path.join(c.installDir, "system.fgfsrc"),
       ]),
-    verified: "FlightGear flightstick/gamepad property auto-configuration.",
     needsConfig(text) {
-      return !/joysticks.*enabled=true/i.test(String(text || ""));
+      return !/^\s*--prop:\/input\/joysticks\/js\[0\]\/enabled=true\s*$/im.test(String(text || ""));
     },
     apply(text, profile) {
       const original = String(text ?? "");
-      const block = `# PlayBound flightstick & controller setup\n--prop:/input/joysticks/js[0]/enabled=true\n`;
+      /*
+       * Every meaningful line in an fgfsrc is an option or a comment. Anything
+       * else — XML, an ini section header — means we resolved the wrong file,
+       * and appending to it would break whatever it actually is.
+       */
+      const meaningful = original
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l && !l.startsWith("#"));
+      if (meaningful.some((l) => !l.startsWith("--"))) return null;
+
+      const stick = profile.deviceType === "flightstick";
+      const lines = [
+        "--prop:/input/joysticks/js[0]/enabled=true",
+        // Only for a pad. A real stick has an axis layout of its own and
+        // FlightGear's shipped profile for it is better than anything here.
+        ...(stick ? [] : ["--prop:/input/joysticks/js[0]/axis[0]/binding/command=property-scale"]),
+      ];
       const trimmed = original.replace(/\s*$/, "");
+      const block = `# PlayBound ${stick ? "flightstick" : "controller"} setup — ${profile.label}\n${lines.join("\n")}\n`;
       return trimmed ? `${trimmed}\n\n${block}` : block;
     },
   },
+  /**
+   * OpenMW — Morrowind's engine reimplementation. `settings.cfg` is ini-shaped
+   * with an `[Input]` section.
+   *
+   * Controller support is complete and off: OpenMW ships a full gamepad layout
+   * behind `enable controller`, so this is a flag flip rather than a binding
+   * list. It writes into the user config, which OpenMW layers over its
+   * defaults, so nothing shipped with the game is overwritten.
+   */
+  morrowind: {
+    verified:
+      "UNVERIFIED against a real install — 'enable controller' is OpenMW's " +
+      "documented [Input] setting. The guard declines anything that is not " +
+      "already an ini with that section.",
+    resolve: (c) =>
+      firstExisting([
+        path.join(c.documents, "My Games", "OpenMW", "settings.cfg"),
+        c.installDir && path.join(c.installDir, "settings.cfg"),
+        path.join(c.appData, "openmw", "settings.cfg"),
+      ]),
+    needsConfig(text) {
+      return !/^\s*enable controller\s*=\s*true\s*$/im.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      // An OpenMW settings.cfg is ini sections; anything else is the wrong file.
+      if (!/^\[[A-Za-z ]+\]$/m.test(original)) return null;
+
+      const body = (lines) => [
+        ...lines.filter((l) => !/^\s*enable controller\s*=/i.test(l)),
+        "enable controller = true",
+        // A stick's axes are nothing like a pad's, and OpenMW has no profile
+        // for one — enabling it without a layout is the honest half.
+        ...(profile.deviceType === "flightstick" ? [] : ["joystick dead zone = 0.15"]),
+      ];
+      const edited = editIniSection(original, "Input", (lines) =>
+        body(lines.filter((l) => !/^\s*joystick dead zone\s*=/i.test(l)))
+      );
+      if (edited != null) return `${edited.replace(/\s*$/, "")}\n`;
+
+      // No [Input] section yet: append one rather than declining, since the
+      // file is recognisably OpenMW's and a missing section is normal.
+      const trimmed = original.replace(/\s*$/, "");
+      return `${trimmed}\n\n[Input]\n${body([]).join("\n")}\n`;
+    },
+  },
+
+  /**
+   * Daggerfall Unity — `settings.ini`, ini-shaped, with controller options in
+   * `[Controls]`.
+   *
+   * The engine reads a joystick when told to and ships sensible axis defaults,
+   * so this enables it and leaves the mapping alone.
+   */
+  daggerfall: {
+    verified:
+      "UNVERIFIED against a real install — [Controls] and the Joystick* keys " +
+      "are Daggerfall Unity's documented settings.ini options. The guard " +
+      "declines anything that is not already that ini.",
+    resolve: (c) =>
+      firstExisting([
+        c.installDir && path.join(c.installDir, "settings.ini"),
+        path.join(c.documents, "My Games", "Daggerfall Unity", "settings.ini"),
+        path.join(c.appData, "Daggerfall Unity", "settings.ini"),
+      ]),
+    needsConfig(text) {
+      return !/^\s*JoystickCursorSensitivity\s*=/im.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      // Daggerfall Unity's ini always carries this section.
+      if (!/^\[Controls\]$/m.test(original)) return null;
+
+      const keys = [
+        ["EnableController", "True"],
+        ["JoystickCursorSensitivity", "1.0"],
+        ["JoystickMovementThreshold", "0.15"],
+        ["JoystickLookSensitivity", profile.deviceType === "flightstick" ? "0.6" : "1.0"],
+      ];
+      const edited = editIniSection(original, "Controls", (lines) => {
+        const taken = new Set(keys.map(([k]) => k.toLowerCase()));
+        return [
+          ...lines.filter((l) => !taken.has(String(iniKeyOf(l)))),
+          ...keys.map(([k, v]) => `${k} = ${v}`),
+        ];
+      });
+      if (edited == null) return null;
+      return `${edited.replace(/\s*$/, "")}\n`;
+    },
+  },
+
   naev: {
     resolve: (c) =>
       firstExisting([
@@ -506,6 +636,23 @@ const NO_CONFIG_NEEDED = {
   "endless-sky": { kind: "native", note: "Gamepad bindings are exposed in the game's own settings." },
   hedgewars: { kind: "native", note: "Native gamepad input and binding menu in settings." },
   "the-finals": { kind: "native", note: "Native controller support with aim assist options." },
+  /*
+   * The last three the admin table marks as controller-capable. Recorded so
+   * every Yes on that page has an answer here, rather than three that look
+   * forgotten.
+   */
+  valorant: {
+    kind: "unwritable",
+    note: "Riot live-service install we do not manage; its config is not ours to edit.",
+  },
+  "wild-rift": {
+    kind: "unwritable",
+    note: "Mobile title run through an emulator — the pad is bound in the emulator, not the game.",
+  },
+  "space-station-14": {
+    kind: "native",
+    note: "Robust engine reads a pad through its own input system; bound in-game.",
+  },
   "star-trek-online": { kind: "native", note: "Native gamepad layout for PC & console." },
   "path-of-exile": { kind: "native", note: "Native controller detection and custom UI layout." },
   "once-human": { kind: "native", note: "Native controller support for combat and inventory." },

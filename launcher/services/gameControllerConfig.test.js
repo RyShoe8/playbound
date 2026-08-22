@@ -342,5 +342,125 @@ test("auto-configures Privateer Gemini Gold with joystick block", () => {
   assert.ok(out.includes("Thrustmaster HOTAS"));
 });
 
+/* ── FlightGear: fgfsrc, and the file it must not touch ────────────────── */
+
+const stick = pickPrimary([{ id: "Thrustmaster T.16000M Joystick", connected: true }]);
+
+/** A real fgfsrc: command-line options, one per line, with comments. */
+const FGFSRC = ["# FlightGear options", "--aircraft=c172p", "--airport=KSFO", ""].join("\n");
+
+test("enables the first stick in an fgfsrc", () => {
+  const out = applyProfile("flightgear", FGFSRC, stick);
+  assert.ok(/^--prop:\/input\/joysticks\/js\[0\]\/enabled=true$/m.test(out), "stick enabled");
+  assert.ok(out.includes("--aircraft=c172p"), "existing options survive");
+});
+
+test("leaves a real stick's own axis layout alone", () => {
+  /*
+   * FlightGear ships a binding profile for most sticks and binds a recognised
+   * one on sight. Writing axis bindings over that makes things worse, so the
+   * pad-only line is exactly that.
+   */
+  const withStick = applyProfile("flightgear", FGFSRC, stick);
+  assert.ok(!withStick.includes("axis[0]/binding"), "no invented axis map for a stick");
+
+  const withPad = applyProfile("flightgear", FGFSRC, dualsense);
+  assert.ok(withPad.includes("axis[0]/binding"), "a pad still gets one");
+});
+
+test("refuses a file that is not an fgfsrc", () => {
+  /*
+   * The bug this replaced: the entry pointed at an autosave XML and appended
+   * --prop: lines to it with no format check. Appending command-line syntax to
+   * an XML document destroys the player's saved settings.
+   */
+  const autosaveXml = '<?xml version="1.0"?>\n<PropertyList>\n <sim n="0"><startup/></sim>\n</PropertyList>\n';
+  assert.strictEqual(applyProfile("flightgear", autosaveXml, stick), null);
+  assert.strictEqual(applyProfile("flightgear", "[Controls]\nx=1", stick), null);
+});
+
+test("FlightGear is idempotent", () => {
+  const once = applyProfile("flightgear", FGFSRC, stick);
+  assert.strictEqual(applyProfile("flightgear", once, stick), null);
+});
+
+/* ── OpenMW ────────────────────────────────────────────────────────────── */
+
+const OPENMW = ["[Camera]", "field of view = 60", "", "[Input]", "grab cursor = true", ""].join("\n");
+
+test("turns OpenMW's controller support on", () => {
+  const out = applyProfile("morrowind", OPENMW, dualsense);
+  assert.ok(/^enable controller = true$/m.test(out));
+  assert.ok(out.includes("grab cursor = true"), "other input settings survive");
+  assert.ok(out.includes("field of view = 60"), "other sections survive");
+});
+
+test("adds an [Input] section when the config has none", () => {
+  const noInput = "[Camera]\nfield of view = 60\n";
+  const out = applyProfile("morrowind", noInput, dualsense);
+  assert.ok(out.includes("[Input]"));
+  assert.ok(/^enable controller = true$/m.test(out));
+});
+
+test("does not hand OpenMW a pad dead zone for a flightstick", () => {
+  // OpenMW has no flightstick layout; enabling it is the honest half.
+  const out = applyProfile("morrowind", OPENMW, stick);
+  assert.ok(/^enable controller = true$/m.test(out));
+  assert.ok(!out.includes("joystick dead zone"));
+});
+
+test("OpenMW declines a foreign file and is idempotent", () => {
+  assert.strictEqual(applyProfile("morrowind", "", dualsense), null);
+  assert.strictEqual(applyProfile("morrowind", "just prose", dualsense), null);
+  const once = applyProfile("morrowind", OPENMW, dualsense);
+  assert.strictEqual(applyProfile("morrowind", once, dualsense), null);
+});
+
+/* ── Daggerfall Unity ──────────────────────────────────────────────────── */
+
+const DFU = ["[Video]", "Fullscreen = True", "", "[Controls]", "MouseLookSensitivity = 2.0", ""].join("\n");
+
+test("enables the pad in Daggerfall Unity", () => {
+  const out = applyProfile("daggerfall", DFU, dualsense);
+  assert.ok(/^EnableController = True$/m.test(out));
+  assert.ok(out.includes("MouseLookSensitivity = 2.0"), "existing controls survive");
+  assert.ok(out.includes("[Video]"), "other sections survive");
+});
+
+test("softens Daggerfall look sensitivity for a stick", () => {
+  const pad = applyProfile("daggerfall", DFU, dualsense);
+  const flight = applyProfile("daggerfall", DFU, stick);
+  assert.ok(pad.includes("JoystickLookSensitivity = 1.0"));
+  assert.ok(flight.includes("JoystickLookSensitivity = 0.6"));
+});
+
+test("Daggerfall declines a foreign file and is idempotent", () => {
+  assert.strictEqual(applyProfile("daggerfall", "", dualsense), null);
+  assert.strictEqual(applyProfile("daggerfall", "[Video]\nFullscreen = True", dualsense), null);
+  const once = applyProfile("daggerfall", DFU, dualsense);
+  assert.strictEqual(applyProfile("daggerfall", once, dualsense), null);
+});
+
+/* ── every catalogued controller game has an answer ────────────────────── */
+
+test("no controller-capable game is left unassessed", () => {
+  /*
+   * The list the admin games table marks Yes for controller support. A game
+   * missing from both maps is indistinguishable from one nobody looked at.
+   */
+  const yes = `morrowind wild-rift the-finals star-trek-online path-of-exile once-human palia
+call-of-duty-mobile xonotic supertuxkart veloren endless-sky shattered-pixel-dungeon supertux
+warframe mega-man-unlimited rainbow-six-siege where-winds-meet flightgear freedoom daggerfall
+war-thunder team-fortress-2 genshin-impact valorant quake-champions holocure enlisted
+asphalt-legends privateer-gemini-gold space-station-14 openlara strikers-club brawlhalla
+mrboom trigger-rally ysoccer wolfenstein-enemy-territory dc-universe-online`
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const missing = yes.filter((slug) => controllerSupportFor(slug).kind === "unknown");
+  assert.deepStrictEqual(missing, [], `unassessed: ${missing.join(", ")}`);
+});
+
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
