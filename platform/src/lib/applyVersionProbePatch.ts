@@ -27,6 +27,7 @@ export function gameProbePatchFields(
   if (result.patch.url) set["launcherInstall.url"] = result.patch.url;
   if (result.patch.fileName) set["launcherInstall.fileName"] = result.patch.fileName;
   if (result.patch.versionLabel) set["launcherInstall.versionLabel"] = result.patch.versionLabel;
+  if (result.patch.kind && isHeal) set["launcherInstall.kind"] = result.patch.kind;
   if (result.patch.assetPattern && (isHeal || isDirect)) {
     set["launcherInstall.assetPattern"] = result.patch.assetPattern;
   }

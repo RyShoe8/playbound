@@ -95,7 +95,8 @@ async function run(req: Request) {
         k === "launcherInstall.url" ||
         k === "launcherInstall.fileName" ||
         k === "launcherInstall.versionLabel" ||
-        k === "launcherInstall.assetPattern"
+        k === "launcherInstall.assetPattern" ||
+        k === "launcherInstall.kind"
     );
     tally(summary.games, result.status, patched);
 

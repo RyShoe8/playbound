@@ -204,9 +204,9 @@ export const maintenanceChecks: Record<string, MaintenanceCheck> = {
   },
   mrboom: {
     kind: "manual",
-    url: "http://mrboom.mumble.info/",
-    checkedAt: "2026-08-15",
-    note: "Open-source 8-player Bomberman party game with active Steam and standalone releases.",
+    url: "https://buildbot.libretro.com/stable/1.19.1/windows/x86_64/RetroArch.7z",
+    checkedAt: "2026-08-22",
+    note: "Standalone Windows build retired (mrboom.mumble.info returns 421). RetroArch + libretro core is the maintained install path.",
   },
   triplea: {
     kind: "manual",
