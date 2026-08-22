@@ -362,9 +362,19 @@ function wireMainEvents() {
     if (data?.message) setStatus(data.message, data.connected === false);
     void refreshAccountStatus();
     if (data?.connected) void loadCompatibilitySetting();
-    markViewDirty(views.friends, views.settings);
+    markViewDirty(views.settings);
     if (state.currentView === "settings") api.renderSettingsView?.();
-    if (state.currentView === "friends") api.renderFriendsView?.();
+    /*
+     * Remount Friends only on real auth flips / errors — not every library sync
+     * status tick (that remount used to call syncLibraryNow again → loop).
+     */
+    const authFlipped =
+      typeof data?.connected === "boolean" && data.connected !== state.accountState?.connected;
+    const authError = data?.connected === false || Boolean(data?.error);
+    if (authFlipped || authError) {
+      markViewDirty(views.friends);
+      if (state.currentView === "friends") api.renderFriendsView?.();
+    }
     if (state.currentView === "library" && /library|located|Locate/i.test(data?.message || "")) {
       markViewDirty(views.library);
       api.renderLibraryView?.();
@@ -372,7 +382,12 @@ function wireMainEvents() {
   });
 
   window.playbound.onNavigate?.((data) => {
-    if (data?.view) void navigateTo(data.view);
+    if (!data?.view) return;
+    if (data.view === "gameDetail" && data.slug) {
+      void openGameDetail(data.slug, data.fromView || "friends");
+      return;
+    }
+    void navigateTo(data.view, data);
   });
 
   window.playbound.onUpdateStatus?.((data) => {
@@ -483,6 +498,12 @@ function wireMainEvents() {
         state.currentEditionDetail.editionSlug,
         { force: true }
       );
+    }
+    /* Party config-sync needs a fresh poll after install so “wrong version” clears. */
+    if (state.currentView === "friends" || state._activeParty) {
+      const areaSlot = document.getElementById("friends-party-area");
+      if (areaSlot) areaSlot.dataset.sig = "";
+      void api.refreshFriendsData?.();
     }
   });
 
