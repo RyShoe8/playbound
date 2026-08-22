@@ -21,7 +21,7 @@ const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: stri
 ];
 
 export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; onCreated?: () => void }) {
-  const { createParty, inviteFriends, provisionDiscord } = usePartyStore();
+  const { createParty, inviteFriends, provisionDiscord, error: storeError } = usePartyStore();
   const { friends } = useFriendsStore();
   const [busy, setBusy] = useState(false);
   const [voicePhase, setVoicePhase] = useState(false);
@@ -56,7 +56,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         wantVoice,
       });
 
-      if (party) {
+      if (party?.id) {
         if (selectedFriends.size > 0) {
           await inviteFriends(party.id, [...selectedFriends]);
         }
@@ -67,14 +67,15 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
           await provisionDiscord(party.id);
         }
       } else {
-        const { activeParty, fetchParties } = usePartyStore.getState();
-        if (!activeParty) await fetchParties();
         const recovered = usePartyStore.getState().activeParty;
-        if (recovered) {
+        if (recovered?.id) {
           onCreated?.();
           closed = true;
         } else {
-          setError("Failed to create party. You might already have one active.");
+          setError(
+            storeError ||
+              "Failed to create party. Try refreshing Friends — your party may already exist."
+          );
         }
       }
     } finally {

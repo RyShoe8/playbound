@@ -260,17 +260,52 @@ async function findActiveLeaderParty(userId: string) {
   }).lean();
 }
 
+/** Active parties this user leads or belongs to — used for cleanup and listing. */
+function activePartyFilterForUser(userId: string, keepPartyId?: string) {
+  const base: Record<string, unknown> = {
+    status: { $nin: ["ended"] },
+    $or: [{ leaderId: userId }, { "members.userId": userId }],
+  };
+  if (keepPartyId) base._id = { $ne: keepPartyId };
+  return base;
+}
+
+/** Leave failures during cleanup must not block create/list. */
+async function safeLeaveParty(partyId: string, userId: string): Promise<void> {
+  try {
+    const result = await leaveParty(partyId, userId);
+    if ("error" in result) {
+      console.warn(`[party] safe leave ${partyId} for ${userId}: ${result.error}`);
+    }
+  } catch (err) {
+    console.warn(
+      `[party] safe leave ${partyId} for ${userId} threw:`,
+      err instanceof Error ? err.message : err
+    );
+  }
+}
+
 /** Drop every live party except `keepPartyId` — one active membership per user. */
 async function leaveOtherActiveParties(userId: string, keepPartyId?: string) {
-  const filter: Record<string, unknown> = {
-    status: { $nin: ["ended"] },
-    "members.userId": userId,
-  };
-  if (keepPartyId) filter._id = { $ne: keepPartyId };
-  const docs = await Party.find(filter);
+  const docs = await Party.find(activePartyFilterForUser(userId, keepPartyId));
   for (const doc of docs) {
-    await leaveParty(String(doc._id), userId);
+    await safeLeaveParty(String(doc._id), userId);
   }
+}
+
+/** Leader-only rows missing from the roster break list queries; heal in place. */
+async function ensureLeaderMembership(doc: { _id: unknown; leaderId: unknown; members: Array<{ userId: unknown; role?: string; ready?: boolean; joinedAt?: Date }> }) {
+  const leaderId = String(doc.leaderId);
+  const inMembers = doc.members.some((m) => String(m.userId) === leaderId);
+  if (inMembers) return doc;
+  doc.members.unshift({
+    userId: doc.leaderId,
+    role: "leader",
+    ready: false,
+    joinedAt: new Date(),
+  });
+  await Party.updateOne({ _id: doc._id }, { $set: { members: doc.members } });
+  return doc;
 }
 
 type PartyDocLean = Record<string, unknown> & {
@@ -300,7 +335,7 @@ async function pickCanonicalPartyDoc(
       console.warn(
         `[party] leaving stale party ${String(d._id)} for ${userId} (canonical ${String(canonical._id)})`
       );
-      await leaveParty(String(d._id), userId);
+      await safeLeaveParty(String(d._id), userId);
     }
   }
   return canonical;
@@ -459,11 +494,21 @@ export async function createParty(opts: {
   if (existing) {
     const existingId = String(existing._id);
     await leaveOtherActiveParties(opts.userId, existingId);
-    await setPresenceParty(opts.userId, {
-      partyId: existingId,
-      gameSlug: String(existing.gameSlug || "") || null,
-    });
-    const party = await partyPayloadForDoc(existing as Record<string, unknown>);
+    const healed = await Party.findById(existingId);
+    const existingDoc = healed
+      ? ((await ensureLeaderMembership(
+          healed.toObject() as Parameters<typeof ensureLeaderMembership>[0]
+        )) as Record<string, unknown>)
+      : (existing as Record<string, unknown>);
+    try {
+      await setPresenceParty(opts.userId, {
+        partyId: existingId,
+        gameSlug: String(existingDoc.gameSlug || "") || null,
+      });
+    } catch (err) {
+      console.warn("[party] setPresenceParty on idempotent create failed:", err);
+    }
+    const party = await partyPayloadForDoc(existingDoc);
     return { party, status: 200, existing: true, ...SKIP_VOICE };
   }
 
@@ -514,10 +559,14 @@ export async function createParty(opts: {
       if (raced) {
         const racedId = String(raced._id);
         await leaveOtherActiveParties(opts.userId, racedId);
-        await setPresenceParty(opts.userId, {
-          partyId: racedId,
-          gameSlug: String(raced.gameSlug || "") || null,
-        });
+        try {
+          await setPresenceParty(opts.userId, {
+            partyId: racedId,
+            gameSlug: String(raced.gameSlug || "") || null,
+          });
+        } catch (presenceErr) {
+          console.warn("[party] setPresenceParty on duplicate-key create failed:", presenceErr);
+        }
         const party = await partyPayloadForDoc(raced as Record<string, unknown>);
         return { party, status: 200, existing: true, ...SKIP_VOICE };
       }
@@ -525,24 +574,40 @@ export async function createParty(opts: {
     throw err;
   }
 
-  await setPresenceParty(opts.userId, {
-    partyId: String(doc._id),
-    gameSlug: gameSlug || null,
-  });
-  const party = await partyPayloadForDoc(
-    (doc.toObject ? doc.toObject() : doc) as Record<string, unknown>
-  );
-  trackPartyEvent("party_created", {
-    partyId: party.id,
-    gameSlug: party.gameSlug || null,
-    userId: opts.userId,
-    visibility: party.visibility,
-  });
-  return {
-    party,
-    status: 201,
-    ...SKIP_VOICE,
-  };
+  const createdId = String(doc._id);
+  try {
+    await setPresenceParty(opts.userId, {
+      partyId: createdId,
+      gameSlug: gameSlug || null,
+    });
+  } catch (presenceErr) {
+    console.warn("[party] setPresenceParty on create failed:", presenceErr);
+  }
+
+  try {
+    const party = await partyPayloadForDoc(
+      (doc.toObject ? doc.toObject() : doc) as Record<string, unknown>
+    );
+    trackPartyEvent("party_created", {
+      partyId: party.id,
+      gameSlug: party.gameSlug || null,
+      userId: opts.userId,
+      visibility: party.visibility,
+    });
+    return {
+      party,
+      status: 201,
+      ...SKIP_VOICE,
+    };
+  } catch (payloadErr) {
+    console.error("[party] create payload failed after insert:", payloadErr);
+    const fallback = await findActiveLeaderParty(opts.userId);
+    if (fallback) {
+      const party = await partyPayloadForDoc(fallback as Record<string, unknown>);
+      return { party, status: 200, existing: true, ...SKIP_VOICE };
+    }
+    throw payloadErr;
+  }
 }
 
 /* ─── join (4C, 4E) ──────────────────────────────────────────────────────── */
@@ -1439,18 +1504,24 @@ export async function listPartiesForUser(
 ): Promise<PartyPayload[]> {
   await dbConnect();
 
-  const docs = await Party.find({
-    "members.userId": userId,
-    status: { $nin: ["ended"] },
-  })
+  const docs = await Party.find(activePartyFilterForUser(userId))
     .sort({ lastActivity: -1 })
     .limit(10)
     .lean();
 
   if (docs.length === 0) return [];
 
-  const canonical = await pickCanonicalPartyDoc(docs as PartyDocLean[], userId);
+  let canonical = await pickCanonicalPartyDoc(docs as PartyDocLean[], userId);
   if (!canonical) return [];
+
+  if (String(canonical.leaderId) === userId) {
+    const full = await Party.findById(canonical._id);
+    if (full) {
+      canonical = (await ensureLeaderMembership(
+        full.toObject() as Parameters<typeof ensureLeaderMembership>[0]
+      )) as PartyDocLean;
+    }
+  }
 
   const allMemberIds = new Set<string>();
   const slugs = new Set<string>();
