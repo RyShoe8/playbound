@@ -34,7 +34,7 @@ import {
 import {
   wireNotifications,
   onNotificationsAccountChanged,
-  clearNotificationsPanel,
+  closeNotificationsPanel,
 } from "./notifications.js";
 
 async function finishPartyInstallReturn(slug) {

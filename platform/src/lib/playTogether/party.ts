@@ -44,6 +44,7 @@ import {
 import {
   hostedPayloadFromDoc,
   provisionPartyHost,
+  reconcilePartyHostAlive,
   releasePartyHost,
   type PartyHostFields,
 } from "@/lib/gameHost/provision";
@@ -54,6 +55,7 @@ import {
   type PartyLanFields,
 } from "@/lib/virtualLan/provision";
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
+import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import {
   BASE_EDITION_KEY,
@@ -148,6 +150,7 @@ async function ensurePartyConnectReady(
   const slug = String(doc.gameSlug || "");
 
   if (isHostableGame(slug)) {
+    await reconcilePartyHostAlive(doc);
     let hs = (doc.hosted?.status || "none") as HostedStatus;
     if (hs === "ready" && doc.hosted?.host && doc.hosted?.port) {
       /* ready */
@@ -1198,11 +1201,11 @@ export async function joinPartyGame(
   }
 
   const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
+  const connect = await ensurePartyConnectReady(doc);
+  if ("error" in connect) {
+    return { error: connect.error, status: 400 };
+  }
   if (firstLaunch) {
-    const connect = await ensurePartyConnectReady(doc);
-    if ("error" in connect) {
-      return { error: connect.error, status: 400 };
-    }
     doc.status = "playing";
     doc.lastActivity = new Date();
     await doc.save();
@@ -1651,7 +1654,7 @@ export async function checkConfigSync(
       .lean(),
     LibraryModEntry.find({
       userId: { $in: memberLookup },
-      baseGameSlug: doc.gameSlug,
+      baseGameSlug: { $in: modBaseGameSlugsForCatalogGame(String(doc.gameSlug || "")) },
       installed: true,
     })
       .select("userId modSlug")

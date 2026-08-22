@@ -321,6 +321,26 @@ describe("audit", () => {
     expect(auditAccessGraph(g).map((i) => i.code)).toContain("CIRCULAR_DEPENDENCY");
   });
 
+  it("accepts keeperfx and alephone mods against canonical catalog games", () => {
+    const g = buildAccessGraph([
+      game("dungeon-keeper-gold", FREE_ACCESS),
+      game("marathon-2", FREE_ACCESS),
+      {
+        id: accessId.mod("keeperfx-ancient-keeper"),
+        kind: "mod",
+        label: "Ancient Keeper",
+        dependsOn: [accessId.game("dungeon-keeper-gold")],
+      },
+      {
+        id: accessId.mod("alephone-rubicon-x"),
+        kind: "mod",
+        label: "Rubicon X",
+        dependsOn: [accessId.game("marathon-2")],
+      },
+    ]);
+    expect(auditAccessGraph(g).filter((i) => i.code === "UNRESOLVED_DEPENDENCY")).toEqual([]);
+  });
+
   it("distinguishes base-game-required engines from direct paid games", () => {
     expect(isBaseGameRequirement(needsRetailAssets)).toBe(true);
     expect(isBaseGameRequirement(paid(599))).toBe(false);

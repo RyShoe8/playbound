@@ -5,7 +5,7 @@
 
 import type { Document } from "mongoose";
 import { getHostedInGameSteps } from "@/lib/multiplayer/adapters";
-import { createHostRoom, deleteHostRoom, isGameHostConfigured } from "./client";
+import { createHostRoom, deleteHostRoom, isGameHostConfigured, listHostRooms } from "./client";
 import {
   emptyHostedPayload,
   isHostableGame,
@@ -40,14 +40,40 @@ function ensureHosted(party: PartyLike): PartyHostFields {
   return party.hosted!;
 }
 
+/** Clear Mongo hosted state when the VPS room is gone (crash, idle timeout, redeploy). */
+export async function reconcilePartyHostAlive(party: PartyLike): Promise<void> {
+  const hosted = party.hosted;
+  if (!hosted?.roomId || hosted.status !== "ready") return;
+  if (!isGameHostConfigured()) return;
+
+  const listed = await listHostRooms();
+  if (!listed.ok) return;
+
+  const alive = listed.rooms.some((room) => room.roomId === hosted.roomId);
+  if (alive) return;
+
+  hosted.roomId = null;
+  hosted.status = "none";
+  hosted.host = null;
+  hosted.port = null;
+  hosted.name = null;
+  hosted.error = null;
+  hosted.roomCode = null;
+  await party.save();
+}
+
 export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   const slug = String(party.gameSlug || "");
   if (!isHostableGame(slug)) return false;
 
+  await reconcilePartyHostAlive(party);
   const hosted = ensureHosted(party);
   if (hosted.status === "ready" && hosted.host && hosted.port) return true;
 
   if (!isGameHostConfigured()) {
+    hosted.status = "failed";
+    hosted.error = "PlayBound game host is not configured on this deployment.";
+    await party.save();
     return false;
   }
 

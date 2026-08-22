@@ -1505,7 +1505,9 @@ function missingSummary(m, editionSlug) {
   if (!m.hasGame) out.push("the game");
   else if (editionSlug && !m.hasEdition) out.push("a different edition");
   if ((m.missingMods || []).length) {
-    out.push(`${m.missingMods.length} mod${m.missingMods.length === 1 ? "" : "s"}`);
+    const labels = m.missingMods.slice(0, 3).join(", ");
+    const extra = m.missingMods.length > 3 ? ` +${m.missingMods.length - 3} more` : "";
+    out.push(`${m.missingMods.length} mod${m.missingMods.length === 1 ? "" : "s"} (${labels}${extra})`);
   }
   return out;
 }
