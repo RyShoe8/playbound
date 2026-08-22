@@ -383,11 +383,28 @@ BWRAP
 fi
 
 systemctl disable --now bzflag-server 2>/dev/null || true
+systemctl mask bzflag-server 2>/dev/null || true
+pkill -x bzfs 2>/dev/null || true
 
-echo "==> TripleA headless"
+echo "==> TripleA headless (requires Java 25+)"
+TRIPLEA_JAVA_DIR="$INSTALL_ROOT/jre/temurin-25"
+if [[ ! -x "$TRIPLEA_JAVA_DIR/bin/java" ]]; then
+  mkdir -p "$INSTALL_ROOT/jre"
+  curl -fL --retry 3 -o /tmp/temurin25-jre.tar.gz \
+    "https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jre/hotspot/normal/eclipse"
+  rm -rf /tmp/temurin25-jre-extract
+  mkdir -p /tmp/temurin25-jre-extract
+  tar -xzf /tmp/temurin25-jre.tar.gz -C /tmp/temurin25-jre-extract
+  rm -rf "$TRIPLEA_JAVA_DIR"
+  mv /tmp/temurin25-jre-extract/* "$TRIPLEA_JAVA_DIR"
+  rm -rf /tmp/temurin25-jre.tar.gz /tmp/temurin25-jre-extract
+  echo "  installed Temurin 25 JRE under $TRIPLEA_JAVA_DIR"
+fi
+
 TRIPLEA_DIR="$GAMES_DIR/triplea"
 mkdir -p "$TRIPLEA_DIR"
-if [[ ! -x "$TRIPLEA_DIR/run-server" ]]; then
+HEADLESS_JAR="$(find "$TRIPLEA_DIR" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
+if [[ -z "$HEADLESS_JAR" ]]; then
   TRIPLEA_API="https://api.github.com/repos/triplea-game/triplea/releases/latest"
   TRIPLEA_ZIP_URL="$(curl -fsSL "$TRIPLEA_API" | jq -r '.assets[] | select(.name == "game-headless.zip") | .browser_download_url' | head -n1)"
   if [[ -n "$TRIPLEA_ZIP_URL" && "$TRIPLEA_ZIP_URL" != "null" ]]; then
@@ -399,27 +416,29 @@ if [[ ! -x "$TRIPLEA_DIR/run-server" ]]; then
     rm -rf /tmp/triplea-headless.zip /tmp/triplea-headless-extract
   fi
   HEADLESS_JAR="$(find "$TRIPLEA_DIR" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
-  if [[ -n "$HEADLESS_JAR" ]]; then
-    cat > "$TRIPLEA_DIR/run-server" <<'EOF'
+fi
+if [[ -n "$HEADLESS_JAR" && -x "$TRIPLEA_JAVA_DIR/bin/java" ]]; then
+  cat > "$TRIPLEA_DIR/run-server" <<EOF
 #!/usr/bin/env bash
-ROOT="$(cd "$(dirname "$0")" && pwd)"
-JAR="$(find "$ROOT" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
-PORT="${1:?port required}"
-exec /usr/bin/java -server -Xmx512M -Djava.awt.headless=true -jar "$JAR" \
-  -Ptriplea.lobby.uri="https://prod2-lobby.triplea-game.org" \
-  -Ptriplea.map.folder="$ROOT/downloadedMaps" \
-  -Ptriplea.name="PlayBound" \
-  -Ptriplea.port="$PORT" \
+ROOT="\$(cd "\$(dirname "\$0")" && pwd)"
+JAR="\$(find "\$ROOT" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
+PORT="\${1:?port required}"
+exec "${TRIPLEA_JAVA_DIR}/bin/java" -server -Xmx512M -Djava.awt.headless=true -jar "\$JAR" \\
+  -Ptriplea.lobby.uri="https://prod2-lobby.triplea-game.org" \\
+  -Ptriplea.map.folder="\$ROOT/downloadedMaps" \\
+  -Ptriplea.name="PlayBound" \\
+  -Ptriplea.port="\$PORT" \\
   -Ptriplea.server.password=""
 EOF
-    chmod +x "$TRIPLEA_DIR/run-server"
-    echo "  installed TripleA headless under $TRIPLEA_DIR"
-  else
-    echo "  WARN: TripleA headless jar not found — party hosting unavailable until installed"
-  fi
+  chmod +x "$TRIPLEA_DIR/run-server"
+  echo "  TripleA headless ready under $TRIPLEA_DIR"
+elif [[ -z "$HEADLESS_JAR" ]]; then
+  echo "  WARN: TripleA headless jar not found — party hosting unavailable until installed"
+elif [[ ! -x "$TRIPLEA_JAVA_DIR/bin/java" ]]; then
+  echo "  WARN: Temurin 25 JRE missing — TripleA headless cannot start"
 fi
 
-chown -R playbound:playbound "$GAMES_DIR"
+chown -R playbound:playbound "$GAMES_DIR" "$INSTALL_ROOT/jre"
 
 echo "==> firewall"
 ufw allow OpenSSH || true
