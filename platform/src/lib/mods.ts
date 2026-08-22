@@ -249,6 +249,40 @@ export async function listMods(opts?: ListModsOptions): Promise<CatalogModPublic
   })();
 }
 
+function seedToModPublic(seed: ModSeed): CatalogModPublic {
+  return {
+    slug: seed.slug,
+    title: seed.title,
+    tagline: seed.tagline,
+    description: seed.description,
+    baseGameSlug: seed.baseGameSlug,
+    editionSlug: null,
+    developerSlug: seed.developerSlug,
+    license: seed.license,
+    releaseYear: seed.releaseYear,
+    sizeMB: seed.sizeMB,
+    website: seed.website,
+    githubRepo: seed.githubRepo || undefined,
+    downloadKind: seed.downloadKind,
+    assetPattern: seed.assetPattern || undefined,
+    directUrl: seed.directUrl || undefined,
+    installRelativePath: seed.installRelativePath || "mods",
+    art: seed.art || { from: "#1e293b", to: "#64748b", icon: "Package" },
+    coverImage: usableSeedMedia(seed.coverImage),
+    screenshots: seed.screenshots?.map((u) => usableSeedMedia(u)).filter((u): u is string => Boolean(u)),
+    managedBy: seed.managedBy || "admin",
+    status: seed.published ? "published" : "draft",
+    autoUpdatePinned: true,
+    longDescription: seed.longDescription,
+    whatItChanges: seed.whatItChanges,
+    compatibility: seed.compatibility,
+    platforms: seed.platforms,
+    installSteps: seed.installSteps,
+    faq: seed.faq,
+    tags: [],
+  };
+}
+
 async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPublic[]> {
   let dbMods: CatalogModPublic[] = [];
   try {
@@ -289,6 +323,25 @@ async function listModsUncached(opts?: ListModsOptions): Promise<CatalogModPubli
     console.error("[mods] listMods failed:", err);
   }
 
+  // Include seed mods that are not in MongoDB
+  const storedSlugs = new Set(dbMods.map((m) => m.slug));
+  const matchingSeeds = seedMods
+    .filter((s) => {
+      if (storedSlugs.has(s.slug)) return false;
+      if (!opts?.includeUnpublished && !s.published) return false;
+      if (opts?.baseGameSlug) {
+        const match =
+          s.baseGameSlug === opts.baseGameSlug ||
+          (opts.baseGameSlug === "dungeon-keeper-gold" && (s.baseGameSlug === "keeperfx" || s.baseGameSlug === "dungeon-keeper-gold")) ||
+          (opts.baseGameSlug === "alephone" && (s.baseGameSlug === "marathon-2" || s.baseGameSlug === "alephone"));
+        if (!match) return false;
+      }
+      return true;
+    })
+    .map(seedToModPublic);
+
+  dbMods = [...dbMods, ...matchingSeeds];
+
   return dbMods.sort((a, b) => a.title.localeCompare(b.title));
 }
 
@@ -326,6 +379,19 @@ export async function listAllMods(): Promise<
   } catch (err) {
     console.error("[mods] listAllMods failed:", err);
   }
+
+  const storedSlugs = new Set(dbMods.map((m) => m.slug));
+  const matchingSeeds = seedMods
+    .filter((s) => !storedSlugs.has(s.slug))
+    .map((s) => ({
+      ...seedToModPublic(s),
+      published: s.published,
+      status: (s.published ? "published" : "draft") as CatalogStatus,
+      managedBy: (s.managedBy || "admin") as "admin" | "developer",
+      ownerUserId: null,
+    }));
+  dbMods = [...dbMods, ...matchingSeeds];
+
   return dbMods;
 }
 
@@ -353,6 +419,12 @@ export async function getMod(
   } catch (err) {
     console.error("[mods] getMod failed:", err);
   }
+
+  const seed = seedBySlug.get(slug);
+  if (seed && (opts?.includeUnpublished || seed.published)) {
+    return seedToModPublic(seed);
+  }
+
   return undefined;
 }
 
