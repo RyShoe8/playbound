@@ -249,7 +249,7 @@ export async function listMods(opts?: ListModsOptions): Promise<CatalogModPublic
   })();
 }
 
-function seedToModPublic(seed: ModSeed): CatalogModPublic {
+function seedToModPublic(seed: (typeof seedMods)[number]): CatalogModPublic {
   return {
     slug: seed.slug,
     title: seed.title,
