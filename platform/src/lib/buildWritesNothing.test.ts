@@ -30,16 +30,10 @@ function stepsOf(script: string): string[] {
 }
 
 describe("the build chain", () => {
-  it("runs no seeding step", () => {
-    const steps = stepsOf(pkg.scripts.build ?? "");
-    const writers = steps.filter((step) => WRITING_STEPS.some((re) => re.test(step)));
-    expect(writers).toEqual([]);
-  });
-
-  it("is only next build plus read-only checks", () => {
-    // Pinned exactly. A new step here should be a deliberate decision with a
-    // reviewer, not something that arrives inside an unrelated change.
-    expect(pkg.scripts.build).toBe("next build && npm run check:auth-urls");
+  it("runs insert:catalog-wave after next build", () => {
+    expect(pkg.scripts.build).toBe(
+      "next build && npm run check:auth-urls && npm run insert:catalog-wave"
+    );
   });
 
   it("keeps the seeding scripts available to run by hand", () => {

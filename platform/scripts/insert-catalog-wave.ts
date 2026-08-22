@@ -33,17 +33,14 @@ async function main() {
   const CatalogGame = (await import("../src/lib/models/CatalogGame")).default;
   const CatalogMod = (await import("../src/lib/models/CatalogMod")).default;
   const { editions } = await import("../src/lib/data/editions");
-  const { catalogWaveAug2026Mods } = await import("../src/lib/data/catalogWaveAug2026Mods");
+  const { mods } = await import("../src/lib/data/mods");
   const { developersBySlug } = await import("../src/lib/data/developers");
   const { defaultArtFor } = await import("../src/lib/gamePayload");
   const { ensureDerivedModFields } = await import("../src/lib/enrich");
 
   await dbConnect();
 
-  const wantedEditions = editions.filter((s) =>
-    NEW_EDITION_KEYS.includes(`${s.gameSlug}/${s.slug}`)
-  );
-  const gameSlugs = [...new Set(wantedEditions.map((s) => s.gameSlug))];
+  const gameSlugs = [...new Set([...editions.map((s) => s.gameSlug), ...mods.map((m) => m.baseGameSlug)])];
   const games = await CatalogGame.find({ slug: { $in: gameSlugs } })
     .select("_id slug title")
     .lean();
@@ -51,19 +48,17 @@ async function main() {
 
   let editionsCreated = 0;
   let editionsSkipped = 0;
-  for (const seed of wantedEditions) {
+  for (const seed of editions) {
     const key = `${seed.gameSlug}/${seed.slug}`;
     const existing = await Edition.findOne({ gameSlug: seed.gameSlug, slug: seed.slug })
       .select("_id")
       .lean();
     if (existing) {
-      console.log(`skip edition ${key} (already stored)`);
       editionsSkipped++;
       continue;
     }
     const game = gameBySlug.get(seed.gameSlug);
     if (!game) {
-      console.log(`skip edition ${key} (no parent game)`);
       editionsSkipped++;
       continue;
     }
@@ -72,30 +67,24 @@ async function main() {
       isDefault: seed.isDefault === true,
       gameId: game._id,
     });
-    console.log(`add  edition ${key}`);
+    console.log(`add edition ${key}`);
     editionsCreated++;
   }
 
-  const baseTitles = new Map(
-    (
-      await CatalogGame.find({
-        slug: { $in: [...new Set(catalogWaveAug2026Mods.map((m) => m.baseGameSlug))] },
-      })
-        .select("slug title")
-        .lean<{ slug: string; title: string }[]>()
-    ).map((g) => [g.slug, g.title])
-  );
+  const baseTitles = new Map(games.map((g) => [String(g.slug), String(g.title)]));
 
   let modsCreated = 0;
   let modsSkipped = 0;
-  for (const seed of catalogWaveAug2026Mods) {
+  for (const seed of mods) {
     const existing = await CatalogMod.findOne({ slug: seed.slug }).select("_id").lean();
     if (existing) {
-      console.log(`skip mod ${seed.slug} (already stored)`);
       modsSkipped++;
       continue;
     }
-    const m = ensureDerivedModFields(seed, baseTitles.get(seed.baseGameSlug));
+    const baseSlug =
+      seed.baseGameSlug === "keeperfx" ? "dungeon-keeper-gold" : seed.baseGameSlug;
+    const baseTitle = baseTitles.get(seed.baseGameSlug) || baseTitles.get(baseSlug) || seed.baseGameSlug;
+    const m = ensureDerivedModFields(seed, baseTitle);
     await CatalogMod.create({
       slug: m.slug,
       title: m.title,
@@ -116,16 +105,16 @@ async function main() {
       art: m.art ?? defaultArtFor([], m.slug),
       coverImage: m.coverImage ?? null,
       screenshots: m.screenshots ?? [],
-      published: m.published,
-      status: m.published ? "published" : "draft",
-      managedBy: m.managedBy,
+      published: m.published !== false,
+      status: m.published !== false ? "published" : "draft",
+      managedBy: m.managedBy || "admin",
       longDescription: m.longDescription ?? null,
       whatItChanges: m.whatItChanges ?? null,
       compatibility: m.compatibility ?? null,
       installSteps: m.installSteps ?? [],
       faq: m.faq ?? [],
     });
-    console.log(`add  mod ${m.slug}`);
+    console.log(`add mod ${m.slug}`);
     modsCreated++;
   }
 
