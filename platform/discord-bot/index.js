@@ -69,12 +69,17 @@ function categoryNameForSlug(slug) {
 
 /** Discord channel names: lowercase, a–z 0–9 hyphen, max 90. */
 function discordChannelName(raw) {
-  return String(raw || "channel")
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 90) || "channel";
+  const str = String(raw || "channel").toLowerCase().trim();
+  if (str === "the-elder-scrolls-iii-morrowind" || str === "morrowind") {
+    return "openmw";
+  }
+  return (
+    str
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 90) || "channel"
+  );
 }
 
 /** Party voice: `party-` + sanitized display name, Discord 100-char limit. */
@@ -259,33 +264,112 @@ async function ensureCategory(guild, name) {
   return created;
 }
 
+const SINGLE_CHANNEL_GAMES = new Set([
+  "war-thunder",
+  "genshin-impact",
+  "league-of-legends",
+  "openlara",
+  "triplea",
+  "privateer-gemini-gold",
+  "trigger-rally",
+]);
+
 function isExcludedEdition(edition) {
   if (!edition) return false;
+  const gameSlug = String(edition.gameSlug || "").toLowerCase().trim();
+  if (SINGLE_CHANNEL_GAMES.has(gameSlug)) return true;
+
   const slug = String(edition.slug || "").toLowerCase().trim();
   const name = String(edition.name || "").toLowerCase().trim();
-  return (
-    slug === "official" ||
-    slug === "base" ||
-    slug === "base-game" ||
-    slug === "default" ||
-    slug === "steam" ||
-    slug === "steam-edition" ||
-    slug === "steam-release" ||
-    slug === "gog" ||
-    slug === "gog-edition" ||
-    slug === "epic" ||
-    slug === "epic-games" ||
-    name === "official" ||
-    name === "base game" ||
-    name === "default" ||
-    name === "steam" ||
-    name === "steam edition" ||
-    name === "steam release" ||
-    name === "gog" ||
-    name === "gog edition" ||
-    name === "epic games" ||
-    edition.isDefault === true
-  );
+
+  // If it's OpenMW or KeeperFX or Daggerfall Unity or a custom server, do not exclude
+  if (
+    slug === "openmw" ||
+    slug === "keeperfx" ||
+    slug === "daggerfall-unity" ||
+    slug === "turtle-wow" ||
+    slug === "project-1999" ||
+    slug === "project-quarm"
+  ) {
+    return false;
+  }
+
+  // Common store, client, platform, or default/official installer slugs and names
+  const storeOrClientPatterns = [
+    "official",
+    "base",
+    "base-game",
+    "default",
+    "steam",
+    "steam-edition",
+    "steam-release",
+    "gog",
+    "gog-edition",
+    "epic",
+    "epic-games",
+    "gaijin",
+    "gaijin-client",
+    "gaijin-launcher",
+    "hoyoplay",
+    "genshin-pc-hoyoplay",
+    "genshin-epic",
+    "desktop-native",
+    "web-wasm",
+    "trigger-rally-portable",
+    "trigger-rally-web",
+    "portable",
+    "standalone",
+    "windows",
+    "mac",
+    "macos",
+    "linux",
+    "web",
+    "browser",
+    "direct-download",
+    "riot",
+    "riot-client",
+  ];
+
+  if (storeOrClientPatterns.includes(slug)) return true;
+
+  if (
+    slug.endsWith("-client") ||
+    slug.endsWith("-launcher") ||
+    slug.endsWith("-installer") ||
+    slug.endsWith("-portable") ||
+    slug.endsWith("-mac") ||
+    slug.endsWith("-windows") ||
+    slug.endsWith("-linux") ||
+    slug.endsWith("-web") ||
+    slug.startsWith("steam-") ||
+    slug.startsWith("epic-") ||
+    slug.startsWith("gog-") ||
+    slug.startsWith("gaijin-")
+  ) {
+    return true;
+  }
+
+  if (
+    name.includes("steam") ||
+    name.includes("gog") ||
+    name.includes("epic") ||
+    name.includes("gaijin") ||
+    name.includes("hoyoplay") ||
+    name.includes("standalone") ||
+    name.includes("portable") ||
+    name.includes("official") ||
+    name.includes("base game") ||
+    name.includes("default") ||
+    name.includes("mac client") ||
+    name.includes("windows client") ||
+    name.includes("browser edition") ||
+    name.includes("webassembly") ||
+    name.includes("desktop native")
+  ) {
+    return true;
+  }
+
+  return edition.isDefault === true;
 }
 
 async function listPublicEditions(gameSlug) {
@@ -594,10 +678,22 @@ async function cleanupRedundantChannels(guild) {
       channel.name === "steam-edition" ||
       channel.name === "steam-release" ||
       channel.name === "gog" ||
-      channel.name === "epic"
+      channel.name === "epic" ||
+      channel.name === "gaijin-client" ||
+      channel.name === "gaijin-launcher" ||
+      channel.name === "genshin-pc-hoyoplay" ||
+      channel.name === "genshin-epic" ||
+      channel.name === "desktop-native" ||
+      channel.name === "web-wasm" ||
+      channel.name === "trigger-rally-portable" ||
+      channel.name === "trigger-rally-web" ||
+      channel.name.endsWith("-client") ||
+      channel.name.endsWith("-launcher") ||
+      channel.name.endsWith("-installer") ||
+      channel.name.endsWith("-portable")
     ) {
-      console.log(`[cleanup] Deleting #${channel.name} in category "${parent.name}"`);
-      await channel.delete("PlayBound cleanup: redundant official/steam channel").catch((err) => {
+      console.log(`[cleanup] Deleting redundant #${channel.name} in category "${parent.name}"`);
+      await channel.delete("PlayBound cleanup: redundant installer/client channel").catch((err) => {
         console.warn(`[cleanup] Failed to delete #${channel.name}:`, err?.message || err);
       });
       await sleep(PROVISION_DELAY_MS);
@@ -1452,6 +1548,42 @@ const server = http.createServer(async (req, res) => {
     }
     return;
   }
+
+  if (req.method === "POST" && req.url === "/parties/chat/send") {
+    if (!requireSecret(req, res)) return;
+    if (!client.isReady()) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Discord bot not ready" }));
+      return;
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { textChannelId, username, avatarUrl, content } = JSON.parse(body || "{}");
+      const textBody = String(content || "").trim().slice(0, 500);
+      if (!textChannelId || !textBody) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "textChannelId and content required" }));
+        return;
+      }
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const text = await guild.channels.fetch(String(textChannelId));
+      if (!text || text.type !== ChannelType.GuildText) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Text channel not found" }));
+        return;
+      }
+      const hooks = await text.fetchWebhooks();
+      let webhook = hooks.find((w) => w.owner?.id === client.user.id);
+      if (!webhook) {
+        webhook = await text.createWebhook({
+          name: "PlayBound",
+          reason: "PlayBound party chat",
+        });
+      }
+      const sent = await webhook.send({
+        username: String(username || "Player").slice(0, 80),
+        avatarURL: typeof avatarUrl === "string" && avatarUrl.startsWith("http") ? avatarUrl : undefined,
         content: textBody,
         allowedMentions: { parse: [] },
       });

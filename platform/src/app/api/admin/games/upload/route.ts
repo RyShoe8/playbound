@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
-    if (file.size > 8 * 1024 * 1024) {
-      return NextResponse.json({ error: "Max file size is 8MB" }, { status: 400 });
+    if (file.size > 30 * 1024 * 1024) {
+      return NextResponse.json({ error: "Max file size is 30MB" }, { status: 400 });
     }
     const name = file.name.toLowerCase();
     const looksLikeImage =

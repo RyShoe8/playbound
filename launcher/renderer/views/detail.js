@@ -2439,8 +2439,6 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
                 : ""
             }
 
-            ${shots ? `<section class="detail-section"><h2 class="detail-section-title">Screenshots & Gallery</h2><div class="shot-row">${shots}</div></section>` : ""}
-
             ${
               faqHtml
                 ? `<section class="detail-section"><h2 class="detail-section-title">Frequently Asked Questions</h2><div class="faq-list">${faqHtml}</div></section>`

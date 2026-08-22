@@ -599,23 +599,6 @@ function OverviewTab({
           </section>
         )}
 
-        {screenshots.length > 0 && (
-          <section>
-            <SectionHeader title="Gallery & Screenshots" />
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {screenshots.slice(0, 6).map((src) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={src}
-                  src={src}
-                  alt={`${edition.name} screenshot`}
-                  loading="lazy"
-                  className="aspect-video w-full rounded-xl border border-border object-cover transition-transform hover:scale-[1.02]"
-                />
-              ))}
-            </div>
-          </section>
-        )}
 
         {edition.languages.length > 0 && (
           <section>

@@ -41,6 +41,7 @@ import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSect
 import { SizeInput } from "@/components/admin/SizeInput";
 import { LauncherPackageUploader } from "@/components/admin/LauncherPackageUploader";
 import { LAUNCHER_INSTALL_KINDS } from "@/lib/launcherInstall";
+import { uploadAdminMediaFile } from "@/lib/adminUploadHelper";
 
 export type { EditionDraft };
 
@@ -115,9 +116,9 @@ export function EditionEditorForm({
   games: { slug: string; title: string }[];
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const heroFileRef = useRef<HTMLInputElement>(null);
+  const shotsFileRef = useRef<HTMLInputElement>(null);
   const videoFileRef = useRef<HTMLInputElement>(null);
-  const pendingImageKindRef = useRef<"cover" | "shot">("shot");
   const [form, setForm] = useState<EditionDraft>({
     ...initial,
     patchNotes: initial.patchNotes ?? [],
@@ -365,67 +366,83 @@ export function EditionEditorForm({
     }
   }
 
-  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onHeroFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const kind = pendingImageKindRef.current;
     setBusy(true);
     setError("");
-    setMediaNote(kind === "cover" ? "Uploading hero…" : "Uploading screenshot…");
+    setMediaNote("Uploading hero…");
     try {
-      const body = new FormData();
-      body.set("file", file);
-      body.set("slug", uploadSlugFor(form));
-      body.set("kind", kind);
-      const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-      /*
-       * Read the body once as text, then try JSON.
-       *
-       * A bare "Upload failed" was the outcome whenever the response was not
-       * JSON — a platform-level 413, a gateway timeout, a runtime crash before
-       * the handler — which is exactly when the reason matters most and is the
-       * one case the old code threw away.
-       */
-      const raw = await res.text().catch(() => "");
-      let data: { url?: string; error?: string } | null = null;
-      try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch {
-        data = null;
-      }
-      if (!res.ok) {
-        const detail =
-          data?.error ??
-          (raw ? `${res.status} ${res.statusText}: ${raw.slice(0, 200)}` : `${res.status} ${res.statusText}`);
-        setError(detail);
-        setMediaNote(detail);
-        setBusy(false);
-        return;
-      }
-      if (!data?.url || typeof data.url !== "string") {
-        const msg = "Upload succeeded but no image URL was returned.";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-      if (kind === "cover") {
-        patchBranding({ heroImage: data.url });
-        setMediaNote("Hero uploaded — save the edition to persist.");
-      } else {
-        patchBranding({
-          screenshots: [...(form.branding.screenshots ?? []), data.url].slice(0, 20),
-        });
-        setMediaNote("Screenshot uploaded — save the edition to persist.");
-      }
-      setBusy(false);
-    } catch {
-      const msg = "Couldn't reach the server.";
+      const url = await uploadAdminMediaFile(file, {
+        slug: uploadSlugFor(form),
+        kind: "hero",
+        prefix: "editions",
+      });
+      patchBranding({ heroImage: url });
+      setMediaNote("Hero uploaded — save the edition to persist.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed.";
       setError(msg);
       setMediaNote(msg);
+    } finally {
       setBusy(false);
     }
+  }
+
+  async function onShotFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!picked.length) return;
+
+    const existing = form.branding.screenshots ?? [];
+    const remaining = Math.max(0, 20 - existing.length);
+    if (remaining === 0) {
+      setMediaNote("Screenshot gallery is full (20). Remove some before uploading more.");
+      return;
+    }
+
+    const files = picked.slice(0, remaining);
+    const skipped = picked.length - files.length;
+    setBusy(true);
+    setError("");
+    const urls: string[] = [];
+    const failures: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      setMediaNote(`Uploading screenshots… ${i + 1}/${files.length}`);
+      try {
+        const url = await uploadAdminMediaFile(files[i], {
+          slug: uploadSlugFor(form),
+          kind: "shot",
+          prefix: "editions",
+        });
+        urls.push(url);
+      } catch (err) {
+        failures.push(
+          `${files[i].name}: ${err instanceof Error ? err.message : "upload failed"}`
+        );
+      }
+    }
+
+    if (urls.length) {
+      patchBranding({
+        screenshots: mergeUniqueMediaUrls(form.branding.screenshots ?? [], urls, 20),
+      });
+    }
+
+    const parts = [
+      urls.length ? `Added ${urls.length} screenshot${urls.length === 1 ? "" : "s"}.` : null,
+      skipped > 0 ? `${skipped} skipped (gallery max 20).` : null,
+      failures.length ? `Failed: ${failures.join(", ")}.` : null,
+      urls.length ? "Save to persist." : null,
+    ].filter(Boolean);
+
+    setMediaNote(parts.join(" ") || "No screenshots added.");
+    if (failures.length && !urls.length) {
+      setError(failures.join(", "));
+    }
+    setBusy(false);
   }
 
   async function save() {
@@ -476,12 +493,21 @@ export function EditionEditorForm({
   return (
     <div className="space-y-6">
       <input
-        ref={fileRef}
+        ref={heroFileRef}
         type="file"
         accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
         className="sr-only"
         tabIndex={-1}
-        onChange={onFileSelected}
+        onChange={onHeroFileSelected}
+      />
+      <input
+        ref={shotsFileRef}
+        type="file"
+        multiple
+        accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
+        className="sr-only"
+        tabIndex={-1}
+        onChange={onShotFilesSelected}
       />
       <input
         ref={videoFileRef}
@@ -694,11 +720,7 @@ export function EditionEditorForm({
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              pendingImageKindRef.current = "cover";
-              setUploadKind("cover");
-              window.setTimeout(() => fileRef.current?.click(), 0);
-            }}
+            onClick={() => heroFileRef.current?.click()}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
           >
             Upload hero
@@ -706,14 +728,10 @@ export function EditionEditorForm({
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              pendingImageKindRef.current = "shot";
-              setUploadKind("shot");
-              window.setTimeout(() => fileRef.current?.click(), 0);
-            }}
+            onClick={() => shotsFileRef.current?.click()}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
           >
-            Upload screenshot
+            Upload screenshots
           </button>
           <button
             type="button"

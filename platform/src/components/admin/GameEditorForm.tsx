@@ -39,6 +39,7 @@ import { isScreenshotCandidate } from "@/lib/mediaImageFilter";
 import { mergeUniqueMediaUrls } from "@/lib/mediaDedupe";
 import { HlsVideo } from "@/components/HlsVideo";
 import { HardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
+import { uploadAdminMediaFile } from "@/lib/adminUploadHelper";
 import {
   DerivedContentEditor,
   EvidencePanel,
@@ -572,32 +573,11 @@ export function GameEditorForm({
   }
 
   async function uploadImageFile(file: File, kind: "cover" | "shot"): Promise<string> {
-    const body = new FormData();
-    body.set("file", file);
-    body.set("slug", form.slug || "upload");
-    body.set("kind", kind);
-    const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-    // Same reasoning as the edition editor: a non-JSON failure used to collapse
-    // to "Upload failed" and discard the only thing that said why.
-    const raw = await res.text().catch(() => "");
-    let data: { url?: string; error?: string } | null = null;
-    try {
-      data = raw ? JSON.parse(raw) : null;
-    } catch {
-      data = null;
-    }
-    if (!res.ok) {
-      throw new Error(
-        data?.error ??
-          (raw
-            ? `${res.status} ${res.statusText}: ${raw.slice(0, 200)}`
-            : `${res.status} ${res.statusText}`)
-      );
-    }
-    if (!data?.url || typeof data.url !== "string") {
-      throw new Error("Upload succeeded but no image URL was returned.");
-    }
-    return data.url;
+    return uploadAdminMediaFile(file, {
+      slug: form.slug || "upload",
+      kind,
+      prefix: "games",
+    });
   }
 
   async function onCoverFileSelected(e: React.ChangeEvent<HTMLInputElement>) {

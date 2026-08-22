@@ -28,18 +28,28 @@ import {
 } from "@/components/admin/EditorialFields";
 import { ModHardwareRequirementsEditor } from "@/components/admin/HardwareRequirementsEditor";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
+import { uploadAdminMediaFile } from "@/lib/adminUploadHelper";
 import { ModClassificationPicker } from "@/components/admin/ModClassificationPicker";
 
-type DevOption = { slug: string; name: string };
-type GameOption = { slug: string; title: string };
+export interface DevOption {
+  slug: string;
+  name: string;
+}
 
+export interface GameOption {
+  slug: string;
+  title: string;
+}
+
+const label = "block text-xs font-semibold text-muted-foreground";
 const field =
-  "mt-1 w-full rounded-lg border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
-const label = "text-xs font-bold uppercase tracking-wide text-muted-foreground";
+  "mt-1 h-9 w-full rounded-lg border border-input bg-secondary/50 px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
+const area =
+  "mt-1 w-full resize-y rounded-lg border border-input bg-secondary/50 px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/40";
 
 function modUploadSlug(slug: string): string {
-  const s = (slug || "upload").replace(/[^a-z0-9-]/gi, "-").slice(0, 60);
-  return `mod-${s || "upload"}`;
+  const clean = slug.replace(/[^a-z0-9-]/gi, "-").slice(0, 80);
+  return clean ? `mod-${clean}` : "mod-upload";
 }
 
 export function ModEditorForm({
@@ -54,8 +64,8 @@ export function ModEditorForm({
   games: GameOption[];
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const pendingImageKindRef = useRef<"cover" | "shot">("shot");
+  const coverFileRef = useRef<HTMLInputElement>(null);
+  const shotsFileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<ModPayload>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -191,52 +201,84 @@ export function ModEditorForm({
     }
   }
 
-  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onCoverFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const kind = pendingImageKindRef.current;
     setBusy(true);
     setError("");
-    setMediaNote(kind === "cover" ? "Uploading cover…" : "Uploading screenshot…");
+    setMediaNote("Uploading cover…");
     try {
-      const body = new FormData();
-      body.set("file", file);
-      body.set("slug", modUploadSlug(form.slug));
-      body.set("kind", kind);
-      const res = await fetch("/api/admin/games/upload", { method: "POST", body });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        const msg = data?.error ?? "Upload failed";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-      if (!data?.url || typeof data.url !== "string") {
-        const msg = "Upload succeeded but no image URL was returned.";
-        setError(msg);
-        setMediaNote(msg);
-        setBusy(false);
-        return;
-      }
-      if (kind === "cover") {
-        patch("coverImage", data.url);
-        setMediaNote("Cover uploaded — save the mod to persist.");
-      } else {
-        setForm((prev) => ({
-          ...prev,
-          screenshots: mergeUniqueMediaUrls(prev.screenshots, [data.url], 20),
-        }));
-        setMediaNote("Screenshot uploaded — save the mod to persist.");
-      }
-      setBusy(false);
-    } catch {
-      const msg = "Couldn't reach the server.";
+      const url = await uploadAdminMediaFile(file, {
+        slug: modUploadSlug(form.slug),
+        kind: "cover",
+        prefix: "mods",
+      });
+      patch("coverImage", url);
+      setMediaNote("Cover uploaded — save the mod to persist.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed.";
       setError(msg);
       setMediaNote(msg);
+    } finally {
       setBusy(false);
     }
+  }
+
+  async function onShotFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!picked.length) return;
+
+    const existing = form.screenshots ?? [];
+    const remaining = Math.max(0, 20 - existing.length);
+    if (remaining === 0) {
+      setMediaNote("Screenshot gallery is full (20). Remove some before uploading more.");
+      return;
+    }
+
+    const files = picked.slice(0, remaining);
+    const skipped = picked.length - files.length;
+    setBusy(true);
+    setError("");
+    const urls: string[] = [];
+    const failures: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      setMediaNote(`Uploading screenshots… ${i + 1}/${files.length}`);
+      try {
+        const url = await uploadAdminMediaFile(files[i], {
+          slug: modUploadSlug(form.slug),
+          kind: "shot",
+          prefix: "mods",
+        });
+        urls.push(url);
+      } catch (err) {
+        failures.push(
+          `${files[i].name}: ${err instanceof Error ? err.message : "upload failed"}`
+        );
+      }
+    }
+
+    if (urls.length) {
+      setForm((prev) => ({
+        ...prev,
+        screenshots: mergeUniqueMediaUrls(prev.screenshots ?? [], urls, 20),
+      }));
+    }
+
+    const parts = [
+      urls.length ? `Added ${urls.length} screenshot${urls.length === 1 ? "" : "s"}.` : null,
+      skipped > 0 ? `${skipped} skipped (gallery max 20).` : null,
+      failures.length ? `Failed: ${failures.join(", ")}.` : null,
+      urls.length ? "Save to persist." : null,
+    ].filter(Boolean);
+
+    setMediaNote(parts.join(" ") || "No screenshots added.");
+    if (failures.length && !urls.length) {
+      setError(failures.join(", "));
+    }
+    setBusy(false);
   }
 
   async function runImport() {
@@ -611,11 +653,19 @@ export function ModEditorForm({
 
       <AdminCollapsibleSection title="Cover & media" defaultOpen>
         <input
-          ref={fileRef}
+          ref={coverFileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
           className="hidden"
-          onChange={onFileSelected}
+          onChange={onCoverFileSelected}
+        />
+        <input
+          ref={shotsFileRef}
+          type="file"
+          multiple
+          accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.avif"
+          className="hidden"
+          onChange={onShotFilesSelected}
         />
         <div className="flex flex-wrap gap-2">
           <button
@@ -629,10 +679,7 @@ export function ModEditorForm({
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              pendingImageKindRef.current = "cover";
-              window.setTimeout(() => fileRef.current?.click(), 0);
-            }}
+            onClick={() => coverFileRef.current?.click()}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
           >
             Upload cover
@@ -640,13 +687,10 @@ export function ModEditorForm({
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              pendingImageKindRef.current = "shot";
-              window.setTimeout(() => fileRef.current?.click(), 0);
-            }}
+            onClick={() => shotsFileRef.current?.click()}
             className="rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-bold disabled:opacity-60"
           >
-            Upload screenshot
+            Upload screenshots
           </button>
         </div>
         {mediaNote && <p className="text-xs text-muted-foreground">{mediaNote}</p>}
