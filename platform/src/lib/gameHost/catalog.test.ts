@@ -21,8 +21,8 @@ describe("game host catalog", () => {
     expect(isHostableGame("wolfenstein-enemy-territory")).toBe(true);
     expect(isHostableGame("openarena")).toBe(true);
     expect(isHostableGame("ysoccer")).toBe(true);
-    expect(isHostableGame("mrboom")).toBe(true);
     expect(isHostableGame("xonotic")).toBe(true);
+    expect(isHostableGame("mrboom")).toBe(false);
   });
 
   it("does not host closed platforms or lobby-only titles", () => {

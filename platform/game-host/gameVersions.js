@@ -28,7 +28,6 @@ const PROBES = {
   openarena: { args: ["+version"], pick: pickFirstVersion },
   "0-ad": { args: ["-version"], pick: pickFirstVersion },
   openra: { args: ["--version"], pick: pickFirstVersion },
-  mrboom: { args: ["-v"], pick: pickFirstVersion },
 };
 
 function looksLikeVersion(value) {

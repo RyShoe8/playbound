@@ -511,7 +511,8 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     client: {
       launchArguments: ["-c", "{host}"],
     },
-    notes: "Mr. Boom dedicated server with -c connect CLI.",
+    notes:
+      "RetroArch netplay only — no dedicated server for VPS hosting. Local/LAN party uses managed RetroArch core.",
   },
 
   starcraft: {

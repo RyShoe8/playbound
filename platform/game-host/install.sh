@@ -49,7 +49,7 @@ apt-get install -y --no-install-recommends \
   0ad
 
 # Optional on some mirrors — do not fail the whole install if missing.
-apt-get install -y --no-install-recommends mrboom || echo "WARN: mrboom package unavailable"
+# Mr. Boom has no dedicated server binary (RetroArch netplay only); not VPS-hostable.
 
 # ET: Legacy etlded runtime libraries (Ubuntu 24.04).
 apt-get install -y --no-install-recommends \
@@ -342,6 +342,82 @@ fi
 mkdir -p "$HOME_DIR/et"
 chown playbound:playbound "$HOME_DIR/et"
 chmod 755 "$HOME_DIR/et"
+
+echo "==> OpenTTD OpenGFX (required for -D dedicated server)"
+OTT_BASESET="$HOME_DIR/.openttd/baseset"
+mkdir -p "$OTT_BASESET" "$HOME_DIR/logs" "$HOME_DIR/luanti-worlds"
+if ! compgen -G "$OTT_BASESET/*.grf" >/dev/null; then
+  if apt-cache show openttd-opengfx >/dev/null 2>&1; then
+    apt-get install -y --no-install-recommends openttd-opengfx || true
+    if compgen -G "/usr/share/games/openttd/baseset/*.grf" >/dev/null; then
+      cp -a /usr/share/games/openttd/baseset/. "$OTT_BASESET/"
+    fi
+  fi
+fi
+if ! compgen -G "$OTT_BASESET/*.grf" >/dev/null; then
+  apt-get install -y --no-install-recommends unzip || true
+  OPENGFX_ZIP="/tmp/opengfx-all.zip"
+  curl -fL --retry 3 -o "$OPENGFX_ZIP" \
+    "https://cdn.openttd.org/opengfx-releases/7.1/opengfx-7.1-all.zip"
+  rm -rf /tmp/opengfx-extract
+  mkdir -p /tmp/opengfx-extract
+  unzip -qo "$OPENGFX_ZIP" -d /tmp/opengfx-extract
+  tar -xf /tmp/opengfx-extract/opengfx-"*"/*.tar -C "$OTT_BASESET" 2>/dev/null || \
+    tar -xf /tmp/opengfx-extract/*.tar -C "$OTT_BASESET" 2>/dev/null || true
+  rm -rf "$OPENGFX_ZIP" /tmp/opengfx-extract
+fi
+chown -R playbound:playbound "$HOME_DIR/.openttd" "$HOME_DIR/logs" "$HOME_DIR/luanti-worlds"
+
+echo "==> Warzone 2100 (AppArmor bwrap profile for Ubuntu 24.04+)"
+if [[ ! -f /etc/apparmor.d/bwrap ]]; then
+  cat > /etc/apparmor.d/bwrap <<'BWRAP'
+abi <abi/4.0>,
+include <tunables/global>
+
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/bwrap>
+}
+BWRAP
+  systemctl reload apparmor 2>/dev/null || true
+fi
+
+systemctl disable --now bzflag-server 2>/dev/null || true
+
+echo "==> TripleA headless"
+TRIPLEA_DIR="$GAMES_DIR/triplea"
+mkdir -p "$TRIPLEA_DIR"
+if [[ ! -x "$TRIPLEA_DIR/run-server" ]]; then
+  TRIPLEA_API="https://api.github.com/repos/triplea-game/triplea/releases/latest"
+  TRIPLEA_ZIP_URL="$(curl -fsSL "$TRIPLEA_API" | jq -r '.assets[] | select(.name == "game-headless.zip") | .browser_download_url' | head -n1)"
+  if [[ -n "$TRIPLEA_ZIP_URL" && "$TRIPLEA_ZIP_URL" != "null" ]]; then
+    curl -fL --retry 3 -o /tmp/triplea-headless.zip "$TRIPLEA_ZIP_URL"
+    rm -rf /tmp/triplea-headless-extract
+    mkdir -p /tmp/triplea-headless-extract
+    unzip -qo /tmp/triplea-headless.zip -d /tmp/triplea-headless-extract
+    cp -a /tmp/triplea-headless-extract/* "$TRIPLEA_DIR/"
+    rm -rf /tmp/triplea-headless.zip /tmp/triplea-headless-extract
+  fi
+  HEADLESS_JAR="$(find "$TRIPLEA_DIR" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
+  if [[ -n "$HEADLESS_JAR" ]]; then
+    cat > "$TRIPLEA_DIR/run-server" <<'EOF'
+#!/usr/bin/env bash
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+JAR="$(find "$ROOT" -maxdepth 3 -name '*.jar' ! -name '*-sources.jar' | head -n1)"
+PORT="${1:?port required}"
+exec /usr/bin/java -server -Xmx512M -Djava.awt.headless=true -jar "$JAR" \
+  -Ptriplea.lobby.uri="https://prod2-lobby.triplea-game.org" \
+  -Ptriplea.map.folder="$ROOT/downloadedMaps" \
+  -Ptriplea.name="PlayBound" \
+  -Ptriplea.port="$PORT" \
+  -Ptriplea.server.password=""
+EOF
+    chmod +x "$TRIPLEA_DIR/run-server"
+    echo "  installed TripleA headless under $TRIPLEA_DIR"
+  else
+    echo "  WARN: TripleA headless jar not found — party hosting unavailable until installed"
+  fi
+fi
 
 chown -R playbound:playbound "$GAMES_DIR"
 
