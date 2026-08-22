@@ -68,6 +68,8 @@ import { LocateGameButton } from "@/components/LocateGameButton";
 import { launcherPlayModUrl } from "@/lib/launcher";
 import { modsForEdition } from "@/lib/mods";
 import { cn } from "@/lib/utils";
+import { classifyMediaUrl } from "@/lib/mediaEmbed";
+import { HlsVideo } from "@/components/HlsVideo";
 import { GameHardwareCompatibility } from "@/components/hardware/GameHardwareCompatibility";
 
 type Params = Promise<{ slug: string; editionSlug: string }>;
@@ -211,6 +213,14 @@ export default async function EditionPage({
   const screenshots = edition.branding.screenshots?.length
     ? edition.branding.screenshots
     : (game.screenshots ?? []);
+  /*
+   * Same fallback shape as screenshots above: the edition's own media when it
+   * has any, the parent game's otherwise. An edition that adds a trailer should
+   * show that trailer instead of the game's, not both.
+   */
+  const videos = edition.branding.videos?.length
+    ? edition.branding.videos.filter(Boolean)
+    : (game.videos ?? []).filter(Boolean);
   const requirements = edition.requirements ?? game.systemRequirements;
   const heroImage = edition.branding.heroImage;
 
@@ -483,7 +493,9 @@ export default async function EditionPage({
           </section>
         )}
 
-        {tab === "media" && <MediaTab edition={edition} game={game} screenshots={screenshots} />}
+        {tab === "media" && (
+          <MediaTab edition={edition} game={game} screenshots={screenshots} videos={videos} />
+        )}
       </div>
     </div>
   );
@@ -1105,19 +1117,79 @@ function MediaTab({
   edition,
   game,
   screenshots,
+  videos,
 }: {
   edition: Edition;
   game: Game;
   screenshots: string[];
+  videos: string[];
 }) {
+  const vids = videos.map(classifyMediaUrl);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Media</h2>
         <span className="text-xs text-muted-foreground">
+          {vids.length > 0 && `${vids.length} ${vids.length === 1 ? "video" : "videos"}`}
+          {vids.length > 0 && screenshots.length > 0 && " · "}
           {screenshots.length > 0 && `${screenshots.length} ${screenshots.length === 1 ? "screenshot" : "screenshots"}`}
         </span>
       </div>
+
+      {/*
+        Videos were stored on the edition and never rendered — branding.videos
+        round-trips through the admin editor and the model, but this tab only
+        ever drew screenshots, so anything added here vanished. Same treatment
+        the game page gives them, including the YouTube/Vimeo/HLS split.
+      */}
+      {vids.length > 0 && (
+        <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
+          <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 bg-secondary/30 transition-colors hover:bg-secondary/50 font-semibold text-sm">
+            <span className="flex items-center gap-2">
+              <Film className="size-4 text-primary" />
+              <span>Videos</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground font-normal">
+                {vids.length}
+              </span>
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="p-4 grid grid-cols-1 gap-3">
+            {vids.map((v) => (
+              <div
+                key={v.src}
+                className="relative aspect-video overflow-hidden rounded-lg border border-border bg-black"
+              >
+                {v.kind === "youtube" || v.kind === "vimeo" ? (
+                  <iframe
+                    src={v.embedUrl}
+                    title={`${edition.name} video`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="h-full w-full"
+                  />
+                ) : v.kind === "hls" ? (
+                  <HlsVideo
+                    src={v.src}
+                    title={`${edition.name} video`}
+                    poster={edition.branding.heroImage || game.coverImage || undefined}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <video
+                    src={v.src}
+                    controls
+                    preload="metadata"
+                    className="h-full w-full object-contain"
+                    poster={edition.branding.heroImage || game.coverImage || undefined}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {screenshots.length > 0 ? (
         <details open className="group rounded-xl border border-border bg-card/50 overflow-hidden">
@@ -1150,7 +1222,9 @@ function MediaTab({
             ))}
           </div>
         </details>
-      ) : (
+      ) : vids.length === 0 ? (
+        /* Only when there is no media at all — cover art under a row of videos
+           is filler, not a fallback. */
         <div className="space-y-3">
           <EmptyHint icon={Gamepad2}>
             No screenshots for {edition.name} yet.
@@ -1162,7 +1236,7 @@ function MediaTab({
             </div>
           ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
