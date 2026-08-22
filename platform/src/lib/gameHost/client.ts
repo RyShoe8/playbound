@@ -11,6 +11,7 @@ const TEST_SPAWN_TIMEOUT_MS = 15 * 60 * 1000;
 
 export type GameHostRoom = {
   roomId: string;
+  partyId: string;
   host: string;
   port: number;
   gameSlug: string;
@@ -230,6 +231,7 @@ export async function createHostRoom(opts: {
     if (!host) return { error: "Game host did not return a public IP" };
     return {
       roomId: data.roomId,
+      partyId: data.partyId || opts.partyId,
       host,
       port: Number(data.port),
       gameSlug: data.gameSlug || opts.gameSlug,
