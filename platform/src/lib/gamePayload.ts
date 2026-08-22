@@ -36,7 +36,6 @@ export const GENRES = [
   "Tower Defense",
   "Space",
   "Arcade",
-  "Pirate",
   "MMO",
   "Survival",
   "Shooter",
@@ -204,9 +203,28 @@ export const TAGS = [
 /** Play modes belong in FEATURES. Strip them if they linger on tags. */
 const PLAY_MODE_TAG_NAMES = new Set(["Multiplayer", "Singleplayer"]);
 
+/** Tags retired from filters and admin pickers — stripped on read and save. */
+export const RETIRED_TAGS = new Set([
+  "Deck Building",
+  "C++",
+  "Free to Play",
+  "Doom Engine",
+  "Pirate",
+  "Freeware",
+]);
+
 export function dropPlayModeTags(value: unknown): unknown {
   if (!Array.isArray(value)) return value;
   return value.filter((v) => typeof v !== "string" || !PLAY_MODE_TAG_NAMES.has(v));
+}
+
+export function dropRetiredTags(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.filter((v) => typeof v !== "string" || !RETIRED_TAGS.has(v));
+}
+
+export function normalizeTags(value: unknown): unknown {
+  return dropRetiredTags(dropPlayModeTags(value));
 }
 
 const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> = {
@@ -223,7 +241,6 @@ const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> =
   "Tower Defense": { from: "#7c2d12", to: "#fb923c", icon: "Landmark" },
   Space: { from: "#0f172a", to: "#6366f1", icon: "Rocket" },
   Arcade: { from: "#831843", to: "#f472b6", icon: "Target" },
-  Pirate: { from: "#0c4a6e", to: "#f59e0b", icon: "Flag" },
 };
 
 export function defaultArtFor(genres: string[] = [], slug = ""): { from: string; to: string; icon: string } {
@@ -390,7 +407,7 @@ export const gamePayloadSchema = z.object({
   developerSlug: z.string().trim().min(1).max(80),
   developerName: z.string().trim().max(120).optional().nullable(),
   genres: z.preprocess(dropUnknown(GENRES), z.array(z.enum(GENRES)).default([])),
-  tags: z.preprocess(dropPlayModeTags, z.array(z.string().trim().min(1).max(40)).max(30).default([])),
+  tags: z.preprocess(normalizeTags, z.array(z.string().trim().min(1).max(40)).max(30).default([])),
   aliases: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
   license: z.string().trim().min(1).max(120),
   releaseYear: z.number().int().min(1970).max(2100),

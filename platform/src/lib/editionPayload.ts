@@ -7,7 +7,7 @@ import {
   VERIFICATION_LEVELS,
 } from "@/lib/editionTypes";
 import { hardwareRequirementsBlockSchema } from "@/lib/hardware/schema";
-import { dropPlayModeTags } from "@/lib/gamePayload";
+import { normalizeTags } from "@/lib/gamePayload";
 
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -172,7 +172,7 @@ export const editionPayloadSchema = z
 
     features: z.array(z.string().trim().min(1).max(200)).max(40).default([]),
     tags: z.preprocess(
-      dropPlayModeTags,
+      normalizeTags,
       z.array(z.string().trim().min(1).max(60)).max(40).default([])
     ),
     aliases: z.array(z.string().trim().min(1).max(80)).max(20).default([]),

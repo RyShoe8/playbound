@@ -20,7 +20,7 @@ import { searchEditions } from "@/lib/editions";
 import type { Edition } from "@/lib/editionTypes";
 import type { Collection, Developer } from "@/lib/data/types";
 import { mongoVisibleFilter, normalizeStatus, type CatalogStatus } from "@/lib/catalogStatus";
-import { normalizeQualityBar } from "@/lib/gamePayload";
+import { normalizeQualityBar, normalizeTags, GENRES } from "@/lib/gamePayload";
 import { accessFromDoc } from "@/lib/access/docs";
 import { pickHardwareRequirements, pickSystemRequirements } from "@/lib/catalogRequirements";
 
@@ -116,6 +116,17 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
   return game;
 }
 
+const ALLOWED_GENRES = new Set<string>(GENRES);
+
+function sanitizeGenres(genres: Genre[]): Genre[] {
+  return genres.filter((g) => ALLOWED_GENRES.has(g));
+}
+
+function sanitizeTags(tags: string[]): string[] {
+  const normalized = normalizeTags(tags);
+  return Array.isArray(normalized) ? (normalized as string[]) : tags;
+}
+
 function toGame(doc: LeanGame): Game {
   const seed = seedBySlug.get(String(doc.slug));
   const extra = overlayForMongoOnly(String(doc.slug));
@@ -127,8 +138,12 @@ function toGame(doc: LeanGame): Game {
     tagline: String(doc.tagline) || seed?.tagline || "",
     description: String(doc.description) || seed?.description || "",
     developerSlug: String(doc.developerSlug) || seed?.developerSlug || "",
-    genres: (doc.genres as Genre[])?.length ? (doc.genres as Genre[]) : (seed?.genres ?? []),
-    tags: (doc.tags as string[])?.length ? (doc.tags as string[]) : (seed?.tags ?? []),
+    genres: sanitizeGenres(
+      (doc.genres as Genre[])?.length ? (doc.genres as Genre[]) : (seed?.genres ?? [])
+    ),
+    tags: sanitizeTags(
+      (doc.tags as string[])?.length ? (doc.tags as string[]) : (seed?.tags ?? [])
+    ),
     aliases: (doc.aliases as string[])?.length ? (doc.aliases as string[]) : (seed?.aliases ?? []),
     license: String(doc.license) || seed?.license || "",
     releaseYear: (typeof doc.releaseYear === "number" && doc.releaseYear > 1970 ? doc.releaseYear : seed?.releaseYear) || 0,

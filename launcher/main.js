@@ -1626,8 +1626,7 @@ function editionInstallDir(slug, editionSlug) {
   return path.join(gamesRoot(), slug, editionSlug || DEFAULT_EDITION_SLUG);
 }
 
-function installedEditionsPayload(slug) {
-  const state = loadState();
+function installedEditionsPayload(slug, state = loadState()) {
   const game = ensureGameInstallRecord(state[slug]);
   return listEditionEntries(game)
     .filter((e) => playableExePath(e) || e.pending)
@@ -7338,7 +7337,7 @@ function listInstalledGames() {
     if (!raw || typeof raw !== "object") continue;
     const game = ensureGameInstallRecord(raw);
     syncGameInstallSummary(game);
-    const editions = installedEditionsPayload(slug);
+    const editions = installedEditionsPayload(slug, state);
     const ready = Boolean(playableExePath(game));
     const pending = Boolean(game.pending) && !ready;
     if (!ready && !pending && editions.length === 0) continue;
@@ -8002,6 +8001,7 @@ ipcMain.handle("get-mods-catalog", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/launcher/mods`, {
       headers: launcherApiHeaders(),
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return { mods: [] };
     return await res.json();
@@ -8939,14 +8939,20 @@ ipcMain.handle("invite-to-party", async (_event, partyId, friendIds = []) => {
  * its party panel could not show the same controls as the site.
  */
 ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
-  // Awaited for the same reason as create/join: the PATCH response carries a
-  // freshly computed configSync, and picking a game is exactly when it matters.
-  await syncInstallsBeforeParty();
+  /*
+   * Game picks should feel instant — blocking on a full library sync here made
+   * the selector snap back when friends polling repainted before PATCH returned.
+   * Sync still runs, but in the background after the PATCH response lands.
+   */
+  const gamePick = typeof patch.gameSlug === "string" && patch.gameSlug.length > 0;
+  if (!gamePick) await syncInstallsBeforeParty();
   try {
-    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, {
+    const result = await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, {
       method: "PATCH",
       body: patch,
     });
+    if (gamePick) void syncInstallsBeforeParty();
+    return result;
   } catch (err) {
     return { error: err.message };
   }

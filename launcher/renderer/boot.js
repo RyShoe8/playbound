@@ -505,6 +505,8 @@ function wireMainEvents() {
       cacheInvalidate("game");
       cacheInvalidate("editions");
     }
+    cacheInvalidate("installed");
+    cacheInvalidate("installedMods");
     markViewDirty(views.library, views.gameDetail, views.editionDetail);
     if (returnToParty) {
       /* navigateTo("friends") above already refreshed the party panel. */
@@ -558,6 +560,8 @@ function wireMainEvents() {
       cacheInvalidate(`game:${data.slug}`);
       cacheInvalidate(`editions:${data.slug}`);
     }
+    cacheInvalidate("installed");
+    cacheInvalidate("installedMods");
     markViewDirty(views.library, views.gameDetail);
     if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "home") api.paintHomeGrids?.(state.catalogCache, state.recentCache);
@@ -576,6 +580,8 @@ function wireMainEvents() {
       cacheInvalidate(`game:${data.slug}`);
       cacheInvalidate(`editions:${data.slug}`);
     }
+    cacheInvalidate("installed");
+    cacheInvalidate("installedMods");
     markViewDirty(views.library, views.gameDetail);
     if (state.currentView === "library") api.renderLibraryView?.();
     else if (state.currentView === "gameDetail" && data?.slug && state.currentDetailSlug === data.slug) {

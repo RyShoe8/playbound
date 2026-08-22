@@ -152,6 +152,8 @@ export const CACHE_TTL = {
   eventDetail: 60_000,
   friends: 15_000,
   installed: 8_000,
+  installedMods: 8_000,
+  cloudLibrary: 30_000,
   gameDetail: 90_000,
   modDetail: 90_000,
   editions: 60_000,
