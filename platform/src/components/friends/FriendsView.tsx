@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { useFriendsStore, type FriendUser } from "@/stores/friendsStore";
 import { AddFriends } from "@/components/friends/AddFriends";
@@ -9,7 +9,7 @@ import { FriendsUpcomingEvents } from "@/components/events/FriendsUpcomingEvents
 import { Avatar } from "@/components/ui/bits";
 import { Gamepad2, LogIn, UserMinus, X } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { telemetry } from "@/lib/telemetry";
 import { usePartyStore, refreshPartyAndFriends } from "@/stores/partyStore";
 import { PartyView, type PartyGameOption } from "@/components/friends/PartyView";
@@ -129,7 +129,17 @@ function FriendCard({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-        {showJoin ? (
+        {inYourParty ? (
+          <span className="text-[11px] font-semibold text-muted-foreground">In your party</span>
+        ) : partyId ? (
+          <button
+            type="button"
+            className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
+            onClick={() => onJoinParty?.(partyId)}
+          >
+            Join Party
+          </button>
+        ) : showJoin ? (
           <Link
             href={join.href!}
             className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
@@ -154,16 +164,6 @@ function FriendCard({
           >
             View Game
           </Link>
-        ) : inYourParty ? (
-          <span className="text-[11px] font-semibold text-muted-foreground">In your party</span>
-        ) : partyId ? (
-          <button
-            type="button"
-            className="rounded-md bg-play px-2.5 py-1 text-[11px] font-bold text-play-foreground hover:brightness-110"
-            onClick={() => onJoinParty?.(partyId)}
-          >
-            Join Party
-          </button>
         ) : lfgJoinSlug ? (
           <Link
             href={`/games/${encodeURIComponent(lfgJoinSlug)}`}
@@ -413,11 +413,15 @@ export function FriendsView({
   } = useFriendsStore();
   
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const partyParam = searchParams.get("party");
+  const joiningPartyRef = useRef<string | null>(null);
   
   const { 
     activeParty, 
     discoverableParties,
+    error: partyError,
     startPolling: startPartyPolling, 
     stopPolling: stopPartyPolling,
     joinParty,
@@ -449,17 +453,24 @@ export function FriendsView({
         })
         .catch(() => {});
         
-      void refreshPartyAndFriends();
-      startPartyPolling(5000);
-      if (partyParam) {
-        void joinParty(partyParam);
+      if (partyParam && joiningPartyRef.current !== partyParam) {
+        joiningPartyRef.current = partyParam;
+        void joinParty(partyParam).finally(() => {
+          const next = new URLSearchParams(window.location.search);
+          next.delete("party");
+          const q = next.toString();
+          router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+        });
+      } else {
+        void refreshPartyAndFriends();
       }
+      startPartyPolling(5000);
     }
     return () => {
       stopPolling();
       stopPartyPolling();
     };
-  }, [status, startPolling, stopPolling, startPartyPolling, stopPartyPolling, partyParam, joinParty]);
+  }, [status, startPolling, stopPolling, startPartyPolling, stopPartyPolling, partyParam, joinParty, pathname, router]);
 
   async function patchVisibility(patch: Record<string, boolean>) {
     setAppearBusy(true);
@@ -713,6 +724,19 @@ export function FriendsView({
           </div>
         ) : null}
       </div>
+
+      {partyError && !activeParty ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-sm font-semibold text-destructive flex items-center justify-between gap-2">
+          <span>{partyError}</span>
+          <button
+            type="button"
+            onClick={() => usePartyStore.setState({ error: null })}
+            className="text-xs opacity-75 hover:opacity-100 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       {activeParty && (
         <div className="space-y-3">

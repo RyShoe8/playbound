@@ -179,6 +179,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   },
 
   createParty: async (opts) => {
+    partyMutationInFlight += 1;
     set({ loading: true, error: null });
     try {
       const res = await fetch("/api/parties", {
@@ -236,10 +237,13 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
       set({ error: "Network error", loading: false });
       return null;
+    } finally {
+      partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
     }
   },
 
   joinParty: async (partyId, password) => {
+    partyMutationInFlight += 1;
     set({ loading: true, error: null });
     try {
       const res = await fetch(`/api/parties/${partyId}/join`, {
@@ -264,17 +268,20 @@ export const usePartyStore = create<PartyState>((set, get) => ({
         needsDiscordLink: Boolean(data.needsDiscordLink),
         inviteUrl,
       };
-      set({ activeParty: party, loading: false });
+      set({ activeParty: party, loading: false, error: null });
       syncPartyPoll(get);
       refreshFriendsAfterPartyMutation();
       return party;
     } catch (err) {
       set({ error: "Network error", loading: false });
       return null;
+    } finally {
+      partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
     }
   },
 
   leaveParty: async (partyId) => {
+    partyMutationInFlight += 1;
     try {
       await fetch(`/api/parties/${partyId}/leave`, { method: "POST" });
       set({ activeParty: null });
@@ -282,6 +289,8 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       refreshFriendsAfterPartyMutation();
     } catch (err) {
       console.error("Failed to leave party", err);
+    } finally {
+      partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
     }
   },
 

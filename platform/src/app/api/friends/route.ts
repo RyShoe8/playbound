@@ -9,6 +9,7 @@ import { listGames } from "@/lib/catalog";
 import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 import { listSharedLibraryByFriend } from "@/lib/playTogether/sharedGames";
+import { PARTY_IDLE_TIMEOUT_MS } from "@/lib/playTogether/types";
 
 type PopulatedFriendUser = {
   _id: { toString(): string };
@@ -58,6 +59,8 @@ export async function GET(req: Request) {
       };
     });
 
+    const now = Date.now();
+    const partyCutoff = new Date(now - PARTY_IDLE_TIMEOUT_MS);
     const friendIds = friendUsers.map((u) => u.id);
     const friendIdStrings = friendIds.map((id) => String(id));
     const [presences, discordConnections, games, sharedByFriend, liveMemberParties] =
@@ -68,6 +71,7 @@ export async function GET(req: Request) {
       listSharedLibraryByFriend(userId, friendIdStrings),
       Party.find({
         status: { $nin: ["ended"] },
+        lastActivity: { $gte: partyCutoff },
         "members.userId": { $in: friendIds },
       })
         .select("_id members.userId")
@@ -96,7 +100,6 @@ export async function GET(req: Request) {
     const titleBySlug = new Map(games.map((g) => [g.slug, g.title]));
     const gameBySlug = new Map(games.map((g) => [g.slug, g]));
     const discordLinkedSet = new Set(discordConnections.map((dc) => dc.userId.toString()));
-    const now = Date.now();
 
     const presenceMap = new Map();
     for (const p of presences) {
@@ -140,7 +143,9 @@ export async function GET(req: Request) {
         now
       );
       const membershipPartyId = partyIdByMember.get(userIdStr);
-      if (membershipPartyId) raw.currentPartyId = membershipPartyId;
+      if (raw.status !== "offline" && membershipPartyId) {
+        raw.currentPartyId = membershipPartyId;
+      }
       const presence = maskPresenceForOthers(raw, user.appearOffline, user.hideActivity);
       const game = presence.currentGameId
         ? gameBySlug.get(String(presence.currentGameId))

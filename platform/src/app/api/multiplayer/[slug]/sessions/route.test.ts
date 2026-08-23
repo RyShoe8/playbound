@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { POST as createGenericSession } from "./route";
-import { POST as joinGenericSession } from "./[code]/join/route";
+import { POST as joinGenericSession } from "./[id]/join/route";
 import { POST as postGenericSignal, GET as getGenericSignal } from "./[id]/signal/route";
 
 describe("Generic Multiplayer API Endpoints", () => {
@@ -34,7 +34,7 @@ describe("Generic Multiplayer API Endpoints", () => {
     );
 
     const joinRes = await joinGenericSession(joinReq, {
-      params: Promise.resolve({ slug: "keeperfx", code: dataKeeper.joinCode }),
+      params: Promise.resolve({ slug: "keeperfx", id: dataKeeper.joinCode }),
     });
     expect(joinRes.status).toBe(200);
     const joinData = await joinRes.json();

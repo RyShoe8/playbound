@@ -19,6 +19,7 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import Presence from "@/lib/models/Presence";
 import PartyMessage from "@/lib/models/PartyMessage";
+import PlayInvite from "@/lib/models/PlayInvite";
 import { getGame } from "@/lib/catalog";
 import { listEditionsForGame } from "@/lib/editions";
 import {
@@ -200,9 +201,13 @@ async function ensurePartyConnectReady(
 /* ─── helpers ────────────────────────────────────────────────────────────── */
 
 async function acceptedFriendIds(userId: string): Promise<string[]> {
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const userOr = userObjId
+    ? [{ requesterId: userObjId }, { recipientId: userObjId }, { requesterId: userId }, { recipientId: userId }]
+    : [{ requesterId: userId }, { recipientId: userId }];
   const docs = await Friend.find({
     status: "accepted",
-    $or: [{ requesterId: userId }, { recipientId: userId }],
+    $or: userOr,
   })
     .select("requesterId recipientId")
     .lean();
@@ -254,17 +259,25 @@ function isMongoDuplicateKey(err: unknown): boolean {
 }
 
 async function findActiveLeaderParty(userId: string) {
+  const cutoff = new Date(Date.now() - PARTY_IDLE_TIMEOUT_MS);
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
   return Party.findOne({
-    leaderId: userId,
+    leaderId: matchUser,
     status: { $nin: ["ended"] },
+    lastActivity: { $gte: cutoff },
   }).lean();
 }
 
 /** Active parties this user leads or belongs to — used for cleanup and listing. */
 function activePartyFilterForUser(userId: string, keepPartyId?: string) {
+  const cutoff = new Date(Date.now() - PARTY_IDLE_TIMEOUT_MS);
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const matchUser = userObjId ? { $in: [userId, userObjId] } : userId;
   const base: Record<string, unknown> = {
     status: { $nin: ["ended"] },
-    $or: [{ leaderId: userId }, { "members.userId": userId }],
+    lastActivity: { $gte: cutoff },
+    $or: [{ leaderId: matchUser }, { "members.userId": matchUser }],
   };
   if (keepPartyId) base._id = { $ne: keepPartyId };
   return base;
@@ -630,6 +643,19 @@ export async function joinParty(
   const isFriend = friendIds.includes(rp.leaderId) ||
     rp.members.some((m) => friendIds.includes(m.userId));
 
+  let hasInvite = false;
+  if (!isFriend && (doc.visibility === "friends" || doc.visibility === "invite_only")) {
+    const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+    const inviteDoc = await PlayInvite.findOne({
+      recipientId: userObjId ? { $in: [userId, userObjId] } : userId,
+      partyId: String(doc._id),
+      status: { $in: ["pending", "accepted"] },
+    }).lean();
+    if (inviteDoc) {
+      hasInvite = true;
+    }
+  }
+
   let passwordOk = false;
   if (doc.visibility === "password") {
     const salt = String(doc.passwordSalt || "");
@@ -661,7 +687,7 @@ export async function joinParty(
     };
   }
 
-  const check = canJoinParty(rp, userId, isFriend, passwordOk);
+  const check = canJoinParty(rp, userId, isFriend || hasInvite, passwordOk);
   if (!check.ok) return { error: check.reason || "Cannot join", status: 403 };
 
   const now = new Date();
@@ -678,10 +704,11 @@ export async function joinParty(
    * Pushing under a filter that excludes existing members closes the window:
    * whichever write lands second matches nothing and changes nothing.
    */
+  const userIdObj = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
   const claimed = await Party.updateOne(
-    { _id: doc._id, "members.userId": { $ne: userId } },
+    { _id: doc._id, "members.userId": { $nin: userIdObj ? [userId, userIdObj] : [userId] } },
     {
-      $push: { members: { userId, role: "member", ready: false, joinedAt: now } },
+      $push: { members: { userId: userIdObj || userId, role: "member", ready: false, joinedAt: now } },
       $set: { lastActivity: now },
     }
   );
@@ -1569,12 +1596,22 @@ export async function listDiscoverableParties(
   const friendIds = await acceptedFriendIds(userId);
   if (friendIds.length === 0) return [];
 
+  const cutoff = new Date(Date.now() - PARTY_IDLE_TIMEOUT_MS);
+  const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+  const friendObjIds = friendIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+  const memberMatch = [
+    ...friendIds,
+    ...friendObjIds,
+  ];
+  const ninMatch = userObjId ? [userId, userObjId] : [userId];
+
   // Parties where a friend is a member, visibility is "friends", and
   // the requesting user is not already in them.
   const docs = await Party.find({
-    "members.userId": { $in: friendIds, $nin: [userId] },
+    "members.userId": { $in: memberMatch, $nin: ninMatch },
     visibility: "friends",
     status: { $nin: ["ended"] },
+    lastActivity: { $gte: cutoff },
   })
     .sort({ lastActivity: -1 })
     .limit(20)

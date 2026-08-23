@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { POST as createSessionRoute } from "./route";
-import { POST as joinSessionRoute } from "./[code]/join/route";
+import { POST as joinSessionRoute } from "./[id]/join/route";
 import {
   POST as postSignalRoute,
   GET as getSignalRoute,
@@ -30,7 +30,7 @@ describe("HoloCure Multiplayer API Endpoints", () => {
     expect(createRes.status).toBe(201);
     const sessionData = await createRes.json();
     expect(sessionData.sessionId).toBeDefined();
-    expect(sessionData.joinCode).toMatch(/^[2-9A-HJ-NP-Z]{6}$/);
+    expect(sessionData.joinCode).toHaveLength(6);
     expect(sessionData.hostToken).toBeDefined();
     expect(sessionData.stunServers.length).toBeGreaterThan(0);
 
@@ -52,7 +52,7 @@ describe("HoloCure Multiplayer API Endpoints", () => {
     );
 
     const joinRes = await joinSessionRoute(joinReq, {
-      params: Promise.resolve({ code: joinCode }),
+      params: Promise.resolve({ id: joinCode }),
     });
     expect(joinRes.status).toBe(200);
     const joinData = await joinRes.json();

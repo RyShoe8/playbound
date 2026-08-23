@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import PlayInvite from "@/lib/models/PlayInvite";
 import Friend from "@/lib/models/Friend";
@@ -12,11 +13,15 @@ import { nextInviteStatus } from "@/lib/playTogether/inviteRules";
 import type { PlayInviteStatus } from "@/lib/playTogether/types";
 
 async function areFriends(a: string, b: string): Promise<boolean> {
+  const aObj = Types.ObjectId.isValid(a) ? new Types.ObjectId(a) : null;
+  const bObj = Types.ObjectId.isValid(b) ? new Types.ObjectId(b) : null;
+  const aMatches = aObj ? [a, aObj] : [a];
+  const bMatches = bObj ? [b, bObj] : [b];
   const row = await Friend.findOne({
     status: "accepted",
     $or: [
-      { requesterId: a, recipientId: b },
-      { requesterId: b, recipientId: a },
+      { requesterId: { $in: aMatches }, recipientId: { $in: bMatches } },
+      { requesterId: { $in: bMatches }, recipientId: { $in: aMatches } },
     ],
   })
     .select("_id")
@@ -32,16 +37,34 @@ export async function checkInviteRecipient(
   if (senderId === recipientId) {
     return { error: "Cannot invite yourself", status: 400 };
   }
-  if (!(await areFriends(senderId, recipientId))) {
-    return { error: "You can only invite friends", status: 403 };
+  const friends = await areFriends(senderId, recipientId);
+  if (!friends) {
+    return { error: "Can only invite friends", status: 403 };
   }
-  const recipient = await User.findById(recipientId).select("preferences username").lean();
-  if (!recipient) return { error: "User not found", status: 404 };
-  const allow =
-    (recipient as { preferences?: { allowPlayInvites?: boolean } }).preferences?.allowPlayInvites !==
-    false;
-  if (!allow) return { error: "This user is not accepting play invites", status: 403 };
+  const recipient = await User.findById(recipientId).select("preferences").lean();
+  if (!recipient) {
+    return { error: "Recipient not found", status: 404 };
+  }
+  if (recipient.preferences?.allowPlayInvites === false) {
+    return { error: "This friend does not accept play invites", status: 403 };
+  }
   return { ok: true };
+}
+
+function serializeInvite(doc: Record<string, unknown>) {
+  return {
+    id: String(doc._id),
+    senderId: String(doc.senderId),
+    recipientId: String(doc.recipientId),
+    gameSlug: String(doc.gameSlug),
+    editionSlug: (doc.editionSlug as string) || null,
+    modSlug: (doc.modSlug as string) || null,
+    partyId: doc.partyId ? String(doc.partyId) : null,
+    status: doc.status as PlayInviteStatus,
+    expiresAt: (doc.expiresAt as Date).toISOString(),
+    createdAt: (doc.createdAt as Date).toISOString(),
+    respondedAt: doc.respondedAt ? (doc.respondedAt as Date).toISOString() : null,
+  };
 }
 
 export async function sendPlayInvite(opts: {
@@ -139,6 +162,16 @@ export async function respondPlayInvite(opts: {
   invite.respondedAt = now;
   await invite.save();
 
+  let partyResult = null;
+  if (opts.action === "accept" && invite.partyId) {
+    try {
+      const { joinParty } = await import("@/lib/playTogether/party");
+      partyResult = await joinParty(String(invite.partyId), opts.userId);
+    } catch (partyErr) {
+      console.warn("[play-invites] auto joinParty on accept failed:", partyErr);
+    }
+  }
+
   const [recipient, game] = await Promise.all([
     User.findById(opts.userId).select("username").lean(),
     getGame(invite.gameSlug, { includeTesting: true }),
@@ -153,7 +186,11 @@ export async function respondPlayInvite(opts: {
     accepted: opts.action === "accept",
   });
 
-  return { invite: serializeInvite(invite), status: 200 as const };
+  return {
+    invite: serializeInvite(invite),
+    party: partyResult && "party" in partyResult ? partyResult.party : null,
+    status: 200 as const,
+  };
 }
 
 export async function listPlayInvitesForUser(userId: string) {
