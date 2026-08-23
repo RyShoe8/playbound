@@ -22,12 +22,12 @@ import {
 } from "../shared.js";
 
 let friendsPollInterval = null;
-let friendsPollMs = 3000;
+let friendsPollMs = 5000;
 let localPlaying = false;
 let playPollWired = false;
 
-const FRIENDS_POLL_MS = 3000;
-const LIVE_PARTY_POLL_MS = 1000;
+const FRIENDS_POLL_MS = 5000;
+const LIVE_PARTY_POLL_MS = 3000;
 
 /*
  * Party constants, copied from platform/src/lib/playTogether/types.ts so the
@@ -710,89 +710,109 @@ async function refreshFriendsData() {
       `;
     }
 
-    content.innerHTML = html;
+    const contentSig = JSON.stringify([
+      onlineAll.map((f) => [
+        f.id,
+        f.username,
+        f.presence?.status,
+        f.presence?.currentGameId,
+        f.presence?.currentPartyId,
+        f.presence?.lookingForPlayers,
+        f.join?.capability,
+        f.discordLinked,
+      ]),
+      offline.map((f) => [f.id, f.username]),
+      incomingRequests.map((r) => [r.id, r.user?.username]),
+      outgoingRequests.map((r) => [r.id, r.user?.username]),
+      upcomingEvents.map((e) => [e.id, e.title, e.friendCount]),
+    ]);
 
-    document.getElementById("btn-find-friends")?.addEventListener("click", () => {
-      void api.toggleAddFriendsPanel(true);
-    });
+    if (content.dataset.sig !== contentSig) {
+      content.dataset.sig = contentSig;
+      content.innerHTML = html;
 
-    // Attach event listeners
-    content.querySelectorAll(".btn-accept").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "Accepting...";
-        await window.playbound.acceptFriendRequest(btn.dataset.id);
-        api.refreshFriendsData();
+      document.getElementById("btn-find-friends")?.addEventListener("click", () => {
+        void api.toggleAddFriendsPanel(true);
       });
-    });
 
-    content.querySelectorAll(".btn-decline").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "Declining...";
-        await window.playbound.declineFriendRequest(btn.dataset.id);
-        api.refreshFriendsData();
+      // Attach event listeners
+      content.querySelectorAll(".btn-accept").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Accepting...";
+          await window.playbound.acceptFriendRequest(btn.dataset.id);
+          api.refreshFriendsData();
+        });
       });
-    });
 
-    content.querySelectorAll(".btn-cancel-request").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "Cancelling...";
-        await window.playbound.cancelFriendRequest(btn.dataset.id);
-        api.refreshFriendsData();
+      content.querySelectorAll(".btn-decline").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Declining...";
+          await window.playbound.declineFriendRequest(btn.dataset.id);
+          api.refreshFriendsData();
+        });
       });
-    });
 
-    content.querySelectorAll(".btn-remove-friend").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (!confirm("Are you sure you want to remove this friend?")) return;
-        btn.disabled = true;
-        await window.playbound.removeFriend(btn.dataset.id);
-        api.refreshFriendsData();
+      content.querySelectorAll(".btn-cancel-request").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "Cancelling...";
+          await window.playbound.cancelFriendRequest(btn.dataset.id);
+          api.refreshFriendsData();
+        });
       });
-    });
 
-    content.querySelectorAll(".btn-view-game").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const slug = btn.dataset.slug;
-        if (slug) api.openGameDetail(slug, "friends");
+      content.querySelectorAll(".btn-remove-friend").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Are you sure you want to remove this friend?")) return;
+          btn.disabled = true;
+          await window.playbound.removeFriend(btn.dataset.id);
+          api.refreshFriendsData();
+        });
       });
-    });
 
-    content.querySelectorAll(".btn-event-link").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        if (id) api.openEventDetail(id, "friends");
+      content.querySelectorAll(".btn-view-game").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const slug = btn.dataset.slug;
+          if (slug) api.openGameDetail(slug, "friends");
+        });
       });
-    });
 
-    content.querySelectorAll(".btn-friend-discord").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        // Prefers the desktop app when it is installed.
-        void (window.playbound.openDiscordInvite?.("https://discord.com/app") ??
-          window.playbound.openExternal("https://discord.com/app"));
+      content.querySelectorAll(".btn-event-link").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          if (id) api.openEventDetail(id, "friends");
+        });
       });
-    });
 
-    content.querySelectorAll(".btn-join-friend-party").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        btn.disabled = true;
-        btn.textContent = "Joining…";
-        const res = await window.playbound.joinParty(btn.dataset.id);
-        if (res?.error) {
-          btn.disabled = false;
-          btn.textContent = "Join Party";
-          setStatus(res.error, true);
-          return;
-        }
-        api.refreshFriendsData();
+      content.querySelectorAll(".btn-friend-discord").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          // Prefers the desktop app when it is installed.
+          void (window.playbound.openDiscordInvite?.("https://discord.com/app") ??
+            window.playbound.openExternal("https://discord.com/app"));
+        });
       });
-    });
+
+      content.querySelectorAll(".btn-join-friend-party").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          btn.disabled = true;
+          btn.textContent = "Joining…";
+          const res = await window.playbound.joinParty(btn.dataset.id);
+          if (res?.error) {
+            btn.disabled = false;
+            btn.textContent = "Join Party";
+            setStatus(res.error, true);
+            return;
+          }
+          api.refreshFriendsData();
+        });
+      });
+    }
 
     const onlineCount = onlineAll.length;
     const friendsNav = document.querySelector('.nav-btn[data-view="friends"]');

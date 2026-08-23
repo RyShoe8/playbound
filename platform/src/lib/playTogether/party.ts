@@ -279,7 +279,10 @@ function activePartyFilterForUser(userId: string, keepPartyId?: string) {
     lastActivity: { $gte: cutoff },
     $or: [{ leaderId: matchUser }, { "members.userId": matchUser }],
   };
-  if (keepPartyId) base._id = { $ne: keepPartyId };
+  if (keepPartyId) {
+    const keepObjId = Types.ObjectId.isValid(keepPartyId) ? new Types.ObjectId(keepPartyId) : null;
+    base._id = keepObjId ? { $nin: [keepPartyId, keepObjId] } : { $ne: keepPartyId };
+  }
   return base;
 }
 
