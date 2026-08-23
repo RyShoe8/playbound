@@ -20,6 +20,7 @@ type NotifItem = {
     gameSlug?: string;
     actions?: string[];
     fromUserId?: string;
+    partyId?: string;
   };
 };
 
