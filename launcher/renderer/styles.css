@@ -4821,15 +4821,16 @@ textarea.input-text {
 .party-panel-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 .party-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   padding: 16px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
 }
-.party-header-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.party-header-side { width: 176px; flex-shrink: 0; }
+.party-header-main { min-width: 0; flex: 1; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
+.party-header-side { flex: 1; min-width: 240px; max-width: 520px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.party-header-side .party-visibility-select { width: 176px; }
 .party-title { font-size: 18px; font-weight: 700; margin: 0; }
 .party-name-input { max-width: 380px; font-weight: 700; }
 .party-game-select { max-width: 380px; }
@@ -5025,7 +5026,9 @@ textarea.input-text {
 .party-chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .party-sync-card {
-  margin-top: 12px;
+  margin-top: 0;
+  width: 100%;
+  text-align: left;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 12px;
