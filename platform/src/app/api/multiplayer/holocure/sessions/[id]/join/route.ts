@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionByCode } from "@/lib/holocure/sessionManager";
+import { getSessionByCode, getSessionById } from "@/lib/holocure/sessionManager";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
