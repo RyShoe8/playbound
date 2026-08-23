@@ -237,30 +237,3 @@ export async function expireStalePlayInvites(now = new Date()) {
   return { expired: res.modifiedCount || 0 };
 }
 
-function serializeInvite(inv: {
-  _id: unknown;
-  senderId: unknown;
-  recipientId: unknown;
-  gameSlug: string;
-  editionSlug?: string | null;
-  modSlug?: string | null;
-  partyId?: unknown | null;
-  status: string;
-  expiresAt: Date;
-  respondedAt?: Date | null;
-  createdAt?: Date;
-}) {
-  return {
-    id: String(inv._id),
-    senderId: String(inv.senderId),
-    recipientId: String(inv.recipientId),
-    gameSlug: inv.gameSlug,
-    editionSlug: inv.editionSlug || null,
-    modSlug: inv.modSlug || null,
-    partyId: inv.partyId ? String(inv.partyId) : null,
-    status: inv.status,
-    expiresAt: inv.expiresAt,
-    respondedAt: inv.respondedAt || null,
-    createdAt: inv.createdAt || null,
-  };
-}
