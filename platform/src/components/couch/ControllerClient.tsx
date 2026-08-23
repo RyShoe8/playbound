@@ -521,12 +521,14 @@ export function ControllerClient({ code }: { code: string }) {
     sendInput();
   };
 
+  /* ── Screens ─────────────────────────────────────────────────────────── */
+
   if (error) {
     return (
-      <Shell>
-        <h1 style={titleStyle}>Couldn’t join</h1>
-        <p style={{ opacity: 0.8 }}>{error}</p>
-        <p style={{ opacity: 0.5, fontSize: 13 }}>Code: {code}</p>
+      <Shell tone="bad">
+        <Eyebrow>Couldn’t join</Eyebrow>
+        <h1 className="pbc-title">{error}</h1>
+        <p className="pbc-code">{code}</p>
       </Shell>
     );
   }
@@ -534,7 +536,10 @@ export function ControllerClient({ code }: { code: string }) {
   if (!join) {
     return (
       <Shell>
-        <h1 style={titleStyle}>Joining {code}…</h1>
+        <div className="pbc-pulse" aria-hidden />
+        <Eyebrow>Connecting</Eyebrow>
+        <h1 className="pbc-title">Joining {code}</h1>
+        <p className="pbc-sub">Holding the line to your PC…</p>
       </Shell>
     );
   }
@@ -542,9 +547,11 @@ export function ControllerClient({ code }: { code: string }) {
   if (join.status === "pending") {
     return (
       <Shell>
-        <p style={eyebrowStyle}>Waiting for host</p>
-        <h1 style={titleStyle}>{join.hostLabel}</h1>
-        <p style={{ opacity: 0.7 }}>Ask the host to approve this controller.</p>
+        <div className="pbc-pulse" aria-hidden />
+        <Eyebrow>Waiting for host</Eyebrow>
+        <h1 className="pbc-title">{join.hostLabel}</h1>
+        <p className="pbc-sub">Ask them to approve this controller. This screen updates itself.</p>
+        <p className="pbc-code">{code}</p>
       </Shell>
     );
   }
@@ -552,29 +559,64 @@ export function ControllerClient({ code }: { code: string }) {
   if (mode === "standard-gamepad") {
     return (
       <Shell>
-        <p style={eyebrowStyle}>{playerLabel}</p>
-        <h1 style={titleStyle}>{physicalLabel || "Connect a controller"}</h1>
-        <p style={{ opacity: 0.75, maxWidth: 360, textAlign: "center" }}>
-          Pair an Xbox, DualSense, Switch, 8BitDo, or other browser-supported pad to this phone.
+        <Eyebrow>{playerLabel}</Eyebrow>
+        <h1 className="pbc-title">{physicalLabel || "Connect a controller"}</h1>
+        <p className="pbc-sub">
+          Pair an Xbox, DualSense, Switch, 8BitDo or other browser-supported pad to this phone.
           PlayBound forwards it to the PC.
         </p>
+        <div className={physicalLabel ? "pbc-dot pbc-dot-live" : "pbc-dot"} aria-hidden />
         <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
         <ModeToggle mode={mode} setMode={setMode} />
       </Shell>
     );
   }
 
+  /* ── The pad ─────────────────────────────────────────────────────────── */
+
   return (
-    <div style={rootPadStyle}>
-      <div style={topBarStyle}>
-        <div>
-          <div style={eyebrowStyle}>{join.hostLabel}</div>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{playerLabel}</div>
-        </div>
-        <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
+    <main className="pbc-pad">
+      <ControllerStyles />
+
+      {/*
+        Portrait is not how anyone holds a controller, so it says so rather
+        than pretending. The pad stays live underneath — a nudge, not a wall.
+      */}
+      <div className="pbc-rotate" aria-hidden>
+        <span className="pbc-rotate-icon">⟳</span>
+        Turn your phone sideways
       </div>
 
-      <div style={padGridStyle}>
+      <header className="pbc-hud">
+        <span className="pbc-hud-host">{join.hostLabel}</span>
+        <span className="pbc-hud-sep" aria-hidden>
+          ·
+        </span>
+        <span className="pbc-hud-player">{playerLabel}</span>
+        <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
+      </header>
+
+      {/* Shoulders sit on the top edge, where the index fingers already are. */}
+      <div className="pbc-shoulder pbc-shoulder-left">
+        <TriggerButton
+          label="LT"
+          onValue={(v) => {
+            padRef.current.lt = v;
+          }}
+        />
+        <HoldButton label="LB" bit={BUTTON.LB} setBit={setBit} />
+      </div>
+      <div className="pbc-shoulder pbc-shoulder-right">
+        <HoldButton label="RB" bit={BUTTON.RB} setBit={setBit} />
+        <TriggerButton
+          label="RT"
+          onValue={(v) => {
+            padRef.current.rt = v;
+          }}
+        />
+      </div>
+
+      <div className="pbc-zone pbc-zone-left">
         <AnalogStick
           label="L"
           onChange={(x, y) => {
@@ -582,14 +624,11 @@ export function ControllerClient({ code }: { code: string }) {
             padRef.current.ly = y;
           }}
         />
-        <div style={faceClusterStyle}>
-          <FaceButton label="Y" bit={BUTTON.Y} color="#f0d060" setBit={setBit} />
-          <div style={{ display: "flex", gap: 18, justifyContent: "center" }}>
-            <FaceButton label="X" bit={BUTTON.X} color="#6aa8ff" setBit={setBit} />
-            <FaceButton label="B" bit={BUTTON.B} color="#ff6b6b" setBit={setBit} />
-          </div>
-          <FaceButton label="A" bit={BUTTON.A} color="#6ddea0" setBit={setBit} />
-        </div>
+        <DPad setBit={setBit} />
+      </div>
+
+      <div className="pbc-zone pbc-zone-right">
+        <FaceCluster setBit={setBit} />
         <AnalogStick
           label="R"
           onChange={(x, y) => {
@@ -599,39 +638,29 @@ export function ControllerClient({ code }: { code: string }) {
         />
       </div>
 
-      <div style={shoulderRowStyle}>
-        <TriggerButton label="LT" onValue={(v) => { padRef.current.lt = v; }} />
-        <HoldButton label="LB" bit={BUTTON.LB} setBit={setBit} />
-        <HoldButton label="◀" bit={BUTTON.BACK} setBit={setBit} />
-        <HoldButton label="▶" bit={BUTTON.START} setBit={setBit} />
-        <HoldButton label="RB" bit={BUTTON.RB} setBit={setBit} />
-        <TriggerButton label="RT" onValue={(v) => { padRef.current.rt = v; }} />
+      {/* Menu keys live centre-bottom, out of thumb travel so they are hard to hit by accident. */}
+      <div className="pbc-menu">
+        <HoldButton label="◀" bit={BUTTON.BACK} setBit={setBit} title="Back" />
+        <ModeToggle mode={mode} setMode={setMode} compact />
+        <HoldButton label="▶" bit={BUTTON.START} setBit={setBit} title="Start" />
       </div>
-
-      <DPad setBit={setBit} />
-      <ModeToggle mode={mode} setMode={setMode} />
-    </div>
+    </main>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+/* ── Chrome ──────────────────────────────────────────────────────────── */
+
+function Shell({ children, tone }: { children: React.ReactNode; tone?: "bad" }) {
   return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-        padding: 24,
-        background: "#0b0a10",
-        color: "#f2efe8",
-      }}
-    >
-      {children}
+    <main className={tone === "bad" ? "pbc-shell pbc-shell-bad" : "pbc-shell"}>
+      <ControllerStyles />
+      <div className="pbc-shell-inner">{children}</div>
     </main>
   );
+}
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <p className="pbc-eyebrow">{children}</p>;
 }
 
 function StatusBar({
@@ -643,11 +672,15 @@ function StatusBar({
   pingMs: number | null;
   hz: number;
 }) {
+  const live = transport === "webrtc" || transport === "websocket";
   return (
-    <div style={{ fontSize: 12, opacity: 0.65, fontVariantNumeric: "tabular-nums" }}>
-      {transport}
-      {pingMs != null ? ` · ${pingMs.toFixed(0)} ms` : ""}
-      {hz ? ` · ${hz} Hz` : ""}
+    <div className="pbc-status" role="status">
+      <span className={live ? "pbc-status-led pbc-status-led-live" : "pbc-status-led"} aria-hidden />
+      <span className="pbc-status-transport">
+        {transport === "webrtc" ? "direct" : transport === "websocket" ? "relay" : transport}
+      </span>
+      {pingMs != null && <span className="pbc-status-num">{pingMs.toFixed(0)}ms</span>}
+      {hz > 0 && <span className="pbc-status-num">{hz}Hz</span>}
     </div>
   );
 }
@@ -655,65 +688,97 @@ function StatusBar({
 function ModeToggle({
   mode,
   setMode,
+  compact,
 }: {
   mode: "touch-gamepad" | "standard-gamepad";
   setMode: (m: "touch-gamepad" | "standard-gamepad") => void;
+  compact?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+    <div className={compact ? "pbc-toggle pbc-toggle-compact" : "pbc-toggle"}>
       <button
         type="button"
-        style={mode === "touch-gamepad" ? toggleOn : toggleOff}
+        className={mode === "touch-gamepad" ? "pbc-toggle-btn is-on" : "pbc-toggle-btn"}
         onClick={() => setMode("touch-gamepad")}
       >
         Touch
       </button>
       <button
         type="button"
-        style={mode === "standard-gamepad" ? toggleOn : toggleOff}
+        className={mode === "standard-gamepad" ? "pbc-toggle-btn is-on" : "pbc-toggle-btn"}
         onClick={() => setMode("standard-gamepad")}
       >
-        Physical pad
+        Pad
       </button>
     </div>
   );
 }
 
-function FaceButton({
-  label,
-  bit,
-  color,
-  setBit,
-}: {
-  label: string;
-  bit: number;
-  color: string;
-  setBit: (bit: number, down: boolean) => void;
-}) {
+/* ── Inputs ──────────────────────────────────────────────────────────── */
+
+/**
+ * A short tap through the phone's own motor.
+ *
+ * Touch controls have no travel and no click, so without this a press is
+ * confirmed only by whatever happens on the TV — which is exactly the feedback
+ * loop a controller exists to shorten. Guarded because iOS Safari has no
+ * vibrate at all and must not throw over it.
+ */
+function tap(ms = 8) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    /* no motor, or blocked — the visual press state still lands */
+  }
+}
+
+/** Shared press wiring: pointer capture, haptics, and a class for the press state. */
+function pressProps(down: () => void, up: () => void) {
+  return {
+    onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      e.currentTarget.classList.add("is-down");
+      tap();
+      down();
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLElement>) => {
+      e.currentTarget.classList.remove("is-down");
+      up();
+    },
+    onPointerCancel: (e: React.PointerEvent<HTMLElement>) => {
+      e.currentTarget.classList.remove("is-down");
+      up();
+    },
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  };
+}
+
+const FACE = [
+  { label: "Y", bit: BUTTON.Y, hue: "var(--pbc-y)", area: "y" },
+  { label: "X", bit: BUTTON.X, hue: "var(--pbc-x)", area: "x" },
+  { label: "B", bit: BUTTON.B, hue: "var(--pbc-b)", area: "b" },
+  { label: "A", bit: BUTTON.A, hue: "var(--pbc-a)", area: "a" },
+] as const;
+
+function FaceCluster({ setBit }: { setBit: (bit: number, down: boolean) => void }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      style={{
-        width: 58,
-        height: 58,
-        borderRadius: "50%",
-        border: `2px solid ${color}`,
-        background: "rgba(255,255,255,0.06)",
-        color,
-        fontWeight: 700,
-        fontSize: 18,
-        touchAction: "none",
-      }}
-      onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        setBit(bit, true);
-      }}
-      onPointerUp={() => setBit(bit, false)}
-      onPointerCancel={() => setBit(bit, false)}
-    >
-      {label}
-    </button>
+    <div className="pbc-face">
+      {FACE.map(({ label, bit, hue, area }) => (
+        <button
+          key={label}
+          type="button"
+          aria-label={label}
+          className="pbc-face-btn"
+          style={{ gridArea: area, ["--btn" as string]: hue }}
+          {...pressProps(
+            () => setBit(bit, true),
+            () => setBit(bit, false)
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -721,30 +786,22 @@ function HoldButton({
   label,
   bit,
   setBit,
+  title,
 }: {
   label: string;
   bit: number;
   setBit: (bit: number, down: boolean) => void;
+  title?: string;
 }) {
   return (
     <button
       type="button"
-      style={{
-        minWidth: 48,
-        height: 40,
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.2)",
-        background: "rgba(255,255,255,0.08)",
-        color: "#f2efe8",
-        fontWeight: 600,
-        touchAction: "none",
-      }}
-      onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        setBit(bit, true);
-      }}
-      onPointerUp={() => setBit(bit, false)}
-      onPointerCancel={() => setBit(bit, false)}
+      className="pbc-bumper"
+      aria-label={title || label}
+      {...pressProps(
+        () => setBit(bit, true),
+        () => setBit(bit, false)
+      )}
     >
       {label}
     </button>
@@ -755,22 +812,12 @@ function TriggerButton({ label, onValue }: { label: string; onValue: (v: number)
   return (
     <button
       type="button"
-      style={{
-        minWidth: 48,
-        height: 40,
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.2)",
-        background: "rgba(255,255,255,0.08)",
-        color: "#f2efe8",
-        fontWeight: 600,
-        touchAction: "none",
-      }}
-      onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        onValue(1);
-      }}
-      onPointerUp={() => onValue(0)}
-      onPointerCancel={() => onValue(0)}
+      className="pbc-trigger"
+      aria-label={label}
+      {...pressProps(
+        () => onValue(1),
+        () => onValue(0)
+      )}
     >
       {label}
     </button>
@@ -786,6 +833,7 @@ function AnalogStick({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
+  const [active, setActive] = useState(false);
 
   const move = (clientX: number, clientY: number) => {
     const el = ref.current;
@@ -793,7 +841,7 @@ function AnalogStick({
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
-    const max = r.width * 0.35;
+    const max = r.width * 0.34;
     let dx = clientX - cx;
     let dy = clientY - cy;
     const mag = Math.hypot(dx, dy) || 1;
@@ -801,13 +849,12 @@ function AnalogStick({
       dx = (dx / mag) * max;
       dy = (dy / mag) * max;
     }
-    const x = dx / max;
-    const y = dy / max;
     setKnob({ x: dx, y: dy });
-    onChange(clamp(x, -1, 1), clamp(y, -1, 1));
+    onChange(clamp(dx / max, -1, 1), clamp(dy / max, -1, 1));
   };
 
   const end = () => {
+    setActive(false);
     setKnob({ x: 0, y: 0 });
     onChange(0, 0);
   };
@@ -815,9 +862,11 @@ function AnalogStick({
   return (
     <div
       ref={ref}
-      style={stickWellStyle}
+      className={active ? "pbc-stick is-active" : "pbc-stick"}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
+        setActive(true);
+        tap(6);
         move(e.clientX, e.clientY);
       }}
       onPointerMove={(e) => {
@@ -825,150 +874,398 @@ function AnalogStick({
       }}
       onPointerUp={end}
       onPointerCancel={end}
+      onContextMenu={(e) => e.preventDefault()}
     >
-      <div
-        style={{
-          ...stickKnobStyle,
-          transform: `translate(${knob.x}px, ${knob.y}px)`,
-        }}
+      <span className="pbc-stick-ring" aria-hidden />
+      <span
+        className="pbc-stick-knob"
+        style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       >
         {label}
-      </div>
+      </span>
     </div>
   );
 }
+
+const DPAD_KEYS = [
+  { label: "▲", bit: BUTTON.DPAD_UP, area: "u" },
+  { label: "◀", bit: BUTTON.DPAD_LEFT, area: "l" },
+  { label: "▶", bit: BUTTON.DPAD_RIGHT, area: "r" },
+  { label: "▼", bit: BUTTON.DPAD_DOWN, area: "d" },
+] as const;
 
 function DPad({ setBit }: { setBit: (bit: number, down: boolean) => void }) {
-  const cell = (_label: string, _bit: number): CSSProperties => ({
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.07)",
-    color: "#f2efe8",
-    fontWeight: 700,
-  });
-  const Btn = ({ label, bit }: { label: string; bit: number }) => (
-    <button
-      type="button"
-      style={cell(label, bit)}
-      onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        setBit(bit, true);
-      }}
-      onPointerUp={() => setBit(bit, false)}
-      onPointerCancel={() => setBit(bit, false)}
-    >
-      {label}
-    </button>
-  );
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "44px 44px 44px",
-        gridTemplateRows: "44px 44px 44px",
-        gap: 6,
-        justifyContent: "center",
-        marginTop: 8,
-      }}
-    >
-      <span />
-      <Btn label="▲" bit={BUTTON.DPAD_UP} />
-      <span />
-      <Btn label="◀" bit={BUTTON.DPAD_LEFT} />
-      <span />
-      <Btn label="▶" bit={BUTTON.DPAD_RIGHT} />
-      <span />
-      <Btn label="▼" bit={BUTTON.DPAD_DOWN} />
-      <span />
+    <div className="pbc-dpad">
+      <span className="pbc-dpad-hub" aria-hidden />
+      {DPAD_KEYS.map(({ label, bit, area }) => (
+        <button
+          key={area}
+          type="button"
+          aria-label={area}
+          className="pbc-dpad-key"
+          style={{ gridArea: area }}
+          {...pressProps(
+            () => setBit(bit, true),
+            () => setBit(bit, false)
+          )}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
 
-const titleStyle: CSSProperties = { margin: 0, fontSize: "1.6rem" };
-const eyebrowStyle: CSSProperties = {
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  opacity: 0.55,
-  fontSize: 11,
-  margin: 0,
-};
-const rootPadStyle: CSSProperties = {
-  minHeight: "100dvh",
-  background: "#0b0a10",
-  color: "#f2efe8",
-  padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
-  display: "flex",
-  flexDirection: "column",
-  gap: 10,
-  boxSizing: "border-box",
-};
-const topBarStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-start",
-  gap: 12,
-};
-const padGridStyle: CSSProperties = {
-  flex: 1,
-  display: "grid",
-  gridTemplateColumns: "1fr auto 1fr",
-  alignItems: "center",
-  gap: 12,
-  minHeight: 200,
-};
-const faceClusterStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 10,
-};
-const shoulderRowStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "center",
-  flexWrap: "wrap",
-  gap: 8,
-};
-const stickWellStyle: CSSProperties = {
-  width: 130,
-  height: 130,
-  borderRadius: "50%",
-  margin: "0 auto",
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  position: "relative",
-  touchAction: "none",
-};
-const stickKnobStyle: CSSProperties = {
-  position: "absolute",
-  left: "50%",
-  top: "50%",
-  width: 54,
-  height: 54,
-  marginLeft: -27,
-  marginTop: -27,
-  borderRadius: "50%",
-  background: "rgba(255,255,255,0.16)",
-  display: "grid",
-  placeItems: "center",
-  fontWeight: 700,
-  fontSize: 14,
-};
-const toggleOn: CSSProperties = {
-  border: "1px solid #9ad0ff",
-  background: "rgba(154,208,255,0.15)",
-  color: "#9ad0ff",
-  borderRadius: 999,
-  padding: "8px 14px",
-  fontWeight: 600,
-};
-const toggleOff: CSSProperties = {
-  border: "1px solid rgba(255,255,255,0.2)",
-  background: "transparent",
-  color: "#f2efe8",
-  borderRadius: 999,
-  padding: "8px 14px",
-  fontWeight: 600,
-  opacity: 0.7,
-};
+
+/* ── Styles ──────────────────────────────────────────────────────────── */
+
+/**
+ * One stylesheet rather than inline styles, because the things that make this
+ * feel like a controller cannot be expressed inline: orientation media
+ * queries, press states, and keyframes.
+ *
+ * Sizes are in vmin, not px. A pad measured in pixels is right on exactly one
+ * phone — the previous 58px buttons and 130px sticks were tuned for a mid-size
+ * device and left an SE cramped and a Max looking like a toy. vmin ties every
+ * control to the short edge, which in landscape is the height, which is what
+ * actually limits a thumb.
+ */
+function ControllerStyles() {
+  return (
+    <style>{`
+:root {
+  --pbc-ground: #07060B;
+  --pbc-ink: #F4F1FB;
+  --pbc-muted: #8F87A6;
+  --pbc-line: rgba(255,255,255,.10);
+  --pbc-raise: rgba(255,255,255,.055);
+  --pbc-accent: #8B6DFF;
+  --pbc-live: #3DD68C;
+  /* Canonical face colours. These are information, not decoration — every
+     console overlay and every button prompt in every game uses them. */
+  --pbc-a: #5BD98A;
+  --pbc-b: #FF6B6B;
+  --pbc-x: #6AA8FF;
+  --pbc-y: #F5CE5A;
+  /* Insets on all four edges. Landscape is the orientation this is used in,
+     and that is precisely when a notch eats the left or right edge — the
+     earlier layout only ever accounted for the bottom. */
+  --pbc-safe-t: env(safe-area-inset-top, 0px);
+  --pbc-safe-r: env(safe-area-inset-right, 0px);
+  --pbc-safe-b: env(safe-area-inset-bottom, 0px);
+  --pbc-safe-l: env(safe-area-inset-left, 0px);
+}
+
+.pbc-shell, .pbc-pad {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(139,109,255,.16), transparent 62%),
+    var(--pbc-ground);
+  color: var(--pbc-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  /* Nothing here should ever select, callout, or bounce under a thumb. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+/* ── Connection screens ─────────────────────────────────────────────── */
+
+.pbc-shell { display: grid; place-items: center; padding: 28px; }
+.pbc-shell-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  text-align: center; max-width: 34ch;
+}
+.pbc-shell-bad { background: radial-gradient(120% 90% at 50% -10%, rgba(255,107,107,.16), transparent 62%), var(--pbc-ground); }
+
+.pbc-eyebrow {
+  margin: 0; font-size: 11px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--pbc-muted);
+}
+.pbc-title {
+  margin: 0; font-size: clamp(22px, 6vw, 30px); font-weight: 700;
+  line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance;
+}
+.pbc-sub { margin: 0; color: var(--pbc-muted); font-size: 14px; line-height: 1.55; }
+.pbc-code {
+  margin: 4px 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px; letter-spacing: .34em; color: var(--pbc-muted);
+  padding-left: .34em; /* letter-spacing pads the right; balance it */
+}
+
+/* A slow breath, so "waiting" looks alive rather than hung. */
+.pbc-pulse {
+  width: 74px; height: 74px; border-radius: 50%; margin-bottom: 4px;
+  background: radial-gradient(circle, rgba(139,109,255,.55), transparent 68%);
+  animation: pbc-breathe 2.4s ease-in-out infinite;
+}
+@keyframes pbc-breathe {
+  0%, 100% { transform: scale(.86); opacity: .55; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+.pbc-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--pbc-muted); box-shadow: 0 0 0 4px rgba(255,255,255,.05);
+}
+.pbc-dot-live { background: var(--pbc-live); box-shadow: 0 0 0 4px rgba(61,214,140,.16); }
+
+/* ── Status ─────────────────────────────────────────────────────────── */
+
+.pbc-status {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 600; color: var(--pbc-muted);
+  font-variant-numeric: tabular-nums;
+}
+.pbc-status-led {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--pbc-muted);
+}
+.pbc-status-led-live { background: var(--pbc-live); box-shadow: 0 0 8px var(--pbc-live); }
+.pbc-status-transport { text-transform: uppercase; letter-spacing: .1em; }
+.pbc-status-num { opacity: .8; }
+
+/* ── Mode toggle ────────────────────────────────────────────────────── */
+
+.pbc-toggle {
+  display: inline-flex; gap: 4px; padding: 4px;
+  border-radius: 999px; background: rgba(255,255,255,.05);
+  border: 1px solid var(--pbc-line);
+}
+.pbc-toggle-btn {
+  appearance: none; border: 0; background: transparent; color: var(--pbc-muted);
+  font: inherit; font-size: 12px; font-weight: 700;
+  padding: 7px 15px; border-radius: 999px; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.pbc-toggle-btn.is-on { background: var(--pbc-accent); color: #0b0713; }
+.pbc-toggle-compact .pbc-toggle-btn { font-size: 10px; padding: 5px 11px; }
+
+/* ── Pad chrome ─────────────────────────────────────────────────────── */
+
+.pbc-hud {
+  position: absolute; top: calc(var(--pbc-safe-t) + 8px); left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--pbc-muted); white-space: nowrap;
+  max-width: 60vw; overflow: hidden;
+}
+.pbc-hud-host { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.pbc-hud-player { font-weight: 700; color: var(--pbc-ink); }
+.pbc-hud-sep { opacity: .4; }
+
+.pbc-menu {
+  position: absolute; bottom: calc(var(--pbc-safe-b) + 6px); left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* ── Shoulders: on the top edge, under the index fingers ────────────── */
+
+.pbc-shoulder {
+  position: absolute; top: calc(var(--pbc-safe-t) + 6px);
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.pbc-shoulder-left  { left: calc(var(--pbc-safe-l) + 10px); }
+.pbc-shoulder-right { right: calc(var(--pbc-safe-r) + 10px); }
+
+.pbc-bumper, .pbc-trigger {
+  appearance: none; font: inherit; cursor: pointer;
+  color: var(--pbc-ink); font-weight: 700;
+  font-size: clamp(11px, 2.4vmin, 15px);
+  border: 1px solid var(--pbc-line);
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 2px 6px rgba(0,0,0,.35);
+  touch-action: none;
+  transition: transform .06s ease, background .06s ease, box-shadow .06s ease;
+}
+.pbc-bumper {
+  min-width: clamp(48px, 11vmin, 74px); height: clamp(44px, 9vmin, 54px);
+  border-radius: 12px;
+}
+/* Triggers read as taller than bumpers, the way they sit on real hardware. */
+.pbc-trigger {
+  min-width: clamp(48px, 11vmin, 74px); height: clamp(48px, 10.5vmin, 64px);
+  border-radius: 12px 12px 16px 16px;
+}
+.pbc-bumper.is-down, .pbc-trigger.is-down {
+  transform: translateY(2px) scale(.97);
+  background: linear-gradient(180deg, rgba(139,109,255,.45), rgba(139,109,255,.22));
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.45);
+}
+
+/* ── Thumb zones ────────────────────────────────────────────────────── */
+
+/*
+ * Thumb zones sit just below the vertical centre, not in the bottom corners.
+ * Holding a phone sideways in two hands puts the thumbs a little under the
+ * midline; anchoring to the bottom edge pushed every control into the last
+ * third of the screen and left the rest empty.
+ */
+.pbc-zone {
+  position: absolute; top: 50%; transform: translateY(-42%);
+  display: flex; align-items: center; gap: clamp(10px, 3vmin, 26px);
+}
+.pbc-zone-left  { left: calc(var(--pbc-safe-l) + 12px); }
+.pbc-zone-right { right: calc(var(--pbc-safe-r) + 12px); }
+
+/* ── Analog stick ───────────────────────────────────────────────────── */
+
+.pbc-stick {
+  position: relative;
+  width: clamp(112px, 39vmin, 208px); aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.07), rgba(255,255,255,.02) 60%, transparent 72%),
+    rgba(255,255,255,.03);
+  border: 1px solid var(--pbc-line);
+  touch-action: none;
+  transition: border-color .12s ease;
+}
+.pbc-stick.is-active { border-color: rgba(139,109,255,.5); }
+.pbc-stick-ring {
+  position: absolute; inset: 18%; border-radius: 50%;
+  border: 1px dashed rgba(255,255,255,.09);
+}
+.pbc-stick-knob {
+  position: absolute; left: 50%; top: 50%;
+  width: 44%; aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: clamp(12px, 2.6vmin, 17px); color: var(--pbc-ink);
+  background: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.07));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.22), 0 6px 16px rgba(0,0,0,.5);
+  /* No transition on transform — a stick that eases is a stick that lags. */
+}
+.pbc-stick.is-active .pbc-stick-knob {
+  background: linear-gradient(180deg, rgba(139,109,255,.55), rgba(139,109,255,.28));
+}
+
+/* ── Face buttons ───────────────────────────────────────────────────── */
+
+.pbc-face {
+  display: grid;
+  grid-template-areas: ". y ." "x . b" ". a .";
+  gap: clamp(4px, 1.2vmin, 10px);
+}
+.pbc-face-btn {
+  appearance: none; cursor: pointer; font: inherit;
+  width: clamp(50px, 15vmin, 92px); aspect-ratio: 1; border-radius: 50%;
+  font-weight: 800; font-size: clamp(15px, 3.4vmin, 24px);
+  color: var(--btn);
+  border: 2px solid color-mix(in oklab, var(--btn) 70%, transparent);
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--btn) 22%, transparent), transparent 70%),
+    rgba(255,255,255,.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 3px 10px rgba(0,0,0,.45);
+  touch-action: none;
+  transition: transform .06s ease, background .06s ease, box-shadow .06s ease;
+}
+.pbc-face-btn.is-down {
+  transform: translateY(2px) scale(.94);
+  background: radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--btn) 62%, transparent), transparent 78%), rgba(255,255,255,.06);
+  box-shadow: inset 0 3px 8px rgba(0,0,0,.5), 0 0 18px color-mix(in oklab, var(--btn) 40%, transparent);
+}
+
+/* ── D-pad ──────────────────────────────────────────────────────────── */
+
+.pbc-dpad {
+  position: relative;
+  display: grid;
+  grid-template-areas: ". u ." "l . r" ". d .";
+  gap: 2px;
+}
+.pbc-dpad-key {
+  appearance: none; cursor: pointer; font: inherit;
+  width: clamp(44px, 12vmin, 74px); aspect-ratio: 1;
+  color: var(--pbc-ink); font-size: clamp(11px, 2.4vmin, 16px);
+  border: 1px solid var(--pbc-line);
+  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 6px rgba(0,0,0,.35);
+  touch-action: none;
+  transition: transform .06s ease, background .06s ease;
+}
+/* Rounded only on the outer corners, so the four keys read as one cross. */
+[style*="grid-area: u"].pbc-dpad-key { border-radius: 12px 12px 3px 3px; }
+[style*="grid-area: d"].pbc-dpad-key { border-radius: 3px 3px 12px 12px; }
+[style*="grid-area: l"].pbc-dpad-key { border-radius: 12px 3px 3px 12px; }
+[style*="grid-area: r"].pbc-dpad-key { border-radius: 3px 12px 12px 3px; }
+.pbc-dpad-key.is-down {
+  transform: scale(.94);
+  background: linear-gradient(180deg, rgba(139,109,255,.45), rgba(139,109,255,.22));
+}
+.pbc-dpad-hub {
+  position: absolute; inset: 0; margin: auto;
+  width: clamp(44px, 12vmin, 74px); aspect-ratio: 1;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  border-top: 1px solid var(--pbc-line); border-bottom: 1px solid var(--pbc-line);
+  pointer-events: none;
+}
+
+/* ── Orientation ────────────────────────────────────────────────────── */
+
+.pbc-rotate { display: none; }
+
+/*
+ * Portrait. The pad still works, but the thumb zones stack instead of sitting
+ * in opposite corners, and a nudge appears — the old layout simply ran the
+ * same column layout in both orientations, which is why it never sat right
+ * held sideways.
+ */
+@media (orientation: portrait) {
+  /*
+   * The pad becomes a bottom-weighted column: both thumb clusters stack within
+   * reach of the bottom edge, because in portrait one hand is holding the phone
+   * and neither thumb reaches the middle.
+   */
+  .pbc-pad {
+    display: flex; flex-direction: column;
+    justify-content: flex-end; align-items: center;
+    gap: clamp(12px, 3.5vh, 34px);
+    padding: 0 12px calc(var(--pbc-safe-b) + 84px);
+  }
+  .pbc-zone {
+    /* Both must be reset: position alone leaves the landscape transform,
+       which is what pulled the clusters off-centre. */
+    position: static; transform: none;
+    width: 100%; justify-content: center;
+    gap: clamp(12px, 5vw, 30px);
+  }
+  .pbc-zone-right { flex-direction: row-reverse; }
+
+  /* Shoulders keep the top corners; the HUD drops below them so the two stop
+     sharing the same line. */
+  .pbc-hud {
+    top: auto; bottom: calc(var(--pbc-safe-b) + 54px);
+    max-width: 90vw; justify-content: center;
+  }
+  .pbc-rotate {
+    display: flex; align-items: center; gap: 8px;
+    position: absolute; top: calc(var(--pbc-safe-t) + 78px); left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px; font-weight: 600; color: var(--pbc-muted);
+    white-space: nowrap;
+  }
+  .pbc-rotate-icon { font-size: 16px; animation: pbc-rock 2.2s ease-in-out infinite; display: inline-block; }
+  @keyframes pbc-rock { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(78deg); } }
+}
+
+/* A short landscape phone has no room for a wide gap between stick and d-pad. */
+@media (orientation: landscape) and (max-height: 380px) {
+  .pbc-zone { gap: clamp(6px, 2vmin, 14px); }
+  .pbc-hud { font-size: 10px; }
+  .pbc-stick { width: clamp(104px, 34vmin, 150px); }
+  .pbc-face-btn { width: clamp(46px, 13vmin, 74px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pbc-pulse, .pbc-rotate-icon { animation: none; }
+  .pbc-face-btn, .pbc-bumper, .pbc-trigger, .pbc-dpad-key { transition: none; }
+}
+`}</style>
+  );
+}
+
