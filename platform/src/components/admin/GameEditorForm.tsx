@@ -1330,7 +1330,20 @@ export function GameEditorForm({
                     setForm((prev) => ({
                       ...prev,
                       launchMethods: next,
-                      browserPlayable: next.includes("browser") && !next.includes("install") ? true : prev.browserPlayable,
+                      /*
+                       * Clears as well as sets. It only ever set, so a game
+                       * imported as browser-playable and later given an install
+                       * recipe kept the flag — and isBrowserGame short-circuits
+                       * on it before it ever looks at the recipe, so the game
+                       * still loaded in a browser tab with a perfectly good zip
+                       * sitting unused. Pokemon: Dawn of Darkness was in exactly
+                       * that state.
+                       */
+                      browserPlayable: next.includes("browser")
+                        ? !next.includes("install") || prev.browserPlayable
+                        : next.includes("install")
+                          ? false
+                          : prev.browserPlayable,
                       platforms:
                         next.includes("browser") && !prev.platforms.includes("Web")
                           ? [...prev.platforms, "Web"]

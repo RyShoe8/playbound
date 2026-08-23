@@ -1,23 +1,24 @@
 import { NextResponse } from "next/server";
-import { getSessionByCode } from "@/lib/holocure/sessionManager";
+import { getMultiplayerSessionByCode } from "@/lib/multiplayer/sessionManager";
 
 interface RouteContext {
-  params: Promise<{ code: string }>;
+  params: Promise<{ slug: string; id: string }>;
 }
 
 /**
- * POST /api/multiplayer/holocure/sessions/:code/join
+ * POST /api/multiplayer/:slug/sessions/:id/join
  * Resolves a 6-character room code to session details, STUN/TURN endpoints,
- * and version metadata for pre-flight handshake.
+ * and game version validation.
  */
 export async function POST(req: Request, context: RouteContext) {
   try {
-    const { code } = await context.params;
+    const { slug, id } = await context.params;
+    const code = id;
     if (!code) {
       return NextResponse.json({ error: "Missing room code" }, { status: 400 });
     }
 
-    const session = getSessionByCode(code);
+    const session = getMultiplayerSessionByCode(code);
     if (!session) {
       return NextResponse.json(
         { error: "Session not found or expired. Check the room code." },
@@ -32,6 +33,14 @@ export async function POST(req: Request, context: RouteContext) {
       );
     }
 
+    // Verify game slug matches if provided
+    if (slug && session.gameSlug !== slug.toLowerCase()) {
+      return NextResponse.json(
+        { error: `Room code ${code} is for ${session.gameSlug}, not ${slug}.` },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const clientModVersion = body.modVersion;
     const clientGameVersion = body.gameVersion;
@@ -39,13 +48,14 @@ export async function POST(req: Request, context: RouteContext) {
     // Check version compatibility
     const versionMismatch =
       (clientGameVersion && clientGameVersion !== session.gameVersion) ||
-      (clientModVersion && clientModVersion !== session.modVersion);
+      (clientModVersion && session.modVersion && clientModVersion !== session.modVersion);
 
     const vpsIp = process.env.GAME_HOST_PUBLIC_IP || "127.0.0.1";
     const stunPort = process.env.STUN_PORT || "3478";
 
     return NextResponse.json({
       sessionId: session.sessionId,
+      gameSlug: session.gameSlug,
       joinCode: session.joinCode,
       status: session.status,
       gameVersion: session.gameVersion,
@@ -61,9 +71,10 @@ export async function POST(req: Request, context: RouteContext) {
           credential: "guest_session_token",
         },
       ],
+      extraConfig: session.extraConfig,
     });
   } catch (err) {
-    console.error("POST /api/multiplayer/holocure/sessions/[code]/join failed:", err);
+    console.error("POST /api/multiplayer/[slug]/sessions/[code]/join failed:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
