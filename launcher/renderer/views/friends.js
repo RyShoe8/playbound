@@ -790,7 +790,6 @@ async function refreshFriendsData() {
           setStatus(res.error, true);
           return;
         }
-        handlePartyVoice(res);
         api.refreshFriendsData();
       });
     });
@@ -2284,7 +2283,6 @@ function wirePartyDiscovery(slot) {
         setStatus(res.error, true);
         return;
       }
-      handlePartyVoice(res);
       slot.dataset.sig = "";
       void api.refreshFriendsData();
     });
