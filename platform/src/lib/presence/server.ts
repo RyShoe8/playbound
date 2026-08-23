@@ -286,8 +286,7 @@ export async function setPresenceParty(
       $setOnInsert: {
         userId,
         status: "online",
-        startedAt: new Date(),
-        lastHeartbeat: new Date(),
+        startedAt: now,
         platform: "web",
       },
     },
