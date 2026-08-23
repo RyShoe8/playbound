@@ -741,20 +741,6 @@ export function FriendsView({
       {activeParty && (
         <div className="space-y-3">
           <PartyView party={activeParty} games={games} />
-          {/*
-            * Shown to every member, not just the leader. The warning exists for
-            * the people who need to change something — including a host who
-            * picked a game they have not installed yet. The component renders
-            * the green ready state when everyone is in sync.
-            */}
-          {session?.user && activeParty.gameSlug && (
-            <PartyConfigSync
-              partyId={activeParty.id}
-              gameSlug={activeParty.gameSlug}
-              editionSlug={activeParty.editionSlug}
-              currentUserId={session.user.id}
-            />
-          )}
         </div>
       )}
       

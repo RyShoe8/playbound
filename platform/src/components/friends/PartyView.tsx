@@ -31,6 +31,7 @@ import { SITE_DISCORD_INVITE } from "@/lib/site";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PartyChat } from "@/components/friends/PartyChat";
+import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
@@ -234,8 +235,8 @@ export function PartyView({
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="bg-muted p-4 flex items-center justify-between border-b border-border">
-        <div className="min-w-0 flex-1 space-y-2">
+      <div className="bg-muted p-4 flex flex-col md:flex-row items-start justify-between gap-4 border-b border-border">
+        <div className="min-w-0 flex-1 space-y-2 w-full md:max-w-md">
           {isLeader && party.status !== "ended" ? (
             <input
               type="text"
@@ -307,20 +308,33 @@ export function PartyView({
           </p>
         </div>
         
-        {isLeader && party.status !== "ended" && (
-          <div className="w-44 shrink-0">
-            <PremiumSelect
-              value={party.visibility}
-              onChange={(e) => void setVisibility(party.id, e.target.value as PartyPayload["visibility"])}
-            >
-              {PARTY_VISIBILITIES.filter((v) => v !== "event").map((v) => (
-                <option key={v} value={v}>
-                  {PARTY_VISIBILITY_LABELS[v]}
-                </option>
-              ))}
-            </PremiumSelect>
-          </div>
-        )}
+        <div className="w-full md:flex-1 flex flex-col items-stretch md:items-end gap-3 min-w-0">
+          {isLeader && party.status !== "ended" && (
+            <div className="w-44 self-start md:self-end">
+              <PremiumSelect
+                value={party.visibility}
+                onChange={(e) => void setVisibility(party.id, e.target.value as PartyPayload["visibility"])}
+              >
+                {PARTY_VISIBILITIES.filter((v) => v !== "event").map((v) => (
+                  <option key={v} value={v}>
+                    {PARTY_VISIBILITY_LABELS[v]}
+                  </option>
+                ))}
+              </PremiumSelect>
+            </div>
+          )}
+
+          {session?.user && party.gameSlug && (
+            <div className="w-full">
+              <PartyConfigSync
+                partyId={party.id}
+                gameSlug={party.gameSlug}
+                editionSlug={party.editionSlug}
+                currentUserId={session.user.id}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Members */}

@@ -1316,16 +1316,14 @@ function buildPartyViewHtml(party) {
 
   const visibilityHtml =
     isLeader && !ended
-      ? `<div class="party-header-side">
-           <select class="input-text" id="party-visibility-select" aria-label="Who can join">
-             ${VISIBILITY_OPTIONS.map(
-               (o) =>
-                 `<option value="${o.value}"${party.visibility === o.value ? " selected" : ""}>${escapeHtml(
-                   PARTY_VISIBILITY_LABELS[o.value]
-                 )}</option>`
-             ).join("")}
-           </select>
-         </div>`
+      ? `<select class="input-text party-visibility-select" id="party-visibility-select" aria-label="Who can join">
+           ${VISIBILITY_OPTIONS.map(
+             (o) =>
+               `<option value="${o.value}"${party.visibility === o.value ? " selected" : ""}>${escapeHtml(
+                 PARTY_VISIBILITY_LABELS[o.value]
+               )}</option>`
+           ).join("")}
+         </select>`
       : "";
 
   const membersHtml = (party.members || [])
@@ -1455,7 +1453,10 @@ function buildPartyViewHtml(party) {
               }</span>
             </p>
           </div>
-          ${visibilityHtml}
+          <div class="party-header-side">
+            ${visibilityHtml}
+            ${buildPartyConfigSyncHtml(party, userId)}
+          </div>
         </div>
 
         <div class="party-members">
@@ -1484,7 +1485,6 @@ function buildPartyViewHtml(party) {
 
         ${buildPartyChatHtml(party)}
       </div>
-      ${buildPartyConfigSyncHtml(party, userId)}
     </div>
   `;
 }
