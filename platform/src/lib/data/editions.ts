@@ -2614,6 +2614,7 @@ export const editions: EditionSeed[] = [
     visibility: "public",
     isDefault: true,
     sortOrder: 10,
+    platforms: ["Windows"],
     links: {
       website: "https://privateer.sourceforge.net",
       forum: "https://privateer.sourceforge.net/comlink/",
@@ -2659,6 +2660,7 @@ export const editions: EditionSeed[] = [
     visibility: "public",
     isDefault: false,
     sortOrder: 20,
+    platforms: ["Linux", "macOS"],
     links: {
       website: "https://privateer.sourceforge.net",
     },
