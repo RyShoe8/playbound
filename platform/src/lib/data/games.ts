@@ -2737,7 +2737,7 @@ const facts: Game[] = [
     description:
       "Marathon 2: Durandal is Bungie's legendary 1995 first-person shooter, remastered on the open-source Aleph One engine. Defend against the Pfhor invasion across the ruins of Lh'owon with dual-wielded shotguns, atmospheric narrative terminals, and full cross-platform cooperative and competitive multiplayer for up to 8 players.",
     developerSlug: "aleph-one",
-    genres: ["FPS", "Action", "Sci-Fi"],
+    genres: ["FPS", "Action", "Shooter"],
     tags: ["FPS", "Retro FPS", "Boomer Shooter", "Sci-Fi", "Classic", "Multiplayer", "Co-op", "PvP", "Controller Support", "Bungie", "Open Source"],
     aliases: ["Marathon", "Marathon 2", "Aleph One", "Durandal", "Marathon Trilogy"],
     license: "Open Source (GPL-3.0) / Freeware Game Data",
@@ -2800,7 +2800,7 @@ const facts: Game[] = [
     description:
       "Marathon is the 1994 classic FPS that redefined storytelling in action games. Defend the colony ship UESC Marathon against cybernetic alien slavers, unravel the mysteries of rampant shipboard AI Durandal, and battle your friends in local and online multiplayer.",
     developerSlug: "aleph-one",
-    genres: ["FPS", "Action", "Sci-Fi"],
+    genres: ["FPS", "Action", "Shooter"],
     tags: ["FPS", "Retro FPS", "Boomer Shooter", "Sci-Fi", "Classic", "Multiplayer", "Co-op", "PvP", "Controller Support", "Bungie", "Open Source"],
     aliases: ["Marathon 1", "Marathon (1994)", "UESC Marathon"],
     license: "Open Source (GPL-3.0) / Freeware Game Data",
@@ -2863,7 +2863,7 @@ const facts: Game[] = [
     description:
       "Aleph One is the open-source continuation of Bungie's Marathon 2 engine. Enjoy Marathon, Marathon 2: Durandal, and Marathon Infinity with modern widescreen resolutions, OpenGL shaders, 60fps mouselook, gamepad support, and internet multiplayer.",
     developerSlug: "aleph-one",
-    genres: ["FPS", "Action", "Sci-Fi"],
+    genres: ["FPS", "Action", "Shooter"],
     tags: ["FPS", "Retro FPS", "Boomer Shooter", "Sci-Fi", "Classic", "Multiplayer", "Co-op", "PvP", "Controller Support", "Bungie", "Open Source"],
     aliases: ["Aleph One", "Marathon Trilogy", "Marathon 2", "Marathon Infinity"],
     license: "Open Source (GPL-3.0) / Freeware Game Data",
