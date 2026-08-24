@@ -1747,7 +1747,7 @@ export const editions: EditionSeed[] = [
          * us. This is the same 0.7 build (5/7/2025), checksummed.
          */
         kind: "direct-zip",
-        url: "https://mirror.playbound.club/games/holocure/HoloCure-0.7.1746645739.zip",
+        url: "https://mirror.playbound.club/launcher-packages/games/holocure/1787200318272-HoloCure.zip",
         /*
          * Checksum lives on the Artifact record, not here.
          *
@@ -1939,7 +1939,7 @@ export const editions: EditionSeed[] = [
     installConfig: {
       playbound_installer: {
         kind: "direct-zip",
-        url: "https://mirror.playbound.club/games/holocure/HoloCure-0.7.1746645739.zip",
+        url: "https://mirror.playbound.club/launcher-packages/games/holocure/1787200318272-HoloCure.zip",
         versionLabel: "0.7.1746645739",
         fileName: "HoloCure.zip",
         exeHint: "HoloCure|holocure",
