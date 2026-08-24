@@ -46,7 +46,7 @@ const CLIENT_CONNECT_ARGS = {
   keeperfx: ["-connect", "{host}:{port}"],
   "marathon-2": ["-connect", "{host}:{port}"],
   "aleph-one": ["-connect", "{host}:{port}"],
-  freedoom: ["-connect", "{host}:{port}"],
+  freedoom: ["+connect", "{host}:{port}"],
   triplea: ["-Dserver.address={host}", "-Dserver.port={port}"],
   "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
   veloren: ["--connect", "{host}:{port}"],

@@ -7,6 +7,8 @@ import type { InstallAction } from "@/lib/editionInstall";
 import { telemetry } from "@/lib/telemetry";
 import { usePartyStore } from "@/stores/partyStore";
 
+import { editionSupportsMultiplayer } from "@/lib/multiplayer/support";
+
 function withPartyInstallReturn(href: string): string {
   if (!href.startsWith("playbound://install/")) return href;
   if (/[?&]return=friends(?:&|$)/.test(href)) return href;
@@ -71,8 +73,13 @@ export function PartyHostInstallPicker({
           return;
         }
         const data = await res.json();
+        const rawEditions = Array.isArray(data.editions) ? data.editions : [];
+        const mpEditions = rawEditions.filter((ed: Record<string, unknown>) =>
+          editionSupportsMultiplayer(ed as unknown as Parameters<typeof editionSupportsMultiplayer>[0])
+        );
+        const listToDisplay = mpEditions.length > 0 ? mpEditions : rawEditions;
         setEditions(
-          (data.editions || []).map(
+          listToDisplay.map(
             (edition: { slug: string; name: string; installAction: InstallAction }) => ({
               slug: edition.slug,
               name: edition.name,

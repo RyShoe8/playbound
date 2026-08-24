@@ -112,3 +112,39 @@ export function supportsLauncherParty(game: LauncherPartyInput | null | undefine
 export function gameSupportsMultiplayer(game: Game | null | undefined): boolean {
   return supportsMultiplayer(game ?? undefined);
 }
+
+export type EditionMultiplayerInput = {
+  features?: string[];
+  tags?: string[];
+  type?: string;
+  name?: string;
+  shortDescription?: string;
+};
+
+/**
+ * True when an edition is suitable for multiplayer party play.
+ * Excludes strictly singleplayer editions (e.g. speedrunning or vanilla SP ports).
+ */
+export function editionSupportsMultiplayer(
+  edition: EditionMultiplayerInput | null | undefined
+): boolean {
+  if (!edition) return false;
+  const feat = (edition.features || []).map((f) => f.toLowerCase());
+  const tags = (edition.tags || []).map((t) => t.toLowerCase());
+  const haystack = [...feat, ...tags].join(" | ");
+
+  if (MULTIPLAYER_PATTERNS.some((pattern) => pattern.test(haystack))) {
+    return true;
+  }
+  if (edition.type === "private") return true;
+
+  // If features list explicitly contains singleplayer and lacks any multiplayer keyword, it is SP-only
+  if (feat.length > 0 && feat.some((f) => f.includes("singleplayer"))) {
+    return false;
+  }
+
+  // Fallback to searching name and shortDescription for multiplayer keywords
+  const descHaystack = `${edition.name || ""} ${edition.shortDescription || ""}`;
+  return MULTIPLAYER_PATTERNS.some((pattern) => pattern.test(descHaystack));
+}
+

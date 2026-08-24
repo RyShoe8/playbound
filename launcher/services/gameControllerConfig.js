@@ -668,6 +668,10 @@ const NO_CONFIG_NEEDED = {
   "counter-strike-2": { kind: "native", note: "Native Steam Input and controller support." },
   "quake-champions": { kind: "native", note: "Native controller support." },
   holocure: { kind: "native", note: "Native twin-stick and controller mapping." },
+  freedoom: {
+    kind: "native",
+    note: "GZDoom and Zandronum feature native XInput and DirectInput controller detection with built-in analog sticks and triggers.",
+  },
   enlisted: { kind: "native", note: "Native controller support for infantry and vehicles." },
   "world-of-sea-battle": { kind: "native", note: "Native gamepad steering and broadside firing." },
   "asphalt-legends": { kind: "native", note: "Native arcade gamepad and steering support." },
