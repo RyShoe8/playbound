@@ -129,3 +129,34 @@ describe("first-party MMO launcher installs", () => {
     });
   }
 });
+
+describe("multiplayer testing-wave installers", () => {
+  const slugs = [
+    "volleyball-legends",
+    "c-dogs-retrarch",
+    "sven-co-op",
+    "teeworlds",
+    "assaultcube",
+    "bzflag",
+    "openclonk",
+    "red-eclipse",
+    "widelands",
+    "warfork",
+    "slapshot-rebound",
+  ];
+
+  it.each(slugs)("%s has an enabled Windows install path", (slug) => {
+    const recipe = launcherInstallBySlug[slug];
+    expect(recipe).toBeDefined();
+    expect(recipe.enabled).toBe(true);
+    expect(recipe.kind).toBeTruthy();
+    expect(recipe.url || recipe.repo).toBeTruthy();
+  });
+
+  it("uses official store handoffs for account-managed games", () => {
+    expect(launcherInstallBySlug["volleyball-legends"].url).toMatch(/^https:\/\/www\.roblox\.com\/games\//);
+    expect(launcherInstallBySlug["sven-co-op"].url).toBe("steam://run/225840");
+    expect(launcherInstallBySlug.warfork.url).toBe("steam://run/671610");
+    expect(launcherInstallBySlug["slapshot-rebound"].url).toBe("steam://run/1173370");
+  });
+});
