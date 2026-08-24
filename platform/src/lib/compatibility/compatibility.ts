@@ -19,7 +19,10 @@ export type EditionLike = {
   platforms?: string[];
 };
 
-const DESKTOP_PLATFORMS = new Set(["windows", "macos", "linux", "web", "browser"]);
+// `desktop` is the Windows client bucket. macOS and Linux have their own
+// device types, so treating every desktop OS as compatible makes native-only
+// editions leak into the Windows view.
+const DESKTOP_PLATFORMS = new Set(["windows", "web", "browser"]);
 const MOBILE_PLATFORMS = new Set(["android", "ios", "web", "browser"]);
 
 /** Platforms considered compatible for a device class (normalized lowercase). */

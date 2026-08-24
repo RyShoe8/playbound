@@ -3,6 +3,20 @@ import { editions } from "./editions";
 
 const holocure = editions.filter((e) => e.gameSlug === "holocure");
 
+describe("Privateer Gemini Gold editions", () => {
+  const geminiGold = editions.filter((e) => e.gameSlug === "privateer-gemini-gold");
+
+  it("keeps Windows and Unix builds on their native platforms", () => {
+    expect(geminiGold.find((e) => e.slug === "gemini-gold-1-03")?.platforms).toEqual([
+      "Windows",
+    ]);
+    expect(geminiGold.find((e) => e.slug === "gemini-gold-unix")?.platforms).toEqual([
+      "Linux",
+      "macOS",
+    ]);
+  });
+});
+
 describe("Daggerfall editions", () => {
   const daggerfall = editions.filter((e) => e.gameSlug === "daggerfall");
 
