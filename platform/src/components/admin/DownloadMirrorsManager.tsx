@@ -48,6 +48,12 @@ interface OverviewData {
   vpsFreeGB: number;
   vpsBandwidthServedBytes: number;
   vpsBandwidthServedGB: number;
+  r2BandwidthServedBytes?: number;
+  r2BandwidthServedGB?: number;
+  publicBandwidthServedBytes?: number;
+  publicBandwidthServedGB?: number;
+  totalBandwidthServedBytes?: number;
+  totalBandwidthServedGB?: number;
   vpsFilesystemUsedGB: number | null;
   vpsFilesystemTotalGB: number | null;
   vpsFilesystemUsedPercent: number | null;
@@ -586,11 +592,11 @@ export function DownloadMirrorsManager() {
             </div>
           </div>
 
-          {/* Card 3: VPS filesystem bandwidth served */}
+          {/* Card 3: Multi-tier Data Transfer & Bandwidth Served */}
           <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-lg backdrop-blur">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Network className="w-4 h-4 text-cyan-400" /> VPS Bandwidth Served
+                <Network className="w-4 h-4 text-cyan-400" /> Data Transfer
               </span>
               {overview.vpsFilesystemUsedPercent != null ? (
                 <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
@@ -600,12 +606,35 @@ export function DownloadMirrorsManager() {
             </div>
             <div>
               <div className="text-2xl font-black tracking-tight text-foreground">
-                {formatDataVolume(overview.vpsBandwidthServedBytes ?? 0)}
+                {formatDataVolume(overview.totalBandwidthServedBytes ?? overview.vpsBandwidthServedBytes ?? 0)}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Lifetime egress from VPS archive downloads
+                Total lifetime egress across all delivery tiers
               </p>
             </div>
+
+            {/* Individual Tier Breakdown */}
+            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+              <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-2 text-center">
+                <div className="text-[11px] font-semibold text-blue-400 truncate">VPS Archive</div>
+                <div className="text-xs font-black text-blue-300 mt-0.5">
+                  {formatDataVolume(overview.vpsBandwidthServedBytes ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-lg bg-purple-500/10 border border-purple-500/20 p-2 text-center">
+                <div className="text-[11px] font-semibold text-purple-400 truncate">R2 Cache</div>
+                <div className="text-xs font-black text-purple-300 mt-0.5">
+                  {formatDataVolume(overview.r2BandwidthServedBytes ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
+                <div className="text-[11px] font-semibold text-emerald-400 truncate">Public</div>
+                <div className="text-xs font-black text-emerald-300 mt-0.5">
+                  {formatDataVolume(overview.publicBandwidthServedBytes ?? 0)}
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-between text-xs text-muted-foreground pt-1">
               <span>
                 {overview.vpsFilesystemUsedGB != null && overview.vpsFilesystemTotalGB != null
@@ -614,7 +643,9 @@ export function DownloadMirrorsManager() {
                     ? "Filesystem stats unavailable"
                     : "Live FS stats need updated VPS agent"}
               </span>
-              <span>{(overview.vpsBandwidthServedGB ?? 0).toFixed(2)} GB logged</span>
+              <span>
+                {(overview.totalBandwidthServedGB ?? overview.vpsBandwidthServedGB ?? 0).toFixed(2)} GB logged
+              </span>
             </div>
           </div>
 
