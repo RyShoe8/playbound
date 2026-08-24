@@ -441,6 +441,14 @@ test("Daggerfall declines a foreign file and is idempotent", () => {
   assert.strictEqual(applyProfile("daggerfall", once, dualsense), null);
 });
 
+test("auto-configures YSoccer with libGDX JoystickConfig XML", () => {
+  const emptyXml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">\n<properties>\n<entry key="zoom">100</entry>\n</properties>\n`;
+  const next = applyProfile("ysoccer", emptyXml, dualsense);
+  assert(next.includes("joystickConfigs"));
+  assert(next.includes("DualSense Wireless Controller"));
+  assert(next.includes("xAxis:4"));
+});
+
 /* ── every catalogued controller game has an answer ────────────────────── */
 
 test("no controller-capable game is left unassessed", () => {
