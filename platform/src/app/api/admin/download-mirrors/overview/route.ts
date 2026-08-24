@@ -90,12 +90,28 @@ export async function GET() {
     const estimatedClassB = 342190;
     const estimatedGbMonth = Number((r2StorageGB * 0.95).toFixed(2));
 
-    const vpsBandwidthAgg = await MirrorAttempt.aggregate<{ totalBytes: number }>([
-      { $match: { sourceType: "playbound_vps", result: "success" } },
-      { $group: { _id: null, totalBytes: { $sum: "$bytesDownloaded" } } },
+    const bandwidthAgg = await MirrorAttempt.aggregate<{ _id: string; totalBytes: number }>([
+      { $match: { result: "success" } },
+      { $group: { _id: "$sourceType", totalBytes: { $sum: "$bytesDownloaded" } } },
     ]);
-    const vpsBandwidthServedBytes = vpsBandwidthAgg[0]?.totalBytes ?? 0;
+    const bandwidthBySource: Record<string, number> = {};
+    let totalBandwidthServedBytes = 0;
+    for (const b of bandwidthAgg) {
+      if (b._id) {
+        bandwidthBySource[b._id] = b.totalBytes || 0;
+        totalBandwidthServedBytes += b.totalBytes || 0;
+      }
+    }
+    const vpsBandwidthServedBytes = bandwidthBySource["playbound_vps"] || 0;
     const vpsBandwidthServedGB = Number((vpsBandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
+
+    const r2BandwidthServedBytes = bandwidthBySource["r2"] || 0;
+    const r2BandwidthServedGB = Number((r2BandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
+
+    const publicBandwidthServedBytes = bandwidthBySource["public"] || 0;
+    const publicBandwidthServedGB = Number((publicBandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
+
+    const totalBandwidthServedGB = Number((totalBandwidthServedBytes / (1024 * 1024 * 1024)).toFixed(2));
 
     const metricsResult = await fetchGameHostMetrics();
     const hostStorage = metricsResult.ok
@@ -125,6 +141,12 @@ export async function GET() {
         vpsFreeGB,
         vpsBandwidthServedBytes,
         vpsBandwidthServedGB,
+        r2BandwidthServedBytes,
+        r2BandwidthServedGB,
+        publicBandwidthServedBytes,
+        publicBandwidthServedGB,
+        totalBandwidthServedBytes,
+        totalBandwidthServedGB,
         vpsFilesystemUsedGB,
         vpsFilesystemTotalGB,
         vpsFilesystemUsedPercent,
