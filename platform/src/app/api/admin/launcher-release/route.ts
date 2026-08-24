@@ -60,6 +60,18 @@ export async function POST(req: Request) {
     }
 
     /*
+     * ensureArtifact only fills sizeBytes/sha256 when the row was previously
+     * empty — right for its normal "record what a random download told us"
+     * callers, wrong here: a re-upload of the same version (a rebuild, or a
+     * re-run after this route failed partway) must overwrite whatever an
+     * earlier call stored, or the VPS validates the new bytes against a stale
+     * expected size and 416s trying to "resume" a file that's already whole.
+     */
+    artifact.sizeBytes = input.sizeBytes;
+    if (input.sha256) artifact.sha256 = input.sha256;
+    artifact.filename = input.fileName;
+
+    /*
      * ensureArtifact defaults every new row to unmirrorable — correct for
      * unknown third-party content, wrong for our own signed build. Matches
      * what the local upload script has always set for this same artifact type.
