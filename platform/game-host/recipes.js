@@ -121,6 +121,40 @@ export const recipes = {
     binaries: gameBin("hedgewars", ["hedgewars-server"]),
     args: (port) => ["-p", String(port)],
   },
+  /*
+   * Source SDK 2007 (Half-Life 2 branch) never got a native Linux dedicated
+   * server, so this runs the real Windows srcds.exe under Wine + Xvfb.
+   * install.sh fetches the engine itself (Steam appid 310, Valve's own free
+   * tool — anonymous SteamCMD, not ModDB, so it is not blocked) and writes
+   * `run-server`, the wrapper `gameBin` finds before any named binary. The
+   * one piece install.sh cannot stage is the mod content: both the client
+   * installer and the dedicated server archive are ModDB-hosted, and ModDB's
+   * bot protection 403s a scripted fetch the same way it does a plain curl
+   * from a player's machine (see the launcherInstall note on the catalog
+   * entry). Until gesource/ is placed under GAMES_ROOT/goldeneye-source by
+   * hand, `gameBin` finds no `run-server` either and this reports the same
+   * way Freedoom does when its own binaries are missing — not installed,
+   * not a broken recipe.
+   */
+  "goldeneye-source": {
+    portStart: 27045,
+    portEnd: 27065,
+    protocol: "both",
+    binaries: gameBin("goldeneye-source", ["srcds.exe"]),
+    args: (port) => [
+      "-game",
+      path.join(GAMES_ROOT, "goldeneye-source", "gesource"),
+      "-port",
+      String(port),
+      "+map",
+      "ge_facility",
+      "+maxplayers",
+      "16",
+      "-console",
+      "-novid",
+      "-nojoy",
+    ],
+  },
   "warzone-2100": {
     portStart: 2100,
     portEnd: 2120,

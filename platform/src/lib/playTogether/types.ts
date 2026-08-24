@@ -171,6 +171,12 @@ export type PartyPayload = {
   gameTitle: string | null;
   editionSlug: string | null;
   modSlugs: string[];
+  /**
+   * Only meaningful for a PlayBound-hostable multiplayer game. Every other
+   * game ignores this and keeps the schema default.
+   */
+  hostingMode: "managed" | "self";
+  selfHostable: boolean;
   status: PartyStatus;
   visibility: PartyVisibility;
   maxSize: number;
@@ -213,6 +219,7 @@ export type PartyPayload = {
    */
   lan: {
     enabled: boolean;
+    configured: boolean;
     status: "none" | "pending" | "ready" | "failed";
     adapterFile: string | null;
     steps: string[];

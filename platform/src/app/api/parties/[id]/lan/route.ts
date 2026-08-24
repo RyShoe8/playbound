@@ -64,9 +64,14 @@ export async function POST(req: Request, ctx: RouteContext) {
       await doc.save();
     }
 
+    const leader = doc.members.find(
+      (candidate: { userId: unknown }) => String(candidate.userId) === String(doc.leaderId)
+    );
+
     return NextResponse.json({
       ...result,
       isLeader: String(doc.leaderId) === userId,
+      leaderAddress: isPrivateOverlayAddress(leader?.lanAddress) ? leader.lanAddress : null,
       peerAddresses: doc.members
         .filter((candidate: { userId: unknown; lanAddress?: string | null }) =>
           String(candidate.userId) !== userId && isPrivateOverlayAddress(candidate.lanAddress)

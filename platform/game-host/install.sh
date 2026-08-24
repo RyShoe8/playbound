@@ -155,6 +155,91 @@ mkdir -p "$YSOCCER_DIR"
 curl -fL --retry 3 -o "$YSOCCER_DIR/ysoccer-server.jar" \
   "https://github.com/RyShoe8/playbound/releases/download/ysoccer-online-latest/ysoccer-server.jar"
 
+echo "==> GoldenEye: Source dedicated (Wine — the 2007-branch engine has no Linux server build)"
+GES_DIR="$GAMES_DIR/goldeneye-source"
+STEAMCMD_DIR="$INSTALL_ROOT/steamcmd"
+GES_WINEPREFIX="$HOME_DIR/.wine-goldeneye-source"
+mkdir -p "$GES_DIR"
+
+# The engine half — Source 2007 Dedicated Server, Valve's own free tool
+# (Steam appid 310), fetched anonymously via SteamCMD. This is not the
+# ModDB-blocked part: SteamCMD talks to Steam directly, and
+# @sSteamCmdForcePlatformType pulls the Windows depot even though this box is
+# Linux, because appid 310 was never given a native Linux build.
+#
+# Wrapped so a Wine/SteamCMD hiccup on this one game cannot take the rest of
+# this script down with it — every step below runs inside `set -e`, but the
+# `if !` around the whole subshell keeps that failure from tripping the
+# script's own errexit and aborting every game after this one.
+if [[ ! -f "$GES_DIR/srcds.exe" ]]; then
+  if ! (
+    set -e
+    dpkg --add-architecture i386
+    apt-get update -y
+    apt-get install -y --no-install-recommends wine32 wine64 xvfb
+
+    mkdir -p "$STEAMCMD_DIR"
+    if [[ ! -x "$STEAMCMD_DIR/steamcmd.sh" ]]; then
+      curl -fL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" \
+        | tar -xz -C "$STEAMCMD_DIR"
+    fi
+    "$STEAMCMD_DIR/steamcmd.sh" \
+      +@sSteamCmdForcePlatformType windows \
+      +force_install_dir "$GES_DIR" \
+      +login anonymous \
+      +app_update 310 validate \
+      +quit
+
+    # One Wine prefix for this game, not the agent user's default $HOME/.wine —
+    # a shared default prefix is how one game's bad DLL override breaks another.
+    su -s /bin/bash playbound -c \
+      "WINEPREFIX='$GES_WINEPREFIX' WINEARCH=win32 WINEDLLOVERRIDES='mscoree,mshtml=' wineboot --init" \
+      >/dev/null 2>&1 || true
+
+    cat > "$GES_DIR/run-server" <<EOF
+#!/usr/bin/env bash
+# gameBin() looks for this exact filename before any named binary — see
+# game-host/recipes.js. Xvfb gives srcds.exe a virtual display; the 2007
+# engine branch still touches video init even with -console.
+#
+# health.games only checks that this file exists, not that gesource/ has
+# been staged — that part still needs a human (see install.sh). Guard here
+# so a premature Join Game gets one clear line instead of a Wine crash trace.
+if [[ ! -f "$GES_DIR/gesource/gameinfo.txt" ]]; then
+  echo "GoldenEye: Source mod content (gesource/) is not staged on this box yet." >&2
+  exit 1
+fi
+export WINEPREFIX="$GES_WINEPREFIX"
+export WINEARCH=win32
+exec xvfb-run -a wine "$GES_DIR/srcds.exe" "\$@"
+EOF
+    chmod +x "$GES_DIR/run-server"
+    chown -R playbound:playbound "$GES_DIR" "$GES_WINEPREFIX"
+  ); then
+    echo "    GoldenEye: Source engine setup failed — see the output above." >&2
+    echo "    Every other game in this script still installs normally; re-run" >&2
+    echo "    install.sh once the problem (Wine packages, SteamCMD, disk space) is fixed." >&2
+  fi
+fi
+
+# The mod half — ModDB fronts every GE:S download, client installer and
+# dedicated server archive alike, with bot protection that 403s a scripted
+# curl exactly like this one. There is no mirror this script can pull from
+# unattended, so gesource/ is the one piece that still needs a human:
+#   1. Download the GE:S dedicated server archive from
+#      https://www.moddb.com/mods/goldeneye-source/downloads via a browser
+#      (GoldenEye_Source_v5.0.6_full_server_windows.7z — Windows-only
+#      content, which is fine: it runs under the Wine setup above regardless
+#      of which OS the archive was built for, since it is just game data).
+#   2. Extract it so this box ends up with $GES_DIR/gesource/ (the archive's
+#      own top-level folder — the mod content -game points at).
+#   3. Restart playbound-game-host — health.games.goldeneye-source flips
+#      true once both gesource/ and run-server exist.
+if [[ ! -d "$GES_DIR/gesource" ]]; then
+  echo "    gesource/ not found — GoldenEye: Source party rooms will fail to start"
+  echo "    until the mod content is staged by hand. See the comment above this line."
+fi
+
 if [[ "$WITH_HEAVY" -eq 1 ]]; then
   echo "==> Xonotic dedicated (large download)"
   XON_DIR="$GAMES_DIR/xonotic"

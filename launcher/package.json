@@ -22,6 +22,7 @@
     "test:cache": "node renderer/cache.test.mjs",
     "test:discovery": "node renderer/discovery.test.mjs",
     "test:connect": "node services/connectArgs.test.js",
+    "test:self-host": "node services/selfHost.test.js",
     "test:catalog": "node services/catalogMerge.test.js",
     "test:exe-format": "node services/executableFormat.test.js",
     "test:dosbox": "node services/ManagedDosBox.test.js",

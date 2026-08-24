@@ -116,6 +116,38 @@ On the player's machine the NetBird client must be installed, and its CLI talks 
 privileged service, so an unelevated launcher gets `needsElevation` back rather than a
 network.
 
+## Self-hosted party server
+
+Every game in `HOSTABLE_GAMES` offers `hostingMode: "self"`. The VPS room is
+released and the same party-scoped NetBird segment is provisioned instead. This
+is an addressable overlay, not the broadcast-discovery path above:
+
+```
+leader launcher → enrol and report overlay IP
+                → launch the normal game client as a listen server
+                → bind its game port to that overlay IP
+member launcher → enrol and report overlay IP
+                → authenticated LAN endpoint returns the leader's overlay IP
+                → normal client connect args target leaderIP:port
+```
+
+GoldenEye: Source is the first fully automatic listen-server recipe. The leader launches Source SDK
+Base 2007's `hl2.exe` with the existing `-game gesource` arguments plus `-ip`,
+`-port 27045`, `+maxplayers 16`, `+sv_lan 0`, and `+map ge_facility`; other members use the
+normal `+connect leaderIP:27045` path. No router port-forward is involved.
+
+For other hostable games, self-host mode launches the normal client and tells
+the leader to create the room in its multiplayer menu. The overlay address is
+copied for any port field the game exposes. Members still use automatic client
+connect arguments where available; otherwise the same address is copied for
+the in-game join screen. Adding an automatic recipe improves that game's leader
+experience without changing whether the option exists.
+
+The launcher-side listen-server recipes live in
+[`launcher/services/selfHost.js`](../launcher/services/selfHost.js). They are
+deliberately separate from `game-host/recipes.js`, whose recipes launch dedicated
+server binaries on the VPS. Add both only when a game supports both modes.
+
 Key files:
 
 - [`platform/src/lib/playTogether/party.ts`](../platform/src/lib/playTogether/party.ts) — party mutations, `joinPartyGame`

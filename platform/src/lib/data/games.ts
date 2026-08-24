@@ -2502,8 +2502,8 @@ const facts: Game[] = [
     description:
       "Hearthstone is Blizzard's collectible card game. Install via Battle.net. Deck trackers and community sites are listed as external tools — always follow Blizzard's third-party software rules.",
     developerSlug: "blizzard",
-    genres: ["Strategy"],
-    tags: ["CCG", "Free to Play", "Competitive", "Casual", "Card Game"],
+    genres: ["Deck Builder", "Strategy"],
+    tags: ["CCG", "Free to Play", "Competitive", "Casual"],
     license: "Free to Play",
     releaseYear: 2014,
     sizeMB: 3000,

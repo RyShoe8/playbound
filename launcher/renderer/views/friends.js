@@ -1236,6 +1236,22 @@ function buildPartyViewHtml(party) {
     ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>`
     : "";
 
+  const hostingHtml =
+    isLeader && !ended && party.selfHostable
+      ? `<label class="party-hosting-choice">
+           <span class="party-member-sub">Who hosts the server</span>
+           <select class="input-text" id="party-hosting-select" aria-label="Who hosts the server">
+             <option value="managed"${party.hostingMode !== "self" ? " selected" : ""}>PlayBound (no setup needed)</option>
+             <option value="self"${party.hostingMode === "self" ? " selected" : ""}>I'll host it myself</option>
+           </select>
+           ${
+             party.hostingMode === "self"
+               ? `<span class="party-member-sub">The launcher creates a private network; no port forwarding is needed.</span>`
+               : ""
+           }
+         </label>`
+      : "";
+
   const visibilityHtml =
     isLeader && !ended
       ? `<div class="party-header-side">
@@ -1354,6 +1370,7 @@ function buildPartyViewHtml(party) {
           <div class="party-header-main">
             ${titleHtml}
             ${gameHtml}
+            ${hostingHtml}
             <p class="party-meta">
               <span>${escapeHtml(partyStatusLabel(party.status))}</span>
               <span>·</span>
@@ -1752,6 +1769,19 @@ function wirePartyView(slot, party) {
     enhanceSelect(visibilitySelect);
   }
 
+  const hostingSelect = slot.querySelector("#party-hosting-select");
+  if (hostingSelect) {
+    hostingSelect.addEventListener("change", async () => {
+      hostingSelect.disabled = true;
+      applyPartyResult(
+        await window.playbound.setPartyHostingMode(partyId, hostingSelect.value),
+        "Couldn't change how the party is hosted."
+      );
+      hostingSelect.disabled = false;
+    });
+    enhanceSelect(hostingSelect);
+  }
+
   slot.querySelectorAll(".btn-party-promote").forEach((btn) => {
     btn.addEventListener("click", async () => {
       btn.disabled = true;
@@ -1954,6 +1984,10 @@ async function prepareVirtualLan(party, lan) {
    * both true and playable; refusing to start it is neither.
    */
   if (lan.configured === false) {
+    if (party.hostingMode === "self") {
+      setStatus("Self-hosting needs the PlayBound party network, which is unavailable.", true);
+      return false;
+    }
     setStatus(
       "Party network is unavailable — launching anyway. You may need to connect in-game yourself."
     );
@@ -2004,7 +2038,7 @@ async function prepareVirtualLan(party, lan) {
       ? `On the party network as "${res.adapterName}".${steps}`
       : `On the party network as "${res.adapterName}". Pick that adapter in-game.${steps}`
   );
-  return true;
+  return res;
 }
 
 /**
@@ -2076,8 +2110,59 @@ async function launchPartyGame(party) {
    */
   const lan = party.lan || {};
   if (lan.enabled) {
-    const ready = await prepareVirtualLan(party, lan);
-    if (!ready) return;
+    const network = await prepareVirtualLan(party, lan);
+    if (!network) return;
+
+    if (party.hostingMode === "self") {
+      const port = Number(network.hostPort);
+      if (!Number.isInteger(port)) {
+        setStatus("This launcher cannot self-host this game yet. Update PlayBound and try again.", true);
+        return;
+      }
+      try {
+        if (network.isLeader) {
+          setStatus(
+            network.automaticHost
+              ? `Starting ${party.gameTitle || slug} for the party…`
+              : `Launching ${party.gameTitle || slug} — host a game from its multiplayer menu.`
+          );
+          await window.playbound.play(
+            slug,
+            { selfHost: true, host: network.adapterAddress, port },
+            party.editionSlug || null
+          );
+          startGameSession(slug, party.gameTitle || slug);
+          void window.playbound.clipboardWrite?.(`${network.adapterAddress}:${port}`);
+          setStatus(
+            network.automaticHost
+              ? `Hosting on ${network.adapterAddress}:${port}`
+              : `Copied ${network.adapterAddress}:${port} — host from the multiplayer menu and use this port if the game asks.`
+          );
+        } else {
+          if (!network.leaderAddress) {
+            setStatus("The leader is not on the party network yet. Ask them to Join Game first.", true);
+            return;
+          }
+          const address = `${network.leaderAddress}:${port}`;
+          setStatus(`Joining the leader at ${address}…`);
+          const launchResult = await window.playbound.play(
+            slug,
+            { host: network.leaderAddress, port, name: party.gameTitle || "" },
+            party.editionSlug || null
+          );
+          startGameSession(slug, party.gameTitle || slug);
+          if (launchResult?.manualConnect) {
+            void window.playbound.clipboardWrite?.(address);
+            setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
+          } else {
+            setStatus(`Joining ${party.gameTitle || slug} at ${address}…`);
+          }
+        }
+      } catch (err) {
+        setStatus(err?.message || String(err), true);
+      }
+      return;
+    }
   }
 
   const games = partyGamesCache || [];

@@ -10,6 +10,7 @@ import {
   isHostableGame,
   type HostedStatus,
 } from "./catalog";
+import { isSelfHostable } from "@/lib/multiplayer/adapters";
 import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyHostFields = {
@@ -28,6 +29,7 @@ type PartyLike = Document & {
   gameSlug: string;
   editionSlug?: string | null;
   maxSize?: number;
+  hostingMode?: "managed" | "self";
   hosted?: PartyHostFields;
   save: () => Promise<unknown>;
 };
@@ -42,6 +44,13 @@ function ensureHosted(party: PartyLike): PartyHostFields {
 export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   const slug = String(party.gameSlug || "");
   if (!isHostableGame(slug)) return false;
+
+  // Self-hosting is the leader's own machine, not the VPS — release any room
+  // left over from before they switched modes rather than paying to run both.
+  if (party.hostingMode === "self" && isSelfHostable(slug)) {
+    if (party.hosted?.roomId) await releasePartyHost(party);
+    return false;
+  }
 
   const hosted = ensureHosted(party);
   if (hosted.status === "ready" && hosted.host && hosted.port) return true;
@@ -125,7 +134,8 @@ export async function releasePartyHost(party: PartyLike): Promise<void> {
 
 export function hostedPayloadFromDoc(
   gameSlug: string,
-  hosted?: PartyHostFields | null
+  hosted?: PartyHostFields | null,
+  hostingMode: "managed" | "self" = "managed"
 ) {
   const base = emptyHostedPayload(gameSlug);
   /*
@@ -135,6 +145,9 @@ export function hostedPayloadFromDoc(
    * something that would never become ready.
    */
   const configured = isGameHostConfigured();
+  if (hostingMode === "self" && isSelfHostable(gameSlug)) {
+    return { ...base, enabled: false, configured };
+  }
   if (!hosted) return { ...base, configured };
   return {
     enabled: base.enabled,

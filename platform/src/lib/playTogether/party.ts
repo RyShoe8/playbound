@@ -51,6 +51,7 @@ import {
   provisionPartyLan,
   releasePartyLan,
 } from "@/lib/virtualLan/provision";
+import { isSelfHostable } from "@/lib/multiplayer/adapters";
 import {
   BASE_EDITION_KEY,
   isBaseEditionSlug,
@@ -157,6 +158,8 @@ function serializeParty(
     gameTitle,
     editionSlug: (doc.editionSlug as string) || null,
     modSlugs: (doc.modSlugs as string[]) || [],
+    hostingMode: (doc.hostingMode as "managed" | "self") || "managed",
+    selfHostable: isSelfHostable(String(doc.gameSlug || "")),
     status: (doc.status as PartyStatus) || "forming",
     visibility: (doc.visibility as PartyVisibility) || "friends",
     hasPassword: Boolean(doc.passwordHash),
@@ -170,11 +173,13 @@ function serializeParty(
     },
     hosted: hostedPayloadFromDoc(
       String(doc.gameSlug || ""),
-      (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[1]) || null
+      (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[1]) || null,
+      (doc.hostingMode as "managed" | "self") || "managed"
     ),
     lan: lanPayloadFromDoc(
       String(doc.gameSlug || ""),
-      (doc.lan as Parameters<typeof lanPayloadFromDoc>[1]) || null
+      (doc.lan as Parameters<typeof lanPayloadFromDoc>[1]) || null,
+      (doc.hostingMode as "managed" | "self") || "managed"
     ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
     createdAt: (doc.createdAt as Date)?.toISOString() || new Date().toISOString(),
@@ -783,6 +788,65 @@ export async function setPartyGame(
   }
   return {
     party: updated,
+    status: 200,
+  };
+}
+
+/**
+ * Choose who runs the server for the party's current game: PlayBound's VPS
+ * (default), or the leader's own machine over the party's virtual-LAN
+ * overlay. Only meaningful for a PlayBound-hostable game — anything else is
+ * rejected outright rather than silently accepted and ignored, since a
+ * leader who picked "self" on a game that cannot do it should see why their
+ * choice didn't stick, not a party that quietly kept using the VPS.
+ */
+export async function setPartyHostingMode(
+  partyId: string,
+  leaderId: string,
+  hostingMode: "managed" | "self"
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can change how this party is hosted", status: 403 };
+  }
+  if (doc.status === "ended") {
+    return { error: "Party has ended", status: 400 };
+  }
+  if (!doc.gameSlug) {
+    return { error: "Pick a game first", status: 400 };
+  }
+  if (hostingMode === "self" && !isSelfHostable(String(doc.gameSlug))) {
+    return { error: "This game cannot be self-hosted", status: 400 };
+  }
+
+  const game = await getGame(String(doc.gameSlug), { includeTesting: true });
+  if (!game) return { error: "Game not found", status: 404 };
+
+  doc.hostingMode = hostingMode;
+  for (const member of doc.members) member.lanAddress = null;
+  doc.lastActivity = new Date();
+  await doc.save();
+  // Tears down whichever of the two the new mode no longer wants, and stands
+  // up the other — same release-then-provision shape setPartyGame uses.
+  await provisionPartyHost(doc);
+  await provisionPartyLan(doc);
+  await doc.save();
+
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const nameById = await resolveUsernames(memberIds);
+
+  trackPartyEvent("party_hosting_mode_set", {
+    partyId: String(doc._id),
+    gameSlug: String(doc.gameSlug || "") || null,
+    hostingMode,
+    userId: leaderId,
+  });
+  const serialized = serializeParty(doc.toObject(), nameById, game.title);
+  return {
+    party: await attachConfigSync(serialized, leaderId),
     status: 200,
   };
 }

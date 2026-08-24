@@ -6,6 +6,7 @@ import {
   setPartyGame,
   setPartyEdition,
   setPartyName,
+  setPartyHostingMode,
   endParty,
 } from "@/lib/playTogether/party";
 import { PARTY_VISIBILITIES, type PartyVisibility } from "@/lib/playTogether/types";
@@ -69,6 +70,17 @@ export async function PATCH(req: Request, ctx: RouteContext) {
         userId,
         typeof body.editionSlug === "string" ? body.editionSlug : null
       );
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    if (body.hostingMode !== undefined) {
+      if (body.hostingMode !== "managed" && body.hostingMode !== "self") {
+        return NextResponse.json({ error: "Invalid hostingMode" }, { status: 400 });
+      }
+      const result = await setPartyHostingMode(id, userId, body.hostingMode);
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }

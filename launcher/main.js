@@ -42,6 +42,7 @@ const {
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
+const { selfHostIsAutomatic, selfHostLaunchArgs, selfHostPort } = require("./services/selfHost");
 const {
   isLegacyDosExecutable,
   preferRunnableExecutable,
@@ -588,6 +589,28 @@ function findInSteamLibraries(entry) {
     }
   }
 
+  return null;
+}
+
+/**
+ * GoldenEye: Source has neither its own executable nor a Steam App ID — Steam
+ * launches it as `hl2.exe -game <mod path>` using Source SDK Base 2007's own
+ * (free, appid 218) binary. findInSteamLibraries only ever re-resolves
+ * `steamapps/common/...` tails, which covers hl2.exe but not the mod itself,
+ * so this checks both pieces directly across every library: the SDK's hl2.exe
+ * under `steamapps/common`, and the mod under `steamapps/sourcemods/gesource`.
+ * Finding the SDK alone is not enough — it can be installed with the mod still
+ * mid-download, or never placed at all.
+ */
+function findGoldenEyeSourceInstall() {
+  for (const root of steamLibraryRoots()) {
+    const hl2Exe = path.join(root, "steamapps", "common", "Source SDK Base 2007", "hl2.exe");
+    const modDir = path.join(root, "steamapps", "sourcemods", "gesource");
+    const gameinfo = path.join(modDir, "gameinfo.txt");
+    if (fs.existsSync(hl2Exe) && fs.existsSync(gameinfo)) {
+      return { exe: hl2Exe, modDir };
+    }
+  }
   return null;
 }
 
@@ -3462,6 +3485,13 @@ function findExeInSlugGamesDir(entry) {
 }
 
 function findKnownExecutable(entry) {
+  // No knownExePaths pattern can express this one: the launchable file is
+  // Source SDK Base 2007's shared hl2.exe, identified only by pairing it with
+  // the mod folder next to it. See findGoldenEyeSourceInstall.
+  if (entry?.slug === "goldeneye-source") {
+    const ges = findGoldenEyeSourceInstall();
+    return ges ? ges.exe : null;
+  }
   const known = findKnownPathOnly(entry);
   if (known) return known;
   /*
@@ -3532,7 +3562,21 @@ function notifyInstallDetected(slug) {
 }
 
 function markInstalledFromExe(slug, entry, exe, version) {
-  const dir = resolveInstallDir(entry, exe);
+  let dir = resolveInstallDir(entry, exe);
+  let launchArgs = Array.isArray(entry?.launchArgs) ? entry.launchArgs : undefined;
+  /*
+   * resolveInstallDir would land on the Source SDK folder that hl2.exe lives
+   * in — every sourcemod shares that same exe, so it tells us nothing about
+   * which mod to run. The real install root is the mod folder itself, and the
+   * engine only loads it when told to with -game.
+   */
+  if (slug === "goldeneye-source") {
+    const ges = findGoldenEyeSourceInstall();
+    if (ges) {
+      dir = ges.modDir;
+      launchArgs = ["-game", ges.modDir];
+    }
+  }
   markInstalled(slug, {
     version,
     exe,
@@ -3541,6 +3585,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
     editionName: entry?.editionName,
     editionType: entry?.editionType,
     connectArgs: Array.isArray(entry?.connectArgs) ? entry.connectArgs : undefined,
+    launchArgs,
   });
   void syncAllInstalledGames();
   // Modded editions finish setting themselves up here — this is the one point
@@ -4621,8 +4666,10 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     // carries a mod loader is not: PlayBound still has to place the mod files
     // once the store finishes installing, so watch for the executable the same
     // way a downloaded installer is watched. Without this the store opens and
-    // the mods are never applied.
-    if (entry.modLoader) {
+    // the mods are never applied. GoldenEye: Source has no mod loader but the
+    // same problem in a different shape — Steam installs it in the background
+    // with nothing to poll for until findGoldenEyeSourceInstall sees it land.
+    if (entry.modLoader || slug === "goldeneye-source") {
       const externalEntry = {
         ...entry,
         editionSlug: entry.editionSlug || editionMeta?.editionSlug || DEFAULT_EDITION_SLUG,
@@ -5851,7 +5898,13 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     : Array.isArray(entry?.launchArgs)
       ? [...entry.launchArgs]
       : [];
-  if (join?.host && join?.port && Array.isArray(connectArgs)) {
+  if (join?.selfHost) {
+    const hostArgs = selfHostLaunchArgs(slug, join.host, join.port);
+    if (!hostArgs) {
+      throw new Error("This game cannot start a self-hosted party server.");
+    }
+    args.push(...hostArgs);
+  } else if (join?.host && join?.port && Array.isArray(connectArgs)) {
     for (const template of connectArgs) {
       args.push(
         String(template)
@@ -8787,7 +8840,16 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
         };
       }
     }
-    return { ok: true, adapterName, adapterAddress, pointed };
+    return {
+      ok: true,
+      adapterName,
+      adapterAddress,
+      isLeader: Boolean(reported.isLeader),
+      leaderAddress: reported.leaderAddress || null,
+      hostPort: selfHostPort(slug),
+      automaticHost: selfHostIsAutomatic(slug),
+      pointed,
+    };
   } catch (err) {
     return { error: err.message };
   }

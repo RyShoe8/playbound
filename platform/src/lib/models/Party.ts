@@ -109,6 +109,20 @@ const PartySchema = new Schema(
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
 
+    /**
+     * For multiplayer games PlayBound can host — PlayBound spins up
+     * a VPS room, or the leader's own machine hosts it over the party's
+     * virtual-LAN overlay so NAT is someone else's problem either way.
+     * Meaningless (and ignored by both provisioners) for every other game,
+     * which is why this defaults to "managed" rather than requiring every
+     * existing party document to be migrated.
+     */
+    hostingMode: {
+      type: String,
+      enum: ["managed", "self"],
+      default: "managed",
+    },
+
     status: {
       type: String,
       enum: PARTY_STATUSES,
@@ -201,6 +215,7 @@ export type PartyDoc = {
   gameSlug: string;
   editionSlug?: string | null;
   modSlugs: string[];
+  hostingMode?: "managed" | "self";
   status: string;
   visibility: string;
   passwordSalt?: string | null;

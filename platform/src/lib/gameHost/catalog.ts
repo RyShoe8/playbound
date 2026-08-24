@@ -60,6 +60,15 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 54575,
     protocol: "both",
   },
+  "goldeneye-source": {
+    slug: "goldeneye-source",
+    title: "GoldenEye: Source",
+    defaultPort: 27045,
+    portEnd: 27065,
+    // Gameplay and A2S queries are UDP; RCON, if ever exposed, shares the
+    // same port number over TCP — same shape as the other srcds-style hosts.
+    protocol: "both",
+  },
   hedgewars: {
     slug: "hedgewars",
     title: "Hedgewars",

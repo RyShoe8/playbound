@@ -30,6 +30,7 @@ import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PartyChat } from "@/components/friends/PartyChat";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
+import { isSelfHostable } from "@/lib/multiplayer/adapters";
 
 export type PartyGameOption = {
   slug: string;
@@ -60,6 +61,7 @@ export function PartyView({
     endParty,
     provisionDiscord,
     setGame,
+    setHostingMode,
     setName,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -252,6 +254,29 @@ export function PartyView({
                   editionSlug={party.editionSlug}
                 />
               ) : null}
+              {party.gameSlug && isSelfHostable(party.gameSlug) && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Who hosts the server
+                  </span>
+                  <PremiumSelect
+                    value={party.hostingMode}
+                    onChange={(e) =>
+                      void setHostingMode(party.id, e.target.value as "managed" | "self")
+                    }
+                  >
+                    <option value="managed">PlayBound (no setup needed)</option>
+                    <option value="self">I&apos;ll host it myself</option>
+                  </PremiumSelect>
+                  {party.hostingMode === "self" && (
+                    <p className="text-xs text-muted-foreground">
+                      Everyone in this party — including you — joins over a private
+                      network the launcher sets up automatically, so nobody needs to
+                      forward a port.
+                    </p>
+                  )}
+                </label>
+              )}
             </div>
           ) : hasGame ? (
             <p className="text-sm font-semibold text-muted-foreground">

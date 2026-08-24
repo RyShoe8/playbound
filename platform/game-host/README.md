@@ -65,6 +65,18 @@ or `zandronum-server` on this box — `install.sh` does not install those, so
 party Join Game will say the PlayBound game server does not have Freedoom yet
 until they are apt-installed here. That is not a Vercel change.
 
+GoldenEye: Source runs a real Windows `srcds.exe` under Wine + Xvfb — the
+Source SDK 2007 engine branch never got a native Linux dedicated server.
+`install.sh` handles the engine itself automatically (Steam appid 310 via
+anonymous SteamCMD, not ModDB, so nothing is blocked) and writes the
+`run-server` wrapper that starts it headless. The one thing it cannot stage
+is the mod content: ModDB fronts every GE:S download, client and dedicated
+server alike, with bot protection that 403s a scripted fetch. See the
+comment in `install.sh` above the GoldenEye: Source block for the one-time
+manual step — extracting `gesource/` from the server archive onto this box.
+`health.games.goldeneye-source` flips true once both `gesource/` and
+`run-server` exist.
+
 ## Games this host covers
 
 Installed by default: OpenRA, OpenTTD, Luanti/Minetest, Mindustry, Hedgewars,

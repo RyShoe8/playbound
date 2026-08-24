@@ -183,6 +183,50 @@ test("console entries are idempotent too", () => {
   assert.strictEqual(applyProfile("openarena", once, dualsense), null);
 });
 
+/* ── Source engine (GoldenEye: Source) ─────────────────────────────────── */
+
+/** A real Source config.cfg dump, shortened. The engine rewrites this wholesale. */
+const SOURCE_CFG = [
+  "unbindall",
+  'bind "w" "+forward"',
+  'bind "TAB" "+showscores"',
+  'joystick "0"',
+  'name "Player"',
+].join("\n");
+
+test("enables the pad in a Source engine config", () => {
+  const out = applyProfile("goldeneye-source", SOURCE_CFG, dualsense);
+  assert.ok(out.includes('joystick "1"'));
+  assert.ok(out.includes('bind JOY1 "+attack"'), "fire is button 0, written JOY1");
+  // Source has no `seta` command — every other engine's cvar-set prefix must not leak in.
+  assert.ok(!out.includes("seta "), "Source cvars are set bare, not with seta");
+});
+
+test("keeps every other setting in the Source config", () => {
+  const out = applyProfile("goldeneye-source", SOURCE_CFG, dualsense);
+  assert.ok(out.includes('bind "w" "+forward"'));
+  assert.ok(out.includes('name "Player"'));
+});
+
+test("leaves it alone when the player already enabled a pad", () => {
+  const on = SOURCE_CFG.replace('joystick "0"', 'joystick "1"');
+  assert.strictEqual(applyProfile("goldeneye-source", on, dualsense), null);
+});
+
+test("writes into an empty config.cfg — the normal first-run case", () => {
+  const out = applyProfile("goldeneye-source", "", dualsense);
+  assert.ok(out.includes('joystick "1"'));
+});
+
+test("declines an unfamiliar file", () => {
+  assert.strictEqual(applyProfile("goldeneye-source", "<html>not a config</html>", dualsense), null);
+});
+
+test("Source config is idempotent too", () => {
+  const once = applyProfile("goldeneye-source", SOURCE_CFG, dualsense);
+  assert.strictEqual(applyProfile("goldeneye-source", once, dualsense), null);
+});
+
 /* ── GZDoom / Freedoom ─────────────────────────────────────────────────── */
 
 /** A gzdoom.ini shaped like the engine writes it, with a pad detected and nothing bound. */
@@ -281,6 +325,7 @@ test("records why a native game has no writer", () => {
   }
   assert.strictEqual(controllerSupportFor("mindustry").kind, "unwritable");
   assert.strictEqual(controllerSupportFor("openarena").kind, "config");
+  assert.strictEqual(controllerSupportFor("goldeneye-source").kind, "config");
   assert.strictEqual(controllerSupportFor("no-such-game").kind, "unknown");
 });
 
@@ -292,6 +337,11 @@ test("finds no config rather than inventing one somewhere wrong", () => {
   assert.strictEqual(configPathFor("freedoom", NOWHERE, nowhere), null);
   // The fixed-location entries still resolve without looking at the disk.
   assert.ok(String(configPathFor("openarena", "C:\\Games\\OpenArena")).endsWith("q3config.cfg"));
+  assert.ok(
+    String(configPathFor("goldeneye-source", "C:\\Games\\gesource")).endsWith(
+      path.join("cfg", "config.cfg")
+    )
+  );
 });
 
 test("prefers the portable config beside the exe", () => {

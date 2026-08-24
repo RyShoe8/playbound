@@ -134,6 +134,43 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Direct ENET/UDP and TCP/IP with automatic CLI session argument join.",
   },
 
+  /*
+   * GoldenEye: Source is not a Steam product (no appid), so the Steam
+   * GetServerList plumbing TF2/CS2 use has nothing to filter on, and there is
+   * no community master API either — there is no honest public server list
+   * for this game, full stop. Not registered in servers/registry.ts as a
+   * result; a party's room is found through the party itself, not a browser.
+   */
+  "goldeneye-source": {
+    gameSlug: "goldeneye-source",
+    title: "GoldenEye: Source",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: {
+      port: 27045,
+      protocol: "both",
+      binaryHint: "run-server",
+      argsTemplate: ["-game", "gesource", "-port", "{port}", "+map", "ge_facility", "+maxplayers", "16"],
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    // Home internet cannot accept the inbound game port a dedicated server
+    // needs, so self-hosting rides the party's virtual-LAN overlay instead
+    // of a forwarded port: the leader's own listen server binds the overlay
+    // adapter, everyone else's {host} resolves to that private IP.
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: [
+        "Open the console (~) and run: map ge_facility",
+        "Set maxplayers before the map loads: maxplayers 16",
+      ],
+    },
+    notes:
+      "PlayBound-hosted srcds instance under Wine; +connect joins directly. No public server list exists for this game, so there is no live player count outside an active party.",
+  },
+
   "warzone-2100": {
     gameSlug: "warzone-2100",
     title: "Warzone 2100",
@@ -423,6 +460,28 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Freeciv dedicated server. Client needs --autoconnect or GTK opens the start screen instead of joining.",
   },
 
+  bzflag: {
+    gameSlug: "bzflag",
+    title: "BZFlag",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: { port: 5154, protocol: "both", binaryHint: "bzfs" },
+    client: { launchArguments: ["{host}:{port}"] },
+    notes: "PlayBound can run bzfs, or the party leader can host over the private overlay.",
+  },
+
+  supertuxkart: {
+    gameSlug: "supertuxkart",
+    title: "SuperTuxKart",
+    tier: "tier1_improved",
+    adapterType: "managed-server",
+    protocol: "custom",
+    host: { port: 2759, protocol: "both", binaryHint: "supertuxkart" },
+    client: { launchArguments: ["--connect-now={host}:{port}"] },
+    notes: "PlayBound dedicated room or a leader-hosted room over the private overlay.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   "space-station-14": {
     gameSlug: "space-station-14",
@@ -572,12 +631,25 @@ export function getMultiplayerTier(gameSlug: string): MultiplayerTier {
  */
 export function getVirtualLanConfig(gameSlug: string): VirtualLanConfig | null {
   const adapter = getMultiplayerAdapter(gameSlug);
-  if (adapter.adapterType !== "virtual-lan") return null;
+  // Either this game only ever finds friends over LAN (HoloCure), or it can
+  // optionally be self-hosted over one instead of PlayBound's VPS. Whether an
+  // overlay is *currently* in use for a given party is `lan.status`, not this
+  // — this only answers "does this game have LAN-overlay config at all".
+  if (adapter.adapterType !== "virtual-lan" && !isSelfHostable(gameSlug)) return null;
   return adapter.virtualLan || {};
 }
 
 export function isVirtualLanGame(gameSlug: string): boolean {
   return getMultiplayerAdapter(gameSlug).adapterType === "virtual-lan";
+}
+
+/** True when the party leader can host this one themselves, as an alternative to PlayBound's VPS. */
+export function isSelfHostable(gameSlug: string): boolean {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  return (
+    (adapter.adapterType === "managed-server" || adapter.adapterType === "direct-ip") &&
+    Number.isInteger(adapter.host?.port)
+  );
 }
 
 /** Every game Connect reaches by putting the party on one shared segment. */

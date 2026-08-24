@@ -15,7 +15,7 @@ import {
   managementUrl,
   type NetBirdParty,
 } from "./client";
-import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { getVirtualLanConfig, isSelfHostable, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
@@ -30,6 +30,8 @@ type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
   maxSize?: number;
+  hostingMode?: "managed" | "self";
+  members?: Array<{ lanAddress?: string | null }>;
   lan?: PartyLanFields;
   save: () => Promise<unknown>;
 };
@@ -41,9 +43,24 @@ function ensureLan(party: PartyLike): PartyLanFields {
   return party.lan!;
 }
 
+/**
+ * A LAN-discovery game (HoloCure) always gets the overlay — there is no other
+ * way for it to find anyone. A `managed-server` game only needs it when the
+ * leader has chosen to host it themselves instead of the VPS; otherwise the
+ * overlay would sit there unused while `+connect` already goes straight to
+ * the VPS's public IP.
+ */
+function wantsOverlay(slug: string, party: PartyLike): boolean {
+  if (isVirtualLanGame(slug)) return true;
+  return isSelfHostable(slug) && party.hostingMode === "self";
+}
+
 export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   const slug = String(party.gameSlug || "");
-  if (!isVirtualLanGame(slug)) return false;
+  if (!wantsOverlay(slug, party)) {
+    if (party.lan?.groupId) await releasePartyLan(party);
+    return false;
+  }
 
   const lan = ensureLan(party);
   if (lan.status === "ready" && lan.setupKey) return true;
@@ -115,6 +132,7 @@ export function partyLanEnrollment(
 
 export async function releasePartyLan(party: PartyLike): Promise<void> {
   const lan = party.lan;
+  for (const member of party.members || []) member.lanAddress = null;
   if (!lan?.groupId && !lan?.setupKeyId) {
     if (lan) {
       lan.status = "none";
@@ -139,9 +157,14 @@ export async function releasePartyLan(party: PartyLike): Promise<void> {
  *
  * No setup key here — see `partyLanEnrollment`.
  */
-export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null) {
+export function lanPayloadFromDoc(
+  gameSlug: string,
+  lan?: PartyLanFields | null,
+  hostingMode: "managed" | "self" = "managed"
+) {
   const config = getVirtualLanConfig(gameSlug);
-  if (!config) {
+  const enabled = isVirtualLanGame(gameSlug) || (isSelfHostable(gameSlug) && hostingMode === "self");
+  if (!config || !enabled) {
     return {
       enabled: false,
       configured: isVirtualLanConfigured(),

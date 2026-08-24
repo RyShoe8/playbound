@@ -144,6 +144,40 @@ function darkPlacesJoystickBlock(profile) {
 }
 
 /**
+ * Source engine (Half-Life 2 branch) — GoldenEye: Source.
+ *
+ * Documented on Valve's own wiki as shared across every Source game: `joystick`
+ * turns the pad on, `joy_advanced "0"` keeps the two-stick auto mapping instead
+ * of requiring per-axis assignment, and binds use the same JOY1..JOYn naming
+ * the idTech games above inherited from the same Quake-derived console. Unlike
+ * idTech's `seta cvar "1"`, Source cvars are set bare — there is no `seta`
+ * command here, so this cannot reuse consoleConfigEntry().
+ *
+ * `invprev`/`invnext` are baseline Half-Life 2 SDK commands present in every
+ * Source mod's default bindings, not something specific to GoldenEye: Source,
+ * which is why they are used here rather than a GE:S-specific weapon command
+ * that was never found documented anywhere.
+ */
+function sourceEngineJoystickBlock(profile) {
+  const joy = (i) => `JOY${i + 1}`;
+  const b = profile.buttons;
+  return [
+    `joystick "1"`,
+    `joy_advanced "0"`,
+    `joy_forwardsensitivity "-1"`,
+    `joy_sidesensitivity "1"`,
+    `joy_pitchsensitivity "1"`,
+    `joy_yawsensitivity "-2"`,
+    `bind ${joy(b.fire)} "+attack"`,
+    `bind ${joy(b.altFire)} "+attack2"`,
+    `bind ${joy(b.leftShoulder)} "invprev"`,
+    `bind ${joy(b.rightShoulder)} "invnext"`,
+    `bind ${joy(b.menu)} "gameui_activate"`,
+    `bind ${joy(b.pause)} "+showscores"`,
+  ].join("\n");
+}
+
+/**
  * Rewrite the body of one INI section, leaving every other section untouched.
  *
  * `mutate` is handed the section's lines and returns the replacement. Returns
@@ -380,6 +414,31 @@ const GAMES = {
   }),
   freedoom: gzDoomEntry,
   luanti: luantiEntry,
+  "goldeneye-source": {
+    /** Relative to the install directory — the mod's own sourcemods/gesource folder. */
+    file: path.join("cfg", "config.cfg"),
+    verified:
+      "UNVERIFIED against a real install — joystick/joy_advanced/bind are Valve's " +
+      "documented Source engine console commands, shared by every Source game, but no " +
+      "GoldenEye: Source install has been read here. The guard below only writes into a " +
+      "file that already looks like a real Source config.cfg, or an empty one on first run.",
+    needsConfig(text) {
+      return !/^\s*joystick\s+"?1"?\s*$/im.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      /*
+       * config.cfg does not exist until the engine has run once and exited —
+       * an empty read is the normal first-run case, not an unrecognised file.
+       * Once it exists, the engine's own dump always opens with `unbindall`,
+       * which is the signature checked for anything non-empty.
+       */
+      if (original.trim() !== "" && !/^unbindall\s*$/im.test(original)) return null;
+      const block = sourceEngineJoystickBlock(profile);
+      const trimmed = original.replace(/\s*$/, "");
+      return trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
+    },
+  },
   opentyrian: {
     /** Relative to the install directory. */
     file: "opentyrian.cfg",

@@ -52,6 +52,7 @@ interface PartyState {
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
   setEdition: (partyId: string, editionSlug: string | null) => Promise<void>;
+  setHostingMode: (partyId: string, hostingMode: "managed" | "self") => Promise<void>;
   setName: (partyId: string, name: string | null) => Promise<void>;
   removeMember: (partyId: string, userId: string) => Promise<void>;
   transferLeadership: (partyId: string, userId: string) => Promise<void>;
@@ -320,6 +321,22 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to set party edition", err);
+    }
+  },
+
+  setHostingMode: async (partyId, hostingMode) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hostingMode }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+      }
+    } catch (err) {
+      console.error("Failed to set party hosting mode", err);
     }
   },
 

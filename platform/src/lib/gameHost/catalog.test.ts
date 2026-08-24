@@ -24,6 +24,7 @@ describe("game host catalog", () => {
     expect(isHostableGame("marathon-2")).toBe(true);
     expect(isHostableGame("aleph-one")).toBe(true);
     expect(isHostableGame("triplea")).toBe(true);
+    expect(isHostableGame("goldeneye-source")).toBe(true);
   });
 
   it("does not host closed platforms or lobby-only titles", () => {

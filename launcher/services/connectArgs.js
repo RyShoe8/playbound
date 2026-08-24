@@ -39,6 +39,12 @@ const CLIENT_CONNECT_ARGS = {
   openarena: ["+connect", "{host}:{port}"],
   unvanquished: ["+connect", "{host}:{port}"],
 
+  // Source engine (Half-Life 2 branch) uses the same +connect console command
+  // as the id Tech games above. GoldenEye: Source is a Source SDK Base 2007
+  // mod installed to Steam\steamapps\sourcemods\gesource — Steam launches it,
+  // so this is what playGame's client-connect override appends.
+  "goldeneye-source": ["+connect", "{host}:{port}"],
+
   // RTS / Turn-based & Classic Engines
   "battle-for-wesnoth": ["--host", "{host}:{port}"],
   "0-ad": ["-autostart={host}:{port}"],
