@@ -25,6 +25,7 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
 const { spawnSync } = require("child_process");
 
 const TAG = "[build-windows]";
@@ -73,6 +74,24 @@ function main() {
       env.WINDOWS_SIGNING_ENABLED = "true";
     }
     console.log(`${TAG} Mode: PRODUCTION — signing required (WINDOWS_SIGNING_ENABLED=${env.WINDOWS_SIGNING_ENABLED}).`);
+
+    /*
+     * verify-signatures.js checks every top-level .exe it finds in dist/ — it
+     * has no idea which ones this run actually produced. A --dev build never
+     * signs anything, so an unsigned installer from a prior rehearsal build
+     * left sitting in dist/ is invisible right up until the next --prod run,
+     * which inherits it, fails signature verification on a file it never
+     * touched, and does so *after* electron-builder already spent real
+     * signings on the artifacts that were actually built. A failed build
+     * still consumes those signings — see docs/windows-code-signing.md — so
+     * this was not a cosmetic bug, it was a way to burn signing budget for
+     * nothing. A production build now always starts from a clean directory.
+     */
+    const distDir = path.join(launcherDir, "dist");
+    if (fs.existsSync(distDir)) {
+      console.log(`${TAG} Clearing ${distDir} so verification only sees this build's artifacts.`);
+      fs.rmSync(distDir, { recursive: true, force: true });
+    }
   }
 
   // 1. Vendor ViGEmBus redistributable (skipped if already pinned).
