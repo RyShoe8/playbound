@@ -52,6 +52,7 @@ function seedToEdition(seed: EditionSeed): Edition {
     installConfig: seed.installConfig ?? {},
     requirements: seed.requirements,
     hardwareRequirements: seed.hardwareRequirements,
+    platforms: seed.platforms,
     features: seed.features ?? [],
     tags: seed.tags ?? [],
     aliases: seed.aliases ?? [],
@@ -189,6 +190,10 @@ function toEdition(doc: LeanEdition): Edition {
         }
       : undefined,
     hardwareRequirements: (doc.hardwareRequirements as Edition["hardwareRequirements"]) || null,
+    platforms:
+      Array.isArray(doc.platforms) && doc.platforms.length > 0
+        ? (doc.platforms as string[])
+        : seedMatch?.platforms,
     features: (doc.features as string[]) ?? [],
     tags: (doc.tags as string[]) ?? [],
     aliases: (doc.aliases as string[]) ?? [],
@@ -330,6 +335,7 @@ export function deriveVirtualEdition(game: Game): Edition {
     requirements: game.systemRequirements
       ? { min: game.systemRequirements.min, recommended: game.systemRequirements.recommended }
       : undefined,
+    platforms: game.platforms,
     features: game.features ?? [],
     tags: game.tags ?? [],
     aliases: game.aliases ?? [],

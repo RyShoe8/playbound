@@ -298,6 +298,8 @@ export interface Edition {
   requirements?: EditionRequirements;
   /** Optional structured HW requirements (overrides/raises game floors). */
   hardwareRequirements?: HardwareRequirementsBlock | null;
+  /** Native operating systems; omitted editions inherit their parent game. */
+  platforms?: string[];
   features: string[];
   tags: string[];
   /**
