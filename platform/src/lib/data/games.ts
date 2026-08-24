@@ -3648,7 +3648,7 @@ const facts: Game[] = [
     license: "LGPL-2.1",
     releaseYear: 1992,
     sizeMB: 30,
-    status: "published",
+    status: "testing",
     platforms: ["Windows", "Linux", "macOS"],
     features: [
       "Online Multiplayer with Global Server Browser",
