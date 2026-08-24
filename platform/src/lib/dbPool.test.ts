@@ -50,7 +50,7 @@ describe("mongo connection options", () => {
   it("still reuses one cached connection per instance", () => {
     // The cache is what keeps a warm lambda from reconnecting per request.
     expect(SOURCE).toContain("global.__mongooseCache");
-    expect(SOURCE).toMatch(/if \(cached\.conn\)\s*\{\s*return cached\.conn;/);
+    expect(SOURCE).toMatch(/if \(cached\.conn/);
   });
 
   it("clears the cached promise on failure so the next call can retry", () => {

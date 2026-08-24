@@ -263,5 +263,10 @@ const CatalogGameSchema = new Schema(
   { timestamps: true }
 );
 
+CatalogGameSchema.index({ slug: 1 });
+CatalogGameSchema.index({ updatedAt: -1 });
+CatalogGameSchema.index({ status: 1, playboundSupported: 1, title: 1 });
+CatalogGameSchema.index({ "launcherInstall.versionCheckStatus": 1 });
+
 const CatalogGame = models.CatalogGame || model("CatalogGame", CatalogGameSchema);
 export default CatalogGame;

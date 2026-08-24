@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
 import type { Game } from "@/lib/data/types";
@@ -577,11 +578,7 @@ export async function editionCountsByGame(): Promise<Map<string, number>> {
   return counts;
 }
 
-/**
- * Returns a map of gameSlug -> boolean for whether any of the game's editions
- * provide controller / gamepad / flightstick support.
- */
-export async function editionControllerSupportByGame(): Promise<Record<string, boolean>> {
+async function editionControllerSupportByGameUncached(): Promise<Record<string, boolean>> {
   const map: Record<string, boolean> = {};
   for (const s of seedEditions) {
     if (supportsController(s)) {
@@ -608,6 +605,17 @@ export async function editionControllerSupportByGame(): Promise<Record<string, b
     console.error("[editions] controller support check failed:", err);
   }
   return map;
+}
+
+/**
+ * Returns a map of gameSlug -> boolean for whether any of the game's editions
+ * provide controller / gamepad / flightstick support.
+ */
+export async function editionControllerSupportByGame(): Promise<Record<string, boolean>> {
+  return unstable_cache(editionControllerSupportByGameUncached, ["edition-controller-support"], {
+    revalidate: 300,
+    tags: ["editions"],
+  })();
 }
 
 /**

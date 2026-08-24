@@ -16,8 +16,13 @@ async function connectOnce() {
     );
   }
 
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
+  }
+
+  if (cached.conn && mongoose.connection.readyState !== 1) {
+    cached.conn = null;
+    cached.promise = null;
   }
 
   if (!cached.promise) {
@@ -39,13 +44,13 @@ async function connectOnce() {
      */
     const opts = {
       bufferCommands: false,
-      maxPoolSize: 5,
+      maxPoolSize: 10,
       minPoolSize: 0,
       // Return a connection to the pool quickly; idle lambdas should not sit on
       // sockets the rest of the fleet could be using.
-      maxIdleTimeMS: 30_000,
+      maxIdleTimeMS: 60_000,
       // Fail fast rather than piling up waiters behind an unhealthy cluster.
-      serverSelectionTimeoutMS: 8_000,
+      serverSelectionTimeoutMS: 5_000,
       waitQueueTimeoutMS: 10_000,
     };
 
@@ -56,6 +61,7 @@ async function connectOnce() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
+    cached.conn = null;
     throw e;
   }
 

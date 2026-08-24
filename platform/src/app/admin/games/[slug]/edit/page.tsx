@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { listDevelopers } from "@/lib/developers";
-import { getGame, listAllGames } from "@/lib/catalog";
+import { getGame } from "@/lib/catalog";
 import { gameAccessTiers } from "@/lib/access/tiers";
 import type { GamePayload } from "@/lib/gamePayload";
 import { toPayloadLauncherInstall, toPayloadCommunityLinks, toPayloadAccess } from "@/lib/gamePayload";
@@ -87,7 +87,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
 
   const [developers, allGames, catalogTiers] = await Promise.all([
     listDevelopers(),
-    listAllGames(),
+    CatalogGame.find({}).select("slug title access.priceType").sort({ title: 1 }).lean(),
     gameAccessTiers(),
   ]);
 
