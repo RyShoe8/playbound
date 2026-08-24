@@ -95,5 +95,9 @@ const CatalogModSchema = new Schema(
   { timestamps: true }
 );
 
+CatalogModSchema.index({ status: 1, title: 1 });
+CatalogModSchema.index({ baseGameSlug: 1, status: 1, title: 1 });
+CatalogModSchema.index({ published: 1, title: 1 });
+
 const CatalogMod = models.CatalogMod || model("CatalogMod", CatalogModSchema);
 export default CatalogMod;

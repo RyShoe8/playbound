@@ -245,7 +245,7 @@ export async function listMods(opts?: ListModsOptions): Promise<CatalogModPublic
 
   return unstable_cache(() => listModsUncached(opts), ["mods-list", key], {
     revalidate: 300,
-    tags: ["mods", "catalog"],
+    tags: ["mods"],
   })();
 }
 
