@@ -10,6 +10,7 @@ import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
 import { DiscoveryModeToggle } from "@/components/DiscoveryModeToggle";
 import { MobileFriendsButton } from "@/components/friends/MobileFriendsButton";
 import { NotificationBell } from "@/components/shell/NotificationBell";
+import { BackButton } from "@/components/shell/BackButton";
 
 export function TopBar() {
   const { data: session } = useSession();
@@ -18,6 +19,7 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+        <BackButton />
         {/* mobile logo */}
         <Link href="/" className="flex items-center gap-2 lg:hidden">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary">
