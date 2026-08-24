@@ -6020,7 +6020,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     };
   }
 
-  const args = Array.isArray(info.launchArgs)
+  let args = Array.isArray(info.launchArgs)
     ? [...info.launchArgs]
     : Array.isArray(entry?.launchArgs)
       ? [...entry.launchArgs]
