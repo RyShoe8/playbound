@@ -180,9 +180,10 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       ],
     },
     client: {
-      launchArguments: ["--connect={host}:{port}"],
+      inGameJoinPrompt: true,
+      inGameSteps: ["Multiplay", "Join Game", "IP / Direct", "Paste Address"],
     },
-    notes: "Native IP hosting and automated VPS dedicated server.",
+    notes: "Native IP hosting and automated VPS dedicated server. Joins via in-game IP menu.",
   },
 
   mindustry: {
