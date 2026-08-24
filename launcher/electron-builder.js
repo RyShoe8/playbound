@@ -100,6 +100,11 @@ module.exports = {
       to: "vigem",
       filter: ["**/*"],
     },
+    {
+      from: "resources/scripts",
+      to: "scripts",
+      filter: ["**/*"],
+    },
   ],
   // systeminformation shells out to helpers; unpack so Windows detection works reliably.
   // assets is unpacked so Linux D-Bus/AppIndicator can read tray icons from real disk files.

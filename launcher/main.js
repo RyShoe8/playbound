@@ -3171,6 +3171,8 @@ function findExecutable(dir, exeHint) {
       if (process.platform === "win32") {
         if (lower.endsWith(".exe") && (ignoreSkip || !skip.test(name))) {
           candidates.push({ full, name, size: stat.size, rank: 100 });
+        } else if (/\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(lower) && (ignoreSkip || !skip.test(name))) {
+          candidates.push({ full, name, size: stat.size, rank: 90 });
         }
         continue;
       }
@@ -6131,6 +6133,19 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       persistEditionExe(slug, edSlug, launchPath, runnable);
       launchPath = runnable;
     }
+  const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(launchPath);
+  if (isRom) {
+    const ext = path.extname(launchPath);
+    const { coreForExtension } = require("./services/ManagedRetroArch");
+    const core = coreForExtension(ext) || "gambatte";
+    sendProgress({ phase: "retroarch", message: `Preparing RetroArch (${core})…` });
+    const runtime = await managedRetroArch.ensureCore(core);
+    if (!runtime.ok || !runtime.binary || !runtime.corePath) {
+      throw new Error(runtime.error || `Could not prepare RetroArch core for ${ext}.`);
+    }
+    const romFile = launchPath;
+    launchPath = runtime.binary;
+    args = ["-L", runtime.corePath, romFile, "-f", ...args];
   }
 
   const wrapDos = shouldLaunchThroughDosBox(launchPath, { needsDosBox: Boolean(entry?.needsDosBox) });
@@ -6574,6 +6589,25 @@ function spawnTrackedExe(slug, exePath, args = []) {
     pollTimer: null,
     settleTimer: null,
   });
+
+  if (process.platform === "win32" && (slug === "pokemon-dawn-of-darkness" || entry?.autoMaximize)) {
+    try {
+      const candidates = [
+        path.join(process.resourcesPath || "", "scripts", "maximize-window.ps1"),
+        path.join(__dirname, "resources", "scripts", "maximize-window.ps1"),
+      ];
+      const script = candidates.find((p) => p && fs.existsSync(p));
+      if (script) {
+        const bg = spawn("powershell.exe", ["-ExecutionPolicy", "Bypass", "-File", script, "Pokemon Online", "PDoDLauncher"], {
+          windowsHide: true,
+          stdio: "ignore",
+        });
+        bg.unref();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
 
   return new Promise((resolve, reject) => {
     let settled = false;
