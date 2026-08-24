@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { LauncherReleaseUploader } from "./LauncherReleaseUploader";
 import {
   DownloadCloud,
   HardDrive,
@@ -776,6 +777,7 @@ export function DownloadMirrorsManager() {
       {/* TAB 1: R2 Hot Cache */}
       {activeTab === "cache" && (
         <div className="space-y-4">
+          <LauncherReleaseUploader />
           <div className="flex items-start gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-sm text-sky-100">
             <Archive className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
             <p>
