@@ -25,6 +25,7 @@
 
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const { defaultContext } = require("./saveLocations");
 
 /**
@@ -610,6 +611,60 @@ const GAMES = {
       return trimmed ? `${trimmed}\n\n${block}` : block;
     },
   },
+
+  ysoccer: {
+    resolve: (c) => {
+      const homePrefs = path.join(c.home || os.homedir(), ".prefs", "YSoccer19");
+      const installPrefs = c.installDir && path.join(c.installDir, ".prefs", "YSoccer19");
+      return firstExisting([homePrefs, installPrefs]) || homePrefs;
+    },
+    verified: "YSoccer libGDX XML preferences JoystickConfig auto-configuration.",
+    needsConfig(text, profile) {
+      const s = String(text || "");
+      if (!s.includes("<properties>") || !s.includes("joystickConfigs")) return true;
+      if (!profile) return false;
+      if (profile.family === "dualsense" && !/DualSense|Wireless Controller|PS5/i.test(s)) return true;
+      if (profile.family === "xbox" && !/Xbox|XInput/i.test(s)) return true;
+      if (profile.family === "dualshock4" && !/DualShock|PS4|Wireless Controller/i.test(s)) return true;
+      return false;
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      const isDualSense = profile?.family === "dualsense" || /dualsense|ps5|0ce6/i.test(profile?.rawId || "");
+      const isDualShock4 = profile?.family === "dualshock4" || /dualshock|ps4/i.test(profile?.rawId || "");
+
+      const configs = [
+        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
+        `{class:JoystickConfig,name:Wireless Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
+        `{class:JoystickConfig,name:PS5 Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
+        `{class:JoystickConfig,name:PS4 Controller,xAxis:4,yAxis:5,button1:1,button2:2}`,
+        `{class:JoystickConfig,name:Xbox 360 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox 360 Controller (XInput CONTROLLER),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (Xbox One For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (XBOX 360 For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+      ];
+
+      if (profile?.rawId && !configs.some((c) => c.includes(`name:${profile.rawId}`))) {
+        const xAx = isDualSense || isDualShock4 ? 4 : 0;
+        const yAx = isDualSense || isDualShock4 ? 5 : 1;
+        const b1 = isDualSense || isDualShock4 ? 2 : 0;
+        const b2 = 1;
+        configs.unshift(`{class:JoystickConfig,name:${profile.rawId},xAxis:${xAx},yAxis:${yAx},button1:${b1},button2:${b2}}`);
+      }
+
+      const entryXml = `<entry key="joystickConfigs">[${configs.join(",")}]</entry>`;
+
+      if (original.includes('<entry key="joystickConfigs">')) {
+        return original.replace(/<entry key="joystickConfigs">[\s\S]*?<\/entry>/, entryXml);
+      } else if (original.includes("</properties>")) {
+        return original.replace("</properties>", `${entryXml}\n</properties>`);
+      } else {
+        return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">\n<properties>\n${entryXml}\n</properties>\n`;
+      }
+    },
+  },
 };
 
 /**
@@ -625,10 +680,6 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
-  ysoccer: {
-    kind: "native",
-    note: "libGDX controller discovery supplies the connected pad; the PlayBound online build keeps its one-button layout.",
-  },
   supertux: { kind: "native", note: "SDL2 binds a pad on detection; defaults cover the whole game." },
   supertuxkart: { kind: "native", note: "Detects pads on first run and writes its own mapping." },
   veloren: { kind: "native", note: "Analog movement, camera and combat are bound by default." },
