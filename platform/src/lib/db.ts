@@ -39,11 +39,11 @@ async function connectOnce() {
      */
     const opts = {
       bufferCommands: false,
-      maxPoolSize: 5,
+      maxPoolSize: 1,
       minPoolSize: 0,
       // Return a connection to the pool quickly; idle lambdas should not sit on
       // sockets the rest of the fleet could be using.
-      maxIdleTimeMS: 15_000,
+      maxIdleTimeMS: 10_000,
       // Fail fast rather than piling up waiters behind an unhealthy cluster.
       serverSelectionTimeoutMS: 10_000,
       waitQueueTimeoutMS: 10_000,
