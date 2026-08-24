@@ -524,12 +524,23 @@ export async function gamesFor(
 
   if (opts?.includeUnpublished) {
     const unique = [...new Set(slugs)];
-    const resolved = await Promise.all(
-      unique.map((s) => getGame(s, { includeUnpublished: true }))
-    );
-    const map = new Map(
-      resolved.filter((g): g is Game => Boolean(g)).map((g) => [g.slug, g])
-    );
+    const map = new Map<string, Game>();
+    try {
+      await dbConnect();
+      const docs = await CatalogGame.find({ slug: { $in: unique } }).lean();
+      for (const d of docs) {
+        const game = toGame(d as LeanGame);
+        map.set(game.slug, game);
+      }
+    } catch (err) {
+      console.error("[catalog] gamesFor batch find failed:", err);
+    }
+    for (const slug of unique) {
+      if (!map.has(slug)) {
+        const seed = seedGames.find((g) => g.slug === slug);
+        if (seed) map.set(slug, seedGameWithInstall(seed));
+      }
+    }
     return slugs.map((s) => map.get(s)).filter((g): g is Game => Boolean(g));
   }
 

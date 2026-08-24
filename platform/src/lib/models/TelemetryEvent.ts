@@ -22,7 +22,7 @@ const TelemetryEventSchema = new Schema(
     event: { type: String, required: true, index: true },
     properties: { type: Schema.Types.Mixed, default: {} },
     userId: { type: String, default: null, index: true },
-    anonymousId: { type: String, default: null },
+    anonymousId: { type: String, default: null, index: true },
     sessionId: { type: String, default: null, index: true },
     url: { type: String, default: null },
     referrer: { type: String, default: null },
@@ -37,6 +37,7 @@ const TelemetryEventSchema = new Schema(
 
 TelemetryEventSchema.index({ createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, createdAt: -1 });
+TelemetryEventSchema.index({ event: 1, sessionId: 1, createdAt: -1 });
 TelemetryEventSchema.index({ userId: 1, createdAt: -1 });
 
 /*

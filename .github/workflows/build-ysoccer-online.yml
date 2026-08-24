@@ -32,10 +32,10 @@ jobs:
       - name: Package client
         run: |
           mkdir -p out/client
-          cp upstream/java/lwjgl3/build/libs/*-win.jar out/client/ysoccer-online.jar
+          cp upstream/java/lwjgl3/build/libs/*-win.jar out/client/ysoccer-online.jar 2>/dev/null || cp upstream/java/lwjgl3/build/libs/*.jar out/client/ysoccer-online.jar
           cp -R upstream/java/assets out/client/assets
-          cd out/client && zip -qr ../ysoccer-online-windows.zip .
           cp upstream/java/server/build/libs/*.jar out/ysoccer-server.jar
+          (cd out/client && zip -qr ../ysoccer-online-windows.zip .)
       - name: Publish rolling release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -122,13 +122,13 @@ export function buildGameHealth(rows: Row[]): Map<string, GameHealth> {
   return out;
 }
 
+import { unstable_cache } from "next/cache";
+
 /**
  * One aggregation for the whole table. Classifying inside the pipeline keeps
  * this to a single pass over the window instead of four queries per game.
  */
-export async function getGameHealth(
-  days = HEALTH_WINDOW_DAYS
-): Promise<Map<string, GameHealth>> {
+async function computeGameHealth(days: number): Promise<[string, GameHealth][]> {
   try {
     await dbConnect();
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -228,10 +228,25 @@ export async function getGameHealth(
       },
     ]);
 
-    return buildGameHealth(rows);
+    const map = buildGameHealth(rows);
+    return Array.from(map.entries());
   } catch (err) {
     // The table must still render if telemetry is unavailable.
     console.error("getGameHealth failed:", err);
-    return new Map();
+    return [];
   }
+}
+
+export async function getGameHealth(
+  days = HEALTH_WINDOW_DAYS
+): Promise<Map<string, GameHealth>> {
+  const entries = await unstable_cache(
+    () => computeGameHealth(days),
+    ["admin-game-health-v1", String(days)],
+    {
+      revalidate: 60,
+      tags: ["game-health"],
+    }
+  )();
+  return new Map(entries);
 }
