@@ -6133,6 +6133,8 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       persistEditionExe(slug, edSlug, launchPath, runnable);
       launchPath = runnable;
     }
+  }
+
   const isRom = /\.(gb|gbc|gba|nes|sfc|smc|z64|n64|gen)$/i.test(launchPath);
   if (isRom) {
     const ext = path.extname(launchPath);

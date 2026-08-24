@@ -97,12 +97,17 @@ function main() {
   //    which npm does not run for dist:dev / dist:prod.
   run("Syncing game catalog", path.join(__dirname, "sync-catalog.js"), [], env);
 
-  // 5. Build. electron-builder.config.js reads the same env vars and decides
+  // 5. Refuse to package JavaScript that Electron cannot parse. A malformed
+  //    main.js otherwise produces a valid-looking installer that replaces the
+  //    working app and then fails before the first window can open.
+  run("Checking launcher syntax", path.join(__dirname, "check-launcher-syntax.js"), [], env);
+
+  // 6. Build. electron-builder.config.js reads the same env vars and decides
   //    whether to sign; forceCodeSigning makes a failed signing attempt fatal.
   const cliPath = require.resolve("electron-builder/cli.js", { paths: [launcherDir] });
   run("Building Windows artifacts", cliPath, ["--win"], env);
 
-  // 6. Prove it. A production build that somehow emitted unsigned binaries
+  // 7. Prove it. A production build that somehow emitted unsigned binaries
   //    must not be publishable.
   if (mode === "prod") {
     run(
