@@ -622,9 +622,9 @@ const GAMES = {
     needsConfig(text, profile) {
       const s = String(text || "");
       if (!s.includes("<properties>") || !s.includes("joystickConfigs")) return true;
-      if (!profile) return !s.includes("Xbox 360 Controller") || !s.includes("DualSense");
+      if (!profile) return !s.includes("GC101") || !s.includes("DualSense") || !s.includes("Xbox");
       if (profile.family === "dualsense" && !/DualSense/i.test(s)) return true;
-      if (profile.family === "xbox" && !/Xbox/i.test(s)) return true;
+      if (profile.family === "xbox" && !/Xbox|GC101/i.test(s)) return true;
       if (profile.family === "dualshock4" && !/DualShock|PS4/i.test(s)) return true;
       if (profile.rawId && !s.includes(profile.rawId)) return true;
       return false;
@@ -635,21 +635,27 @@ const GAMES = {
       const isDualShock4 = profile?.family === "dualshock4" || /dualshock|ps4/i.test(profile?.rawId || "");
 
       const configs = [
+        `{class:JoystickConfig,name:Controller (GC101 1.03),xAxis:1,yAxis:0,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (XBOX 360 For Windows),xAxis:1,yAxis:0,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (XBOX 360 For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (Xbox 360 Wireless Receiver for Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Controller (Xbox One For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox 360 Controller,xAxis:1,yAxis:0,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox 360 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox 360 Controller (XInput CONTROLLER),xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox One Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
         `{class:JoystickConfig,name:Wireless Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
         `{class:JoystickConfig,name:PS5 Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
         `{class:JoystickConfig,name:PS4 Controller,xAxis:4,yAxis:5,button1:1,button2:2}`,
-        `{class:JoystickConfig,name:Xbox 360 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:Xbox 360 Controller (XInput CONTROLLER),xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:Controller (Xbox One For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:Controller (XBOX 360 For Windows),xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
       ];
 
       if (profile?.rawId && !configs.some((c) => c.includes(`name:${profile.rawId}`))) {
-        const xAx = isDualSense || isDualShock4 ? 4 : 0;
-        const yAx = isDualSense || isDualShock4 ? 5 : 1;
+        const xAx = isDualSense || isDualShock4 ? 4 : 1;
+        const yAx = isDualSense || isDualShock4 ? 5 : 0;
         const b1 = isDualSense || isDualShock4 ? 2 : 0;
         const b2 = 1;
         configs.unshift(`{class:JoystickConfig,name:${profile.rawId},xAxis:${xAx},yAxis:${yAx},button1:${b1},button2:${b2}}`);
