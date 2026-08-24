@@ -484,9 +484,19 @@ export async function deleteArtifactCompletely(artifactId: string, actor: string
   const artifact = await Artifact.findOne({ artifactId });
   if (!artifact) return { success: false, message: "Artifact not found" };
 
-  if (artifact.vpsStatus === "verified" || artifact.vpsStatus === "uploading") {
-    const vps = await deleteArchivedArtifactOnHost(artifact.relativePath);
-    if (!vps.success) return { success: false, message: vps.message || "Could not remove VPS archive copy." };
+  /*
+   * Always tell the host to forget this path, not only when our own record
+   * says "verified" or "uploading". A failed archive attempt leaves the
+   * host's in-memory job (and any partial file) behind while our own status
+   * reads back as "missing" — skipping the host call in that case orphans a
+   * failed job that then blocks every future retry for this artifact, since
+   * the host replays a stale failure instead of trying again. The host call
+   * is idempotent (deleting a job/file that was never there is a no-op), so
+   * there's no cost to making it unconditional.
+   */
+  const vps = await deleteArchivedArtifactOnHost(artifact.relativePath);
+  if (!vps.success && vps.message !== "Game host is not configured") {
+    return { success: false, message: vps.message || "Could not remove VPS archive copy." };
   }
   const r2 = await deleteObjectFromR2(artifact.relativePath);
   if (!r2.success) return { success: false, message: "Could not remove R2 cache copy." };
