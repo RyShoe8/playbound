@@ -65,6 +65,7 @@ export function addPeriodCounts(a: PeriodCounts, b: PeriodCounts): PeriodCounts 
 
 type Countable = {
   countDocuments: (filter: Record<string, unknown>) => Promise<number> | number;
+  aggregate?: unknown;
 };
 
 /**
@@ -82,6 +83,81 @@ export async function periodDocumentCounts(
 ): Promise<PeriodCounts> {
   await dbConnect();
   const w = getPeriodWindows();
+
+  const maybeAggregate = (model as { aggregate?: (pipeline: unknown[]) => Promise<unknown[]> }).aggregate;
+  if (typeof maybeAggregate === "function") {
+    try {
+      const rows = (await maybeAggregate.call(model, [
+        { $match: { ...baseFilter, createdAt: { $gte: w.d60 } } },
+        {
+          $group: {
+            _id: null,
+            day: { $sum: { $cond: [{ $gte: ["$createdAt", w.today] }, 1, 0] } },
+            week: { $sum: { $cond: [{ $gte: ["$createdAt", w.d7] }, 1, 0] } },
+            month: { $sum: { $cond: [{ $gte: ["$createdAt", w.d30] }, 1, 0] } },
+            dayPrev: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $gte: ["$createdAt", w.yesterday] },
+                      { $lt: ["$createdAt", w.today] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            weekPrev: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $gte: ["$createdAt", w.d14] },
+                      { $lt: ["$createdAt", w.d7] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            monthPrev: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $gte: ["$createdAt", w.d60] },
+                      { $lt: ["$createdAt", w.d30] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ])) as Array<Record<string, number>>;
+
+      const res = rows[0];
+      if (res) {
+        return {
+          day: res.day || 0,
+          week: res.week || 0,
+          month: res.month || 0,
+          dayPrev: res.dayPrev || 0,
+          weekPrev: res.weekPrev || 0,
+          monthPrev: res.monthPrev || 0,
+        };
+      }
+      return emptyPeriodCounts();
+    } catch {
+      // Fall back to countDocuments if aggregate is unsupported or fails
+    }
+  }
+
   const count = async (createdAt: Record<string, Date>) =>
     Number(await model.countDocuments({ ...baseFilter, createdAt }));
 
