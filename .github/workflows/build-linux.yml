@@ -18,29 +18,57 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Skip if this version is already published
+        id: check
+        # Electron builds are not byte-reproducible, so re-running this
+        # workflow against an unchanged package.json version — which every
+        # launcher-path push does, whether or not it touched anything
+        # Linux-relevant — used to republish a *different* AppImage under the
+        # same version string and the same latest-linux.yml URL every time.
+        # Any user whose electron-updater had already fetched the manifest
+        # from an earlier run, or was mid-download when a later run
+        # overwrote it, got a checksum that no longer matched what was live.
+        # Only a real version bump should ever touch the update feed.
+        run: |
+          LOCAL_VERSION=$(node -p "require('./launcher/package.json').version")
+          LIVE_VERSION=$(curl -fsSL "https://mt8u2b96lweefbpb.public.blob.vercel-storage.com/launcher/latest-linux.yml" | grep '^version:' | awk '{print $2}' || echo "")
+          echo "local=$LOCAL_VERSION live=$LIVE_VERSION"
+          if [ "$LOCAL_VERSION" = "$LIVE_VERSION" ]; then
+            echo "Version $LOCAL_VERSION is already published — skipping rebuild."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js
+        if: steps.check.outputs.should_build == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Install Linux packaging dependencies
+        if: steps.check.outputs.should_build == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y fakeroot dpkg libopenjp2-tools libfuse2
 
       - name: Install Platform Dependencies
+        if: steps.check.outputs.should_build == 'true'
         run: npm install
         working-directory: platform
 
       - name: Install Launcher Dependencies
+        if: steps.check.outputs.should_build == 'true'
         run: npm install
         working-directory: launcher
 
       - name: Build Linux Launcher (AppImage)
+        if: steps.check.outputs.should_build == 'true'
         run: npm run dist:linux
         working-directory: launcher
 
       - name: Upload to Vercel Blob
+        if: steps.check.outputs.should_build == 'true'
         run: npm run upload:launcher -- --linux --promote-prod
         working-directory: platform
         env:
