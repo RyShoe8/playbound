@@ -4161,7 +4161,14 @@ async function applyControllerConfig(slug, installDir) {
   const configPath = gameControllerConfig.configPathFor(slug, installDir);
   if (!configPath) return false;
 
-  const profile = controllerProfiles.pickPrimary(lastKnownGamepads);
+  let profile = controllerProfiles.pickPrimary(lastKnownGamepads);
+  const couchActive = Boolean(couchHost?.getState?.()?.active);
+  if (!profile && couchActive) {
+    profile = { family: "xbox", label: "Phone Controller", rawId: "Controller (GC101 1.03)" };
+  }
+  if (!profile && slug === "ysoccer") {
+    profile = { family: "xbox", label: "Controller", rawId: "Controller (GC101 1.03)" };
+  }
   if (!profile) return false;
 
   let current = "";
@@ -4180,14 +4187,21 @@ async function applyControllerConfig(slug, installDir) {
   const next = gameControllerConfig.applyProfile(slug, current, profile);
   if (next == null) return false;
 
-  if (!(await shouldConfigureController(slug, profile))) {
+  if (!couchActive && slug !== "ysoccer" && !(await shouldConfigureController(slug, profile))) {
     console.log(`[controller] declined for ${slug}`);
     return false;
   }
 
-  await fsp.writeFile(configPath, next, "utf8");
-  console.log(`[controller] configured ${profile.label} for ${slug}`);
-  return true;
+  try {
+    const dir = path.dirname(configPath);
+    await fsp.mkdir(dir, { recursive: true });
+    await fsp.writeFile(configPath, next, "utf8");
+    console.log(`[controller] configured ${profile.label} for ${slug}`);
+    return true;
+  } catch (err) {
+    console.error(`[controller] failed to write config for ${slug}:`, err);
+    return false;
+  }
 }
 
 function markInstalled(
