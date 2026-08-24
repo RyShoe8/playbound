@@ -67,6 +67,9 @@ contextBridge.exposeInMainWorld("playbound", {
   clipboardWrite: (text) => ipcRenderer.invoke("clipboard-write", text),
   /** Report connected gamepads so games can be auto-configured at launch. */
   reportGamepads: (pads) => ipcRenderer.invoke("report-gamepads", pads),
+  startGamepadBridge: (profile) => ipcRenderer.invoke("gamepad-bridge-start", profile || {}),
+  stopGamepadBridge: () => ipcRenderer.invoke("gamepad-bridge-stop"),
+  gamepadBridgeSendFrame: (frame) => ipcRenderer.send("gamepad-bridge-frame", frame),
   getAccount: () => ipcRenderer.invoke("get-account"),
   setLauncherToken: (token) => ipcRenderer.invoke("set-launcher-token", token),
   clearLauncherToken: () => ipcRenderer.invoke("clear-launcher-token"),

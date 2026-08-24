@@ -56,6 +56,7 @@ const {
   staticLaunchArgs,
 } = require("./services/connectArgs");
 const { createHostService } = require("./services/couch/hostService");
+const gamepadBridge = require("./services/gamepadBridge");
 
 function loadHardwareModule() {
   try {
@@ -8517,6 +8518,9 @@ ipcMain.handle("couch-controller-action", async (_event, action, controllerId, p
   }
 });
 ipcMain.handle("couch-probe-driver", async () => couchHost.probeDriver());
+ipcMain.handle("gamepad-bridge-start", async (_event, profile) => gamepadBridge.startBridge(profile));
+ipcMain.handle("gamepad-bridge-stop", async () => gamepadBridge.stopBridge());
+ipcMain.on("gamepad-bridge-frame", (_event, frame) => gamepadBridge.applyInputFrame(frame));
 ipcMain.handle("get-controller-support", (_event, slug) => {
   try {
     const { controllerSupportFor } = require("./services/gameControllerConfig");
