@@ -11,6 +11,7 @@
  */
 
 import http from "node:http";
+import https from "node:https";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -200,6 +201,41 @@ async function sha256File(file) {
   return hash.digest("hex");
 }
 
+/**
+ * Streams a GET over node:https, following redirects manually.
+ *
+ * fetch()'s res.body is a WHATWG ReadableStream, and Readable.fromWeb() —
+ * the standard way to pipe it into a Node write stream — has a serious
+ * performance bug on Node 20: converting a large fetch body this way pegs a
+ * CPU core in pure userspace (confirmed with strace -c: ~0 syscall time
+ * while the process sits at 100%+ CPU) and collapses effective throughput to
+ * tens of KB/s regardless of real link speed. A 2GB archive that curl pulled
+ * at 20+ MB/s took over an hour and still timed out through fetch(). Talking
+ * to https directly hands back a real Node Readable with no adapter in the
+ * way, so backpressure and the write stream work the way they're supposed to.
+ */
+function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
+  return new Promise((resolve, reject) => {
+    const attempt = (u, redirectsLeft) => {
+      const req = https.get(u, { headers, signal }, (res) => {
+        const status = res.statusCode || 0;
+        if (status >= 300 && status < 400 && res.headers.location) {
+          res.resume();
+          if (redirectsLeft <= 0) {
+            reject(new Error("Too many redirects"));
+            return;
+          }
+          attempt(new URL(res.headers.location, u), redirectsLeft - 1);
+          return;
+        }
+        resolve({ statusCode: status, headers: res.headers, stream: res });
+      });
+      req.on("error", reject);
+    };
+    attempt(targetUrl, maxRedirects);
+  });
+}
+
 async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSignal = undefined) {
   const target = archivePath(relativePath);
   if (!target) return { error: "Invalid archive path" };
@@ -247,23 +283,23 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
           /* First attempt, or a prior attempt did not create a partial file. */
         }
         const headers = received > 0 ? { Range: `bytes=${received}-` } : undefined;
-        const res = await fetch(source, { signal, headers });
-        if (!res.ok || !res.body) throw new Error(`Archive download failed (${res.status})`);
-        const resuming = received > 0 && res.status === 206;
+        const { statusCode, headers: resHeaders, stream } = await httpsGetStream(source, { signal, headers });
+        if (statusCode < 200 || statusCode >= 300) {
+          stream.resume();
+          throw new Error(`Archive download failed (${statusCode})`);
+        }
+        const resuming = received > 0 && statusCode === 206;
         // A source that ignores Range starts at zero. Replace the old partial
         // rather than appending a duplicate copy of the archive.
         if (received > 0 && !resuming) {
           await rm(temp, { force: true });
           received = 0;
         }
-        const contentLength = Number(res.headers.get("content-length") || 0);
+        const contentLength = Number(resHeaders["content-length"] || 0);
         if (contentLength && received + contentLength > MIRROR_ARCHIVE_MAX_BYTES) {
           throw new Error("Archive exceeds the host limit");
         }
-        await pipeline(
-          Readable.fromWeb(res.body),
-          createWriteStream(temp, { flags: received > 0 ? "a" : "w" })
-        );
+        await pipeline(stream, createWriteStream(temp, { flags: received > 0 ? "a" : "w" }));
         const file = await stat(temp);
         if (file.size !== Number(sizeBytes)) {
           throw new Error(`Archive size mismatch (expected ${sizeBytes}, got ${file.size})`);
