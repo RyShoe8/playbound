@@ -5938,7 +5938,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       ? [...entry.launchArgs]
       : [];
   if (join?.selfHost) {
-    const hostArgs = selfHostLaunchArgs(slug, join.host, join.port);
+    const hostArgs = selfHostLaunchArgs(slug, join.host, join.port, join.players);
     if (!hostArgs) {
       throw new Error("This game cannot start a self-hosted party server.");
     }

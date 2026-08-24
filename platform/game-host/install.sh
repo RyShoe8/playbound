@@ -149,6 +149,62 @@ if [[ ! -f "$MIN_DIR/server-release.jar" ]]; then
   curl -fL --retry 3 -o "$MIN_DIR/server-release.jar" "$MIN_URL"
 fi
 
+echo "==> BombSquad dedicated"
+BOMBSQUAD_DIR="$GAMES_DIR/bombsquad"
+mkdir -p "$BOMBSQUAD_DIR"
+if [[ ! -f "$BOMBSQUAD_DIR/bombsquad_server" ]]; then
+  # Ballistica publishes small official headless builds independently of any
+  # store launcher. Resolve the current x86-64 archive from its download page
+  # so re-running install.sh also brings a newly provisioned VPS up to date.
+  BOMBSQUAD_URL="$(curl -fsSL https://ballistica.net/downloads \
+    | grep -oE 'https://files\.ballistica\.net/bombsquad/builds/BombSquad_Server_Linux_x86_64_[^"<]+\.tar\.gz' \
+    | head -n1 || true)"
+  if [[ -z "$BOMBSQUAD_URL" ]]; then
+    echo "WARN: could not resolve the current BombSquad server build" >&2
+  else
+    BOMBSQUAD_TMP="$(mktemp -d)"
+    if curl -fL --retry 3 "$BOMBSQUAD_URL" | tar -xz --strip-components=1 -C "$BOMBSQUAD_TMP"; then
+      cp -a "$BOMBSQUAD_TMP/." "$BOMBSQUAD_DIR/"
+      # Current alpha builds name their preferred interpreter exactly (for
+      # example python3.14). Ubuntu 24.04's Python 3 is new enough for the
+      # manager and the build already includes its third-party packages.
+      sed -i '1s|^#!.*$|#!/usr/bin/env -S python3 -OB|' "$BOMBSQUAD_DIR/bombsquad_server"
+      chmod +x "$BOMBSQUAD_DIR/bombsquad_server"
+    else
+      echo "WARN: BombSquad server download or extraction failed" >&2
+    fi
+    rm -rf -- "$BOMBSQUAD_TMP"
+  fi
+fi
+if [[ -f "$BOMBSQUAD_DIR/bombsquad_server" ]]; then
+  cat > "$BOMBSQUAD_DIR/run-server" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+BASE="$(cd "$(dirname "$0")" && pwd)"
+PORT="${1:?port required}"
+PARTY_NAME="${2:-PlayBound Party}"
+MAX_PLAYERS="${3:-8}"
+ROOM="$(printf '%s' "${4:-room}" | tr -cd 'A-Za-z0-9_-')"
+[[ "$PORT" =~ ^[0-9]+$ ]] || { echo "invalid BombSquad port" >&2; exit 2; }
+[[ "$MAX_PLAYERS" =~ ^[0-9]+$ ]] || MAX_PLAYERS=8
+(( MAX_PLAYERS < 1 )) && MAX_PLAYERS=1
+(( MAX_PLAYERS > 8 )) && MAX_PLAYERS=8
+STATE_DIR="$BASE/state/${ROOM:-room}"
+mkdir -p "$STATE_DIR/root"
+CONFIG="$STATE_DIR/config.json"
+jq -n \
+  --arg party_name "$PARTY_NAME" \
+  --argjson port "$PORT" \
+  --argjson max_players "$MAX_PLAYERS" \
+  '{party_name:$party_name,party_is_public:false,port:$port,max_party_size:($max_players+1),session_max_players_override:$max_players,session_type:"teams",show_tutorial:false}' \
+  > "$CONFIG"
+cd "$BASE"
+exec /usr/bin/env python3 -OB ./bombsquad_server \
+  --config "$CONFIG" --root "$STATE_DIR/root" --noninteractive --no-auto-restart
+EOF
+  chmod +x "$BOMBSQUAD_DIR/run-server"
+fi
+
 echo "==> YSoccer dedicated"
 YSOCCER_DIR="$GAMES_DIR/ysoccer"
 mkdir -p "$YSOCCER_DIR"

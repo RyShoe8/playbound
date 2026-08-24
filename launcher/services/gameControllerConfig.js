@@ -477,6 +477,27 @@ const GAMES = {
  * from a profile but keeps its settings somewhere we cannot safely edit.
  */
 const NO_CONFIG_NEEDED = {
+  gradius: {
+    kind: "native",
+    note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
+  },
+  "apex-legends": { kind: "native", note: "Ships Xbox and PlayStation controller layouts." },
+  "among-us": { kind: "native", note: "Native controller navigation and gameplay bindings." },
+  "goose-goose-duck": { kind: "native", note: "Steam build ships full Xbox controller support." },
+  trackmania: { kind: "native", note: "Native analog steering, acceleration and menu navigation." },
+  "fishing-planet": { kind: "native", note: "Native Xbox and PlayStation controller support." },
+  "sky-children-of-the-light": {
+    kind: "native",
+    note: "Steam build ships full Xbox and PlayStation controller support.",
+  },
+  bombsquad: {
+    kind: "native",
+    note: "Designed for multiple local game controllers; BombSquad Remote is also supported by the game.",
+  },
+  wolfenstein: {
+    kind: "native",
+    note: "ECWolf exposes modern control binding through SDL and keeps the player's own mapping.",
+  },
   ysoccer: {
     kind: "native",
     note: "libGDX controller discovery supplies the connected pad; the PlayBound online build keeps its one-button layout.",

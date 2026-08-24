@@ -63,6 +63,8 @@ const CLIENT_CONNECT_ARGS = {
   // In-game Room Code / Lobby Joins — no CLI join; show host:port to paste.
   holocure: null,
   hedgewars: null,
+  bombsquad: null,
+  wolfenstein: ["--join", "{host}:{port}"],
 };
 
 /** Templates for a slug, or null when the client cannot join from the CLI. */

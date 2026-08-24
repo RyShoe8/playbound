@@ -12,6 +12,8 @@ import { telemetry } from "@/lib/telemetry";
 import { isHostableGame } from "@/lib/gameHost/catalog";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { defaultPartySize, gamePlayerCount } from "@/lib/playTogether/playerCounts";
+import { prefersPlayBoundConnect } from "@/lib/multiplayer/adapters";
 
 const VISIBILITY_OPTIONS: { value: Exclude<PartyVisibility, "event">; hint: string }[] = [
   { value: "public", hint: "Anyone signed in can join. Listed on Events." },
@@ -32,6 +34,8 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
   const [password, setPassword] = useState("");
   const [wantVoice, setWantVoice] = useState(true);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const playerCount = gamePlayerCount(gameSlug);
+  const connectFirst = Boolean(gameSlug && prefersPlayBoundConnect(gameSlug));
 
   async function handleCreate() {
     if (visibility === "password" && password.trim().length < 4) {
@@ -48,7 +52,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         name: name.trim() || null,
         gameSlug: gameSlug || null,
         visibility,
-        maxSize: 8,
+        maxSize: defaultPartySize(gameSlug),
         password: visibility === "password" ? password.trim() : null,
         wantVoice,
       });
@@ -79,10 +83,19 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
       <div>
         <h4 className="font-bold">Create a Party</h4>
         <p className="text-sm text-muted-foreground">
-          {gameSlug && isHostableGame(gameSlug)
+          {connectFirst
+            ? "PlayBound Connect puts everyone on one private network so the leader can host without port forwarding."
+            : gameSlug && isHostableGame(gameSlug)
             ? "PlayBound will start a public server for this game so friends can join without port forwarding."
             : "Host a lobby, invite friends, then pick a game in the party window."}
         </p>
+        {playerCount ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {playerCount.max == null
+              ? `Persistent world · PlayBound party up to ${playerCount.partyMax}`
+              : `${playerCount.min}–${playerCount.max} players · PlayBound party up to ${playerCount.partyMax}`}
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">

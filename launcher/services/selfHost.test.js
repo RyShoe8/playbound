@@ -20,10 +20,27 @@ test("GoldenEye listen server binds to the overlay address", () => {
 });
 
 test("every PlayBound-hostable game has a local-host plan", () => {
-  assert.equal(Object.keys(SELF_HOST_PORTS).length, 21);
+  assert.equal(Object.keys(SELF_HOST_PORTS).length, 23);
   assert.deepEqual(selfHostLaunchArgs("openarena", "100.80.12.4"), []);
   assert.equal(selfHostIsAutomatic("openarena"), false);
   assert.equal(selfHostIsAutomatic("goldeneye-source"), true);
+  assert.equal(selfHostIsAutomatic("wolfenstein"), true);
+  assert.equal(selfHostIsAutomatic("bombsquad"), false);
+});
+
+test("ECWolf hosts the number of party members on its overlay port", () => {
+  assert.deepEqual(selfHostLaunchArgs("wolfenstein", "100.80.12.4", 5029, 4), [
+    "--host",
+    "4",
+    "--port",
+    "5029",
+  ]);
+  assert.deepEqual(selfHostLaunchArgs("wolfenstein", "100.80.12.4", 5029, 99), [
+    "--host",
+    "11",
+    "--port",
+    "5029",
+  ]);
 });
 
 test("self-host recipes reject unknown games and unsafe addresses", () => {

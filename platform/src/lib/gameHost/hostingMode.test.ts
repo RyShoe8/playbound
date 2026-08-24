@@ -2,11 +2,19 @@ import { describe, expect, it } from "vitest";
 import { hostedPayloadFromDoc } from "./provision";
 import { lanPayloadFromDoc } from "@/lib/virtualLan/provision";
 import { HOSTABLE_SLUGS } from "./catalog";
-import { isSelfHostable } from "@/lib/multiplayer/adapters";
+import { isSelfHostable, prefersPlayBoundConnect } from "@/lib/multiplayer/adapters";
 
 describe("party hosting mode payloads", () => {
   it("offers self-hosting for every PlayBound-hostable multiplayer game", () => {
     expect(HOSTABLE_SLUGS.filter((slug) => !isSelfHostable(slug))).toEqual([]);
+  });
+  it("prefers Connect only for verified networked-local modes", () => {
+    expect(prefersPlayBoundConnect("bombsquad")).toBe(true);
+    expect(prefersPlayBoundConnect("wolfenstein")).toBe(true);
+    expect(prefersPlayBoundConnect("holocure")).toBe(true);
+    expect(prefersPlayBoundConnect("the-spike-cross")).toBe(false);
+    expect(prefersPlayBoundConnect("panzer-marshal")).toBe(false);
+    expect(prefersPlayBoundConnect("among-us")).toBe(false);
   });
   it("exposes only the VPS route in managed mode", () => {
     const hosted = hostedPayloadFromDoc(

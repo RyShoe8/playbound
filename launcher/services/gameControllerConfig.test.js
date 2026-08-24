@@ -109,6 +109,23 @@ test("declines for a game with no entry", () => {
   assert.strictEqual(supportsControllerConfig("some-other-game"), false);
 });
 
+test("records native controller support without overwriting game-owned bindings", () => {
+  for (const slug of [
+    "gradius",
+    "apex-legends",
+    "among-us",
+    "goose-goose-duck",
+    "trackmania",
+    "fishing-planet",
+    "sky-children-of-the-light",
+    "bombsquad",
+    "wolfenstein",
+  ]) {
+    assert.strictEqual(controllerSupportFor(slug).kind, "native", slug);
+    assert.strictEqual(supportsControllerConfig(slug), false, `${slug} should keep its native bindings`);
+  }
+});
+
 test("will not guess a path without an install directory", () => {
   assert.strictEqual(configPathFor("opentyrian", null), null);
   assert.ok(String(configPathFor("opentyrian", "C:/games/x")).endsWith("opentyrian.cfg"));

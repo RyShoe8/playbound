@@ -1239,10 +1239,10 @@ function buildPartyViewHtml(party) {
   const hostingHtml =
     isLeader && !ended && party.selfHostable
       ? `<label class="party-hosting-choice">
-           <span class="party-member-sub">Who hosts the server</span>
-           <select class="input-text" id="party-hosting-select" aria-label="Who hosts the server">
-             <option value="managed"${party.hostingMode !== "self" ? " selected" : ""}>PlayBound (no setup needed)</option>
-             <option value="self"${party.hostingMode === "self" ? " selected" : ""}>I'll host it myself</option>
+           <span class="party-member-sub">Connection</span>
+           <select class="input-text" id="party-hosting-select" aria-label="Connection">
+             <option value="managed"${party.hostingMode !== "self" ? " selected" : ""}>Online / PlayBound hosted</option>
+             <option value="self"${party.hostingMode === "self" ? " selected" : ""}>PlayBound Connect — host locally</option>
            </select>
            ${
              party.hostingMode === "self"
@@ -2126,7 +2126,12 @@ async function launchPartyGame(party) {
           await window.playbound.play(
             slug,
             hasKnownPort
-              ? { selfHost: true, host: network.adapterAddress, port }
+              ? {
+                  selfHost: true,
+                  host: network.adapterAddress,
+                  port,
+                  players: Math.max(2, Number(party.members?.length) || 2),
+                }
               : null,
             party.editionSlug || null
           );

@@ -30,13 +30,15 @@ const SELF_HOST_PORTS = Object.freeze({
   "battle-for-wesnoth": 15000,
   freedoom: 10666,
   "0-ad": 20595,
+  bombsquad: 43210,
+  wolfenstein: 5029,
 });
 
 function selfHostPort(slug) {
   return SELF_HOST_PORTS[String(slug || "")] || null;
 }
 
-function selfHostLaunchArgs(slug, host, port = selfHostPort(slug)) {
+function selfHostLaunchArgs(slug, host, port = selfHostPort(slug), players = 2) {
   if (!selfHostPort(slug)) return null;
   if (net.isIP(String(host || "")) !== 4) return null;
   const numericPort = Number(port);
@@ -45,6 +47,10 @@ function selfHostLaunchArgs(slug, host, port = selfHostPort(slug)) {
   // Most games expose hosting through their own multiplayer menu. An empty
   // recipe means "launch normally and guide the leader there"; it is still a
   // supported self-host path, not an unknown game.
+  if (slug === "wolfenstein") {
+    const playerCount = Math.min(Math.max(Number(players) || 2, 2), 11);
+    return ["--host", String(playerCount), "--port", String(numericPort)];
+  }
   if (slug !== "goldeneye-source") return [];
 
   // -port is the listen-server port. -ip binds Source to the NetBird adapter so
@@ -66,7 +72,7 @@ function selfHostLaunchArgs(slug, host, port = selfHostPort(slug)) {
 }
 
 function selfHostIsAutomatic(slug) {
-  return slug === "goldeneye-source";
+  return slug === "goldeneye-source" || slug === "wolfenstein";
 }
 
 module.exports = { SELF_HOST_PORTS, selfHostIsAutomatic, selfHostLaunchArgs, selfHostPort };

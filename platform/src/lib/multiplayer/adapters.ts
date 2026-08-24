@@ -64,6 +64,8 @@ export interface GameMultiplayerAdapter {
   host?: HostLaunchConfig;
   client?: ClientLaunchConfig;
   virtualLan?: VirtualLanConfig;
+  /** Prefer the leader's private PlayBound Connect network over a VPS room. */
+  preferPlayBoundConnect?: boolean;
   notes?: string;
 }
 
@@ -482,6 +484,41 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "PlayBound dedicated room or a leader-hosted room over the private overlay.",
   },
 
+  bombsquad: {
+    gameSlug: "bombsquad",
+    title: "BombSquad",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: { port: 43210, protocol: "udp", binaryHint: "bombsquad_server" },
+    client: { inGameJoinPrompt: true },
+    preferPlayBoundConnect: true,
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: [
+        "Leader: open Play → Gather and host a private party",
+        "Everyone else: open Gather and connect to the copied private address",
+      ],
+    },
+    notes: "Official Ballistica headless server; clients enter the private host and port in-game.",
+  },
+
+  wolfenstein: {
+    gameSlug: "wolfenstein",
+    title: "Wolfenstein 3D via ECWolf",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    host: { port: 5029, protocol: "udp", binaryHint: "ecwolf" },
+    client: { launchArguments: ["--join", "{host}:{port}"] },
+    preferPlayBoundConnect: true,
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: ["The party leader starts ECWolf after every player has joined the PlayBound party."],
+    },
+    notes: "ECWolf lock-step LAN play over the private overlay; up to 11 nodes and no public dedicated server.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   "space-station-14": {
     gameSlug: "space-station-14",
@@ -650,6 +687,16 @@ export function isSelfHostable(gameSlug: string): boolean {
     (adapter.adapterType === "managed-server" || adapter.adapterType === "direct-ip") &&
     Number.isInteger(adapter.host?.port)
   );
+}
+
+/**
+ * Titles whose useful local-network mode should start on PlayBound Connect by
+ * default. This is deliberately explicit: couch co-op, split screen and
+ * pass-and-play have no network traffic for an overlay to carry.
+ */
+export function prefersPlayBoundConnect(gameSlug: string): boolean {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  return adapter.adapterType === "virtual-lan" || adapter.preferPlayBoundConnect === true;
 }
 
 /** Every game Connect reaches by putting the party on one shared segment. */

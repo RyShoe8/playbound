@@ -174,6 +174,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 20615,
     protocol: "udp",
   },
+  bombsquad: {
+    slug: "bombsquad",
+    title: "BombSquad",
+    defaultPort: 43210,
+    portEnd: 43230,
+    protocol: "udp",
+  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);

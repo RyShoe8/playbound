@@ -256,7 +256,7 @@ export function PartyView({
               {catalogGame && isMultiplayerGame(catalogGame) && (
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Who hosts the server
+                    Connection
                   </span>
                   <PremiumSelect
                     value={party.hostingMode}
@@ -264,8 +264,8 @@ export function PartyView({
                       void setHostingMode(party.id, e.target.value as "managed" | "self")
                     }
                   >
-                    <option value="managed">PlayBound (no setup needed)</option>
-                    <option value="self">I&apos;ll host it myself</option>
+                    <option value="managed">Online / PlayBound hosted</option>
+                    <option value="self">PlayBound Connect — host locally</option>
                   </PremiumSelect>
                   {party.hostingMode === "self" && (
                     <p className="text-xs text-muted-foreground">

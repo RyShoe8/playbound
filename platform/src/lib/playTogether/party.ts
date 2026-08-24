@@ -51,7 +51,7 @@ import {
   provisionPartyLan,
   releasePartyLan,
 } from "@/lib/virtualLan/provision";
-import { isSelfHostable } from "@/lib/multiplayer/adapters";
+import { isSelfHostable, prefersPlayBoundConnect } from "@/lib/multiplayer/adapters";
 import { isMultiplayerGame } from "@/lib/launcherInstall";
 import {
   BASE_EDITION_KEY,
@@ -291,6 +291,7 @@ export async function createParty(opts: {
   }
 
   const now = new Date();
+  const hostingMode = gameSlug && prefersPlayBoundConnect(gameSlug) ? "self" : "managed";
   const doc = await Party.create({
     leaderId: opts.userId,
     members: [
@@ -310,6 +311,7 @@ export async function createParty(opts: {
     passwordSalt,
     passwordHash,
     voiceEnabled: wantVoice,
+    hostingMode,
     maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), 20),
     eventId: opts.eventId || null,
     lastActivity: now,
@@ -752,6 +754,9 @@ export async function setPartyGame(
   if (switchingGame) {
     doc.editionSlug = null;
     doc.modSlugs = [];
+    // Verified LAN/direct-IP games begin on the party-scoped Connect overlay.
+    // Dedicated/official games retain the zero-setup managed default.
+    doc.hostingMode = prefersPlayBoundConnect(slug) ? "self" : "managed";
   }
   doc.lastActivity = new Date();
   await doc.save();

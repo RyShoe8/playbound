@@ -168,6 +168,28 @@ VPS agent ops (install, firewall, env names — not secret values): [`platform/g
 
 Limits (defaults): max concurrent VPS rooms `GAME_HOST_MAX_ROOMS` (8), idle party timeout 4h, party max size 8.
 
+Known games override that last default through
+[`platform/src/lib/playTogether/playerCounts.ts`](../platform/src/lib/playTogether/playerCounts.ts).
+The value is the useful invite-group cap, not blindly the total people in a
+match: Apex defaults to a three-person squad, Among Us to 15, Goose Goose Duck
+to 16, Populous: Reincarnated to four, and MMO parties remain capped at 20.
+
+BombSquad uses Ballistica's official headless Linux build on the VPS (UDP
+43210–43230). Its client has no reliable command-line join, so PlayBound copies
+the private address and the player enters it in BombSquad's LAN/IP screen.
+Wolfenstein 3D via ECWolf does not need a VPS process: self-host mode starts the
+leader with `--host`, binds UDP 5029 on the party overlay, and launches every
+other member with `--join`.
+
+Games with a verified LAN/direct-IP local mode can mark
+`preferPlayBoundConnect` on their multiplayer adapter. New parties for those
+games start in Connect mode automatically; the leader can still switch to a
+PlayBound-hosted server when one exists. Do not apply this to couch co-op,
+split-screen, or pass-and-play games: an IP overlay carries network packets,
+not video or remote controller input. The Spike Cross and Panzer Marshal are
+therefore intentionally excluded until PlayBound has a separate remote-play
+transport.
+
 ## How to add a virtual-LAN game
 
 1. Adapter row in `adapters.ts` with `adapterType: "virtual-lan"`, plus `virtualLan.adapterFile`
