@@ -116,6 +116,7 @@ const EditionSchema = new Schema(
 
     requirements: { type: RequirementsSchema, default: null },
     hardwareRequirements: { type: HardwareRequirementsBlockSchema, default: null },
+    platforms: { type: [String], default: [] },
     features: { type: [String], default: [] },
     tags: { type: [String], default: [], index: true },
     /** Alternate search names — "Turtle", "TWoW". Indexed; never displayed. */
