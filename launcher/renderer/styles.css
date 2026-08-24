@@ -301,6 +301,36 @@ body {
   flex-shrink: 0;
 }
 
+/*
+ * Absolutely positioned rather than a flex sibling of the search box, so it
+ * stays pinned to the top-left corner of the content area — right against
+ * the sidebar — instead of shifting the centered search bar over or moving
+ * around with it.
+ */
+.topbar-back-btn {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.topbar-back-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+}
+
 .global-search-form {
   width: 100%;
   max-width: 540px;

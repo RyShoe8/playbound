@@ -149,6 +149,48 @@ function applyNavChrome(viewName) {
   updateGamesFamilyNav();
 }
 
+/** Stable key identifying "the same page" for back-button history and scroll memory. */
+function routeKeyFor(viewName, params = {}) {
+  if (viewName === "gameDetail") return `gameDetail:${params.slug}`;
+  if (viewName === "modDetail") return `modDetail:${params.slug}`;
+  if (viewName === "gearDetail") return `gearDetail:${params.slug}`;
+  if (viewName === "editionDetail") return `editionDetail:${params.gameSlug}:${params.editionSlug}`;
+  if (viewName === "eventDetail") return `eventDetail:${params.eventId}`;
+  if (viewName === "editions") return `editions:${params.gameSlug || editionsContextSlug() || ""}`;
+  return viewName;
+}
+
+function updateBackButtonVisibility() {
+  const btn = document.getElementById("topbar-back-btn");
+  if (btn) btn.classList.toggle("hidden", state.navStack.length === 0);
+}
+
+/** Record where we're leaving from — including scroll position — before switching views. */
+function pushNavHistory() {
+  const content = document.getElementById("content");
+  state.navStack.push({
+    key: routeKeyFor(state.currentView, state.currentViewParams),
+    view: state.currentView,
+    params: state.currentViewParams,
+    scrollTop: content ? content.scrollTop : 0,
+  });
+  // A back history is only useful a handful of steps deep; cap it so it can't grow forever.
+  if (state.navStack.length > 50) state.navStack.shift();
+  updateBackButtonVisibility();
+}
+
+/** Pop the back-button history and return, restoring scroll position once the view repaints. */
+export async function goBack() {
+  const entry = state.navStack.pop();
+  updateBackButtonVisibility();
+  if (!entry) return;
+  await navigateTo(entry.view, { ...entry.params, __back: true });
+  requestAnimationFrame(() => {
+    const content = document.getElementById("content");
+    if (content) content.scrollTop = entry.scrollTop || 0;
+  });
+}
+
 export async function navigateTo(viewName, params = {}) {
   if (viewName === "editions" && !editionsContextSlug() && !params.gameSlug) {
     return navigateTo("games");
@@ -157,8 +199,17 @@ export async function navigateTo(viewName, params = {}) {
   closeNotificationsPanel();
 
   const force = Boolean(params.force);
+  const isBack = Boolean(params.__back);
+  const cameFromView = state.currentView;
+  const cameFromParams = state.currentViewParams;
+  if (!isBack && cameFromView && routeKeyFor(cameFromView, cameFromParams) !== routeKeyFor(viewName, params)) {
+    pushNavHistory();
+  }
+
   state.currentView = viewName;
+  state.currentViewParams = params;
   applyNavChrome(viewName);
+  updateBackButtonVisibility();
 
   if (viewName === "home") {
     if (!force && isViewReady(views.home)) return;
@@ -242,6 +293,7 @@ export async function openEventDetail(eventId, fromView) {
 }
 
 api.navigateTo = navigateTo;
+api.goBack = goBack;
 api.finishPartyInstallReturn = finishPartyInstallReturn;
 api.openGameDetail = openGameDetail;
 api.openModDetail = openModDetail;
@@ -279,6 +331,11 @@ function wireShell() {
   });
 
   updateGamesFamilyNav();
+
+  document.getElementById("topbar-back-btn")?.addEventListener("click", () => {
+    void goBack();
+  });
+  updateBackButtonVisibility();
 
   document.getElementById("sidebar-discord")?.addEventListener("click", (e) => {
     e.preventDefault();

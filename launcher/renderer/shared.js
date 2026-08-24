@@ -125,6 +125,10 @@ export const state = {
   _addFriendsMode: "username",
   _addFriendsSent: {},
   statusAction: null,
+  /** Back-button history. Entries are {key, view, params, scrollTop}, most recent last. */
+  navStack: [],
+  /** view+params of whatever is on screen right now, for the next push onto navStack. */
+  currentViewParams: {},
 };
 
 export function shouldReturnToFriendsAfterPartyInstall(slug, ctx = state.deepLinkCtx) {
