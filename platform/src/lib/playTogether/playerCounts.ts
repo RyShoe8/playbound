@@ -52,6 +52,9 @@ export const GAME_PLAYER_COUNTS: Readonly<Record<string, GamePlayerCount>> = Obj
   wolfenstein: { min: 1, max: 11, partyMax: 11, note: "ECWolf LAN nodes." },
   bombsquad: { min: 1, max: 8, partyMax: 8 },
   "populous-reincarnated": { min: 1, max: 4, partyMax: 4 },
+  "lincity-ng": { min: 1, max: 1, partyMax: 1 },
+  "3d-city": { min: 1, max: 1, partyMax: 1 },
+  isocity: { min: 1, max: 1, partyMax: 1 },
 });
 
 export function gamePlayerCount(slug: string | null | undefined): GamePlayerCount | null {

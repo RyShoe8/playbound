@@ -10,6 +10,7 @@ const CURRENT_TESTING_SLUGS = [
   "c-dogs-retrarch", "sven-co-op", "teeworlds", "assaultcube", "bzflag", "openclonk",
   "red-eclipse", "widelands", "warfork", "slapshot-rebound", "deadeus", "openspades",
   "opentyrian-2000", "pokemon-dawn-of-darkness",
+  "lincity-ng", "3d-city", "isocity",
 ] as const;
 
 describe("game player counts", () => {
@@ -26,6 +27,12 @@ describe("game player counts", () => {
 
   it("preserves the legacy default for uncatalogued games", () => {
     expect(defaultPartySize("some-new-game")).toBe(8);
+  });
+
+  it("keeps the city builders out of multiplayer parties", () => {
+    expect(gamePlayerCount("lincity-ng")).toEqual({ min: 1, max: 1, partyMax: 1 });
+    expect(gamePlayerCount("3d-city")).toEqual({ min: 1, max: 1, partyMax: 1 });
+    expect(gamePlayerCount("isocity")).toEqual({ min: 1, max: 1, partyMax: 1 });
   });
 
   it("has a verified count for every game currently in Testing", () => {
