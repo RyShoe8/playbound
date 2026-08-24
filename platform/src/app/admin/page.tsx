@@ -11,6 +11,7 @@ import CatalogMod from "@/lib/models/CatalogMod";
 import { listAllGames } from "@/lib/catalog";
 import { GameArt } from "@/components/GameArt";
 import { PeriodStatTile, SectionHeader } from "@/components/ui/bits";
+import { unstable_cache } from "next/cache";
 import {
   addPeriodCounts,
   emptyPeriodCounts,
@@ -22,7 +23,7 @@ import { getAdminLauncherDownloadUrl } from "@/lib/launcherDownload";
 
 export const metadata: Metadata = { title: "Admin" };
 
-async function loadDashboardKpis() {
+async function computeDashboardKpis() {
   try {
     await dbConnect();
     const [
@@ -95,6 +96,13 @@ async function loadDashboardKpis() {
       pendingSubs: 0,
     };
   }
+}
+
+function loadDashboardKpis() {
+  return unstable_cache(computeDashboardKpis, ["admin-dashboard-kpis-v1"], {
+    revalidate: 60,
+    tags: ["admin-kpis"],
+  })();
 }
 
 export default async function AdminPage() {

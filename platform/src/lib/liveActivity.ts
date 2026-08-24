@@ -420,7 +420,7 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
     (g) => g.launchMethods.includes("server") || hasServerProvider(g.slug)
   );
 
-  const [settled, platformPlayers, platformByGame, editionCountBySlug, externalEntries] = await Promise.all([
+  const [settled, platformByGame, editionCountBySlug, externalEntries] = await Promise.all([
     Promise.allSettled(
       multiplayer.map((g) =>
         // One budget for everyone; see MULTIPLAYER_FANOUT_MS for why.
@@ -430,7 +430,6 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
         })
       )
     ),
-    countActivePlatformPlayers(),
     countActivePlatformPlayersByGame(),
     publicEditionCountsByGame(),
     Promise.all(
@@ -440,6 +439,11 @@ async function computeCatalogLiveStats(): Promise<CatalogLiveStats> {
       })
     ),
   ]);
+
+  let platformPlayers = 0;
+  for (const count of platformByGame.values()) {
+    platformPlayers += count;
+  }
 
   const externalBySlug = new Map<string, number>(externalEntries);
   let externalTotal = 0;
