@@ -5,8 +5,12 @@
  *   npx vercel env pull .env.local --environment=production
  *   cd ../launcher && npm run dist
  *   npm run upload:launcher -- ../launcher/dist/PlayBound-Setup-0.1.5.exe
- *   npm run upload:launcher -- --mac --promote-prod
- *   npm run upload:launcher -- --linux --promote-prod
+ *   npm run upload:launcher -- --prod ../launcher/dist/PlayBound-Setup-0.1.5.exe
+ *   npm run upload:launcher -- --mac --prod
+ *   npm run upload:launcher -- --linux --prod
+ *
+ * The channel defaults to admin. --prod publishes to the public installer and
+ * auto-update feed, and on Windows refuses unless the build looks signed.
  *
  * Uploads:
  *   - versioned installer (as named in the update yml)
@@ -18,6 +22,7 @@ import { createHash } from "crypto";
 import { basename, dirname, resolve } from "path";
 import { loadEnvConfig } from "@next/env";
 import { put } from "@vercel/blob";
+import { resolveReleaseChannel } from "../src/lib/launcherReleaseChannel";
 
 loadEnvConfig(process.cwd());
 
@@ -86,8 +91,6 @@ async function main() {
   const args = process.argv.slice(2);
   const platform = resolvePlatform(args);
   const cfg = PLATFORM[platform];
-  /** Also overwrite production site/auto-update aliases even for unsigned admin-channel builds. */
-  const promoteProd = args.includes("--promote-prod");
   const argPath = args.find((a) => !a.startsWith("--"));
   const distDir = resolve(process.cwd(), "../launcher/dist");
   let setupPath = argPath ? resolve(argPath) : "";
@@ -117,10 +120,31 @@ async function main() {
   const setupName = basename(setupPath);
   const dir = dirname(setupPath);
 
-  // admin-*.yml is written by electron-builder when publish.channel is "admin" (unsigned).
-  const isAdmin = existsSync(resolve(dir, cfg.adminYml));
+  /*
+   * The yml files are evidence about how the build was made, not the choice of
+   * where it goes. electron-builder writes admin.yml only for an unsigned build
+   * and latest.yml only for a signed one.
+   */
+  const hasAdminYml = existsSync(resolve(dir, cfg.adminYml));
+  const hasProdYml = existsSync(resolve(dir, cfg.prodYml));
+
+  const decision = resolveReleaseChannel(args, { hasAdminYml, hasProdYml, platform });
+  if (decision.refuse) {
+    console.error("");
+    console.error(decision.refuse);
+    console.error("");
+    process.exit(1);
+  }
+  const isAdmin = decision.channel === "admin";
+  if (!decision.explicit) {
+    console.log("No channel given — using the admin channel. Pass --prod to publish publicly.");
+  }
+
+  // Whichever metadata the build produced is what we publish, under the feed
+  // name the target channel reads.
+  const localYmlName = hasAdminYml ? cfg.adminYml : cfg.prodYml;
   const ymlName = isAdmin ? cfg.adminYml : cfg.prodYml;
-  const ymlPath = resolve(dir, ymlName);
+  const ymlPath = resolve(dir, localYmlName);
   const blockmapPath = resolve(dir, `${setupName}.blockmap`);
 
   console.log(`Uploading ${platform} updater package from ${dir}…`);
@@ -148,40 +172,22 @@ async function main() {
     console.warn("  warning: .blockmap missing — delta updates unavailable");
   }
 
-  const aliasName = isAdmin ? cfg.adminAlias : cfg.prodAlias;
+  // The admin alias is always refreshed; a public release adds the prod one.
+  const aliasName = cfg.adminAlias;
   const aliasUrl = await uploadBlob(`launcher/${aliasName}`, setupPath, "application/octet-stream");
 
   /*
-   * Promoting an unsigned Windows build would overwrite the public installer
-   * and latest.yml, so every regular user — and every existing install's
-   * auto-updater — would receive a binary Windows SmartScreen warns about.
-   * The admin channel exists precisely so unsigned builds stay away from them,
-   * and one absent-minded flag should not undo that.
-   *
-   * Only Windows is gated: Mac and Linux artifacts are not signed through this
-   * path, so promoting them is the normal way they ship.
+   * A public release also refreshes the admin channel, so admin testers are
+   * never left on an older build than everyone else.
    */
-  if (promoteProd && isAdmin && platform === "windows" && !args.includes("--i-know-its-unsigned")) {
-    console.error("");
-    console.error("Refusing to promote an UNSIGNED Windows build to the public channel.");
-    console.error(`  ${setupName} produced ${cfg.adminYml}, meaning it was built unsigned.`);
-    console.error("  Promoting it would hand every user a SmartScreen warning and push it");
-    console.error("  to existing installs through latest.yml.");
-    console.error("");
-    console.error("  Build signed instead:  cd launcher && npm run dist:prod");
-    console.error("  Or, if you truly mean it, re-run with --i-know-its-unsigned");
-    process.exit(1);
-  }
-
-  // Unsigned CI builds land on admin-* ; optionally also promote to public site aliases.
   let prodAliasUrl: string | null = null;
   let prodYmlUrl: string | null = null;
-  if (promoteProd && isAdmin) {
+  if (!isAdmin) {
     if (existsSync(ymlPath)) {
       prodYmlUrl = await uploadBlob(`launcher/${cfg.prodYml}`, ymlPath, "text/yaml; charset=utf-8");
     }
     prodAliasUrl = await uploadBlob(`launcher/${cfg.prodAlias}`, setupPath, "application/octet-stream");
-    console.log(`  also promoted admin build → ${cfg.prodAlias} / ${cfg.prodYml}`);
+    console.log(`  published to public aliases → ${cfg.prodAlias} / ${cfg.prodYml}`);
   }
 
   const feedBase = (prodAliasUrl || aliasUrl).replace(/\/[^/]+$/, "/");
