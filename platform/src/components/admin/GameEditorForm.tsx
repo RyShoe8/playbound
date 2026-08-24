@@ -1884,6 +1884,25 @@ export function GameEditorForm({
                     </div>
                   </div>
                 )}
+                {form.launcherInstall?.kind === "steamcmd" && (
+                  <div>
+                    <label className={label}>Anonymous SteamCMD app ID</label>
+                    <input
+                      inputMode="numeric"
+                      value={form.launcherInstall?.steamAppId ?? ""}
+                      onChange={(e) =>
+                        patchLauncher({
+                          steamAppId: e.target.value.replace(/\D/g, "").slice(0, 20) || null,
+                        })
+                      }
+                      placeholder="1136510"
+                      className={field}
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Public depots only. PlayBound signs in anonymously and never asks for Steam credentials.
+                    </p>
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-4">
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -1937,7 +1956,8 @@ export function GameEditorForm({
                 {(form.launcherInstall?.kind === "github-zip" ||
                   form.launcherInstall?.kind === "direct-zip" ||
                   form.launcherInstall?.kind === "direct-7z" ||
-                  form.launcherInstall?.kind === "openttd-zip") && (
+                  form.launcherInstall?.kind === "openttd-zip" ||
+                  form.launcherInstall?.kind === "steamcmd") && (
                   <div>
                     <label className={label}>Exe hint (optional regex)</label>
                     <input

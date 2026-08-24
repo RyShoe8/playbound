@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { probeDirectUrl, probeGithubZip } from "./catalogVersionProbe";
+import { probeDirectUrl, probeGameInstall, probeGithubZip } from "./catalogVersionProbe";
 
 /**
  * These encode the failures that made the previous probe untrustworthy: it
@@ -124,5 +124,17 @@ describe("probeGithubZip", () => {
     vi.stubGlobal("fetch", vi.fn(async () => response({ ok: false, status: 401 })));
     const r = await probeGithubZip({ repo: "a/b" });
     expect(r.status).toBe("skipped");
+  });
+});
+
+describe("probeGameInstall", () => {
+  it("recognises anonymous SteamCMD recipes without calling them broken", async () => {
+    const r = await probeGameInstall({
+      kind: "steamcmd",
+      versionLabel: "Anonymous SteamCMD",
+    });
+    expect(r.status).toBe("skipped");
+    expect(r.detectedVersion).toBe("Anonymous SteamCMD");
+    expect(r.note).toMatch(/anonymous SteamCMD/i);
   });
 });

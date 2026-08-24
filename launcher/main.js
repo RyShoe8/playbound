@@ -23,6 +23,7 @@ const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
+const { createSteamCmdInstaller } = require("./services/steamCmd");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
@@ -2515,6 +2516,13 @@ const managedRetroArch = createManagedRetroArch({
   extractArchive,
   onProgress: (payload) => sendProgress(payload),
 });
+const managedSteamCmd = createSteamCmdInstaller({
+  userDataPath: app.getPath("userData"),
+  tempPath: app.getPath("temp"),
+  downloadTo,
+  extractArchive,
+  onProgress: (payload) => sendProgress(payload),
+});
 GameLauncher.managedDosBoxResolver = () => managedDosBox.findManagedDosBoxBinary();
 
 /**
@@ -4704,6 +4712,37 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     (editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
       ? editionInstallDir(entry.slug, editionExtra.editionSlug)
       : path.join(gamesRoot(), entry.slug));
+
+  if (entry.kind === "steamcmd") {
+    const appId = String(entry.steamAppId || "").trim();
+    const result = await managedSteamCmd.install({
+      appId,
+      installDir: gameDir,
+      title: entry.title || slug,
+    });
+    const exe = findExecutable(gameDir, entry.exeHint);
+    if (!exe) {
+      throw new Error("SteamCMD finished, but the game executable was not found.");
+    }
+    await processAddons(entry, gameDir, selectedAddons);
+    markInstalled(slug, {
+      version: result.version,
+      exe,
+      dir: gameDir,
+      ...editionExtra,
+    });
+    sendProgress({ phase: "done" });
+    void reportInstall(slug);
+    void telemetry.editionInstalled(
+      editionInfoFor(slug, { version: result.version, ...editionExtra })
+    );
+    return {
+      status: "installed",
+      version: result.version,
+      dir: gameDir,
+      editionSlug: editionExtra.editionSlug,
+    };
+  }
 
   sendProgress({ phase: "resolving" });
   const dl = await resolveDownload(entry);
@@ -9747,6 +9786,15 @@ function createWindow() {
 async function testResolve() {
   let failures = 0;
   for (const entry of catalog) {
+    if (entry.kind === "steamcmd") {
+      if (!/^\d+$/.test(String(entry.steamAppId || ""))) {
+        failures++;
+        console.log(`FAIL  ${entry.slug}: steamcmd kind missing numeric steamAppId`);
+      } else {
+        console.log(`OK    ${entry.slug} anonymous SteamCMD app=${entry.steamAppId}`);
+      }
+      continue;
+    }
     if (entry.kind === "github-installer" || entry.kind === "direct-installer") {
       if (!Array.isArray(entry.knownExePaths) || entry.knownExePaths.length === 0) {
         failures++;
