@@ -33,9 +33,12 @@
  * ---------------------------------------------------------------------------
  * WINDOWS_SIGNING_ENABLED
  * ---------------------------------------------------------------------------
- *   unset / "auto"   Sign if credentials are present, otherwise skip with a
- *                    warning and produce an unsigned build. This is what keeps
- *                    development builds and fresh clones working.
+ *   unset / "auto"   Never sign, regardless of what credentials are present.
+ *                    Signing is opt-in: this machine holds real EV
+ *                    credentials, so any invocation that doesn't explicitly
+ *                    ask for signing — including a bare `electron-builder`
+ *                    call that bypasses scripts/build-windows.js — must not
+ *                    silently spend a metered signing.
  *
  *   "true" / "1"     Signing is REQUIRED. Missing credentials, a signing
  *                    failure, or a failed signature verification all fail the
@@ -162,17 +165,26 @@ function resolveSigningConfig() {
     return disabled("WINDOWS_SIGNING_ENABLED=false — signing explicitly disabled.");
   }
 
+  // Signing is opt-in, not auto-detected. This machine holds real EV
+  // credentials for legitimate signed releases, so a bare `electron-builder`
+  // invocation that bypassed scripts/build-windows.js — a stray CI recipe, a
+  // manual `npx electron-builder`, anything that doesn't go through --dev or
+  // --prod — must not silently start consuming metered signings just because
+  // the credentials happen to be sitting in the environment. Only an explicit
+  // WINDOWS_SIGNING_ENABLED=true turns signing on.
+  if (!required) {
+    return disabled("WINDOWS_SIGNING_ENABLED is not explicitly \"true\" — producing an unsigned build.");
+  }
+
   const hasStoreCreds = Boolean(certSha1Raw || certSubject);
   const hasPfxCreds = Boolean(certPath);
   const hasCscCreds = Boolean(cscLink);
 
   if (!hasStoreCreds && !hasPfxCreds && !hasCscCreds) {
-    if (required) {
-      errors.push(
-        "WINDOWS_SIGNING_ENABLED=true but no signing credentials were found. " +
-          "Set WINDOWS_CERT_SHA1 (EV / cert store) or WINDOWS_CERT_PATH (.pfx file)."
-      );
-    }
+    errors.push(
+      "WINDOWS_SIGNING_ENABLED=true but no signing credentials were found. " +
+        "Set WINDOWS_CERT_SHA1 (EV / cert store) or WINDOWS_CERT_PATH (.pfx file)."
+    );
     return disabled("No signing credentials in the environment — producing an unsigned build.");
   }
 

@@ -313,7 +313,7 @@ expiry, and whether the private key is present.
 
 | Variable | Purpose |
 | --- | --- |
-| `WINDOWS_SIGNING_ENABLED` | `true` = signing required (build fails without it) · `false` = never sign · unset/`auto` = sign if credentials exist |
+| `WINDOWS_SIGNING_ENABLED` | `true` = signing required (build fails without it) · `false`/unset/`auto` = never sign, even if credentials exist — signing is opt-in |
 | `WINDOWS_CERT_PATH` | Path to `.pfx`/`.p12`. Selects **standard** mode. |
 | `WINDOWS_CERT_PASSWORD` | Password for that `.pfx`. |
 | `WINDOWS_CERT_SHA1` | Certificate thumbprint in the Windows store. Selects **EV** mode. Separators are stripped. |
