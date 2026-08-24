@@ -40,6 +40,7 @@ const DOWNLOAD_DOMAINS = [
   "bzflag.org",
   "scummvm.org",
   "itch.io",
+  "zandronum.com",
   "archive.org",
   "codeberg.org",
   "myabandonware.com",

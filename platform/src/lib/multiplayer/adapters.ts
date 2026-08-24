@@ -408,9 +408,9 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "direct-ip",
     protocol: "doom",
     client: {
-      launchArguments: ["-connect", "{host}:{port}"],
+      launchArguments: ["+connect", "{host}:{port}"],
     },
-    notes: "Odamex/Zandronum peer host. No plain Linux odasrv package on Ubuntu 24.04 VPS yet.",
+    notes: "Zandronum and GZDoom client/server party connect supporting up to 64 players with full gamepad support.",
   },
 
   freeciv: {
