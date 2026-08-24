@@ -764,6 +764,36 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     note: "Plays in the browser. No PlayBound desktop installer yet.",
   },
 
+  "marathon-2": {
+    enabled: true,
+    kind: "github-zip",
+    repo: "Aleph-One-Marathon/alephone",
+    assetPattern: "^Marathon2-\\d{8}-Win\\.zip$",
+    exeHint: "Marathon2.exe",
+    versionLabel: "Aleph One 1.6",
+    note: "Bundles the Aleph One engine and complete Marathon 2 scenario.",
+  },
+
+  marathon: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "Aleph-One-Marathon/alephone",
+    assetPattern: "^Marathon-\\d{8}-Win\\.zip$",
+    exeHint: "Marathon.exe",
+    versionLabel: "Aleph One 1.6",
+    note: "Bundles the Aleph One engine and complete Marathon scenario.",
+  },
+
+  alephone: {
+    enabled: true,
+    kind: "github-zip",
+    repo: "Aleph-One-Marathon/alephone",
+    assetPattern: "^Marathon2-\\d{8}-Win\\.zip$",
+    exeHint: "Marathon2.exe",
+    versionLabel: "Aleph One 1.6",
+    note: "Bundles the Aleph One engine and complete Marathon scenarios.",
+  },
+
   "mega-man-unlimited": {
     enabled: true,
     /*

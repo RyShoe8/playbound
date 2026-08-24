@@ -11,23 +11,35 @@
 const fs = require("fs");
 const path = require("path");
 
-const DEFAULT_API_BASE = "https://playbound.club";
+const DEFAULT_API_BASE = process.env.PLAYBOUND_API_BASE || "http://localhost:3000";
 
 async function main() {
   const args = process.argv.slice(2);
   const baseIdx = args.indexOf("--api-base");
-  const apiBase = baseIdx !== -1 && args[baseIdx + 1] ? args[baseIdx + 1] : DEFAULT_API_BASE;
-  const url = `${apiBase}/api/launcher/catalog?_t=${Date.now()}`;
+  let apiBase = baseIdx !== -1 && args[baseIdx + 1] ? args[baseIdx + 1] : DEFAULT_API_BASE;
+  let url = `${apiBase}/api/launcher/catalog?_t=${Date.now()}`;
 
   console.log(`[sync-catalog] Fetching ${url} …`);
 
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       cache: "no-store",
       headers: { "user-agent": "playbound-sync-catalog", accept: "application/json", "cache-control": "no-cache" },
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} from ${url}`);
+    }).catch(() => null);
+
+    if (!res || !res.ok) {
+      if (apiBase !== "https://playbound.club") {
+        apiBase = "https://playbound.club";
+        url = `${apiBase}/api/launcher/catalog?_t=${Date.now()}`;
+        console.log(`[sync-catalog] Local fetch failed, trying ${url} …`);
+        res = await fetch(url, {
+          cache: "no-store",
+          headers: { "user-agent": "playbound-sync-catalog", accept: "application/json", "cache-control": "no-cache" },
+        });
+      }
+    }
+    if (!res || !res.ok) {
+      throw new Error(`HTTP ${res?.status || "error"} from ${url}`);
     }
     const data = await res.json();
     const games = Array.isArray(data.games) ? data.games : [];

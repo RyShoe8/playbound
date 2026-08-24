@@ -203,6 +203,18 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Java headless server on VPS with direct IP in-game client connect.",
   },
 
+  marathon: {
+    gameSlug: "marathon",
+    title: "Marathon / Aleph One",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    notes: "Aleph One peer host with CLI -connect for up to 8 players.",
+  },
+
   "marathon-2": {
     gameSlug: "marathon-2",
     title: "Marathon 2 / Aleph One",
@@ -212,7 +224,19 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     client: {
       launchArguments: ["-connect", "{host}:{port}"],
     },
-    notes: "Aleph One peer host with CLI -connect. No VPS dedicated recipe yet.",
+    notes: "Aleph One peer host with CLI -connect for up to 8 players.",
+  },
+
+  alephone: {
+    gameSlug: "alephone",
+    title: "Aleph One (Marathon Trilogy)",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    notes: "Aleph One peer host with CLI -connect for up to 8 players.",
   },
 
   "aleph-one": {
