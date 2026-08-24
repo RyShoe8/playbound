@@ -1629,19 +1629,26 @@ function editionInstallDir(slug, editionSlug) {
 
 function installedEditionsPayload(slug, state = loadState()) {
   const game = ensureGameInstallRecord(state[slug]);
+  const catEntry = catalog.find((e) => e.slug === slug);
   return listEditionEntries(game)
     .filter((e) => playableExePath(e) || e.pending)
     .map((e) => {
       const exe = playableExePath(e);
+      const edSlug = e.editionSlug || DEFAULT_EDITION_SLUG;
+      const catEd = (catEntry?.editions || []).find((ce) => ce.slug === edSlug);
       return {
-        editionSlug: e.editionSlug || DEFAULT_EDITION_SLUG,
-        editionName: e.editionName || "Official",
-        editionType: e.editionType || "official",
+        editionSlug: edSlug,
+        editionName: e.editionName || catEd?.name || "Official",
+        editionType: e.editionType || catEd?.type || "official",
         version: e.version || null,
         dir: e.dir || null,
         exe,
         pending: Boolean(e.pending) && !exe,
         connectArgs: Array.isArray(e.connectArgs) ? e.connectArgs : null,
+        features: e.features || catEd?.features || catEntry?.features || [],
+        tags: e.tags || catEd?.tags || catEntry?.tags || [],
+        controllerSupport: e.controllerSupport || catEd?.controllerSupport || catEntry?.controllerSupport || null,
+        hasControllerSupport: e.hasControllerSupport ?? catEd?.hasControllerSupport ?? catEntry?.hasControllerSupport ?? null,
       };
     });
 }
@@ -7410,6 +7417,9 @@ function listInstalledGames() {
       approxSize: entry?.approxSize || "",
       genres: entry?.genres || (isCustom ? ["Custom"] : []),
       tags: entry?.tags || [],
+      features: entry?.features || [],
+      controllerSupport: entry?.controllerSupport || null,
+      hasControllerSupport: entry?.hasControllerSupport ?? null,
       multiplayer: Boolean(entry?.multiplayer),
       platforms: Array.isArray(entry?.platforms) ? entry.platforms : ["Windows"],
       browserPlayable: Boolean(entry?.browserPlayable),
