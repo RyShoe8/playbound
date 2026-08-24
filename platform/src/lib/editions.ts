@@ -142,7 +142,9 @@ function toEdition(doc: LeanEdition): Edition {
         (gameSlugStr === "tes-arena" &&
           (editionSlugStr === "official" || editionSlugStr === "opentesarena")) ||
         (gameSlugStr === "daggerfall" &&
-          (editionSlugStr === "classic-dos" || editionSlugStr === "daggerfall-unity")))
+          (editionSlugStr === "classic-dos" || editionSlugStr === "daggerfall-unity")) ||
+        (gameSlugStr === "holocure" &&
+          (editionSlugStr === "playbound" || editionSlugStr === "official")))
     ) {
       installConfig = seedMatch.installConfig ?? installConfig;
       installMethod = seedMatch.installMethod ?? installMethod;
