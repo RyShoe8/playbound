@@ -45,7 +45,7 @@ function GitHubIcon({ className }: { className?: string }) {
 }
 
 export const metadata: Metadata = pageMetadata({
-  title: "Open Platform — Auditable, Ad-Free, No Spyware",
+  title: "Open Platform — Auditable, No Spyware",
   description:
     "Explore PlayBound's 100% open-source launcher architecture. Zero background spyware, no bloatware, open manifest recipes, and a clear boundary for exclusive community games.",
   path: "/open-platform",
@@ -91,7 +91,7 @@ const fatiguePoints = [
   },
   {
     bad: "Invasive tracking, data mining, and targeted ads",
-    good: "No user tracking, no ad networks, no data brokers.",
+    good: "No user tracking, no data brokers.",
   },
   {
     bad: "Locked proprietary storefronts with closed ecosystems",
