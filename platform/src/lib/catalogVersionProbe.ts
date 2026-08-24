@@ -361,6 +361,13 @@ export async function probeGameInstall(install: {
   if (kind === "external" || !kind) {
     return { status: "skipped", detectedVersion: null, note: "external or missing recipe" };
   }
+  if (kind === "steamcmd") {
+    return {
+      status: "skipped",
+      detectedVersion: install.versionLabel || null,
+      note: "Anonymous SteamCMD depot; version is resolved during install",
+    };
+  }
   if (kind.startsWith("github") && install.repo) {
     const engine = await probeGithubZip({
       repo: install.repo,

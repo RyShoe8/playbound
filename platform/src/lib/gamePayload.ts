@@ -137,6 +137,7 @@ export const launcherInstallSchema = z
     url: optionalTrimmed,
     fileName: optionalTrimmed,
     versionLabel: optionalTrimmed,
+    steamAppId: optionalTrimmed,
     knownExePaths: z.array(z.string().trim().min(1).max(400)).max(20).default([]),
     registryTitles: z.array(z.string().trim().min(1).max(120)).max(10).default([]),
     installRoot: optionalTrimmed,
@@ -175,6 +176,13 @@ export const launcherInstallSchema = z
       !val.url
     ) {
       ctx.addIssue({ code: "custom", message: "This install kind needs a URL", path: ["url"] });
+    }
+    if (val.kind === "steamcmd" && !/^\d+$/.test(val.steamAppId || "")) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Anonymous SteamCMD installs need a numeric app ID",
+        path: ["steamAppId"],
+      });
     }
   });
 
@@ -669,6 +677,7 @@ export function toPayloadLauncherInstall(
     url: li.url ?? null,
     fileName: li.fileName ?? null,
     versionLabel: li.versionLabel ?? null,
+    steamAppId: li.steamAppId ?? null,
     knownExePaths: li.knownExePaths ?? [],
     registryTitles: li.registryTitles ?? [],
     installRoot: li.installRoot ?? null,
