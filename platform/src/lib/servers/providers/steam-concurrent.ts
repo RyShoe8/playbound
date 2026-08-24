@@ -229,3 +229,53 @@ export function fetchNaevPlayers(): Promise<GameServer[]> {
 export function fetchAsphaltLegendsPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(1815780, { label: "Asphalt Legends" });
 }
+
+/** THE FINALS — Steam app 2073850. */
+export function fetchTheFinalsPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2073850, { label: "THE FINALS" });
+}
+
+/** EVE Online — Steam app 8500. */
+export function fetchEveOnlinePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(8500, { label: "EVE Online" });
+}
+
+/** Enlisted — Steam app 2051620. */
+export function fetchEnlistedPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2051620, { label: "Enlisted" });
+}
+
+/** MARVEL SNAP — Steam app 1997040. */
+export function fetchMarvelSnapPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(1997040, { label: "MARVEL SNAP" });
+}
+
+/** Palia — Steam app 2707930. */
+export function fetchPaliaPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2707930, { label: "Palia" });
+}
+
+/** Where Winds Meet — Steam app 3564740. */
+export function fetchWhereWindsMeetPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(3564740, { label: "Where Winds Meet" });
+}
+
+/** Tom Clancy's Rainbow Six Siege — Steam app 359550. */
+export function fetchRainbowSixSiegePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(359550, { label: "Rainbow Six Siege" });
+}
+
+/** Once Human — Steam app 2139460. */
+export function fetchOnceHumanPlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(2139460, { label: "Once Human" });
+}
+
+/** Path of Exile — Steam app 238960. Not Path of Exile 2 (app 2694490), a separate game. */
+export function fetchPathOfExilePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(238960, { label: "Path of Exile" });
+}
+
+/** Star Trek Online — Steam app 9900. */
+export function fetchStarTrekOnlinePlayers(): Promise<GameServer[]> {
+  return fetchSteamConcurrentPlayers(9900, { label: "Star Trek Online" });
+}
