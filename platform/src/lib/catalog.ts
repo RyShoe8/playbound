@@ -345,9 +345,9 @@ async function fromMongo(filter: Record<string, unknown> = {}): Promise<Game[]> 
      * Throwing makes Next keep serving the last good page instead of replacing
      * it with nothing, and only a genuinely empty collection renders as empty.
      */
-    if (process.env.NEXT_PHASE === "phase-production-build") {
+    if (!process.env.MONGODB_URI || process.env.NEXT_PHASE === "phase-production-build") {
       console.warn(
-        `[catalog] Falling back to ${seedGames.length} seed games for this build.`
+        `[catalog] Falling back to ${seedGames.length} seed games.`
       );
       return seedGames.map(seedGameWithInstall);
     }
