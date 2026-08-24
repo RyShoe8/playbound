@@ -170,6 +170,7 @@ export const editionPayloadSchema = z
       .optional(),
     hardwareRequirements: hardwareRequirementsBlockSchema.optional().nullable(),
 
+    platforms: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
     features: z.array(z.string().trim().min(1).max(200)).max(40).default([]),
     tags: z.preprocess(
       normalizeTags,

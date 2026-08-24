@@ -49,6 +49,8 @@ export type EditionSeed = {
   installConfig?: EditionInstallConfig;
   requirements?: { min?: string; recommended?: string; notes?: string };
   hardwareRequirements?: HardwareRequirementsBlock | null;
+  /** Native operating systems for this edition. Inherits the parent when omitted. */
+  platforms?: string[];
   features?: string[];
   tags?: string[];
   aliases?: string[];
