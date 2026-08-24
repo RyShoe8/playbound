@@ -217,7 +217,23 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
   const temp = `${target}.partial-${crypto.randomBytes(6).toString("hex")}`;
   try {
     await mkdir(path.dirname(target), { recursive: true });
-    const timeout = AbortSignal.timeout(60 * 60 * 1000);
+    /*
+     * A flat 1-hour ceiling was too tight: a 2GB GoldenEye installer took
+     * ~50 minutes on this VPS's real link and a bigger artifact (up to
+     * MIRROR_ARCHIVE_MAX_BYTES, 20GB by default) would never finish in an
+     * hour at that throughput. All 3 attempts share one deadline, so a slow
+     * first attempt can burn through it before a retry gets a real chance.
+     * Scale the budget to size against a conservative 1 MB/s floor, still
+     * capped so a genuinely hung connection doesn't hold the job forever.
+     */
+    const MIN_THROUGHPUT_BYTES_PER_SEC = 1024 * 1024;
+    const MIN_TIMEOUT_MS = 60 * 60 * 1000;
+    const MAX_TIMEOUT_MS = 8 * 60 * 60 * 1000;
+    const timeoutMs = Math.min(
+      MAX_TIMEOUT_MS,
+      Math.max(MIN_TIMEOUT_MS, (Number(sizeBytes) / MIN_THROUGHPUT_BYTES_PER_SEC) * 1000)
+    );
+    const timeout = AbortSignal.timeout(timeoutMs);
     const signal = abortSignal ? AbortSignal.any([timeout, abortSignal]) : timeout;
     const maxAttempts = 3;
     let lastError = "Archive transfer terminated";
