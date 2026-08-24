@@ -9858,6 +9858,54 @@ ipcMain.handle("get-mod-detail", async (_event, slug) => {
   };
 });
 
+/*
+ * Mirrors electron-updater's own cache-dir formula exactly (see
+ * node_modules/electron-updater/out/AppAdapter.js getAppCacheDir() and
+ * AppUpdater.js getOrCreateDownloadHelper()) rather than guessing a path —
+ * app.getName() and the per-OS base cache dir are the only two inputs, and
+ * both are available here at runtime, so there is no reason to hardcode
+ * something that could drift from the library's actual behavior.
+ */
+function updaterCacheDir() {
+  const home = os.homedir();
+  let base;
+  if (process.platform === "win32") {
+    base = process.env.LOCALAPPDATA || path.join(home, "AppData", "Local");
+  } else if (process.platform === "darwin") {
+    base = path.join(home, "Library", "Caches");
+  } else {
+    base = process.env.XDG_CACHE_HOME || path.join(home, ".cache");
+  }
+  return path.join(base, app.getName());
+}
+
+/*
+ * A checksum/signature mismatch means the file already sitting in
+ * electron-updater's cache does not match what the current manifest expects
+ * — most often a partial or superseded download left over from an earlier,
+ * since-overwritten release. electron-updater has no built-in recovery from
+ * this: it keeps re-verifying the same bad cached bytes against the same
+ * manifest forever, and neither relaunching the app nor rebooting the OS
+ * clears a disk-persistent cache directory. Wiping it here is what a manual
+ * `rm -rf ~/.cache/PlayBound` fixes by hand — done automatically so the next
+ * check starts genuinely clean instead of leaving a tester stuck.
+ */
+function isCacheCorruptionError(message) {
+  return /checksum|sha512|sha256|signature/i.test(String(message || ""));
+}
+
+async function clearStaleUpdaterCache(reason) {
+  const dir = updaterCacheDir();
+  try {
+    await fs.promises.rm(dir, { recursive: true, force: true });
+    console.log(`[updater] Cleared cache at ${dir} after: ${reason}`);
+    return true;
+  } catch (err) {
+    console.warn(`[updater] Could not clear cache at ${dir}:`, err?.message || err);
+    return false;
+  }
+}
+
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
   const autoUpdater = getAutoUpdater();
@@ -9904,7 +9952,13 @@ function setupAutoUpdater() {
       channel: getEffectiveUpdateChannel(),
     });
   });
-  autoUpdater.on("error", (err) => emit({ phase: "error", message: err?.message || String(err) }));
+  autoUpdater.on("error", (err) => {
+    const message = err?.message || String(err);
+    emit({ phase: "error", message });
+    if (isCacheCorruptionError(message)) {
+      void clearStaleUpdaterCache(message);
+    }
+  });
 
   setTimeout(() => {
     void (async () => {
