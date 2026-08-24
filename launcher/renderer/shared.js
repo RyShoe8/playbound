@@ -810,6 +810,11 @@ export function endGameSession() {
     durationMs,
   });
   state._activeGameSession = null;
+  try {
+    void window.playbound?.stopGamepadBridge?.();
+  } catch {
+    /* ignore */
+  }
 }
 
 export function enhanceSelect(selectEl) {

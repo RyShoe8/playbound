@@ -8,6 +8,11 @@ import {
   ensureCouchBackground,
   startCouchSessionQuiet,
 } from "./views/couch.js";
+import {
+  enableGamepadBridge,
+  isBridgeableGamepadConnected,
+  disableGamepadBridge,
+} from "./gamepadBridge.js";
 
 function pb() {
   return window.playbound;
@@ -307,6 +312,13 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       } else {
         setStatus("Phone controller paired — launching game…");
       }
+    }
+  }
+
+  if (choice === "normal") {
+    if (isBridgeableGamepadConnected()) {
+      setStatus("Enabling Universal Gamepad Bridge for controller…");
+      void enableGamepadBridge();
     }
   }
 
