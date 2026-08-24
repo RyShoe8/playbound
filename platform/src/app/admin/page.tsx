@@ -7,8 +7,8 @@ import NewsletterSubscriber from "@/lib/models/NewsletterSubscriber";
 import GameSubmission from "@/lib/models/GameSubmission";
 import BugReport from "@/lib/models/BugReport";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
+import CatalogMod from "@/lib/models/CatalogMod";
 import { listAllGames } from "@/lib/catalog";
-import { listAllMods } from "@/lib/mods";
 import { GameArt } from "@/components/GameArt";
 import { PeriodStatTile, SectionHeader } from "@/components/ui/bits";
 import {
@@ -98,15 +98,15 @@ async function loadDashboardKpis() {
 }
 
 export default async function AdminPage() {
-  const [kpis, games, mods] = await Promise.all([
+  const [kpis, games, brokenModCount] = await Promise.all([
     loadDashboardKpis(),
     listAllGames(),
-    listAllMods(),
+    CatalogMod.countDocuments({ versionCheckStatus: "broken" }),
   ]);
 
   const brokenVersions =
     games.filter((g) => g.launcherInstall?.versionCheckStatus === "broken").length +
-    mods.filter((m) => m.versionCheckStatus === "broken").length;
+    brokenModCount;
   const adminLauncherUrl = getAdminLauncherDownloadUrl();
 
   return (

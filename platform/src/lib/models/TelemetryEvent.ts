@@ -37,6 +37,7 @@ const TelemetryEventSchema = new Schema(
 
 TelemetryEventSchema.index({ createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, createdAt: -1 });
+TelemetryEventSchema.index({ userId: 1, createdAt: -1 });
 
 /*
  * Scoped lookups in lib/liveActivity.ts — installs, players this month, active
