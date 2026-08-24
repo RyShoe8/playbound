@@ -52,6 +52,7 @@ import {
   releasePartyLan,
 } from "@/lib/virtualLan/provision";
 import { isSelfHostable } from "@/lib/multiplayer/adapters";
+import { isMultiplayerGame } from "@/lib/launcherInstall";
 import {
   BASE_EDITION_KEY,
   isBaseEditionSlug,
@@ -135,7 +136,7 @@ function hashPartyPassword(password: string, salt: string): string {
 function serializeParty(
   doc: Record<string, unknown>,
   nameById: Map<string, string>,
-  gameTitle: string | null
+  game: (Parameters<typeof isMultiplayerGame>[0] & { title?: string }) | null
 ): PartyPayload {
   const members = (doc.members as Array<Record<string, unknown>>) || [];
   const leaderId = String(doc.leaderId);
@@ -155,11 +156,11 @@ function serializeParty(
       })
     ),
     gameSlug: String(doc.gameSlug || ""),
-    gameTitle,
+    gameTitle: game?.title || null,
     editionSlug: (doc.editionSlug as string) || null,
     modSlugs: (doc.modSlugs as string[]) || [],
     hostingMode: (doc.hostingMode as "managed" | "self") || "managed",
-    selfHostable: isSelfHostable(String(doc.gameSlug || "")),
+    selfHostable: game ? isMultiplayerGame(game) : isSelfHostable(String(doc.gameSlug || "")),
     status: (doc.status as PartyStatus) || "forming",
     visibility: (doc.visibility as PartyVisibility) || "friends",
     hasPassword: Boolean(doc.passwordHash),
@@ -326,7 +327,7 @@ export async function createParty(opts: {
   const party = serializeParty(
     doc.toObject ? doc.toObject() : doc,
     nameById,
-    game?.title || null
+    game || null
   );
   trackPartyEvent("party_created", {
     partyId: party.id,
@@ -428,7 +429,7 @@ export async function joinParty(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
-  const party = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const party = serializeParty(doc.toObject(), nameById, game || null);
   trackPartyEvent("party_joined", {
     partyId: party.id,
     gameSlug: party.gameSlug || null,
@@ -522,7 +523,7 @@ export async function leaveParty(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
-  const leftParty = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const leftParty = serializeParty(doc.toObject(), nameById, game || null);
   trackPartyEvent("party_left", {
     partyId: String(doc._id),
     gameSlug: leftParty.gameSlug || null,
@@ -652,7 +653,7 @@ export async function removeMember(
   ]);
 
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: serializeParty(doc.toObject(), nameById, game || null),
     status: 200,
   };
 }
@@ -700,7 +701,7 @@ export async function transferLeadership(
   ]);
 
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: serializeParty(doc.toObject(), nameById, game || null),
     status: 200,
   };
 }
@@ -765,7 +766,7 @@ export async function setPartyGame(
   );
   const nameById = await resolveUsernames(memberIds);
 
-  let updated = serializeParty(doc.toObject(), nameById, game.title);
+  let updated = serializeParty(doc.toObject(), nameById, game);
   trackPartyEvent("party_game_set", {
     partyId: updated.id,
     gameSlug: slug,
@@ -795,10 +796,9 @@ export async function setPartyGame(
 /**
  * Choose who runs the server for the party's current game: PlayBound's VPS
  * (default), or the leader's own machine over the party's virtual-LAN
- * overlay. Only meaningful for a PlayBound-hostable game — anything else is
- * rejected outright rather than silently accepted and ignored, since a
- * leader who picked "self" on a game that cannot do it should see why their
- * choice didn't stick, not a party that quietly kept using the VPS.
+ * overlay. Every multiplayer game can use the self-host route: configured
+ * titles get automatic launch arguments, while the rest launch normally and
+ * use their own Host / Join menu over the private party network.
  */
 export async function setPartyHostingMode(
   partyId: string,
@@ -818,12 +818,11 @@ export async function setPartyHostingMode(
   if (!doc.gameSlug) {
     return { error: "Pick a game first", status: 400 };
   }
-  if (hostingMode === "self" && !isSelfHostable(String(doc.gameSlug))) {
-    return { error: "This game cannot be self-hosted", status: 400 };
-  }
-
   const game = await getGame(String(doc.gameSlug), { includeTesting: true });
   if (!game) return { error: "Game not found", status: 404 };
+  if (hostingMode === "self" && !isMultiplayerGame(game)) {
+    return { error: "Only multiplayer games can be self-hosted", status: 400 };
+  }
 
   doc.hostingMode = hostingMode;
   for (const member of doc.members) member.lanAddress = null;
@@ -844,7 +843,7 @@ export async function setPartyHostingMode(
     hostingMode,
     userId: leaderId,
   });
-  const serialized = serializeParty(doc.toObject(), nameById, game.title);
+  const serialized = serializeParty(doc.toObject(), nameById, game);
   return {
     party: await attachConfigSync(serialized, leaderId),
     status: 200,
@@ -894,7 +893,7 @@ export async function setPartyEdition(
     editionSlug: slug || null,
     userId: leaderId,
   });
-  const serialized = serializeParty(doc.toObject(), nameById, game.title);
+  const serialized = serializeParty(doc.toObject(), nameById, game);
   return {
     party: await attachConfigSync(serialized, leaderId),
     status: 200,
@@ -931,7 +930,7 @@ export async function setPartyName(
   ]);
 
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: serializeParty(doc.toObject(), nameById, game || null),
     status: 200,
   };
 }
@@ -966,7 +965,7 @@ export async function setVisibility(
   ]);
 
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: serializeParty(doc.toObject(), nameById, game || null),
     status: 200,
   };
 }
@@ -1010,7 +1009,7 @@ export async function setReady(
   ]);
 
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: serializeParty(doc.toObject(), nameById, game || null),
     status: 200,
   };
 }
@@ -1056,7 +1055,7 @@ export async function joinPartyGame(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
-  const joined = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const joined = serializeParty(doc.toObject(), nameById, game || null);
   trackPartyEvent("party_join_game", {
     partyId: joined.id,
     gameSlug: joined.gameSlug || null,
@@ -1101,7 +1100,7 @@ export async function launchParty(
     getGame(doc.gameSlug, { includeTesting: true }),
   ]);
 
-  const launched = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const launched = serializeParty(doc.toObject(), nameById, game || null);
   trackPartyEvent("party_join_game", {
     partyId: launched.id,
     gameSlug: launched.gameSlug || null,
@@ -1173,7 +1172,7 @@ export async function getParty(
 
   return {
     party: await attachConfigSync(
-      serializeParty(doc, nameById, game?.title || null),
+      serializeParty(doc, nameById, game || null),
       viewerUserId
     ),
     status: 200,
@@ -1212,14 +1211,14 @@ export async function listPartiesForUser(
     Promise.all(
       [...slugs].map(async (s) => {
         const g = await getGame(s, { includeTesting: true });
-        return [s, g?.title || null] as const;
+        return [s, g || null] as const;
       })
     ),
   ]);
-  const titleBySlug = new Map(games);
+  const gameBySlug = new Map(games);
 
   const parties = docs.map((d) =>
-    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
+    serializeParty(d, nameById, gameBySlug.get(String(d.gameSlug)) || null)
   );
   if (parties[0]) {
     parties[0] = await attachConfigSync(parties[0], userId);
@@ -1274,14 +1273,14 @@ export async function listDiscoverableParties(
     Promise.all(
       [...slugs].map(async (s) => {
         const g = await getGame(s, { includeTesting: true });
-        return [s, g?.title || null] as const;
+        return [s, g || null] as const;
       })
     ),
   ]);
-  const titleBySlug = new Map(games);
+  const gameBySlug = new Map(games);
 
   return filtered.map((d) =>
-    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
+    serializeParty(d, nameById, gameBySlug.get(String(d.gameSlug)) || null)
   );
 }
 
@@ -1305,13 +1304,13 @@ async function serializePartyDocs(
     Promise.all(
       [...slugs].map(async (s) => {
         const g = await getGame(s, { includeTesting: true });
-        return [s, g?.title || null] as const;
+        return [s, g || null] as const;
       })
     ),
   ]);
-  const titleBySlug = new Map(games);
+  const gameBySlug = new Map(games);
   return docs.map((d) =>
-    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
+    serializeParty(d, nameById, gameBySlug.get(String(d.gameSlug)) || null)
   );
 }
 

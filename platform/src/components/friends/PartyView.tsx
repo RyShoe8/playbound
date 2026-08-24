@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Users, Crown, LogOut, Check, X, Phone, Play, HardDriveDownload } from "lucide-react";
@@ -30,7 +30,6 @@ import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PartyChat } from "@/components/friends/PartyChat";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
-import { isSelfHostable } from "@/lib/multiplayer/adapters";
 
 export type PartyGameOption = {
   slug: string;
@@ -95,7 +94,7 @@ export function PartyView({
    * OpenArena, whose tags never say "multiplayer" but which have server
    * browsers.
    */
-  const partyGames = useMemo(() => games.filter((g) => isMultiplayerGame(g)), [games]);
+  const partyGames = games.filter((g) => isMultiplayerGame(g));
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
   const joinUrl = hostedReady
@@ -254,7 +253,7 @@ export function PartyView({
                   editionSlug={party.editionSlug}
                 />
               ) : null}
-              {party.gameSlug && isSelfHostable(party.gameSlug) && (
+              {catalogGame && isMultiplayerGame(catalogGame) && (
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Who hosts the server

@@ -33,4 +33,16 @@ describe("party hosting mode payloads", () => {
     expect(lan.enabled).toBe(true);
     expect(lan.status).toBe("ready");
   });
+
+  it("exposes an overlay for multiplayer games without an automatic host recipe", () => {
+    const lan = lanPayloadFromDoc(
+      "community-multiplayer-game",
+      { status: "ready" },
+      "self"
+    );
+
+    expect(lan.enabled).toBe(true);
+    expect(lan.status).toBe("ready");
+    expect(lan.adapterFile).toBeNull();
+  });
 });

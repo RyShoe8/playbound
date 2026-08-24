@@ -15,7 +15,7 @@ import {
   managementUrl,
   type NetBirdParty,
 } from "./client";
-import { getVirtualLanConfig, isSelfHostable, isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
@@ -45,14 +45,13 @@ function ensureLan(party: PartyLike): PartyLanFields {
 
 /**
  * A LAN-discovery game (HoloCure) always gets the overlay — there is no other
- * way for it to find anyone. A `managed-server` game only needs it when the
- * leader has chosen to host it themselves instead of the VPS; otherwise the
- * overlay would sit there unused while `+connect` already goes straight to
- * the VPS's public IP.
+ * way for it to find anyone. Any multiplayer game also gets one when its
+ * leader chooses self-hosting; configured titles can connect automatically,
+ * while the rest use their existing Host / Join menu on the private segment.
  */
 function wantsOverlay(slug: string, party: PartyLike): boolean {
   if (isVirtualLanGame(slug)) return true;
-  return isSelfHostable(slug) && party.hostingMode === "self";
+  return party.hostingMode === "self";
 }
 
 export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
@@ -162,8 +161,9 @@ export function lanPayloadFromDoc(
   lan?: PartyLanFields | null,
   hostingMode: "managed" | "self" = "managed"
 ) {
-  const config = getVirtualLanConfig(gameSlug);
-  const enabled = isVirtualLanGame(gameSlug) || (isSelfHostable(gameSlug) && hostingMode === "self");
+  const selfHosted = hostingMode === "self";
+  const config = getVirtualLanConfig(gameSlug) || (selfHosted ? {} : null);
+  const enabled = isVirtualLanGame(gameSlug) || selfHosted;
   if (!config || !enabled) {
     return {
       enabled: false,

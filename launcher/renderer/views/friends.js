@@ -2115,10 +2115,7 @@ async function launchPartyGame(party) {
 
     if (party.hostingMode === "self") {
       const port = Number(network.hostPort);
-      if (!Number.isInteger(port)) {
-        setStatus("This launcher cannot self-host this game yet. Update PlayBound and try again.", true);
-        return;
-      }
+      const hasKnownPort = Number.isInteger(port) && port >= 1024 && port <= 65535;
       try {
         if (network.isLeader) {
           setStatus(
@@ -2128,30 +2125,39 @@ async function launchPartyGame(party) {
           );
           await window.playbound.play(
             slug,
-            { selfHost: true, host: network.adapterAddress, port },
+            hasKnownPort
+              ? { selfHost: true, host: network.adapterAddress, port }
+              : null,
             party.editionSlug || null
           );
           startGameSession(slug, party.gameTitle || slug);
-          void window.playbound.clipboardWrite?.(`${network.adapterAddress}:${port}`);
+          const address = hasKnownPort
+            ? `${network.adapterAddress}:${port}`
+            : network.adapterAddress;
+          void window.playbound.clipboardWrite?.(address);
           setStatus(
             network.automaticHost
-              ? `Hosting on ${network.adapterAddress}:${port}`
-              : `Copied ${network.adapterAddress}:${port} — host from the multiplayer menu and use this port if the game asks.`
+              ? `Hosting on ${address}`
+              : `Copied ${address} — host from the multiplayer menu and share this private address if the game asks.`
           );
         } else {
           if (!network.leaderAddress) {
             setStatus("The leader is not on the party network yet. Ask them to Join Game first.", true);
             return;
           }
-          const address = `${network.leaderAddress}:${port}`;
+          const address = hasKnownPort
+            ? `${network.leaderAddress}:${port}`
+            : network.leaderAddress;
           setStatus(`Joining the leader at ${address}…`);
           const launchResult = await window.playbound.play(
             slug,
-            { host: network.leaderAddress, port, name: party.gameTitle || "" },
+            hasKnownPort
+              ? { host: network.leaderAddress, port, name: party.gameTitle || "" }
+              : null,
             party.editionSlug || null
           );
           startGameSession(slug, party.gameTitle || slug);
-          if (launchResult?.manualConnect) {
+          if (!hasKnownPort || launchResult?.manualConnect) {
             void window.playbound.clipboardWrite?.(address);
             setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
           } else {

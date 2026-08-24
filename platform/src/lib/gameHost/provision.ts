@@ -10,7 +10,6 @@ import {
   isHostableGame,
   type HostedStatus,
 } from "./catalog";
-import { isSelfHostable } from "@/lib/multiplayer/adapters";
 import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyHostFields = {
@@ -47,7 +46,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
 
   // Self-hosting is the leader's own machine, not the VPS — release any room
   // left over from before they switched modes rather than paying to run both.
-  if (party.hostingMode === "self" && isSelfHostable(slug)) {
+  if (party.hostingMode === "self") {
     if (party.hosted?.roomId) await releasePartyHost(party);
     return false;
   }
@@ -145,7 +144,7 @@ export function hostedPayloadFromDoc(
    * something that would never become ready.
    */
   const configured = isGameHostConfigured();
-  if (hostingMode === "self" && isSelfHostable(gameSlug)) {
+  if (hostingMode === "self") {
     return { ...base, enabled: false, configured };
   }
   if (!hosted) return { ...base, configured };
