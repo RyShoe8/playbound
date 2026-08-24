@@ -3666,7 +3666,7 @@ const facts: Game[] = [
     gameOfWeek: true,
     hiddenGem: false,
     art: { from: "#166534", to: "#22c55e", icon: "Shield" },
-    coverImage: "https://raw.githubusercontent.com/BZFlag-Dev/bzflag/2.4/misc/bzflag-icon.svg",
+    coverImage: "https://raw.githubusercontent.com/BZFlag-Dev/bzflag/2.4/misc/art/bzicon-red.svg",
     screenshots: [
       "https://upload.wikimedia.org/wikipedia/commons/4/4b/BZFlag_2.4.2_-_GUI.png",
       "https://upload.wikimedia.org/wikipedia/commons/7/77/BZFlag_screenshot.png",
