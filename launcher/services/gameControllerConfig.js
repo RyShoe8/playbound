@@ -622,10 +622,11 @@ const GAMES = {
     needsConfig(text, profile) {
       const s = String(text || "");
       if (!s.includes("<properties>") || !s.includes("joystickConfigs")) return true;
-      if (!profile) return false;
-      if (profile.family === "dualsense" && !/DualSense|Wireless Controller|PS5/i.test(s)) return true;
-      if (profile.family === "xbox" && !/Xbox|XInput/i.test(s)) return true;
-      if (profile.family === "dualshock4" && !/DualShock|PS4|Wireless Controller/i.test(s)) return true;
+      if (!profile) return !s.includes("Xbox 360 Controller") || !s.includes("DualSense");
+      if (profile.family === "dualsense" && !/DualSense/i.test(s)) return true;
+      if (profile.family === "xbox" && !/Xbox/i.test(s)) return true;
+      if (profile.family === "dualshock4" && !/DualShock|PS4/i.test(s)) return true;
+      if (profile.rawId && !s.includes(profile.rawId)) return true;
       return false;
     },
     apply(text, profile) {
@@ -802,7 +803,7 @@ function configPathFor(gameSlug, installDir, ctx = defaultContext()) {
 function applyProfile(gameSlug, text, profile) {
   const entry = GAMES[gameSlug];
   if (!entry || !profile) return null;
-  if (!entry.needsConfig(text)) return null;
+  if (!entry.needsConfig(text, profile)) return null;
   return entry.apply(text, profile);
 }
 

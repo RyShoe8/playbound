@@ -223,12 +223,15 @@ export async function DELETE(req: Request) {
     // Scoped to the device making the request: removing a game from your phone
     // must not also remove the desktop copy you still have installed.
     // `?allPlatforms=1` is the deliberate opt-out for "remove everywhere".
-    const allPlatforms = url.searchParams.get("allPlatforms") === "1";
+    const allPlatforms = url.searchParams.get("allPlatforms") !== "0";
     const platform = platformFromRequest(req);
-    const filter: Record<string, unknown> = { userId: session.user.id, gameSlug: slug };
+    const cleanSlug = slug.replace(/^custom-/, "");
+    const slugFilter = slug.startsWith("custom-")
+      ? { $in: [slug, cleanSlug] }
+      : { $in: [slug, `custom-${slug}`] };
+
+    const filter: Record<string, unknown> = { userId: session.user.id, gameSlug: slugFilter };
     if (!allPlatforms) {
-      // Legacy entries have no platform and are desktop by definition, so a
-      // desktop delete must match them too or they become unremovable.
       filter.$or =
         platform === "desktop"
           ? [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }]
@@ -238,12 +241,14 @@ export async function DELETE(req: Request) {
     const res = await LibraryEntry.deleteMany(filter);
     const remaining = await LibraryEntry.countDocuments({
       userId: session.user.id,
-      gameSlug: slug,
+      gameSlug: slugFilter,
     });
     if (allPlatforms || remaining === 0 || platform === "desktop") {
       await removeLibraryModsForGame(session.user.id, slug);
+      await removeLibraryModsForGame(session.user.id, cleanSlug);
     } else {
       revalidateLibraryPages(slug);
+      revalidateLibraryPages(cleanSlug);
     }
     return NextResponse.json({ success: true, deleted: res.deletedCount > 0 });
   } catch (error) {

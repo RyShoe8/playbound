@@ -52,7 +52,7 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
     if (removing) return;
     setRemoving(true);
     try {
-      const res = await fetch(`/api/library?slug=${encodeURIComponent(slug)}`, {
+      const res = await fetch(`/api/library?slug=${encodeURIComponent(slug)}&allPlatforms=1`, {
         method: "DELETE",
       });
       if (!res.ok) {
