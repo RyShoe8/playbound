@@ -196,6 +196,31 @@ for (const packaged of [true, false]) {
   check("rejects http on a non-loopback host", throws(() => sec.assertDownloadUrl("http://github.com/a/b.zip")));
   check("rejects a disallowed host", throws(() => sec.assertDownloadUrl("https://attacker.example/a.exe")));
   check("rejects a malformed URL", throws(() => sec.assertDownloadUrl("://nope")));
+
+  /*
+   * RetroArch and every libretro core come from buildbot.libretro.com. The host
+   * was not on the allowlist, so the whole RetroArch path died on its first
+   * download — Deadeus reported it as "Error invoking remote method 'play'".
+   */
+  check(
+    "allows the RetroArch binary",
+    sec.assertDownloadUrl("https://buildbot.libretro.com/stable/1.19.1/windows/x86_64/RetroArch.7z").length > 0
+  );
+  check(
+    "allows a libretro core",
+    sec
+      .assertDownloadUrl("https://buildbot.libretro.com/nightly/windows/x86_64/latest/gambatte_libretro.dll.zip")
+      .length > 0
+  );
+  // Subdomain trust must not extend to a host that merely starts with it.
+  check(
+    "rejects a libretro lookalike domain",
+    throws(() => sec.assertDownloadUrl("https://buildbot.libretro.com.attacker.example/core.zip"))
+  );
+  check(
+    "rejects plain http from libretro",
+    throws(() => sec.assertDownloadUrl("http://buildbot.libretro.com/core.zip"))
+  );
 }
 
 // External URLs: only the four schemes.
