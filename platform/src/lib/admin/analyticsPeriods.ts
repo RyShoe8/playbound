@@ -187,32 +187,67 @@ export async function periodTelemetryCounts(
   return periodDocumentCounts(TelemetryEvent, base);
 }
 
+import TelemetryEvent from "@/lib/models/TelemetryEvent";
+
 /**
  * Distinct identified userIds with any telemetry in each window.
  */
 export async function periodDistinctUsers(
-  distinctFn: (filter: Record<string, unknown>) => Promise<unknown[]>
+  distinctFn?: (filter: Record<string, unknown>) => Promise<unknown[]>
 ): Promise<PeriodCounts> {
-  // Same cold-start race as periodDocumentCounts — the caller's distinctFn
-  // closes over a Mongoose model that needs a live connection.
+  // Same cold-start race as periodDocumentCounts — needs a live connection.
   await dbConnect();
   const w = getPeriodWindows();
-  const run = async (createdAt: Record<string, Date>) => {
-    const ids = await distinctFn({
-      createdAt,
-      userId: { $nin: [null, ""] },
-    });
-    return ids.length;
-  };
 
-  const [day, week, month, dayPrev, weekPrev, monthPrev] = await Promise.all([
-    run({ $gte: w.today }),
-    run({ $gte: w.d7 }),
-    run({ $gte: w.d30 }),
-    run({ $gte: w.yesterday, $lt: w.today }),
-    run({ $gte: w.d14, $lt: w.d7 }),
-    run({ $gte: w.d60, $lt: w.d30 }),
-  ]);
+  try {
+    const rows = (await TelemetryEvent.aggregate([
+      {
+        $match: {
+          userId: { $nin: [null, ""] },
+          createdAt: { $gte: w.d60 },
+        },
+      },
+      {
+        $group: {
+          _id: "$userId",
+          dates: { $push: "$createdAt" },
+        },
+      },
+    ])) as Array<{ _id: string; dates: Date[] }>;
 
-  return { day, week, month, dayPrev, weekPrev, monthPrev };
+    let day = 0, week = 0, month = 0, dayPrev = 0, weekPrev = 0, monthPrev = 0;
+    for (const row of rows) {
+      const dates = row.dates || [];
+      if (dates.some((d) => d >= w.today)) day += 1;
+      if (dates.some((d) => d >= w.d7)) week += 1;
+      if (dates.some((d) => d >= w.d30)) month += 1;
+      if (dates.some((d) => d >= w.yesterday && d < w.today)) dayPrev += 1;
+      if (dates.some((d) => d >= w.d14 && d < w.d7)) weekPrev += 1;
+      if (dates.some((d) => d >= w.d60 && d < w.d30)) monthPrev += 1;
+    }
+
+    return { day, week, month, dayPrev, weekPrev, monthPrev };
+  } catch {
+    if (typeof distinctFn === "function") {
+      const run = async (createdAt: Record<string, Date>) => {
+        const ids = await distinctFn({
+          createdAt,
+          userId: { $nin: [null, ""] },
+        });
+        return ids.length;
+      };
+
+      const [day, week, month, dayPrev, weekPrev, monthPrev] = await Promise.all([
+        run({ $gte: w.today }),
+        run({ $gte: w.d7 }),
+        run({ $gte: w.d30 }),
+        run({ $gte: w.yesterday, $lt: w.today }),
+        run({ $gte: w.d14, $lt: w.d7 }),
+        run({ $gte: w.d60, $lt: w.d30 }),
+      ]);
+
+      return { day, week, month, dayPrev, weekPrev, monthPrev };
+    }
+    return emptyPeriodCounts();
+  }
 }
