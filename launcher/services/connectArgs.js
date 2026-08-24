@@ -43,7 +43,6 @@ const CLIENT_CONNECT_ARGS = {
   "battle-for-wesnoth": ["--host", "{host}:{port}"],
   "0-ad": ["-autostart={host}:{port}"],
   "0ad": ["-autostart={host}:{port}"],
-  "warzone-2100": ["--connect={host}:{port}"],
   keeperfx: ["-connect", "{host}:{port}"],
   "marathon-2": ["-connect", "{host}:{port}"],
   "aleph-one": ["-connect", "{host}:{port}"],

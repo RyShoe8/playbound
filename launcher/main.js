@@ -4225,8 +4225,11 @@ function markInstalled(
   state[slug] = game;
   saveState(state);
   clearPendingInstaller(slug);
-  void syncLibrary(slug, "install", version, { editionSlug: ed });
-  notifyInstallDetected(slug);
+  void syncLibrary(slug, "install", version, { editionSlug: ed })
+    .catch(() => {})
+    .finally(() => {
+      notifyInstallDetected(slug);
+    });
 }
 
 /** Show the game in Library immediately while we look for the exe. */
@@ -5716,10 +5719,10 @@ async function placeModFiles(slug, install, baseDirOverride) {
     ...(written.length > 0 ? { written } : {}),
   };
   saveState(state);
-  void syncLibrary(slug, "install", dl.version, {
+  await syncLibrary(slug, "install", dl.version, {
     kind: "mod",
     baseGameSlug: install.baseGameSlug,
-  });
+  }).catch(() => {});
   sendProgress({ phase: "done" });
   return {
     status: "installed",
