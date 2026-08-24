@@ -1926,14 +1926,20 @@ let lastCatalogRefreshTime = 0;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 
 /** List-view catalog rows — no install URLs, exe paths, or registry keys. */
+/*
+ * Spread the whole catalog entry rather than hand-picking fields — same fix
+ * as listRecentlyPlayed below, applied here for the same reason. This list
+ * used to allowlist field names one at a time, so accessTier/fromPriceCents
+ * silently never made it across the IPC boundary when pricing was added:
+ * every card in every grid read them as undefined and rendered "FREE" for a
+ * paid game, while the detail view (which fetches full data separately) was
+ * unaffected. Any field a card learns to use in future is carried
+ * automatically now instead of needing a matching update here.
+ */
 function mapCatalogList(entries = catalog) {
   return (Array.isArray(entries) ? entries : []).map((e) => ({
-    slug: e.slug,
-    title: e.title,
-    blurb: e.blurb,
-    kind: e.kind,
+    ...e,
     approxSize: e.approxSize || "",
-    art: e.art,
     coverImage: resolveMediaUrl(e.coverImage) || null,
     genres: Array.isArray(e.genres) ? e.genres : [],
     tags: Array.isArray(e.tags) ? e.tags : [],
