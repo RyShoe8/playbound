@@ -671,13 +671,16 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     play.addEventListener("click", async (e) => {
       e.stopPropagation();
       const ed = editions.length > 1 ? selected : selected || null;
+      const curEd = selectedEdition();
       const catalogEntry = opts.catalogEntry;
+      const catEd = (catalogEntry?.editions || []).find((x) => x.slug === ed);
       const detail = {
         title: game.title,
-        features: catalogEntry?.features || game.features,
-        tags: catalogEntry?.tags || game.tags,
-        controllerSupport: catalogEntry?.controllerSupport || game.controllerSupport,
-        hasControllerSupport: catalogEntry?.hasControllerSupport ?? game.hasControllerSupport,
+        editionName: curEd?.editionName || catEd?.name || game.editionName || null,
+        features: curEd?.features || catEd?.features || catalogEntry?.features || game.features,
+        tags: curEd?.tags || catEd?.tags || catalogEntry?.tags || game.tags,
+        controllerSupport: curEd?.controllerSupport || catEd?.controllerSupport || catalogEntry?.controllerSupport || game.controllerSupport,
+        hasControllerSupport: curEd?.hasControllerSupport ?? catEd?.hasControllerSupport ?? catalogEntry?.hasControllerSupport ?? game.hasControllerSupport,
       };
       try {
         const launched = await maybeOfferPhoneControllerThenPlay(
@@ -688,7 +691,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
             startGameSession(game.slug, game.title);
             setStatus(`Launched ${game.title}`);
           },
-          game.slug
+          ed || game.slug
         );
         if (!launched) return;
       } catch (err) {

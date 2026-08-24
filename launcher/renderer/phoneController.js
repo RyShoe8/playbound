@@ -29,18 +29,21 @@ export async function gameSupportsController(detail, slug) {
       ...(detail.features || []),
       ...(detail.tags || []),
       String(detail.controllerSupport || ""),
+      String(detail.title || ""),
+      String(detail.editionName || ""),
     ]
       .join(" | ")
       .toLowerCase();
     if (hay.trim()) {
       if (/\b(no controller|controller not supported|unsupported)\b/.test(hay)) return false;
-      if (/\b(controller|gamepad|joystick|flightstick|hotas|wheel)\b/.test(hay)) return true;
+      if (/\b(controller|gamepad|joystick|flightstick|hotas|wheel|marathon|alephone|aleph one)\b/.test(hay)) return true;
     }
   }
   const gameSlug = slug || detail?.slug;
   if (gameSlug) {
     try {
-      const support = await window.playbound.getControllerSupport?.(gameSlug);
+      const clean = String(gameSlug).toLowerCase().replace(/^custom-/, "");
+      const support = await window.playbound.getControllerSupport?.(clean);
       if (support && (support.kind === "native" || support.kind === "config" || support.kind === "unwritable")) {
         return true;
       }

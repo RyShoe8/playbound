@@ -3773,7 +3773,7 @@ const facts: Game[] = [
       "The sequel that made Bungie's name before Halo: a story-heavy sci-fi shooter with swimming, terminals full of an AI losing its mind, and level design that expects you to think. Free and complete, engine and game data together, in one download.",
     developerSlug: "aleph-one-team",
     genres: ["FPS", "Shooter", "Action"],
-    tags: ["Classic", "Story Rich", "Open Source", "Retro"],
+    tags: ["Classic", "Story Rich", "Open Source", "Retro", "Controller Support"],
     aliases: ["Marathon", "Marathon 2", "Durandal", "Aleph One", "Marathon Durandal", "alephone"],
     license: "Open Source (GPL-3.0) · game data free from Bungie",
     releaseYear: 1995,
