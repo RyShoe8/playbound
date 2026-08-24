@@ -25,8 +25,17 @@ contextBridge.exposeInMainWorld("playbound", {
   addScannedGames: (slugs) => ipcRenderer.invoke("add-scanned-games", slugs || []),
   addCustomGame: (customTitle) => ipcRenderer.invoke("add-custom-game", customTitle || null),
   dismissPendingInstall: (slug) => ipcRenderer.invoke("dismiss-pending-install", slug),
-  play: (slug, join, editionSlug) =>
-    ipcRenderer.invoke("play", slug, join || null, editionSlug || null),
+  play: (slug, join, editionSlug) => {
+    try {
+      const pads = Array.from(navigator.getGamepads?.() || [])
+        .filter(Boolean)
+        .map((p) => ({ id: p.id, mapping: p.mapping, connected: p.connected }));
+      void ipcRenderer.invoke("report-gamepads", pads);
+    } catch {
+      /* ignore */
+    }
+    return ipcRenderer.invoke("play", slug, join || null, editionSlug || null);
+  },
   playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
   postTelemetry: (payload) => ipcRenderer.invoke("post-telemetry", payload),
   uninstall: (slug, editionSlug) => ipcRenderer.invoke("uninstall", slug, editionSlug || null),
