@@ -8503,6 +8503,14 @@ ipcMain.handle("couch-controller-action", async (_event, action, controllerId, p
   }
 });
 ipcMain.handle("couch-probe-driver", async () => couchHost.probeDriver());
+ipcMain.handle("get-controller-support", (_event, slug) => {
+  try {
+    const { controllerSupportFor } = require("./services/gameControllerConfig");
+    return controllerSupportFor(slug);
+  } catch (err) {
+    return { kind: "unknown", note: err?.message };
+  }
+});
 ipcMain.handle("couch-renderer-message", async (_event, payload) =>
   couchHost.onRendererMessage(payload || {})
 );
