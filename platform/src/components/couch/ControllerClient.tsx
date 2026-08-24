@@ -965,22 +965,41 @@ function ControllerStyles() {
     var(--pbc-ground);
   color: var(--pbc-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  overflow: hidden;
   /* Nothing here should ever select, callout, or bounce under a thumb. */
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+
+.pbc-pad {
+  overflow: hidden;
   touch-action: none;
 }
 
 /* ── Connection screens ─────────────────────────────────────────────── */
 
-.pbc-shell { display: grid; place-items: center; padding: 28px; }
+.pbc-shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: calc(var(--pbc-safe-t) + 16px) calc(var(--pbc-safe-r) + 16px) calc(var(--pbc-safe-b) + 16px) calc(var(--pbc-safe-l) + 16px);
+  box-sizing: border-box;
+}
 .pbc-shell-inner {
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-  text-align: center; max-width: 34ch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 38ch;
+  width: 100%;
+  margin: auto;
 }
 .pbc-shell-bad { background: radial-gradient(120% 90% at 50% -10%, rgba(255,107,107,.16), transparent 62%), var(--pbc-ground); }
 
@@ -1254,7 +1273,28 @@ function ControllerStyles() {
 }
 
 /* A short landscape phone has no room for a wide gap between stick and d-pad. */
-@media (orientation: landscape) and (max-height: 380px) {
+@media (orientation: landscape) and (max-height: 480px) {
+  .pbc-shell {
+    padding: calc(var(--pbc-safe-t) + 10px) calc(var(--pbc-safe-r) + 16px) calc(var(--pbc-safe-b) + 10px) calc(var(--pbc-safe-l) + 16px);
+  }
+  .pbc-shell-inner {
+    gap: 8px;
+    max-width: 48ch;
+  }
+  .pbc-title {
+    font-size: clamp(16px, 4.5vh, 22px);
+  }
+  .pbc-sub {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .pbc-pulse {
+    width: 46px;
+    height: 46px;
+  }
+  .pbc-toggle {
+    margin-top: 4px;
+  }
   .pbc-zone { gap: clamp(6px, 2vmin, 14px); }
   .pbc-hud { font-size: 10px; }
   .pbc-stick { width: clamp(104px, 34vmin, 150px); }

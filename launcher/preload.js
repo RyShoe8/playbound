@@ -175,6 +175,7 @@ contextBridge.exposeInMainWorld("playbound", {
   onCouchStatus: (cb) => ipcRenderer.on("couch-status", (_event, data) => cb(data || {})),
   onCouchPeerSend: (cb) =>
     ipcRenderer.on("couch-peer-send", (_event, data) => cb(data || {})),
+  getControllerSupport: (slug) => ipcRenderer.invoke("get-controller-support", slug),
 
   // Events
   onCatalogUpdated: (cb) => ipcRenderer.on("catalog-updated", (_event, data) => cb(data || [])),

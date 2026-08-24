@@ -680,12 +680,16 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         hasControllerSupport: catalogEntry?.hasControllerSupport ?? game.hasControllerSupport,
       };
       try {
-        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
-          setStatus(`Checking Java / launching ${game.title}…`);
-          await window.playbound.play(game.slug, null, ed);
-          startGameSession(game.slug, game.title);
-          setStatus(`Launched ${game.title}`);
-        });
+        const launched = await maybeOfferPhoneControllerThenPlay(
+          detail,
+          async () => {
+            setStatus(`Checking Java / launching ${game.title}…`);
+            await window.playbound.play(game.slug, null, ed);
+            startGameSession(game.slug, game.title);
+            setStatus(`Launched ${game.title}`);
+          },
+          game.slug
+        );
         if (!launched) return;
       } catch (err) {
         setStatus(err.message || String(err), true);

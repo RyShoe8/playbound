@@ -1493,12 +1493,16 @@ async function renderGameDetailView(slug, opts = {}) {
     `;
     document.getElementById("act-play").addEventListener("click", async () => {
       try {
-        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
-          setStatus("Checking Java / launching…");
-          await window.playbound.play(slug);
-          startGameSession(slug, detail.title || slug);
-          setStatus(`Launched ${detail.title || slug}`);
-        });
+        const launched = await maybeOfferPhoneControllerThenPlay(
+          detail,
+          async () => {
+            setStatus("Checking Java / launching…");
+            await window.playbound.play(slug);
+            startGameSession(slug, detail.title || slug);
+            setStatus(`Launched ${detail.title || slug}`);
+          },
+          slug
+        );
         if (!launched) return;
       } catch (err) {
         setStatus(err.message || String(err), true);
@@ -2720,7 +2724,8 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
           await window.playbound.play(gameSlug, null, editionSlug);
           startGameSession(gameSlug, edition.gameTitle || gameSlug);
           setStatus(`Launched ${edition.editionName || edition.gameTitle || gameSlug}`);
-        }
+        },
+        gameSlug
       );
       if (!launched) return;
     } catch (err) {
