@@ -38,17 +38,22 @@ export type LibraryOrphan = {
   ownedElsewhere?: boolean;
 };
 
-function DesktopInstalledActions({ slug }: { slug: string }) {
+function RemoveFromLibraryButton({
+  slug,
+  className,
+  label = "Remove",
+  onRemoved,
+}: {
+  slug: string;
+  className?: string;
+  label?: string;
+  onRemoved?: () => void;
+}) {
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const stopWatch = useRef<(() => void) | null>(null);
-  const chip =
-    "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
 
-  useEffect(() => () => stopWatch.current?.(), []);
-
-  async function removeFromLibrary() {
+  async function handleRemove(e: React.MouseEvent) {
+    e.stopPropagation();
     if (removing) return;
     setRemoving(true);
     try {
@@ -59,12 +64,37 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
         setRemoving(false);
         return;
       }
-      setHidden(true);
+      onRemoved?.();
       router.refresh();
     } catch {
       setRemoving(false);
     }
   }
+
+  return (
+    <button
+      type="button"
+      disabled={removing}
+      onClick={handleRemove}
+      className={cn(
+        "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold bg-destructive/15 text-destructive hover:bg-destructive/25 disabled:opacity-50 transition-colors",
+        className
+      )}
+      title="Remove from library"
+    >
+      <Trash2 className="size-3" /> {removing ? "Removing…" : label}
+    </button>
+  );
+}
+
+function DesktopInstalledActions({ slug }: { slug: string }) {
+  const router = useRouter();
+  const [hidden, setHidden] = useState(false);
+  const stopWatch = useRef<(() => void) | null>(null);
+  const chip =
+    "inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold";
+
+  useEffect(() => () => stopWatch.current?.(), []);
 
   function uninstallFromPc() {
     stopWatch.current?.();
@@ -103,18 +133,7 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
       >
         Locate
       </a>
-      <button
-        type="button"
-        disabled={removing}
-        onClick={() => void removeFromLibrary()}
-        className={cn(
-          chip,
-          "bg-destructive/15 text-destructive hover:bg-destructive/25 disabled:opacity-50"
-        )}
-        title="Remove from library"
-      >
-        <Trash2 className="size-3" /> {removing ? "Removing…" : "Remove"}
-      </button>
+      <RemoveFromLibraryButton slug={slug} onRemoved={() => setHidden(true)} />
       <button
         type="button"
         onClick={uninstallFromPc}
@@ -259,9 +278,18 @@ function MobileOrphanRow({
           />
         </div>
       </div>
-      <div className="mt-2">
-        <LibraryModsDisclosure mods={mods} />
+      <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+        <RemoveFromLibraryButton
+          slug={entry.gameSlug}
+          label="Remove from Library"
+          className="min-h-9 flex-1 justify-center !text-sm"
+        />
       </div>
+      {mods.length > 0 && (
+        <div className="mt-2">
+          <LibraryModsDisclosure mods={mods} />
+        </div>
+      )}
     </article>
   );
 }
@@ -326,20 +354,29 @@ function DesktopLibraryRow({
           {installed && showLauncherActions ? (
             <DesktopInstalledActions slug={game.slug} />
           ) : ownedElsewhere && showLauncherActions ? (
-            <LauncherInstallButton
-              slug={game.slug}
-              label="Install on this PC"
-              className="!px-4 !py-1.5 !text-xs"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <LauncherInstallButton
+                slug={game.slug}
+                label="Install on this PC"
+                className="!px-4 !py-1.5 !text-xs"
+              />
+              <RemoveFromLibraryButton slug={game.slug} />
+            </div>
           ) : ownedElsewhere ? (
-            <MobileOwnedElsewhereInstall game={game} />
+            <div className="flex flex-wrap items-center gap-2">
+              <MobileOwnedElsewhereInstall game={game} />
+              <RemoveFromLibraryButton slug={game.slug} />
+            </div>
           ) : (
-            <Link
-              href={`/games/${game.slug}`}
-              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
-            >
-              <ExternalLink className="size-3" /> Open game
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/games/${game.slug}`}
+                className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
+              >
+                <ExternalLink className="size-3" /> Open game
+              </Link>
+              <RemoveFromLibraryButton slug={game.slug} />
+            </div>
           )}
         </div>
         {mods.length > 0 && (
@@ -457,7 +494,9 @@ export function LibraryGrid({
                     <div className="mt-auto pt-3 flex flex-wrap gap-2">
                       {entry.installed && showLauncherActions ? (
                         <DesktopInstalledActions slug={entry.gameSlug} />
-                      ) : null}
+                      ) : (
+                        <RemoveFromLibraryButton slug={entry.gameSlug} />
+                      )}
                     </div>
                     {modsByBase[entry.gameSlug] && modsByBase[entry.gameSlug].length > 0 && (
                       <div className="mt-2">

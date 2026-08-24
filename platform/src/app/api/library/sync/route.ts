@@ -85,11 +85,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, kind: "mod", deleted: true });
     }
 
-    if (!(await resolveGameForSync(body.slug))) {
-      return NextResponse.json({ error: "Unknown game" }, { status: 404 });
-    }
-
     if (body.action === "install") {
+      if (!(await resolveGameForSync(body.slug))) {
+        return NextResponse.json({ error: "Unknown game" }, { status: 404 });
+      }
+
       const entry = await LibraryEntry.findOneAndUpdate(
         // The launcher only runs on desktop, so its installs are always the
         // desktop copy — and must not collide with the same game installed
@@ -144,16 +144,24 @@ export async function POST(req: Request) {
       });
     }
 
-    // Uninstalling via the launcher removes the desktop copy only. Legacy
+    // Uninstalling via the launcher removes the desktop copy. Legacy
     // entries have no platform and are desktop by definition, so they must
-    // match too or they become unremovable.
+    // match too or they become unremovable. Also matches custom- prefixes.
+    const cleanSlug = body.slug.replace(/^custom-/, "");
+    const slugFilter = body.slug.startsWith("custom-")
+      ? { $in: [body.slug, cleanSlug] }
+      : { $in: [body.slug, `custom-${body.slug}`] };
+
     const entry = await LibraryEntry.findOne({
       userId: user._id,
-      gameSlug: body.slug,
+      gameSlug: slugFilter,
       $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
     });
     if (!entry) {
       await removeLibraryModsForGame(String(user._id), body.slug);
+      await removeLibraryModsForGame(String(user._id), cleanSlug);
+      revalidateLibraryPages(body.slug);
+      revalidateLibraryPages(cleanSlug);
       return NextResponse.json({ success: true, deleted: false });
     }
 
@@ -174,6 +182,8 @@ export async function POST(req: Request) {
         if (entry.editionSlug === body.editionSlug) entry.editionSlug = remaining[0];
         entry.updatedAt = now;
         await entry.save();
+        revalidateLibraryPages(body.slug);
+        revalidateLibraryPages(cleanSlug);
         return NextResponse.json({
           success: true,
           deleted: false,
@@ -182,8 +192,15 @@ export async function POST(req: Request) {
       }
     }
 
-    await entry.deleteOne();
+    await LibraryEntry.deleteMany({
+      userId: user._id,
+      gameSlug: slugFilter,
+      $or: [{ platform: "desktop" }, { platform: { $exists: false } }, { platform: null }],
+    });
     await removeLibraryModsForGame(String(user._id), body.slug);
+    await removeLibraryModsForGame(String(user._id), cleanSlug);
+    revalidateLibraryPages(body.slug);
+    revalidateLibraryPages(cleanSlug);
     return NextResponse.json({ success: true, deleted: true });
   } catch (error) {
     if (error instanceof z.ZodError) {

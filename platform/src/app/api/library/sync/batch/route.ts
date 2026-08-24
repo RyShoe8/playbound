@@ -152,40 +152,43 @@ export async function POST(req: Request) {
     if (body.prune) {
       const keepGames = body.installs.map((i) => i.slug);
       const keepMods = (body.modInstalls || []).map((i) => i.slug);
-      
-      if (keepGames.length) {
-        // Mark desktop games not in this batch as saved (in account library, but not installed on this specific machine)
-        // rather than deleting them from the user's account library.
-        const uninstalledFilter: Record<string, unknown> = {
-          userId: user._id,
-          installed: true,
-          gameSlug: { $nin: keepGames },
-          $and: [
-            {
-              $or: [
-                { platform: "desktop" },
-                { platform: { $exists: false } },
-                { platform: null },
-              ],
-            },
-            /*
-             * Only revoke what the launcher could have installed.
-             *
-             * This pass says "the launcher did not report it, so it is gone",
-             * which is only true for rows the launcher owns. A store redirect
-             * or a browser install is not the launcher's to un-install, and
-             * sweeping them was marking games uninstalled that were never on
-             * this device in the first place. `manual` is included because it
-             * is the schema default every pre-`source` launcher row carries.
-             */
-            { $or: [{ source: "launcher" }, { source: "manual" }, { source: { $exists: false } }] },
-          ],
-        };
-        const gameRes = await LibraryEntry.updateMany(uninstalledFilter, {
-          $set: { installed: false, saved: true, updatedAt: now },
-        });
-        pruned = gameRes.modifiedCount || 0;
-      }
+
+      // Delete custom games that are no longer in the launcher
+      const customFilter =
+        keepGames.length > 0
+          ? { userId: user._id, gameSlug: { $nin: keepGames, $regex: /^custom-/ } }
+          : { userId: user._id, gameSlug: { $regex: /^custom-/ } };
+      await LibraryEntry.deleteMany(customFilter);
+
+      const uninstalledFilter: Record<string, unknown> = {
+        userId: user._id,
+        installed: true,
+        ...(keepGames.length > 0 ? { gameSlug: { $nin: keepGames } } : {}),
+        $and: [
+          {
+            $or: [
+              { platform: "desktop" },
+              { platform: { $exists: false } },
+              { platform: null },
+            ],
+          },
+          /*
+           * Only revoke what the launcher could have installed.
+           *
+           * This pass says "the launcher did not report it, so it is gone",
+           * which is only true for rows the launcher owns. A store redirect
+           * or a browser install is not the launcher's to un-install, and
+           * sweeping them was marking games uninstalled that were never on
+           * this device in the first place. `manual` is included because it
+           * is the schema default every pre-`source` launcher row carries.
+           */
+          { $or: [{ source: "launcher" }, { source: "manual" }, { source: { $exists: false } }] },
+        ],
+      };
+      const gameRes = await LibraryEntry.updateMany(uninstalledFilter, {
+        $set: { installed: false, saved: true, updatedAt: now },
+      });
+      pruned = gameRes.modifiedCount || 0;
 
       if (keepMods.length) {
         const modFilter: Record<string, unknown> = {
