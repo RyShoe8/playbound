@@ -103,11 +103,11 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   warfork: {
     enabled: true,
-    kind: "external",
-    url: "steam://run/671610",
-    steamAppId: "671610",
-    versionLabel: "Steam",
-    note: "Installs the free official Warfork release through Steam.",
+    kind: "steamcmd",
+    steamAppId: "1136510",
+    versionLabel: "Anonymous SteamCMD",
+    exeHint: "warfork_x64\\.exe$",
+    note: "One-click official Warfork client install through its public anonymous depot. No Steam client or account required.",
   },
   "slapshot-rebound": {
     enabled: true,

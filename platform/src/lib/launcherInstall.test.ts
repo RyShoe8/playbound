@@ -150,13 +150,20 @@ describe("multiplayer testing-wave installers", () => {
     expect(recipe).toBeDefined();
     expect(recipe.enabled).toBe(true);
     expect(recipe.kind).toBeTruthy();
-    expect(recipe.url || recipe.repo).toBeTruthy();
+    expect(recipe.url || recipe.repo || recipe.steamAppId).toBeTruthy();
   });
 
   it("uses official store handoffs for account-managed games", () => {
     expect(launcherInstallBySlug["volleyball-legends"].url).toMatch(/^https:\/\/www\.roblox\.com\/games\//);
     expect(launcherInstallBySlug["sven-co-op"].url).toBe("steam://run/225840");
-    expect(launcherInstallBySlug.warfork.url).toBe("steam://run/671610");
     expect(launcherInstallBySlug["slapshot-rebound"].url).toBe("steam://run/1173370");
+  });
+
+  it("installs Warfork anonymously without opening the Steam client", () => {
+    const recipe = launcherInstallBySlug.warfork;
+    expect(recipe.kind).toBe("steamcmd");
+    expect(recipe.steamAppId).toBe("1136510");
+    expect(recipe.url ?? null).toBeNull();
+    expect(recipe.note).toMatch(/No Steam client or account required/i);
   });
 });

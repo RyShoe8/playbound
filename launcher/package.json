@@ -27,6 +27,7 @@
     "test:exe-format": "node services/executableFormat.test.js",
     "test:dosbox": "node services/ManagedDosBox.test.js",
     "test:retroarch": "node services/ManagedRetroArch.test.js",
+    "test:steamcmd": "node services/steamCmd.test.js",
     "test:controller": "node services/gameControllerConfig.test.js",
     "test:couch": "node services/couch/protocol.test.js"
   },
