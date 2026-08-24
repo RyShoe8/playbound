@@ -40,6 +40,16 @@ import {
   fetchEndlessSkyPlayers,
   fetchNaevPlayers,
   fetchAsphaltLegendsPlayers,
+  fetchTheFinalsPlayers,
+  fetchEveOnlinePlayers,
+  fetchEnlistedPlayers,
+  fetchMarvelSnapPlayers,
+  fetchPaliaPlayers,
+  fetchWhereWindsMeetPlayers,
+  fetchRainbowSixSiegePlayers,
+  fetchOnceHumanPlayers,
+  fetchPathOfExilePlayers,
+  fetchStarTrekOnlinePlayers,
 } from "./providers/steam-concurrent";
 import { fetchZeroKServers } from "./providers/zero-k";
 import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
@@ -263,6 +273,46 @@ const providers: Record<string, ServerProvider> = {
   "asphalt-legends": {
     slug: "asphalt-legends",
     fetchServers: fetchAsphaltLegendsPlayers,
+  },
+  "the-finals": {
+    slug: "the-finals",
+    fetchServers: fetchTheFinalsPlayers,
+  },
+  "eve-online": {
+    slug: "eve-online",
+    fetchServers: fetchEveOnlinePlayers,
+  },
+  enlisted: {
+    slug: "enlisted",
+    fetchServers: fetchEnlistedPlayers,
+  },
+  "marvel-snap": {
+    slug: "marvel-snap",
+    fetchServers: fetchMarvelSnapPlayers,
+  },
+  palia: {
+    slug: "palia",
+    fetchServers: fetchPaliaPlayers,
+  },
+  "where-winds-meet": {
+    slug: "where-winds-meet",
+    fetchServers: fetchWhereWindsMeetPlayers,
+  },
+  "rainbow-six-siege": {
+    slug: "rainbow-six-siege",
+    fetchServers: fetchRainbowSixSiegePlayers,
+  },
+  "once-human": {
+    slug: "once-human",
+    fetchServers: fetchOnceHumanPlayers,
+  },
+  "path-of-exile": {
+    slug: "path-of-exile",
+    fetchServers: fetchPathOfExilePlayers,
+  },
+  "star-trek-online": {
+    slug: "star-trek-online",
+    fetchServers: fetchStarTrekOnlinePlayers,
   },
 };
 
