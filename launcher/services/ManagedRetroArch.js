@@ -9,7 +9,21 @@ const RETROARCH_URL =
 const CORE_URLS = {
   mrboom: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/mrboom_libretro.dll.zip",
   puae: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/puae_libretro.dll.zip",
+  gambatte: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/gambatte_libretro.dll.zip",
+  sameboy: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/sameboy_libretro.dll.zip",
+  mgba: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/mgba_libretro.dll.zip",
+  snes9x: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/snes9x_libretro.dll.zip",
+  genesis_plus_gx: "https://buildbot.libretro.com/nightly/windows/x86_64/latest/genesis_plus_gx_libretro.dll.zip",
 };
+
+function coreForExtension(ext) {
+  const clean = String(ext || "").toLowerCase().replace(/^\./, "");
+  if (clean === "gb" || clean === "gbc") return "gambatte";
+  if (clean === "gba") return "mgba";
+  if (clean === "sfc" || clean === "smc") return "snes9x";
+  if (clean === "md" || clean === "gen") return "genesis_plus_gx";
+  return null;
+}
 
 function managedRetroArchRoot(userDataPath) {
   return path.join(userDataPath, "runtimes", "retroarch");
@@ -92,4 +106,4 @@ function createManagedRetroArch({ userDataPath, downloadTo, extractArchive, onPr
   return { root: () => root, runtimeBinary: () => runtimeBinary(root), coreBinary: (core) => coreBinary(root, core), ensureRuntime, ensureCore };
 }
 
-module.exports = { CORE_URLS, RETROARCH_URL, RETROARCH_VERSION, coreBinary, createManagedRetroArch, managedRetroArchRoot, runtimeBinary };
+module.exports = { CORE_URLS, RETROARCH_URL, RETROARCH_VERSION, coreBinary, coreForExtension, createManagedRetroArch, managedRetroArchRoot, runtimeBinary };
