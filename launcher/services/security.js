@@ -45,6 +45,14 @@ const DOWNLOAD_DOMAINS = [
   "codeberg.org",
   "myabandonware.com",
   "allegro.cc",
+  /*
+   * RetroArch and every libretro core the launcher manages — see
+   * services/ManagedRetroArch.js. Both the emulator itself and the seven cores
+   * behind it come from buildbot.libretro.com, so without this the whole
+   * RetroArch path fails at the first download with "Download host not
+   * allowed": Deadeus, Mrboom, and every other cartridge title.
+   */
+  "libretro.com",
   // Brewall's EverQuest map packs — see verifiedModsWave.ts.
   "eqmaps.info",
   // MMOs that ship their own installer — see launcherInstallBySlug in
