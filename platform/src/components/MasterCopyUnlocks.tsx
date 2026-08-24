@@ -43,31 +43,39 @@ export function MasterCopyUnlocks({
       ) : (
         <div className="space-y-10">
           {titleCount > 0 ? (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                {unlocks.games.map((unlocked) => {
-                  const paid = directPurchaseRequired(unlocked.access);
-                  return (
-                    <div
-                      key={unlocked.slug}
-                      className="flex w-[250px] shrink-0 flex-col gap-3 self-start sm:w-[276px]"
-                    >
-                      <GameCard game={unlocked} className="h-auto" />
-                      <div className="flex flex-wrap gap-2">
-                        <GetGameCta game={unlocked} size="sm" affiliates={affiliates} />
-                        {paid ? null : <PlayCta game={unlocked} size="sm" />}
-                      </div>
+            <div className="flex flex-wrap gap-4">
+              {unlocks.games.map((unlocked) => {
+                const paid = directPurchaseRequired(unlocked.access);
+                return (
+                  <div
+                    key={unlocked.slug}
+                    className="flex w-[250px] shrink-0 flex-col gap-3 self-start sm:w-[276px]"
+                  >
+                    <GameCard game={unlocked} className="h-auto" />
+                    <div className="flex flex-wrap gap-2">
+                      <GetGameCta game={unlocked} size="sm" affiliates={affiliates} />
+                      {paid ? null : <PlayCta game={unlocked} size="sm" />}
                     </div>
-                  );
-                })}
-              </div>
-              {unlocks.editions.length > 0 ? (
-                <div className="grid max-w-2xl gap-4">
-                  {unlocks.editions.map(({ game: parent, edition }) => (
-                    <EditionCard key={`${parent.slug}:${edition.id}`} game={parent} edition={edition} />
-                  ))}
-                </div>
-              ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {/*
+           * Independent of titleCount: an edition of the SAME game (OpenRCT2 for
+           * RollerCoaster Tycoon, OpenMW for Morrowind) unlocks no separate game
+           * entry at all, so titleCount stayed 0 and this whole block — despite
+           * having real editions to show — never rendered. Mods next door were
+           * never gated this way, which is why they kept showing while editions
+           * silently vanished for exactly the master copies that had no other
+           * unlocked game alongside them.
+           */}
+          {unlocks.editions.length > 0 ? (
+            <div className="grid max-w-2xl gap-4">
+              {unlocks.editions.map(({ game: parent, edition }) => (
+                <EditionCard key={`${parent.slug}:${edition.id}`} game={parent} edition={edition} />
+              ))}
             </div>
           ) : null}
 

@@ -80,6 +80,7 @@ export async function listUnlockedByMaster(
   opts?: { includeTesting?: boolean }
 ): Promise<MasterCopyUnlocks> {
   const catalog = await listGames(opts);
+  const master = catalog.find((g) => g.slug === slug) || null;
   const dependents = gamesRequiringMaster(slug, catalog);
 
   const editions: MasterCopyEditionUnlock[] = [];
@@ -96,6 +97,26 @@ export async function listUnlockedByMaster(
 
   const ownMods = await modsForGame(slug, opts);
   addMods(ownMods);
+
+  /*
+   * The master's own alternate editions — OpenRCT2 for RollerCoaster Tycoon,
+   * OpenMW for Morrowind — unlock no separate game entry, so the dependents
+   * loop below never sees them; it only walks games that require this master,
+   * not the master itself. They are still exactly what this section promises
+   * ("the games, editions, and mods below"), so they are added directly here.
+   *
+   * Deliberately skips the hasChoosableEditions(≥2) gate the dependents loop
+   * applies: that gate exists to avoid advertising "an edition" when a
+   * dependent game only has one and installing it normally is the same
+   * thing. Here the one edition (OpenRCT2) *is* the alternate to owning the
+   * commercial data outright, so it is worth showing even alone.
+   */
+  if (master) {
+    const ownEditions = await listPublicEditionsForGame(master);
+    for (const edition of ownEditions) {
+      editions.push({ game: master, edition });
+    }
+  }
 
   const perDependent = await Promise.all(
     dependents.map(async (game) => {
