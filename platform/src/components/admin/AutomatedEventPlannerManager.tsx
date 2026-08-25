@@ -24,6 +24,7 @@ import {
   Square,
   VolumeX,
 } from "lucide-react";
+import { LocalTime } from "@/components/LocalTime";
 
 type EditionItem = {
   slug: string;
@@ -488,7 +489,12 @@ export function AutomatedEventPlannerManager() {
               </h3>
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span>
-                  Starts: {sessionStartsAt ? sessionStartsAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "Soon"}
+                  Starts:{" "}
+                  {config.activeSession.startsAt ? (
+                    <LocalTime value={config.activeSession.startsAt} mode="event" />
+                  ) : (
+                    "Soon"
+                  )}
                 </span>
                 {config.activeSession.eventId && (
                   <Link
@@ -978,7 +984,7 @@ export function AutomatedEventPlannerManager() {
                       {log.host && log.port ? `${log.host}:${log.port}` : "—"}
                     </td>
                     <td className="py-3 text-muted-foreground">
-                      {new Date(log.startedAt).toLocaleString()}
+                      <LocalTime value={log.startedAt} />
                     </td>
                     <td className="py-3 text-muted-foreground">
                       {log.durationMinutes ? `${log.durationMinutes} mins` : "—"}

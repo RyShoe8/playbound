@@ -1,8 +1,16 @@
 "use client";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
+
+function toLocalDatetimeInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export type EditEventInitialValues = {
   title: string;
@@ -38,8 +46,17 @@ export function EditEventForm({
   const [gameSlug, setGameSlug] = useState(initialValues.gameSlug);
   const [coverImage, setCoverImage] = useState<string | null>(initialValues.coverImage);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [startsAt, setStartsAt] = useState(initialValues.startsAt);
-  const [endsAt, setEndsAt] = useState(initialValues.endsAt);
+  const [startsAt, setStartsAt] = useState(toLocalDatetimeInput(initialValues.startsAt));
+  const [endsAt, setEndsAt] = useState(toLocalDatetimeInput(initialValues.endsAt));
+
+  useEffect(() => {
+    if (initialValues.startsAt) {
+      setStartsAt(toLocalDatetimeInput(initialValues.startsAt));
+    }
+    if (initialValues.endsAt) {
+      setEndsAt(toLocalDatetimeInput(initialValues.endsAt));
+    }
+  }, [initialValues.startsAt, initialValues.endsAt]);
   const [maxParticipants, setMaxParticipants] = useState(
     initialValues.maxParticipants != null ? String(initialValues.maxParticipants) : ""
   );

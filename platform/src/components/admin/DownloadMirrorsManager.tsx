@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { LauncherReleaseUploader } from "./LauncherReleaseUploader";
+import { LocalTime } from "@/components/LocalTime";
 import {
   DownloadCloud,
   HardDrive,
@@ -1200,7 +1201,7 @@ export function DownloadMirrorsManager() {
                     </div>
                   </div>
                   <div className="text-xs font-mono text-muted-foreground shrink-0">
-                    {new Date(evt.createdAt).toLocaleString()}
+                    <LocalTime value={evt.createdAt} />
                   </div>
                 </div>
               ))
