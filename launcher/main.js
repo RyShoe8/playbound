@@ -8641,6 +8641,23 @@ ipcMain.handle("check-for-updates", async () => {
      */
     if (offered && delta > 0) {
       pendingUpdate = info;
+      /*
+       * Report the breaker here too, so pressing Check for updates gives the
+       * same actionable answer the background check already surfaced instead
+       * of offering an update that is known to fail verification on this
+       * machine.
+       */
+      if (updateBreakerTripped(offered)) {
+        return {
+          ok: true,
+          updateAvailable: false,
+          manualDownloadRequired: true,
+          version: offered,
+          channel,
+          downloadUrl: MANUAL_DOWNLOAD_URL,
+          message: manualDownloadMessage(offered),
+        };
+      }
       return { ok: true, updateAvailable: true, version: offered, channel };
     }
 
@@ -9880,15 +9897,13 @@ function updaterCacheDir() {
 }
 
 /*
- * A checksum/signature mismatch means the file already sitting in
- * electron-updater's cache does not match what the current manifest expects
- * — most often a partial or superseded download left over from an earlier,
- * since-overwritten release. electron-updater has no built-in recovery from
- * this: it keeps re-verifying the same bad cached bytes against the same
- * manifest forever, and neither relaunching the app nor rebooting the OS
- * clears a disk-persistent cache directory. Wiping it here is what a manual
- * `rm -rf ~/.cache/PlayBound` fixes by hand — done automatically so the next
- * check starts genuinely clean instead of leaving a tester stuck.
+ * A checksum/signature mismatch means the bytes electron-updater ended up
+ * with do not match what the manifest says they should be — usually a
+ * partial or superseded download left in its cache. electron-updater has no
+ * recovery for this: it re-verifies the same bad bytes against the same
+ * manifest forever, and neither relaunching the app nor rebooting clears a
+ * disk-persistent cache directory. Wiping it is what a manual
+ * `rm -rf ~/.cache/PlayBound` does by hand.
  */
 function isCacheCorruptionError(message) {
   return /checksum|sha512|sha256|signature/i.test(String(message || ""));
@@ -9904,6 +9919,81 @@ async function clearStaleUpdaterCache(reason) {
     console.warn(`[updater] Could not clear cache at ${dir}:`, err?.message || err);
     return false;
   }
+}
+
+/**
+ * Give up on auto-updating after repeated verification failures.
+ *
+ * Clearing the cache fixes the common case, but it cannot fix every case: a
+ * Linux tester running the AppImage under Gearlever's bwrap sandbox kept
+ * getting one identical expected/got hash pair across three server-side
+ * releases, a full uninstall/reinstall, and a cache wipe — the bytes reaching
+ * the verifier were never the ones we published, for a reason outside this
+ * process. Whatever the cause, retrying forever is the wrong response: it
+ * burns bandwidth on every check and leaves someone staring at the same error
+ * with nothing to act on.
+ *
+ * So the breaker counts *consecutive* failures for one offered version and,
+ * past the threshold, stops auto-downloading and tells the user to grab the
+ * installer by hand instead. State is persisted rather than held in memory
+ * precisely because a restart is the thing that does not help here — an
+ * in-memory counter would reset on every relaunch and the loop would resume.
+ *
+ * It is keyed by version and cleared on success, so a genuinely new release
+ * always gets a clean attempt: this can delay an update, never permanently
+ * block one.
+ */
+const UPDATE_FAILURE_LIMIT = 3;
+const MANUAL_DOWNLOAD_URL = `${DEFAULT_API_BASE}/launcher`;
+
+function readUpdateFailures() {
+  try {
+    const record = loadSettings().updateFailures;
+    if (!record || typeof record !== "object") return null;
+    if (typeof record.version !== "string" || !Number.isFinite(Number(record.count))) return null;
+    return { version: record.version, count: Number(record.count) };
+  } catch {
+    return null;
+  }
+}
+
+function writeUpdateFailures(record) {
+  try {
+    const settings = loadSettings();
+    if (record) settings.updateFailures = record;
+    else delete settings.updateFailures;
+    saveSettings(settings);
+  } catch (err) {
+    console.warn("[updater] Could not persist update-failure state:", err?.message || err);
+  }
+}
+
+/** True once this version has failed verification too many times to keep retrying. */
+function updateBreakerTripped(version) {
+  if (!version) return false;
+  const record = readUpdateFailures();
+  return Boolean(record && record.version === version && record.count >= UPDATE_FAILURE_LIMIT);
+}
+
+/** @returns the new consecutive-failure count for this version. */
+function recordUpdateFailure(version) {
+  if (!version) return 0;
+  const previous = readUpdateFailures();
+  // A different version means a different download; start its count fresh.
+  const count = previous && previous.version === version ? previous.count + 1 : 1;
+  writeUpdateFailures({ version, count });
+  return count;
+}
+
+function clearUpdateFailures() {
+  if (readUpdateFailures()) writeUpdateFailures(null);
+}
+
+function manualDownloadMessage(version) {
+  return (
+    `Automatic update to ${version} failed verification ${UPDATE_FAILURE_LIMIT} times, so PlayBound stopped retrying. ` +
+    `Download the latest installer directly from ${MANUAL_DOWNLOAD_URL} instead.`
+  );
 }
 
 function setupAutoUpdater() {
@@ -9928,6 +10018,23 @@ function setupAutoUpdater() {
   autoUpdater.on("checking-for-update", () => emit({ phase: "checking" }));
   autoUpdater.on("update-available", (info) => {
     pendingUpdate = info;
+    /*
+     * Downloading is decided per offered version, not once at startup: a
+     * version that has already failed verification too many times must not be
+     * fetched again, while a newer one still gets its normal automatic path.
+     */
+    if (updateBreakerTripped(info.version)) {
+      autoUpdater.autoDownload = false;
+      emit({
+        phase: "manual",
+        version: info.version,
+        channel: getEffectiveUpdateChannel(),
+        downloadUrl: MANUAL_DOWNLOAD_URL,
+        message: manualDownloadMessage(info.version),
+      });
+      return;
+    }
+    autoUpdater.autoDownload = true;
     emit({
       phase: "available",
       version: info.version,
@@ -9946,6 +10053,8 @@ function setupAutoUpdater() {
   );
   autoUpdater.on("update-downloaded", (info) => {
     pendingUpdate = info;
+    // A download that verified is the definition of recovery — forget the past.
+    clearUpdateFailures();
     emit({
       phase: "ready",
       version: info.version,
@@ -9954,10 +10063,30 @@ function setupAutoUpdater() {
   });
   autoUpdater.on("error", (err) => {
     const message = err?.message || String(err);
-    emit({ phase: "error", message });
-    if (isCacheCorruptionError(message)) {
-      void clearStaleUpdaterCache(message);
+    if (!isCacheCorruptionError(message)) {
+      emit({ phase: "error", message });
+      return;
     }
+
+    const version = pendingUpdate?.version || null;
+    const failures = recordUpdateFailure(version);
+    void clearStaleUpdaterCache(message);
+
+    if (version && failures >= UPDATE_FAILURE_LIMIT) {
+      autoUpdater.autoDownload = false;
+      console.warn(
+        `[updater] ${version} failed verification ${failures}x — stopping automatic retries.`
+      );
+      emit({
+        phase: "manual",
+        version,
+        channel: getEffectiveUpdateChannel(),
+        downloadUrl: MANUAL_DOWNLOAD_URL,
+        message: manualDownloadMessage(version),
+      });
+      return;
+    }
+    emit({ phase: "error", message });
   });
 
   setTimeout(() => {

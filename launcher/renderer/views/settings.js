@@ -47,9 +47,13 @@ async function renderSettingsView() {
       ? `Version ${state.updateStatus.version} downloaded.`
       : state.updateStatus.phase === "downloading"
         ? `Downloading… ${state.updateStatus.percent || 0}%`
-        : ver?.updateAvailable
-          ? `Update ${ver.updateAvailable.version} available.`
-          : "You're on the latest build (or check to confirm).";
+        : // Auto-update gave up on this version; the message names the manual route.
+          state.updateStatus.phase === "manual"
+          ? state.updateStatus.message ||
+            `Automatic update failed repeatedly. Download the installer from playbound.club/launcher.`
+          : ver?.updateAvailable
+            ? `Update ${ver.updateAvailable.version} available.`
+            : "You're on the latest build (or check to confirm).";
 
   container.innerHTML = `
     <h1 class="view-title">Settings</h1>
@@ -293,7 +297,22 @@ async function renderSettingsView() {
       if (hintEl) hintEl.textContent = res.message || "Update check failed.";
       return;
     }
-    if (res.updateAvailable) {
+    if (res.manualDownloadRequired) {
+      /*
+       * Auto-update has already failed verification for this version enough
+       * times that retrying is pointless — say so and offer the one action
+       * that still works instead of another doomed download.
+       */
+      setStatus(res.message || "Automatic update failed — download it manually.", true);
+      state.updateStatus = {
+        phase: "manual",
+        version: res.version,
+        message: res.message,
+        downloadUrl: res.downloadUrl,
+      };
+      if (hintEl) hintEl.textContent = res.message || "Automatic update failed — download it manually.";
+      if (res.downloadUrl) window.playbound.openExternal(res.downloadUrl);
+    } else if (res.updateAvailable) {
       setStatus(`Update ${res.version} available — downloading…`);
       state.updateStatus = { phase: "available", version: res.version };
       if (hintEl) hintEl.textContent = `Update ${res.version} available — downloading…`;
