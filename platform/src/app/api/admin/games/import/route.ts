@@ -411,12 +411,16 @@ async function fromGithub(
 async function fromWebsite(
   url: string
 ): Promise<{ draft: GamePayload; warning?: string; extras: ImportExtras }> {
+  const hostname = new URL(url).hostname.toLowerCase();
+  const isGogStore = hostname === "gog.com" || hostname.endsWith(".gog.com");
   const result = await tryFetchPageMeta(url);
 
   if (result.ok) {
     const meta = result.meta;
     const title = meta.title || softTitleFromUrl(url);
-    const description = meta.description || `Play ${title} free in your browser.`;
+    const description = meta.description || (isGogStore
+      ? `Get ${title} as a DRM-free purchase from GOG.`
+      : `Play ${title} free in your browser.`);
     const slug = slugifyTitle(title);
     const cover = meta.images[0] ?? null;
 
@@ -452,18 +456,18 @@ async function fromWebsite(
         coverImage: cover,
         screenshots: meta.images.slice(0, MAX_SCREENSHOTS),
         videos: meta.videos.slice(0, MAX_VIDEOS),
-        platforms: ["Web"],
-        launchMethods: ["browser"],
-        browserPlayable: true,
+        platforms: isGogStore ? ["Windows"] : ["Web"],
+        launchMethods: isGogStore ? ["install"] : ["browser"],
+        browserPlayable: !isGogStore,
         sizeMB: 0,
-        license: "Free to play",
-        genres: ["Arcade"],
-        tags: ["Browser", "Indie"],
+        license: isGogStore ? "Commercial · DRM-free purchase" : "Free to play",
+        genres: isGogStore ? [] : ["Arcade"],
+        tags: isGogStore ? [] : ["Browser", "Indie"],
         systemRequirements: {
-          min: "Modern web browser",
-          recommended: "Modern web browser",
+          min: isGogStore ? "See the GOG store page" : "Modern web browser",
+          recommended: isGogStore ? "See the GOG store page" : "Modern web browser",
         },
-        art: defaultArtFor(["Arcade"], slug),
+        art: defaultArtFor(isGogStore ? [] : ["Arcade"], slug),
         published: false,
         launcherInstall: null,
       },
@@ -484,24 +488,26 @@ async function fromWebsite(
       ...emptyGameDraft(),
       slug,
       title,
-      tagline: `Play ${title}`,
-      description: `Play ${title} free in your browser.`,
+      tagline: isGogStore ? `Get ${title} DRM-free` : `Play ${title}`,
+      description: isGogStore
+        ? `Get ${title} as a DRM-free purchase from GOG.`
+        : `Play ${title} free in your browser.`,
       website: url,
       developerSlug: "indie-web",
       coverImage: null,
       screenshots: [],
       videos: [],
-      platforms: ["Web"],
-      launchMethods: ["browser"],
-      browserPlayable: true,
+      platforms: isGogStore ? ["Windows"] : ["Web"],
+      launchMethods: isGogStore ? ["install"] : ["browser"],
+      browserPlayable: !isGogStore,
       sizeMB: 0,
-      license: "Free to play",
-      tags: ["Browser", "Indie"],
+      license: isGogStore ? "Commercial · DRM-free purchase" : "Free to play",
+      tags: isGogStore ? [] : ["Browser", "Indie"],
       systemRequirements: {
-        min: "Modern web browser",
-        recommended: "Modern web browser",
+        min: isGogStore ? "See the GOG store page" : "Modern web browser",
+        recommended: isGogStore ? "See the GOG store page" : "Modern web browser",
       },
-      art: defaultArtFor(["Arcade"], slug),
+      art: defaultArtFor(isGogStore ? [] : ["Arcade"], slug),
       published: false,
       launcherInstall: null,
     },
