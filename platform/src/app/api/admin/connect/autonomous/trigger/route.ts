@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
     action?: "trigger" | "stop" | "test_discord";
     gameSlug?: string;
+    editionSlug?: string;
   };
 
   if (body.action === "stop") {
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
     const result = await sendSilentDiscordAnnouncement({
       webhookUrl: config.discord?.webhookUrl,
       gameSlug: body.gameSlug || "openra",
+      editionSlug: body.editionSlug || null,
       gameTitle: "OpenRA (Test Preview)",
       host: "127.0.0.1",
       port: 1234,
@@ -42,6 +44,7 @@ export async function POST(req: Request) {
   const result = await evaluateAndTriggerAutonomousMatch({
     force: true,
     gameSlugOverride: body.gameSlug,
+    editionSlugOverride: body.editionSlug,
   });
 
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });

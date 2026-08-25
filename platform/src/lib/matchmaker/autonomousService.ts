@@ -13,6 +13,7 @@ import {
   isGameHostConfigured,
 } from "@/lib/gameHost/client";
 import { games as staticGames } from "@/lib/data/games";
+import { editions as staticEditions } from "@/lib/data/editions";
 
 const DEFAULT_POPUP_GAMES: AutonomousGameConfig[] = [
   { slug: "openra", enabled: true, durationHours: 2, weight: 1 },
@@ -76,6 +77,7 @@ export async function saveAutonomousConfig(
 export async function sendSilentDiscordAnnouncement(params: {
   webhookUrl?: string | null;
   gameSlug: string;
+  editionSlug?: string | null;
   gameTitle: string;
   host: string;
   port: number;
@@ -95,8 +97,12 @@ export async function sendSilentDiscordAnnouncement(params: {
     return { ok: false, error: "No valid Discord Webhook URL configured" };
   }
 
-  const joinDeepLink = `playbound://join/${params.gameSlug}?host=${params.host}&port=${params.port}&name=${encodeURIComponent(`Pop-Up ${params.gameTitle}`)}`;
-  const webGameUrl = `https://playbound.gg/games/${params.gameSlug}`;
+  const joinDeepLink = params.editionSlug
+    ? `playbound://join/${params.gameSlug}?edition=${encodeURIComponent(params.editionSlug)}&host=${params.host}&port=${params.port}&name=${encodeURIComponent(`Pop-Up ${params.gameTitle}`)}`
+    : `playbound://join/${params.gameSlug}?host=${params.host}&port=${params.port}&name=${encodeURIComponent(`Pop-Up ${params.gameTitle}`)}`;
+  const webGameUrl = params.editionSlug
+    ? `https://playbound.gg/games/${params.gameSlug}/editions/${params.editionSlug}`
+    : `https://playbound.gg/games/${params.gameSlug}`;
   const endTimestampUnix = Math.floor(params.endsAt.getTime() / 1000);
 
   const embedTitle = params.customTitle || `⚡ Pop-Up Game Night: ${params.gameTitle}`;
@@ -161,7 +167,11 @@ export async function sendSilentDiscordAnnouncement(params: {
  * Checks and triggers an autonomous pop-up game server session if eligible.
  */
 export async function evaluateAndTriggerAutonomousMatch(
-  options: { force?: boolean; gameSlugOverride?: string } = {}
+  options: {
+    force?: boolean;
+    gameSlugOverride?: string;
+    editionSlugOverride?: string;
+  } = {}
 ): Promise<{
   ok: boolean;
   skipped?: boolean;
@@ -213,39 +223,59 @@ export async function evaluateAndTriggerAutonomousMatch(
     return { ok: false, reason: "GAME_HOST_URL or GAME_HOST_SECRET is not configured on this server" };
   }
 
-  // 5. Select Game from Pool
+  // 5. Select Game/Edition from Pool
   const enabledGames = (freshConfig.games || []).filter((g) => g.enabled);
   if (enabledGames.length === 0 && !options.gameSlugOverride) {
-    return { ok: false, reason: "No games enabled in the autonomous rotation pool" };
+    return { ok: false, reason: "No games or editions enabled in the rotation pool" };
   }
 
   let selectedSlug = options.gameSlugOverride;
+  let selectedEditionSlug = options.editionSlugOverride || null;
+  let selectedEditionName: string | null = null;
   let gameDurationHours = freshConfig.defaultDurationHours || 2;
 
   if (!selectedSlug) {
-    // Pick next game in rotation or pseudo-random
+    // Pick next game/edition in rotation or pseudo-random
     const pool = enabledGames;
     const randomIndex = Math.floor(Math.random() * pool.length);
     const chosen = pool[randomIndex];
     selectedSlug = chosen.slug;
+    selectedEditionSlug = chosen.editionSlug || null;
+    selectedEditionName = chosen.editionName || null;
     gameDurationHours = chosen.durationHours || gameDurationHours;
   } else {
-    const configuredGame = enabledGames.find((g) => g.slug === selectedSlug);
+    const configuredGame = enabledGames.find(
+      (g) =>
+        g.slug === selectedSlug &&
+        (selectedEditionSlug ? g.editionSlug === selectedEditionSlug : !g.editionSlug)
+    );
     if (configuredGame?.durationHours) {
       gameDurationHours = configuredGame.durationHours;
     }
+    if (configuredGame?.editionName) {
+      selectedEditionName = configuredGame.editionName;
+    }
+  }
+
+  if (selectedEditionSlug && !selectedEditionName) {
+    const staticEd = staticEditions.find(
+      (e) => e.gameSlug === selectedSlug && e.slug === selectedEditionSlug
+    );
+    selectedEditionName = staticEd?.name || selectedEditionSlug;
   }
 
   // Resolve game metadata
   const dbGame = await CatalogGame.findOne({ slug: selectedSlug }).lean();
   const staticEntry = staticGames.find((g) => g.slug === selectedSlug);
-  const gameTitle = (dbGame as { title?: string })?.title || staticEntry?.title || selectedSlug;
+  const baseTitle = (dbGame as { title?: string })?.title || staticEntry?.title || selectedSlug;
+  const gameTitle = selectedEditionName ? `${baseTitle}: ${selectedEditionName}` : baseTitle;
   const coverImage = (dbGame as { coverImage?: string })?.coverImage || staticEntry?.coverImage || null;
 
   // 6. Spawn Server via VPS Game Host
-  const partyId = `auto-popup-${selectedSlug}-${Date.now()}`;
+  const partyId = `auto-popup-${selectedSlug}-${selectedEditionSlug ? `${selectedEditionSlug}-` : ""}${Date.now()}`;
   const roomResult = await createHostRoom({
     gameSlug: selectedSlug,
+    editionSlug: selectedEditionSlug,
     partyId,
     name: `PlayBound Pop-Up: ${gameTitle}`,
   });
@@ -254,6 +284,7 @@ export async function evaluateAndTriggerAutonomousMatch(
     // Log failure
     await AutonomousMatchLog.create({
       gameSlug: selectedSlug,
+      editionSlug: selectedEditionSlug,
       gameTitle,
       startedAt: new Date(),
       status: "failed",
@@ -273,6 +304,7 @@ export async function evaluateAndTriggerAutonomousMatch(
       description: `Automated community match for ${gameTitle}. Connect with one click in the PlayBound launcher!`,
       eventType: "game_night",
       gameSlug: selectedSlug,
+      editionSlug: selectedEditionSlug,
       coverImage: coverImage || undefined,
       hostType: "playbound",
       startsAt,
@@ -289,6 +321,7 @@ export async function evaluateAndTriggerAutonomousMatch(
   await sendSilentDiscordAnnouncement({
     webhookUrl: freshConfig.discord?.webhookUrl,
     gameSlug: selectedSlug,
+    editionSlug: selectedEditionSlug,
     gameTitle,
     host: roomResult.host,
     port: roomResult.port,
@@ -304,6 +337,7 @@ export async function evaluateAndTriggerAutonomousMatch(
   const newSession: AutonomousActiveSession = {
     roomId: roomResult.roomId,
     gameSlug: selectedSlug,
+    editionSlug: selectedEditionSlug,
     gameTitle,
     partyId,
     host: roomResult.host,
@@ -326,6 +360,7 @@ export async function evaluateAndTriggerAutonomousMatch(
 
   await AutonomousMatchLog.create({
     gameSlug: selectedSlug,
+    editionSlug: selectedEditionSlug,
     gameTitle,
     roomId: roomResult.roomId,
     partyId,
