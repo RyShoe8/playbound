@@ -564,23 +564,38 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "fgms multiplayer; no Ubuntu 24.04 fgms package on the VPS yet.",
   },
 
+  /*
+   * Was `managed-server` while its own note said there is no dedicated server
+   * to manage, and it is not in HOSTABLE_GAMES — so it resolved to no host
+   * modes at all and had no PlayBound multiplayer despite being an eight-player
+   * game. RetroArch netplay is peer-hosted by nature: one player hosts and the
+   * rest connect, which is `direct-ip`.
+   *
+   * The launch flags were also wrong for the edition that actually ships. The
+   * live edition is the RetroArch one, where `-c` means --config, not connect;
+   * pointing it at a hostname would have been read as a config path. RetroArch
+   * uses -C to connect and -H to host.
+   */
   mrboom: {
     gameSlug: "mrboom",
     title: "Mr. Boom",
     tier: "tier1_improved",
-    adapterType: "managed-server",
-    protocol: "udp",
-    host: {
-      port: 27999,
-      protocol: "udp",
-      binaryHint: "mrboom",
-      argsTemplate: ["-p", "{port}"],
-    },
+    adapterType: "direct-ip",
+    protocol: "custom",
     client: {
-      launchArguments: ["-c", "{host}"],
+      launchArguments: ["-C", "{host}"],
+      inGameSteps: ["Wait for the netplay session to sync, then pick a slot."],
+    },
+    selfHost: {
+      // RetroArch netplay's default TCP port, and the one its own UPnP attempt
+      // asks for. https://docs.libretro.com/guides/netplay-faq/
+      port: 55435,
+      protocol: "tcp",
+      verified: true,
+      inGameSteps: ["Netplay -> Host", "Start hosting"],
     },
     notes:
-      "RetroArch netplay only — no dedicated server for VPS hosting. Local/LAN party uses managed RetroArch core.",
+      "RetroArch netplay, peer-hosted. No dedicated server exists to run on the VPS, so this is self-host only.",
   },
 
   starcraft: {
