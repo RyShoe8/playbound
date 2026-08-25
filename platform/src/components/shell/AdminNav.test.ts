@@ -78,12 +78,13 @@ describe("admin nav structure", () => {
     }
   });
 
-  it("puts mods, editions, collections and classifications under Games", () => {
+  it("puts developers, mods, editions, collections and classifications under Games", () => {
     expect(subRow("/admin/games")).toMatchObject({
       section: "Games",
       children: [
         { label: "Mods" },
         { label: "Editions" },
+        { label: "Developers" },
         { label: "Collections" },
         { label: "Mod Classifications" },
       ],
@@ -101,10 +102,13 @@ describe("admin nav structure", () => {
     });
   });
 
-  it("puts game servers under Connect", () => {
+  it("puts game servers and autonomous matchmaker under Connect", () => {
     expect(subRow("/admin/connect/game-servers")).toMatchObject({
       section: "Connect",
-      children: [{ label: "Game Servers", href: "/admin/connect/game-servers" }],
+      children: [
+        { label: "Game Servers", href: "/admin/connect/game-servers" },
+        { label: "Autonomous Matchmaker", href: "/admin/connect/autonomous" },
+      ],
     });
   });
 

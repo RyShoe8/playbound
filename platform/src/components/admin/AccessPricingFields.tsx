@@ -384,7 +384,7 @@ function PurchaseSources({
           ? {
               ...offer,
               retailer: json.retailer || offer.retailer,
-              url: json.url || offer.url,
+              url: offer.url.trim() ? offer.url.trim() : (json.url || offer.url),
               priceCents: json.priceCents!,
               lastCheckedAt: json.lastCheckedAt ?? new Date().toISOString(),
               isActive: true,
