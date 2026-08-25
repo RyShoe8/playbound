@@ -3204,12 +3204,33 @@ export const editions: EditionSeed[] = [
     },
     installMethod: "playbound_installer",
     installConfig: {
+      /*
+       * This was `github-zip` with `triplea_.*_windows-64bit\.exe$|\.zip$`,
+       * and both halves were wrong. The real asset is `TripleA_..._windows-
+       * 64bit.exe` — capitalised — so the first alternative never matched and
+       * the pattern fell through to `\.zip$`, picking up game-headed.zip or
+       * game-headless.zip instead. Neither contains a Windows executable, so
+       * the install ended in "Extracted, but no executable found".
+       *
+       * The asset is an install4j installer, not an archive, so it has to be
+       * run rather than extracted: hence `github-installer`. knownExePaths
+       * lists install4j's usual destinations rather than one guess; if the
+       * player picks somewhere else the installer poll falls back to asking
+       * them to locate the exe, which is the existing behaviour for every
+       * installer-kind game.
+       */
       playbound_installer: {
-        kind: "github-zip",
+        kind: "github-installer",
         repo: "triplea-game/triplea",
-        assetPattern: "triplea_.*_windows-64bit\\.exe$|\\.zip$",
+        assetPattern: "_windows-64bit\\.exe$",
         exeHint: "triplea",
-        note: "Official Windows 64-bit installer with bundled JRE.",
+        knownExePaths: [
+          "%LOCALAPPDATA%\\Programs\\TripleA\\TripleA.exe",
+          "%PROGRAMFILES%\\TripleA\\TripleA.exe",
+          "%PROGRAMFILES(X86)%\\TripleA\\TripleA.exe",
+          "%USERPROFILE%\\TripleA\\TripleA.exe",
+        ],
+        note: "Official Windows 64-bit install4j installer with bundled JRE.",
       },
     },
     requirements: {
@@ -3244,10 +3265,25 @@ export const editions: EditionSeed[] = [
       website: "https://triplea-game.org/",
       github: "https://github.com/triplea-game/triplea",
     },
-    installMethod: "official_download",
+    /*
+     * One-click rather than a link to the download page. The upstream release
+     * ships `game-headed.zip`, whose only runnable is
+     * `bin/game-headed-<version>.jar` — confirmed by listing the archive — and
+     * the launcher ranks .jar above .exe when locating an executable and
+     * already manages a Java runtime for jar-based games. So the portable
+     * edition installs and launches with no extra machinery.
+     *
+     * The asset name carries no version, so the pattern stays exact rather
+     * than fuzzy; game-headless.zip is the dedicated server and must not match.
+     */
+    installMethod: "playbound_installer",
     installConfig: {
-      official_download: {
-        url: "https://triplea-game.org/download/",
+      playbound_installer: {
+        kind: "github-zip",
+        repo: "triplea-game/triplea",
+        assetPattern: "^game-headed\\.zip$",
+        exeHint: "game-headed",
+        note: "Portable multi-platform build. Runs the bundled jar; PlayBound supplies Java if missing.",
       },
     },
     requirements: {

@@ -79,6 +79,23 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
    * https://wiki.bzflag.org/Creating_a_server
    */
   "bzflag",
+
+  /*
+   * The four below were confirmed in the client by hand, which is the standard
+   * this list is meant to hold to.
+   */
+
+  // Create a world others connect to, with an announce option.
+  "luanti",
+
+  // Client can create a multiplayer server.
+  "xonotic",
+
+  // Start a multiplayer game, with local / invite-only / public visibility.
+  "openttd",
+
+  // Client can host a multiplayer match.
+  "0-ad",
 ]);
 
 export interface HostModeOption {
