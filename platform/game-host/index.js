@@ -484,7 +484,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     }
   }
 
-  const args = recipe.args(port, ctx);
+  const args = recipe.args(port, ctx, binary);
   const hostHome = process.env.HOME || "/var/lib/playbound-host";
   const spawnEnv = {
     ...process.env,
