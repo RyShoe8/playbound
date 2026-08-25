@@ -218,20 +218,6 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 2330,
     protocol: "udp",
   },
-  "chris-sawyers-locomotion": {
-    slug: "chris-sawyers-locomotion",
-    title: "Chris Sawyer's Locomotion",
-    defaultPort: 2300,
-    portEnd: 2320,
-    protocol: "both",
-  },
-  "renegade-x": {
-    slug: "renegade-x",
-    title: "Renegade X",
-    defaultPort: 7777,
-    portEnd: 7797,
-    protocol: "udp",
-  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
@@ -249,9 +235,6 @@ const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   ss14: "space-station-14",
   rvgl: "re-volt-rvgl",
   revolt: "re-volt-rvgl",
-  locomotion: "chris-sawyers-locomotion",
-  openloco: "chris-sawyers-locomotion",
-  renegadex: "renegade-x",
   wipeout: "wipeout-rewrite",
 };
 

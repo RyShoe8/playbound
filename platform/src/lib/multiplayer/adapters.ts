@@ -1200,14 +1200,9 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "chris-sawyers-locomotion": {
     gameSlug: "chris-sawyers-locomotion",
     title: "Chris Sawyer's Locomotion",
-    tier: "tier2_automated_server",
-    adapterType: "managed-server",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
     protocol: "tcp",
-    host: {
-      port: 2300,
-      protocol: "both",
-      binaryHint: "openloco",
-    },
     client: {
       launchArguments: ["--connect", "{host}:{port}"],
       inGameSteps: ["Multiplayer", "Join Direct IP"],
@@ -1218,20 +1213,15 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       verified: true,
       inGameSteps: ["Two Player", "Host TCP/IP Network Game"],
     },
-    notes: "Locomotion transport simulation with OpenLoco dedicated and local TCP/IP multiplayer.",
+    notes: "Locomotion transport simulation with OpenLoco local TCP/IP multiplayer.",
   },
 
   "renegade-x": {
     gameSlug: "renegade-x",
     title: "Renegade X",
-    tier: "tier2_automated_server",
-    adapterType: "managed-server",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
     protocol: "udp",
-    host: {
-      port: 7777,
-      protocol: "udp",
-      binaryHint: "RenegadeXServer.exe",
-    },
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
@@ -1241,7 +1231,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       verified: true,
       inGameSteps: ["Host LAN / Internet Server"],
     },
-    notes: "Unreal Engine 3 C&C Renegade reboot with automated dedicated servers and master listing.",
+    notes: "Unreal Engine 3 C&C Renegade reboot with player-hosted servers (Windows only).",
   },
 
   gemrb: {
