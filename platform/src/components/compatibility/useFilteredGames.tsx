@@ -9,6 +9,10 @@ import {
   type GameLike,
 } from "@/lib/compatibility/compatibility";
 
+import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
+import { useAccessTiers } from "@/components/AccessTiersProvider";
+import { filterBySlugAccess } from "@/lib/access/discoveryMode";
+
 /** Soft fade when the filtered set changes. */
 export function CompatibleGamesFade({
   children,
@@ -27,8 +31,8 @@ export function CompatibleGamesFade({
 }
 
 /**
- * Apply global compatibility preference.
- * - default: hard-filter when mode is "compatible"
+ * Apply global compatibility and discovery mode preferences.
+ * - default: hard-filter when mode is "compatible" or discovery mode is "FREE"
  * - soft: reorder ~90% compatible / 10% other (recommendations); never hard-exclude
  */
 export function useFilteredGames<T extends GameLike>(
@@ -36,14 +40,21 @@ export function useFilteredGames<T extends GameLike>(
   options?: { prioritize?: boolean; soft?: boolean; limit?: number; ratio?: number }
 ): T[] {
   const { mode, device } = useCompatibilityFilter();
+  const { mode: discoveryMode } = useDiscoveryMode();
+  const tiers = useAccessTiers();
   const limit = options?.limit ?? games.length;
   const ratio = options?.ratio ?? 0.9;
 
-  if (options?.soft || (options?.prioritize && mode === "all")) {
-    return prioritizeCompatible(games, device.type, { ratio, limit });
+  let accessibleGames = games;
+  if (discoveryMode === "FREE") {
+    accessibleGames = filterBySlugAccess(games, "FREE", tiers, (g) => (g as { slug?: string }).slug);
   }
 
-  const filtered = filterGamesForPreference(games, mode, device.type);
+  if (options?.soft || (options?.prioritize && mode === "all")) {
+    return prioritizeCompatible(accessibleGames, device.type, { ratio, limit });
+  }
+
+  const filtered = filterGamesForPreference(accessibleGames, mode, device.type);
   if (options?.prioritize) {
     return prioritizeCompatible(filtered, device.type, { ratio: 1, limit });
   }

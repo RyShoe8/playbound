@@ -8,6 +8,9 @@ import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
 import { evaluateCompatibility } from "@/lib/hardware/compatibility";
 import { useTelemetry } from "@/lib/telemetry";
 import { useCompatibilityFilter } from "@/hooks/useCompatibilityFilter";
+import { useDiscoveryMode } from "@/hooks/useDiscoveryMode";
+import { useAccessTiers } from "@/components/AccessTiersProvider";
+import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { filterGamesForPreference } from "@/lib/compatibility/compatibility";
 import { CompatibleGamesFade } from "@/components/compatibility/useFilteredGames";
 import { GenreGameRow } from "@/components/GenreGameRow";
@@ -47,6 +50,8 @@ export function DiscoverFilters({
 }) {
   const { track } = useTelemetry();
   const { mode, device } = useCompatibilityFilter();
+  const { mode: discoveryMode } = useDiscoveryMode();
+  const tiers = useAccessTiers();
   const [selectedGenre, setSelectedGenre] = useState<string>("");
   /*
    * Tags are a long tail — dozens of them against a dozen genres — so they
@@ -181,6 +186,10 @@ export function DiscoverFilters({
       });
     }
 
+    if (discoveryMode === "FREE") {
+      list = filterGamesByMode(list, "FREE", tiers);
+    }
+
     list = filterGamesForPreference(list, mode, device.type);
 
     if (sort === "players") {
@@ -200,6 +209,8 @@ export function DiscoverFilters({
     hasPlayersOnly,
     hwFilter,
     userHw,
+    discoveryMode,
+    tiers,
     mode,
     device.type,
     sort,

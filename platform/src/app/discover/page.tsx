@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { listDiscoverableGames } from "@/lib/access/discover";
+import { listGames } from "@/lib/catalog";
 import { viewerCanSeeTesting } from "@/lib/requestIncludesTesting";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
@@ -16,7 +16,7 @@ export const metadata: Metadata = pageMetadata({
 export default async function DiscoverPage() {
   const includeTesting = await viewerCanSeeTesting();
   const [games, liveStats] = await Promise.all([
-    listDiscoverableGames({ includeTesting }),
+    listGames({ includeTesting }),
     getCatalogLiveStats(),
   ]);
 

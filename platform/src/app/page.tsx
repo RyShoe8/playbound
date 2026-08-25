@@ -2,14 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Gem, Newspaper, Server } from "lucide-react";
-import { getGame } from "@/lib/catalog";
+import { getGame, listGames, listGamesNewestFirst, mostPopularGames } from "@/lib/catalog";
 import { listCollections } from "@/lib/collections";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
 import {
-  listDiscoverableGames,
-  listDiscoverableGamesNewestFirst,
-  listDiscoverablePopular,
   filterDiscoverableBySlug,
   filterDiscoverableCollections,
   getDiscoveryContext,
@@ -110,9 +107,9 @@ export default async function HomePage() {
    */
   const [gamesNewestFirst, games, popular, mods, liveStats, collections] =
     await Promise.all([
-      listDiscoverableGamesNewestFirst(),
-      listDiscoverableGames(),
-      listDiscoverablePopular(12),
+      listGamesNewestFirst(),
+      listGames(),
+      mostPopularGames(12),
       listMods({ view: "card" }),
       getCatalogLiveStats(),
       listCollections(),

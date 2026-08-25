@@ -36,15 +36,16 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   if (!collection) notFound();
 
   const allGames = await gamesFor(collection.gameSlugs);
+  if (allGames.length === 0) notFound();
+
   const { mode, tiers } = await getDiscoveryContext();
-  const games = filterGamesByMode(allGames, mode, tiers);
-  if (games.length === 0) notFound();
+  const visibleGames = filterGamesByMode(allGames, mode, tiers);
 
   const faq = [
     {
       q: `What is the best ${collection.title.toLowerCase().replace(/^best /, "")}?`,
-      a: games[0]
-        ? `PlayBound's top pick is ${games[0].title} — ${games[0].tagline} It runs on ${games[0].platforms.join(", ")}.`
+      a: (visibleGames[0] || allGames[0])
+        ? `PlayBound's top pick is ${(visibleGames[0] || allGames[0]).title} — ${(visibleGames[0] || allGames[0]).tagline} It runs on ${(visibleGames[0] || allGames[0]).platforms.join(", ")}.`
         : collection.description,
     },
     {
@@ -57,7 +58,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
     <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
       <JsonLd
         data={graph(
-          collectionPageSchema(collection, games),
+          collectionPageSchema(collection, allGames),
           faqSchema(faq),
           breadcrumbSchema([
             { name: "Home", path: "/" },
@@ -72,14 +73,14 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{collection.title}</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">{collection.description}</p>
         <p className="mt-4 text-sm text-muted-foreground">
-          {games.length} games · every one clears{" "}
+          {allGames.length} games · every one clears{" "}
           <Link href="/standards" className="font-semibold text-primary hover:underline">
             the PlayBound Bar
           </Link>
         </p>
       </section>
 
-      <CollectionGamesList games={games} />
+      <CollectionGamesList games={allGames} />
 
       <section>
         <h2 className="text-xl font-bold">Questions</h2>
