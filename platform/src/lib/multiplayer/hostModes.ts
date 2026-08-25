@@ -4,18 +4,25 @@
  * This is the one place Connect answers that question, for the site, the
  * launcher API and the admin views alike.
  *
- * Nothing here is hand-copied per game. A game's listen port and protocol are
- * the same whether the VPS runs it or a player does, so both are read from
- * HOSTABLE_GAMES — already the authority for "what does this game listen on".
- * Adding a game to that catalog therefore gives it self-hosting support for
- * free, which is the point: deploying to a future game is one entry, not two
- * that can drift apart.
+ * ── Why self-hosting is safe by default ──────────────────────────────────
+ * Hosting on a home connection normally founders on NAT: the host's router
+ * will not accept inbound traffic, and automatic port mapping is not always
+ * available (probing a real home network during this work found neither UPnP
+ * nor NAT-PMP). Connect already solves that a different way — it puts the
+ * party on one overlay segment, so every member shares an L2 network and the
+ * host is directly addressable with no port forwarding at all. That is the
+ * same mechanism virtual-lan games have always used, and it is live in
+ * production.
  *
- * The only per-game fact that cannot be derived is whether the game's *client*
- * can host at all. A dedicated server is frequently a separate binary, and
- * "the client has a Host button" is not something to assume — so it lives in
- * SELF_HOST_VERIFIED below and is added only after someone has really hosted a
- * game and had another player join it.
+ * So reachability inside a party is a solved problem, and self-hosting is a
+ * reasonable default: lower latency, and the host keeps control of the room.
+ * Port mapping stays as a second path for reaching a self-hosted room from
+ * *outside* the party — a public lobby — where the overlay does not apply.
+ *
+ * ── Where the data comes from ────────────────────────────────────────────
+ * Nothing here is hand-copied per game. Port and protocol, needed only for the
+ * public-lobby path, are read from HOSTABLE_GAMES, already the authority on
+ * what a game listens on. Adding a game there gives it self-hosting for free.
  */
 
 import { HOSTABLE_GAMES, isHostableGame } from "@/lib/gameHost/catalog";
@@ -24,53 +31,62 @@ import { getMultiplayerAdapter, type PartyHostMode, type SelfHostConfig } from "
 export type { PartyHostMode };
 
 /**
- * Games where hosting from the player's own machine has been confirmed by an
- * actual host-and-join test.
+ * Games whose *client* can host, where that is not already obvious.
  *
- * Warzone 2100 is here on the strength of its adapter note — "Native IP
- * hosting and automated VPS dedicated server" — which records that both paths
- * were exercised for that game.
+ * Only `managed-server` games need to be listed. For them a dedicated server
+ * is frequently a separate binary, so "the client can host too" has to be
+ * seen to be believed — Warzone 2100 is here because its adapter note records
+ * exactly that ("Native IP hosting and automated VPS dedicated server").
  *
- * Every other VPS-hostable game already has working port/protocol data and
- * needs nothing but a real test to join this list. Adding a slug here is what
- * turns the option on in the UI.
+ * `direct-ip` and `virtual-lan` games are deliberately absent: peer hosting is
+ * the only way those games work at all, so their client hosting is not a
+ * claim, it is the existing behaviour.
  */
-export const SELF_HOST_VERIFIED: ReadonlySet<string> = new Set<string>([
+export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
   "warzone-2100",
 ]);
 
 export interface HostModeOption {
   mode: PartyHostMode;
-  /** Whether this mode can actually be picked for this game right now. */
   available: boolean;
   label: string;
   hint: string;
 }
 
-/**
- * Self-host settings for a game, or null when the game cannot be self-hosted.
- *
- * An adapter may declare `selfHost` explicitly — that wins, and is how a game
- * that is *not* VPS-hostable can still offer self-hosting. Otherwise the
- * config is derived from the game-host catalog.
- */
-export function selfHostConfigFor(gameSlug: string): SelfHostConfig | null {
-  const declared = getMultiplayerAdapter(gameSlug).selfHost;
-  if (declared) {
-    return declared.verified ? declared : null;
-  }
-  const hostable = HOSTABLE_GAMES[gameSlug];
-  if (!hostable) return null;
-  if (!SELF_HOST_VERIFIED.has(gameSlug)) return null;
-  return {
-    port: hostable.defaultPort,
-    protocol: hostable.protocol,
-    verified: true,
-  };
+/** True when the game's own networking is peer-hosted to begin with. */
+function isPeerHostedGame(gameSlug: string): boolean {
+  const type = getMultiplayerAdapter(gameSlug).adapterType;
+  return type === "direct-ip" || type === "virtual-lan";
 }
 
+/**
+ * Can a player host this game on their own machine?
+ *
+ * Three ways to qualify, in descending order of certainty:
+ *   1. The adapter says so outright.
+ *   2. The game is peer-hosted anyway, so hosting is how it already works.
+ *   3. It is a managed-server game whose client hosting has been verified.
+ */
 export function canSelfHost(gameSlug: string): boolean {
-  return selfHostConfigFor(gameSlug) !== null;
+  const declared = getMultiplayerAdapter(gameSlug).selfHost;
+  if (declared) return declared.verified;
+  if (isPeerHostedGame(gameSlug)) return true;
+  return CLIENT_HOSTING_VERIFIED.has(gameSlug);
+}
+
+/**
+ * Port/protocol for reaching a self-hosted room from outside the party.
+ *
+ * Null is not a failure. Party members reach the host over the overlay, which
+ * needs no mapping — this is only consulted for the public-lobby path, and a
+ * game with no port on file simply does not get one.
+ */
+export function publicLobbyPortFor(gameSlug: string): Pick<SelfHostConfig, "port" | "protocol"> | null {
+  const declared = getMultiplayerAdapter(gameSlug).selfHost;
+  if (declared?.port) return { port: declared.port, protocol: declared.protocol };
+  const hostable = HOSTABLE_GAMES[gameSlug];
+  if (!hostable) return null;
+  return { port: hostable.defaultPort, protocol: hostable.protocol };
 }
 
 export function canUseDedicated(gameSlug: string): boolean {
@@ -80,30 +96,25 @@ export function canUseDedicated(gameSlug: string): boolean {
 /**
  * Every host mode a game supports.
  *
- * Returns an empty array for a game with no PlayBound-run multiplayer at all,
- * which callers should read as "do not show a picker".
+ * Empty means the game has no PlayBound-run multiplayer, and callers should
+ * show no picker at all.
  */
 export function hostModesFor(gameSlug: string): PartyHostMode[] {
   const modes: PartyHostMode[] = [];
-  if (canUseDedicated(gameSlug)) modes.push("dedicated");
   if (canSelfHost(gameSlug)) modes.push("self");
+  if (canUseDedicated(gameSlug)) modes.push("dedicated");
   return modes;
 }
 
 /**
- * The mode to preselect.
+ * The mode to preselect: self-hosting wherever the game supports it.
  *
- * Dedicated whenever it exists. Connect's whole premise is that most home
- * connections cannot accept inbound traffic (see /connect), and that has not
- * changed: probing a real home network while building this found neither UPnP
- * nor NAT-PMP, so an automatic port mapping is genuinely unavailable to a
- * meaningful share of players. Defaulting to the VPS means a party works
- * without the host having to think about their router; self-hosting stays one
- * click away for anyone who wants it.
+ * Safe because the party overlay carries reachability — see the file header.
+ * A game that cannot be client-hosted falls back to the VPS.
  */
 export function defaultHostMode(gameSlug: string): PartyHostMode | null {
   const modes = hostModesFor(gameSlug);
-  if (modes.includes("dedicated")) return "dedicated";
+  if (modes.includes("self")) return "self";
   return modes[0] ?? null;
 }
 
@@ -116,29 +127,33 @@ export function isValidHostMode(gameSlug: string, mode: unknown): mode is PartyH
 export function hostModeOptions(gameSlug: string): HostModeOption[] {
   return [
     {
-      mode: "dedicated" as const,
-      available: canUseDedicated(gameSlug),
-      label: "PlayBound server",
-      hint: "We host the room. Everyone connects out — no port forwarding, and it stays up if you leave.",
-    },
-    {
       mode: "self" as const,
       available: canSelfHost(gameSlug),
       label: "My computer",
-      hint: "Your PC hosts. Lower latency for you, but your router has to accept inbound connections and the room ends when you quit.",
+      hint: "Your PC runs the game. Lowest latency, and your party reaches it over the PlayBound network — no port forwarding. The room ends when you quit.",
+    },
+    {
+      mode: "dedicated" as const,
+      available: canUseDedicated(gameSlug),
+      label: "PlayBound server",
+      hint: "We host the room on our server. It stays up even if you leave, and anyone can join without being in your party.",
     },
   ].filter((option) => option.available);
 }
 
-/** Games wired for self-hosting but still awaiting a real host-and-join test. */
-export function listUnverifiedSelfHostCandidates(): Array<{
+/**
+ * Managed-server games still waiting on a host-and-join test before their
+ * client-hosting option appears. Peer-hosted games are excluded — they never
+ * needed verifying.
+ */
+export function listUnverifiedClientHosting(): Array<{
   gameSlug: string;
   title: string;
   port: number;
   protocol: "udp" | "tcp" | "both";
 }> {
   return Object.values(HOSTABLE_GAMES)
-    .filter((game) => !SELF_HOST_VERIFIED.has(game.slug))
+    .filter((game) => !CLIENT_HOSTING_VERIFIED.has(game.slug) && !isPeerHostedGame(game.slug))
     .map((game) => ({
       gameSlug: game.slug,
       title: game.title,
