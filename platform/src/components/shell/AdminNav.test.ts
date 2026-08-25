@@ -107,7 +107,7 @@ describe("admin nav structure", () => {
       section: "Connect",
       children: [
         { label: "Game Servers", href: "/admin/connect/game-servers" },
-        { label: "Automated Events", href: "/admin/connect/autonomous" },
+        { label: "Event Planner", href: "/admin/connect/automated-events" },
       ],
     });
   });
