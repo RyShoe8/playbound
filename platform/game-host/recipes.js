@@ -442,7 +442,13 @@ export const recipes = {
     portStart: 15000,
     portEnd: 15020,
     protocol: "tcp",
-    binaries: gameBin("battle-for-wesnoth", ["wesnothd", "wesnoth-server", "wesnothd-1.18", "wesnothd-1.16"]),
+    binaries: gameBin("battle-for-wesnoth", [
+      "wesnothd",
+      "wesnoth-server",
+      "wesnothd-1.18",
+      "wesnothd-1.16",
+      "wesnoth",
+    ]),
     args: (port) => ["-p", String(port)],
   },
   veloren: {
@@ -456,7 +462,16 @@ export const recipes = {
     portStart: 10666,
     portEnd: 10686,
     protocol: "udp",
-    binaries: gameBin("freedoom", ["odasrv", "zandronum-server", "chocolate-server"]),
+    binaries: gameBin("freedoom", [
+      "odasrv",
+      "odamex-server",
+      "odamex",
+      "zandronum-server",
+      "chocolate-server",
+      "chocolate-doom-server",
+      "crispy-server",
+      "prboom-plus-game-server",
+    ]),
     args: (port, ctx) => [
       "-port",
       String(port),
@@ -477,14 +492,14 @@ export const recipes = {
     portStart: 8452,
     portEnd: 8462,
     protocol: "udp",
-    binaries: gameBin("zero-k", ["spring-dedicated", "spring"]),
+    binaries: gameBin("zero-k", ["spring-dedicated", "spring", "Zero-K.exe"]),
     args: (port) => ["--port", String(port), "--headless"],
   },
   flightgear: {
     portStart: 5000,
     portEnd: 5010,
     protocol: "udp",
-    binaries: gameBin("flightgear", ["fgms"]),
+    binaries: gameBin("flightgear", ["fgms", "fgfs", "flightgear"]),
     args: (port) => ["-p", String(port)],
   },
   openhv: {
@@ -533,27 +548,6 @@ export const recipes = {
     protocol: "tcp",
     binaries: gameBin("gemrb", ["gemrb", "gemrb-server"]),
     args: (port) => ["--port", String(port)],
-  },
-  "wipeout-rewrite": {
-    portStart: 7000,
-    portEnd: 7020,
-    protocol: "udp",
-    binaries: gameBin("wipeout-rewrite", ["wipeout-rewrite", "wipeout"]),
-    args: (port) => ["-server", "-port", String(port)],
-  },
-  exult: {
-    portStart: 9999,
-    portEnd: 10010,
-    protocol: "both",
-    binaries: gameBin("exult", ["exult", "exult-server"]),
-    args: (port) => ["--port", String(port)],
-  },
-  "hurry-curry": {
-    portStart: 8888,
-    portEnd: 8900,
-    protocol: "both",
-    binaries: gameBin("hurry-curry", ["hurry_curry", "hurry-curry"]),
-    args: (port) => ["--server", "--port", String(port)],
   },
 };
 

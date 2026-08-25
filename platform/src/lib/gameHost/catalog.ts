@@ -239,27 +239,6 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 47640,
     protocol: "tcp",
   },
-  "wipeout-rewrite": {
-    slug: "wipeout-rewrite",
-    title: "wipEout Rewrite",
-    defaultPort: 7000,
-    portEnd: 7020,
-    protocol: "udp",
-  },
-  exult: {
-    slug: "exult",
-    title: "Exult",
-    defaultPort: 9999,
-    portEnd: 10010,
-    protocol: "both",
-  },
-  "hurry-curry": {
-    slug: "hurry-curry",
-    title: "Hurry Curry!",
-    defaultPort: 8888,
-    portEnd: 8900,
-    protocol: "both",
-  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
