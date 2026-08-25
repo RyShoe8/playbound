@@ -56,37 +56,48 @@ export async function GET() {
       .lean(),
   ]);
 
-  const candidateGames = slugsArr.map((slug) => {
-    const staticGame = staticGames.find((g) => g.slug === slug);
-    const dbMatch = dbGames.find((dbG) => (dbG as { slug?: string }).slug === slug);
-    const title = (dbMatch as { title?: string })?.title || staticGame?.title || slug;
-    const coverImage = (dbMatch as { coverImage?: string })?.coverImage || staticGame?.coverImage || undefined;
+  const candidateGames = slugsArr
+    .map((slug) => {
+      const staticGame = staticGames.find((g) => g.slug === slug);
+      const dbMatch = dbGames.find((dbG) => (dbG as { slug?: string }).slug === slug) as
+        | { slug?: string; title?: string; coverImage?: string; status?: string }
+        | undefined;
 
-    const gameDbEditions = dbEditions.filter((e) => (e as { gameSlug?: string }).gameSlug === slug);
-    const gameStaticEditions = staticEditions.filter(
-      (e) => e.gameSlug === slug && e.visibility !== "hidden" && e.status !== "archived"
-    );
-
-    const editionMap = new Map<string, { slug: string; name: string; shortDescription?: string }>();
-    for (const e of gameStaticEditions) {
-      if (e.slug !== "official" && e.slug !== "default") {
-        editionMap.set(e.slug, { slug: e.slug, name: e.name, shortDescription: e.shortDescription });
+      const status = dbMatch?.status ?? staticGame?.status ?? "published";
+      // Exclude games in testing or draft status from the Event Planner
+      if (status === "testing" || status === "draft") {
+        return null;
       }
-    }
-    for (const e of gameDbEditions) {
-      const ed = e as { slug: string; name: string; shortDescription?: string };
-      if (ed.slug !== "official" && ed.slug !== "default") {
-        editionMap.set(ed.slug, { slug: ed.slug, name: ed.name, shortDescription: ed.shortDescription });
-      }
-    }
 
-    return {
-      slug,
-      title,
-      coverImage,
-      editions: Array.from(editionMap.values()),
-    };
-  });
+      const title = dbMatch?.title || staticGame?.title || slug;
+      const coverImage = dbMatch?.coverImage || staticGame?.coverImage || undefined;
+
+      const gameDbEditions = dbEditions.filter((e) => (e as { gameSlug?: string }).gameSlug === slug);
+      const gameStaticEditions = staticEditions.filter(
+        (e) => e.gameSlug === slug && e.visibility !== "hidden" && e.status !== "archived"
+      );
+
+      const editionMap = new Map<string, { slug: string; name: string; shortDescription?: string }>();
+      for (const e of gameStaticEditions) {
+        if (e.slug !== "official" && e.slug !== "default") {
+          editionMap.set(e.slug, { slug: e.slug, name: e.name, shortDescription: e.shortDescription });
+        }
+      }
+      for (const e of gameDbEditions) {
+        const ed = e as { slug: string; name: string; shortDescription?: string };
+        if (ed.slug !== "official" && ed.slug !== "default") {
+          editionMap.set(ed.slug, { slug: ed.slug, name: ed.name, shortDescription: ed.shortDescription });
+        }
+      }
+
+      return {
+        slug,
+        title,
+        coverImage,
+        editions: Array.from(editionMap.values()),
+      };
+    })
+    .filter((g): g is NonNullable<typeof g> => g !== null);
 
   // Get VPS Host health
   const hostHealth = await fetchGameHostHealth().catch(() => null);
