@@ -545,20 +545,6 @@ export const recipes = {
       ctx.name || "PlayBound RVGL",
     ],
   },
-  "chris-sawyers-locomotion": {
-    portStart: 2300,
-    portEnd: 2320,
-    protocol: "both",
-    binaries: gameBin("chris-sawyers-locomotion", ["openloco", "OpenLoco"]),
-    args: (port) => ["--port", String(port), "--headless"],
-  },
-  "renegade-x": {
-    portStart: 7777,
-    portEnd: 7797,
-    protocol: "udp",
-    binaries: gameBin("renegade-x", ["RenegadeXServer.exe", "UDK.exe", "renegadex-server"]),
-    args: (port) => ["server", `CNC-Field?game=RenegadeX.Rx_Game?Port=${port}`, "-silent"],
-  },
 };
 
 export function resolveRecipe(slug) {
