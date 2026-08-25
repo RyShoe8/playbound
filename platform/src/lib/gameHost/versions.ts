@@ -39,9 +39,6 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   flightgear: "fgms daemon",
   openhv: "OpenRA engine (OpenHV.Server)",
   "re-volt-rvgl": "RVGL dedicated",
-  "chris-sawyers-locomotion": "OpenLoco server",
-  "renegade-x": "UDK Renegade X server",
-  gemrb: "GemRB party host",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {
@@ -129,7 +126,6 @@ export function versionsLikelyMismatch(
   if (c.includes("githublatest") || s.includes("ubuntuapt")) return false;
   if (c.includes("playboundonline") && s.includes("playboundonline")) return false;
   if (c === s) return false;
-  // Same major.minor prefix (e.g. 3.2.5 client vs 3.2.5 server probe)
   if (c.startsWith(s) || s.startsWith(c)) return false;
   const cMajorMinor = c.match(/^(\d+\.\d+)/)?.[1];
   const sMajorMinor = s.match(/^(\d+\.\d+)/)?.[1];
@@ -140,6 +136,8 @@ export function versionsLikelyMismatch(
     const sMajor = s.match(/^(\d+)/)?.[1];
     if (cMajor && cMajor === sMajor) return false;
   }
+  // FlightGear uses fgms server daemon (0.13.x) which has separate versioning from fgfs client (2024.x)
+  if (slug === "flightgear") return false;
   return true;
 }
 
