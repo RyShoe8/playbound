@@ -99,8 +99,14 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
   // Start a multiplayer game, with local / invite-only / public visibility.
   "openttd",
 
-  // Client can host a multiplayer match.
-  "0-ad",
+  /*
+   * The catalog slug, `0ad`, not the `0-ad` spelling HOSTABLE_GAMES uses. This
+   * said "0-ad" and so never matched the live game: 0 A.D. was offered only
+   * the dedicated mode despite its client hosting fine. canSelfHost now
+   * resolves through the adapter's canonical slug so either spelling works,
+   * but the entry names the real one.
+   */
+  "0ad",
 
   /*
    * Same idTech/Quake lineage as Xonotic, which was confirmed by hand: the
@@ -140,10 +146,15 @@ function isPeerHostedGame(gameSlug: string): boolean {
  *   3. It is a managed-server game whose client hosting has been verified.
  */
 export function canSelfHost(gameSlug: string): boolean {
-  const declared = getMultiplayerAdapter(gameSlug).selfHost;
-  if (declared) return declared.verified;
+  const adapter = getMultiplayerAdapter(gameSlug);
+  if (adapter.selfHost) return adapter.selfHost.verified;
   if (isPeerHostedGame(gameSlug)) return true;
-  return CLIENT_HOSTING_VERIFIED.has(gameSlug);
+  /*
+   * Checked against the adapter's canonical slug as well as the caller's, so
+   * an alias spelling reads the same entry. Without this, `0ad` and `0-ad`
+   * disagreed about whether the same game could be client-hosted.
+   */
+  return CLIENT_HOSTING_VERIFIED.has(adapter.gameSlug) || CLIENT_HOSTING_VERIFIED.has(gameSlug);
 }
 
 /**

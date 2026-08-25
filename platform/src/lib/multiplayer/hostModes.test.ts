@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  findOrphanedAdapters,
+  getMultiplayerAdapter,
+  MULTIPLAYER_ADAPTERS,
+} from "./adapters";
+import {
   canSelfHost,
   canUseDedicated,
   defaultHostMode,
@@ -94,5 +99,48 @@ describe("host mode configuration", () => {
 
   it("has no port for a game that cannot be self-hosted at all", () => {
     expect(publicLobbyPortFor("counter-strike-2")).toBeNull();
+  });
+
+  /*
+   * 0 A.D. is published as `0ad` but HOSTABLE_GAMES and the agent both call it
+   * `0-ad`. It used to carry two byte-identical adapter entries; now one entry
+   * plus an alias. Both spellings still have to resolve identically, because
+   * which one a call site uses is not something the caller thinks about.
+   */
+  it("resolves both spellings of 0 A.D. to the same configuration", () => {
+    expect(getMultiplayerAdapter("0ad").adapterType).toBe("managed-server");
+    expect(getMultiplayerAdapter("0-ad").adapterType).toBe("managed-server");
+    expect(getMultiplayerAdapter("0-ad").gameSlug).toBe(getMultiplayerAdapter("0ad").gameSlug);
+    expect(hostModesFor("0ad")).toEqual(hostModesFor("0-ad"));
+  });
+
+  it("still falls back to `official` for a genuinely unknown game", () => {
+    // The alias lookup must not turn an unknown slug into a match.
+    expect(getMultiplayerAdapter("not-a-real-game").adapterType).toBe("official");
+  });
+});
+
+describe("orphaned adapters", () => {
+  it("reports an adapter whose game left the catalog", () => {
+    // OpenLara became the engine behind Tomb Raider 1+2+3 and lost its own
+    // catalog entry; its adapter stayed behind reading as live config.
+    const live = ["warzone-2100", "freedoom"];
+    expect(findOrphanedAdapters(live)).toContain("openlara");
+  });
+
+  it("does not report deliberate aliases or folded-in editions", () => {
+    const orphans = findOrphanedAdapters(["warzone-2100"]);
+    for (const expected of ["0-ad", "marathon", "alephone", "aleph-one", "keeperfx", "tes3mp"]) {
+      expect(orphans).not.toContain(expected);
+    }
+  });
+
+  it("reports nothing when every adapter names a live game", () => {
+    const live = Object.keys(MULTIPLAYER_ADAPTERS);
+    expect(findOrphanedAdapters(live)).toEqual([]);
+  });
+
+  it("is case-insensitive about catalog slugs", () => {
+    expect(findOrphanedAdapters(["WARZONE-2100"])).not.toContain("warzone-2100");
   });
 });
