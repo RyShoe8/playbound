@@ -266,6 +266,189 @@ function clearsAll(verdict: string): Game["qualityBar"] {
 }
 
 export const editorial: Record<string, GameEditorial> = {
+  "s-t-a-l-k-e-r-shadow-of-chernobyl": {
+    qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "Shadow of Chornobyl clears the PlayBound Bar because the Zone feels indifferent to your survival, making every safe campfire and clean magazine genuinely valuable.", lastVerified: "2026-08-25" },
+    maintenanceCheck: { kind: "manual", url: "https://www.gog.com/en/game/stalker_shadow_of_chernobyl", checkedAt: "2026-08-25", note: "Commercial classic; verify the GOG offline installer, campaign launch, and community-dependent multiplayer manually." },
+    thatOneThing: "The Zone keeps living beyond your sight, so a routine walk can become somebody else's firefight.",
+    longDescription: "Shadow of Chornobyl drops you into the Zone with a pistol, a half-useful name, and no promise that the road ahead belongs to you. The landscape around Chernobyl is part military cordon, part scavenger economy, and part supernatural wound. Stalkers trade stories beside fires, soldiers lock down checkpoints, mutants hunt by sound, and anomalies turn ordinary ground into a puzzle with lethal answers.\n\nThe shooting is harsh on purpose. Early weapons kick, cheap ammunition misbehaves, and armor only buys time. You learn to lean around ruined concrete, listen before entering a tunnel, and carry enough medicine without turning your pack into an anchor. Artifacts tempt you toward anomalies because the same places that kill careless explorers can fund the next expedition. Radiation, bleeding, hunger, weight, and weapon condition keep each trip grounded.\n\nWhat separates the Zone from a conventional open world is that it rarely waits for you. Patrols clash, mutants wander into camps, distant gunfire changes direction, and bodies you did not create can lead to equipment you did not earn. The simulation is imperfect and occasionally absurd, but it produces the feeling that everyone else has somewhere to be.\n\nGOG's DRM-free offline installer is the cleanest master copy and does not require Galaxy. Launch the original once before adding anything. Community fixes and total conversions belong in separate PlayBound editions because this engine is sensitive to install order and overwritten files.\n\nExpect friction. Menus are old, quest scripting can wobble, gun feel improves slowly, and the English voice work has become affectionate folklore for a reason. None of that erases the central achievement: danger is not placed for your convenience. The Zone feels occupied, hostile, and strange enough that crossing a familiar field at dusk can still make you stop and listen.",
+    whyWePickedIt: "We picked Shadow of Chornobyl because it makes an open world feel inhabited without treating the player as its center. Systems collide, travel carries risk, and atmosphere comes from rules as much as scenery. The inexpensive GOG master preserves the original without a mandatory launcher, while Lost Alpha and True Stalker show how far community authors can rebuild its ideas.",
+    bestFor: ["Players who want hostile open worlds driven by systems rather than checklists", "Anyone who enjoys survival-horror tension without giving up tactical firefights"],
+    notFor: ["Players who need modern interfaces, reliable quest scripting, or gentle onboarding", "Anyone who wants a pure power fantasy where every fight is balanced around the hero"],
+    comparableTo: ["Metro Exodus", "Fallout 3"],
+    installSteps: [{ platform: "windows", text: "Download the DRM-free Shadow of Chornobyl offline installer from GOG. Galaxy is optional." }, { platform: "windows", text: "Run the original once, set resolution and controls, and confirm a new save works." }, { platform: "windows", text: "Install Lost Alpha or True Stalker as a separate PlayBound edition instead of overwriting the clean master." }],
+    faq: [{ q: "Is Shadow of Chornobyl free?", a: "No. It is a paid commercial master copy; the GOG release is DRM-free." }, { q: "Does it still have multiplayer?", a: "The original includes multiplayer, but present activity is community-dependent." }, { q: "Should I mod my first playthrough?", a: "Start clean or with a conservative fix edition; major conversions are separate experiences." }, { q: "Does it need a powerful PC?", a: "No. Compatibility and frame pacing matter more than raw hardware." }],
+  },
+  "s-t-a-l-k-e-r-call-of-pripyat": {
+    qualityBar: { genuinelyFree: true, finished: true, activelyMaintained: true, standsAlone: true, highQuality: true, verdict: "Call of Pripyat clears the PlayBound Bar because every expedition is a chain of preparation, bad weather, distant gunfire, and decisions the Zone never pauses to explain.", lastVerified: "2026-08-25" },
+    maintenanceCheck: { kind: "manual", url: "https://www.gog.com/en/game/stalker_call_of_pripyat", checkedAt: "2026-08-25", note: "Commercial classic; verify the GOG offline installer and edition compatibility manually." },
+    thatOneThing: "Its side missions change places and people, making exploration feel consequential instead of collectible.",
+    longDescription: "Call of Pripyat is the original S.T.A.L.K.E.R. trilogy at its most confident. Major Degtyarev enters the Zone to investigate crashed military helicopters, but the assignment quickly becomes an excuse to study three broad regions full of stalkers, mutants, anomalies, faction grudges, and problems that rarely have one clean answer.\n\nThe shooting remains dangerous, but this sequel is less interested in making a weak pistol miserable. Weapons can be repaired and upgraded, armor has clear roles, detectors turn artifact hunting into a readable risk, and emissions force everyone toward shelter. Inventory weight, radiation, bleeding, medicine, food, ammunition, and equipment condition make preparation matter without becoming a spreadsheet.\n\nIts quests are the series high point. A missing squad, an underground route, a suspicious deal, or a mutant nest can change depending on what you discover and whom you trust. Outcomes return later through prices, allies, available services, and the ending. Observation can replace a quest marker: tracks, conversations, bodies, and unusual behavior all point toward answers.\n\nGOG's DRM-free offline installer is the right master copy and needs no Galaxy client. Run it clean once before choosing an edition. Gunslinger rebuilds the original campaign's weapons; Anomaly is a standalone sandbox; GAMMA layers demanding survival progression onto Anomaly. They solve different problems and belong in separate folders.\n\nFaces are stiff, movement is heavy, multiplayer activity is community-dependent, and scripting oddities remain. It is still the easiest classic S.T.A.L.K.E.R. game to recommend on design alone: compact enough to learn, systemic enough to surprise, and generous enough to reward leaving the road because something looked wrong.",
+    whyWePickedIt: "We picked Call of Pripyat because it turns side quests into part of the world instead of chores layered over it. Decisions change services, allies, locations, and the ending, while the simulation produces trouble between objectives. Its editions also prove why curation matters: Gunslinger, Anomaly, and GAMMA are excellent, but not interchangeable.",
+    bestFor: ["Players who want dense open-world exploration with consequential side quests", "Anyone who enjoys tactical shooting shaped by preparation, weather, and scarcity"],
+    notFor: ["Players who need modern animation, frictionless movement, or constant direction", "Anyone looking for a traditional power fantasy or busy ranked multiplayer"],
+    comparableTo: ["Metro Exodus", "Fallout: New Vegas"],
+    installSteps: [{ platform: "windows", text: "Download the DRM-free Call of Pripyat offline installer from GOG. Galaxy is optional." }, { platform: "windows", text: "Run the clean game once and confirm a new save works." }, { platform: "windows", text: "Install Gunslinger, Anomaly, or GAMMA as separate PlayBound editions." }],
+    faq: [{ q: "Is Call of Pripyat free?", a: "No. It is a paid commercial master copy; the GOG release is DRM-free." }, { q: "Which edition should I choose?", a: "Gunslinger preserves the campaign, Anomaly is a sandbox, and GAMMA adds demanding survival progression." }, { q: "Does it have multiplayer?", a: "The original includes multiplayer, but activity is community-dependent." }, { q: "Should editions share one folder?", a: "No. Keep the master and every major edition separate." }],
+  },
+  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "KOTOR II clears the PlayBound Bar because it turns Star Wars morality into an argument your companions remember, challenge, and occasionally dismantle.",
+      lastVerified: "2026-08-25",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/star_wars_knights_of_the_old_republic_ii_the_sith_lords",
+      checkedAt: "2026-08-25",
+      note: "Commercial classic; verify the GOG offline installer and the separate TSLRCM edition manually.",
+    },
+    thatOneThing:
+      "Your companions do not just approve of choices—they interrogate the reasons you made them.",
+    longDescription:
+      "Knights of the Old Republic II begins after victory has already failed. The Jedi are scattered, the Republic is exhausted, and your character—an exile cut off from the Force—wakes inside the aftermath rather than at the start of another heroic charge. Obsidian uses that bruised setting to ask what Star Wars usually moves past: what war does to the people who survive it, whether influence is another form of control, and what responsibility follows extraordinary power.\n\nUnderneath the philosophy is the familiar KOTOR structure. You explore planets with a three-person party, pause combat to queue actions, build characters from feats and Force powers, repair droids, slice terminals, and talk through problems that a lightsaber could solve less elegantly. The d20 rules are visible enough to reward planning without demanding tabletop expertise. Alignment opens powers and dialogue, but the more interesting system is influence: companions respond to what you do and why, revealing histories, changing alignment, and sometimes learning the Force through your example.\n\nThe cast is the reason to stay. Kreia is teacher, critic, manipulator, and one of the sharpest characters Star Wars has produced. Atton, Bao-Dur, Visas, Mira, Handmaiden, Disciple, HK-47, and the returning droids arrive with wounds the game lets you uncover rather than filing into a codex. Conversations can be missed, relationships can close, and a persuasive character can reshape the whole crew. That makes a second run meaningfully different rather than merely darker or lighter.\n\nThe original release was rushed, and you can still feel the seams. Late-game transitions are abrupt, some encounters repeat, combat animations are old, and the interface expects a mouse and keyboard. The Sith Lords Restored Content Mod is therefore the PlayBound edition we recommend after you own the DRM-free GOG master. TSLRCM restores cut scenes, dialogue, quests, and connective tissue while fixing a remarkable number of bugs. It does not reinvent the game; it lets the shipped ideas breathe.\n\nStart with GOG's offline installer—Galaxy is optional—then use the separate restored-content edition for the community package. Avoid mixing unrelated overhaul mods into a first run, because KOTOR II's files are old enough that install order matters and conflicting edits can produce failures much later.\n\nKOTOR II is not the cleanest Star Wars adventure. The first KOTOR has the tidier arc, modern RPGs have smoother combat, and no restoration can completely erase a rushed ending. What survives is more valuable than polish alone: a party-driven RPG willing to question its universe without sneering at it. The result is thoughtful, funny, wounded, and still unusually alive.",
+    whyWePickedIt:
+      "We picked KOTOR II because it treats companions as participants in the story rather than approval meters attached to combat builds. Influence changes what people reveal, what they believe, and who they can become. The inexpensive DRM-free master remains easy to own without a mandatory launcher, while TSLRCM demonstrates community preservation at its best: careful restoration in service of the original work. It is imperfect, but its ideas have outlasted much smoother RPGs.",
+    bestFor: [
+      "Players who want character-driven RPGs where conversations reshape the party",
+      "Star Wars fans interested in the consequences of war, power, and mentorship",
+    ],
+    notFor: [
+      "Players who need modern real-time combat, cinematic animation, or a perfectly tidy ending",
+      "Anyone unwilling to use the restored-content edition for the strongest first playthrough",
+    ],
+    comparableTo: ["Mass Effect", "Dragon Age: Origins"],
+    installSteps: [
+      { platform: "windows", text: "Download the DRM-free KOTOR II offline installer from GOG. Galaxy is optional; the offline files are sufficient." },
+      { platform: "windows", text: "Run the installer, launch the unmodified game once, and confirm that video, audio, controls, and save creation work." },
+      { platform: "windows", text: "For the recommended experience, install PlayBound's separate TSLRCM edition over a clean KOTOR II installation instead of mixing manual mod packages." },
+      { platform: "windows", text: "Start a new game after installing restored content. Add optional visual or convenience mods only when their TSLRCM compatibility and install order are documented." },
+    ],
+    faq: [
+      { q: "Is KOTOR II free?", a: "No. KOTOR II is a paid commercial master copy. The GOG release is DRM-free and can be installed without GOG Galaxy." },
+      { q: "Should I use TSLRCM for my first playthrough?", a: "Yes. The Sith Lords Restored Content Mod restores dialogue, quests, scenes, and connective material while fixing many bugs. PlayBound keeps it as a separate recommended edition." },
+      { q: "Does KOTOR II have multiplayer?", a: "No. KOTOR II is a single-player party RPG. PlayBound parties can provide voice chat and shared sessions, but the game has no networked co-op." },
+      { q: "Can I install other mods with TSLRCM?", a: "Often, but compatibility and order matter. Begin with a clean game, install TSLRCM first through its PlayBound edition, and add only mods that explicitly document restored-content compatibility." },
+    ],
+  },
+  "thief-gold": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Thief Gold clears the PlayBound Bar because its darkness, sound, and strange sprawling spaces still make every successful burglary feel personally engineered.",
+      lastVerified: "2026-08-25",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/thief_gold",
+      checkedAt: "2026-08-25",
+      note: "Commercial classic; verify the current GOG offline installer, modern Windows launch reliability, and included controller support manually.",
+    },
+    thatOneThing:
+      "A guard can hear the floor beneath your boots, turning architecture itself into the stealth system.",
+    longDescription:
+      "Thief Gold is the game that taught first-person design how much tension can live outside the crosshair. Garrett is a thief, not a soldier, and the world responds accordingly. Light decides whether he can be seen. Stone, metal, wood, carpet, and water decide how loudly he moves. Guards listen, investigate, lose confidence, and sometimes force you to abandon a plan you thought was perfect.\n\nThe Gold release contains the original Dark Project campaign plus three added missions and connective changes that make it the definitive version of Garrett's first story. Its city begins with grounded robberies and gradually opens into haunted ruins, lost civilizations, and a supernatural conspiracy. That tonal swing is deliberate and memorable, although players who only want manor-house heists should know the first game spends more time underground and among monsters than Thief II.\n\nThe toolset makes stealth active. Water arrows extinguish torches, moss arrows soften noisy floors, rope arrows create routes, flash bombs rescue a failed approach, and the blackjack rewards patience without turning every room into a fight. Large missions rarely advertise a single correct path. You study patrols, read notes, overhear conversations, and build a route out of incomplete information. Expert difficulty adds objectives and conduct rules instead of merely giving enemies more health.\n\nThe GOG edition is the practical modern starting point. It is a DRM-free offline install and uses the NewDark-era compatibility work needed on current Windows PCs. GOG Galaxy is not required. Mouse and keyboard remain the best fit for the dense inventory and precise aiming, even where controller support is available. Fan missions can be managed through AngelLoader after the original campaign, with mission archives left zipped in their own folder.\n\nThief Gold shows its age. Character animation is wooden, sword combat is deliberately poor, navigation can be confusing, and several monster-heavy missions are more divisive than the city jobs. Its audio and level design survive all of that. The game gives you enough information to plan but never enough to feel safe, and its best spaces feel discovered rather than presented.\n\nThat is why the original still matters beside its smoother sequel. Thief II refines the formula; Thief Gold is stranger, rougher, and more willing to lead you somewhere you did not expect. When a guard stops beneath your hiding place and listens, no remake is required to explain why this works. It still rewards curiosity, restraint, and nerve in equal measure.",
+    whyWePickedIt:
+      "We picked Thief Gold because it established a form of stealth built from physical rules rather than scripted takedowns. Sound, surface, light, patrols, and player-made routes all matter at once. The GOG build keeps the commercial classic accessible without a mandatory launcher, while NewDark and AngelLoader open a huge body of community missions. It is uneven in honest, visible ways, but the central idea remains exceptional: the safest player is the one who understands the room.",
+    bestFor: [
+      "Players who want systemic stealth with sound, light, and surfaces doing real work",
+      "Explorers who enjoy strange, sprawling missions and supernatural atmosphere",
+    ],
+    notFor: [
+      "Players who want straightforward maps, polished animation, or reliable sword combat",
+      "Anyone who dislikes undead enemies or getting temporarily lost in large old levels",
+    ],
+    comparableTo: ["Dishonored", "Deus Ex"],
+    installSteps: [
+      { platform: "windows", text: "Download the DRM-free Thief Gold offline installer from GOG. GOG Galaxy is optional; the offline installer is sufficient." },
+      { platform: "windows", text: "Run the installer, launch Thief Gold once, and set resolution, audio, and controls before beginning the campaign." },
+      { platform: "windows", text: "For fan missions, install AngelLoader in a writable folder outside Program Files, then point it to THIEF.EXE and a separate folder containing your mission archives." },
+      { platform: "windows", text: "Keep fan missions zipped and let AngelLoader install them. Use ‘Play without FM’ whenever you want to return to the original Thief Gold campaign." },
+    ],
+    faq: [
+      { q: "Is Thief Gold free?", a: "No. Thief Gold is a paid commercial classic. PlayBound lists it as a low-cost master copy, and the GOG offline installer does not require Galaxy." },
+      { q: "What does Thief Gold add to The Dark Project?", a: "It includes the original campaign, three additional missions, updated levels, and connective changes, making Gold the definitive release of Garrett's first adventure." },
+      { q: "Does Thief Gold support controllers?", a: "Controller support is possible in the modern GOG package, but mouse and keyboard remain the clearest fit for precise arrows, leaning, and the original inventory interface." },
+      { q: "How do I play Thief Gold fan missions?", a: "Use the NewDark-compatible GOG build with AngelLoader. Install AngelLoader outside Program Files, point it to THIEF.EXE and a mission folder, and leave downloaded archives zipped." },
+    ],
+  },
+  "thief-2-the-metal-age": {
+    qualityBar: {
+      genuinelyFree: true,
+      finished: true,
+      activelyMaintained: true,
+      standsAlone: true,
+      highQuality: true,
+      verdict:
+        "Thief II clears the PlayBound Bar because twenty-six years later, a marble floor and one badly timed footstep still make better tension than most scripted set pieces.",
+      lastVerified: "2026-08-25",
+    },
+    maintenanceCheck: {
+      kind: "manual",
+      url: "https://www.gog.com/en/game/thief_2_the_metal_age",
+      checkedAt: "2026-08-25",
+      note: "Commercial classic; verify the current GOG offline installer, modern Windows launch reliability, and included controller support manually.",
+    },
+    thatOneThing:
+      "Every room becomes a clockwork stealth puzzle the moment you stop and listen.",
+    longDescription:
+      "Thief II is a stealth game about information before action. You play Garrett, a professional thief who survives by reading rooms: the scrape of a guard's boots, the shine on a marble floor, the dark patch beneath a balcony, and the distance between one torch and the next. Darkness is cover, sound is evidence, and a clean escape is usually more satisfying than a pile of bodies.\n\nThe sequel takes the first game's wonderful systems and gives them spaces built to show those systems off. Mansions, banks, warehouses, city streets, and Mechanist strongholds feel like places with routines rather than corridors waiting for a hero. Objectives send you inside, but the best stories happen between them—when a water arrow saves a route, a rope arrow invents one, or a guard hears exactly one footstep too many.\n\nGarrett is capable without becoming powerful. His blackjack, broadhead arrows, flash bombs, scouting orb, and collection of specialty arrows reward preparation and improvisation. The difficulty settings do more than inflate enemy health; they add objectives and restrictions, turning familiar missions into tighter heists. That makes Thief II unusually replayable even before the enormous fan-mission scene enters the picture.\n\nThe GOG release is the sensible modern starting point: a DRM-free offline installer, the NewDark-compatible game, and no required launcher. Run the original campaign first. When you want more, AngelLoader can organize fan missions without unpacking every archive by hand. Controller support exists in the current GOG package, but mouse and keyboard remain the sharpest way to aim arrows and work through the old interface.\n\nSome edges are still unmistakably from 2000. Character animation is stiff, combat is awkward, menus assume a keyboard, and the deliberate pace will frustrate anyone who wants stealth as a brief pause between fights. Those limitations matter. They also leave the central design untouched: observe, plan, improvise, disappear. Few games trust sound, space, and player judgment this completely. Thief II does, and that confidence is still its one great trick.\n\nThe campaign also understands that stealth needs texture. Eavesdropped conversations sketch out the city, Garrett's dry commentary keeps the gloom from turning ponderous, and the Mechanists give every mission a sharp industrial identity. A first run can be cautious and methodical; a return trip can chase loot, expert objectives, ghost rules, or routes you never noticed. It is not nostalgia doing all the work here. The underlying simulation still produces decisions worth making.",
+    whyWePickedIt:
+      "We picked Thief II because its stealth is not a visibility meter pasted onto an action game. The whole world participates: flooring changes your noise, light changes your safety, patrols create timing windows, and tools let you rewrite a route. It remains approachable through GOG's offline build, grows for years through NewDark fan missions, and gives us an honest reason to keep recommending a game from 2000: nobody has replaced what it does best.",
+    bestFor: [
+      "Players who enjoy patient, systems-driven stealth where listening matters as much as looking",
+      "Anyone who wants sprawling handcrafted missions with several viable routes",
+    ],
+    notFor: [
+      "Players who want fast combat, modern animation, or constant objective markers",
+      "Anyone unwilling to spend a few minutes learning old-school controls and menus",
+    ],
+    comparableTo: ["Dishonored", "Deus Ex"],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the DRM-free GOG offline installer for Thief II. GOG Galaxy is optional; the offline files are enough.",
+      },
+      {
+        platform: "windows",
+        text: "Run the installer, then launch Thief II once. Set your resolution, audio, and controls before starting the campaign.",
+      },
+      {
+        platform: "windows",
+        text: "For fan missions, keep the NewDark-compatible GOG build and install AngelLoader in a writable folder outside Program Files. Point it to Thief2.exe and to a separate fan-mission archive folder.",
+      },
+      {
+        platform: "windows",
+        text: "Leave downloaded fan missions zipped. Let AngelLoader install and launch them; choose ‘Play without FM’ whenever you want the original campaign.",
+      },
+    ],
+    faq: [
+      {
+        q: "Do I need GOG Galaxy to play Thief II?",
+        a: "No. Download the DRM-free offline installer from your GOG library. Galaxy is optional.",
+      },
+      {
+        q: "Does Thief II support controllers?",
+        a: "The current GOG package includes controller support, but mouse and keyboard remain the most precise fit for aiming, inventory, and the original interface.",
+      },
+      {
+        q: "How do I play Thief II fan missions?",
+        a: "Use the NewDark-compatible GOG build with AngelLoader. Install AngelLoader outside Program Files, point it to Thief2.exe and your fan-mission folder, and leave mission archives zipped.",
+      },
+      {
+        q: "Does Thief II have multiplayer?",
+        a: "No. Thief II is a single-player stealth campaign; PlayBound parties are useful for voice chat and shared sessions, not networked co-op.",
+      },
+    ],
+  },
   "rollercoaster-tycoon": {
     qualityBar: {
       genuinelyFree: true,
