@@ -6495,9 +6495,26 @@ function hintProcessNames(exeHint) {
   return out;
 }
 
-function isAnyImageRunning(imageNames) {
+/**
+ * Is any of these process images running, and do we actually know?
+ *
+ * The distinction matters. This used to collapse "the probe failed" into "the
+ * process is gone": tasklist timing out under load, or pgrep failing to spawn,
+ * landed in the same `catch` as a genuine no-match and returned false. The
+ * exit poll below runs every 10 seconds for the entire session, so one
+ * transient hiccup — most likely exactly when the machine is busy — ended a
+ * session while the game was still running. A 54-minute RollerCoaster Tycoon
+ * session was reported "Finished" that way with the game still open, which
+ * also means playtime and playing-now counts were quietly under-reported.
+ *
+ * @returns {{ running: boolean, certain: boolean }} `certain` is false when a
+ *   probe errored, meaning `running: false` is "we could not tell", not "no".
+ */
+function probeImagesRunning(imageNames) {
   const names = (imageNames || []).filter(Boolean);
-  if (!names.length) return false;
+  if (!names.length) return { running: false, certain: true };
+
+  let probeFailed = false;
 
   if (process.platform === "win32") {
     for (const image of names) {
@@ -6507,12 +6524,16 @@ function isAnyImageRunning(imageNames) {
           ["/FI", `IMAGENAME eq ${image}`, "/NH"],
           { encoding: "utf8", windowsHide: true, timeout: 5000 }
         );
-        if (out.toLowerCase().includes(image.toLowerCase())) return true;
+        if (out.toLowerCase().includes(image.toLowerCase())) {
+          return { running: true, certain: true };
+        }
       } catch {
-        // tasklist failed or no match
+        // tasklist prints "INFO: No tasks..." and still exits 0 on a clean
+        // miss, so reaching here means the probe itself failed.
+        probeFailed = true;
       }
     }
-    return false;
+    return { running: false, certain: !probeFailed };
   }
 
   for (const image of names) {
@@ -6523,12 +6544,27 @@ function isAnyImageRunning(imageNames) {
         timeout: 5000,
         stdio: ["ignore", "pipe", "ignore"],
       });
-      return true;
-    } catch {
-      // not running
+      return { running: true, certain: true };
+    } catch (err) {
+      // pgrep exits 1 for "no process matched" — a definitive answer. Any
+      // other status (spawn failure, timeout, pgrep missing) is not.
+      if (err?.status !== 1) probeFailed = true;
     }
   }
-  return false;
+  return { running: false, certain: !probeFailed };
+}
+
+/**
+ * Boolean view for callers deciding whether a game is alive.
+ *
+ * An uncertain probe reports "running" on purpose: every caller uses this to
+ * decide whether to tear a session down or report a launch failure, and doing
+ * either on a guess is worse than waiting for the next poll to give a real
+ * answer.
+ */
+function isAnyImageRunning(imageNames) {
+  const { running, certain } = probeImagesRunning(imageNames);
+  return running || !certain;
 }
 
 function onSpawnedProcessGone(slug) {
@@ -6540,11 +6576,25 @@ function onSpawnedProcessGone(slug) {
     if (!current) return;
     if (isAnyImageRunning(current.imageNames)) {
       if (current.pollTimer) clearInterval(current.pollTimer);
+      /*
+       * Two consecutive confirmed misses, not one. Beyond the probe-failure
+       * fix in probeImagesRunning, a game can be legitimately absent from the
+       * process list for an instant while handing off between executables —
+       * the bootstrap pattern this poll exists to support in the first place
+       * (OpenRA -> RedAlert). One sample is not evidence a session ended.
+       * Costs at most one extra poll interval before a real exit registers.
+       */
+      let confirmedGone = 0;
       current.pollTimer = setInterval(() => {
-        if (!isAnyImageRunning(current.imageNames)) {
-          clearLaunchTracking(slug, { beat: true });
-          sendGameExited(slug);
+        const { running, certain } = probeImagesRunning(current.imageNames);
+        if (running || !certain) {
+          confirmedGone = 0;
+          return;
         }
+        confirmedGone += 1;
+        if (confirmedGone < 2) return;
+        clearLaunchTracking(slug, { beat: true });
+        sendGameExited(slug);
       }, GAME_RUNNING_POLL_MS);
     } else {
       clearLaunchTracking(slug, { beat: true });
