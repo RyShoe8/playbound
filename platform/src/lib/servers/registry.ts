@@ -17,6 +17,8 @@ import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
 import { fetchOldSchoolRuneScapeServers } from "./providers/old-school-runescape";
 import { fetchStarWarsGalaxiesServers } from "./providers/star-wars-galaxies";
 import {
+  fetchSteamConcurrentPlayers,
+  fetchTombRaider123Players,
   fetchVillagersAndHeroesPlayers,
   fetchAsphaltLegendsUnitePlayers,
   fetchHoloCurePlayers,
@@ -56,6 +58,9 @@ import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
 import { fetchGenshinImpactServers } from "./providers/genshin-impact";
 import { fetchTripleAServers } from "./providers/triplea";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
+
+// Counting semantics, source priority, and zero-vs-unknown rules are documented
+// in platform/docs/player-counts.md. Read that policy before adding a provider.
 
 async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
   const auth = await getServerLobbyAuth(slug);
@@ -313,6 +318,57 @@ const providers: Record<string, ServerProvider> = {
   "star-trek-online": {
     slug: "star-trek-online",
     fetchServers: fetchStarTrekOnlinePlayers,
+  },
+  // Newly catalogued commercial classics. These are exact Steam App IDs, so
+  // the rows are labelled Steam-only and are never presented as the whole
+  // cross-store population. See docs/player-counts.md.
+  "stronghold-crusader-hd": {
+    slug: "stronghold-crusader-hd",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(40970, { label: "Stronghold Crusader HD" }),
+  },
+  "s-t-a-l-k-e-r-shadow-of-chernobyl": {
+    slug: "s-t-a-l-k-e-r-shadow-of-chernobyl",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(4500, { label: "S.T.A.L.K.E.R.: Shadow of Chernobyl" }),
+  },
+  "s-t-a-l-k-e-r-call-of-pripyat": {
+    slug: "s-t-a-l-k-e-r-call-of-pripyat",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(41700, { label: "S.T.A.L.K.E.R.: Call of Pripyat" }),
+  },
+  "star-wars-knights-of-the-old-republic": {
+    slug: "star-wars-knights-of-the-old-republic",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(32370, { label: "Star Wars: Knights of the Old Republic" }),
+  },
+  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": {
+    slug: "star-wars-knights-of-the-old-republic-ii-the-sith-lords",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(208580, { label: "KOTOR II: The Sith Lords" }),
+  },
+  "thief-gold": {
+    slug: "thief-gold",
+    fetchServers: () => fetchSteamConcurrentPlayers(211600, { label: "Thief Gold" }),
+  },
+  "thief-2-the-metal-age": {
+    slug: "thief-2-the-metal-age",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(211740, { label: "Thief II: The Metal Age" }),
+  },
+  "ground-control-anthology": {
+    slug: "ground-control-anthology",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(254820, { label: "Ground Control Anthology" }),
+  },
+  "ground-control-2-operation-exodus": {
+    slug: "ground-control-2-operation-exodus",
+    fetchServers: () =>
+      fetchSteamConcurrentPlayers(254840, { label: "Ground Control II: Operation Exodus" }),
+  },
+  "tomb-raider-123": {
+    slug: "tomb-raider-123",
+    fetchServers: fetchTombRaider123Players,
   },
 };
 
