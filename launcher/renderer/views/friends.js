@@ -2234,6 +2234,35 @@ async function prepareVirtualLan(party, lan) {
 async function launchPartyGame(party) {
   const slug = party.gameSlug;
   if (!slug) return;
+
+  /*
+   * A public self-hosted room is the only case that needs a router mapping:
+   * party members reach the host over the overlay, but someone joining from
+   * the public list does not. The server sends selfHostPort only when that
+   * applies, and only the leader is actually hosting. Awaited so the port is
+   * open before the game binds it, but never fatal — plenty of routers refuse,
+   * and the room still works for the party itself.
+   */
+  const selfHostPort = party.selfHostPort;
+  const isLeader = party.leaderId === state.accountState?.userId;
+  if (isLeader && party.hostMode === "self" && selfHostPort?.port) {
+    try {
+      const mapped = await window.playbound.prepareSelfHost?.({
+        slug,
+        port: selfHostPort.port,
+        protocol: selfHostPort.protocol,
+      });
+      if (mapped && !mapped.ok) {
+        setStatus(
+          "Couldn't open your router's port — friends in the party can still join, but players outside it may not.",
+          true
+        );
+      }
+    } catch {
+      /* Hosting proceeds regardless; see above. */
+    }
+  }
+
   const hosted = party.hosted || {};
   if (hosted.status === "ready" && hosted.host && hosted.port) {
     const address = `${hosted.host}:${hosted.port}`;

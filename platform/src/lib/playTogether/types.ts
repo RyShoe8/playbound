@@ -183,6 +183,12 @@ export type PartyPayload = {
     label: string;
     hint: string;
   }>;
+  /**
+   * Port to open for a public self-hosted room, or null. Party members reach a
+   * self-hosted host over the overlay and need no mapping, so this is set only
+   * when someone outside the party could be joining.
+   */
+  selfHostPort: { port: number; protocol: "udp" | "tcp" | "both" } | null;
   eventId: string | null;
   /** True when a password is required; the hash is never returned. */
   hasPassword: boolean;
