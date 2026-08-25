@@ -71,7 +71,18 @@ export async function GET(req: Request) {
           verified: edition.verified,
           tags: edition.tags || [],
           genres: game.genres || [],
-          platforms: game.platforms || [],
+          /*
+           * Edition first, game as fallback — same pattern as sizeMB below.
+           * An edition can run somewhere its base game's own platforms list
+           * does not: OpenMoHAA is a Linux/macOS-native rebuild of a
+           * Windows-only retail game, and reporting the game's platforms
+           * here told party cross-platform filtering (partyPlatforms.ts)
+           * that Linux players could not play a game one of its own editions
+           * runs natively.
+           */
+          platforms: (Array.isArray(edition.platforms) && edition.platforms.length > 0
+            ? edition.platforms
+            : game.platforms) || [],
 
           art: game.art,
           /*
