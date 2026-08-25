@@ -96,6 +96,14 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
 
   // Client can host a multiplayer match.
   "0-ad",
+
+  /*
+   * Same idTech/Quake lineage as Xonotic, which was confirmed by hand: the
+   * client starts a listen server from its own multiplayer menu. Enabled on
+   * that basis rather than a separate test for each.
+   */
+  "openarena",
+  "wolfenstein-enemy-territory",
 ]);
 
 export interface HostModeOption {
