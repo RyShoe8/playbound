@@ -114,6 +114,19 @@ const EditionSchema = new Schema(
      */
     installConfig: { type: Schema.Types.Mixed, default: () => ({}) },
 
+    /*
+     * Version-probe results, mirroring the fields on CatalogGame and
+     * CatalogMod. Editions carry their own install recipes — several are the
+     * only way a game installs at all — but nothing ever probed them, so an
+     * edition whose upstream asset moved or whose overlay outgrew its engine
+     * stayed "fine" until a player hit the failure. Written by dotted path by
+     * the cron, so curated content is untouched.
+     */
+    detectedVersion: { type: String, default: null },
+    lastVersionCheckAt: { type: Date, default: null },
+    versionCheckStatus: { type: String, default: null },
+    versionCheckNote: { type: String, default: null },
+
     requirements: { type: RequirementsSchema, default: null },
     hardwareRequirements: { type: HardwareRequirementsBlockSchema, default: null },
     platforms: { type: [String], default: [] },
