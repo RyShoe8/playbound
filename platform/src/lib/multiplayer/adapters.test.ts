@@ -52,13 +52,18 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     const ss14 = getMultiplayerAdapter("space-station-14");
     expect(ss14.tier).toBe("tier2_automated_server");
     expect(isPlayBoundManagedMultiplayer("space-station-14")).toBe(true);
+
+    const cs2 = getMultiplayerAdapter("counter-strike-2");
+    expect(cs2.tier).toBe("tier2_automated_server");
+    expect(cs2.adapterType).toBe("managed-server");
+    expect(isPlayBoundManagedMultiplayer("counter-strike-2")).toBe(true);
   });
 
   it("correctly treats Tier 3 official proprietary games as untouched networking", () => {
-    const cs2 = getMultiplayerAdapter("counter-strike-2");
-    expect(cs2.tier).toBe("tier3_official");
-    expect(cs2.adapterType).toBe("official");
-    expect(isPlayBoundManagedMultiplayer("counter-strike-2")).toBe(false);
+    const lol = getMultiplayerAdapter("league-of-legends");
+    expect(lol.tier).toBe("tier3_official");
+    expect(lol.adapterType).toBe("official");
+    expect(isPlayBoundManagedMultiplayer("league-of-legends")).toBe(false);
 
     const valorant = getMultiplayerAdapter("valorant");
     expect(valorant.tier).toBe("tier3_official");
