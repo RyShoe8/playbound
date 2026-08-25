@@ -108,6 +108,40 @@ export interface GameMultiplayerAdapter {
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   // ─── TIER 1: PlayBound Multiplayer Editions ───────────────────────────────
+  "re-volt-rvgl": {
+    gameSlug: "re-volt-rvgl",
+    title: "Re-Volt (RVGL)",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: [
+        "Leader: open Multiplayer and host an IP lobby",
+        "Everyone else: enter the leader's copied PlayBound Connect address",
+      ],
+    },
+    notes: "Player-hosted RVGL IP lobby over the private party overlay; the curated Online Edition keeps cars and tracks matched.",
+  },
+
+  "hurry-curry": {
+    gameSlug: "hurry-curry",
+    title: "Hurry Curry!",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: [
+        "Leader: start the official server build or choose a private server in-game",
+        "Everyone else: join the leader's server from Hurry Curry's server screen",
+      ],
+    },
+    notes: "The project ships client and server builds; PlayBound Connect carries private party traffic while public servers remain available in-game.",
+  },
+
   /*
    * HoloCure's multiplayer mod (upstream v1.4.1) offers exactly two ways in:
    * a Steam friend lobby, and a LAN session bound to a network adapter you
