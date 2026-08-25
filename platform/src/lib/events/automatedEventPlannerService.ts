@@ -130,6 +130,25 @@ export async function sendAdvanceDiscordAnnouncement(params: {
         timestamp: params.startsAt.toISOString(),
       },
     ],
+    components: [
+      {
+        type: 1, // Action Row
+        components: [
+          {
+            type: 2, // Button
+            style: 5, // Link (URL button)
+            label: "🎟️ RSVP & Event Details",
+            url: webEventUrl,
+          },
+          {
+            type: 2, // Button
+            style: 5, // Link (URL button)
+            label: "🚀 Pre-Install Game",
+            url: webGameUrl,
+          },
+        ],
+      },
+    ],
   };
 
   try {
@@ -176,9 +195,20 @@ export async function sendSilentDiscordAnnouncement(params: {
     return { ok: false, error: "No valid Discord Webhook URL configured" };
   }
 
-  const joinDeepLink = params.editionSlug
-    ? `playbound://join/${params.gameSlug}?edition=${encodeURIComponent(params.editionSlug)}&host=${params.host}&port=${params.port}&name=${encodeURIComponent(`Pop-Up ${params.gameTitle}`)}`
-    : `playbound://join/${params.gameSlug}?host=${params.host}&port=${params.port}&name=${encodeURIComponent(`Pop-Up ${params.gameTitle}`)}`;
+  const joinParams = new URLSearchParams({
+    game: params.gameSlug,
+    host: params.host,
+    port: String(params.port),
+    name: `Pop-Up ${params.gameTitle}`,
+  });
+  if (params.editionSlug) {
+    joinParams.set("edition", params.editionSlug);
+  }
+  if (params.eventId) {
+    joinParams.set("eventId", params.eventId);
+  }
+
+  const webJoinUrl = `https://playbound.club/launch?${joinParams.toString()}`;
   const webGameUrl = params.editionSlug
     ? `https://playbound.club/games/${params.gameSlug}/editions/${params.editionSlug}`
     : `https://playbound.club/games/${params.gameSlug}`;
@@ -205,7 +235,7 @@ export async function sendSilentDiscordAnnouncement(params: {
           `🌐 **Server:** \`${params.host}:${params.port}\`\n` +
           `⏳ **Active Until:** <t:${endTimestampUnix}:R> (<t:${endTimestampUnix}:t>)\n` +
           `⏱️ **Duration:** ${params.durationHours} hours\n\n` +
-          `🚀 **[⚡ 1-Click Launch & Auto-Join](${joinDeepLink})**\n` +
+          `🚀 **[⚡ 1-Click Launch & Auto-Join](${webJoinUrl})**\n` +
           `*(Installs verified game version if missing and connects instantly)*\n\n` +
           `🎟️ **[Event Details & Community](${webEventUrl})**`,
         color: 0x6366f1, // Indigo / PlayBound purple
@@ -220,6 +250,25 @@ export async function sendSilentDiscordAnnouncement(params: {
           text: "PlayBound Automated Event Planner • Dedicated Game Host",
         },
         timestamp: params.startsAt.toISOString(),
+      },
+    ],
+    components: [
+      {
+        type: 1, // Action Row
+        components: [
+          {
+            type: 2, // Button
+            style: 5, // Link (URL button)
+            label: "⚡ 1-Click Launch & Auto-Join",
+            url: webJoinUrl,
+          },
+          {
+            type: 2, // Button
+            style: 5, // Link (URL button)
+            label: "🎟️ Event Details",
+            url: webEventUrl,
+          },
+        ],
       },
     ],
   };
