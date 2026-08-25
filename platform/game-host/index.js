@@ -615,19 +615,26 @@ async function runTestSpawn(gameSlug) {
   }
 
   const port = result.room?.port ?? null;
+  const childPid = result.room?.child?.pid;
   stopRoom(result.room);
-  if (result.room?.child?.pid) {
-    try {
-      process.kill(-result.room.child.pid, "SIGKILL");
-    } catch {
-      /* already dead */
-    }
-    try {
-      result.room.child.kill("SIGKILL");
-    } catch {
-      /* already dead */
-    }
+
+  // Wait for the SIGKILL inside stopRoom to land (500ms timer + margin)
+  await new Promise((resolve) => setTimeout(resolve, 600));
+
+  // Double-tap: force-kill process group and direct child in case anything survived
+  if (childPid) {
+    try { process.kill(-childPid, "SIGKILL"); } catch { /* already dead */ }
+    try { result.room.child.kill("SIGKILL"); } catch { /* already dead */ }
   }
+
+  // Last resort: fuser -k to ensure the port is freed and no orphan holds it
+  if (port) {
+    const { execFile: execFileCb } = await import("node:child_process");
+    try {
+      execFileCb("fuser", ["-k", `${port}/tcp`, `${port}/udp`], () => {});
+    } catch { /* fuser not available or port already free */ }
+  }
+
   recordSpawnTest(gameSlug, { ok: true, durationMs, port });
   return { ok: true, durationMs, port };
 }
