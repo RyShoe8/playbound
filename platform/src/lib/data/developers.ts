@@ -1253,6 +1253,7 @@ export const developers: Developer[] = [
     about:
       "Independent game developer and designer known for fast-paced arcade action, snappy pixel art, and kinetic game feel in titles like Hurry Curry! and BYTEPATH.",
     location: "Worldwide",
+    founded: 2017,
     website: "https://a327ex.itch.io/",
     artHue: 38,
   },
