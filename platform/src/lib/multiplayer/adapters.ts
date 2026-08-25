@@ -750,7 +750,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "virtual-lan",
     protocol: "custom",
     client: { inGameJoinPrompt: true },
-    preferPlayBoundConnect: true,
     virtualLan: {
       requiresBroadcast: true,
       inGameSteps: [
@@ -769,7 +768,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "virtual-lan",
     protocol: "udp",
     client: { inGameJoinPrompt: true },
-    preferPlayBoundConnect: true,
     virtualLan: {
       requiresBroadcast: true,
       inGameSteps: ["Leader: Multiplayer → Local Network → Create", "Everyone else: open Local Network and join the leader's server"],
@@ -784,7 +782,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "virtual-lan",
     protocol: "udp",
     client: { inGameJoinPrompt: true },
-    preferPlayBoundConnect: true,
     virtualLan: {
       requiresBroadcast: true,
       inGameSteps: ["Leader: Multiplayer → Local Network → Create", "Everyone else: open Local Network and join the leader's server"],
