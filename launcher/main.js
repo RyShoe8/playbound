@@ -5388,8 +5388,9 @@ async function maybeOpenEditionPostInstallHandoff(entry, gameDir) {
  * the edition dir, then merge an overlay zip (P99Files) without wiping assets.
  */
 async function installLocateThenZip(slug, entry, editionExtra) {
+  const baseExeHint = entry.exeHint || "eqgame";
   const result = await dialog.showOpenDialog(win || undefined, {
-    title: `Select existing ${entry.title || slug} / Titanium folder (eqgame.exe)`,
+    title: `Select the existing ${entry.title || slug} folder (${baseExeHint})`,
     properties: ["openDirectory"],
   });
   if (result.canceled || !result.filePaths?.[0]) {
@@ -5406,22 +5407,21 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     }
     return {
       status: "cancelled",
-      note: "Select a legal Titanium EverQuest install folder, then try Install again.",
+      note: `Select the legal base-game folder containing ${baseExeHint}, then try Install again.`,
     };
   }
 
   let sourceDir = result.filePaths[0];
-  const sourceExe = path.join(sourceDir, "eqgame.exe");
-  if (!fs.existsSync(sourceExe)) {
+  if (!findExecutable(sourceDir, baseExeHint)) {
     // Allow picking a parent; search one level down.
     const nested = fs
       .readdirSync(sourceDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => path.join(sourceDir, d.name))
-      .find((dir) => fs.existsSync(path.join(dir, "eqgame.exe")));
+      .find((dir) => Boolean(findExecutable(dir, baseExeHint)));
     if (nested) sourceDir = nested;
     else {
-      throw new Error("That folder does not contain eqgame.exe. Pick your Titanium EverQuest install.");
+      throw new Error(`That folder does not contain ${baseExeHint}. Pick the installed base-game folder.`);
     }
   }
 
@@ -5447,8 +5447,8 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   await extractArchive(downloadPath, gameDir);
   await removeFileWithRetries(downloadPath);
 
-  const exe = findExecutable(gameDir, entry.exeHint || "eqgame");
-  if (!exe) throw new Error("Install copied, but eqgame.exe was not found.");
+  const exe = findExecutable(gameDir, baseExeHint);
+  if (!exe) throw new Error(`Install copied, but ${baseExeHint} was not found.`);
 
   const version = entry.versionLabel || "located+overlay";
   markInstalled(slug, {
@@ -5456,7 +5456,10 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     exe,
     dir: gameDir,
     ...editionExtra,
-    connectArgs: editionExtra.connectArgs || entry.connectArgs || ["patchme"],
+    connectArgs:
+      editionExtra.connectArgs ||
+      entry.connectArgs ||
+      (/eqgame/i.test(baseExeHint) ? ["patchme"] : undefined),
   });
   sendProgress({ phase: "done" });
   void reportInstall(slug);

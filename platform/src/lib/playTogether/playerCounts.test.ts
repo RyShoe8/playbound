@@ -33,6 +33,9 @@ describe("game player counts", () => {
     expect(gamePlayerCount("lincity-ng")).toEqual({ min: 1, max: 1, partyMax: 1 });
     expect(gamePlayerCount("3d-city")).toEqual({ min: 1, max: 1, partyMax: 1 });
     expect(gamePlayerCount("isocity")).toEqual({ min: 1, max: 1, partyMax: 1 });
+    expect(gamePlayerCount("heroes-of-might-and-magic-3-complete")?.partyMax).toBe(8);
+    expect(gamePlayerCount("ground-control-anthology")?.max).toBe(8);
+    expect(gamePlayerCount("ground-control-2-operation-exodus")).toMatchObject({ max: 8, partyMax: 8 });
   });
 
   it("has a verified count for every game currently in Testing", () => {

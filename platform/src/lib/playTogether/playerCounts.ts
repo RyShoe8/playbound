@@ -56,6 +56,9 @@ export const GAME_PLAYER_COUNTS: Readonly<Record<string, GamePlayerCount>> = Obj
   "3d-city": { min: 1, max: 1, partyMax: 1 },
   isocity: { min: 1, max: 1, partyMax: 1 },
   "tomb-raider-123": { min: 1, max: 1, partyMax: 1 },
+  "heroes-of-might-and-magic-3-complete": { min: 1, max: 8, partyMax: 8, note: "Online, LAN, and local hotseat support up to eight players." },
+  "ground-control-anthology": { min: 1, max: 8, partyMax: 8, note: "Competitive and cooperative LAN games support up to eight players." },
+  "ground-control-2-operation-exodus": { min: 1, max: 8, partyMax: 8, note: "Competitive games support eight; campaign co-op supports three." },
 });
 
 export function gamePlayerCount(slug: string | null | undefined): GamePlayerCount | null {

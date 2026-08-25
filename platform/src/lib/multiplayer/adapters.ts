@@ -519,6 +519,57 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "ECWolf lock-step LAN play over the private overlay; up to 11 nodes and no public dedicated server.",
   },
 
+  "heroes-of-might-and-magic-3-complete": {
+    gameSlug: "heroes-of-might-and-magic-3-complete",
+    title: "Heroes of Might and Magic III: Complete",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Open HD_Launcher and choose HD+ Online Lobby for public community rooms",
+        "For a private Connect party, the leader creates a TCP/IP/LAN game and everyone else joins it from the multiplayer menu",
+      ],
+    },
+    notes: "HD+ supplies the maintained public lobby; PlayBound Connect supplies a private shared LAN when the party wants to host its own game.",
+  },
+
+  "ground-control-anthology": {
+    gameSlug: "ground-control-anthology",
+    title: "Ground Control Anthology",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Leader: Multiplayer → Local Area Network → Create Game",
+        "Everyone else: Multiplayer → Local Area Network, refresh the list, then join the leader",
+      ],
+    },
+    notes: "The defunct WON.net path is not used. PlayBound Connect carries the game's surviving eight-player LAN mode over the party overlay.",
+  },
+
+  "ground-control-2-operation-exodus": {
+    gameSlug: "ground-control-2-operation-exodus",
+    title: "Ground Control 2: Operation Exodus",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Use Online for GC2 Essentials' OpenSpy community rooms",
+        "For a private Connect party, the leader hosts from Local Area Network and everyone else joins from the LAN list",
+      ],
+    },
+    notes: "GC2 Essentials restores public online play through OpenSpy; PlayBound Connect remains the private LAN fallback for competitive and three-player co-op sessions.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   "space-station-14": {
     gameSlug: "space-station-14",
