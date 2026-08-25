@@ -58,6 +58,7 @@ import {
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
 import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { defaultHostMode, isValidHostMode, type PartyHostMode } from "@/lib/multiplayer/hostModes";
 import {
   BASE_EDITION_KEY,
   isBaseEditionSlug,
@@ -495,6 +496,8 @@ export async function createParty(opts: {
   eventId?: string | null;
   password?: string | null;
   wantVoice?: boolean;
+  /** Where the room runs. Falls back to the game's default when unset or invalid. */
+  hostMode?: string | null;
 }): Promise<
   | ({ party: PartyPayload; status: 201 | 200; existing?: boolean } & PartyVoiceFollowup)
   | { error: string; status: 400 | 404 }
@@ -566,6 +569,17 @@ export async function createParty(opts: {
       passwordHash,
       voiceEnabled: wantVoice,
       maxSize: Math.min(Math.max(opts.maxSize || PARTY_MAX_SIZE, 2), 20),
+      /*
+       * Validated against the game rather than trusted: a mode the game does
+       * not support would otherwise provision an overlay for a room that
+       * cannot use one, or skip the VPS for a game that needs it. An
+       * unsupported or absent value falls back to the game's own default.
+       */
+      hostMode: gameSlug
+        ? isValidHostMode(gameSlug, opts.hostMode)
+          ? (opts.hostMode as PartyHostMode)
+          : defaultHostMode(gameSlug)
+        : null,
       eventId: opts.eventId || null,
       lastActivity: now,
     });

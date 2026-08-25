@@ -35,7 +35,8 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice } = body;
+    const { name, gameSlug, editionSlug, modSlugs, visibility, maxSize, eventId, password, wantVoice, hostMode } =
+      body;
 
     if (gameSlug != null && typeof gameSlug !== "string") {
       return NextResponse.json({ error: "Invalid gameSlug" }, { status: 400 });
@@ -58,6 +59,9 @@ export async function POST(req: Request) {
       eventId: eventId || null,
       password: typeof password === "string" ? password : null,
       wantVoice: wantVoice !== false,
+      // createParty validates this against the game and falls back to its
+      // default, so an unknown value here is safe rather than rejected.
+      hostMode: typeof hostMode === "string" ? hostMode : null,
     });
 
     if ("error" in result) {

@@ -10,6 +10,7 @@ import {
 } from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
 import { isHostableGame } from "@/lib/gameHost/catalog";
+import { defaultHostMode, hostModeOptions, type PartyHostMode } from "@/lib/multiplayer/hostModes";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
 
@@ -34,6 +35,16 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
   const [wantVoice, setWantVoice] = useState(true);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
 
+  /*
+   * Only offered when the game genuinely supports more than one; a picker with
+   * a single choice is noise, and the server applies the same default anyway.
+   */
+  const modeOptions = gameSlug ? hostModeOptions(gameSlug) : [];
+  const showHostModes = modeOptions.length > 1;
+  const [hostMode, setHostMode] = useState<PartyHostMode | null>(
+    gameSlug ? defaultHostMode(gameSlug) : null
+  );
+
   async function handleCreate() {
     if (creatingRef.current) return;
     if (visibility === "password" && password.trim().length < 4) {
@@ -46,7 +57,12 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
     setError(null);
     let closed = false;
     try {
-      telemetry.track("party_create_clicked", { gameSlug: gameSlug || "", visibility, wantVoice });
+      telemetry.track("party_create_clicked", {
+        gameSlug: gameSlug || "",
+        visibility,
+        wantVoice,
+        hostMode: hostMode || "",
+      });
       const party = await createParty({
         name: name.trim() || null,
         gameSlug: gameSlug || null,
@@ -54,6 +70,7 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
         maxSize: 8,
         password: visibility === "password" ? password.trim() : null,
         wantVoice,
+        hostMode,
       });
 
       if (party?.id) {
@@ -131,6 +148,27 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
           {VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.hint}
         </p>
       </div>
+
+      {showHostModes ? (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Where the game runs
+          </label>
+          <PremiumSelect
+            value={hostMode ?? ""}
+            onChange={(e) => setHostMode(e.target.value as PartyHostMode)}
+          >
+            {modeOptions.map((opt) => (
+              <option key={opt.mode} value={opt.mode}>
+                {opt.label}
+              </option>
+            ))}
+          </PremiumSelect>
+          <p className="text-xs text-muted-foreground">
+            {modeOptions.find((o) => o.mode === hostMode)?.hint}
+          </p>
+        </div>
+      ) : null}
 
       {visibility === "password" ? (
         <div className="space-y-2">
