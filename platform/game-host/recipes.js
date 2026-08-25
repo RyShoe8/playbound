@@ -462,7 +462,7 @@ export const recipes = {
     portEnd: 14014,
     protocol: "both",
     binaries: gameBin("veloren", ["veloren-server-cli", "veloren-server"]),
-    args: (port) => ["--port", String(port)],
+    args: () => [],
   },
   freedoom: {
     portStart: 10666,
@@ -552,13 +552,6 @@ export const recipes = {
     protocol: "udp",
     binaries: gameBin("renegade-x", ["RenegadeXServer.exe", "UDK.exe", "renegadex-server"]),
     args: (port) => ["server", `CNC-Field?game=RenegadeX.Rx_Game?Port=${port}`, "-silent"],
-  },
-  gemrb: {
-    portStart: 47624,
-    portEnd: 47640,
-    protocol: "tcp",
-    binaries: gameBin("gemrb", ["gemrb", "gemrb-server"]),
-    args: (port) => ["--port", String(port)],
   },
 };
 

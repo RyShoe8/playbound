@@ -232,13 +232,6 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 7797,
     protocol: "udp",
   },
-  gemrb: {
-    slug: "gemrb",
-    title: "GemRB",
-    defaultPort: 47624,
-    portEnd: 47640,
-    protocol: "tcp",
-  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);

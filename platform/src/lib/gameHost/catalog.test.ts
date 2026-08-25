@@ -37,7 +37,7 @@ describe("game host catalog", () => {
     expect(isHostableGame("re-volt-rvgl")).toBe(true);
     expect(isHostableGame("chris-sawyers-locomotion")).toBe(true);
     expect(isHostableGame("renegade-x")).toBe(true);
-    expect(isHostableGame("gemrb")).toBe(true);
+    expect(isHostableGame("gemrb")).toBe(false);
     expect(isHostableGame("mrboom")).toBe(false);
 
     /*
