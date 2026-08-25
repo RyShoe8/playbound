@@ -123,6 +123,13 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 20615,
     protocol: "udp",
   },
+  bombsquad: {
+    slug: "bombsquad",
+    title: "BombSquad",
+    defaultPort: 43210,
+    portEnd: 43230,
+    protocol: "udp",
+  },
   "wolfenstein-enemy-territory": {
     slug: "wolfenstein-enemy-territory",
     title: "Wolfenstein: Enemy Territory",

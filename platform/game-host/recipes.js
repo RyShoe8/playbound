@@ -324,6 +324,18 @@ export const recipes = {
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
     args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
   },
+  bombsquad: {
+    portStart: 43210,
+    portEnd: 43230,
+    protocol: "udp",
+    binaries: gameBin("bombsquad", ["bombsquad_server"]),
+    args: (port, ctx) => [
+      String(port),
+      ctx.name,
+      String(Math.min(Number(ctx.maxPlayers) || 8, 8)),
+      ctx.partyId,
+    ],
+  },
   "wolfenstein-enemy-territory": {
     portStart: 27950,
     portEnd: 27959,
@@ -488,6 +500,7 @@ export function resolveRecipe(slug) {
 
 const HOST_TITLES = {
   "0-ad": "0 A.D.",
+  bombsquad: "BombSquad",
   "wolfenstein-enemy-territory": "Wolfenstein: Enemy Territory",
   ysoccer: "YSoccer",
 };
