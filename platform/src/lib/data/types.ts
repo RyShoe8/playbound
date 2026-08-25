@@ -34,6 +34,8 @@ export type Genre =
   | "Deck Builder"
   | "Idle"
   | "Horror"
+  | "Stealth"
+  | "Immersive Sim"
   | "MOBA"
   | "Party Game";
 
