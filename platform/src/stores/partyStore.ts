@@ -32,6 +32,8 @@ interface PartyState {
     eventId?: string | null;
     password?: string | null;
     wantVoice?: boolean;
+    /** "self" | "dedicated"; the server validates it against the game. */
+    hostMode?: string | null;
   }) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
   joinParty: (
     partyId: string,
