@@ -130,7 +130,7 @@ export async function sendSilentDiscordAnnouncement(params: {
             }
           : undefined,
         footer: {
-          text: "PlayBound Autonomous Matchmaker • Dedicated Game Host",
+          text: "PlayBound Automated Events • Dedicated Game Host",
         },
         timestamp: params.startsAt.toISOString(),
       },

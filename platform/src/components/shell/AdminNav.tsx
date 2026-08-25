@@ -237,7 +237,7 @@ const CONNECT_CHILDREN: NavChild[] = [
       p.startsWith("/admin/game-servers"),
   },
   {
-    label: "Autonomous Matchmaker",
+    label: "Automated Events",
     icon: Bot,
     href: "/admin/connect/autonomous",
     match: (p) => p.startsWith("/admin/connect/autonomous"),
