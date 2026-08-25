@@ -1265,8 +1265,33 @@ async function ensurePartyGames() {
   return partyGamesCache;
 }
 
+/**
+ * Does every member's platform support this game?
+ *
+ * requiredPlatforms comes from the server, derived from each member's
+ * presence, so the site and the launcher cannot disagree about what a mixed
+ * party can play. Empty means nobody's OS is known and nothing is constrained.
+ *
+ * Browser games and games with no platforms listed both pass. The second is
+ * missing data rather than a statement of incompatibility, and hiding a game
+ * because its catalog entry is thin looks to the leader like it left the
+ * catalog entirely.
+ */
+function partyCanAllPlay(game, requiredPlatforms) {
+  if (!requiredPlatforms?.length) return true;
+  if (game.browserPlayable) return true;
+  const supported = new Set(
+    (game.platforms || []).map((p) => String(p || "").trim().toLowerCase())
+  );
+  if (supported.size === 0 || supported.has("web")) return true;
+  return requiredPlatforms.every((p) => supported.has(p));
+}
+
 function partyGameOptionsHtml(selectedSlug, party) {
-  const games = filterByDiscovery(partyGamesCache || []);
+  const required = Array.isArray(party?.requiredPlatforms) ? party.requiredPlatforms : [];
+  const games = filterByDiscovery(partyGamesCache || []).filter((g) =>
+    partyCanAllPlay(g, required)
+  );
   const options = [`<option value="">Select a game</option>`];
   for (const g of games) {
     options.push(
@@ -1326,10 +1351,25 @@ function buildPartyViewHtml(party) {
    * once play started meant a party that finished a game had no way to move on
    * to another one without disbanding.
    */
+  /*
+   * Say why the list is shorter than the catalog. A mixed-platform party
+   * silently dropping games reads as games having disappeared, and the leader
+   * has no way to guess that a member's OS is the reason.
+   */
+  const requiredPlatformLabels = (party.requiredPlatforms || []).map(
+    (p) => ({ windows: "Windows", macos: "macOS", linux: "Linux" })[p] || p
+  );
+  const platformNoteHtml =
+    isLeader && !ended && requiredPlatformLabels.length > 1
+      ? `<p class="party-game-platform-note">Showing games that run on ${escapeHtml(
+          requiredPlatformLabels.join(" and ")
+        )} — everyone in this party has to be able to play.</p>`
+      : "";
+
   const gameHtml = isLeader && !ended
     ? `<select class="input-text party-game-select" id="party-game-select" aria-label="Party game" style="max-width: 380px;">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
-       </select>`
+       </select>${platformNoteHtml}`
     : hasGame
     ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>`
     : "";
@@ -1782,6 +1822,9 @@ function partyAreaSignature(active, discoverable) {
       // the picker has to appear or disappear with them.
       hostMode: active.hostMode || null,
       hostModes: (active.hostModes || []).map((m) => m.mode),
+      // Someone joining on another OS changes which games are offered, so the
+      // picker has to repaint when this does.
+      requiredPlatforms: (active.requiredPlatforms || []).join(","),
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
       hosted: active.hosted || null,
       discord: active.discord || null,

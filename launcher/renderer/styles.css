@@ -4865,6 +4865,7 @@ textarea.input-text {
 .party-name-input { max-width: 380px; font-weight: 700; }
 .party-game-select { max-width: 380px; }
 .party-game-label { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.party-game-platform-note { margin: 6px 0 0; font-size: 11px; color: var(--text-muted); max-width: 380px; }
 .party-meta {
   margin: 0;
   display: flex;

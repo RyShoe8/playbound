@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { Users, Crown, LogOut, Check, X, Phone, Play, HardDriveDownload } from "lucide-react";
 import { usePartyStore } from "@/stores/partyStore";
 import type { PartyPayload } from "@/lib/playTogether/types";
+import { filterGamesForParty } from "@/lib/playTogether/partyPlatforms";
 import {
   PARTY_NAME_MAX,
   PARTY_VISIBILITIES,
@@ -100,13 +101,27 @@ export function PartyView({
    * OpenArena, whose tags never say "multiplayer" but which have server
    * browsers.
    */
+  /*
+   * requiredPlatforms is resolved server-side from every member's presence, so
+   * a mixed party — someone on Windows, someone on Linux — is only offered
+   * games all of them can actually run. Picking a Windows-only game for a
+   * party with a Linux member strands them after the group has committed to
+   * it.
+   */
   const partyGames = useMemo(
     () =>
-      games
-        .filter((g) => supportsMultiplayer(g))
-        .filter((g) => supportsLauncherParty(g))
-        .filter((g) => mode === "all" || isGameCompatible(g, device.type)),
-    [games, mode, device.type]
+      filterGamesForParty(
+        games
+          .filter((g) => supportsMultiplayer(g))
+          .filter((g) => supportsLauncherParty(g))
+          .filter((g) => mode === "all" || isGameCompatible(g, device.type)),
+        party.requiredPlatforms || []
+      ),
+    [games, mode, device.type, party.requiredPlatforms]
+  );
+
+  const requiredPlatformLabels = (party.requiredPlatforms || []).map(
+    (p) => ({ windows: "Windows", macos: "macOS", linux: "Linux" })[p] || p
   );
   const hostedReady =
     party.hosted?.status === "ready" && party.hosted.host && party.hosted.port;
@@ -286,6 +301,16 @@ export function PartyView({
                   ) : null}
                 </PremiumSelect>
               </label>
+              {/*
+                A shorter list with no explanation reads as games having
+                disappeared; the leader cannot guess a member's OS is why.
+              */}
+              {requiredPlatformLabels.length > 1 ? (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Showing games that run on {requiredPlatformLabels.join(" and ")} — everyone in this
+                  party has to be able to play.
+                </p>
+              ) : null}
               {party.gameSlug ? (
                 <PartyHostInstallPicker
                   partyId={party.id}

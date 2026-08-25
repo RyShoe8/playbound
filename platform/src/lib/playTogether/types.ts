@@ -158,6 +158,11 @@ export type PartyMemberPayload = {
   role: PartyMemberRole;
   ready: boolean;
   joinedAt: string;
+  /**
+   * From presence: "windows" | "macos" | "linux" | … | "unknown".
+   * Unknown means no live presence row — treated as "do not constrain".
+   */
+  os: string;
 };
 
 /** Serialised party for API responses. */
@@ -174,6 +179,12 @@ export type PartyPayload = {
   status: PartyStatus;
   visibility: PartyVisibility;
   maxSize: number;
+  /**
+   * Desktop platforms every game offered to this party must support, derived
+   * from the members' presence. Empty means no member's OS is known, which
+   * clients read as "no constraint" rather than "nothing qualifies".
+   */
+  requiredPlatforms: string[];
   /** Where the room runs. Null when the game offers no PlayBound-run multiplayer. */
   hostMode: "self" | "dedicated" | null;
   /** Modes this game supports, in display order. Fewer than two means no picker. */
