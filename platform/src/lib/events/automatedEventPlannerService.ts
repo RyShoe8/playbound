@@ -374,9 +374,10 @@ export async function evaluateAndTriggerAutomatedEvent(
   const gameTitle = selectedEditionName ? `${baseTitle}: ${selectedEditionName}` : baseTitle;
   const coverImage = (dbGame as { coverImage?: string })?.coverImage || staticEntry?.coverImage || null;
 
-  const leadMinutes = options.force
-    ? (options.leadMinutesOverride ?? 0)
-    : (options.leadMinutesOverride ?? (Number(freshConfig.leadTimeMinutes) || 0));
+  const leadMinutes =
+    options.leadMinutesOverride !== undefined
+      ? options.leadMinutesOverride
+      : Number(freshConfig.leadTimeMinutes) || 0;
 
   const startsAt = new Date(Date.now() + leadMinutes * 60 * 1000);
   const endsAt = new Date(startsAt.getTime() + gameDurationHours * 60 * 60 * 1000);
