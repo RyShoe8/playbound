@@ -33,7 +33,7 @@
       "schedule": "45 4 * * *"
     },
     {
-      "path": "/api/cron/autonomous-matchmaker",
+      "path": "/api/cron/automated-event-planner",
       "schedule": "*/10 * * * *"
     }
   ]

@@ -127,15 +127,15 @@ export async function runEventsCron(now = new Date()): Promise<{
 
   discordActions += await cleanupDueEventChannels(now);
 
-  // Evaluate and trigger automated pop-up events (autonomous matchmaker)
+  // Evaluate and trigger automated pop-up events (Automated Event Planner)
   try {
-    const { checkAndTeardownExpiredMatches, evaluateAndTriggerAutonomousMatch } = await import(
-      "@/lib/matchmaker/autonomousService"
+    const { checkAndTeardownExpiredEvents, evaluateAndTriggerAutomatedEvent } = await import(
+      "@/lib/events/automatedEventPlannerService"
     );
-    await checkAndTeardownExpiredMatches();
-    await evaluateAndTriggerAutonomousMatch({ force: false });
+    await checkAndTeardownExpiredEvents();
+    await evaluateAndTriggerAutomatedEvent({ force: false });
   } catch (err) {
-    console.warn("[events cron] autonomous matchmaker evaluation skipped:", err);
+    console.warn("[events cron] automated event planner evaluation skipped:", err);
   }
 
   return { statusUpdates, reminders, attendanceSynced, discordActions };
