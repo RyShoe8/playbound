@@ -59,6 +59,13 @@ export const GAME_PLAYER_COUNTS: Readonly<Record<string, GamePlayerCount>> = Obj
   "heroes-of-might-and-magic-3-complete": { min: 1, max: 8, partyMax: 8, note: "Online, LAN, and local hotseat support up to eight players." },
   "ground-control-anthology": { min: 1, max: 8, partyMax: 8, note: "Competitive and cooperative LAN games support up to eight players." },
   "ground-control-2-operation-exodus": { min: 1, max: 8, partyMax: 8, note: "Competitive games support eight; campaign co-op supports three." },
+  "stronghold-crusader-hd": { min: 1, max: 8, partyMax: 8, note: "Skirmish multiplayer supports up to eight players over GameRanger or a shared LAN." },
+  "s-t-a-l-k-e-r-shadow-of-chernobyl": { min: 1, max: 32, partyMax: 16, note: "The original competitive modes support dedicated and LAN servers; PlayBound parties are capped at sixteen." },
+  "s-t-a-l-k-e-r-call-of-pripyat": { min: 1, max: 32, partyMax: 16, note: "The original competitive multiplayer supports dedicated and LAN servers; the major overhaul editions are single-player." },
+  "star-wars-knights-of-the-old-republic": { min: 1, max: 1, partyMax: 1 },
+  "star-wars-knights-of-the-old-republic-ii-the-sith-lords": { min: 1, max: 1, partyMax: 1 },
+  "thief-gold": { min: 1, max: 1, partyMax: 1 },
+  "thief-2-the-metal-age": { min: 1, max: 1, partyMax: 1 },
 });
 
 export function gamePlayerCount(slug: string | null | undefined): GamePlayerCount | null {

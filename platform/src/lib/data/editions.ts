@@ -528,6 +528,63 @@ export const editions: EditionSeed[] = [
     verificationNote: "Pinned to GC2 Essentials 2026.01.02 and verified against the published archive checksum and contents.",
   },
   {
+    gameSlug: "stronghold-crusader-hd", slug: "ucp3-playbound", name: "Unofficial Crusader Patch 3 — PlayBound Edition", version: "1.0.15",
+    shortDescription: "The living Crusader balance patch, mod framework, and AI workshop in one clean edition.",
+    description: "UCP3 is where classic Crusader keeps evolving. It fixes long-standing problems, opens the game to modular balance sets, and makes custom AI and maps dramatically easier to share. PlayBound installs the official manager directly and keeps the patched copy separate from the GOG master.",
+    type: "community", status: "active", visibility: "public", sortOrder: 10,
+    links: { website: "https://unofficialcrusaderpatch.github.io/", github: "https://github.com/UnofficialCrusaderPatch/UCP3-GUI" },
+    installMethod: "playbound_installer", installConfig: { playbound_installer: { kind: "github-installer", repo: "UnofficialCrusaderPatch/UCP3-GUI", assetPattern: "UCP3-GUI_.*_x64-setup\\.exe$", versionLabel: "v1.0.15", exeHint: "ucp3-gui", note: "Install Stronghold Crusader HD first; the official UCP3 manager asks for that folder." } },
+    features: ["Singleplayer", "Multiplayer", "LAN Support", "Mod Support", "Custom Maps"], tags: ["Classic", "LAN", "Mods"], aliases: ["UCP3", "Unofficial Crusader Patch"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "stronghold-crusader-hd", slug: "stronghold-europe", name: "Stronghold Europe — Total Conversion", version: "1.2",
+    shortDescription: "Crusader's skirmish engine rebuilt around green fields, familiar castles, and the original Stronghold mood.", description: "Stronghold Europe is the full scenery-and-rules conversion for players who want Crusader's skirmish sandbox in the forests and farmland of the first game.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://www.moddb.com/mods/stronghold-europe" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/stronghold-europe" } }, features: ["Singleplayer", "Multiplayer", "LAN Support", "Mod Support"], tags: ["Classic", "LAN", "Mods"], aliases: ["Stronghold Europe"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "anomaly", name: "S.T.A.L.K.E.R. Anomaly — Standalone Edition", version: "1.5.3",
+    shortDescription: "The whole trilogy's Zone reshaped into a free-roaming survival sandbox.", description: "Anomaly is the great open-ended Zone: every major region, faction starts, story routes, and enough tuning to make the same road feel different twice.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://www.moddb.com/mods/stalker-anomaly" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/stalker-anomaly" } }, features: ["Singleplayer", "Mod Support"], tags: ["Open World", "Mods"], aliases: ["STALKER Anomaly"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "gamma", name: "S.T.A.L.K.E.R. G.A.M.M.A. — Survival Edition", version: "0.9.3",
+    shortDescription: "Anomaly rebuilt around scarcity, long-term progression, and gloriously fussy survival.", description: "GAMMA turns Anomaly into a deliberate survival campaign where maintenance, medicine, crafting, and preparation matter as much as marksmanship.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://github.com/Grokitach/Stalker_GAMMA", github: "https://github.com/Grokitach/Stalker_GAMMA" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://github.com/Grokitach/Stalker_GAMMA/wiki/Installing-GAMMA" } }, features: ["Singleplayer", "Mod Support"], tags: ["Open World", "Mods"], aliases: ["STALKER GAMMA"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat", slug: "gunslinger", name: "Gunslinger — Call of Pripyat Edition", version: "Beta",
+    shortDescription: "Call of Pripyat with obsessive weapon handling, animation, and combat detail.", description: "Gunslinger keeps the original campaign recognizable while rebuilding the feel of carrying a firearm through the Zone.", type: "community", status: "active", visibility: "public", sortOrder: 30, links: { website: "https://www.moddb.com/mods/gunslinger-mod" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/gunslinger-mod" } }, features: ["Singleplayer", "Mod Support"], tags: ["Mods"], aliases: ["STALKER Gunslinger"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl", slug: "lost-alpha", name: "Lost Alpha: Developer's Cut — Total Conversion", version: "1.4007",
+    shortDescription: "The abandoned early vision of S.T.A.L.K.E.R. rebuilt into a huge standalone journey.", description: "Lost Alpha imagines the game Shadow of Chornobyl might have become before years of cuts reshaped it: wider maps, restored ideas, new routes, and its own campaign.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://www.moddb.com/mods/lost-alpha" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/lost-alpha" } }, features: ["Singleplayer", "Mod Support"], tags: ["Open World", "Mods"], aliases: ["STALKER Lost Alpha"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl", slug: "true-stalker", name: "True Stalker — Standalone Story Edition", version: "1.5",
+    shortDescription: "A polished fan-made campaign that sends a new face into a familiar Zone.", description: "True Stalker is a complete standalone story with its own protagonist, quests, performances, and carefully rebuilt spaces.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://www.moddb.com/mods/true-stalker" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.moddb.com/mods/true-stalker" } }, features: ["Singleplayer", "Mod Support"], tags: ["Open World", "Mods"], aliases: ["True Stalker"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "star-wars-knights-of-the-old-republic", slug: "k1-community-patch", name: "KOTOR Community Patch — PlayBound Edition", version: "1.10",
+    shortDescription: "The original adventure with hundreds of quest, script, dialogue, and visual fixes.", description: "K1 Community Patch is the quiet definitive edition: it fixes broken triggers, inaccessible content, continuity mistakes, and visual oddities without rewriting the game.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://deadlystream.com/files/file/1258-kotor-1-community-patch/", github: "https://github.com/KOTORCommunityPatches/K1_Community_Patch" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://deadlystream.com/files/file/1258-kotor-1-community-patch/" } }, features: ["Singleplayer", "Mod Support"], tags: ["Classic", "Mods"], aliases: ["K1CP"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "star-wars-knights-of-the-old-republic", slug: "brotherhood-of-shadow", name: "Brotherhood of Shadow: Solomon's Revenge — Total Conversion", version: "1.1",
+    shortDescription: "A full companion-driven campaign woven through KOTOR's galaxy.", description: "Brotherhood of Shadow is another RPG tucked inside the first one: new companions, planets, voiced scenes, and a long narrative crossing the main campaign.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://deadlystream.com/files/file/761-brotherhood-of-shadow-solomons-revenge/" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://deadlystream.com/files/file/761-brotherhood-of-shadow-solomons-revenge/" } }, features: ["Singleplayer", "Mod Support"], tags: ["Classic", "Mods"], aliases: ["BOSSR"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "star-wars-knights-of-the-old-republic-ii-the-sith-lords", slug: "tslrcm", name: "The Sith Lords Restored Content — PlayBound Edition", version: "1.8.6",
+    shortDescription: "The missing connective tissue, character scenes, and ending work restored to KOTOR II.", description: "TSLRCM is the closest thing KOTOR II has to a director's cut, restoring quests, companion material, combat sequences, and the connective scenes that help the final act breathe.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://deadlystream.com/files/file/578-tsl-restored-content-mod/" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://deadlystream.com/files/file/578-tsl-restored-content-mod/" } }, features: ["Singleplayer", "Mod Support"], tags: ["Classic", "Mods"], aliases: ["TSLRCM"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "star-wars-knights-of-the-old-republic-ii-the-sith-lords", slug: "m4-78-enhancement-project", name: "M4-78 Enhancement Project — Restored Planet Edition", version: "1.5.1",
+    shortDescription: "TSLRCM plus the lost droid world rebuilt as a full playable chapter.", description: "M4-78EP reconstructs the cut droid planet as a substantial new stop in the Exile's journey and is intended for returning players using TSLRCM.", type: "community", status: "active", visibility: "public", sortOrder: 20, links: { website: "https://deadlystream.com/files/file/277-m4-78-enhancement-project/" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://deadlystream.com/files/file/277-m4-78-enhancement-project/" } }, features: ["Singleplayer", "Mod Support"], tags: ["Classic", "Mods"], aliases: ["M4-78EP"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "thief-gold", slug: "the-black-parade", name: "The Black Parade — Total Campaign Edition", version: "1.0",
+    shortDescription: "Ten enormous missions that understand exactly why the dark still feels dangerous.", description: "The Black Parade is a fan campaign with the confidence and craft of a lost Looking Glass sequel: dense city spaces, patient environmental storytelling, and ten missions that keep unfolding.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://www.thiefguild.com/fanmissions/26275/thief-the-black-parade" }, installMethod: "external_installer", installConfig: { external_installer: { url: "https://www.thiefguild.com/fanmissions/26275/thief-the-black-parade" } }, features: ["Singleplayer", "Mod Support", "Custom Maps"], tags: ["Classic", "Mods"], aliases: ["The Black Parade", "TBP Thief"], verificationLevel: "community_verified",
+  },
+  {
+    gameSlug: "thief-2-the-metal-age", slug: "t2x-shadows-of-the-metal-age", name: "T2X: Shadows of the Metal Age — Total Conversion", version: "1.1",
+    shortDescription: "A thirteen-mission parallel campaign with a new thief, new story, and its own corner of the City.", description: "T2X spans thirteen missions, original art and audio, new locations, and a story that stands beside Thief II. PlayBound downloads and verifies the official installer directly.", type: "community", status: "active", visibility: "public", sortOrder: 10, links: { website: "https://www.thief2x.com/download/" }, installMethod: "playbound_installer", installConfig: { playbound_installer: { kind: "direct-installer", url: "https://www.thief2x.com/_dlfiles/t2x_v11_full.exe", fileName: "t2x_v11_full.exe", versionLabel: "1.1", checksumMd5: "f3f7e8e55626a61e9fbdc0bba0eddaa4", exeHint: "thief2", note: "Requires Thief II. The verified official installer asks for the separate PlayBound edition folder." } }, features: ["Singleplayer", "Mod Support", "Custom Maps"], tags: ["Classic", "Mods"], aliases: ["T2X", "Thief2X"], verificationLevel: "community_verified",
+  },
+  {
     gameSlug: "counter-strike-2",
     slug: "official",
     name: "Counter-Strike 2 (Default)",

@@ -48,6 +48,8 @@ export const GENRES = [
   "Deck Builder",
   "Idle",
   "Horror",
+  "Stealth",
+  "Immersive Sim",
   "MOBA",
   /*
    * Party Game covers the browser and living-room titles that Social Deduction

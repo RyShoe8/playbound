@@ -11,6 +11,9 @@ const CURRENT_TESTING_SLUGS = [
   "red-eclipse", "widelands", "warfork", "slapshot-rebound", "deadeus", "openspades",
   "opentyrian-2000", "pokemon-dawn-of-darkness",
   "lincity-ng", "3d-city", "isocity", "tomb-raider-123",
+  "stronghold-crusader-hd", "s-t-a-l-k-e-r-shadow-of-chernobyl", "s-t-a-l-k-e-r-call-of-pripyat",
+  "star-wars-knights-of-the-old-republic", "star-wars-knights-of-the-old-republic-ii-the-sith-lords",
+  "thief-gold", "thief-2-the-metal-age",
 ] as const;
 
 describe("game player counts", () => {
@@ -36,6 +39,8 @@ describe("game player counts", () => {
     expect(gamePlayerCount("heroes-of-might-and-magic-3-complete")?.partyMax).toBe(8);
     expect(gamePlayerCount("ground-control-anthology")?.max).toBe(8);
     expect(gamePlayerCount("ground-control-2-operation-exodus")).toMatchObject({ max: 8, partyMax: 8 });
+    expect(gamePlayerCount("stronghold-crusader-hd")).toMatchObject({ max: 8, partyMax: 8 });
+    expect(gamePlayerCount("s-t-a-l-k-e-r-call-of-pripyat")?.partyMax).toBe(16);
   });
 
   it("has a verified count for every game currently in Testing", () => {

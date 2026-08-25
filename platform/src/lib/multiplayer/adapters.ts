@@ -570,6 +570,55 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "GC2 Essentials restores public online play through OpenSpy; PlayBound Connect remains the private LAN fallback for competitive and three-player co-op sessions.",
   },
 
+  "stronghold-crusader-hd": {
+    gameSlug: "stronghold-crusader-hd",
+    title: "Stronghold Crusader HD",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    client: { inGameJoinPrompt: true },
+    preferPlayBoundConnect: true,
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: [
+        "Make sure every player is using the same base game or UCP3 preset",
+        "Leader: Multiplayer → Host and create the skirmish",
+        "Everyone else: Multiplayer → Local Network and join the leader",
+      ],
+    },
+    notes: "PlayBound Connect replaces the third-party matchmaking dependency for private parties while preserving the game's own eight-player simulation.",
+  },
+
+  "s-t-a-l-k-e-r-shadow-of-chernobyl": {
+    gameSlug: "s-t-a-l-k-e-r-shadow-of-chernobyl",
+    title: "S.T.A.L.K.E.R.: Shadow of Chornobyl",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: { inGameJoinPrompt: true },
+    preferPlayBoundConnect: true,
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: ["Leader: Multiplayer → Local Network → Create", "Everyone else: open Local Network and join the leader's server"],
+    },
+    notes: "The commercial master retains competitive multiplayer; Lost Alpha and True Stalker remain correctly single-player editions.",
+  },
+
+  "s-t-a-l-k-e-r-call-of-pripyat": {
+    gameSlug: "s-t-a-l-k-e-r-call-of-pripyat",
+    title: "S.T.A.L.K.E.R.: Call of Pripyat",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: { inGameJoinPrompt: true },
+    preferPlayBoundConnect: true,
+    virtualLan: {
+      requiresBroadcast: true,
+      inGameSteps: ["Leader: Multiplayer → Local Network → Create", "Everyone else: open Local Network and join the leader's server"],
+    },
+    notes: "Multiplayer belongs to the original Call of Pripyat master. Anomaly, GAMMA, and Gunslinger are single-player editions and do not inherit this adapter at launch.",
+  },
+
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   "space-station-14": {
     gameSlug: "space-station-14",
