@@ -1,9 +1,20 @@
+import type { Metadata } from "next";
 import { Gift, Sparkles, Clock, History } from "lucide-react";
 import { listActiveOffers, listRecentlyExpiredOffers } from "@/lib/freeOffers/service";
 import { ActiveOffersGrid } from "@/components/ActiveOffersGrid";
 import { Badge, EmptyHint, SectionHeader } from "@/components/ui/bits";
 import { storeDisplayName, dateRangeLabel, offerTypeLabel } from "@/lib/freeOffers/labels";
 import type { StoreSlug } from "@/lib/freeOffers/types";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
+import { absoluteUrl } from "@/lib/site";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Free Games This Week — Active Giveaways & Store Promotions",
+  description:
+    "Claim time-limited free games from Epic Games Store, Steam, GOG, and Prime Gaming before they expire. Live promotion tracker updated continuously.",
+  path: "/free-games",
+});
 
 export default async function FreeGamesPage() {
   const [activeOffers, recentlyExpired] = await Promise.all([
@@ -14,8 +25,57 @@ export default async function FreeGamesPage() {
   // Group active offers by store
   const activeStores = [...new Set(activeOffers.map((o) => o.store))] as StoreSlug[];
 
+  const offersSchema = {
+    "@type": "ItemList",
+    name: "Free Games This Week",
+    description:
+      "Active free game promotions and giveaways from Epic Games Store, Steam, GOG, and Prime Gaming.",
+    url: absoluteUrl("/free-games"),
+    numberOfItems: activeOffers.length,
+    itemListElement: activeOffers.map((offer, i) => {
+      const metaTitle = offer.metadata?.title as string | undefined;
+      const title =
+        offer.unmatchedTitle ||
+        metaTitle ||
+        (offer.gameSlug
+          ? offer.gameSlug
+              .replace(/[-_]+/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+          : null) ||
+        `${storeDisplayName(offer.store)} Free Offer`;
+      return {
+        "@type": "ListItem",
+        position: i + 1,
+        name: title,
+        item: {
+          "@type": "Offer",
+          name: title,
+          url: offer.claimUrl || offer.storeUrl || absoluteUrl("/free-games"),
+          price: "0",
+          priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
+          seller: {
+            "@type": "Organization",
+            name: storeDisplayName(offer.store),
+          },
+          ...(offer.startDate ? { validFrom: new Date(offer.startDate).toISOString() } : {}),
+          ...(offer.endDate ? { validThrough: new Date(offer.endDate).toISOString() } : {}),
+        },
+      };
+    }),
+  };
+
   return (
     <div className="space-y-12 px-4 py-8 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <JsonLd
+        data={graph(
+          offersSchema,
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Free Games", path: "/free-games" },
+          ])
+        )}
+      />
       {/* ── Page Header ─────────────────────────────────────────── */}
       <header className="max-w-3xl space-y-3">
         <Badge tone="play" className="w-fit">

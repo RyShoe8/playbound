@@ -7,6 +7,7 @@ import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
 import { listWeeklyIssues } from "@/lib/weekly";
 import { listPublishedGear } from "@/lib/gear";
+import { listPublicEvents } from "@/lib/events/service";
 import { SITE_URL } from "@/lib/site";
 
 /**
@@ -16,12 +17,13 @@ import { SITE_URL } from "@/lib/site";
  * no standalone value that would compete with the game page itself.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [games, mods, weekly, editions, gear] = await Promise.all([
+  const [games, mods, weekly, editions, gear, events] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
     listWeeklyIssues(),
     listAllPublicEditions(),
     listPublishedGear(),
+    listPublicEvents({ limit: 100, includePast: false }),
   ]);
   const now = new Date();
 
@@ -75,10 +77,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: e.updatedAt ? new Date(e.updatedAt) : now,
     }));
 
+  const eventRoutes: MetadataRoute.Sitemap = events
+    .filter((e) => e.visibility === "public" || !e.visibility)
+    .map((e) => ({
+      url: `${SITE_URL}/events/${e.id}`,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+      lastModified: e.publishedAt
+        ? new Date(e.publishedAt)
+        : e.createdAt
+          ? new Date(e.createdAt)
+          : now,
+    }));
+
   return [
     ...staticRoutes,
     ...gameRoutes,
     ...editionRoutes,
+    ...eventRoutes,
     ...weekly.map((i) => ({
       url: `${SITE_URL}/weekly/${i.slug}`,
       changeFrequency: "yearly" as const,
