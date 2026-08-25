@@ -138,12 +138,33 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
 
+/**
+ * Catalog slugs that differ from the slug the VPS knows the game by.
+ *
+ * 0 A.D. is published as `0ad`, while this catalog and the agent's recipes.js
+ * both call it `0-ad`. provisionPartyHost looks the party's game up by its
+ * catalog slug, so the lookup missed and every 0 A.D. party silently fell back
+ * to no dedicated server — on a game the VPS was fully configured to run. The
+ * server browser sidestepped it by registering its provider under `0ad`, which
+ * is why the mismatch survived: servers listed fine, only hosting broke.
+ *
+ * Aliasing rather than renaming, because the agent on the box already answers
+ * to `0-ad` and this is deployed by hand.
+ */
+const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
+  "0ad": "0-ad",
+};
+
 export function isHostableGame(slug: string | null | undefined): boolean {
-  return Boolean(slug && HOSTABLE_GAMES[slug]);
+  return Boolean(slug && getHostableGame(slug));
 }
 
 export function getHostableGame(slug: string): HostableGame | null {
-  return HOSTABLE_GAMES[slug] || null;
+  if (!slug) return null;
+  const direct = HOSTABLE_GAMES[slug];
+  if (direct) return direct;
+  const aliased = HOSTABLE_SLUG_ALIASES[slug];
+  return aliased ? HOSTABLE_GAMES[aliased] || null : null;
 }
 
 export type PartyHostedPayload = {
