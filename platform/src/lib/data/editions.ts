@@ -445,10 +445,10 @@ export const editions: EditionSeed[] = [
     verificationLevel: "community_verified",
   },
   {
-    gameSlug: "openlara",
+    gameSlug: "tomb-raider-123",
     slug: "web-wasm",
-    name: "WebAssembly Browser Edition (Default)",
-    shortDescription: "Play classic Tomb Raider instantly in your browser with WebAssembly & WebGL.",
+    name: "OpenLara WebAssembly Browser Edition",
+    shortDescription: "Run the classic Tomb Raider data in OpenLara's instant WebAssembly engine.",
     description:
       "The instant WebAssembly release of OpenLara. Runs directly in any modern web browser at 60 FPS with full audio, dynamic water shaders, and shareware level data.",
     type: "community",
@@ -470,10 +470,10 @@ export const editions: EditionSeed[] = [
     verificationLevel: "playbound_verified",
   },
   {
-    gameSlug: "openlara",
+    gameSlug: "tomb-raider-123",
     slug: "desktop-native",
-    name: "Desktop Native (OpenGL / VR / Split-Screen)",
-    shortDescription: "Native desktop client with 4K widescreen, VR support, and split-screen co-op.",
+    name: "OpenLara Desktop (OpenGL / VR / Split-Screen)",
+    shortDescription: "A native OpenLara edition with modern rendering, VR, and local split-screen options.",
     description:
       "High-performance native desktop executable with OpenXR virtual reality headset support, uncapped framerates, 4K texture support, and local 2-player split-screen.",
     type: "community",
