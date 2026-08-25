@@ -38,9 +38,6 @@ describe("game host catalog", () => {
     expect(isHostableGame("chris-sawyers-locomotion")).toBe(true);
     expect(isHostableGame("renegade-x")).toBe(true);
     expect(isHostableGame("gemrb")).toBe(true);
-    expect(isHostableGame("wipeout-rewrite")).toBe(true);
-    expect(isHostableGame("exult")).toBe(true);
-    expect(isHostableGame("hurry-curry")).toBe(true);
     expect(isHostableGame("mrboom")).toBe(false);
 
     /*

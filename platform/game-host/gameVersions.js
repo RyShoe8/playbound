@@ -40,9 +40,6 @@ const PROBES = {
   "chris-sawyers-locomotion": { args: ["--version"], pick: pickFirstVersion },
   "renegade-x": { args: ["-version"], pick: pickFirstVersion },
   gemrb: { args: ["--version"], pick: pickFirstVersion },
-  "wipeout-rewrite": { args: ["--version"], pick: pickFirstVersion },
-  exult: { args: ["--version"], pick: pickFirstVersion },
-  "hurry-curry": { args: ["--version"], pick: pickFirstVersion },
 };
 
 function looksLikeVersion(value) {

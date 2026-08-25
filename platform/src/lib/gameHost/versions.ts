@@ -42,9 +42,6 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   "chris-sawyers-locomotion": "OpenLoco server",
   "renegade-x": "UDK Renegade X server",
   gemrb: "GemRB party host",
-  "wipeout-rewrite": "wipEout Rewrite server",
-  exult: "Exult local host",
-  "hurry-curry": "Hurry Curry local host",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {
