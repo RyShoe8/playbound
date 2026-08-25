@@ -27,7 +27,7 @@ const PlatformEventSchema = new Schema(
     recommendedModSlugs: { type: [String], default: [] },
     organizerId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     /** @deprecated Prefer organizerId; kept for backward compatibility with creates. */
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: false, default: null },
     hostType: {
       type: String,
       enum: HOST_TYPES,

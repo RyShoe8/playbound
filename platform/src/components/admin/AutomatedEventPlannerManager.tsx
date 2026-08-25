@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Activity,
   AlertCircle,
@@ -101,9 +102,9 @@ export function AutomatedEventPlannerManager() {
   const [logs, setLogs] = useState<MatchLog[]>([]);
   const [hostConfigured, setHostConfigured] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       const res = await fetch("/api/admin/connect/automated-events");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -112,12 +113,14 @@ export function AutomatedEventPlannerManager() {
       setLogs(data.logs || []);
       setHostConfigured(Boolean(data.hostConfigured));
     } catch (err) {
-      setBanner({
-        type: "error",
-        text: err instanceof Error ? err.message : "Failed to load automated event planner config",
-      });
+      if (!isSilent) {
+        setBanner({
+          type: "error",
+          text: err instanceof Error ? err.message : "Failed to load automated event planner config",
+        });
+      }
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, []);
 
@@ -125,13 +128,16 @@ export function AutomatedEventPlannerManager() {
     loadData();
   }, [loadData]);
 
-  // Periodic refresh for active session countdowns
+  // Silent periodic refresh for countdown timers (without unmounting the UI)
   useEffect(() => {
     const timer = setInterval(() => {
-      if (config?.activeSession?.status === "live") {
-        loadData();
+      if (
+        config?.activeSession?.status === "live" ||
+        config?.activeSession?.status === "scheduled"
+      ) {
+        loadData(true);
       }
-    }, 30_000);
+    }, 20_000);
     return () => clearInterval(timer);
   }, [config?.activeSession?.status, loadData]);
 
@@ -141,58 +147,68 @@ export function AutomatedEventPlannerManager() {
       setSaving(true);
       setBanner(null);
       const res = await fetch("/api/admin/connect/automated-events", {
-        method: "POST",
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           enabled: config.enabled,
-          frequencyHours: Number(config.frequencyHours) || 12,
-          leadTimeMinutes: Number(config.leadTimeMinutes) || 0,
-          defaultDurationHours: Number(config.defaultDurationHours) || 2,
+          frequencyHours: config.frequencyHours,
+          leadTimeMinutes: config.leadTimeMinutes,
+          defaultDurationHours: config.defaultDurationHours,
           games: config.games,
           discord: config.discord,
         }),
       });
-      if (!res.ok) throw new Error(`Failed to save: HTTP ${res.status}`);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setConfig(data.config);
-      setBanner({ type: "success", text: "Settings saved successfully." });
+      setBanner({ type: "success", text: "Automated Event Planner configuration saved successfully." });
     } catch (err) {
       setBanner({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to save settings",
+        text: err instanceof Error ? err.message : "Failed to save configuration",
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleTrigger = async (gameSlug?: string, editionSlug?: string | null) => {
-    const actionKey = editionSlug
-      ? `trigger-${gameSlug}:${editionSlug}`
-      : gameSlug
-        ? `trigger-${gameSlug}`
-        : "trigger-random";
+  const handleTrigger = async (
+    gameSlugOverride?: string,
+    editionSlugOverride?: string,
+    leadMinutesOverride?: number
+  ) => {
     try {
-      setActionLoading(actionKey);
+      setActionLoading(gameSlugOverride || "trigger-random");
       setBanner(null);
       const res = await fetch("/api/admin/connect/automated-events/trigger", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          action: "trigger",
-          gameSlug,
-          editionSlug: editionSlug || undefined,
+          force: true,
+          gameSlugOverride,
+          editionSlugOverride,
+          leadMinutesOverride,
         }),
       });
+
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.reason || data.error || `HTTP ${res.status}`);
+        throw new Error(data.reason || `Trigger failed (HTTP ${res.status})`);
       }
-      setBanner({
-        type: "success",
-        text: `Pop-up event started for ${data.session?.gameTitle || data.session?.gameSlug}! Server is live at ${data.session?.host}:${data.session?.port}`,
-      });
-      await loadData();
+
+      await loadData(true);
+      if (data.session?.status === "scheduled") {
+        setBanner({
+          type: "success",
+          text: `Upcoming Game Night scheduled for ${data.session.gameTitle}! Advance announcement sent to Discord.`,
+        });
+      } else {
+        setBanner({
+          type: "success",
+          text: `Dedicated match server successfully spun up for ${data.session?.gameTitle || "game"}!`,
+        });
+      }
     } catch (err) {
       setBanner({
         type: "error",
@@ -204,23 +220,20 @@ export function AutomatedEventPlannerManager() {
   };
 
   const handleStop = async () => {
-    if (!confirm("Are you sure you want to stop the active pop-up match server immediately?")) {
-      return;
-    }
     try {
       setActionLoading("stop");
       setBanner(null);
       const res = await fetch("/api/admin/connect/automated-events/trigger", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "stop" }),
+        method: "DELETE",
       });
+
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || `HTTP ${res.status}`);
+        throw new Error(data.error || `Stop failed (HTTP ${res.status})`);
       }
-      setBanner({ type: "success", text: "Active pop-up server stopped and room cleaned up." });
-      await loadData();
+
+      await loadData(true);
+      setBanner({ type: "success", text: "Active event server stopped and room cleaned up." });
     } catch (err) {
       setBanner({
         type: "error",
@@ -232,44 +245,40 @@ export function AutomatedEventPlannerManager() {
   };
 
   const handleTestDiscord = async () => {
+    if (!config?.discord?.webhookUrl) return;
     try {
       setActionLoading("discord-test");
       setBanner(null);
       const res = await fetch("/api/admin/connect/automated-events/trigger", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "test_discord" }),
+        body: JSON.stringify({ testDiscordOnly: true }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || `HTTP ${res.status}`);
+        throw new Error(data.error || "Discord test failed");
       }
-      setBanner({ type: "success", text: "Silent Discord announcement test dispatched successfully." });
+      setBanner({ type: "success", text: "Test announcement sent to Discord successfully!" });
     } catch (err) {
       setBanner({
         type: "error",
-        text: err instanceof Error ? err.message : "Discord test failed",
+        text: err instanceof Error ? err.message : "Failed to send test announcement",
       });
     } finally {
       setActionLoading(null);
     }
   };
 
-  const toggleGameEnabled = (
-    slug: string,
-    editionSlug: string | null = null,
-    editionName: string | null = null
-  ) => {
+  const togglePoolGame = (slug: string, editionSlug?: string | null, editionName?: string | null) => {
     if (!config) return;
-    const existing = config.games.find(
+    const existingIndex = config.games.findIndex(
       (g) => g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
     );
+
     let newGames: GamePoolItem[];
-    if (existing) {
-      newGames = config.games.map((g) =>
-        g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
-          ? { ...g, enabled: !g.enabled }
-          : g
+    if (existingIndex >= 0) {
+      newGames = config.games.map((g, idx) =>
+        idx === existingIndex ? { ...g, enabled: !g.enabled } : g
       );
     } else {
       newGames = [
@@ -287,16 +296,17 @@ export function AutomatedEventPlannerManager() {
     setConfig({ ...config, games: newGames });
   };
 
-  const updateGameDuration = (
+  const updatePoolDuration = (
     slug: string,
     duration: number,
-    editionSlug: string | null = null,
-    editionName: string | null = null
+    editionSlug?: string | null,
+    editionName?: string | null
   ) => {
     if (!config) return;
     const existing = config.games.find(
       (g) => g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
     );
+
     let newGames: GamePoolItem[];
     if (existing) {
       newGames = config.games.map((g) =>
@@ -320,7 +330,7 @@ export function AutomatedEventPlannerManager() {
     setConfig({ ...config, games: newGames });
   };
 
-  if (loading || !config) {
+  if (loading && !config) {
     return (
       <div className="flex h-64 items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-6 animate-spin text-primary" />
@@ -329,14 +339,27 @@ export function AutomatedEventPlannerManager() {
     );
   }
 
+  if (!config) return null;
+
   const isLive = config.activeSession?.status === "live";
+  const isScheduled = config.activeSession?.status === "scheduled";
+
   const sessionEndsAt = config.activeSession?.endsAt
     ? new Date(config.activeSession.endsAt)
     : null;
+  const sessionStartsAt = config.activeSession?.startsAt
+    ? new Date(config.activeSession.startsAt)
+    : null;
+
   const remainingMs = sessionEndsAt ? sessionEndsAt.getTime() - Date.now() : 0;
   const remainingMins = Math.max(0, Math.ceil(remainingMs / (60 * 1000)));
   const remainingHours = Math.floor(remainingMins / 60);
   const remainingMinsRemainder = remainingMins % 60;
+
+  const startsInMs = sessionStartsAt ? sessionStartsAt.getTime() - Date.now() : 0;
+  const startsInMins = Math.max(0, Math.ceil(startsInMs / (60 * 1000)));
+  const startsInHours = Math.floor(startsInMins / 60);
+  const startsInMinsRemainder = startsInMins % 60;
 
   return (
     <div className="space-y-8">
@@ -403,7 +426,7 @@ export function AutomatedEventPlannerManager() {
 
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={loadData}
+            onClick={() => loadData(false)}
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
           >
@@ -420,7 +443,7 @@ export function AutomatedEventPlannerManager() {
             ) : (
               <Sparkles className="size-4 text-primary" />
             )}
-            Force Trigger Event
+            Force Trigger Now
           </button>
           <button
             onClick={handleSave}
@@ -432,6 +455,77 @@ export function AutomatedEventPlannerManager() {
           </button>
         </div>
       </div>
+
+      {/* Scheduled Event Widget */}
+      {isScheduled && config.activeSession && (
+        <div className="relative overflow-hidden rounded-2xl border border-blue-500/40 bg-gradient-to-r from-blue-950/40 via-card to-card p-6 shadow-lg">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="flex size-2.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full size-2.5 bg-blue-500"></span>
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                  Upcoming Game Night Scheduled
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold tracking-tight">
+                {config.activeSession.gameTitle || config.activeSession.gameSlug}
+              </h3>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span>
+                  Starts: {sessionStartsAt ? sessionStartsAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "Soon"}
+                </span>
+                {config.activeSession.eventId && (
+                  <Link
+                    href={`/events/${config.activeSession.eventId}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    View Community Event Page <ExternalLink className="size-3.5" />
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-center">
+                <div className="text-xs text-blue-300">Server Starts In</div>
+                <div className="text-lg font-bold text-foreground">
+                  {startsInHours > 0 ? `${startsInHours}h ` : ""}{startsInMinsRemainder}m
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  handleTrigger(
+                    config.activeSession?.gameSlug || undefined,
+                    config.activeSession?.editionSlug || undefined,
+                    0
+                  )
+                }
+                disabled={actionLoading !== null}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                <Play className="size-4 fill-current" />
+                Start Server Now
+              </button>
+              <button
+                onClick={handleStop}
+                disabled={actionLoading === "stop"}
+                className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+              >
+                {actionLoading === "stop" ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Square className="size-4" />
+                )}
+                Cancel Event
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Live Server Widget */}
       {isLive && config.activeSession && (
@@ -450,9 +544,20 @@ export function AutomatedEventPlannerManager() {
               <h3 className="text-2xl font-bold tracking-tight">
                 {config.activeSession.gameTitle || config.activeSession.gameSlug}
               </h3>
-              <p className="text-sm font-mono text-muted-foreground">
-                Host: <span className="text-foreground">{config.activeSession.host}:{config.activeSession.port}</span> • Room: {config.activeSession.roomId}
-              </p>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span className="font-mono">
+                  Host: <span className="text-foreground">{config.activeSession.host}:{config.activeSession.port}</span> • Room: {config.activeSession.roomId}
+                </span>
+                {config.activeSession.eventId && (
+                  <Link
+                    href={`/events/${config.activeSession.eventId}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    View Event <ExternalLink className="size-3.5" />
+                  </Link>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-6">
@@ -502,6 +607,37 @@ export function AutomatedEventPlannerManager() {
                 onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
                 className="size-5 rounded border-border text-primary focus:ring-primary"
               />
+            </div>
+
+            <div>
+              <label className="font-medium text-foreground">Advance Schedule Lead Time</label>
+              <p className="text-xs text-muted-foreground">
+                How far in advance the event is scheduled and announced in Discord before the server starts.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {[
+                  { label: "Instant (0m)", value: 0 },
+                  { label: "30 Mins", value: 30 },
+                  { label: "1 Hour", value: 60 },
+                  { label: "2 Hours", value: 120 },
+                  { label: "4 Hours", value: 240 },
+                  { label: "12 Hours", value: 720 },
+                  { label: "24 Hours", value: 1440 },
+                ].map((preset) => (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => setConfig({ ...config, leadTimeMinutes: preset.value })}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                      config.leadTimeMinutes === preset.value
+                        ? "bg-primary text-primary-foreground font-semibold"
+                        : "border border-border bg-secondary/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
@@ -589,15 +725,15 @@ export function AutomatedEventPlannerManager() {
                     discord: { ...config.discord, webhookUrl: e.target.value },
                   })
                 }
-                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-mono"
+                className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-xs font-mono"
               />
             </div>
 
             <div>
-              <label className="font-medium text-foreground">Custom Announcement Title</label>
+              <label className="font-medium text-foreground">Custom Embed Title</label>
               <input
                 type="text"
-                placeholder="⚡ Pop-Up Game Night: {game}"
+                placeholder="⚡ Pop-Up Game Night Live"
                 value={config.discord?.customTitle || ""}
                 onChange={(e) =>
                   setConfig({
@@ -605,15 +741,15 @@ export function AutomatedEventPlannerManager() {
                     discord: { ...config.discord, customTitle: e.target.value },
                   })
                 }
-                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
               />
             </div>
 
             <div>
-              <label className="font-medium text-foreground">Custom Announcement Message</label>
+              <label className="font-medium text-foreground">Custom Message Blurb</label>
               <textarea
                 rows={2}
-                placeholder="A dedicated community match is live! Click 1-Click Launch below to play."
+                placeholder="A dedicated match server has been spun up! Click below to auto-install & join."
                 value={config.discord?.customMessage || ""}
                 onChange={(e) =>
                   setConfig({
@@ -621,140 +757,172 @@ export function AutomatedEventPlannerManager() {
                     discord: { ...config.discord, customMessage: e.target.value },
                   })
                 }
-                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Game Pool & Edition Rotation Manager */}
-      <div className="space-y-5 rounded-2xl border border-border/80 bg-card p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-4">
+      {/* Rotation Pool Cards */}
+      <div className="space-y-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2.5">
-              <Layers className="size-5 text-primary" />
-              <h3 className="font-semibold tracking-tight text-foreground">
-                Eligible Rotation Pool & Editions
-              </h3>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Select which games and curated editions the Automated Event Planner can randomly pick or force trigger.
+            <h3 className="text-lg font-bold tracking-tight">Candidate Games & Editions</h3>
+            <p className="text-sm text-muted-foreground">
+              Toggle which published games and standalone editions the planner will select for scheduled community events.
             </p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {config.games.filter((g) => g.enabled).length} games/editions enabled in rotation
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {candidateGames.map((game) => {
-            const hasEditions = Boolean(game.editions && game.editions.length > 0);
-            const basePoolItem = config.games.find((g) => g.slug === game.slug && !g.editionSlug);
-            const isBaseEnabled = basePoolItem ? basePoolItem.enabled : false;
+            const baseConfig = config.games.find((g) => g.slug === game.slug && !g.editionSlug);
+            const isBaseEnabled = Boolean(baseConfig?.enabled);
+            const baseDuration = baseConfig?.durationHours ?? config.defaultDurationHours ?? 2;
 
             return (
               <div
                 key={game.slug}
-                className="flex flex-col justify-between rounded-xl border border-border/70 bg-card/40 p-4 transition-all hover:border-border"
+                className={`flex flex-col justify-between rounded-2xl border p-5 transition-all ${
+                  isBaseEnabled
+                    ? "border-primary/50 bg-card shadow-sm"
+                    : "border-border/60 bg-card/40 opacity-75 hover:opacity-100"
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {game.coverImage ? (
-                        <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted">
+                        <div className="relative size-12 overflow-hidden rounded-xl border border-border shrink-0">
                           <Image
                             src={game.coverImage}
                             alt={game.title}
                             fill
+                            sizes="48px"
                             className="object-cover"
                           />
                         </div>
                       ) : (
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted">
-                          <Gamepad2 className="size-6 text-muted-foreground" />
+                        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                          <Gamepad2 className="size-6" />
                         </div>
                       )}
                       <div>
-                        <h4 className="font-semibold text-sm leading-tight text-foreground">
-                          {game.title}
-                        </h4>
-                        <span className="text-[11px] font-mono text-muted-foreground">
+                        <h4 className="font-semibold text-foreground">{game.title}</h4>
+                        <span className="font-mono text-xs text-muted-foreground">
                           {game.slug}
                         </span>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleTrigger(game.slug)}
-                      disabled={actionLoading !== null || !hostConfigured}
-                      title="Trigger dedicated event for this game right now"
-                      className="rounded-lg border border-border bg-secondary/40 p-1.5 text-xs text-foreground transition-colors hover:bg-secondary disabled:opacity-40"
-                    >
-                      {actionLoading === `trigger-${game.slug}` ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Play className="size-3.5 fill-current" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Base Game Pool Toggle */}
-                  <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3 text-xs">
-                    <span className="text-muted-foreground">Include in Auto-Rotation</span>
                     <input
                       type="checkbox"
                       checked={isBaseEnabled}
-                      onChange={() => toggleGameEnabled(game.slug)}
-                      className="size-4 rounded border-border text-primary focus:ring-primary"
+                      onChange={() => togglePoolGame(game.slug)}
+                      className="size-5 rounded border-border text-primary focus:ring-primary"
                     />
                   </div>
 
-                  {/* Editions Sub-List if present */}
-                  {hasEditions && (
-                    <div className="mt-3 space-y-2 rounded-lg bg-secondary/30 p-2.5 text-xs">
-                      <div className="font-medium text-foreground flex items-center gap-1.5">
-                        <Flame className="size-3 text-amber-400" />
-                        <span>Curated Editions</span>
+                  {/* Editions Sub-List if available */}
+                  {game.editions && game.editions.length > 0 && (
+                    <div className="mt-4 space-y-2 border-t border-border/60 pt-3">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                        <Layers className="size-3" />
+                        <span>Editions / Mods:</span>
                       </div>
-                      {game.editions!.map((ed) => {
-                        const edPoolItem = config.games.find(
-                          (g) => g.slug === game.slug && g.editionSlug === ed.slug
-                        );
-                        const isEdEnabled = edPoolItem ? edPoolItem.enabled : false;
+                      <div className="space-y-1.5">
+                        {game.editions.map((ed) => {
+                          const edConfig = config.games.find(
+                            (g) => g.slug === game.slug && g.editionSlug === ed.slug
+                          );
+                          const isEdEnabled = Boolean(edConfig?.enabled);
+                          const edDuration = edConfig?.durationHours ?? baseDuration;
 
-                        return (
-                          <div
-                            key={ed.slug}
-                            className="flex items-center justify-between gap-2 border-t border-border/30 pt-1.5"
-                          >
-                            <div className="truncate">
-                              <span className="font-medium text-foreground">{ed.name}</span>
+                          return (
+                            <div
+                              key={ed.slug}
+                              className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-1.5 text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isEdEnabled}
+                                  onChange={() => togglePoolGame(game.slug, ed.slug, ed.name)}
+                                  className="size-3.5 rounded border-border text-primary"
+                                />
+                                <span className="font-medium text-foreground">{ed.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={edDuration}
+                                  onChange={(e) =>
+                                    updatePoolDuration(
+                                      game.slug,
+                                      Number(e.target.value),
+                                      ed.slug,
+                                      ed.name
+                                    )
+                                  }
+                                  className="rounded border border-border bg-background px-1.5 py-0.5 text-xs"
+                                >
+                                  <option value={1}>1h</option>
+                                  <option value={1.5}>1.5h</option>
+                                  <option value={2}>2h</option>
+                                  <option value={3}>3h</option>
+                                  <option value={4}>4h</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTrigger(game.slug, ed.slug)}
+                                  disabled={actionLoading !== null || !hostConfigured}
+                                  className="text-primary hover:underline font-semibold"
+                                >
+                                  Trigger
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                onClick={() => handleTrigger(game.slug, ed.slug)}
-                                disabled={actionLoading !== null || !hostConfigured}
-                                title={`Trigger dedicated match for ${ed.name}`}
-                                className="rounded p-1 text-muted-foreground hover:text-foreground"
-                              >
-                                {actionLoading === `trigger-${game.slug}:${ed.slug}` ? (
-                                  <Loader2 className="size-3 animate-spin" />
-                                ) : (
-                                  <Play className="size-3 fill-current" />
-                                )}
-                              </button>
-                              <input
-                                type="checkbox"
-                                checked={isEdEnabled}
-                                onChange={() =>
-                                  toggleGameEnabled(game.slug, ed.slug, ed.name)
-                                }
-                                className="size-3.5 rounded border-border text-primary focus:ring-primary"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Duration:</span>
+                    <select
+                      value={baseDuration}
+                      onChange={(e) =>
+                        updatePoolDuration(game.slug, Number(e.target.value))
+                      }
+                      className="rounded border border-border bg-background px-2 py-1 text-xs"
+                    >
+                      <option value={1}>1 Hour</option>
+                      <option value={1.5}>1.5 Hours</option>
+                      <option value={2}>2 Hours</option>
+                      <option value={3}>3 Hours</option>
+                      <option value={4}>4 Hours</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTrigger(game.slug)}
+                    disabled={actionLoading !== null || !hostConfigured}
+                    className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary/80 disabled:opacity-50"
+                  >
+                    {actionLoading === game.slug ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Play className="size-3 fill-current" />
+                    )}
+                    Trigger
+                  </button>
                 </div>
               </div>
             );
@@ -762,60 +930,59 @@ export function AutomatedEventPlannerManager() {
         </div>
       </div>
 
-      {/* Match History Log */}
+      {/* Match History Logs */}
       <div className="space-y-4 rounded-2xl border border-border/80 bg-card p-6">
-        <div className="flex items-center justify-between border-b border-border/60 pb-4">
-          <div className="flex items-center gap-2.5">
-            <Activity className="size-5 text-primary" />
-            <h3 className="font-semibold tracking-tight text-foreground">Recent Event History</h3>
-          </div>
-          <span className="text-xs text-muted-foreground">{logs.length} logged sessions</span>
+        <div className="flex items-center gap-2.5 border-b border-border/60 pb-4">
+          <Activity className="size-5 text-primary" />
+          <h3 className="font-semibold tracking-tight text-foreground">Recent Event History</h3>
         </div>
 
         {logs.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            No automated events have been triggered yet.
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            No events have run yet. Enable the scheduler or click Force Trigger to launch your first pop-up match!
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border/60 text-muted-foreground">
-                  <th className="pb-2 font-medium">Event / Game</th>
-                  <th className="pb-2 font-medium">Server IP:Port</th>
-                  <th className="pb-2 font-medium">Triggered At</th>
-                  <th className="pb-2 font-medium">Duration</th>
-                  <th className="pb-2 font-medium">Status</th>
+                <tr className="border-b border-border/60 text-xs text-muted-foreground">
+                  <th className="py-2.5 font-medium">Event / Game</th>
+                  <th className="py-2.5 font-medium">Server IP:Port</th>
+                  <th className="py-2.5 font-medium">Triggered At</th>
+                  <th className="py-2.5 font-medium">Duration</th>
+                  <th className="py-2.5 font-medium">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/40">
+              <tbody className="divide-y divide-border/40 text-xs">
                 {logs.map((log) => (
-                  <tr key={log._id} className="text-muted-foreground">
-                    <td className="py-2.5 font-medium text-foreground">
+                  <tr key={log._id} className="hover:bg-secondary/30">
+                    <td className="py-3 font-semibold text-foreground">
                       {log.gameTitle || log.gameSlug}
                     </td>
-                    <td className="py-2.5 font-mono">
-                      {log.host ? `${log.host}:${log.port}` : "—"}
+                    <td className="py-3 font-mono text-muted-foreground">
+                      {log.host && log.port ? `${log.host}:${log.port}` : "—"}
                     </td>
-                    <td className="py-2.5">{new Date(log.startedAt).toLocaleString()}</td>
-                    <td className="py-2.5">
+                    <td className="py-3 text-muted-foreground">
+                      {new Date(log.startedAt).toLocaleString()}
+                    </td>
+                    <td className="py-3 text-muted-foreground">
                       {log.durationMinutes ? `${log.durationMinutes} mins` : "—"}
                     </td>
-                    <td className="py-2.5">
+                    <td className="py-3">
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                           log.status === "completed"
                             ? "bg-emerald-500/15 text-emerald-400"
-                            : log.status === "force_stopped"
-                              ? "bg-amber-500/15 text-amber-400"
-                              : "bg-red-500/15 text-red-400"
+                            : log.status === "failed"
+                            ? "bg-red-500/15 text-red-400"
+                            : "bg-amber-500/15 text-amber-400"
                         }`}
                       >
                         {log.status === "completed"
                           ? "Completed"
-                          : log.status === "force_stopped"
-                            ? "Manual Stop"
-                            : "Failed"}
+                          : log.status === "failed"
+                          ? "Failed"
+                          : "Stopped"}
                       </span>
                     </td>
                   </tr>
@@ -828,6 +995,3 @@ export function AutomatedEventPlannerManager() {
     </div>
   );
 }
-
-// Backwards compatibility alias
-export const AutonomousMatchmakerManager = AutomatedEventPlannerManager;
