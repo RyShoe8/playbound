@@ -366,23 +366,14 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Dedicated C&C server engine with settings argv CLI connect.",
   },
 
-  "0-ad": {
-    gameSlug: "0-ad",
-    title: "0 A.D.",
-    tier: "tier1_improved",
-    adapterType: "managed-server",
-    protocol: "udp",
-    host: {
-      port: 20595,
-      protocol: "udp",
-      binaryHint: "pyrogenesis",
-      argsTemplate: ["-autostart-nonrandom=1", "--port={port}"],
-    },
-    client: {
-      launchArguments: ["-autostart={host}:{port}"],
-    },
-    notes: "Pyrogenesis headless host with -autostart CLI connection.",
-  },
+  /*
+   * 0 A.D. lived here twice, byte-identical under "0-ad" and "0ad". The
+   * catalog publishes it as "0ad", so that is the entry kept; "0-ad" — the
+   * spelling HOSTABLE_GAMES and the agent's recipes use — resolves through
+   * ADAPTER_SLUG_ALIASES below. Two copies of the same config is how the two
+   * halves of a game's setup drift apart, which is exactly what hid the
+   * dedicated-server bug.
+   */
 
   "battle-for-wesnoth": {
     gameSlug: "battle-for-wesnoth",
@@ -999,10 +990,65 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
 /**
  * Returns the multiplayer adapter definition for a game slug, or an official fallback.
  */
+/**
+ * Alternative spellings that resolve to a real adapter.
+ *
+ * Kept as aliases rather than duplicate entries: a second copy of a game's
+ * config is free to drift from the first, and nothing announces when it has.
+ * Every key here is a slug some other part of the system genuinely uses —
+ * HOSTABLE_GAMES and the agent's recipes both call 0 A.D. "0-ad" — so the
+ * lookup has to answer to it even though the catalog does not.
+ */
+const ADAPTER_SLUG_ALIASES: Record<string, string> = {
+  "0-ad": "0ad",
+};
+
+/**
+ * Adapter keys that intentionally do not name a catalog game.
+ *
+ * Two reasons, both legitimate:
+ *   - alternative spellings of a live game (see ADAPTER_SLUG_ALIASES)
+ *   - a title that is now an edition of another game rather than its own
+ *     catalog entry, whose adapter is still consulted through the parent
+ *
+ * Everything not listed here and not in the catalog is a genuine orphan: a
+ * game was renamed or removed and its adapter was left behind, where it looks
+ * live and does nothing. findOrphanedAdapters reports those.
+ */
+export const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
+  // Alternative spellings.
+  "0-ad",
+  "marathon",
+  "alephone",
+  "aleph-one",
+  // Now editions of another game.
+  "keeperfx", // Dungeon Keeper
+  "tes3mp", // Morrowind
+]);
+
+/**
+ * Adapters whose game no longer exists in the catalog.
+ *
+ * Cannot live in the unit suite — it needs the live catalog — so the daily
+ * catalog-versions cron calls it. OpenLara is the case that prompted it:
+ * it became the engine behind Tomb Raider 1+2+3's editions, its own catalog
+ * entry went away, and its adapter stayed behind pointing at nothing.
+ */
+export function findOrphanedAdapters(liveGameSlugs: Iterable<string>): string[] {
+  const live = new Set([...liveGameSlugs].map((s) => String(s || "").toLowerCase()));
+  return Object.keys(MULTIPLAYER_ADAPTERS)
+    .filter((slug) => !live.has(slug) && !EXPECTED_NON_CATALOG_ADAPTERS.has(slug))
+    .sort();
+}
+
 export function getMultiplayerAdapter(gameSlug: string): GameMultiplayerAdapter {
   const key = String(gameSlug || "").toLowerCase();
   if (MULTIPLAYER_ADAPTERS[key]) {
     return MULTIPLAYER_ADAPTERS[key];
+  }
+  const aliased = ADAPTER_SLUG_ALIASES[key];
+  if (aliased && MULTIPLAYER_ADAPTERS[aliased]) {
+    return MULTIPLAYER_ADAPTERS[aliased];
   }
   return {
     gameSlug: key,

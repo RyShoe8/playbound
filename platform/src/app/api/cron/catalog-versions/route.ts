@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import CatalogMod from "@/lib/models/CatalogMod";
 import EditionModel from "@/lib/models/Edition";
+import { findOrphanedAdapters } from "@/lib/multiplayer/adapters";
 import { probeGameInstall, probeModInstall } from "@/lib/catalogVersionProbe";
 import { gameProbePatchFields, modProbePatchFields } from "@/lib/applyVersionProbePatch";
 import { withAutoHealGame, withAutoHealMod } from "@/lib/healBrokenInstall";
@@ -200,5 +201,33 @@ async function run(req: Request) {
     await CatalogMod.updateOne({ slug: mod.slug }, { $set: set });
   }
 
-  return NextResponse.json({ ok: true, summary, at: new Date().toISOString() });
+  /*
+   * Adapters whose game no longer exists. Renaming a game or folding it into
+   * another as an edition leaves its adapter behind, where it reads as live
+   * config and silently does nothing — OpenLara sat that way after becoming
+   * the engine behind Tomb Raider 1+2+3. This cannot be a unit test because
+   * it needs the live catalog, so it rides along with the daily probe.
+   *
+   * Reported, not repaired: an orphan might mean a game was removed, or that
+   * a rename needs the adapter moved rather than deleted, and only a person
+   * can tell those apart.
+   */
+  const allSlugs = await CatalogGame.find({}).select("slug").lean();
+  const orphanedAdapters = findOrphanedAdapters(
+    (allSlugs as Array<{ slug?: string }>).map((g) => String(g.slug || ""))
+  );
+  if (orphanedAdapters.length > 0) {
+    console.warn(
+      `[catalog-versions] ${orphanedAdapters.length} multiplayer adapter(s) name a game not in the catalog: ` +
+        `${orphanedAdapters.join(", ")}. Move them to the new slug, or add them to ` +
+        `EXPECTED_NON_CATALOG_ADAPTERS if the mismatch is deliberate.`
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    summary,
+    orphanedAdapters,
+    at: new Date().toISOString(),
+  });
 }
