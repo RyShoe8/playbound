@@ -43,7 +43,42 @@ export type { PartyHostMode };
  * claim, it is the existing behaviour.
  */
 export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
+  /*
+   * Each entry records what established that this game's client can host.
+   * Anything without evidence stays out — listUnverifiedClientHosting() is
+   * what tracks the rest.
+   */
+
+  // Adapter note: "Native IP hosting and automated VPS dedicated server."
   "warzone-2100",
+
+  /*
+   * Our own launcher/services/openraNat.js exists for no other reason than to
+   * open the inbound port an OpenRA *client* needs in order to host. Hosting
+   * from the client is a thing this codebase already supports.
+   */
+  "openra",
+
+  // Esc in-game -> "host game" starts a listen server on 6567, the port we
+  // already have on file. https://mindustry.fandom.com/wiki/Multiplayer
+  "mindustry",
+
+  // Online -> Local Networking -> Create Server, default port 2759, matching
+  // ours. https://github.com/supertuxkart/stk-code/blob/master/NETWORKING.md
+  "supertuxkart",
+
+  // The LAN screen offers joining a server or starting one.
+  // https://www.hedgewars.org/wiki/Network_Game_Guide
+  "hedgewars",
+
+  /*
+   * Qualified: every BZFlag game runs on bzfs, but the client can start it
+   * ("either be run manually or started from within the game"), and bzfs ships
+   * with the game. If a player turns out not to have it, hosting fails at the
+   * game rather than anywhere in PlayBound.
+   * https://wiki.bzflag.org/Creating_a_server
+   */
+  "bzflag",
 ]);
 
 export interface HostModeOption {
