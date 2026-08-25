@@ -21,6 +21,7 @@ import Presence from "@/lib/models/Presence";
 import PartyMessage from "@/lib/models/PartyMessage";
 import PlayInvite from "@/lib/models/PlayInvite";
 import { getGame } from "@/lib/catalog";
+import { requiredPlatformsFor } from "@/lib/playTogether/partyPlatforms";
 import { listEditionsForGame } from "@/lib/editions";
 import {
   PARTY_MAX_SIZE,
@@ -255,6 +256,35 @@ async function resolveUsernames(
   );
 }
 
+/**
+ * Which OS each member is actually on, from presence.
+ *
+ * The party's game list has to be playable by everyone in it — a Windows-only
+ * game is not a real option for a party with someone on Linux, and picking one
+ * strands them at "not available for your platform" after the party has
+ * already committed to it.
+ *
+ * A member with no live presence row reports "unknown", and callers treat that
+ * as "do not constrain": someone who has not opened the launcher yet should
+ * not silently narrow everyone else's choices.
+ */
+async function resolveMemberOs(ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await Presence.find({ userId: { $in: ids } })
+    .select("userId os lastSeenAt")
+    .sort({ lastSeenAt: -1 })
+    .lean();
+  const byUser = new Map<string, string>();
+  for (const row of rows) {
+    const key = String((row as { userId: unknown }).userId);
+    // Sorted newest first, so the first row for a user is their current device.
+    if (byUser.has(key)) continue;
+    const os = String((row as { os?: unknown }).os || "unknown");
+    byUser.set(key, os);
+  }
+  return byUser;
+}
+
 const SKIP_VOICE: PartyVoiceFollowup = {
   needsDiscordLink: false,
   inviteUrl: null,
@@ -370,11 +400,12 @@ async function partyPayloadForDoc(doc: Record<string, unknown>): Promise<PartyPa
     ...((doc.members as Array<{ userId: unknown }>) || []).map((m) => String(m.userId)),
   ];
   const gameSlug = String(doc.gameSlug || "");
-  const [nameById, game] = await Promise.all([
+  const [nameById, game, osById] = await Promise.all([
     resolveUsernames([...new Set(memberIds)]),
     gameSlug ? getGame(gameSlug, { includeTesting: true }) : Promise.resolve(null),
+    resolveMemberOs([...new Set(memberIds)]),
   ]);
-  return serializeParty(doc, nameById, game?.title || null);
+  return serializeParty(doc, nameById, game?.title || null, osById);
 }
 
 function hashPartyPassword(password: string, salt: string): string {
@@ -384,7 +415,13 @@ function hashPartyPassword(password: string, salt: string): string {
 function serializeParty(
   doc: Record<string, unknown>,
   nameById: Map<string, string>,
-  gameTitle: string | null
+  gameTitle: string | null,
+  /*
+   * Optional so the call sites that only need names are unaffected; absent
+   * simply means no platform constraint is published, which is the same thing
+   * the filter does with an unknown member.
+   */
+  osById: Map<string, string> = new Map()
 ): PartyPayload {
   const members = (doc.members as Array<Record<string, unknown>>) || [];
   const leaderId = String(doc.leaderId);
@@ -401,7 +438,16 @@ function serializeParty(
         role: (m.role as "leader" | "member") || "member",
         ready: Boolean(m.ready),
         joinedAt: (m.joinedAt as Date)?.toISOString() || new Date().toISOString(),
+        os: osById.get(String(m.userId)) || "unknown",
       })
+    ),
+    /*
+     * The desktop platforms every game offered to this party must support.
+     * Empty when nobody's OS is known, which the clients read as "no
+     * constraint" rather than "nothing qualifies".
+     */
+    requiredPlatforms: requiredPlatformsFor(
+      members.map((m) => osById.get(String(m.userId)))
     ),
     gameSlug: String(doc.gameSlug || ""),
     gameTitle,
