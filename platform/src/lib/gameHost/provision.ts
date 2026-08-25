@@ -8,6 +8,7 @@ import { getHostedInGameSteps } from "@/lib/multiplayer/adapters";
 import { createHostRoom, deleteHostRoom, isGameHostConfigured, listHostRooms } from "./client";
 import {
   emptyHostedPayload,
+  getHostableGame,
   isHostableGame,
   type HostedStatus,
 } from "./catalog";
@@ -82,8 +83,14 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   await party.save();
 
   const name = `PlayBound ${slug}`.slice(0, 40);
+  /*
+   * The agent keys its recipes by its own slug, which is not always the
+   * catalog's — 0 A.D. is `0ad` here and `0-ad` on the box. Sending the
+   * catalog slug would have the agent look up a recipe it does not have.
+   */
+  const hostSlug = getHostableGame(slug)?.slug || slug;
   const result = await createHostRoom({
-    gameSlug: slug,
+    gameSlug: hostSlug,
     partyId: String(party._id),
     name,
     maxPlayers: Number(party.maxSize) || 8,

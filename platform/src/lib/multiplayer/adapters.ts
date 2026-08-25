@@ -598,6 +598,34 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       "RetroArch netplay, peer-hosted. No dedicated server exists to run on the VPS, so this is self-host only.",
   },
 
+  /*
+   * Couch co-op shared over RetroArch netplay, which is what netplay is for —
+   * it syncs input for a game that only ever knew about players on one
+   * machine. Same peer-hosted shape and same port as Mr. Boom.
+   *
+   * Worth knowing the limitation: this is netplay's least forgiving case, so
+   * a loose connection shows up as input lag on a shared screen rather than
+   * as one player desyncing.
+   */
+  "opentyrian-2000": {
+    gameSlug: "opentyrian-2000",
+    title: "OpenTyrian 2000",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["-C", "{host}"],
+      inGameSteps: ["Wait for the netplay session to sync, then start a two-player game."],
+    },
+    selfHost: {
+      port: 55435,
+      protocol: "tcp",
+      verified: true,
+      inGameSteps: ["Netplay -> Host", "Start hosting"],
+    },
+    notes: "RetroArch netplay sharing the local co-op mode. Peer-hosted; no dedicated server exists.",
+  },
+
   starcraft: {
     gameSlug: "starcraft",
     title: "StarCraft",

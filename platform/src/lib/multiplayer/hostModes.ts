@@ -26,7 +26,12 @@
  */
 
 import { HOSTABLE_GAMES, isHostableGame } from "@/lib/gameHost/catalog";
-import { getMultiplayerAdapter, type PartyHostMode, type SelfHostConfig } from "./adapters";
+import {
+  getMultiplayerAdapter,
+  MULTIPLAYER_ADAPTERS,
+  type PartyHostMode,
+  type SelfHostConfig,
+} from "./adapters";
 
 export type { PartyHostMode };
 
@@ -203,6 +208,77 @@ export function hostModeOptions(gameSlug: string): HostModeOption[] {
       hint: "We host the room on our server. It stays up even if you leave, and anyone can join without being in your party.",
     },
   ].filter((option) => option.available);
+}
+
+export interface HostModeConfigProblem {
+  gameSlug: string;
+  problem: string;
+}
+
+/**
+ * Catch adapters that resolve to no multiplayer at all.
+ *
+ * A game typed `managed-server` promises a dedicated server on the VPS. If it
+ * is not in HOSTABLE_GAMES there is no such server, and because
+ * `managed-server` is also not peer-hosted, canSelfHost() says no too — so
+ * hostModesFor() returns nothing and the game silently has no PlayBound
+ * multiplayer whatsoever. Nothing surfaces that: the party UI just shows no
+ * picker, which looks identical to a single-player game.
+ *
+ * Both GoldenEye: Source and Mr. Boom sat in that state, Mr. Boom while its
+ * own notes field said outright that no dedicated server existed. This is the
+ * check that would have caught them, and it is asserted in the test suite so
+ * a new adapter cannot reintroduce the shape.
+ *
+ * Deliberately not a runtime throw. A misconfigured adapter should fail the
+ * build, not take down a request path at 3am for a game nobody is playing.
+ */
+export function findHostModeConfigProblems(): HostModeConfigProblem[] {
+  const problems: HostModeConfigProblem[] = [];
+
+  for (const adapter of Object.values(MULTIPLAYER_ADAPTERS)) {
+    const slug = adapter.gameSlug;
+
+    if (adapter.adapterType === "managed-server" && !isHostableGame(slug)) {
+      problems.push({
+        gameSlug: slug,
+        problem:
+          "typed managed-server but absent from HOSTABLE_GAMES, so it has no dedicated server and " +
+          "cannot self-host either — it resolves to no multiplayer at all. Add it to HOSTABLE_GAMES, " +
+          "or retype it (direct-ip when the client hosts, official when PlayBound does not run it).",
+      });
+      continue;
+    }
+
+    /*
+     * A declared selfHost that is turned off is fine and expected — that is
+     * how a game waits for its host-and-join test. A declared selfHost with
+     * no port is not: nothing can be mapped for a public lobby, and the
+     * missing field is invisible until someone tries to host one.
+     */
+    if (adapter.selfHost?.verified && !adapter.selfHost.port) {
+      problems.push({
+        gameSlug: slug,
+        problem: "declares a verified selfHost with no port, so a public lobby cannot be mapped.",
+      });
+    }
+  }
+
+  /*
+   * The reverse direction: a game the VPS is configured to run, which claims
+   * PlayBound does not run its multiplayer. One of the two is wrong.
+   */
+  for (const hostable of Object.values(HOSTABLE_GAMES)) {
+    const adapter = MULTIPLAYER_ADAPTERS[hostable.slug];
+    if (adapter && adapter.adapterType === "official") {
+      problems.push({
+        gameSlug: hostable.slug,
+        problem: "is in HOSTABLE_GAMES but typed `official`, which says PlayBound does not run its multiplayer.",
+      });
+    }
+  }
+
+  return problems;
 }
 
 /**
