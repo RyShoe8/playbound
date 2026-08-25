@@ -3,8 +3,8 @@ import Link from "next/link";
 import { AutonomousMatchmakerManager } from "@/components/admin/AutonomousMatchmakerManager";
 
 export const metadata: Metadata = {
-  title: "Autonomous Matchmaker — Connect Admin",
-  description: "Autonomous dedicated server launcher, Game Night event generator, and Discord integration",
+  title: "Automated Events — Connect Admin",
+  description: "Automated dedicated server launcher, Game Night event generator, and Discord integration",
 };
 
 export default function AutonomousMatchmakerPage() {
@@ -18,7 +18,7 @@ export default function AutonomousMatchmakerPage() {
           >
             ← Dashboard
           </Link>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">Autonomous Matchmaker</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">Automated Events</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Configure automatic server provisioning, game rotations, custom durations, and silent Discord pop-up match alerts with 1-click deep links.
           </p>

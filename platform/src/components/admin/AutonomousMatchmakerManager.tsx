@@ -266,7 +266,7 @@ export function AutonomousMatchmakerManager() {
     return (
       <div className="flex h-64 items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-6 animate-spin text-primary" />
-        <span>Loading Autonomous Matchmaker settings...</span>
+        <span>Loading Automated Events settings...</span>
       </div>
     );
   }
@@ -316,7 +316,7 @@ export function AutonomousMatchmakerManager() {
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-bold tracking-tight">Autonomous Engine</h2>
+              <h2 className="text-xl font-bold tracking-tight">Automated Events Engine</h2>
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                   config.enabled
@@ -434,7 +434,7 @@ export function AutonomousMatchmakerManager() {
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">Enable Autonomous Engine</label>
+                <label className="text-sm font-medium text-foreground">Enable Automated Events Engine</label>
                 <p className="text-xs text-muted-foreground">
                   When active, background cron jobs evaluate and spawn pop-up matches.
                 </p>
