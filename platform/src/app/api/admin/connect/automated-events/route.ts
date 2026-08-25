@@ -120,3 +120,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true, config: updated });
 }
+
+export async function PUT(req: Request) {
+  return POST(req);
+}
