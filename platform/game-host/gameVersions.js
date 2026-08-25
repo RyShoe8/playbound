@@ -28,6 +28,13 @@ const PROBES = {
   openarena: { args: ["+version"], pick: pickFirstVersion },
   "0-ad": { args: ["-version"], pick: pickFirstVersion },
   openra: { args: ["--version"], pick: pickFirstVersion },
+  unvanquished: { args: ["-v"], pick: pickFirstVersion },
+  "battle-for-wesnoth": { args: ["--version"], pick: pickFirstVersion },
+  veloren: { args: ["--version"], pick: pickFirstVersion },
+  flightgear: { args: ["--version"], pick: pickFirstVersion },
+  "space-station-14": { args: ["--version"], pick: pickFirstVersion },
+  "team-fortress-2": { args: ["-version"], pick: pickFirstVersion },
+  "counter-strike-2": { args: ["-version"], pick: pickFirstVersion },
 };
 
 function looksLikeVersion(value) {

@@ -28,6 +28,15 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   triplea: "Manual jar (if installed)",
   "0-ad": "Ubuntu apt",
   "wolfenstein-enemy-territory": "ET: Legacy (etlded)",
+  "team-fortress-2": "SteamCMD (srcds)",
+  "counter-strike-2": "SteamCMD (cs2)",
+  unvanquished: "Dæmon engine (daemonded)",
+  "battle-for-wesnoth": "Ubuntu apt (wesnothd)",
+  veloren: "Rust standalone (veloren-server-cli)",
+  freedoom: "Odamex / Zandronum",
+  "space-station-14": "Robust.Server (.NET)",
+  "zero-k": "Spring Engine (spring-dedicated)",
+  flightgear: "fgms daemon",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {
