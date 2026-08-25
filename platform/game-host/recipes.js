@@ -518,7 +518,8 @@ export const recipes = {
     portStart: 2310,
     portEnd: 2330,
     protocol: "udp",
-    binaries: gameBin("re-volt-rvgl", ["rvgl.exe", "rvgl", "rvgl-server"]),
+    binaries: gameBin("re-volt-rvgl", ["rvgl.64", "rvgl.32", "rvgl", "rvgl.exe", "rvgl-server"]),
+    spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
     args: (port, ctx) => [
       "-dedicated",
       "-lobby",

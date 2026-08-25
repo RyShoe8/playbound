@@ -36,7 +36,6 @@ const PROBES = {
   "team-fortress-2": { args: ["-version"], pick: pickFirstVersion },
   "counter-strike-2": { args: ["-version"], pick: pickFirstVersion },
   openhv: { args: ["--version"], pick: pickFirstVersion },
-  "re-volt-rvgl": { args: ["-version"], pick: pickFirstVersion },
   "chris-sawyers-locomotion": { args: ["--version"], pick: pickFirstVersion },
   "renegade-x": { args: ["-version"], pick: pickFirstVersion },
   gemrb: { args: ["--version"], pick: pickFirstVersion },
