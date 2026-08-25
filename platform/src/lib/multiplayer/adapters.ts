@@ -1247,14 +1247,9 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   gemrb: {
     gameSlug: "gemrb",
     title: "GemRB",
-    tier: "tier2_automated_server",
-    adapterType: "managed-server",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
     protocol: "tcp",
-    host: {
-      port: 47624,
-      protocol: "tcp",
-      binaryHint: "gemrb",
-    },
     client: {
       launchArguments: ["--connect={host}:{port}"],
       inGameSteps: ["Multiplayer", "TCP/IP Connection"],
@@ -1265,7 +1260,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       verified: true,
       inGameSteps: ["Multiplayer", "Host Party Game"],
     },
-    notes: "Infinity Engine reimplementation with dedicated and local party host TCP/IP multiplayer.",
+    notes: "Infinity Engine reimplementation with local party host TCP/IP multiplayer.",
   },
 
   "wipeout-rewrite": {
