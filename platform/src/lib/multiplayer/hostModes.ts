@@ -104,6 +104,10 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
    */
   "openarena",
   "wolfenstein-enemy-territory",
+
+  // Starting a new game brings up a server other players join — the client is
+  // the host, which is exactly what this list is for.
+  "freeciv",
 ]);
 
 export interface HostModeOption {
