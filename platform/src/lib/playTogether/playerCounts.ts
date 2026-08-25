@@ -55,6 +55,7 @@ export const GAME_PLAYER_COUNTS: Readonly<Record<string, GamePlayerCount>> = Obj
   "lincity-ng": { min: 1, max: 1, partyMax: 1 },
   "3d-city": { min: 1, max: 1, partyMax: 1 },
   isocity: { min: 1, max: 1, partyMax: 1 },
+  "tomb-raider-123": { min: 1, max: 1, partyMax: 1 },
 });
 
 export function gamePlayerCount(slug: string | null | undefined): GamePlayerCount | null {

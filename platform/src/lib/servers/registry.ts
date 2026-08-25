@@ -276,7 +276,7 @@ const providers: Record<string, ServerProvider> = {
  *   what supplies both)
  * - freedoom, lincity-ng, daggerfall, pixreveal (not server-browser games)
  * - gamebuddies-io (browser party; no public master)
- * - openciv3, openlara (offline single-player engines with no service to query;
+ * - openciv3, tomb-raider-123 (offline single-player games with no service to query;
  *   they previously reported Civilization III and Tomb Raider 1996 Steam counts
  *   as proxies, which measured a different audience under the project's name)
  * - keeperfx (direct-IP multiplayer arranged via Discord; the masterserver in

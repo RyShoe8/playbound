@@ -10,7 +10,7 @@ const CURRENT_TESTING_SLUGS = [
   "c-dogs-retrarch", "sven-co-op", "teeworlds", "assaultcube", "bzflag", "openclonk",
   "red-eclipse", "widelands", "warfork", "slapshot-rebound", "deadeus", "openspades",
   "opentyrian-2000", "pokemon-dawn-of-darkness",
-  "lincity-ng", "3d-city", "isocity",
+  "lincity-ng", "3d-city", "isocity", "tomb-raider-123",
 ] as const;
 
 describe("game player counts", () => {
