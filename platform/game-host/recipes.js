@@ -449,7 +449,13 @@ export const recipes = {
       "wesnothd-1.16",
       "wesnoth",
     ]),
-    args: (port) => ["-p", String(port)],
+    args: (port, _ctx, binary) => {
+      // If the GUI client binary is symlinked, pass -s to run in dedicated server mode
+      if (binary && (binary.endsWith("/wesnoth") || binary === "wesnoth")) {
+        return ["-s", "-p", String(port)];
+      }
+      return ["-p", String(port)];
+    },
   },
   veloren: {
     portStart: 14004,
@@ -472,14 +478,18 @@ export const recipes = {
       "crispy-server",
       "prboom-plus-game-server",
     ]),
-    args: (port, ctx) => [
-      "-port",
-      String(port),
-      "+sv_hostname",
-      ctx.name || "PlayBound FreeDoom",
-      "-iwad",
-      "freedoom2.wad",
-    ],
+    args: (port, ctx, binary) => {
+      const isChoc = binary && binary.toLowerCase().includes("chocolate");
+      if (isChoc) {
+        return ["-port", String(port), "-servername", ctx.name || "PlayBound FreeDoom"];
+      }
+      return [
+        "-port",
+        String(port),
+        "+sv_hostname",
+        ctx.name || "PlayBound FreeDoom",
+      ];
+    },
   },
   "space-station-14": {
     portStart: 1212,
