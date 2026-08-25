@@ -96,6 +96,21 @@ export async function fetchSteamConcurrentPlayers(
   ];
 }
 
+/**
+ * Tomb Raider 1+2+3 is deliberately catalogued as one trilogy master. Steam
+ * sells the same three classics as separate apps, so its Steam portion is the
+ * sum of the three exact concurrent counts. Returning three labelled rows keeps
+ * the components auditable while liveActivity performs the aggregate.
+ */
+export async function fetchTombRaider123Players(): Promise<GameServer[]> {
+  const rows = await Promise.all([
+    fetchSteamConcurrentPlayers(224960, { label: "Tomb Raider I (1996)" }),
+    fetchSteamConcurrentPlayers(225300, { label: "Tomb Raider II (1997)" }),
+    fetchSteamConcurrentPlayers(225320, { label: "Tomb Raider III (1998)" }),
+  ]);
+  return rows.flat();
+}
+
 /** Villagers and Heroes — Steam app 263540. */
 export function fetchVillagersAndHeroesPlayers(): Promise<GameServer[]> {
   return fetchSteamConcurrentPlayers(263540, { label: "Villagers and Heroes" });
