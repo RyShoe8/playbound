@@ -248,6 +248,106 @@ export async function probeOpenttdLatest(): Promise<ProbeResult> {
   }
 }
 
+/** `https://content.luanti.org/packages/Wuzzy/mineclone2/download/` -> Wuzzy/mineclone2 */
+function contentDbPackageFromUrl(url: string): { author: string; name: string } | null {
+  const match = /content\.luanti\.org\/packages\/([^/]+)\/([^/]+)/i.exec(String(url || ""));
+  return match ? { author: match[1], name: match[2] } : null;
+}
+
+/** "5.17.0" / "5.10" -> comparable tuple. Non-numeric segments sort as 0. */
+function versionTuple(value: string): number[] {
+  return String(value || "")
+    .replace(/^v/i, "")
+    .split(".")
+    .map((part) => Number.parseInt(part, 10) || 0);
+}
+
+function compareVersionStrings(a: string, b: string): number {
+  const left = versionTuple(a);
+  const right = versionTuple(b);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] || 0) - (right[i] || 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+/**
+ * Check a ContentDB overlay against the engine version it will be installed on.
+ *
+ * Recipes like the Luanti VoxeLibre edition pin the engine to a GitHub release
+ * while pulling the game package from ContentDB's `/download/` endpoint, which
+ * always serves the newest build. Nothing coordinated the two, so the day
+ * ContentDB shipped a release needing a newer engine than our pinned one, the
+ * install would break for every new player and nothing here would have noticed
+ * — the existing probe only ever looked at the engine repo.
+ *
+ * ContentDB publishes each release's supported engine range, so the check is a
+ * real comparison rather than a guess.
+ */
+export async function probeContentDbOverlay(
+  overlayUrl: string,
+  engineVersion: string | null
+): Promise<ProbeResult> {
+  const pkg = contentDbPackageFromUrl(overlayUrl);
+  if (!pkg) {
+    return { status: "skipped", detectedVersion: null, note: "not a ContentDB package URL" };
+  }
+  let releases: Array<{
+    title?: string;
+    min_minetest_version?: { name?: string } | null;
+    max_minetest_version?: { name?: string } | null;
+  }>;
+  try {
+    const res = await fetch(
+      `https://content.luanti.org/api/packages/${encodeURIComponent(pkg.author)}/${encodeURIComponent(pkg.name)}/releases/`,
+      { headers: { "user-agent": "playbound-catalog-probe", accept: "application/json" } }
+    );
+    if (!res.ok) {
+      return { status: "skipped", detectedVersion: null, note: `ContentDB returned ${res.status}` };
+    }
+    releases = await res.json();
+  } catch (err) {
+    // Unreachable is not the same as incompatible; say nothing rather than
+    // marking a working game broken because ContentDB had a bad minute.
+    return {
+      status: "skipped",
+      detectedVersion: null,
+      note: `ContentDB unreachable: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  const latest = Array.isArray(releases) ? releases[0] : null;
+  if (!latest) return { status: "skipped", detectedVersion: null, note: "no ContentDB releases" };
+
+  // "0.92.1 – Undaunted" -> "0.92.1"; the codename is decoration.
+  const detectedVersion = String(latest.title || "").split(/[\s–-]/)[0] || null;
+  const min = latest.min_minetest_version?.name || null;
+  const max = latest.max_minetest_version?.name || null;
+
+  if (!engineVersion) {
+    return { status: "ok", detectedVersion, note: min ? `needs engine >= ${min}` : undefined };
+  }
+  if (min && compareVersionStrings(engineVersion, min) < 0) {
+    return {
+      status: "broken",
+      detectedVersion,
+      note: `ContentDB ${detectedVersion} needs engine >= ${min}, but the pinned engine is ${engineVersion}. New installs will fail.`,
+    };
+  }
+  if (max && compareVersionStrings(engineVersion, max) > 0) {
+    return {
+      status: "broken",
+      detectedVersion,
+      note: `ContentDB ${detectedVersion} supports engine <= ${max}, but the pinned engine is ${engineVersion}.`,
+    };
+  }
+  return {
+    status: "ok",
+    detectedVersion,
+    note: `engine ${engineVersion} within ContentDB range${min ? ` (>= ${min}` : ""}${max ? `, <= ${max})` : min ? ")" : ""}`,
+  };
+}
+
 export async function probeGameInstall(install: {
   kind?: string | null;
   repo?: string | null;
@@ -255,17 +355,33 @@ export async function probeGameInstall(install: {
   url?: string | null;
   versionLabel?: string | null;
   autoUpdatePinned?: boolean | null;
+  overlayUrl?: string | null;
 }): Promise<ProbeResult> {
   const kind = install.kind || "";
   if (kind === "external" || !kind) {
     return { status: "skipped", detectedVersion: null, note: "external or missing recipe" };
   }
   if (kind.startsWith("github") && install.repo) {
-    return probeGithubZip({
+    const engine = await probeGithubZip({
       repo: install.repo,
       assetPattern: install.assetPattern,
       currentVersion: install.versionLabel,
     });
+    /*
+     * An engine that resolves fine can still be paired with an overlay that
+     * refuses to run on it, and that combination is what a player actually
+     * installs. A broken overlay outranks a healthy engine here.
+     */
+    if (install.overlayUrl && engine.status !== "broken") {
+      const overlay = await probeContentDbOverlay(install.overlayUrl, engine.detectedVersion);
+      if (overlay.status === "broken") {
+        return { ...engine, status: "broken", note: overlay.note };
+      }
+      if (overlay.note) {
+        return { ...engine, note: [engine.note, overlay.note].filter(Boolean).join(" · ") };
+      }
+    }
+    return engine;
   }
   if (kind === "openttd-zip") return probeOpenttdLatest();
   if (kind.startsWith("direct") && install.url) {

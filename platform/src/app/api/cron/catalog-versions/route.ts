@@ -66,6 +66,9 @@ async function run(req: Request) {
       url: (install.url as string) || null,
       versionLabel: (install.versionLabel as string) || null,
       autoUpdatePinned: install.autoUpdatePinned !== false,
+      // Without this the probe only ever sees the engine, and an overlay that
+      // has outgrown it stays invisible until a player hits the failure.
+      overlayUrl: (install.overlayUrl as string) || null,
     });
     const result = await withAutoHealGame(probed, {
       kind: install.kind as string,

@@ -696,6 +696,36 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Source engine dedicated server with +connect CLI argument.",
   },
 
+  /*
+   * GoldenEye: Source had no adapter at all, so it resolved to the `official`
+   * fallback — no PlayBound multiplayer of any kind — even though its catalog
+   * entry lists "server" as a launch method and it never appeared on the admin
+   * game-servers page. It is a Half-Life 2 sourcemod, so it joins the same way
+   * every other Source title here does, and its client can run a listen server
+   * rather than needing srcds on the VPS.
+   */
+  "goldeneye-source": {
+    gameSlug: "goldeneye-source",
+    title: "GoldenEye: Source",
+    tier: "tier2_automated_server",
+    adapterType: "direct-ip",
+    protocol: "custom",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+      inGameSteps: ["Pick a character and team when the map loads."],
+    },
+    selfHost: {
+      // Source engine default. Only consulted for public lobbies; party
+      // members reach the host over the overlay.
+      port: 27015,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Create Server", "Pick a map and start"],
+    },
+    notes:
+      "Source sourcemod. Client-hosted listen server; no srcds recipe on the VPS, so it is self-host only for now.",
+  },
+
   // ─── TIER 3: Official / Proprietary (Party Orchestration Only) ───────────
   "marvel-snap": {
     gameSlug: "marvel-snap",
