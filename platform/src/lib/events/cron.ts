@@ -127,6 +127,17 @@ export async function runEventsCron(now = new Date()): Promise<{
 
   discordActions += await cleanupDueEventChannels(now);
 
+  // Evaluate and trigger automated pop-up events (autonomous matchmaker)
+  try {
+    const { checkAndTeardownExpiredMatches, evaluateAndTriggerAutonomousMatch } = await import(
+      "@/lib/matchmaker/autonomousService"
+    );
+    await checkAndTeardownExpiredMatches();
+    await evaluateAndTriggerAutonomousMatch({ force: false });
+  } catch (err) {
+    console.warn("[events cron] autonomous matchmaker evaluation skipped:", err);
+  }
+
   return { statusUpdates, reminders, attendanceSynced, discordActions };
 }
 
