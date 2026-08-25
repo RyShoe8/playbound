@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Flame,
   Gamepad2,
+  Layers,
   Loader2,
   Play,
   Radio,
@@ -23,22 +24,32 @@ import {
   VolumeX,
 } from "lucide-react";
 
-type GamePoolItem = {
+type EditionItem = {
   slug: string;
-  enabled: boolean;
-  durationHours: number;
-  weight: number;
+  name: string;
+  shortDescription?: string;
 };
 
 type CandidateGame = {
   slug: string;
   title: string;
   coverImage?: string | null;
+  editions?: EditionItem[];
+};
+
+type GamePoolItem = {
+  slug: string;
+  editionSlug?: string | null;
+  editionName?: string | null;
+  enabled: boolean;
+  durationHours: number;
+  weight: number;
 };
 
 type ActiveSession = {
   roomId?: string | null;
   gameSlug?: string | null;
+  editionSlug?: string | null;
   gameTitle?: string | null;
   partyId?: string | null;
   host?: string | null;
@@ -155,14 +166,19 @@ export function AutonomousMatchmakerManager() {
     }
   };
 
-  const handleTrigger = async (gameSlug?: string) => {
+  const handleTrigger = async (gameSlug?: string, editionSlug?: string | null) => {
+    const actionKey = editionSlug
+      ? `trigger-${gameSlug}:${editionSlug}`
+      : gameSlug
+        ? `trigger-${gameSlug}`
+        : "trigger-random";
     try {
-      setActionLoading(gameSlug ? `trigger-${gameSlug}` : "trigger-random");
+      setActionLoading(actionKey);
       setBanner(null);
       const res = await fetch("/api/admin/connect/autonomous/trigger", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "trigger", gameSlug }),
+        body: JSON.stringify({ action: "trigger", gameSlug, editionSlug: editionSlug || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.reason || data.error || `HTTP ${res.status}`);
@@ -228,35 +244,66 @@ export function AutonomousMatchmakerManager() {
     }
   };
 
-  const toggleGame = (slug: string) => {
+  const toggleGame = (
+    slug: string,
+    editionSlug: string | null = null,
+    editionName: string | null = null
+  ) => {
     if (!config) return;
-    const existing = config.games.find((g) => g.slug === slug);
+    const existing = config.games.find(
+      (g) => g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
+    );
     let newGames: GamePoolItem[];
     if (existing) {
       newGames = config.games.map((g) =>
-        g.slug === slug ? { ...g, enabled: !g.enabled } : g
+        g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
+          ? { ...g, enabled: !g.enabled }
+          : g
       );
     } else {
       newGames = [
         ...config.games,
-        { slug, enabled: true, durationHours: config.defaultDurationHours || 2, weight: 1 },
+        {
+          slug,
+          editionSlug: editionSlug || null,
+          editionName: editionName || null,
+          enabled: true,
+          durationHours: config.defaultDurationHours || 2,
+          weight: 1,
+        },
       ];
     }
     setConfig({ ...config, games: newGames });
   };
 
-  const updateGameDuration = (slug: string, duration: number) => {
+  const updateGameDuration = (
+    slug: string,
+    duration: number,
+    editionSlug: string | null = null,
+    editionName: string | null = null
+  ) => {
     if (!config) return;
-    const existing = config.games.find((g) => g.slug === slug);
+    const existing = config.games.find(
+      (g) => g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
+    );
     let newGames: GamePoolItem[];
     if (existing) {
       newGames = config.games.map((g) =>
-        g.slug === slug ? { ...g, durationHours: duration } : g
+        g.slug === slug && (editionSlug ? g.editionSlug === editionSlug : !g.editionSlug)
+          ? { ...g, durationHours: duration }
+          : g
       );
     } else {
       newGames = [
         ...config.games,
-        { slug, enabled: true, durationHours: duration, weight: 1 },
+        {
+          slug,
+          editionSlug: editionSlug || null,
+          editionName: editionName || null,
+          enabled: true,
+          durationHours: duration,
+          weight: 1,
+        },
       ];
     }
     setConfig({ ...config, games: newGames });
@@ -582,74 +629,172 @@ export function AutonomousMatchmakerManager() {
       <div className="space-y-4 rounded-2xl border border-border/80 bg-card p-6">
         <div className="flex items-center justify-between border-b border-border/60 pb-4">
           <div>
-            <h3 className="font-semibold tracking-tight text-foreground">Game Pool & Durations</h3>
+            <h3 className="font-semibold tracking-tight text-foreground">Game & Edition Pool</h3>
             <p className="text-xs text-muted-foreground">
-              Select which games can be spun up and set custom server lifespans.
+              Select which base games or specific editions can be spun up and customize durations.
             </p>
           </div>
           <span className="text-xs text-muted-foreground">
-            {config.games.filter((g) => g.enabled).length} of {candidateGames.length} active
+            {config.games.filter((g) => g.enabled).length} items active in pool
           </span>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {candidateGames.map((game) => {
-            const configured = config.games.find((g) => g.slug === game.slug);
-            const isEnabled = configured ? configured.enabled : false;
-            const duration = configured?.durationHours ?? config.defaultDurationHours ?? 2;
-            const isTriggering = actionLoading === `trigger-${game.slug}`;
+            const baseConfigured = config.games.find((g) => g.slug === game.slug && !g.editionSlug);
+            const isBaseEnabled = baseConfigured ? baseConfigured.enabled : false;
+            const baseDuration = baseConfigured?.durationHours ?? config.defaultDurationHours ?? 2;
+            const isBaseTriggering = actionLoading === `trigger-${game.slug}`;
+            const hasEditions = Boolean(game.editions && game.editions.length > 0);
 
             return (
               <div
                 key={game.slug}
-                className={`relative flex items-center justify-between gap-3 rounded-xl border p-3.5 transition-colors ${
-                  isEnabled
+                className={`flex flex-col justify-between rounded-2xl border transition-colors ${
+                  isBaseEnabled
                     ? "border-primary/40 bg-primary/5"
-                    : "border-border/60 bg-background/50 opacity-60 hover:opacity-100"
-                }`}
+                    : "border-border/70 bg-background/50 hover:border-border"
+                } p-4`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <input
-                    type="checkbox"
-                    checked={isEnabled}
-                    onChange={() => toggleGame(game.slug)}
-                    className="size-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <div className="min-w-0">
-                    <div className="font-medium text-foreground truncate text-sm">
-                      {game.title}
+                {/* Base Game Row */}
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={isBaseEnabled}
+                        onChange={() => toggleGame(game.slug)}
+                        className="size-4 rounded border-border text-primary focus:ring-primary"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-semibold text-foreground truncate text-sm">
+                            {game.title}
+                          </span>
+                          <span className="shrink-0 rounded bg-muted/80 px-1.5 py-0.2 text-[10px] font-medium text-muted-foreground">
+                            Base
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground font-mono truncate">{game.slug}</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono">{game.slug}</div>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1">
-                    <input
-                      type="number"
-                      min="0.5"
-                      max="12"
-                      step="0.5"
-                      value={duration}
-                      disabled={!isEnabled}
-                      onChange={(e) => updateGameDuration(game.slug, Number(e.target.value))}
-                      className="w-12 bg-transparent text-right text-xs font-semibold focus:outline-none disabled:opacity-50"
-                    />
-                    <span className="text-[10px] text-muted-foreground">hrs</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1">
+                        <input
+                          type="number"
+                          min="0.5"
+                          max="12"
+                          step="0.5"
+                          value={baseDuration}
+                          disabled={!isBaseEnabled}
+                          onChange={(e) => updateGameDuration(game.slug, Number(e.target.value))}
+                          className="w-10 bg-transparent text-right text-xs font-semibold focus:outline-none disabled:opacity-50"
+                        />
+                        <span className="text-[10px] text-muted-foreground">hrs</span>
+                      </div>
+
+                      <button
+                        title={`Launch ${game.title} (Base) server now`}
+                        onClick={() => handleTrigger(game.slug)}
+                        disabled={actionLoading !== null || !hostConfigured}
+                        className="flex size-7 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30"
+                      >
+                        {isBaseTriggering ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Play className="size-3.5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    title={`Launch ${game.title} server now`}
-                    onClick={() => handleTrigger(game.slug)}
-                    disabled={actionLoading !== null || !hostConfigured}
-                    className="flex size-7 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30"
-                  >
-                    {isTriggering ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Play className="size-3.5" />
-                    )}
-                  </button>
+                  {/* Nested Editions List */}
+                  {hasEditions && (
+                    <div className="mt-3.5 space-y-2 border-t border-border/60 pt-3">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                        <Layers className="size-3 text-primary" />
+                        <span>Editions ({game.editions!.length})</span>
+                      </div>
+
+                      <div className="space-y-1.5 pl-1">
+                        {game.editions!.map((ed) => {
+                          const edConfigured = config.games.find(
+                            (g) => g.slug === game.slug && g.editionSlug === ed.slug
+                          );
+                          const isEdEnabled = edConfigured ? edConfigured.enabled : false;
+                          const edDuration =
+                            edConfigured?.durationHours ?? config.defaultDurationHours ?? 2;
+                          const isEdTriggering =
+                            actionLoading === `trigger-${game.slug}:${ed.slug}`;
+
+                          return (
+                            <div
+                              key={ed.slug}
+                              className={`flex items-center justify-between gap-2 rounded-xl border p-2.5 transition-colors ${
+                                isEdEnabled
+                                  ? "border-primary/40 bg-primary/10"
+                                  : "border-border/40 bg-card/40 opacity-70 hover:opacity-100"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isEdEnabled}
+                                  onChange={() => toggleGame(game.slug, ed.slug, ed.name)}
+                                  className="size-3.5 rounded border-border text-primary focus:ring-primary"
+                                />
+                                <div className="min-w-0">
+                                  <div className="text-xs font-medium text-foreground truncate">
+                                    {ed.name}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground font-mono truncate">
+                                    {ed.slug}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5">
+                                  <input
+                                    type="number"
+                                    min="0.5"
+                                    max="12"
+                                    step="0.5"
+                                    value={edDuration}
+                                    disabled={!isEdEnabled}
+                                    onChange={(e) =>
+                                      updateGameDuration(
+                                        game.slug,
+                                        Number(e.target.value),
+                                        ed.slug,
+                                        ed.name
+                                      )
+                                    }
+                                    className="w-8 bg-transparent text-right text-[11px] font-semibold focus:outline-none disabled:opacity-50"
+                                  />
+                                  <span className="text-[9px] text-muted-foreground">h</span>
+                                </div>
+
+                                <button
+                                  title={`Launch ${game.title}: ${ed.name} server now`}
+                                  onClick={() => handleTrigger(game.slug, ed.slug)}
+                                  disabled={actionLoading !== null || !hostConfigured}
+                                  className="flex size-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30"
+                                >
+                                  {isEdTriggering ? (
+                                    <Loader2 className="size-3 animate-spin" />
+                                  ) : (
+                                    <Play className="size-3 text-primary" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );

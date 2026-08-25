@@ -2,6 +2,7 @@ import { Schema, model, models, type Document } from "mongoose";
 
 export interface AutonomousMatchLogDoc extends Document {
   gameSlug: string;
+  editionSlug?: string | null;
   gameTitle?: string;
   roomId?: string;
   partyId?: string;
@@ -20,6 +21,7 @@ export interface AutonomousMatchLogDoc extends Document {
 const AutonomousMatchLogSchema = new Schema(
   {
     gameSlug: { type: String, required: true, index: true },
+    editionSlug: { type: String, default: null },
     gameTitle: { type: String, default: null },
     roomId: { type: String, default: null },
     partyId: { type: String, default: null },

@@ -2,6 +2,8 @@ import { Schema, model, models, type Document } from "mongoose";
 
 export interface AutonomousGameConfig {
   slug: string;
+  editionSlug?: string | null;
+  editionName?: string | null;
   enabled: boolean;
   durationHours: number;
   weight: number;
@@ -10,6 +12,7 @@ export interface AutonomousGameConfig {
 export interface AutonomousActiveSession {
   roomId?: string | null;
   gameSlug?: string | null;
+  editionSlug?: string | null;
   gameTitle?: string | null;
   partyId?: string | null;
   host?: string | null;
@@ -40,6 +43,8 @@ export interface AutonomousMatchConfigDoc extends Document {
 const AutonomousGameConfigSchema = new Schema(
   {
     slug: { type: String, required: true },
+    editionSlug: { type: String, default: null },
+    editionName: { type: String, default: null },
     enabled: { type: Boolean, default: true },
     durationHours: { type: Number, default: 2, min: 0.5, max: 24 },
     weight: { type: Number, default: 1, min: 1 },
@@ -63,6 +68,7 @@ const AutonomousMatchConfigSchema = new Schema(
     activeSession: {
       roomId: { type: String, default: null },
       gameSlug: { type: String, default: null },
+      editionSlug: { type: String, default: null },
       gameTitle: { type: String, default: null },
       partyId: { type: String, default: null },
       host: { type: String, default: null },

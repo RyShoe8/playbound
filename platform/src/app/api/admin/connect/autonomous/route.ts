@@ -7,7 +7,9 @@ import {
 } from "@/lib/matchmaker/autonomousService";
 import AutonomousMatchLog from "@/lib/models/AutonomousMatchLog";
 import CatalogGame from "@/lib/models/CatalogGame";
+import Edition from "@/lib/models/Edition";
 import { games as staticGames } from "@/lib/data/games";
+import { editions as staticEditions } from "@/lib/data/editions";
 import { fetchGameHostHealth } from "@/lib/gameHost/client";
 
 export async function GET() {
@@ -23,33 +25,63 @@ export async function GET() {
     .limit(20)
     .lean();
 
-  // Fetch candidate games that have multiplayer/dedicated server capability
-  const dbGames = await CatalogGame.find({ masterCopy: true })
-    .select("slug title coverImage launchMethods features")
-    .lean();
-
-  const candidateGames = staticGames
-    .filter((g) => g.launchMethods?.includes("server") || g.features?.includes("Dedicated Servers"))
-    .map((g) => {
-      const dbMatch = dbGames.find((dbG) => (dbG as { slug?: string }).slug === g.slug);
-      return {
-        slug: g.slug,
-        title: (dbMatch as { title?: string })?.title || g.title,
-        coverImage: (dbMatch as { coverImage?: string })?.coverImage || g.coverImage,
-      };
-    });
-
-  // Also include any games currently in the config games list
-  for (const g of config.games) {
-    if (!candidateGames.some((c) => c.slug === g.slug)) {
-      const match = dbGames.find((dbG) => (dbG as { slug?: string }).slug === g.slug);
-      candidateGames.push({
-        slug: g.slug,
-        title: (match as { title?: string })?.title || g.slug,
-        coverImage: (match as { coverImage?: string })?.coverImage || undefined,
-      });
+  const candidateSlugs = new Set<string>();
+  for (const g of staticGames) {
+    if (g.launchMethods?.includes("server") || g.features?.includes("Dedicated Servers")) {
+      candidateSlugs.add(g.slug);
     }
   }
+  for (const g of config.games) {
+    candidateSlugs.add(g.slug);
+  }
+
+  const slugsArr = Array.from(candidateSlugs);
+
+  const [dbGames, dbEditions] = await Promise.all([
+    CatalogGame.find({ masterCopy: true })
+      .select("slug title coverImage launchMethods features")
+      .lean(),
+    Edition.find({
+      gameSlug: { $in: slugsArr },
+      visibility: { $ne: "hidden" },
+      status: { $ne: "archived" },
+    })
+      .select("gameSlug slug name shortDescription")
+      .lean(),
+  ]);
+
+  const candidateGames = slugsArr.map((slug) => {
+    const staticGame = staticGames.find((g) => g.slug === slug);
+    const dbMatch = dbGames.find((dbG) => (dbG as { slug?: string }).slug === slug);
+    const title = (dbMatch as { title?: string })?.title || staticGame?.title || slug;
+    const coverImage = (dbMatch as { coverImage?: string })?.coverImage || staticGame?.coverImage || undefined;
+
+    // Gather editions for this game
+    const gameDbEditions = dbEditions.filter((e) => (e as { gameSlug?: string }).gameSlug === slug);
+    const gameStaticEditions = staticEditions.filter(
+      (e) => e.gameSlug === slug && e.visibility !== "hidden" && e.status !== "archived"
+    );
+
+    const editionMap = new Map<string, { slug: string; name: string; shortDescription?: string }>();
+    for (const e of gameStaticEditions) {
+      if (e.slug !== "official" && e.slug !== "default") {
+        editionMap.set(e.slug, { slug: e.slug, name: e.name, shortDescription: e.shortDescription });
+      }
+    }
+    for (const e of gameDbEditions) {
+      const ed = e as { slug: string; name: string; shortDescription?: string };
+      if (ed.slug !== "official" && ed.slug !== "default") {
+        editionMap.set(ed.slug, { slug: ed.slug, name: ed.name, shortDescription: ed.shortDescription });
+      }
+    }
+
+    return {
+      slug,
+      title,
+      coverImage,
+      editions: Array.from(editionMap.values()),
+    };
+  });
 
   // Get VPS Host health
   const hostHealth = await fetchGameHostHealth().catch(() => null);
