@@ -108,39 +108,6 @@ export interface GameMultiplayerAdapter {
 
 export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   // ─── TIER 1: PlayBound Multiplayer Editions ───────────────────────────────
-  "re-volt-rvgl": {
-    gameSlug: "re-volt-rvgl",
-    title: "Re-Volt (RVGL)",
-    tier: "tier1_improved",
-    adapterType: "direct-ip",
-    protocol: "udp",
-    client: { inGameJoinPrompt: true },
-    virtualLan: {
-      requiresBroadcast: false,
-      inGameSteps: [
-        "Leader: open Multiplayer and host an IP lobby",
-        "Everyone else: enter the leader's copied PlayBound Connect address",
-      ],
-    },
-    notes: "Player-hosted RVGL IP lobby over the private party overlay; the curated Online Edition keeps cars and tracks matched.",
-  },
-
-  "hurry-curry": {
-    gameSlug: "hurry-curry",
-    title: "Hurry Curry!",
-    tier: "tier1_improved",
-    adapterType: "direct-ip",
-    protocol: "custom",
-    client: { inGameJoinPrompt: true },
-    virtualLan: {
-      requiresBroadcast: false,
-      inGameSteps: [
-        "Leader: start the official server build or choose a private server in-game",
-        "Everyone else: join the leader's server from Hurry Curry's server screen",
-      ],
-    },
-    notes: "The project ships client and server builds; PlayBound Connect carries private party traffic while public servers remain available in-game.",
-  },
 
   /*
    * HoloCure's multiplayer mod (upstream v1.4.1) offers exactly two ways in:
@@ -1182,6 +1149,185 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "official",
     protocol: "official",
     notes: "HoYoverse co-op world join.",
+  },
+
+  openhv: {
+    gameSlug: "openhv",
+    title: "OpenHV",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "tcp",
+    host: {
+      port: 1255,
+      protocol: "tcp",
+      binaryHint: "OpenHV.Server",
+    },
+    client: {
+      launchArguments: ["Server.Connect={host}:{port}"],
+    },
+    selfHost: {
+      port: 1255,
+      protocol: "tcp",
+      verified: true,
+      inGameSteps: ["Multiplayer", "Host Game"],
+    },
+    notes: "Hard Vacuum RTS on OpenRA engine with automated dedicated and self-hosted TCP rooms.",
+  },
+
+  "re-volt-rvgl": {
+    gameSlug: "re-volt-rvgl",
+    title: "Re-Volt (RVGL)",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 2310,
+      protocol: "udp",
+      binaryHint: "rvgl",
+    },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    selfHost: {
+      port: 2310,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Multiplayer", "Host Game", "Lobby"],
+    },
+    notes: "Cross-platform RVGL engine with automated dedicated servers and local P2P hosting.",
+  },
+
+  "chris-sawyers-locomotion": {
+    gameSlug: "chris-sawyers-locomotion",
+    title: "Chris Sawyer's Locomotion",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "tcp",
+    host: {
+      port: 2300,
+      protocol: "both",
+      binaryHint: "openloco",
+    },
+    client: {
+      launchArguments: ["--connect", "{host}:{port}"],
+      inGameSteps: ["Multiplayer", "Join Direct IP"],
+    },
+    selfHost: {
+      port: 2300,
+      protocol: "both",
+      verified: true,
+      inGameSteps: ["Two Player", "Host TCP/IP Network Game"],
+    },
+    notes: "Locomotion transport simulation with OpenLoco dedicated and local TCP/IP multiplayer.",
+  },
+
+  "renegade-x": {
+    gameSlug: "renegade-x",
+    title: "Renegade X",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 7777,
+      protocol: "udp",
+      binaryHint: "RenegadeXServer.exe",
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    selfHost: {
+      port: 7777,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Host LAN / Internet Server"],
+    },
+    notes: "Unreal Engine 3 C&C Renegade reboot with automated dedicated servers and master listing.",
+  },
+
+  gemrb: {
+    gameSlug: "gemrb",
+    title: "GemRB",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "tcp",
+    host: {
+      port: 47624,
+      protocol: "tcp",
+      binaryHint: "gemrb",
+    },
+    client: {
+      launchArguments: ["--connect={host}:{port}"],
+      inGameSteps: ["Multiplayer", "TCP/IP Connection"],
+    },
+    selfHost: {
+      port: 47624,
+      protocol: "tcp",
+      verified: true,
+      inGameSteps: ["Multiplayer", "Host Party Game"],
+    },
+    notes: "Infinity Engine reimplementation with dedicated and local party host TCP/IP multiplayer.",
+  },
+
+  "wipeout-rewrite": {
+    gameSlug: "wipeout-rewrite",
+    title: "wipEout Rewrite",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    host: {
+      port: 7000,
+      protocol: "udp",
+      binaryHint: "wipeout-rewrite",
+    },
+    client: {
+      launchArguments: ["-connect", "{host}:{port}"],
+    },
+    selfHost: {
+      port: 7000,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Multiplayer", "Host Network Game"],
+    },
+    virtualLan: {
+      requiresBroadcast: true,
+    },
+    notes: "Native wipEout rewrite with local split-screen and direct IP/LAN multiplayer.",
+  },
+
+  exult: {
+    gameSlug: "exult",
+    title: "Exult",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    virtualLan: {
+      requiresBroadcast: true,
+    },
+    selfHost: {
+      port: 9999,
+      protocol: "both",
+      verified: true,
+      inGameSteps: ["Start Exult", "Couch / Local Play"],
+    },
+    notes: "Ultima VII engine recreation with local party and shared controller play.",
+  },
+
+  "hurry-curry": {
+    gameSlug: "hurry-curry",
+    title: "Hurry Curry!",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    virtualLan: {
+      requiresBroadcast: true,
+    },
+    selfHost: {
+      port: 8888,
+      protocol: "both",
+      verified: true,
+      inGameSteps: ["Start Game", "Plug in 1–4 controllers"],
+    },
+    notes: "Fast-paced couch co-op kitchen action with native 4-player gamepad and virtual party support.",
   },
 };
 
