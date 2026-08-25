@@ -62,6 +62,7 @@ import {
   defaultHostMode,
   hostModeOptions,
   isValidHostMode,
+  publicLobbyPortFor,
   type PartyHostMode,
 } from "@/lib/multiplayer/hostModes";
 import {
@@ -422,6 +423,16 @@ function serializeParty(
       (doc.hostMode as PartyHostMode | null) ||
       (doc.gameSlug ? defaultHostMode(String(doc.gameSlug)) : null),
     hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
+    /*
+     * Only for a public self-hosted room. Party members reach the host over the
+     * overlay and need no mapping at all; this is what the launcher would have
+     * to open for someone outside the party to connect, and is null whenever
+     * that does not apply.
+     */
+    selfHostPort:
+      doc.gameSlug && doc.hostMode === "self" && doc.visibility === "public"
+        ? publicLobbyPortFor(String(doc.gameSlug))
+        : null,
     eventId: doc.eventId ? String(doc.eventId) : null,
     discord: {
       voiceChannelId: (discord.voiceChannelId as string) || null,

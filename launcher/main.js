@@ -40,6 +40,7 @@ const {
   resolveGameDir,
 } = require("./openciv3Display");
 const { prepareOpenRaNetwork, isOpenRaFamily } = require("./services/openraNat");
+const portMapping = require("./services/portMapping");
 const { ensureOpenTtdClientName } = require("./services/openTtdPlayerName");
 const { reconcileCatalog, startupCatalog } = require("./services/catalogMerge");
 const virtualLan = require("./services/virtualLan");
@@ -9106,6 +9107,52 @@ ipcMain.handle("update-party", async (_event, partyId, patch = {}) => {
   }
 });
 
+/**
+ * Open an inbound port so people outside the party can reach a self-hosted room.
+ *
+ * Only meaningful for a public self-hosted lobby — party members reach the host
+ * over the overlay, which needs no mapping. Soft-fails on purpose: a router with
+ * UPnP and NAT-PMP both disabled is common (the machine this was written on is
+ * one), and that must not stop the host from launching. The party still works
+ * for its own members either way; only outside joins depend on this.
+ */
+ipcMain.handle("prepare-self-host", async (_event, input = {}) => {
+  const port = Number(input?.port);
+  if (!Number.isInteger(port) || port <= 0) return { ok: false, error: "No port to map" };
+  try {
+    const state = loadState();
+    const game = state[String(input.slug || "")];
+    const result = await portMapping.openPort({
+      port,
+      protocol: input.protocol === "tcp" || input.protocol === "both" ? input.protocol : "udp",
+      exePath: game?.exe || null,
+      description: String(input.slug || "PlayBound").slice(0, 60),
+    });
+    if (result.ok) {
+      console.log(`[self-host] mapped ${port} via ${result.method}${result.externalIp ? "" : " (external IP unknown)"}`);
+    } else {
+      console.warn(`[self-host] could not map ${port}: ${result.error || "no gateway support"}`);
+    }
+    return result;
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("release-self-host", async (_event, input = {}) => {
+  const port = Number(input?.port);
+  if (!Number.isInteger(port) || port <= 0) return { ok: false };
+  try {
+    const released = await portMapping.closePort({
+      port,
+      protocol: input.protocol === "tcp" || input.protocol === "both" ? input.protocol : "udp",
+    });
+    return { ok: released };
+  } catch {
+    return { ok: false };
+  }
+});
+
 ipcMain.handle("end-party", async (_event, partyId) => {
   try {
     return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}`, { method: "DELETE" });
@@ -10660,6 +10707,12 @@ if (gotLock) {
     // Close any play session still open. Fire-and-forget: quitting must not
     // wait on the network, and an unreported session is better than a hang.
     void telemetry.flushOpenSessions();
+    /*
+     * Hand back any router mappings we opened. Also fire-and-forget, and also
+     * not a correctness requirement — mappings are requested with a lease, so
+     * one we fail to release expires on its own rather than lingering forever.
+     */
+    void portMapping.closeAllPorts();
     if (librarySyncTimer) {
       clearInterval(librarySyncTimer);
       librarySyncTimer = null;
