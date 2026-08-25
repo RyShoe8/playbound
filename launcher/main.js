@@ -4688,12 +4688,53 @@ async function installSharedMrBoom(editionSlug) {
   return { status: "installed", version: "shared-retroarch", dir };
 }
 
+/**
+ * Installs run one at a time, in the order they were asked for.
+ *
+ * Clicking Install on a second game while the first is still going used to
+ * start both immediately: two downloads splitting the same bandwidth, two
+ * extractions competing for the same disk, and a single shared progress
+ * channel showing whichever wrote last. The per-key map above only ever
+ * deduplicated *the same* game, not different ones.
+ *
+ * Each new install chains onto the tail of the previous one instead. A failed
+ * install must not strand everything behind it, so the tail always swallows
+ * rejection — the real error still reaches the caller through `job`.
+ */
+let installQueueTail = Promise.resolve();
+
 async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   const key = installJobKey(slug, editionSlug);
   const existing = gameInstallJobs.get(key);
   if (existing) return existing;
 
-  const job = installGameInner(slug, targetDir, editionSlug, selectedAddons)
+  const waitFor = installQueueTail;
+  const queuedBehind = gameInstallJobs.size;
+
+  const job = (async () => {
+    if (queuedBehind > 0) {
+      /*
+       * Say so rather than looking hung. A queued install shows no download
+       * progress for as long as the one ahead of it takes, which is otherwise
+       * indistinguishable from a stall.
+       */
+      const entry = catalog.find((e) => e.slug === slug);
+      sendProgress({
+        phase: "queued",
+        slug,
+        message: `${entry?.title || slug} is queued — waiting for the current install to finish…`,
+      });
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("install-scan", {
+          slug,
+          phase: "queued",
+          message: "Queued — waiting for the current install to finish.",
+        });
+      }
+    }
+    await waitFor;
+    return installGameInner(slug, targetDir, editionSlug, selectedAddons);
+  })()
     .catch((err) => {
       reportInstallFailed(slug, editionSlug || null, err, "install");
       throw err;
@@ -4701,7 +4742,9 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     .finally(() => {
       if (gameInstallJobs.get(key) === job) gameInstallJobs.delete(key);
     });
+
   gameInstallJobs.set(key, job);
+  installQueueTail = job.catch(() => {});
   return job;
 }
 

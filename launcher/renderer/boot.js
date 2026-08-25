@@ -518,7 +518,11 @@ function wireMainEvents() {
 
   window.playbound.onProgress(({ phase, received, total, addon, message }) => {
     if (phase === "resolving") setStatus("Resolving download package...");
-    else if (phase === "java") setStatus(message || "Installing Java…");
+    else if (phase === "queued") {
+      // No bar: this install has not started and has no progress of its own.
+      setStatus(message || "Queued — waiting for the current install to finish…");
+      setProgress(null);
+    } else if (phase === "java") setStatus(message || "Installing Java…");
     else if (phase === "dosbox") setStatus(message || "Installing DOSBox…");
     else if (phase === "downloading") {
       const pct = total ? Math.round((received / total) * 100) : null;
@@ -594,6 +598,10 @@ function wireMainEvents() {
 
   window.playbound.onInstallScan?.((data) => {
     const phase = data?.phase;
+    if (phase === "queued") {
+      if (data.message) setStatus(data.message);
+      return;
+    }
     if (phase === "scanning" || phase === "waiting") {
       if (data.message) setStatus(data.message);
       else if (data.slug) setStatus(`Searching for ${data.slug}…`);
