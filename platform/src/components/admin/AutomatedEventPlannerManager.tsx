@@ -87,7 +87,7 @@ type MatchLog = {
   endsAt?: string;
   stoppedAt?: string;
   durationMinutes?: number;
-  status: "completed" | "force_stopped" | "failed";
+  status: "scheduled" | "live" | "completed" | "force_stopped" | "failed";
   error?: string;
 };
 
@@ -986,14 +986,22 @@ export function AutomatedEventPlannerManager() {
                     <td className="py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          log.status === "completed"
+                          log.status === "live"
+                            ? "bg-red-500/15 text-red-400 animate-pulse"
+                            : log.status === "scheduled"
+                            ? "bg-blue-500/15 text-blue-400"
+                            : log.status === "completed"
                             ? "bg-emerald-500/15 text-emerald-400"
                             : log.status === "failed"
                             ? "bg-red-500/15 text-red-400"
                             : "bg-amber-500/15 text-amber-400"
                         }`}
                       >
-                        {log.status === "completed"
+                        {log.status === "live"
+                          ? "Live Now"
+                          : log.status === "scheduled"
+                          ? "Scheduled"
+                          : log.status === "completed"
                           ? "Completed"
                           : log.status === "failed"
                           ? "Failed"
