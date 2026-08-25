@@ -3114,6 +3114,47 @@ async function unwrapSingleRootDirectory(dir) {
   await fsp.rm(tmp, { recursive: true, force: true });
 }
 
+/**
+ * Extract an overlay archive, replacing each package it contains outright.
+ *
+ * Extracting straight over the destination merges versions: files the new
+ * release still has get overwritten, but anything it dropped or renamed stays
+ * behind. For a Luanti game that is not cosmetic — Luanti satisfies a mod's
+ * `depends` by folder *name*, so a stale mod folder left from an older
+ * VoxeLibre keeps satisfying the dependency while no longer defining what the
+ * newer mods expect. That surfaces much later as a runtime nil, which is what
+ * "attempt to index global 'mcl_gamemode'" was: a dependency present in name
+ * only.
+ *
+ * So each top-level entry is staged, then swapped in whole. Only paths the
+ * archive actually provides are touched — sibling packages the player
+ * installed separately, in the same games/ or mods/ folder, are left alone.
+ */
+async function extractOverlayReplacing(archivePath, destDir) {
+  /*
+   * Staged beside the destination rather than in the system temp dir: the swap
+   * below is a rename, and a rename across volumes fails with EXDEV. A games
+   * folder on a second drive is the normal case, not an edge one.
+   */
+  const staging = path.join(destDir, `.playbound-overlay-${crypto.randomBytes(6).toString("hex")}`);
+  await fsp.mkdir(staging, { recursive: true });
+  try {
+    await extractArchive(archivePath, staging);
+    const entries = await fsp.readdir(staging, { withFileTypes: true });
+    for (const item of entries) {
+      const target = path.join(destDir, item.name);
+      // Guard against a crafted archive escaping the destination.
+      if (!pathUnderRoot(target, destDir)) {
+        throw new Error(`Overlay archive contains an unsafe path: ${item.name}`);
+      }
+      await fsp.rm(target, { recursive: true, force: true });
+      await fsp.rename(path.join(staging, item.name), target);
+    }
+  } finally {
+    await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 async function extractArchive(archivePath, destDir) {
   const lower = String(archivePath || "").toLowerCase();
   await fsp.mkdir(destDir, { recursive: true });
@@ -4964,7 +5005,7 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     const overlayDir = resolveInsideGameDir(gameDir, entry.overlayDest || "");
     if (!overlayDir) throw new Error("Game-assets archive has an unsafe destination path");
     await fsp.mkdir(overlayDir, { recursive: true });
-    await extractArchive(overlayPath, overlayDir);
+    await extractOverlayReplacing(overlayPath, overlayDir);
     await removeFileWithRetries(overlayPath);
     await flattenWadFiles(gameDir);
   }
