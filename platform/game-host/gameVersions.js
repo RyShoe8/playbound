@@ -1,12 +1,12 @@
 /**
  * Probe installed dedicated binary versions (cached for /health).
+ *
+ * Games whose --version flag spawns a heavyweight engine (OpenRA/Mono,
+ * Veloren Rust server, .NET hosts) are excluded — they hang at 100%+ CPU.
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { spawn } from "node:child_process";
 import { resolveRecipe } from "./recipes.js";
-
-const execFileAsync = promisify(execFile);
 
 const CACHE_MS = 10 * 60 * 1000;
 /** @type {Record<string, string | null>} */
@@ -14,11 +14,16 @@ let cache = {};
 let cacheAt = 0;
 let refreshInFlight = null;
 
-/** slug → argv suffix for a short version string */
+/**
+ * slug → argv suffix for a short version string.
+ *
+ * EXCLUDED (spawn heavyweight engines that hang):
+ *   re-volt-rvgl, openhv, veloren, gemrb, space-station-14,
+ *   chris-sawyers-locomotion, renegade-x
+ */
 const PROBES = {
   freeciv: { args: ["-v"], pick: pickFreeciv },
   openttd: { args: ["--version"], pick: pickFirstVersion },
-  // luanti recipe resolves luantiserver or minetestserver on Ubuntu 24.04.
   luanti: { args: ["--version"], pick: pickFirstVersion },
   hedgewars: { args: ["--version"], pick: pickFirstVersion },
   "warzone-2100": { args: ["--version"], pick: pickFirstVersion },
@@ -30,15 +35,10 @@ const PROBES = {
   openra: { args: ["--version"], pick: pickFirstVersion },
   unvanquished: { args: ["-v"], pick: pickFirstVersion },
   "battle-for-wesnoth": { args: ["--version"], pick: pickFirstVersion },
-  veloren: { args: ["--version"], pick: pickFirstVersion },
   flightgear: { args: ["--version"], pick: pickFirstVersion },
-  "space-station-14": { args: ["--version"], pick: pickFirstVersion },
   "team-fortress-2": { args: ["-version"], pick: pickFirstVersion },
   "counter-strike-2": { args: ["-version"], pick: pickFirstVersion },
-  openhv: { args: ["--version"], pick: pickFirstVersion },
-  "chris-sawyers-locomotion": { args: ["--version"], pick: pickFirstVersion },
-  "renegade-x": { args: ["-version"], pick: pickFirstVersion },
-  gemrb: { args: ["--version"], pick: pickFirstVersion },
+  freedoom: { args: ["-v"], pick: pickFirstVersion },
 };
 
 function looksLikeVersion(value) {
@@ -71,23 +71,49 @@ function pickFreeciv(text) {
   return m?.[1] || null;
 }
 
+/**
+ * Spawn the binary with detached: true so we can kill the entire process
+ * group when the timeout fires — preventing orphan engine threads from
+ * consuming CPU indefinitely.
+ */
 async function probeBinary(slug, binary) {
   const probe = PROBES[slug];
   if (!probe) return null;
-  try {
-    const { stdout, stderr } = await execFileAsync(binary, probe.args, {
-      timeout: 8000,
-      maxBuffer: 64 * 1024,
+  const TIMEOUT_MS = 6000;
+  return new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+
+    const child = spawn(binary, probe.args, {
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" },
     });
-    return probe.pick(`${stdout}\n${stderr}`) || null;
-  } catch (err) {
-    const text = [err?.stdout, err?.stderr].filter(Boolean).join("\n");
-    if (text) {
-      const picked = probe.pick(text);
-      if (picked) return picked;
-    }
-    return null;
-  }
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      // Kill entire process group
+      const pid = child.pid;
+      if (pid) {
+        try { process.kill(-pid, "SIGKILL"); } catch { /* already dead */ }
+      }
+      try { child.kill("SIGKILL"); } catch { /* already dead */ }
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => finish(null), TIMEOUT_MS);
+
+    child.stdout?.on("data", (buf) => { stdout += buf; });
+    child.stderr?.on("data", (buf) => { stderr += buf; });
+    child.on("error", () => finish(null));
+    child.on("exit", () => {
+      const text = `${stdout}\n${stderr}`;
+      finish(probe.pick(text) || null);
+    });
+  });
 }
 
 async function refreshGameVersions() {
