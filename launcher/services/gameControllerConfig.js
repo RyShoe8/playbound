@@ -708,6 +708,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "ECWolf exposes modern control binding through SDL and keeps the player's own mapping.",
   },
+  "renegade-x": {
+    kind: "native",
+    note: "Totem Arts ships complete Xbox-style bindings for movement, aiming, weapons, menus, scoring, and vehicles in DefaultInput.ini.",
+  },
   supertux: { kind: "native", note: "SDL2 binds a pad on detection; defaults cover the whole game." },
   supertuxkart: { kind: "native", note: "Detects pads on first run and writes its own mapping." },
   veloren: { kind: "native", note: "Analog movement, camera and combat are bound by default." },
