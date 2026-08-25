@@ -113,6 +113,9 @@ export const CLIENT_HOSTING_VERIFIED: ReadonlySet<string> = new Set<string>([
   // Starting a new game brings up a server other players join — the client is
   // the host, which is exactly what this list is for.
   "freeciv",
+
+  // The client offers "Host Networked Game" alongside starting a local one.
+  "triplea",
 ]);
 
 export interface HostModeOption {
