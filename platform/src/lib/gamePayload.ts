@@ -233,6 +233,8 @@ const ART_BY_GENRE: Record<string, { from: string; to: string; icon: string }> =
   Space: { from: "#0f172a", to: "#6366f1", icon: "Rocket" },
   Arcade: { from: "#831843", to: "#f472b6", icon: "Target" },
   Pirate: { from: "#0c4a6e", to: "#f59e0b", icon: "Flag" },
+  Stealth: { from: "#020617", to: "#475569", icon: "Eye" },
+  "Immersive Sim": { from: "#172554", to: "#0f766e", icon: "Blocks" },
 };
 
 export function defaultArtFor(genres: string[] = [], slug = ""): { from: string; to: string; icon: string } {
