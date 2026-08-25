@@ -53,6 +53,9 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
       "heroes-of-might-and-magic-3-complete",
       "ground-control-anthology",
       "ground-control-2-operation-exodus",
+      "stronghold-crusader-hd",
+      "s-t-a-l-k-e-r-shadow-of-chernobyl",
+      "s-t-a-l-k-e-r-call-of-pripyat",
     ]) {
       expect(getMultiplayerAdapter(slug).adapterType).toBe("virtual-lan");
       expect(getVirtualLanConfig(slug)?.requiresBroadcast).toBe(true);
