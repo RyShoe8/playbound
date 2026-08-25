@@ -205,7 +205,7 @@ async function lookupGog(url: string): Promise<StorePriceLookup> {
   }
   return {
     retailer: "GOG",
-    url: hit.storeLink || `https://www.gog.com/game/${slug}`,
+    url: `https://www.gog.com/en/game/${slug}`,
     priceCents: live,
     listPriceCents: list && list > 0 ? list : live,
   };
