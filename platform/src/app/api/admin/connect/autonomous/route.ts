@@ -11,6 +11,7 @@ import Edition from "@/lib/models/Edition";
 import { games as staticGames } from "@/lib/data/games";
 import { editions as staticEditions } from "@/lib/data/editions";
 import { fetchGameHostHealth } from "@/lib/gameHost/client";
+import { HOSTABLE_SLUGS, isHostableGame } from "@/lib/gameHost/catalog";
 
 export async function GET() {
   const { error } = await requireAdminSession();
@@ -26,13 +27,18 @@ export async function GET() {
     .lean();
 
   const candidateSlugs = new Set<string>();
+  for (const slug of HOSTABLE_SLUGS) {
+    candidateSlugs.add(slug);
+  }
   for (const g of staticGames) {
-    if (g.launchMethods?.includes("server") || g.features?.includes("Dedicated Servers")) {
+    if (isHostableGame(g.slug)) {
       candidateSlugs.add(g.slug);
     }
   }
   for (const g of config.games) {
-    candidateSlugs.add(g.slug);
+    if (isHostableGame(g.slug)) {
+      candidateSlugs.add(g.slug);
+    }
   }
 
   const slugsArr = Array.from(candidateSlugs);
