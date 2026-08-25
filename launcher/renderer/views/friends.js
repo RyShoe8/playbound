@@ -1346,6 +1346,27 @@ function buildPartyViewHtml(party) {
          </select>`
       : "";
 
+  /*
+   * Modes come from the party payload, resolved server-side — the renderer has
+   * no access to the adapter registry and should not carry a second copy of
+   * which games can be hosted where. Fewer than two is not a choice, so no
+   * picker is drawn. Locked once a room is live, matching what the API allows.
+   */
+  const hostModes = Array.isArray(party.hostModes) ? party.hostModes : [];
+  const canPickHost = isLeader && !ended && hostModes.length > 1 && !party.hosted?.roomCode;
+  const hostModeHtml = canPickHost
+    ? `<select class="input-text party-hostmode-select" id="party-hostmode-select" aria-label="Where the game runs">
+         ${hostModes
+           .map(
+             (o) =>
+               `<option value="${escapeHtml(o.mode)}"${party.hostMode === o.mode ? " selected" : ""}>${escapeHtml(
+                 o.label
+               )}</option>`
+           )
+           .join("")}
+       </select>`
+    : "";
+
   const membersHtml = (party.members || [])
     .map((m) => {
       const isMe = String(m.userId) === String(userId);
@@ -1474,6 +1495,7 @@ function buildPartyViewHtml(party) {
             </p>
           </div>
           <div class="party-header-side">
+            ${hostModeHtml}
             ${visibilityHtml}
             ${buildPartyConfigSyncHtml(party, userId)}
           </div>
@@ -1756,6 +1778,10 @@ function partyAreaSignature(active, discoverable) {
       gameTitle: active.gameTitle,
       leaderId: active.leaderId,
       maxSize: active.maxSize,
+      // Both, not just the pick: switching games changes which modes exist, and
+      // the picker has to appear or disappear with them.
+      hostMode: active.hostMode || null,
+      hostModes: (active.hostModes || []).map((m) => m.mode),
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
       hosted: active.hosted || null,
       discord: active.discord || null,
@@ -1905,6 +1931,25 @@ function wirePartyView(slot, party) {
       }
     });
     enhanceSelect(gameSelect);
+  }
+
+  const hostModeSelect = slot.querySelector("#party-hostmode-select");
+  if (hostModeSelect) {
+    hostModeSelect.addEventListener("change", async () => {
+      const mode = hostModeSelect.value;
+      if (!mode) return;
+      partyMutationInFlight += 1;
+      try {
+        const res = await window.playbound.setPartyHostMode(partyId, mode);
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        applyPartyResult(res, "Couldn't change where the game is hosted.");
+      } catch (err) {
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        setStatus(err.message || "Couldn't change where the game is hosted.", true);
+        void api.refreshFriendsData();
+      }
+    });
+    enhanceSelect(hostModeSelect);
   }
 
   const visibilitySelect = slot.querySelector("#party-visibility-select");

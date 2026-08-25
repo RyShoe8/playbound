@@ -111,6 +111,7 @@ contextBridge.exposeInMainWorld("playbound", {
   leaveParty: (partyId) => ipcRenderer.invoke("leave-party", partyId),
   inviteToParty: (partyId, friendIds) => ipcRenderer.invoke("invite-to-party", partyId, friendIds || []),
   setPartyGame: (partyId, gameSlug) => ipcRenderer.invoke("update-party", partyId, { gameSlug }),
+  setPartyHostMode: (partyId, hostMode) => ipcRenderer.invoke("update-party", partyId, { hostMode }),
   setPartyName: (partyId, name) => ipcRenderer.invoke("update-party", partyId, { name }),
   setPartyVisibility: (partyId, visibility) =>
     ipcRenderer.invoke("update-party", partyId, { visibility }),
