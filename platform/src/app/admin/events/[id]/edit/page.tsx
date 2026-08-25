@@ -33,16 +33,6 @@ export default async function EditEventPage({ params }: Props) {
 
   const games = await listGames();
 
-  // Serialise dates into local ISO format for datetime-local inputs
-  function toLocalInput(d: Date | string | null | undefined): string {
-    if (!d) return "";
-    const dt = new Date(d);
-    if (Number.isNaN(dt.getTime())) return "";
-    // Offset to local and chop off seconds + TZ
-    const offset = dt.getTimezoneOffset() * 60_000;
-    return new Date(dt.getTime() - offset).toISOString().slice(0, 16);
-  }
-
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 py-8">
       <h1 className="text-2xl font-extrabold">Edit Event</h1>
@@ -54,8 +44,8 @@ export default async function EditEventPage({ params }: Props) {
           eventType: doc.eventType || "game_night",
           gameSlug: doc.gameSlug || "",
           coverImage: doc.coverImage || null,
-          startsAt: toLocalInput(doc.startsAt),
-          endsAt: toLocalInput(doc.endsAt),
+          startsAt: doc.startsAt ? new Date(doc.startsAt).toISOString() : "",
+          endsAt: doc.endsAt ? new Date(doc.endsAt).toISOString() : "",
           maxParticipants: doc.maxParticipants ?? null,
           discordInviteUrl: doc.discordInviteUrl || "",
           featured: Boolean(doc.featured),

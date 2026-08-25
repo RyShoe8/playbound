@@ -13,6 +13,7 @@ import {
   Server,
   XCircle,
 } from "lucide-react";
+import { LocalTime } from "@/components/LocalTime";
 
 type Alert = { type: "warning" | "error" | "info"; title: string; message: string };
 
@@ -496,7 +497,7 @@ export function ConnectManager() {
                     </td>
                     <td className="py-2 pr-4 tabular-nums">{party.inGameCount}</td>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">{hostedLabel(party)}</td>
-                    <td className="py-2 text-xs text-muted-foreground">{formatWhen(party.lastActivity)}</td>
+                    <td className="py-2 text-xs text-muted-foreground"><LocalTime value={party.lastActivity} /></td>
                   </tr>
                 ))}
               </tbody>

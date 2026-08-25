@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LocalTime } from "@/components/LocalTime";
 
 type StoreRow = {
   slug: string;
@@ -155,9 +156,13 @@ export function EcommerceStoresManager() {
                   </label>
                   <p className="text-[11px] text-muted-foreground">
                     Independent of affiliates. Last run{" "}
-                    {store.lastFreeOffers
-                      ? `${new Date(store.lastFreeOffers.startedAt).toLocaleString()} (${store.lastFreeOffers.status})`
-                      : "never"}
+                    {store.lastFreeOffers ? (
+                      <>
+                        <LocalTime value={store.lastFreeOffers.startedAt} /> ({store.lastFreeOffers.status})
+                      </>
+                    ) : (
+                      "never"
+                    )}
                     .
                   </p>
                 </div>
@@ -274,9 +279,13 @@ export function EcommerceStoresManager() {
                       </div>
                       <p className="text-[11px] text-muted-foreground">
                         CSV, JSON, or merchant XML. Matching uses the last ingested titles.
-                        {store.lastFeed
-                          ? ` Last ingest ${new Date(store.lastFeed.startedAt).toLocaleString()} (${store.lastFeed.status}).`
-                          : ""}
+                        {store.lastFeed ? (
+                          <>
+                            {" "}Last ingest <LocalTime value={store.lastFeed.startedAt} /> ({store.lastFeed.status}).
+                          </>
+                        ) : (
+                          ""
+                        )}
                       </p>
                       <label className="block text-xs font-bold tracking-wide text-muted-foreground uppercase">
                         Or upload a feed
