@@ -108,7 +108,20 @@ export function AutomatedEventPlannerManager() {
       const res = await fetch("/api/admin/connect/automated-events");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setConfig(data.config);
+      if (isSilent) {
+        // On background refresh, only update live status, active session, and logs to avoid clobbering unsaved form inputs
+        setConfig((prev) =>
+          prev
+            ? {
+                ...prev,
+                activeSession: data.config?.activeSession,
+                lastTriggeredAt: data.config?.lastTriggeredAt,
+              }
+            : data.config
+        );
+      } else {
+        setConfig(data.config);
+      }
       setCandidateGames(data.candidateGames || []);
       setLogs(data.logs || []);
       setHostConfigured(Boolean(data.hostConfigured));
@@ -797,13 +810,15 @@ export function AutomatedEventPlannerManager() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {game.coverImage ? (
-                        <div className="relative size-12 overflow-hidden rounded-xl border border-border shrink-0">
-                          <Image
+                        <div className="relative size-12 overflow-hidden rounded-xl border border-border shrink-0 bg-secondary">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
                             src={game.coverImage}
                             alt={game.title}
-                            fill
-                            sizes="48px"
-                            className="object-cover"
+                            className="size-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                            }}
                           />
                         </div>
                       ) : (
