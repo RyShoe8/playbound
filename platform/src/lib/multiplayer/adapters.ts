@@ -759,6 +759,39 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   },
 
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
+  bombsquad: {
+    gameSlug: "bombsquad",
+    title: "BombSquad",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: { port: 43210, protocol: "udp", binaryHint: "bombsquad_server" },
+    client: { inGameJoinPrompt: true },
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: [
+        "Leader: open Play → Gather and host a private party",
+        "Everyone else: open Gather and connect to the copied private address",
+      ],
+    },
+    notes: "Official Ballistica headless server; clients enter the private host and port in-game.",
+  },
+
+  wolfenstein: {
+    gameSlug: "wolfenstein",
+    title: "Wolfenstein 3D via ECWolf",
+    tier: "tier1_improved",
+    adapterType: "direct-ip",
+    protocol: "udp",
+    host: { port: 5029, protocol: "udp", binaryHint: "ecwolf" },
+    client: { launchArguments: ["--join", "{host}:{port}"] },
+    virtualLan: {
+      requiresBroadcast: false,
+      inGameSteps: ["The party leader starts ECWolf after every player has joined the PlayBound party."],
+    },
+    notes: "ECWolf lock-step LAN play over the private overlay; up to 11 nodes and no public dedicated server.",
+  },
+
   "space-station-14": {
     gameSlug: "space-station-14",
     title: "Space Station 14",
@@ -1214,8 +1247,14 @@ export function getMultiplayerTier(gameSlug: string): MultiplayerTier {
  */
 export function getVirtualLanConfig(gameSlug: string): VirtualLanConfig | null {
   const adapter = getMultiplayerAdapter(gameSlug);
-  if (adapter.adapterType !== "virtual-lan") return null;
-  return adapter.virtualLan || {};
+  if (adapter.adapterType === "official") return null;
+  if (adapter.adapterType === "virtual-lan" || adapter.adapterType === "direct-ip") {
+    return adapter.virtualLan || {};
+  }
+  // A managed game whose client can host still needs the overlay when the
+  // leader chooses My computer. The host-mode gate decides whether that
+  // choice is offered; this function only supplies the network config.
+  return adapter.host?.port ? adapter.virtualLan || {} : null;
 }
 
 /** In-game clicks still required after Connect joins a managed-server title. */
