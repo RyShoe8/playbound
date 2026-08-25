@@ -57,6 +57,41 @@ export interface VirtualLanConfig {
   inGameSteps?: string[];
 }
 
+/**
+ * Hosting the game on the player's own machine instead of the PlayBound VPS.
+ *
+ * This is an alternative to Connect's default, never a replacement for it.
+ * Connect exists precisely because most home connections cannot accept inbound
+ * traffic — see /connect — and that has not stopped being true: probing a real
+ * home network during this work found neither UPnP nor NAT-PMP available, so
+ * automatic port mapping simply fails for a meaningful share of players. A
+ * self-hosted room is the right choice when the host has a reachable
+ * connection and wants lower latency or control over uptime; the VPS stays the
+ * safe default for everyone else.
+ *
+ * `port` and `protocol` are the same values the VPS uses for this game in
+ * HOSTABLE_GAMES — the game listens on its own port regardless of which
+ * machine runs it — so a mapping request is derived from data we already
+ * trust rather than guessed per game.
+ */
+export interface SelfHostConfig {
+  /** Inbound port to map. Matches the game's own listen port. */
+  port: number;
+  protocol: "udp" | "tcp" | "both";
+  /**
+   * Whether a real host-and-join has been performed for this game.
+   *
+   * The launcher offers self-hosting only where this is true. It is not a
+   * detail we can infer: a game's client and its dedicated server are often
+   * different binaries, and "the client has a Host button" has to be seen to
+   * be believed. Flipping one of these to true is a deliberate act after
+   * someone actually hosted a game and had another player join it.
+   */
+  verified: boolean;
+  /** What the player does in-game to start hosting. */
+  inGameSteps?: string[];
+}
+
 export interface GameMultiplayerAdapter {
   gameSlug: string;
   title: string;
@@ -66,6 +101,8 @@ export interface GameMultiplayerAdapter {
   host?: HostLaunchConfig;
   client?: ClientLaunchConfig;
   virtualLan?: VirtualLanConfig;
+  /** Present when the game can also be hosted on the player's own machine. */
+  selfHost?: SelfHostConfig;
   notes?: string;
 }
 
@@ -944,4 +981,56 @@ export function listVirtualLanGames(): GameMultiplayerAdapter[] {
   return Object.values(MULTIPLAYER_ADAPTERS).filter(
     (a) => a.adapterType === "virtual-lan"
   );
+}
+
+/** Where a party's room actually runs. */
+export type PartyHostMode = "dedicated" | "self";
+
+export const DEFAULT_HOST_MODE: PartyHostMode = "dedicated";
+
+/**
+ * Self-hosting config for a game, but only once it has been verified.
+ *
+ * Returning null for an unverified entry is the point: config can be written
+ * ahead of testing without the UI offering a mode nobody has confirmed works.
+ */
+export function getSelfHostConfig(gameSlug: string): SelfHostConfig | null {
+  const selfHost = getMultiplayerAdapter(gameSlug).selfHost;
+  return selfHost?.verified ? selfHost : null;
+}
+
+export function canSelfHost(gameSlug: string): boolean {
+  return getSelfHostConfig(gameSlug) !== null;
+}
+
+/**
+ * The host modes a game genuinely offers, in the order they should be shown.
+ *
+ * `dedicated` availability is owned by HOSTABLE_GAMES rather than duplicated
+ * here, so this takes it as an argument instead of importing it — adapters.ts
+ * stays free of a dependency on the game-host catalog, which imports catalog
+ * data of its own.
+ *
+ * Dedicated is listed first deliberately. It is Connect's promise — no port
+ * forwarding, no NAT roulette — and should stay the obvious choice.
+ */
+export function listHostModes(
+  gameSlug: string,
+  { dedicatedAvailable }: { dedicatedAvailable: boolean }
+): PartyHostMode[] {
+  const modes: PartyHostMode[] = [];
+  if (dedicatedAvailable) modes.push("dedicated");
+  if (canSelfHost(gameSlug)) modes.push("self");
+  return modes;
+}
+
+/** Every game with self-hosting wired up, verified or not — for admin/audit views. */
+export function listSelfHostCandidates(): Array<{
+  gameSlug: string;
+  title: string;
+  selfHost: SelfHostConfig;
+}> {
+  return Object.values(MULTIPLAYER_ADAPTERS)
+    .filter((a): a is GameMultiplayerAdapter & { selfHost: SelfHostConfig } => Boolean(a.selfHost))
+    .map((a) => ({ gameSlug: a.gameSlug, title: a.title, selfHost: a.selfHost }));
 }
