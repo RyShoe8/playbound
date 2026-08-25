@@ -36,8 +36,10 @@ function m(d: Def): ModSeed {
     title: d.title,
     tagline: d.tagline,
     description: d.desc,
-    baseGameSlug: d.base,
-    baseTitle: d.baseTitle,
+    // OpenLara is an engine edition of the commercial trilogy, so its add-ons
+    // inherit access from the Tomb Raider master instead of forming a second game.
+    baseGameSlug: d.base === "openlara" ? "tomb-raider-123" : d.base,
+    baseTitle: d.base === "openlara" ? "Tomb Raider 1+2+3" : d.baseTitle,
     developerSlug: d.developerSlug ?? "xproger",
     license: d.license ?? "Open Source (BSD-2-Clause)",
     releaseYear: d.year ?? 2024,
