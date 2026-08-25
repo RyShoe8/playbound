@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Store,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,11 +59,10 @@ export const links: NavItem[] = [
     href: "/admin/games",
     label: "Games",
     icon: Gamepad2,
-    family: ["/admin/games", "/admin/mods", "/admin/collections"],
+    family: ["/admin/games", "/admin/mods", "/admin/collections", "/admin/developers"],
   },
   { href: "/admin/gear", label: "Gear", icon: Mouse },
   { href: "/admin/hardware", label: "Hardware", icon: Cpu },
-  { href: "/admin/developers", label: "Developers", icon: Building2 },
   { href: "/admin/community", label: "Community", icon: MessagesSquare },
   { href: "/admin/weekly", label: "Weekly", icon: Mail },
   {
@@ -109,6 +109,12 @@ export function gameSlugFromPath(pathname: string): string | null {
 
 /** Section-wide entries — the same wherever you are inside Games. */
 const GLOBAL_GAME_CHILDREN: NavChild[] = [
+  {
+    label: "Developers",
+    icon: Building2,
+    href: "/admin/developers",
+    match: (p) => p.startsWith("/admin/developers"),
+  },
   {
     label: "Collections",
     icon: Layers,
@@ -229,6 +235,12 @@ const CONNECT_CHILDREN: NavChild[] = [
     match: (p) =>
       p.startsWith("/admin/connect/game-servers") ||
       p.startsWith("/admin/game-servers"),
+  },
+  {
+    label: "Autonomous Matchmaker",
+    icon: Bot,
+    href: "/admin/connect/autonomous",
+    match: (p) => p.startsWith("/admin/connect/autonomous"),
   },
 ];
 
