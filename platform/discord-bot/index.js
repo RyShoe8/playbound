@@ -120,16 +120,33 @@ function eventNameSlug(raw, fallbackId) {
   return String(fallbackId || "").replace(/[^a-z0-9]/gi, "").slice(-6) || "event";
 }
 
+function formatGameNightTitle(raw) {
+  let title = String(raw || "").trim();
+  title = title.replace(/^[⚡📅🎮\s]+/, "");
+  title = title.replace(/^Pop-Up\s*(Game\s*Night:\s*)?/i, "");
+  title = title.replace(/^Game\s*Night:\s*/i, "");
+  if (!title.toLowerCase().includes("game night")) {
+    title = `${title} Game Night`;
+  }
+  return title.trim();
+}
+
 function eventVoiceChannelName(raw, fallbackId) {
-  return `voice-${eventNameSlug(raw, fallbackId)}`.slice(0, 90);
+  const formatted = formatGameNightTitle(raw);
+  return `🔊 ${formatted}`.slice(0, 90);
 }
 
 function eventTextChannelName(raw, fallbackId) {
-  return `event-${eventNameSlug(raw, fallbackId)}`.slice(0, 90);
+  const formatted = formatGameNightTitle(raw);
+  const slugified = formatted
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `💬-${slugified || "event"}`.slice(0, 90);
 }
 
-/** Category a temporary channel belongs under: the game's area, or Events. */
-const EVENTS_CATEGORY_NAME = "Events";
+/** Category a temporary channel belongs under: the Events category. */
+const EVENTS_CATEGORY_NAME = "EVENTS";
 
 async function resolveGameCategoryId(guild, gameSlug) {
   const slug = String(gameSlug || "").trim();
@@ -151,13 +168,9 @@ async function resolveGameCategoryId(guild, gameSlug) {
 }
 
 /**
- * Where an event's channels live: under its game's area once a game is picked,
- * otherwise in one shared Events category. Mirrors how a party channel is
- * placed by /parties/voice/place.
+ * Event channels always live in the shared Events category.
  */
-async function resolveEventCategoryId(guild, gameSlug) {
-  const fromGame = await resolveGameCategoryId(guild, gameSlug);
-  if (fromGame) return fromGame;
+async function resolveEventCategoryId(guild, _gameSlug) {
   const cat = await ensureCategory(guild, EVENTS_CATEGORY_NAME);
   return cat.id;
 }
