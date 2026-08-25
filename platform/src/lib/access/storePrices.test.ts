@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { gogSlugToQuery } from "./storePrices";
 import {
   detectRetailer,
   parseFanaticalSlug,
@@ -77,6 +78,35 @@ describe("store URL parsers", () => {
       parseGogSlug("https://www.gog.com/en/game/the_elder_scrolls_iii_morrowind_goty_edition")
     ).toBe("the_elder_scrolls_iii_morrowind_goty_edition");
     expect(parseGogSlug("https://www.gog.com/game/morrowind")).toBe("morrowind");
+  });
+});
+
+describe("gogSlugToQuery", () => {
+  /*
+   * GOG's `like:` is a fuzzy search over titles, not a slug lookup. Sending the
+   * raw slug for Ground Control 2 matched on the bare "2" and returned 732
+   * products — Resident Evil 2, Metro 2033, Street Fighter Alpha 2 — with the
+   * real game outside the returned page, so the exact-slug check downstream
+   * could never succeed and a perfectly valid URL reported "no listing
+   * matching that URL". As words the same search returns exactly one product.
+   */
+  it("turns a slug into the words GOG actually searches on", () => {
+    expect(gogSlugToQuery("ground_control_2_operation_exodus")).toBe(
+      "ground control 2 operation exodus"
+    );
+    expect(gogSlugToQuery("the_elder_scrolls_iii_morrowind_goty_edition")).toBe(
+      "the elder scrolls iii morrowind goty edition"
+    );
+  });
+
+  it("handles hyphenated and mixed separators", () => {
+    expect(gogSlugToQuery("some-game_name")).toBe("some game name");
+    expect(gogSlugToQuery("a__b--c")).toBe("a b c");
+  });
+
+  it("leaves a single-word slug alone and tolerates empty input", () => {
+    expect(gogSlugToQuery("morrowind")).toBe("morrowind");
+    expect(gogSlugToQuery("")).toBe("");
   });
 
   it("reads a Fanatical slug", () => {

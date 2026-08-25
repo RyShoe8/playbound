@@ -84,12 +84,33 @@ async function lookupSteam(url: string): Promise<StorePriceLookup> {
   };
 }
 
+/**
+ * A GOG slug as words, for GOG's fuzzy title search.
+ *
+ * Exported for tests: this is the whole reason a valid product URL could come
+ * back "no listing matching that URL".
+ */
+export function gogSlugToQuery(slug: string): string {
+  return String(slug || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function lookupGog(url: string): Promise<StorePriceLookup> {
   const slug = parseGogSlug(url);
   if (!slug) throw new StorePriceError("That does not look like a GOG product URL.");
   const catalog = new URL("https://catalog.gog.com/v1/catalog");
-  catalog.searchParams.set("limit", "10");
-  catalog.searchParams.set("query", `like:${slug}`);
+  catalog.searchParams.set("limit", "20");
+  /*
+   * Words, not the raw slug. GOG's `like:` is a fuzzy text search over titles,
+   * so handing it `ground_control_2_operation_exodus` matched on the stray "2"
+   * and returned 732 products — Resident Evil 2, Metro 2033, Street Fighter
+   * Alpha 2 — with the actual game nowhere in the page, so the exact-slug check
+   * below always failed. The same query as words returns exactly one product,
+   * and it is the right one.
+   */
+  catalog.searchParams.set("query", `like:${gogSlugToQuery(slug)}`);
   catalog.searchParams.set("productType", "in:game,pack");
   catalog.searchParams.set("countryCode", "US");
   catalog.searchParams.set("locale", "en-US");
@@ -110,8 +131,21 @@ async function lookupGog(url: string): Promise<StorePriceLookup> {
     }>;
   };
   const products = json.products ?? [];
+  /*
+   * Still an exact slug match: the URL names one product and we price that
+   * one, never a same-named edition the search happened to rank first.
+   */
   const hit = products.find((p) => p.slug === slug);
-  if (!hit) throw new StorePriceError("GOG has no listing matching that URL.");
+  if (!hit) {
+    // Distinguish "GOG knows nothing about this" from "the search found things
+    // but not this slug" — the second means the URL is stale or renamed, and
+    // the old message gave no way to tell them apart.
+    throw new StorePriceError(
+      products.length === 0
+        ? "GOG returned no products for that URL."
+        : `GOG has no listing with the slug "${slug}". The product may have been renamed — open the store page and copy the current URL.`
+    );
+  }
   if (hit.price?.isFree) {
     throw new StorePriceError("That GOG listing is free — it is not a purchase source.");
   }
