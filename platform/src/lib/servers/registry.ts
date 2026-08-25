@@ -16,6 +16,7 @@ import { fetchAsheronsCallServers } from "./providers/asherons-call";
 import { fetchCounterStrike2Servers } from "./providers/counter-strike-2";
 import { fetchOldSchoolRuneScapeServers } from "./providers/old-school-runescape";
 import { fetchStarWarsGalaxiesServers } from "./providers/star-wars-galaxies";
+import { fetchRenegadeXServers } from "./providers/renegade-x";
 import {
   fetchSteamConcurrentPlayers,
   fetchTombRaider123Players,
@@ -369,6 +370,10 @@ const providers: Record<string, ServerProvider> = {
   "tomb-raider-123": {
     slug: "tomb-raider-123",
     fetchServers: fetchTombRaider123Players,
+  },
+  "renegade-x": {
+    slug: "renegade-x",
+    fetchServers: fetchRenegadeXServers,
   },
 };
 
