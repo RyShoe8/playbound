@@ -30,9 +30,26 @@ type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
   maxSize?: number;
+  /** Where the room runs. A self-hosted room needs the overlay to be reachable. */
+  hostMode?: string | null;
   lan?: PartyLanFields;
   save: () => Promise<unknown>;
 };
+
+/**
+ * Does this party need an overlay segment?
+ *
+ * Two reasons, not one. A virtual-lan game always needs it — the game finds
+ * peers by LAN discovery and has no address to dial. A self-hosted room needs
+ * it for a different reason: the host is behind their own NAT, and the overlay
+ * is what makes them addressable to the rest of the party without port
+ * forwarding. Gating solely on the game's adapter type, as this did, meant a
+ * self-hosted room on any other game had no reachable path to the host.
+ */
+function partyNeedsOverlay(party: PartyLike, slug: string): boolean {
+  if (isVirtualLanGame(slug)) return true;
+  return String(party.hostMode || "") === "self";
+}
 
 function ensureLan(party: PartyLike): PartyLanFields {
   if (!party.lan) {
@@ -43,7 +60,7 @@ function ensureLan(party: PartyLike): PartyLanFields {
 
 export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   const slug = String(party.gameSlug || "");
-  if (!isVirtualLanGame(slug)) return false;
+  if (!partyNeedsOverlay(party, slug)) return false;
 
   const lan = ensureLan(party);
   if (lan.status === "ready" && lan.setupKey) return true;

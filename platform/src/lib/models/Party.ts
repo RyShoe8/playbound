@@ -133,6 +133,18 @@ const PartySchema = new Schema(
       max: 20,
     },
 
+    /*
+     * Where the room runs: "self" on the leader's own machine, "dedicated" on
+     * the PlayBound VPS. Null on parties created before host modes existed and
+     * on games that offer only one, and every reader treats that as the game's
+     * own default — so old parties keep behaving exactly as they did.
+     */
+    hostMode: {
+      type: String,
+      enum: ["self", "dedicated", null],
+      default: null,
+    },
+
     // Optional association with a PlatformEvent (4K).
     eventId: {
       type: Schema.Types.ObjectId,
@@ -207,6 +219,8 @@ export type PartyDoc = {
   passwordHash?: string | null;
   voiceEnabled?: boolean;
   maxSize: number;
+  /** "self" | "dedicated"; null means the game's default for parties predating host modes. */
+  hostMode?: "self" | "dedicated" | null;
   eventId?: Types.ObjectId | null;
   discord: {
     voiceChannelId?: string | null;
