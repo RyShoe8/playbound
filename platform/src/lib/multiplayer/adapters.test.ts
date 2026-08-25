@@ -24,7 +24,9 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     expect(getVirtualLanConfig("holocure")?.adapterFile).toBe(
       "MultiplayerMod/lastUsedNetworkAdapter"
     );
-    expect(getVirtualLanConfig("openra")).toBeNull();
+    // Managed games with a local host port can also ride Connect when the
+    // leader chooses self-hosting, even when they need no game-specific file.
+    expect(getVirtualLanConfig("openra")).toEqual({});
 
     const keeper = getMultiplayerAdapter("keeperfx");
     expect(keeper.adapterType).toBe("direct-ip");
@@ -46,6 +48,15 @@ describe("PlayBound Multiplayer Adapter Framework", () => {
     const wesnoth = getMultiplayerAdapter("battle-for-wesnoth");
     expect(wesnoth.adapterType).toBe("direct-ip");
     expect(wesnoth.client?.launchArguments).toContain("--host");
+
+    for (const slug of [
+      "heroes-of-might-and-magic-3-complete",
+      "ground-control-anthology",
+      "ground-control-2-operation-exodus",
+    ]) {
+      expect(getMultiplayerAdapter(slug).adapterType).toBe("virtual-lan");
+      expect(getVirtualLanConfig(slug)?.requiresBroadcast).toBe(true);
+    }
   });
 
   it("correctly identifies Tier 2 automated server titles", () => {
