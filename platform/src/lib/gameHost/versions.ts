@@ -37,6 +37,14 @@ export const EXPECTED_SERVER_VERSIONS: Record<string, string> = {
   "space-station-14": "Robust.Server (.NET)",
   "zero-k": "Spring Engine (spring-dedicated)",
   flightgear: "fgms daemon",
+  openhv: "OpenRA engine (OpenHV.Server)",
+  "re-volt-rvgl": "RVGL dedicated",
+  "chris-sawyers-locomotion": "OpenLoco server",
+  "renegade-x": "UDK Renegade X server",
+  gemrb: "GemRB party host",
+  "wipeout-rewrite": "wipEout Rewrite server",
+  exult: "Exult local host",
+  "hurry-curry": "Hurry Curry local host",
 };
 
 function installFor(slug: string): LauncherInstall | undefined {

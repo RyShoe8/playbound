@@ -204,6 +204,62 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 5010,
     protocol: "udp",
   },
+  openhv: {
+    slug: "openhv",
+    title: "OpenHV",
+    defaultPort: 1255,
+    portEnd: 1270,
+    protocol: "tcp",
+  },
+  "re-volt-rvgl": {
+    slug: "re-volt-rvgl",
+    title: "Re-Volt (RVGL)",
+    defaultPort: 2310,
+    portEnd: 2330,
+    protocol: "udp",
+  },
+  "chris-sawyers-locomotion": {
+    slug: "chris-sawyers-locomotion",
+    title: "Chris Sawyer's Locomotion",
+    defaultPort: 2300,
+    portEnd: 2320,
+    protocol: "both",
+  },
+  "renegade-x": {
+    slug: "renegade-x",
+    title: "Renegade X",
+    defaultPort: 7777,
+    portEnd: 7797,
+    protocol: "udp",
+  },
+  gemrb: {
+    slug: "gemrb",
+    title: "GemRB",
+    defaultPort: 47624,
+    portEnd: 47640,
+    protocol: "tcp",
+  },
+  "wipeout-rewrite": {
+    slug: "wipeout-rewrite",
+    title: "wipEout Rewrite",
+    defaultPort: 7000,
+    portEnd: 7020,
+    protocol: "udp",
+  },
+  exult: {
+    slug: "exult",
+    title: "Exult",
+    defaultPort: 9999,
+    portEnd: 10010,
+    protocol: "both",
+  },
+  "hurry-curry": {
+    slug: "hurry-curry",
+    title: "Hurry Curry!",
+    defaultPort: 8888,
+    portEnd: 8900,
+    protocol: "both",
+  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
@@ -219,6 +275,12 @@ const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   wesnoth: "battle-for-wesnoth",
   doom: "freedoom",
   ss14: "space-station-14",
+  rvgl: "re-volt-rvgl",
+  revolt: "re-volt-rvgl",
+  locomotion: "chris-sawyers-locomotion",
+  openloco: "chris-sawyers-locomotion",
+  renegadex: "renegade-x",
+  wipeout: "wipeout-rewrite",
 };
 
 export function isHostableGame(slug: string | null | undefined): boolean {
