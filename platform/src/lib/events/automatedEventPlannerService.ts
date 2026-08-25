@@ -231,11 +231,27 @@ export async function evaluateAndTriggerAutomatedEvent(
     };
   }
 
-  const enabledGames = (freshConfig.games || []).filter(
-    (g) => g.enabled && isHostableGame(g.slug)
-  );
+  // Fetch testing/draft statuses from DB to exclude games in testing
+  const candidateDbGames = await CatalogGame.find({
+    slug: { $in: (freshConfig.games || []).map((g) => g.slug) },
+  })
+    .select("slug status")
+    .lean();
+  const dbStatusBySlug = new Map<string, string>();
+  for (const dg of candidateDbGames) {
+    if ((dg as { slug?: string }).slug) {
+      dbStatusBySlug.set((dg as { slug: string }).slug, (dg as { status?: string }).status || "published");
+    }
+  }
+
+  const enabledGames = (freshConfig.games || []).filter((g) => {
+    if (!g.enabled || !isHostableGame(g.slug)) return false;
+    const st = dbStatusBySlug.get(g.slug) ?? staticGames.find((sg) => sg.slug === g.slug)?.status ?? "published";
+    return st !== "testing" && st !== "draft";
+  });
+
   if (enabledGames.length === 0 && !options.gameSlugOverride) {
-    return { ok: false, reason: "No hostable games or editions enabled in the rotation pool" };
+    return { ok: false, reason: "No published hostable games or editions enabled in the rotation pool" };
   }
 
   let selectedSlug = options.gameSlugOverride;
