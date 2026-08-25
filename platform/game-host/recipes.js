@@ -463,7 +463,12 @@ export const recipes = {
     protocol: "both",
     binaries: gameBin("veloren", ["veloren-server-cli", "veloren-server"]),
     args: () => [],
-    spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
+    cwd: () => path.join(GAMES_ROOT, "veloren"),
+    spawnEnv: () => ({
+      SDL_VIDEODRIVER: "dummy",
+      SDL_AUDIODRIVER: "dummy",
+      VELOREN_ASSETS: path.join(GAMES_ROOT, "veloren", "assets"),
+    }),
   },
   freedoom: {
     portStart: 10666,
