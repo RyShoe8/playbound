@@ -57,4 +57,35 @@ describe("pickUniqueHit", () => {
   it("returns null when there are no hits", () => {
     expect(pickUniqueHit("Morrowind", [])).toBeNull();
   });
+
+  /*
+   * Anything but a lone exact match or a lone hit used to be abandoned, so a
+   * search returning the game alongside its DLC or a bundle matched nothing
+   * even when one result was plainly right — which is most searches, and why
+   * so many of these ended up pasted by hand.
+   */
+  it("picks a clear winner from several candidates", () => {
+    const chosen = pickUniqueHit("Morrowind", [
+      hit("The Elder Scrolls III Morrowind"), // 60, a substring
+      hit("Morrowind GOTY"), // 80, a prefix
+    ]);
+    expect(chosen?.title).toBe("Morrowind GOTY");
+  });
+
+  it("still refuses when two candidates are equally plausible", () => {
+    // Both prefix matches: nothing separates them, so a person decides.
+    expect(
+      pickUniqueHit("Morrowind", [hit("Morrowind GOTY"), hit("Morrowind Deluxe")])
+    ).toBeNull();
+  });
+
+  it("does not promote a weak leader just because it is ahead", () => {
+    // Top is only a substring match; leading the field does not make it right.
+    expect(
+      pickUniqueHit("Morrowind", [
+        hit("The Elder Scrolls III Morrowind"),
+        hit("Something Unrelated"),
+      ])
+    ).toBeNull();
+  });
 });
