@@ -58,7 +58,12 @@ import {
 import { isHostableGame, type HostedStatus } from "@/lib/gameHost/catalog";
 import { modBaseGameSlugsForCatalogGame } from "@/lib/catalogGameAliases";
 import { isVirtualLanGame } from "@/lib/multiplayer/adapters";
-import { defaultHostMode, isValidHostMode, type PartyHostMode } from "@/lib/multiplayer/hostModes";
+import {
+  defaultHostMode,
+  hostModeOptions,
+  isValidHostMode,
+  type PartyHostMode,
+} from "@/lib/multiplayer/hostModes";
 import {
   BASE_EDITION_KEY,
   isBaseEditionSlug,
@@ -406,6 +411,17 @@ function serializeParty(
     hasPassword: Boolean(doc.passwordHash),
     voiceEnabled: doc.voiceEnabled !== false,
     maxSize: (doc.maxSize as number) || PARTY_MAX_SIZE,
+    /*
+     * Resolved server-side and sent down, rather than each client working it
+     * out. The launcher cannot import the adapter registry at all, and a
+     * second implementation of "which modes does this game have" is a second
+     * thing to drift. Null hostMode on an older party reads as the game's
+     * default, same as everywhere else.
+     */
+    hostMode:
+      (doc.hostMode as PartyHostMode | null) ||
+      (doc.gameSlug ? defaultHostMode(String(doc.gameSlug)) : null),
+    hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
     eventId: doc.eventId ? String(doc.eventId) : null,
     discord: {
       voiceChannelId: (discord.voiceChannelId as string) || null,
@@ -1081,6 +1097,14 @@ export async function setPartyGame(
   if (switchingGame) {
     doc.editionSlug = null;
     doc.modSlugs = [];
+    /*
+     * Host mode belongs to the game, not the party: "my computer" is a valid
+     * choice for a peer-hostable game and meaningless for one that only runs
+     * on the VPS. Carrying the old pick across a game switch would leave a
+     * party self-hosting a game whose client cannot host, so it resets to
+     * whatever the new game's default is.
+     */
+    doc.hostMode = defaultHostMode(slug);
     resetPartyConnectState(doc);
   }
   doc.lastActivity = new Date();
@@ -1119,6 +1143,50 @@ export async function setPartyGame(
     party: updated,
     status: 200,
   };
+}
+
+/**
+ * Change where the party's room runs.
+ *
+ * Leader-only, and refused once a room already exists: the mode decides
+ * whether a dedicated server or an overlay gets provisioned, so switching
+ * underneath a live room would leave members connected to something the party
+ * no longer describes. Pick before launching, or after the session ends.
+ */
+export async function setPartyHostMode(
+  partyId: string,
+  leaderId: string,
+  hostMode: string
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can change where the game is hosted", status: 403 };
+  }
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+
+  const slug = String(doc.gameSlug || "");
+  if (!slug) return { error: "Pick a game first", status: 400 };
+  if (!isValidHostMode(slug, hostMode)) {
+    return { error: "That hosting option is not available for this game", status: 400 };
+  }
+  if (doc.status === "playing" || doc.status === "launching" || doc.hosted?.roomId) {
+    return { error: "Can't change hosting while a room is live", status: 400 };
+  }
+
+  if (doc.hostMode !== hostMode) {
+    doc.hostMode = hostMode as PartyHostMode;
+    doc.lastActivity = new Date();
+    await doc.save();
+    trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
+  }
+
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const nameById = await resolveUsernames(memberIds);
+  const game = slug ? await getGame(slug, { includeTesting: true }) : null;
+  return { party: serializeParty(doc.toObject(), nameById, game?.title || null), status: 200 };
 }
 
 export async function setPartyEdition(

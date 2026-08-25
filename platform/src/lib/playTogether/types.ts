@@ -174,6 +174,15 @@ export type PartyPayload = {
   status: PartyStatus;
   visibility: PartyVisibility;
   maxSize: number;
+  /** Where the room runs. Null when the game offers no PlayBound-run multiplayer. */
+  hostMode: "self" | "dedicated" | null;
+  /** Modes this game supports, in display order. Fewer than two means no picker. */
+  hostModes: Array<{
+    mode: "self" | "dedicated";
+    available: boolean;
+    label: string;
+    hint: string;
+  }>;
   eventId: string | null;
   /** True when a password is required; the hash is never returned. */
   hasPassword: boolean;

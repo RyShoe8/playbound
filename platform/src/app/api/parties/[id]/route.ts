@@ -4,6 +4,7 @@ import {
   getParty,
   setVisibility,
   setPartyGame,
+  setPartyHostMode,
   setPartyEdition,
   setPartyName,
   endParty,
@@ -57,6 +58,14 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     if (typeof body.gameSlug === "string") {
       const result = await setPartyGame(id, userId, body.gameSlug);
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    if (typeof body.hostMode === "string") {
+      const result = await setPartyHostMode(id, userId, body.hostMode);
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }
