@@ -12,16 +12,17 @@ import {
   deleteHostRoom,
   isGameHostConfigured,
 } from "@/lib/gameHost/client";
+import { isHostableGame } from "@/lib/gameHost/catalog";
 import { games as staticGames } from "@/lib/data/games";
 import { editions as staticEditions } from "@/lib/data/editions";
 
 const DEFAULT_POPUP_GAMES: AutonomousGameConfig[] = [
   { slug: "openra", enabled: true, durationHours: 2, weight: 1 },
-  { slug: "etlegacy", enabled: true, durationHours: 2, weight: 1 },
+  { slug: "wolfenstein-enemy-territory", enabled: true, durationHours: 2, weight: 1 },
   { slug: "warzone-2100", enabled: true, durationHours: 2, weight: 1 },
   { slug: "xonotic", enabled: true, durationHours: 1.5, weight: 1 },
-  { slug: "quake-3", enabled: true, durationHours: 1.5, weight: 1 },
-  { slug: "unvanquished", enabled: true, durationHours: 2, weight: 1 },
+  { slug: "openarena", enabled: true, durationHours: 1.5, weight: 1 },
+  { slug: "supertuxkart", enabled: true, durationHours: 1.5, weight: 1 },
   { slug: "mindustry", enabled: true, durationHours: 2, weight: 1 },
 ];
 
@@ -224,9 +225,18 @@ export async function evaluateAndTriggerAutonomousMatch(
   }
 
   // 5. Select Game/Edition from Pool
-  const enabledGames = (freshConfig.games || []).filter((g) => g.enabled);
+  if (options.gameSlugOverride && !isHostableGame(options.gameSlugOverride)) {
+    return {
+      ok: false,
+      reason: `Game "${options.gameSlugOverride}" is not configured for VPS dedicated server hosting.`,
+    };
+  }
+
+  const enabledGames = (freshConfig.games || []).filter(
+    (g) => g.enabled && isHostableGame(g.slug)
+  );
   if (enabledGames.length === 0 && !options.gameSlugOverride) {
-    return { ok: false, reason: "No games or editions enabled in the rotation pool" };
+    return { ok: false, reason: "No hostable games or editions enabled in the rotation pool" };
   }
 
   let selectedSlug = options.gameSlugOverride;

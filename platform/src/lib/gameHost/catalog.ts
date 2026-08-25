@@ -153,6 +153,7 @@ export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
  */
 const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   "0ad": "0-ad",
+  etlegacy: "wolfenstein-enemy-territory",
 };
 
 export function isHostableGame(slug: string | null | undefined): boolean {
