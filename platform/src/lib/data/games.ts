@@ -5395,8 +5395,8 @@ const facts: Game[] = [
     description:
       "Hurry Curry! is a chaotic arcade co-op cooking simulation where 1 to 4 players collaborate in a bustling kitchen to chop ingredients, boil pots, assemble curry dishes, wash dirty plates, and serve hungry customers before the timer expires. Features native gamepad support for up to 4 simultaneous controllers.",
     developerSlug: "a327ex",
-    genres: ["Action", "Arcade", "Casual"],
-    tags: ["Co-op", "Local Multiplayer", "Cooking", "Pixel Art", "Controller Support", "Family Friendly", "Fast-Paced"],
+    genres: ["Action", "Arcade", "Party Game", "Simulation"],
+    tags: ["Co-op", "Local Multiplayer", "Cooking", "Casual", "Pixel Art", "Controller Support", "Family Friendly", "Fast-Paced"],
     aliases: ["Hurry Curry", "HurryCurry", "Hurry Curry Cooking Game"],
     license: "Freeware · Open Source",
     releaseYear: 2021,
