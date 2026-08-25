@@ -1246,6 +1246,16 @@ export const developers: Developer[] = [
     website: "https://ysoccer.sourceforge.io/",
     artHue: 120,
   },
+  {
+    slug: "a327ex",
+    name: "a327ex",
+    tagline: "Crisp arcade mechanics and juicy game feel.",
+    about:
+      "Independent game developer and designer known for fast-paced arcade action, snappy pixel art, and kinetic game feel in titles like Hurry Curry! and BYTEPATH.",
+    location: "Worldwide",
+    website: "https://a327ex.itch.io/",
+    artHue: 38,
+  },
 ];
 
 export const developersBySlug = new Map(developers.map((d) => [d.slug, d]));

@@ -984,4 +984,12 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     url: "https://gamebuddies.io",
     note: "Play directly in any web browser without installation.",
   },
+
+  "hurry-curry": {
+    enabled: true,
+    kind: "external",
+    url: "https://a327ex.itch.io/hurry-curry",
+    exeHint: "hurry_curry",
+    note: "Play directly in the browser or download on itch.io with full native controller support.",
+  },
 };
