@@ -97,6 +97,34 @@ export function gogSlugToQuery(slug: string): string {
     .trim();
 }
 
+function normalizeTitleWords(value: string): string[] {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[™®©]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+}
+
+/**
+ * Does this product's title match the words the URL slug gave us?
+ *
+ * Guard for the single-result fallback below. Requiring most of the slug's
+ * words to appear in the title stops a lone unrelated result from being
+ * accepted just because it was the only thing returned. Two-word queries need
+ * both words, since 1-of-2 falls under the threshold.
+ *
+ * Exported for tests.
+ */
+export function gogTitleMatchesQuery(title: string, query: string): boolean {
+  const queryWords = normalizeTitleWords(query);
+  if (queryWords.length === 0) return false;
+  const titleWords = new Set(normalizeTitleWords(title));
+  const hits = queryWords.filter((w) => titleWords.has(w)).length;
+  return hits / queryWords.length >= 0.6;
+}
+
 async function lookupGog(url: string): Promise<StorePriceLookup> {
   const slug = parseGogSlug(url);
   if (!slug) throw new StorePriceError("That does not look like a GOG product URL.");
@@ -110,7 +138,8 @@ async function lookupGog(url: string): Promise<StorePriceLookup> {
    * below always failed. The same query as words returns exactly one product,
    * and it is the right one.
    */
-  catalog.searchParams.set("query", `like:${gogSlugToQuery(slug)}`);
+  const query = gogSlugToQuery(slug);
+  catalog.searchParams.set("query", `like:${query}`);
   catalog.searchParams.set("productType", "in:game,pack");
   catalog.searchParams.set("countryCode", "US");
   catalog.searchParams.set("locale", "en-US");
@@ -120,6 +149,7 @@ async function lookupGog(url: string): Promise<StorePriceLookup> {
   const json = (await res.json()) as {
     products?: Array<{
       slug?: string;
+      title?: string;
       storeLink?: string;
       price?: {
         finalAmount?: string;
@@ -135,7 +165,24 @@ async function lookupGog(url: string): Promise<StorePriceLookup> {
    * Still an exact slug match: the URL names one product and we price that
    * one, never a same-named edition the search happened to rank first.
    */
-  const hit = products.find((p) => p.slug === slug);
+  let hit = products.find((p) => p.slug === slug);
+
+  /*
+   * GOG's store URL slug is not always its catalog slug. /game/thief_gold is
+   * served by the product whose catalog slug — and whose own storeLink — say
+   * "thief_bundle", so there is nothing in the response to match the URL
+   * against and an exact-slug check can never succeed for it.
+   *
+   * A single result whose title still matches the slug's words is
+   * unambiguous enough to take: the query came from the URL, one product came
+   * back, and it is named what the URL said. Anything less certain — several
+   * results, or one that does not match by title — still errors rather than
+   * guessing at a price.
+   */
+  if (!hit && products.length === 1 && gogTitleMatchesQuery(products[0].title || "", query)) {
+    hit = products[0];
+  }
+
   if (!hit) {
     // Distinguish "GOG knows nothing about this" from "the search found things
     // but not this slug" — the second means the URL is stale or renamed, and

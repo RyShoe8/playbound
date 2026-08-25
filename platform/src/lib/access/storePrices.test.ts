@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gogSlugToQuery } from "./storePrices";
+import { gogSlugToQuery, gogTitleMatchesQuery } from "./storePrices";
 import {
   detectRetailer,
   parseFanaticalSlug,
@@ -79,6 +79,10 @@ describe("store URL parsers", () => {
     ).toBe("the_elder_scrolls_iii_morrowind_goty_edition");
     expect(parseGogSlug("https://www.gog.com/game/morrowind")).toBe("morrowind");
   });
+
+  it("reads a Fanatical slug", () => {
+    expect(parseFanaticalSlug("https://www.fanatical.com/en/game/some-title")).toBe("some-title");
+  });
 });
 
 describe("gogSlugToQuery", () => {
@@ -108,8 +112,44 @@ describe("gogSlugToQuery", () => {
     expect(gogSlugToQuery("morrowind")).toBe("morrowind");
     expect(gogSlugToQuery("")).toBe("");
   });
+});
 
-  it("reads a Fanatical slug", () => {
-    expect(parseFanaticalSlug("https://www.fanatical.com/en/game/some-title")).toBe("some-title");
+describe("gogTitleMatchesQuery", () => {
+  /*
+   * Guards the single-result fallback. GOG's store URL slug is not always its
+   * catalog slug — /game/thief_gold is served by the product whose catalog
+   * slug and storeLink both say "thief_bundle" — so nothing in the response
+   * matches the URL and the title is the only signal left.
+   */
+  it("matches a title through trademark symbols and punctuation", () => {
+    expect(gogTitleMatchesQuery("Thief™ Gold", "thief gold")).toBe(true);
+    /*
+     * "S.T.A.L.K.E.R." normalises to single letters, so the acronym itself
+     * never matches — but the rest of the title carries it past the threshold,
+     * which is the behaviour we want: a heavily punctuated title should still
+     * resolve rather than falling back to an error.
+     */
+    expect(
+      gogTitleMatchesQuery("S.T.A.L.K.E.R.: Shadow of Chornobyl", "stalker shadow of chornobyl")
+    ).toBe(true);
+  });
+
+  it("requires both words of a two-word query", () => {
+    // One of two is 0.5, under the threshold — a lone half-match is not enough
+    // to accept a product the URL never named.
+    expect(gogTitleMatchesQuery("Thief II: The Metal Age", "thief gold")).toBe(false);
+    expect(gogTitleMatchesQuery("Gold Rush", "thief gold")).toBe(false);
+  });
+
+  it("tolerates extra words in the store's title", () => {
+    expect(
+      gogTitleMatchesQuery("Ground Control 2: Operation Exodus Special Edition", "ground control 2 operation exodus")
+    ).toBe(true);
+  });
+
+  it("rejects an unrelated product", () => {
+    expect(gogTitleMatchesQuery("Resident Evil 2", "thief gold")).toBe(false);
+    expect(gogTitleMatchesQuery("", "thief gold")).toBe(false);
+    expect(gogTitleMatchesQuery("Thief Gold", "")).toBe(false);
   });
 });

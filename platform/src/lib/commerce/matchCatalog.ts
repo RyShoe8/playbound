@@ -64,11 +64,46 @@ function existingUrl(game: LeanGame, store: CommerceStoreSlug): string | null {
   return null;
 }
 
+/**
+ * How far ahead of the runner-up a hit must be to win on its own.
+ *
+ * The scorer's tiers are 100 exact / 80 prefix / 60 substring, so 20 is
+ * exactly one tier: a prefix match beats a mere substring match, but two hits
+ * in the same tier never resolve automatically.
+ */
+const CLEAR_WINNER_MARGIN = 20;
+
 export function pickUniqueHit(gameTitle: string, hits: StoreSearchHit[]): StoreSearchHit | null {
   if (hits.length === 0) return null;
-  const exact = hits.filter((h) => scoreTitleMatch(gameTitle, h.title) >= 100);
-  if (exact.length === 1) return exact[0];
-  if (hits.length === 1 && scoreTitleMatch(gameTitle, hits[0].title) >= 80) return hits[0];
+
+  const scored = hits
+    .map((hit) => ({ hit, score: scoreTitleMatch(gameTitle, hit.title) }))
+    .sort((a, b) => b.score - a.score);
+
+  const exact = scored.filter((row) => row.score >= 100);
+  if (exact.length === 1) return exact[0].hit;
+  // Several titles normalise identically — an edition and its base game, say.
+  // Picking one would be a coin flip, so leave it to a person.
+  if (exact.length > 1) return null;
+
+  if (hits.length === 1 && scored[0].score >= 80) return scored[0].hit;
+
+  /*
+   * A clear winner among several candidates.
+   *
+   * Previously anything but a lone exact match or a lone hit was abandoned, so
+   * a search returning the game plus its DLC and a bundle auto-matched
+   * nothing even when one result was obviously right — which is most searches,
+   * and why so much of this ended up being pasted by hand.
+   *
+   * Requiring a full tier of daylight keeps that from becoming guesswork: the
+   * winner has to relate to the title more strongly than the runner-up, not
+   * merely edge it out.
+   */
+  const [top, next] = scored;
+  if (top && top.score >= 80 && (!next || top.score - next.score >= CLEAR_WINNER_MARGIN)) {
+    return top.hit;
+  }
   return null;
 }
 
