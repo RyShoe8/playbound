@@ -6,6 +6,7 @@ import {
   checkAndTeardownExpiredEvents,
 } from "@/lib/events/automatedEventPlannerService";
 import AutomatedEventLog from "@/lib/models/AutomatedEventLog";
+import PlatformEvent from "@/lib/models/PlatformEvent";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
 import { games as staticGames } from "@/lib/data/games";
@@ -25,6 +26,52 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .limit(20)
     .lean();
+
+  // Backfill any pop-up PlatformEvents created recently without an AutomatedEventLog
+  const existingLogEventIds = new Set(
+    logs.map((l) => String(l.eventId)).filter(Boolean)
+  );
+
+  const recentPopUpEvents = await PlatformEvent.find({
+    $or: [
+      { title: { $regex: /^⚡ Pop-Up/i } },
+      { hostType: "playbound", eventType: "game_night" },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
+
+  for (const pe of recentPopUpEvents) {
+    if (!existingLogEventIds.has(String(pe._id))) {
+      try {
+        const createdLog = await AutomatedEventLog.create({
+          gameSlug: pe.gameSlug,
+          editionSlug: pe.editionSlug || null,
+          gameTitle: pe.title.replace(/^⚡\s*Pop-Up\s*Game\s*Night:\s*/i, ""),
+          eventId: pe._id,
+          startedAt: pe.startsAt || pe.createdAt,
+          endsAt: pe.endsAt || null,
+          status:
+            pe.status === "live"
+              ? "live"
+              : pe.status === "registration_open"
+              ? "scheduled"
+              : "completed",
+        });
+        logs.push(createdLog.toObject());
+        existingLogEventIds.add(String(pe._id));
+      } catch {
+        // ignore duplicate
+      }
+    }
+  }
+
+  logs.sort(
+    (a, b) =>
+      new Date(b.startedAt || b.createdAt).getTime() -
+      new Date(a.startedAt || a.createdAt).getTime()
+  );
 
   const candidateSlugs = new Set<string>();
   for (const slug of HOSTABLE_SLUGS) {

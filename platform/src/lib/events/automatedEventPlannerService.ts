@@ -477,6 +477,19 @@ export async function evaluateAndTriggerAutomatedEvent(
       }
     );
 
+    // Record scheduled event in log history
+    await AutomatedEventLog.create({
+      gameSlug: selectedSlug,
+      editionSlug: selectedEditionSlug,
+      gameTitle,
+      partyId,
+      eventId: eventDoc?._id || null,
+      startedAt: startsAt,
+      endsAt,
+      durationMinutes: Math.round(gameDurationHours * 60),
+      status: "scheduled",
+    });
+
     await sendAdvanceDiscordAnnouncement({
       webhookUrl: freshConfig.discord?.webhookUrl,
       gameSlug: selectedSlug,
@@ -566,7 +579,7 @@ export async function evaluateAndTriggerAutomatedEvent(
     startedAt: startsAt,
     endsAt,
     durationMinutes: Math.round(gameDurationHours * 60),
-    status: "completed",
+    status: "live",
   });
 
   return { ok: true, session: newSession };
@@ -619,6 +632,30 @@ export async function checkAndTeardownExpiredEvents(): Promise<{
           await PlatformEvent.findByIdAndUpdate(session.eventId, {
             $set: { status: "live" },
           });
+
+          await AutomatedEventLog.updateOne(
+            { eventId: session.eventId },
+            {
+              $set: {
+                roomId: roomResult.roomId,
+                host: roomResult.host,
+                port: roomResult.port,
+                status: "live",
+              },
+            }
+          );
+        } else if (session.partyId) {
+          await AutomatedEventLog.updateOne(
+            { partyId: session.partyId },
+            {
+              $set: {
+                roomId: roomResult.roomId,
+                host: roomResult.host,
+                port: roomResult.port,
+                status: "live",
+              },
+            }
+          );
         }
 
         await sendSilentDiscordAnnouncement({
@@ -663,6 +700,7 @@ export async function stopAutomatedEvent(
 
   const roomId = config.activeSession.roomId;
   const eventId = config.activeSession.eventId;
+  const partyId = config.activeSession.partyId;
 
   // 1. Delete Room on VPS
   if (roomId) {
@@ -685,10 +723,15 @@ export async function stopAutomatedEvent(
   }
 
   // 3. Update Log
-  if (roomId) {
+  if (roomId || eventId || partyId) {
     try {
+      const filter = roomId
+        ? { roomId }
+        : eventId
+        ? { eventId }
+        : { partyId };
       await AutomatedEventLog.updateOne(
-        { roomId },
+        filter,
         {
           $set: {
             stoppedAt: new Date(),

@@ -13,7 +13,7 @@ export interface AutomatedEventLogDoc extends Document {
   endsAt?: Date;
   stoppedAt?: Date;
   durationMinutes?: number;
-  status: "completed" | "force_stopped" | "failed";
+  status: "scheduled" | "live" | "completed" | "force_stopped" | "failed";
   error?: string;
   createdAt: Date;
 }
@@ -36,7 +36,7 @@ const AutomatedEventLogSchema = new Schema(
     durationMinutes: { type: Number, default: null },
     status: {
       type: String,
-      enum: ["completed", "force_stopped", "failed"],
+      enum: ["scheduled", "live", "completed", "force_stopped", "failed"],
       default: "completed",
       index: true,
     },
