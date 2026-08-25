@@ -55,6 +55,7 @@ const {
   clientConnectArgs,
   hasClientConnectArgs,
   joinsFromInGameMenu,
+  applyConnectTemplates,
   staticLaunchArgs,
 } = require("./services/connectArgs");
 const { createHostService } = require("./services/couch/hostService");
@@ -6159,14 +6160,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       ? [...entry.launchArgs]
       : [];
   if (join?.host && join?.port && Array.isArray(connectArgs)) {
-    for (const template of connectArgs) {
-      args.push(
-        String(template)
-          .replaceAll("{host}", join.host)
-          .replaceAll("{port}", String(join.port))
-          .replaceAll("{name}", join.name || "")
-      );
-    }
+    args.push(...applyConnectTemplates(connectArgs, join, edSlug));
   } else {
     // All-or-nothing: a half-applied connect line is worse than none. See
     // staticLaunchArgs in services/connectArgs.js.

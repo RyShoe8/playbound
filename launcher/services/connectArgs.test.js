@@ -76,7 +76,30 @@ test("every shipped list resolves to a complete join line", () => {
     const args = applyConnectTemplates(templates, { host: "1.2.3.4", port: 1234 });
     assert.equal(args.length, templates.length, `${slug} lost an argument`);
     for (const a of args) {
-      assert.ok(!/\{(host|port|name)\}/.test(a), `${slug} left a placeholder in ${a}`);
+      assert.ok(!/\{(host|port|name|mod)\}/.test(a), `${slug} left a placeholder in ${a}`);
     }
   }
+});
+
+test("openra join substitutes the target mod and address", () => {
+  assert.deepEqual(
+    applyConnectTemplates(CLIENT_CONNECT_ARGS.openra, { host: "147.93.133.235", port: 1234 }),
+    ["Game.Mod=ra", "Launch.Connect=147.93.133.235:1234"]
+  );
+  assert.deepEqual(
+    applyConnectTemplates(
+      CLIENT_CONNECT_ARGS.openra,
+      { host: "147.93.133.235", port: 1234 },
+      "tiberian-dawn"
+    ),
+    ["Game.Mod=cnc", "Launch.Connect=147.93.133.235:1234"]
+  );
+  assert.deepEqual(
+    applyConnectTemplates(
+      CLIENT_CONNECT_ARGS.openra,
+      { host: "147.93.133.235", port: 1234 },
+      "dune-2000"
+    ),
+    ["Game.Mod=d2k", "Launch.Connect=147.93.133.235:1234"]
+  );
 });

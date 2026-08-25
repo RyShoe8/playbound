@@ -123,9 +123,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     repo: "OpenRA/OpenRA",
     assetPattern: "x64-winportable\\.zip$",
     exeHint: "RedAlert|OpenRA",
-    // OpenRA's join setting is Launch.Connect. `Game.Connect` is not a setting
-    // it defines, so it was ignored and the game opened on the main menu.
-    connectArgs: ["Launch.Connect={host}:{port}"],
+    // OpenRA's join setting is Launch.Connect. Game.Mod is required so OpenRA
+    // launches directly into the target mod (e.g. Red Alert) instead of modchooser.
+    connectArgs: ["Game.Mod=ra", "Launch.Connect={host}:{port}"],
   },
   "endless-sky": {
     enabled: true,

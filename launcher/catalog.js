@@ -2497,7 +2497,8 @@ module.exports = [
     "assetPattern": "x64-winportable\\.zip$",
     "exeHint": "RedAlert|OpenRA",
     "connectArgs": [
-      "Game.Connect={host}:{port}"
+      "Game.Mod=ra",
+      "Launch.Connect={host}:{port}"
     ],
     "status": "published",
     "testing": false,

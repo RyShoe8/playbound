@@ -21,11 +21,18 @@
  * address in-game. Those are listed deliberately so callers can tell "we do not
  * support this" apart from "we have not got to it yet", and show the address.
  */
+function openRaModName(editionSlug) {
+  const raw = String(editionSlug || "").toLowerCase();
+  if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
+  if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
+  return "ra";
+}
+
 const CLIENT_CONNECT_ARGS = {
-  // OpenRA reads Launch.Connect from its settings-style argv. `Game.Connect`,
-  // which the catalog recipe used to carry, is not a setting OpenRA defines, so
-  // it was parsed as unknown and the game opened on the main menu instead.
-  openra: ["Launch.Connect={host}:{port}"],
+  // OpenRA reads Launch.Connect from its settings-style argv along with Game.Mod.
+  // Without Game.Mod={mod}, OpenRA starts in modchooser or whatever mod was last open
+  // and the handshake fails with "Server is running an incompatible mod".
+  openra: ["Game.Mod={mod}", "Launch.Connect={host}:{port}"],
   openttd: ["-n", "{host}:{port}"],
   luanti: ["--go", "--address", "{host}", "--port", "{port}"],
   // Without --autoconnect the GTK client only pre-fills the connect dialog
@@ -97,14 +104,15 @@ function joinsFromInGameMenu(slug) {
   return hasClientConnectArgs(slug) && clientConnectArgs(slug) === null;
 }
 
-function applyConnectTemplates(templates, join) {
+function applyConnectTemplates(templates, join, editionSlug) {
+  const mod = join?.mod || openRaModName(editionSlug || join?.edition);
   return templates.map((template) =>
     String(template)
-      .replaceAll("{host}", join.host)
-      .replaceAll("{port}", String(join.port))
-      .replaceAll("{name}", join.name || "")
+      .replaceAll("{host}", join?.host || "")
+      .replaceAll("{port}", String(join?.port || ""))
+      .replaceAll("{name}", join?.name || "")
       // OpenRA needs the mod named or it joins with whatever it last had open.
-      .replaceAll("{mod}", join.mod || "")
+      .replaceAll("{mod}", mod || "ra")
   );
 }
 
