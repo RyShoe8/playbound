@@ -41,10 +41,10 @@ describe("host mode configuration", () => {
   });
 
   it("treats a peer-hosted game as self-hostable without extra configuration", () => {
-    // Freedoom has no dedicated server and never needed one; peer hosting is
+    // Marathon 2 has no dedicated server; peer hosting is
     // the only way it works, so it must not require a verification entry.
-    expect(hostModesFor("freedoom")).toEqual(["self"]);
-    expect(canUseDedicated("freedoom")).toBe(false);
+    expect(hostModesFor("marathon-2")).toEqual(["self"]);
+    expect(canUseDedicated("marathon-2")).toBe(false);
   });
 
   it("gives a VPS-only game just the dedicated mode", () => {
@@ -54,16 +54,16 @@ describe("host mode configuration", () => {
   });
 
   it("offers nothing for a game PlayBound does not run multiplayer for", () => {
-    // Counter-Strike 2 uses Valve's own networking end to end.
-    expect(hostModesFor("counter-strike-2")).toEqual([]);
-    expect(defaultHostMode("counter-strike-2")).toBeNull();
-    expect(hostModeOptions("counter-strike-2")).toEqual([]);
+    // League of Legends uses Riot's own networking end to end.
+    expect(hostModesFor("league-of-legends")).toEqual([]);
+    expect(defaultHostMode("league-of-legends")).toBeNull();
+    expect(hostModeOptions("league-of-legends")).toEqual([]);
   });
 
   it("prefers self-hosting when the game supports it", () => {
     // Safe because the party overlay carries reachability; see hostModes.ts.
     expect(defaultHostMode("warzone-2100")).toBe("self");
-    expect(defaultHostMode("freedoom")).toBe("self");
+    expect(defaultHostMode("marathon-2")).toBe("self");
     // Falls back rather than returning nothing when only the VPS can host.
     expect(defaultHostMode("ysoccer")).toBe("dedicated");
   });
@@ -79,7 +79,7 @@ describe("host mode configuration", () => {
 
   it("only offers a picker when there is a real choice", () => {
     // One option is not a choice; the UI hides the control in that case.
-    expect(hostModeOptions("freedoom").length).toBe(1);
+    expect(hostModeOptions("ysoccer").length).toBe(1);
     expect(hostModeOptions("warzone-2100").length).toBe(2);
   });
 
@@ -98,7 +98,7 @@ describe("host mode configuration", () => {
   });
 
   it("has no port for a game that cannot be self-hosted at all", () => {
-    expect(publicLobbyPortFor("counter-strike-2")).toBeNull();
+    expect(publicLobbyPortFor("league-of-legends")).toBeNull();
   });
 
   /*

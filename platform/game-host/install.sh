@@ -49,17 +49,17 @@ apt-get install -y --no-install-recommends \
   0ad
 
 # Optional on some mirrors — do not fail the whole install if missing.
-# Mr. Boom has no dedicated server binary (RetroArch netplay only); not VPS-hostable.
+apt-get install -y --no-install-recommends wesnoth-server wesnoth flightgear || true
+
+# SteamCMD & Source Dedicated Server (TF2 / CS2) 32-bit & 64-bit runtime libraries
+apt-get install -y --no-install-recommends \
+  lib32gcc-s1 lib32stdc++6 libtinfo5 libncurses5 libcurl4-gnutls-dev:i386 \
+  || apt-get install -y --no-install-recommends lib32gcc-s1 lib32stdc++6 || true
 
 # ET: Legacy etlded runtime libraries (Ubuntu 24.04).
 apt-get install -y --no-install-recommends \
   libsdl2-2.0-0 libcurl4 libopenal1 libjpeg-turbo8 libpng16-16 libfreetype6 zlib1g \
   || echo "WARN: some ET runtime packages unavailable"
-
-# Wesnoth uses its own lobby infrastructure and its old `wesnoth-server`
-# package is not available on Ubuntu 24.04. Do not let an optional game
-# server package prevent the agent itself (including archive transfers) from
-# being updated.
 
 # Luanti was still Minetest on Ubuntu 24.04.
 if apt-cache show luanti-server >/dev/null 2>&1; then

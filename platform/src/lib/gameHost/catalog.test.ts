@@ -22,32 +22,33 @@ describe("game host catalog", () => {
     expect(isHostableGame("openarena")).toBe(true);
     expect(isHostableGame("ysoccer")).toBe(true);
     expect(isHostableGame("xonotic")).toBe(true);
+    expect(isHostableGame("unvanquished")).toBe(true);
+    expect(isHostableGame("battle-for-wesnoth")).toBe(true);
+    expect(isHostableGame("team-fortress-2")).toBe(true);
+    expect(isHostableGame("tf2")).toBe(true);
+    expect(isHostableGame("counter-strike-2")).toBe(true);
+    expect(isHostableGame("cs2")).toBe(true);
+    expect(isHostableGame("veloren")).toBe(true);
+    expect(isHostableGame("freedoom")).toBe(true);
+    expect(isHostableGame("space-station-14")).toBe(true);
+    expect(isHostableGame("zero-k")).toBe(true);
+    expect(isHostableGame("flightgear")).toBe(true);
     expect(isHostableGame("mrboom")).toBe(false);
 
     /*
      * The catalog publishes 0 A.D. as `0ad`, while this catalog and the
-     * agent's recipes.js both call it `0-ad`. Both spellings must resolve:
-     * provisionPartyHost looks the game up by the party's catalog slug, so
-     * while only `0-ad` resolved, every 0 A.D. party fell back to no
-     * dedicated server on a game the VPS is fully configured to run —
-     * recipes.js:320 has the recipe, binaries and all.
-     *
-     * This previously asserted `0ad` was *not* hostable, grouped with
-     * lobby-only titles, which is what kept the mismatch invisible.
+     * agent's recipes.js both call it `0-ad`. Both spellings must resolve.
      */
     expect(isHostableGame("0-ad")).toBe(true);
     expect(isHostableGame("0ad")).toBe(true);
   });
 
   it("does not host closed platforms or lobby-only titles", () => {
-    expect(isHostableGame("counter-strike-2")).toBe(false);
     expect(isHostableGame("league-of-legends")).toBe(false);
     expect(isHostableGame("beyond-all-reason")).toBe(false);
     expect(isHostableGame("keeperfx")).toBe(false);
-    expect(isHostableGame("battle-for-wesnoth")).toBe(false);
     expect(isHostableGame("marathon-2")).toBe(false);
-    expect(isHostableGame("flightgear")).toBe(false);
-    expect(isHostableGame("freedoom")).toBe(false);
+    expect(isHostableGame("holocure")).toBe(false);
     expect(isHostableGame("")).toBe(false);
     expect(isHostableGame(null)).toBe(false);
   });

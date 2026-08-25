@@ -457,12 +457,17 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "freedoom",
     title: "Freedoom",
     tier: "tier1_improved",
-    adapterType: "direct-ip",
+    adapterType: "managed-server",
     protocol: "doom",
+    host: {
+      port: 10666,
+      protocol: "udp",
+      binaryHint: "odasrv",
+    },
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
-    notes: "Zandronum and GZDoom client/server party connect supporting up to 64 players with full gamepad support.",
+    notes: "Odamex, Zandronum and GZDoom client/server party connect supporting up to 64 players with full gamepad support.",
   },
 
   freeciv: {
@@ -738,8 +743,13 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "team-fortress-2",
     title: "Team Fortress 2",
     tier: "tier2_automated_server",
-    adapterType: "direct-ip",
-    protocol: "custom",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 27015,
+      protocol: "udp",
+      binaryHint: "srcds_run",
+    },
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
@@ -942,10 +952,18 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
   "counter-strike-2": {
     gameSlug: "counter-strike-2",
     title: "Counter-Strike 2",
-    tier: "tier3_official",
-    adapterType: "official",
-    protocol: "official",
-    notes: "Official Steam matchmaking & servers.",
+    tier: "tier2_automated_server",
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 27030,
+      protocol: "udp",
+      binaryHint: "cs2.sh",
+    },
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    notes: "Automated VPS dedicated server via SRCDS + direct in-game +connect.",
   },
 
   valorant: {

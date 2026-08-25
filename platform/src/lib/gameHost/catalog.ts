@@ -134,26 +134,84 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 27959,
     protocol: "udp",
   },
+  "team-fortress-2": {
+    slug: "team-fortress-2",
+    title: "Team Fortress 2",
+    defaultPort: 27015,
+    portEnd: 27025,
+    protocol: "udp",
+  },
+  "counter-strike-2": {
+    slug: "counter-strike-2",
+    title: "Counter-Strike 2",
+    defaultPort: 27030,
+    portEnd: 27040,
+    protocol: "udp",
+  },
+  unvanquished: {
+    slug: "unvanquished",
+    title: "Unvanquished",
+    defaultPort: 27965,
+    portEnd: 27975,
+    protocol: "udp",
+  },
+  "battle-for-wesnoth": {
+    slug: "battle-for-wesnoth",
+    title: "The Battle for Wesnoth",
+    defaultPort: 15000,
+    portEnd: 15020,
+    protocol: "tcp",
+  },
+  veloren: {
+    slug: "veloren",
+    title: "Veloren",
+    defaultPort: 14004,
+    portEnd: 14014,
+    protocol: "both",
+  },
+  freedoom: {
+    slug: "freedoom",
+    title: "Freedoom",
+    defaultPort: 10666,
+    portEnd: 10686,
+    protocol: "udp",
+  },
+  "space-station-14": {
+    slug: "space-station-14",
+    title: "Space Station 14",
+    defaultPort: 1212,
+    portEnd: 1222,
+    protocol: "udp",
+  },
+  "zero-k": {
+    slug: "zero-k",
+    title: "Zero-K",
+    defaultPort: 8452,
+    portEnd: 8462,
+    protocol: "udp",
+  },
+  flightgear: {
+    slug: "flightgear",
+    title: "FlightGear",
+    defaultPort: 5000,
+    portEnd: 5010,
+    protocol: "udp",
+  },
 };
 
 export const HOSTABLE_SLUGS = Object.keys(HOSTABLE_GAMES);
 
 /**
  * Catalog slugs that differ from the slug the VPS knows the game by.
- *
- * 0 A.D. is published as `0ad`, while this catalog and the agent's recipes.js
- * both call it `0-ad`. provisionPartyHost looks the party's game up by its
- * catalog slug, so the lookup missed and every 0 A.D. party silently fell back
- * to no dedicated server — on a game the VPS was fully configured to run. The
- * server browser sidestepped it by registering its provider under `0ad`, which
- * is why the mismatch survived: servers listed fine, only hosting broke.
- *
- * Aliasing rather than renaming, because the agent on the box already answers
- * to `0-ad` and this is deployed by hand.
  */
 const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   "0ad": "0-ad",
   etlegacy: "wolfenstein-enemy-territory",
+  tf2: "team-fortress-2",
+  cs2: "counter-strike-2",
+  wesnoth: "battle-for-wesnoth",
+  doom: "freedoom",
+  ss14: "space-station-14",
 };
 
 export function isHostableGame(slug: string | null | undefined): boolean {
