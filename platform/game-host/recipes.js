@@ -463,6 +463,7 @@ export const recipes = {
     protocol: "both",
     binaries: gameBin("veloren", ["veloren-server-cli", "veloren-server"]),
     args: () => [],
+    spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
   },
   freedoom: {
     portStart: 10666,
@@ -471,13 +472,13 @@ export const recipes = {
     binaries: gameBin("freedoom", [
       "odasrv",
       "odamex-server",
-      "odamex",
       "zandronum-server",
       "chocolate-server",
       "chocolate-doom-server",
       "crispy-server",
       "prboom-plus-game-server",
     ]),
+    spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
       if (isChoc) {
