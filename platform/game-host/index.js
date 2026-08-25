@@ -388,19 +388,29 @@ function freePort(slug, port) {
 
 function stopRoom(room) {
   if (!room) return;
-  if (room.child && !room.child.killed) {
+  const pid = room.child?.pid || room.pid;
+  if (pid) {
     try {
-      room.child.kill("SIGTERM");
-      setTimeout(() => {
-        try {
-          if (room.child && !room.child.killed) room.child.kill("SIGKILL");
-        } catch {
-          /* already gone */
-        }
-      }, 4000).unref();
+      // Kill entire process tree (all subprocesses spawned by wrapper script or engine)
+      process.kill(-pid, "SIGTERM");
     } catch {
-      /* already gone */
+      try {
+        room.child?.kill("SIGTERM");
+      } catch {
+        /* already dead */
+      }
     }
+    setTimeout(() => {
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        try {
+          room.child?.kill("SIGKILL");
+        } catch {
+          /* already dead */
+        }
+      }
+    }, 2000).unref();
   }
   freePort(room.gameSlug, room.port);
   rooms.delete(room.roomId);
@@ -489,6 +499,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     cwd,
     env: spawnEnv,
     stdio: ["pipe", "pipe", "pipe"],
+    detached: true,
   });
 
   const roomId = `room_${crypto.randomBytes(8).toString("hex")}`;
