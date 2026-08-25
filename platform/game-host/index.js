@@ -391,7 +391,7 @@ function stopRoom(room) {
   const pid = room.child?.pid || room.pid;
   if (pid) {
     try {
-      // Kill entire process tree (all subprocesses spawned by wrapper script or engine)
+      // Send SIGTERM first to process group
       process.kill(-pid, "SIGTERM");
     } catch {
       try {
@@ -400,6 +400,14 @@ function stopRoom(room) {
         /* already dead */
       }
     }
+    try {
+      // Also send direct SIGTERM to child
+      room.child?.kill("SIGTERM");
+    } catch {
+      /* already dead */
+    }
+
+    // Force SIGKILL after 500ms to guarantee no zombie/hung threads consume CPU
     setTimeout(() => {
       try {
         process.kill(-pid, "SIGKILL");
@@ -410,7 +418,7 @@ function stopRoom(room) {
           /* already dead */
         }
       }
-    }, 2000).unref();
+    }, 500).unref();
   }
   freePort(room.gameSlug, room.port);
   rooms.delete(room.roomId);
@@ -608,6 +616,18 @@ async function runTestSpawn(gameSlug) {
 
   const port = result.room?.port ?? null;
   stopRoom(result.room);
+  if (result.room?.child?.pid) {
+    try {
+      process.kill(-result.room.child.pid, "SIGKILL");
+    } catch {
+      /* already dead */
+    }
+    try {
+      result.room.child.kill("SIGKILL");
+    } catch {
+      /* already dead */
+    }
+  }
   recordSpawnTest(gameSlug, { ok: true, durationMs, port });
   return { ok: true, durationMs, port };
 }
