@@ -535,15 +535,30 @@ export const recipes = {
     portEnd: 2330,
     protocol: "udp",
     binaries: gameBin("re-volt-rvgl", ["rvgl.64", "rvgl.32", "rvgl", "rvgl.exe", "rvgl-server"]),
-    spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
-    args: (port, ctx) => [
-      "-dedicated",
-      "-lobby",
-      "-port",
-      String(port),
-      "-name",
-      ctx.name || "PlayBound RVGL",
-    ],
+    resolveBinary: (candidates) => {
+      const realBin = firstExisting(candidates);
+      if (!realBin) return null;
+      if (fs.existsSync("/usr/bin/xvfb-run")) return "/usr/bin/xvfb-run";
+      return realBin;
+    },
+    args: (port, ctx, binary) => {
+      const realBin = firstExisting(gameBin("re-volt-rvgl", ["rvgl.64", "rvgl.32", "rvgl", "rvgl.exe", "rvgl-server"]));
+      const baseArgs = [
+        "-dedicated",
+        "-lobby",
+        "-port",
+        String(port),
+        "-name",
+        ctx.name || "PlayBound RVGL",
+        "-nosound",
+      ];
+      if (binary && binary.endsWith("xvfb-run") && realBin) {
+        return ["-a", realBin, ...baseArgs];
+      }
+      return baseArgs;
+    },
+    cwd: () => path.join(GAMES_ROOT, "re-volt-rvgl"),
+    spawnEnv: () => ({ ALSOFT_DRIVERS: "null", SDL_AUDIODRIVER: "dummy" }),
   },
 };
 
