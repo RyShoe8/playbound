@@ -653,18 +653,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "LAN / IPX direct connect session.",
   },
 
-  openlara: {
-    gameSlug: "openlara",
-    title: "OpenLara",
-    tier: "tier1_improved",
-    adapterType: "direct-ip",
-    protocol: "custom",
-    client: {
-      inGameJoinPrompt: true,
-    },
-    notes: "P2P WebRTC multiplayer room coordination.",
-  },
-
   // ─── TIER 2: Automated Server Infrastructure ─────────────────────────────
   "space-station-14": {
     gameSlug: "space-station-14",

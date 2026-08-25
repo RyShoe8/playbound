@@ -11,6 +11,13 @@ export const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
   alephone: "marathon-2",
   keeperfx: "dungeon-keeper-gold",
   "dungeon-keeper": "dungeon-keeper-gold",
+  /*
+   * Three published mods carry baseGameSlug "gradius-remake" while the catalog
+   * game is titled "Gradius Remake" under the slug "gradius". Without the
+   * alias they hang off a base game that does not exist, so they never appear
+   * on the game they belong to.
+   */
+  "gradius-remake": "gradius",
 };
 
 /** Map a mod/edition slug alias to the canonical CatalogGame.slug. */

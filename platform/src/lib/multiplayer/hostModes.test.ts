@@ -121,11 +121,19 @@ describe("host mode configuration", () => {
 });
 
 describe("orphaned adapters", () => {
+  /*
+   * Deliberately not pinned to a specific game. This first asserted on
+   * "openlara" — the case that prompted the check, after it became the engine
+   * behind Tomb Raider 1+2+3 — and broke the moment that adapter was cleaned
+   * up, which is the wrong reason for a test to fail. Any real adapter absent
+   * from the catalog should report.
+   */
   it("reports an adapter whose game left the catalog", () => {
-    // OpenLara became the engine behind Tomb Raider 1+2+3 and lost its own
-    // catalog entry; its adapter stayed behind reading as live config.
     const live = ["warzone-2100", "freedoom"];
-    expect(findOrphanedAdapters(live)).toContain("openlara");
+    const orphans = findOrphanedAdapters(live);
+    expect(orphans).toContain("mrboom");
+    expect(orphans).not.toContain("warzone-2100");
+    expect(orphans).not.toContain("freedoom");
   });
 
   it("does not report deliberate aliases or folded-in editions", () => {
