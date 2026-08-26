@@ -8,8 +8,7 @@ import { Play, Search } from "lucide-react";
 import { Avatar } from "@/components/ui/bits";
 import { SignOutButton } from "@/components/SignOutButton";
 import { useTelemetry } from "@/lib/telemetry";
-import { GameCompatibilityToggle } from "@/components/GameCompatibilityToggle";
-import { DiscoveryModeToggle } from "@/components/DiscoveryModeToggle";
+import { MobileCatalogPreferences } from "@/components/shell/MobileCatalogPreferences";
 import { MobileFriendsButton } from "@/components/friends/MobileFriendsButton";
 import { NotificationBell } from "@/components/shell/NotificationBell";
 import { BackButton } from "@/components/shell/BackButton";
@@ -82,8 +81,7 @@ export function TopBar() {
         </Suspense>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <DiscoveryModeToggle variant="topbar" className="hidden md:flex lg:hidden" />
-          <GameCompatibilityToggle variant="topbar" className="hidden md:flex lg:hidden" />
+          <MobileCatalogPreferences className="lg:hidden" />
           {session?.user ? (
             <>
               <NotificationBell />
