@@ -154,6 +154,7 @@ function toGame(doc: LeanGame): Game {
     status,
     platforms: (doc.platforms as string[])?.length ? (doc.platforms as string[]) : (seed?.platforms ?? []),
     features: (doc.features as string[])?.length ? (doc.features as string[]) : (seed?.features ?? []),
+    maxPlayers: typeof doc.maxPlayers === "number" ? doc.maxPlayers : null,
     launchMethods: (doc.launchMethods as LaunchMethod[])?.length ? (doc.launchMethods as LaunchMethod[]) : (seed?.launchMethods ?? ["install"]),
     browserPlayable: Boolean(doc.browserPlayable ?? seed?.browserPlayable),
     steamDeck: Boolean(doc.steamDeck ?? seed?.steamDeck),
