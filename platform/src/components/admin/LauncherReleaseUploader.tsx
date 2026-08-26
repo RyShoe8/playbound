@@ -41,13 +41,17 @@ export function LauncherReleaseUploader() {
   async function pollUntilVerified(artifactId: string): Promise<{ ok: boolean; detail?: string }> {
     for (let i = 0; i < 180; i += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 2000));
-      const res = await fetch(`/api/admin/download-mirrors/artifacts/${artifactId}`);
+      const res = await fetch(`/api/admin/download-mirrors/artifacts/${encodeURIComponent(artifactId)}`);
       const body = await res.json().catch(() => null);
       const vpsStatus = body?.artifact?.vpsStatus;
       if (vpsStatus === "verified") return { ok: true };
       if (vpsStatus === "missing") return { ok: false, detail: body?.artifact?.vpsStatusMessage };
     }
-    return { ok: false, detail: "Timed out waiting for the VPS to confirm the copy." };
+    return {
+      ok: false,
+      detail:
+        "Timed out waiting for the VPS to confirm the copy. Refresh this page — if the row shows On VPS, Promote to R2. If still Uploading, wait or retry the upload.",
+    };
   }
 
   async function selected(file: File) {

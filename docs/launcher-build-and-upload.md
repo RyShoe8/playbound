@@ -70,7 +70,26 @@ With `latest.yml` present and `admin.yml` absent, that writes:
 - `launcher/PlayBound-Setup-<version>.exe.blockmap`
 - `launcher/PlayBound-Launcher-Setup.exe` (site download alias)
 
-No `--promote-prod` flag is needed for a signed build.
+Pass **`--prod`** explicitly. The upload script defaults to the admin channel; without `--prod` a signed build still lands only on `admin.yml` / `PlayBound-Launcher-Setup-Admin.exe`.
+
+### VPS archive + R2 hot cache (required for site downloads)
+
+Blob is the updater/CDN object store. **Site downloads that go through the R2 hot cache need the installer on the VPS file system first.**
+
+`upload-launcher.ts` tries to register the artifact and archive it to the VPS, but that step needs `MONGODB_URI` and `GAME_HOST_SECRET`. Both are Vercel Sensitive env vars — `vercel env pull` cannot retrieve them — so the CLI almost always logs:
+
+```text
+Could not register the mirror artifact (upload itself succeeded): …
+```
+
+That is expected. Finish the release on production admin:
+
+1. Open **[/admin/download-mirrors](https://playbound.club/admin/download-mirrors)**.
+2. Use **Upload signed launcher** (`LauncherReleaseUploader`) with the built `PlayBound-Setup-<version>.exe` (same file you just signed).
+3. Wait until status is **On the VPS** / `vpsStatus: verified`.
+4. In the cache table, **Promote to R2** so the hot cache is seeded.
+
+Do not treat a Blob-only upload as a complete production ship for the site installer path.
 
 ### eSigner / store signing failed
 
@@ -170,6 +189,7 @@ The site env var `NEXT_PUBLIC_LAUNCHER_DOWNLOAD_URL` should already point at the
 - [ ] Relevant code committed/pushed if the user asked
 - [ ] Tried **signed** `dist:prod` unless the user asked for unsigned or eSigner is known-broken
 - [ ] Did not burn extra `dist:prod` attempts after a grant/token error
-- [ ] Upload run from `platform/`
+- [ ] Upload run from `platform/` with **`--prod`** for a public signed release
+- [ ] **VPS + R2:** after Blob upload, tell the user (or use) **Upload signed launcher** on `/admin/download-mirrors`, then **Promote to R2** — CLI VPS archive usually fails without Sensitive env
 - [ ] Unsigned public promote used `--promote-prod --i-know-its-unsigned` and the SmartScreen / auto-update caveat was stated
 - [ ] Returned the versioned + alias URLs from the upload script
