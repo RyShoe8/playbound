@@ -294,6 +294,86 @@ export async function sendSilentDiscordAnnouncement(params: {
 }
 
 /**
+ * Weighted random selection with smart recency & genre diversity balancing.
+ * Prevents identical games or identical genres from being picked repeatedly in sequence.
+ */
+export function pickDiverseAutomatedGame(
+  candidates: AutomatedEventGameConfig[],
+  recentGameSlugs: string[] = [],
+  genresBySlug: Map<string, string[]> = new Map()
+): AutomatedEventGameConfig | null {
+  if (!candidates || candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Recency penalty decay weights for the last 4 matches
+  const recentDecay = [1.0, 0.6, 0.35, 0.15];
+  const genreRecencyPenalties = new Map<string, number>();
+
+  recentGameSlugs.slice(0, 4).forEach((slug, idx) => {
+    const decay = recentDecay[idx] ?? 0.1;
+    const gList = genresBySlug.get(slug) || [];
+    for (const g of gList) {
+      const normalized = g.toLowerCase().trim();
+      genreRecencyPenalties.set(
+        normalized,
+        (genreRecencyPenalties.get(normalized) || 0) + decay
+      );
+    }
+  });
+
+  const lastSlug = recentGameSlugs[0] || null;
+  const secondLastSlug = recentGameSlugs[1] || null;
+
+  // Calculate dynamic weight for each candidate in the pool
+  const scoredCandidates = candidates.map((item) => {
+    const baseWeight = Math.max(0.1, Number(item.weight) || 1);
+    let multiplier = 1.0;
+
+    // 1. Same-game repetition penalty
+    if (candidates.length >= 3 && item.slug === lastSlug) {
+      multiplier *= 0.05; // Heavily penalize picking the exact game just played
+    } else if (candidates.length >= 2 && item.slug === lastSlug) {
+      multiplier *= 0.2;
+    } else if (candidates.length >= 4 && item.slug === secondLastSlug) {
+      multiplier *= 0.35; // Moderate penalty for game played 2 matches ago
+    }
+
+    // 2. Genre diversity penalty (avoids strings of RTS, FPS, etc.)
+    const itemGenres = genresBySlug.get(item.slug) || [];
+    if (itemGenres.length > 0) {
+      let maxGenrePenalty = 0;
+      for (const g of itemGenres) {
+        const normalized = g.toLowerCase().trim();
+        const p = genreRecencyPenalties.get(normalized) || 0;
+        if (p > maxGenrePenalty) maxGenrePenalty = p;
+      }
+      if (maxGenrePenalty > 0) {
+        multiplier *= 1 / (1 + maxGenrePenalty * 2.5);
+      }
+    }
+
+    const finalWeight = Math.max(0.01, baseWeight * multiplier);
+    return { item, weight: finalWeight };
+  });
+
+  // Roulette-wheel weighted selection
+  const totalWeight = scoredCandidates.reduce((acc, curr) => acc + curr.weight, 0);
+  if (totalWeight <= 0) {
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  let randomPoint = Math.random() * totalWeight;
+  for (const { item, weight } of scoredCandidates) {
+    if (randomPoint <= weight) {
+      return item;
+    }
+    randomPoint -= weight;
+  }
+
+  return scoredCandidates[scoredCandidates.length - 1].item;
+}
+
+/**
  * Evaluates and schedules or triggers an automated game event.
  */
 export async function evaluateAndTriggerAutomatedEvent(
@@ -388,9 +468,44 @@ export async function evaluateAndTriggerAutomatedEvent(
   let gameDurationHours = freshConfig.defaultDurationHours || 2;
 
   if (!selectedSlug) {
-    const pool = enabledGames;
-    const randomIndex = Math.floor(Math.random() * pool.length);
-    const chosen = pool[randomIndex];
+    // Fetch recent event history to avoid duplicate games & same-genre streaks
+    const recentLogs = await AutomatedEventLog.find({
+      status: { $in: ["completed", "live", "scheduled", "force_stopped"] },
+    })
+      .sort({ startedAt: -1 })
+      .limit(8)
+      .select("gameSlug startedAt")
+      .lean();
+
+    const recentGameSlugs = recentLogs
+      .map((l) => (l as { gameSlug?: string }).gameSlug)
+      .filter(Boolean) as string[];
+
+    // Fetch genres for candidates and recent games
+    const allRelevantSlugs = Array.from(
+      new Set([...enabledGames.map((g) => g.slug), ...recentGameSlugs])
+    );
+    const dbGamesForGenres = await CatalogGame.find({ slug: { $in: allRelevantSlugs } })
+      .select("slug genres")
+      .lean();
+
+    const genresBySlug = new Map<string, string[]>();
+    for (const g of dbGamesForGenres) {
+      if ((g as { slug?: string }).slug) {
+        genresBySlug.set(
+          (g as { slug: string }).slug,
+          ((g as { genres?: string[] }).genres || []).map((x) => x.toLowerCase().trim())
+        );
+      }
+    }
+    for (const sg of staticGames) {
+      if (!genresBySlug.has(sg.slug) && sg.genres) {
+        genresBySlug.set(sg.slug, sg.genres.map((x) => x.toLowerCase().trim()));
+      }
+    }
+
+    const chosen =
+      pickDiverseAutomatedGame(enabledGames, recentGameSlugs, genresBySlug) || enabledGames[0];
     selectedSlug = chosen.slug;
     selectedEditionSlug = chosen.editionSlug || null;
     selectedEditionName = chosen.editionName || null;
