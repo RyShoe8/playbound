@@ -146,12 +146,12 @@ export default async function RootLayout({
             <PopoutDetector />
             <CompatibilityShell accessTiers={accessTiers}>
               <div className="shell-sidebar"><Sidebar /></div>
-              <div className="shell-main flex min-h-screen flex-col pb-16 lg:pb-0 lg:pl-60">
-                <div className="shell-topbar"><TopBar /></div>
-                <main className="flex-1">{children}</main>
-                <div className="shell-footer"><Footer /></div>
+              <div className="shell-main flex min-h-screen min-w-0 max-w-full flex-col overflow-x-hidden pb-16 lg:pb-0 lg:pl-60">
+                <div className="shell-topbar w-full max-w-full"><TopBar /></div>
+                <main className="flex-1 min-w-0 max-w-full">{children}</main>
+                <div className="shell-footer w-full max-w-full"><Footer /></div>
               </div>
-              <div className="shell-mobilenav"><MobileNav /></div>
+              <div className="shell-mobilenav w-full max-w-full"><MobileNav /></div>
             </CompatibilityShell>
           </TelemetryProvider>
         </SessionProvider>

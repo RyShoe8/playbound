@@ -51,7 +51,7 @@ export function MobileNav() {
      */
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 grid overflow-hidden border-t border-border bg-sidebar/95 backdrop-blur-md lg:hidden",
+        "fixed inset-x-0 bottom-0 z-40 grid w-full max-w-[100vw] overflow-hidden border-t border-border bg-sidebar/95 backdrop-blur-md lg:hidden",
         isAdmin ? "grid-cols-7" : "grid-cols-6"
       )}
     >
