@@ -16,8 +16,23 @@ export const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
    * game is titled "Gradius Remake" under the slug "gradius". Without the
    * alias they hang off a base game that does not exist, so they never appear
    * on the game they belong to.
+   *
+   * TODO: unresolved conflict (2026-08-26) — a separate uncommitted batch of
+   * work pointed this the other way ("gradius": "gradius-remake"), reasoning
+   * from games.ts, whose seed slug has always been "gradius-remake". Per
+   * AGENTS.md the live database is authoritative over that seed file and can
+   * disagree with it; this line was verified against the live catalog when it
+   * was written, but the game is unpublished right now (both slugs 404 and
+   * neither is in sitemap.xml), so it can't be re-verified from here. Confirm
+   * the real slug in the admin panel before touching this either way.
    */
   "gradius-remake": "gradius",
+  "metal-slug": "metal-slug-remake",
+  "re-volt": "re-volt-rvgl",
+  revolt: "re-volt-rvgl",
+  rvgl: "re-volt-rvgl",
+  wipeout: "wipeout-rewrite",
+  "wipeout-phantom-edition": "wipeout-rewrite",
 };
 
 /** Map a mod/edition slug alias to the canonical CatalogGame.slug. */

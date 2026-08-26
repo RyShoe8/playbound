@@ -9,6 +9,17 @@ describe("catalogGameAliases", () => {
   it("maps keeperfx and alephone to canonical catalog games", () => {
     expect(canonicalCatalogGameSlug("keeperfx")).toBe("dungeon-keeper-gold");
     expect(canonicalCatalogGameSlug("alephone")).toBe("marathon-2");
+    expect(canonicalCatalogGameSlug("gradius-remake")).toBe("gradius");
+    expect(canonicalCatalogGameSlug("gradius")).toBe("gradius");
+    expect(canonicalCatalogGameSlug("metal-slug")).toBe("metal-slug-remake");
+    expect(canonicalCatalogGameSlug("metal-slug-remake")).toBe("metal-slug-remake");
+    expect(canonicalCatalogGameSlug("re-volt")).toBe("re-volt-rvgl");
+    expect(canonicalCatalogGameSlug("revolt")).toBe("re-volt-rvgl");
+    expect(canonicalCatalogGameSlug("rvgl")).toBe("re-volt-rvgl");
+    expect(canonicalCatalogGameSlug("re-volt-rvgl")).toBe("re-volt-rvgl");
+    expect(canonicalCatalogGameSlug("wipeout")).toBe("wipeout-rewrite");
+    expect(canonicalCatalogGameSlug("wipeout-phantom-edition")).toBe("wipeout-rewrite");
+    expect(canonicalCatalogGameSlug("wipeout-rewrite")).toBe("wipeout-rewrite");
     expect(canonicalCatalogGameSlug("mindustry")).toBe("mindustry");
   });
 
