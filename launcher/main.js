@@ -7459,6 +7459,7 @@ $paths = @(
   'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
 )
 $items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation -or $_.UninstallString }
+function Normalize($s) { ([string]$s).ToLower() -replace '[^a-z0-9]', '' }
 $hit = $null
 foreach ($title in $titles) {
   if (-not $title) { continue }
@@ -7466,6 +7467,24 @@ foreach ($title in $titles) {
     Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
     Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
   if ($hit) { break }
+}
+if (-not $hit) {
+  # Installer-generated DisplayNames routinely drop punctuation an exact/prefix
+  # match needs — "GoldenEye: Source" ships as an NSIS installer whose
+  # DisplayName has no colon, so this normalized substring pass catches title
+  # variants the strict pass above misses without risking a short/generic
+  # title matching something unrelated (titles here are always a full game
+  # name, not a bare word).
+  foreach ($title in $titles) {
+    if (-not $title -or $title.Length -lt 4) { continue }
+    $needle = Normalize $title
+    if (-not $needle) { continue }
+    $hit = $items | Where-Object {
+      $hay = Normalize $_.DisplayName
+      $hay -and ($hay.Contains($needle) -or $needle.Contains($hay))
+    } | Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon, UninstallString, QuietUninstallString
+    if ($hit) { break }
+  }
 }
 if (-not $hit -and $bases.Count -gt 0) {
   $hit = $items | Where-Object {
