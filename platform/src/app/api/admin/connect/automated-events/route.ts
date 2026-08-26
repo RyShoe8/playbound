@@ -91,8 +91,8 @@ export async function GET() {
   const slugsArr = Array.from(candidateSlugs);
 
   const [dbGames, dbEditions] = await Promise.all([
-    CatalogGame.find({ masterCopy: true })
-      .select("slug title coverImage launchMethods features")
+    CatalogGame.find({ slug: { $in: slugsArr } })
+      .select("slug title coverImage launchMethods features status")
       .lean(),
     Edition.find({
       gameSlug: { $in: slugsArr },
