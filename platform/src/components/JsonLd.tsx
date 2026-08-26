@@ -273,7 +273,11 @@ export function itemListSchema(
         description: game.tagline,
         applicationCategory: "Game",
         operatingSystem: game.platforms.join(", "),
-        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        offers: {
+          "@type": "Offer",
+          price: (gamePriceCents(game) / 100).toFixed(2),
+          priceCurrency: game.access?.currency ?? "USD",
+        },
       },
     })),
   };

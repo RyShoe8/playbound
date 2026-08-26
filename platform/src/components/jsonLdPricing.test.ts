@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { videoGameSchema } from "@/components/JsonLd";
+import { itemListSchema, videoGameSchema } from "@/components/JsonLd";
 import type { Game } from "@/lib/data/types";
 import type { GameAccess } from "@/lib/access/types";
 
@@ -10,7 +10,9 @@ import type { GameAccess } from "@/lib/access/types";
  * catalog game. That was a correct invariant while the catalog was free-only,
  * and becomes a false claim to search engines the moment a paid game is
  * published — the one kind of wrong that is served to third parties rather
- * than just shown on screen.
+ * than just shown on screen. videoGameSchema was fixed first; itemListSchema,
+ * which builds the same VideoGame shape for /collections pages, carried the
+ * identical hardcoded zero and is covered below.
  */
 
 const base = {
@@ -128,5 +130,45 @@ describe("paid games", () => {
     const { free, offer } = offerOf(engine);
     expect(free).toBe(false);
     expect(offer.price).toBe("5.99");
+  });
+});
+
+describe("collection ItemList pricing", () => {
+  /*
+   * itemListSchema builds the VideoGame entries a /collections page emits and
+   * hardcoded every one of them to price "0" — the same false-zero-price
+   * violation as videoGameSchema used to have, just in the function next to it
+   * rather than the one already covered above. A collection containing a
+   * paid title asserted, to every crawler, that it was free.
+   */
+  const paid = withAccess({
+    priceType: "PAID",
+    regularPriceCents: 999,
+    currentPriceCents: 499,
+    qualifyingPriceCents: 599,
+    currency: "USD",
+    purchaseRequired: true,
+  });
+
+  function offersOf(games: Game[]) {
+    const list = itemListSchema("Test Collection", "d", "/collections/test", games) as Record<
+      string,
+      unknown
+    >;
+    return (list.itemListElement as Array<{ item: { offers: { price: string } } }>).map(
+      (el) => el.item.offers.price
+    );
+  }
+
+  it("quotes a paid game's real price rather than zero", () => {
+    expect(offersOf([paid])).toEqual(["5.99"]);
+  });
+
+  it("still quotes zero for a genuinely free game", () => {
+    expect(offersOf([base])).toEqual(["0.00"]);
+  });
+
+  it("prices each game independently in a mixed collection", () => {
+    expect(offersOf([base, paid])).toEqual(["0.00", "5.99"]);
   });
 });
