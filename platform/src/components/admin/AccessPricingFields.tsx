@@ -211,7 +211,29 @@ export function AccessPricingFields({
                   access.qualifyingPriceCents || info.listPriceCents || info.priceCents,
               });
             }}
-            onMatched={(nextAccess) => onChange(nextAccess)}
+            onMatched={(nextAccess) => {
+              /*
+               * "Match stores" reads the saved game from the database, which
+               * still shows zero offers while a manual URL sits unsaved in
+               * this form — so it happily auto-matches that retailer itself,
+               * and applying nextAccess wholesale silently discarded the URL
+               * someone had just typed (and any other unsaved edit in this
+               * tab) in favor of whatever it found. Merge in only the
+               * retailers not already present client-side; an offer already
+               * on screen, saved or not, is left exactly as it is.
+               */
+              const currentOffers = access.offers ?? [];
+              const currentRetailers = new Set(
+                currentOffers
+                  .filter((o) => o.url.trim())
+                  .map((o) => o.retailer.toLowerCase())
+              );
+              const newOffers = (nextAccess.offers ?? []).filter(
+                (o) => !currentRetailers.has(o.retailer.toLowerCase())
+              );
+              if (newOffers.length === 0) return;
+              patch({ offers: [...currentOffers, ...newOffers] });
+            }}
           />
         </>
       ) : null}
