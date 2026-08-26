@@ -1931,9 +1931,44 @@ export async function countOpenPublicParties(): Promise<number> {
 export type { ConfigSyncMember, ConfigSyncResult } from "@/lib/playTogether/types";
 export { BASE_EDITION_KEY, isBaseEditionSlug, libraryHasRequiredEdition } from "@/lib/playTogether/editionMatch";
 
-export async function checkConfigSync(
-  partyId: string
-): Promise<{ sync: ConfigSyncResult; status: 200 } | { error: string; status: 404 }> {
+type ConfigSyncOutcome =
+  | { sync: ConfigSyncResult; status: 200 }
+  | { error: string; status: 404 };
+
+/*
+ * Every party member's client polls its own party at 1-5s intervals (see
+ * partyStore.ts), and each poll recomputes config-sync from scratch: a party
+ * doc read plus three collection scans across every member. For a party of
+ * four all polling at once that is the same read cluster four times over in
+ * the same couple of seconds, for output that is identical across viewers —
+ * config-sync has no per-viewer branching, only `selfPlaying` is derived
+ * from it afterward, in `attachConfigSync`.
+ *
+ * A short TTL collapses concurrent pollers of the same party onto one read.
+ * It is per-lambda-instance only — this does not dedupe across Vercel
+ * instances, so it will not fully absorb a burst spread across many cold
+ * function invocations. A distributed cache (Vercel KV / Upstash) would; this
+ * is the zero-infra version that still helps within a warm instance and costs
+ * nothing to ship. The bound is the same 2s a party's own polling interval
+ * already tolerates, including immediately after a mutation — a leader who
+ * just changed the edition sees the field itself update from the mutation's
+ * own response; only the supplementary "is everyone ready" indicator can lag
+ * by up to the TTL, self-correcting on the next poll.
+ */
+const CONFIG_SYNC_CACHE_TTL_MS = 2000;
+const configSyncCache = new Map<string, { expires: number; value: ConfigSyncOutcome }>();
+
+export async function checkConfigSync(partyId: string): Promise<ConfigSyncOutcome> {
+  const cached = configSyncCache.get(partyId);
+  const now = Date.now();
+  if (cached && cached.expires > now) return cached.value;
+
+  const value = await checkConfigSyncUncached(partyId);
+  configSyncCache.set(partyId, { expires: now + CONFIG_SYNC_CACHE_TTL_MS, value });
+  return value;
+}
+
+async function checkConfigSyncUncached(partyId: string): Promise<ConfigSyncOutcome> {
   await dbConnect();
 
   const doc = await Party.findById(partyId).lean();

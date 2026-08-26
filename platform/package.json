@@ -7,6 +7,7 @@
     "build": "next build && npm run check:auth-urls && npm run insert:catalog-wave && npm run sync:game-host",
     "start": "next start",
     "lint": "eslint",
+    "load-test:polling": "tsx scripts/load-test-polling.ts",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "seed:games": "tsx scripts/seed-games.ts",
     "upload:launcher": "tsx scripts/upload-launcher.ts",
