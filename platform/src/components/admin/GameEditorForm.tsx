@@ -1867,13 +1867,21 @@ export function GameEditorForm({
                   form.launcherInstall?.kind === "direct-7z" ||
                   form.launcherInstall?.kind === "direct-installer" ||
                   form.launcherInstall?.kind === "direct-exe" ||
-                  form.launcherInstall?.kind === "external") && (
+                  form.launcherInstall?.kind === "external" ||
+                  form.launcherInstall?.kind === "itch-zip") && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className={label}>Download URL</label>
+                      <label className={label}>
+                        {form.launcherInstall?.kind === "itch-zip" ? "itch.io page URL" : "Download URL"}
+                      </label>
                       <input
                         value={form.launcherInstall?.url ?? ""}
                         onChange={(e) => patchLauncher({ url: e.target.value || null })}
+                        placeholder={
+                          form.launcherInstall?.kind === "itch-zip"
+                            ? "https://creator.itch.io/game"
+                            : undefined
+                        }
                         className={field}
                       />
                     </div>
@@ -1895,6 +1903,21 @@ export function GameEditorForm({
                         className={field}
                       />
                     </div>
+                    {form.launcherInstall?.kind === "itch-zip" && (
+                      <div>
+                        <label className={label}>Upload ID (optional)</label>
+                        <input
+                          value={form.launcherInstall?.uploadId ?? ""}
+                          onChange={(e) => patchLauncher({ uploadId: e.target.value || null })}
+                          placeholder="Pin one file when the page lists several downloads"
+                          className={field}
+                        />
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          itch.io&apos;s data-upload_id for the exact file to grab. Without it, the
+                          launcher takes whichever download is listed first on the page.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
                 {form.launcherInstall?.kind === "steamcmd" && (
