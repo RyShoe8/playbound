@@ -987,10 +987,11 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
 
   "hurry-curry": {
     enabled: true,
-    kind: "external",
-    url: "https://a327ex.itch.io/hurry-curry",
-    exeHint: "hurry_curry",
-    note: "Play directly in the browser or download on itch.io with full native controller support.",
+    kind: "direct-exe",
+    url: "https://hurrycurry-download.metamuffin.org/client-x86_64-pc-windows-gnu.exe",
+    fileName: "hurrycurry-client.exe",
+    versionLabel: "v3.1.1",
+    note: "Portable 64-bit Windows client. Also playable instantly in the browser.",
   },
   "gradius-remake": {
     enabled: true,

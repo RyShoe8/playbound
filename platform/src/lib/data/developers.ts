@@ -1251,11 +1251,22 @@ export const developers: Developer[] = [
     name: "a327ex",
     tagline: "Crisp arcade mechanics and juicy game feel.",
     about:
-      "Independent game developer and designer known for fast-paced arcade action, snappy pixel art, and kinetic game feel in titles like Hurry Curry! and BYTEPATH.",
+      "Independent game developer and designer known for fast-paced arcade action, snappy pixel art, and kinetic game feel in titles like BYTEPATH.",
     location: "Worldwide",
     founded: 2017,
     website: "https://a327ex.itch.io/",
     artHue: 38,
+  },
+  {
+    slug: "hurrycurry-team",
+    name: "metamuffin, tpart & nokoe",
+    tagline: "Open-source co-op kitchen chaos, built for LAN and internet play alike.",
+    about:
+      "The small open-source team behind Hurry Curry!, a couch-and-online co-op cooking game with dedicated community servers and a Codeberg-hosted codebase.",
+    location: "Worldwide",
+    founded: 2021,
+    website: "https://hurrycurry.org/",
+    artHue: 25,
   },
 ];
 
