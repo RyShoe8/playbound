@@ -45,6 +45,9 @@ const DOWNLOAD_DOMAINS = [
   "codeberg.org",
   "myabandonware.com",
   "allegro.cc",
+  "ballistica.net",
+  "re-volt.io",
+  "rvgl.org",
   /*
    * RetroArch and every libretro core the launcher manages — see
    * services/ManagedRetroArch.js. Both the emulator itself and the seven cores
