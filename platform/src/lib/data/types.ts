@@ -115,6 +115,8 @@ export interface Game {
   status?: "draft" | "watchlist" | "testing" | "published";
   platforms: string[];
   features: string[];
+  /** Real max concurrent players in one session. Null until verified — never a guess. */
+  maxPlayers?: number | null;
   launchMethods: LaunchMethod[];
   /** Runs directly in the browser via PlayBound — none yet, reserved for future titles. */
   browserPlayable: boolean;

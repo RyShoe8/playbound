@@ -134,6 +134,14 @@ const CatalogGameSchema = new Schema(
     sizeMB: { type: Number, required: true },
     platforms: { type: [String], default: [] },
     features: { type: [String], default: [] },
+    /**
+     * Real max concurrent players in a single session, for the games that have
+     * one — a lobby cap, a match size, a server slot count. Null for
+     * single-player-only titles and for anything not yet verified; never a
+     * guess, because it feeds /play-with-friends pages and structured data
+     * that crawlers read as fact.
+     */
+    maxPlayers: { type: Number, default: null },
     launchMethods: { type: [String], default: [] },
     browserPlayable: { type: Boolean, default: false },
     steamDeck: { type: Boolean, default: false },

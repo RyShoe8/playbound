@@ -55,6 +55,7 @@ export default async function AdminEditGamePage({ params }: { params: Promise<{ 
     ...game,
     // Optional on Game (older documents predate it), required on the payload.
     aliases: game.aliases ?? [],
+    maxPlayers: game.maxPlayers ?? null,
     complete: Boolean(game.complete),
     masterCopy: Boolean(game.masterCopy),
     steamAppId: game.steamAppId ?? null,

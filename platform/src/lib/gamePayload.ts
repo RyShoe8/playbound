@@ -427,6 +427,7 @@ export const gamePayloadSchema = z.object({
   sizeMB: z.number().min(0).max(1_000_000),
   platforms: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
   features: z.array(z.string().trim().min(1).max(60)).max(40).default([]),
+  maxPlayers: z.number().int().positive().max(100_000).nullable().default(null),
   launchMethods: z.preprocess(
     dropUnknown(LAUNCH_METHODS),
     z.array(z.enum(LAUNCH_METHODS)).min(1, "Pick at least one launch method")
@@ -751,6 +752,7 @@ export const emptyGameDraft = (): GamePayload => ({
   sizeMB: 0,
   platforms: ["Windows"],
   features: [],
+  maxPlayers: null,
   launchMethods: ["install"],
   browserPlayable: false,
   steamDeck: false,

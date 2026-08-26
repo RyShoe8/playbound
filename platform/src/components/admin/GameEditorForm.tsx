@@ -1384,6 +1384,26 @@ export function GameEditorForm({
             </div>
           </div>
 
+          {featureSet.has("Multiplayer") && (
+            <div>
+              <label className={label}>Max players</label>
+              <input
+                type="number"
+                min={2}
+                max={100000}
+                value={form.maxPlayers ?? ""}
+                onChange={(e) => patch("maxPlayers", e.target.value ? Number(e.target.value) : null)}
+                placeholder="e.g. 32 — leave blank until verified"
+                className={field}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Real concurrent-player cap for one session — a lobby size, a match size, a
+                server slot count. Feeds /play-with-friends and structured data, so leave it
+                blank rather than estimate.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className={label}>Tags</label>
             <div className="mt-2 flex flex-wrap gap-2">
