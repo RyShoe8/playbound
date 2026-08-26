@@ -1,21 +1,27 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Coins,
+  Gamepad2,
+  MonitorSmartphone,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Tag,
+  X,
+} from "lucide-react";
 import { GENRES, TAGS, PLATFORMS, FEATURES } from "@/lib/gamePayload";
 import type { DiscoveryMode } from "@/lib/access/discoveryMode";
 import { useTelemetry } from "@/lib/telemetry";
+import { cn } from "@/lib/utils";
 
 type SortOption = "title" | "releaseYear" | "players" | "plays";
 type SortDir = "asc" | "desc";
 
-/*
- * Size is deliberately absent. It remains a *filter* (maxSizeMB), which is the
- * question people actually ask of it — "what fits on my disk" — whereas
- * ordering the catalog by megabytes ranks games by a property nobody is
- * shopping for.
- */
 const PRICE_OPTIONS: { label: string; value: string }[] = [
   { label: "Any", value: "any" },
   { label: "Free", value: "free" },
@@ -31,7 +37,7 @@ const SORT_OPTIONS: { label: string; value: SortOption }[] = [
   { label: "Plays", value: "plays" },
 ];
 
-function FilterChip({
+function CompactFilterChip({
   label,
   active,
   onClick,
@@ -44,13 +50,52 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-6 py-2 text-sm font-semibold transition-all duration-200 ${
+      className={cn(
+        "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 active:scale-95",
         active
-          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-          : "border border-border bg-secondary/50 text-secondary-foreground hover:border-primary/30 hover:bg-secondary"
-      }`}
+          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary"
+          : "border border-border bg-secondary/50 text-secondary-foreground hover:border-primary/40 hover:bg-secondary"
+      )}
     >
       {label}
+    </button>
+  );
+}
+
+function SectionToggle({
+  title,
+  icon: Icon,
+  activeCount = 0,
+  isOpen,
+  onToggle,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  activeCount?: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between py-2 text-left transition-colors hover:text-foreground"
+    >
+      <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        <Icon className="size-3.5 text-primary" />
+        {title}
+        {activeCount > 0 && (
+          <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-extrabold text-primary">
+            {activeCount}
+          </span>
+        )}
+      </span>
+      <ChevronDown
+        className={cn(
+          "size-4 text-muted-foreground transition-transform duration-200",
+          isOpen && "rotate-180 text-primary"
+        )}
+      />
     </button>
   );
 }
@@ -77,17 +122,54 @@ export function SearchFilters({
   const sortDir = (sp.get("sortDir") ?? "asc") as SortDir;
   const price = sp.get("price") ?? "any";
 
+  const [searchInput, setSearchInput] = useState(q);
+
+  useEffect(() => {
+    setSearchInput(q);
+  }, [q]);
+
   const genreSet = useMemo(() => new Set(genres), [genres]);
   const tagSet = useMemo(() => new Set(tags), [tags]);
   const platformSet = useMemo(() => new Set(platforms), [platforms]);
   const featureSet = useMemo(() => new Set(features), [features]);
+
+  const activePriceCount = discoveryMode === "ALL" && price !== "any" ? 1 : 0;
+  const hasSortOverride = sort !== "title" || sortDir !== "asc";
 
   const activeFilterCount =
     genres.length +
     tags.length +
     platforms.length +
     features.length +
-    (discoveryMode === "ALL" && price !== "any" ? 1 : 0);
+    activePriceCount +
+    (hasSortOverride ? 1 : 0);
+
+  // Sections with active selections start open; others start collapsed
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => ({
+    genres: genres.length > 0,
+    tags: tags.length > 0,
+    platforms: platforms.length > 0,
+    features: features.length > 0,
+    price: activePriceCount > 0,
+    sort: hasSortOverride,
+  }));
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const allOpen = Object.values(openSections).every(Boolean);
+  const toggleAll = () => {
+    const nextState = !allOpen;
+    setOpenSections({
+      genres: nextState,
+      tags: nextState,
+      platforms: nextState,
+      features: nextState,
+      price: nextState,
+      sort: nextState,
+    });
+  };
 
   const buildUrl = useCallback(
     (overrides: Record<string, string | string[] | null>) => {
@@ -119,6 +201,18 @@ export function SearchFilters({
     },
     [q, genres, tags, platforms, features, sort, sortDir, price, discoveryMode]
   );
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const queryTerm = searchInput.trim();
+    if (queryTerm) void track("search", { query: queryTerm });
+    router.push(buildUrl({ q: queryTerm || null }));
+  }
+
+  function handleClearSearch() {
+    setSearchInput("");
+    router.push(buildUrl({ q: null }));
+  }
 
   function toggleInArray(arr: string[], val: string): string[] {
     return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
@@ -166,131 +260,287 @@ export function SearchFilters({
 
   const resultLabel =
     resultCount == null
-      ? "Search games, developers, and collections — or use the filters above."
+      ? "Search games, developers, and collections — or use the filters below."
       : `${resultCount} result${resultCount === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}`;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-card/50 p-4 backdrop-blur-sm sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-sm font-bold tracking-tight">
-          <SlidersHorizontal className="size-4 text-primary" />
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-              {activeFilterCount}
-            </span>
+    <div className="space-y-3 rounded-2xl border border-border bg-card/60 p-3.5 backdrop-blur-md sm:p-5">
+      {/* Search Input and Top Row */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-0">
+          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search games, developers, collections…"
+            autoComplete="off"
+            spellCheck={false}
+            className="h-10 w-full rounded-xl border border-input bg-secondary/80 pr-9 pl-10 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground transition-colors focus:border-ring focus:bg-secondary focus:ring-2 focus:ring-ring/40"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Clear search text"
+            >
+              <X className="size-4" />
+            </button>
           )}
-        </h2>
-        {activeFilterCount > 0 && (
+        </form>
+
+        <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
           <button
             type="button"
-            onClick={clearFilters}
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            onClick={toggleAll}
+            className="rounded-lg border border-border/80 bg-secondary/40 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
           >
-            <X className="size-3" /> Clear all
+            {allOpen ? "Collapse all" : "Expand all"}
           </button>
-        )}
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Genres
-        </p>
-        <div className="flex flex-wrap gap-3">
-          {GENRES.map((g) => (
-            <FilterChip key={g} label={g} active={genreSet.has(g)} onClick={() => toggleGenre(g)} />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Tags
-        </p>
-        <div className="flex flex-wrap gap-3">
-          {TAGS.map((t) => (
-            <FilterChip key={t} label={t} active={tagSet.has(t)} onClick={() => toggleTag(t)} />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Platforms
-        </p>
-        <div className="flex flex-wrap gap-3">
-          {PLATFORMS.map((p) => (
-            <FilterChip key={p} label={p} active={platformSet.has(p)} onClick={() => togglePlatform(p)} />
-          ))}
-        </div>
-      </div>
-
-      <details className="group">
-        <summary className="mb-2 flex cursor-pointer list-none items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
-          Features
-          {features.length > 0 && (
-            <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-bold text-primary">
-              {features.length}
-            </span>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
+            >
+              <X className="size-3" /> Clear all ({activeFilterCount})
+            </button>
           )}
-        </summary>
-        <div className="flex flex-wrap gap-3">
-          {FEATURES.map((f) => (
-            <FilterChip
-              key={f}
-              label={f}
-              active={featureSet.has(f)}
-              onClick={() => toggleFeature(f)}
-            />
+        </div>
+      </div>
+
+      {/* Active Filter Pills Bar (Quick removal without drilling into collapsed sections) */}
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
+            Active:
+          </span>
+          {genres.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => toggleGenre(g)}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              Genre: {g} <X className="size-3" />
+            </button>
           ))}
+          {tags.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => toggleTag(t)}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              Tag: {t} <X className="size-3" />
+            </button>
+          ))}
+          {platforms.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => togglePlatform(p)}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              Platform: {p} <X className="size-3" />
+            </button>
+          ))}
+          {features.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => toggleFeature(f)}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              Feature: {f} <X className="size-3" />
+            </button>
+          ))}
+          {activePriceCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setPrice("any")}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              Price: {PRICE_OPTIONS.find((o) => o.value === price)?.label ?? price} <X className="size-3" />
+            </button>
+          )}
+          {hasSortOverride && (
+            <button
+              type="button"
+              onClick={() => {
+                setSort("title");
+                if (sortDir !== "asc") toggleSortDir();
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              Sort: {SORT_OPTIONS.find((o) => o.value === sort)?.label} ({sortDir === "asc" ? "Asc" : "Desc"}) <X className="size-3" />
+            </button>
+          )}
         </div>
-      </details>
+      )}
 
-      {discoveryMode === "ALL" ? (
+      {/* Collapsible Filter Categories */}
+      <div className="divide-y divide-border/40 rounded-xl border border-border/50 bg-secondary/20 px-3 py-1">
+        {/* Genres */}
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Price
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {PRICE_OPTIONS.map((o) => (
-              <FilterChip
-                key={o.value}
-                label={o.label}
-                active={price === o.value || (o.value === "any" && price !== "free" && price !== "under5" && price !== "under10" && price !== "under15")}
-                onClick={() => setPrice(o.value)}
-              />
-            ))}
-          </div>
+          <SectionToggle
+            title="Genres"
+            icon={Gamepad2}
+            activeCount={genres.length}
+            isOpen={!!openSections.genres}
+            onToggle={() => toggleSection("genres")}
+          />
+          {openSections.genres && (
+            <div className="flex flex-wrap gap-1.5 pt-1 pb-3">
+              {GENRES.map((g) => (
+                <CompactFilterChip
+                  key={g}
+                  label={g}
+                  active={genreSet.has(g)}
+                  onClick={() => toggleGenre(g)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      ) : null}
 
-      <div className="flex flex-col gap-4 border-t border-border/50 pt-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Sort by
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            {SORT_OPTIONS.map((o) => (
-              <FilterChip
-                key={o.value}
-                label={o.label}
-                active={sort === o.value}
-                onClick={() => setSort(o.value)}
-              />
-            ))}
-            <FilterChip
-              label={sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
-              active
-              onClick={toggleSortDir}
+        {/* Tags */}
+        <div>
+          <SectionToggle
+            title="Tags"
+            icon={Tag}
+            activeCount={tags.length}
+            isOpen={!!openSections.tags}
+            onToggle={() => toggleSection("tags")}
+          />
+          {openSections.tags && (
+            <div className="flex flex-wrap gap-1.5 pt-1 pb-3">
+              {TAGS.map((t) => (
+                <CompactFilterChip
+                  key={t}
+                  label={t}
+                  active={tagSet.has(t)}
+                  onClick={() => toggleTag(t)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Platforms */}
+        <div>
+          <SectionToggle
+            title="Platforms"
+            icon={MonitorSmartphone}
+            activeCount={platforms.length}
+            isOpen={!!openSections.platforms}
+            onToggle={() => toggleSection("platforms")}
+          />
+          {openSections.platforms && (
+            <div className="flex flex-wrap gap-1.5 pt-1 pb-3">
+              {PLATFORMS.map((p) => (
+                <CompactFilterChip
+                  key={p}
+                  label={p}
+                  active={platformSet.has(p)}
+                  onClick={() => togglePlatform(p)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Features */}
+        <div>
+          <SectionToggle
+            title="Features"
+            icon={Sparkles}
+            activeCount={features.length}
+            isOpen={!!openSections.features}
+            onToggle={() => toggleSection("features")}
+          />
+          {openSections.features && (
+            <div className="flex flex-wrap gap-1.5 pt-1 pb-3">
+              {FEATURES.map((f) => (
+                <CompactFilterChip
+                  key={f}
+                  label={f}
+                  active={featureSet.has(f)}
+                  onClick={() => toggleFeature(f)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Price (if in ALL discovery mode) */}
+        {discoveryMode === "ALL" && (
+          <div>
+            <SectionToggle
+              title="Price"
+              icon={Coins}
+              activeCount={activePriceCount}
+              isOpen={!!openSections.price}
+              onToggle={() => toggleSection("price")}
             />
+            {openSections.price && (
+              <div className="flex flex-wrap gap-1.5 pt-1 pb-3">
+                {PRICE_OPTIONS.map((o) => (
+                  <CompactFilterChip
+                    key={o.value}
+                    label={o.label}
+                    active={
+                      price === o.value ||
+                      (o.value === "any" &&
+                        price !== "free" &&
+                        price !== "under5" &&
+                        price !== "under10" &&
+                        price !== "under15")
+                    }
+                    onClick={() => setPrice(o.value)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
+        )}
+
+        {/* Sort */}
+        <div>
+          <SectionToggle
+            title="Sort & Order"
+            icon={ArrowUpDown}
+            activeCount={hasSortOverride ? 1 : 0}
+            isOpen={!!openSections.sort}
+            onToggle={() => toggleSection("sort")}
+          />
+          {openSections.sort && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-3">
+              {SORT_OPTIONS.map((o) => (
+                <CompactFilterChip
+                  key={o.value}
+                  label={o.label}
+                  active={sort === o.value}
+                  onClick={() => setSort(o.value)}
+                />
+              ))}
+              <CompactFilterChip
+                label={sortDir === "asc" ? "↑ Ascending" : "↓ Descending"}
+                active
+                onClick={toggleSortDir}
+              />
+            </div>
+          )}
         </div>
-        <div className="shrink-0 text-right">
-          <h1 className="text-2xl font-extrabold tracking-tight">Search</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{resultLabel}</p>
-        </div>
+      </div>
+
+      {/* Result Status Header */}
+      <div className="flex items-center justify-between border-t border-border/40 pt-3">
+        <h1 className="text-lg font-extrabold tracking-tight sm:text-xl">Search Results</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">{resultLabel}</p>
       </div>
     </div>
   );
 }
+
