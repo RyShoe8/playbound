@@ -61,3 +61,12 @@ Automated maintenance is expected to keep writing:
 - `/api/games/[slug]/install/report` — install telemetry.
 - The per-slug admin CMS routes under `/api/admin/games/[slug]` — that is a
   human editing one game on purpose.
+
+# Adding a new game is a six-step job, not a catalog row
+
+Install recipe and a title are not a finished addition. Editorial completeness,
+multiplayer wiring, controller wiring, total-conversion editions, and the mods
+list have all been skipped in past sessions because nothing forced a second
+look once the game installed and ran. **Read `docs/new-game-checklist.md` and
+work through all six steps for every game added**, in the same session it's
+added — not deferred "for later," which is how steps 3–6 get forgotten.
