@@ -140,6 +140,15 @@ export const launcherInstallSchema = z
     fileName: optionalTrimmed,
     versionLabel: optionalTrimmed,
     steamAppId: optionalTrimmed,
+    steamPrerequisites: z
+      .array(
+        z.object({
+          appId: z.string().trim().regex(/^\d+$/, "Steam app ID must be numeric").max(20),
+          name: z.string().trim().min(1).max(120),
+        })
+      )
+      .max(10)
+      .default([]),
     knownExePaths: z.array(z.string().trim().min(1).max(400)).max(20).default([]),
     registryTitles: z.array(z.string().trim().min(1).max(120)).max(10).default([]),
     installRoot: optionalTrimmed,
@@ -684,6 +693,7 @@ export function toPayloadLauncherInstall(
     fileName: li.fileName ?? null,
     versionLabel: li.versionLabel ?? null,
     steamAppId: li.steamAppId ?? null,
+    steamPrerequisites: li.steamPrerequisites ?? [],
     knownExePaths: li.knownExePaths ?? [],
     registryTitles: li.registryTitles ?? [],
     installRoot: li.installRoot ?? null,

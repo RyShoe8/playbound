@@ -41,6 +41,28 @@ describe("owner-supplied installs", () => {
   });
 });
 
+describe("Steam prerequisites", () => {
+  it("passes prerequisite metadata to the desktop launcher", () => {
+    const prerequisites = [{ appId: "218", name: "Source SDK Base 2007" }];
+    const entry = toLauncherCatalogEntry({
+      ...base,
+      launcherInstall: {
+        enabled: true,
+        kind: "direct-installer",
+        url: "https://x.test/setup.exe",
+        steamPrerequisites: prerequisites,
+      },
+    });
+    expect(entry.steamPrerequisites).toEqual(prerequisites);
+  });
+
+  it("configures GoldenEye: Source to wait for SDK Base 2007", () => {
+    expect(launcherInstallBySlug["goldeneye-source"].steamPrerequisites).toEqual([
+      { appId: "218", name: "Source SDK Base 2007" },
+    ]);
+  });
+});
+
 describe("commercial base games are never distributed", () => {
   // Freelancer is still Microsoft's copyright. PlayBound lists it for the
   // community mods built on it, so the recipe must locate a copy the player

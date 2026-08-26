@@ -41,6 +41,9 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.connectArgs?.length && seed?.connectArgs?.length) {
       merged.connectArgs = seed.connectArgs;
     }
+    if (!merged.steamPrerequisites?.length && seed?.steamPrerequisites?.length) {
+      merged.steamPrerequisites = seed.steamPrerequisites;
+    }
     // A content overlay can safely fill in only when the stored recipe has no
     // value. This keeps existing database curation authoritative while letting
     // a narrowly-scoped launcher repair (such as Daggerfall's free game data)

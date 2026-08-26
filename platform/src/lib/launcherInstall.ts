@@ -39,6 +39,12 @@ export type LauncherInstallAddon = {
   fileName: string;
 };
 
+export type SteamPrerequisite = {
+  /** Numeric Steam application ID installed through the desktop Steam client. */
+  appId: string;
+  name: string;
+};
+
 /** Stored on CatalogGame and used by site CTAs + launcher API. */
 export type LauncherInstall = {
   enabled: boolean;
@@ -53,6 +59,8 @@ export type LauncherInstall = {
   /** Arguments passed to the installed executable when Play is pressed. */
   launchArgs?: string[];
   steamAppId?: string | null;
+  /** Steam-managed runtimes that must finish installing before this installer starts. */
+  steamPrerequisites?: SteamPrerequisite[];
   /**
    * MD5 of the downloaded archive, verified before install.
    *
@@ -115,6 +123,7 @@ export type LauncherCatalogEntry = {
   knownExePaths?: string[];
   launchArgs?: string[];
   steamAppId?: string;
+  steamPrerequisites?: SteamPrerequisite[];
   checksumMd5?: string;
   registryTitles?: string[];
   installRoot?: string;
@@ -307,6 +316,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
   if (li.launchArgs?.length) entry.launchArgs = li.launchArgs;
   if (li.steamAppId) entry.steamAppId = li.steamAppId;
+  if (li.steamPrerequisites?.length) entry.steamPrerequisites = li.steamPrerequisites;
   if (li.checksumMd5) entry.checksumMd5 = li.checksumMd5;
   if (li.registryTitles?.length) entry.registryTitles = li.registryTitles;
   if (li.installRoot) entry.installRoot = li.installRoot;
