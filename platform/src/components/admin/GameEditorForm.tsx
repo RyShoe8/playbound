@@ -1301,7 +1301,7 @@ export function GameEditorForm({
           />
         </AdminCollapsibleSection>
 
-        <AdminCollapsibleSection title="Taxonomy">
+        <AdminCollapsibleSection title="Taxonomy" defaultOpen>
           <div>
             <label className={label}>Genres</label>
             <div className="mt-2 flex flex-wrap gap-2">
