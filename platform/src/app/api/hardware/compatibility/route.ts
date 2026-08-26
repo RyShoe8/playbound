@@ -13,6 +13,7 @@ import {
   type ModHardwareRequirements,
   type UserHardwareForCompat,
 } from "@/lib/hardware";
+import { parseFreeTextRequirementsBlock } from "@/lib/hardware/parseFreeTextRequirements";
 import { saveEvent } from "@/lib/telemetry/server/saveEvent";
 
 export async function GET(req: Request) {
@@ -43,14 +44,22 @@ export async function GET(req: Request) {
       const ed = editions.find((e) => e.slug === editionSlug);
       if (ed?.hardwareRequirements) {
         editionBlock = ed.hardwareRequirements as HardwareRequirementsBlock;
+      } else if (ed?.requirements) {
+        editionBlock = parseFreeTextRequirementsBlock(ed.requirements);
       } else {
         const bySlug = await getEditionBySlug(game, editionSlug);
         if (bySlug?.hardwareRequirements) {
           editionBlock = bySlug.hardwareRequirements as HardwareRequirementsBlock;
+        } else if (bySlug?.requirements) {
+          editionBlock = parseFreeTextRequirementsBlock(bySlug.requirements);
         } else {
           const byId = await getEditionById(editionSlug);
-          if (byId?.gameSlug === gameSlug && byId.hardwareRequirements) {
-            editionBlock = byId.hardwareRequirements as HardwareRequirementsBlock;
+          if (byId?.gameSlug === gameSlug) {
+            if (byId.hardwareRequirements) {
+              editionBlock = byId.hardwareRequirements as HardwareRequirementsBlock;
+            } else if (byId.requirements) {
+              editionBlock = parseFreeTextRequirementsBlock(byId.requirements);
+            }
           }
         }
       }
@@ -67,8 +76,12 @@ export async function GET(req: Request) {
     }
   }
 
+  const gameHardwareBlock =
+    (game.hardwareRequirements as HardwareRequirementsBlock | null | undefined) ||
+    parseFreeTextRequirementsBlock(game.systemRequirements);
+
   const requirements = effectiveHardwareRequirements(
-    game.hardwareRequirements,
+    gameHardwareBlock,
     editionBlock,
     modBlocks
   );

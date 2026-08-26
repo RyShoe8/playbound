@@ -150,15 +150,14 @@ export function GameHardwareCompatibility({
     );
   }
 
-  if (!hasProfile || !result || result.verdict === "unknown") {
+  if (!hasProfile || !result) {
     return (
       <section className="rounded-xl border border-border bg-card p-4">
         <h2 className="text-lg font-bold">Will this run on your PC?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {syncing
             ? "Waiting for hardware sync…"
-            : result?.summary ||
-              "Open PlayBound while signed in to automatically check this game against your PC."}
+            : "Open PlayBound while signed in to automatically check this game against your PC."}
         </p>
         <CheckCompatibilityCta
           gameSlug={gameSlug}
@@ -229,6 +228,12 @@ export function GameHardwareCompatibility({
                   .filter(Boolean)
                   .join(" · ")}
               </li>
+            ) : null}
+            {!rec?.gpuText &&
+            !rec?.gpuTier &&
+            !rec?.ramMB &&
+            !result.compared.required.target ? (
+              <li className="text-muted-foreground">Requirements not specified</li>
             ) : null}
           </ul>
         </div>
