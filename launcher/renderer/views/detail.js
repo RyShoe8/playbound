@@ -24,6 +24,7 @@ import {
   updateGamesFamilyNav,
   views,
   setProgress,
+  toggleQueuePopover,
 } from "../shared.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 
@@ -1599,6 +1600,20 @@ async function renderGameDetailView(slug, opts = {}) {
       buy?.url
         ? `<button class="btn-primary" id="act-get-game">Get Game — ${escapeHtml(formatCents(buy.priceCents))}</button>`
         : "";
+    
+    const activeInstall = state.installQueue?.active?.slug === slug ? state.installQueue.active : null;
+    const queuedInstall = state.installQueue?.queued?.find((q) => q.slug === slug);
+    const inQueue = activeInstall || queuedInstall;
+    let installBtnLabel = choosable ? "Choose an edition" : "Install Game";
+    let installBtnClass = "btn-primary";
+    if (activeInstall) {
+      installBtnLabel = `⚡ Installing${activeInstall.pct ? ` (${activeInstall.pct}%)` : "…"}`;
+      installBtnClass = "btn-primary btn-install-active";
+    } else if (queuedInstall) {
+      installBtnLabel = `⚡ Queued (#${queuedInstall.queuePosition || 1} in queue)`;
+      installBtnClass = "btn-secondary btn-install-queued";
+    }
+
     actions.innerHTML = paidHero
       ? `
       ${getGameBtn}
@@ -1606,12 +1621,16 @@ async function renderGameDetailView(slug, opts = {}) {
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `
       : `
-      <button class="btn-primary" id="act-install">${choosable ? "Choose an edition" : "Install Game"}</button>
+      <button class="${installBtnClass}" id="act-install" title="${inQueue ? "Click to view queue" : ""}">${installBtnLabel}</button>
       <button class="btn-secondary" id="act-locate" title="Find or select an existing installation on your computer">Already installed? Add to Library</button>
       ${state.accountState.connected ? `<button class="btn-secondary" id="act-create-party">Create Party</button>` : ""}
     `;
     document.getElementById("act-get-game")?.addEventListener("click", () => openStoreUrl(buy?.url));
     document.getElementById("act-install")?.addEventListener("click", async () => {
+      if (inQueue) {
+        toggleQueuePopover();
+        return;
+      }
       await runInstallGated();
     });
     document.getElementById("act-locate")?.addEventListener("click", async () => {

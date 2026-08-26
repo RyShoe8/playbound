@@ -256,9 +256,29 @@
         <div id="view-gear-detail" class="view"></div>
       </main>
 
-      <!-- Status Bar -->
+      <!-- Status Bar & Install Queue Popover -->
+      <div id="statusbar-queue-popover" class="statusbar-queue-popover hidden">
+        <div class="queue-popover-header">
+          <div class="queue-popover-title-row">
+            <span class="queue-popover-title">Install &amp; Download Queue</span>
+            <span id="queue-popover-count" class="chip chip-accent">0</span>
+          </div>
+          <button id="queue-popover-close" class="btn-close-queue" type="button" title="Close Queue">✕</button>
+        </div>
+        <div id="queue-popover-content" class="queue-popover-content">
+          <!-- Dynamically populated queue items -->
+        </div>
+      </div>
+
       <footer id="statusbar">
-        <div id="statusbar-msg"></div>
+        <div id="statusbar-left">
+          <button id="statusbar-queue-toggle" class="statusbar-queue-pill hidden" type="button" title="View Downloads & Install Queue">
+            <span class="queue-pill-icon">⚡</span>
+            <span class="queue-pill-text">Queue</span>
+            <span id="statusbar-queue-count" class="queue-count-badge">0</span>
+          </button>
+          <div id="statusbar-msg"></div>
+        </div>
         <div id="statusbar-progress" class="hidden">
           <div id="statusbar-bar"></div>
         </div>

@@ -2376,6 +2376,37 @@ async function resolveDownload(entry) {
     };
   }
 
+  if (entry.kind === "ballistica-zip" || (entry.url && /ballistica\.net/i.test(entry.url))) {
+    try {
+      const res = await fetch("https://ballistica.net/downloads", {
+        headers: { "user-agent": "playbound-launcher" },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const html = await res.text();
+        let pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Windows_[^"<'\s]+\.zip/i;
+        if (process.platform === "darwin") {
+          pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Mac_[^"<'\s]+\.dmg/i;
+        } else if (process.platform === "linux") {
+          pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Linux_x86_64_[^"<'\s]+\.tar\.gz/i;
+        }
+        const m = html.match(pattern);
+        if (m && m[0]) {
+          const liveUrl = m[0];
+          const fileName = path.basename(new URL(liveUrl).pathname);
+          const versionMatch = fileName.match(/BombSquad_[^_]+_([^\.]+)\.zip/i);
+          return {
+            url: liveUrl,
+            name: fileName,
+            version: (versionMatch && versionMatch[1]) || entry.versionLabel || "latest",
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("Could not query live ballistica.net downloads page, falling back:", e?.message || e);
+    }
+  }
+
   if (entry.kind === "itch-zip" || (entry.url && /itch\.io/i.test(entry.url))) {
     const pageUrl = entry.url || entry.itchUrl || "https://kay-yu.itch.io/holocure";
     const res = await fetch(pageUrl, {
@@ -2483,10 +2514,52 @@ async function resolveModDownload(install) {
   };
 }
 
-/* ── download with progress ────────────────────────────────── */
+/* ── install queue & download with progress ────────────────── */
+
+const installQueue = [];
+let activeInstallTask = null;
+
+function getInstallQueueSnapshot() {
+  const queued = installQueue.filter((t) => t.status === "queued").map((t, idx) => ({
+    ...t,
+    queuePosition: idx + 1,
+  }));
+  return {
+    active: activeInstallTask ? { ...activeInstallTask } : null,
+    queued,
+    totalCount: (activeInstallTask ? 1 : 0) + queued.length,
+  };
+}
+
+function broadcastInstallQueue() {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send("install-queue-updated", getInstallQueueSnapshot());
+}
 
 function sendProgress(payload) {
-  if (win && !win.isDestroyed()) win.webContents.send("progress", payload);
+  if (activeInstallTask) {
+    if (payload.phase) activeInstallTask.phase = payload.phase;
+    if (payload.received != null) activeInstallTask.received = payload.received;
+    if (payload.total != null) activeInstallTask.total = payload.total;
+    if (payload.received != null && payload.total) {
+      activeInstallTask.pct = Math.round((payload.received / payload.total) * 100);
+    }
+    if (payload.addon !== undefined) activeInstallTask.addon = payload.addon;
+    if (payload.message !== undefined) activeInstallTask.message = payload.message;
+  }
+  const snapshot = getInstallQueueSnapshot();
+  const enriched = {
+    ...payload,
+    slug: payload.slug || activeInstallTask?.slug || null,
+    editionSlug: payload.editionSlug || activeInstallTask?.editionSlug || null,
+    title: payload.title || activeInstallTask?.title || null,
+    queueCount: snapshot.totalCount,
+    queue: snapshot,
+  };
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("progress", enriched);
+    win.webContents.send("install-queue-updated", snapshot);
+  }
 }
 
 async function downloadTo(url, dest, attempts = 3) {
@@ -4758,6 +4831,33 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   const existing = gameInstallJobs.get(key);
   if (existing) return existing;
 
+  const entry =
+    catalog.find((e) => e.slug === slug) ||
+    bundledCatalog.find((e) => e.slug === slug);
+  const title = entry?.title || slug;
+  const coverImage = entry?.coverImage || null;
+
+  const task = {
+    id: key,
+    slug,
+    editionSlug: editionSlug || null,
+    title,
+    coverImage,
+    status: activeInstallTask ? "queued" : "active",
+    phase: activeInstallTask ? "queued" : "resolving",
+    received: 0,
+    total: 0,
+    pct: 0,
+    addon: null,
+    message: activeInstallTask
+      ? `Queued — waiting for ${activeInstallTask.title || "current install"} to finish…`
+      : `Installing ${title}…`,
+    startedAt: Date.now(),
+  };
+
+  installQueue.push(task);
+  broadcastInstallQueue();
+
   const waitFor = installQueueTail;
   const queuedBehind = gameInstallJobs.size;
 
@@ -4768,11 +4868,11 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
        * progress for as long as the one ahead of it takes, which is otherwise
        * indistinguishable from a stall.
        */
-      const entry = catalog.find((e) => e.slug === slug);
       sendProgress({
         phase: "queued",
         slug,
-        message: `${entry?.title || slug} is queued — waiting for the current install to finish…`,
+        title,
+        message: `${title} is queued — waiting for ${activeInstallTask?.title || "current install"} to finish…`,
       });
       if (win && !win.isDestroyed()) {
         win.webContents.send("install-scan", {
@@ -4783,7 +4883,31 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       }
     }
     await waitFor;
-    return installGameInner(slug, targetDir, editionSlug, selectedAddons);
+    task.status = "active";
+    task.phase = "resolving";
+    task.message = `Installing ${title}…`;
+    activeInstallTask = task;
+    broadcastInstallQueue();
+
+    try {
+      const result = await installGameInner(slug, targetDir, editionSlug, selectedAddons);
+      task.status = "completed";
+      task.phase = "done";
+      task.message = `${title} complete!`;
+      return result;
+    } catch (err) {
+      task.status = "error";
+      task.phase = "error";
+      task.message = err?.message || String(err);
+      throw err;
+    } finally {
+      if (activeInstallTask === task) {
+        activeInstallTask = null;
+      }
+      const idx = installQueue.indexOf(task);
+      if (idx >= 0) installQueue.splice(idx, 1);
+      broadcastInstallQueue();
+    }
   })()
     .catch((err) => {
       reportInstallFailed(slug, editionSlug || null, err, "install");
@@ -7758,6 +7882,7 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
   ipcMain.handle("install", (_event, slug, targetDir, editionSlug, addons) =>
     installGame(slug, targetDir, editionSlug || null, addons)
   );
+ipcMain.handle("get-install-queue", () => getInstallQueueSnapshot());
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("scan-library-candidates", () => listLibraryScanCandidates());
