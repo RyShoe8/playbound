@@ -63,7 +63,7 @@ export function TopBar() {
   const { data: session } = useSession();
 
   return (
-    <header className="sticky top-0 z-30 w-full max-w-full overflow-hidden border-b border-border bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full max-w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="flex h-14 w-full max-w-full items-center gap-2 px-3 sm:gap-3 sm:px-6">
         <BackButton />
         {/* mobile logo */}
