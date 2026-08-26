@@ -15,6 +15,9 @@ import {
   MonitorPlay,
   Layers,
   ShoppingCart,
+  Gamepad2,
+  Headset,
+  Globe,
 } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { GameArt } from "@/components/GameArt";
@@ -213,15 +216,29 @@ export function HomeHeroPromoSection({
       color: "text-sky-400 bg-sky-500/10 border-sky-500/20",
     },
     {
-      icon: Users,
-      title: "Multiplayer & Community Hub",
-      tagline: "Live servers, parties & brackets",
-      desc: "Real-time server browser with live player counts, Discord chat integration, custom party lobbies, and automated tournament brackets.",
+      icon: Globe,
+      title: "Server Browser",
+      tagline: "Live servers & instant join",
+      desc: "Real-time server browser with live player counts and ping. Find a match and jump directly into the game with one click.",
       color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
     },
     {
+      icon: Headset,
+      title: "Parties",
+      tagline: "Seamless co-op & voice",
+      desc: "Group up with friends using our party system. Launch multiplayer games together and automatically join a dedicated Discord voice channel.",
+      color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+    },
+    {
+      icon: Gamepad2,
+      title: "Controllers",
+      tagline: "Auto-config & phone play",
+      desc: "Automatic controller configuration for all games. Don't have one? Scan a QR code to use your phone as a touchscreen controller instantly.",
+      color: "text-pink-400 bg-pink-500/10 border-pink-500/20",
+    },
+    {
       icon: Gauge,
-      title: "System Matcher & Hardware Grader",
+      title: "Hardware Grader",
       tagline: "Know before you download",
       desc: "Automatic hardware grading evaluates your CPU, GPU, and RAM to tell you if a game will run Great, Playable, or Needs an Upgrade.",
       color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
@@ -322,8 +339,8 @@ export function HomeHeroPromoSection({
               </div>
             </div>
 
-            {/* 5 Core Pillars Grid */}
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {/* 7 Core Pillars Grid */}
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {promoPillars.map((pillar) => {
                 const Icon = pillar.icon;
                 return (
