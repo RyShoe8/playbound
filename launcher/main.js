@@ -389,7 +389,12 @@ function steamDeepLinkFor(rawUrl) {
     if (!/(^|\.)steampowered\.com$/i.test(u.hostname)) return null;
     const m = u.pathname.match(/\/app\/(\d+)/);
     if (!m) return null;
-    return `steam://store/${m[1]}`;
+    // steam://store/<id> only opens the store page inside Steam, leaving the
+    // user to click Install themselves — indistinguishable from opening the
+    // plain https:// store URL. steam://install/<id> is the actual one-click
+    // deep link: Steam launches straight into installing (or running, if
+    // already owned and installed) that app.
+    return `steam://install/${m[1]}`;
   } catch {
     return null;
   }
