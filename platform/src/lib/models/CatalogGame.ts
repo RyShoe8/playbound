@@ -33,6 +33,19 @@ const LauncherInstallSchema = new Schema(
     url: { type: String, default: null },
     fileName: { type: String, default: null },
     versionLabel: { type: String, default: null },
+    steamAppId: { type: String, default: null },
+    steamPrerequisites: {
+      type: [
+        new Schema(
+          {
+            appId: { type: String, required: true },
+            name: { type: String, required: true },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     knownExePaths: { type: [String], default: [] },
     registryTitles: { type: [String], default: [] },
     installRoot: { type: String, default: null },

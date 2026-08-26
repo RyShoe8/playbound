@@ -24,6 +24,7 @@ const { createManagedJava } = require("./services/ManagedJava");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSteamCmdInstaller } = require("./services/steamCmd");
+const { steamAppState } = require("./services/steamPrerequisites");
 const { createSaveData } = require("./services/SaveData");
 const saveLocations = require("./services/saveLocations");
 const controllerProfiles = require("./services/controllerProfiles");
@@ -508,6 +509,61 @@ function steamLibraryRoots() {
   return roots;
 }
 
+async function ensureSteamPrerequisites(entry) {
+  const prerequisites = Array.isArray(entry?.steamPrerequisites)
+    ? entry.steamPrerequisites.filter(
+        (item) => /^\d+$/.test(String(item?.appId || "")) && String(item?.name || "").trim()
+      )
+    : [];
+  if (!prerequisites.length) return;
+  if (!isSteamInstalled()) {
+    throw new Error(
+      `${entry?.title || "This game"} requires ${prerequisites.map((item) => item.name).join(", ")}, ` +
+        "which must be installed through the Steam desktop client. Install Steam, then try again."
+    );
+  }
+
+  for (const prerequisite of prerequisites) {
+    const appId = String(prerequisite.appId);
+    const name = String(prerequisite.name).trim();
+    if (steamAppState(appId, steamLibraryRoots()).installed) continue;
+
+    sendProgress({
+      phase: "prerequisite",
+      slug: entry.slug,
+      message: `Installing required Steam component: ${name}…`,
+    });
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("install-scan", {
+        slug: entry.slug,
+        phase: "waiting",
+        message: `Waiting for Steam to finish installing ${name}…`,
+      });
+    }
+    await safeOpenExternal(`steam://install/${appId}`, { skipUtm: true });
+
+    const started = Date.now();
+    const maxMs = 45 * 60 * 1000;
+    while (Date.now() - started < maxMs) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const state = steamAppState(appId, steamLibraryRoots());
+      if (state.installed) break;
+      const percent = state.progress == null ? null : Math.round(state.progress * 100);
+      sendProgress({
+        phase: "prerequisite",
+        slug: entry.slug,
+        percent,
+        message: percent == null ? `Waiting for Steam to install ${name}…` : `Installing ${name}… ${percent}%`,
+      });
+    }
+    if (!steamAppState(appId, steamLibraryRoots()).installed) {
+      throw new Error(
+        `Steam did not finish installing ${name} within 45 minutes. Finish it in Steam, then try again.`
+      );
+    }
+  }
+}
+
 /**
  * Re-resolve a catalog's Steam knownExePaths against every library on disk.
  *
@@ -519,15 +575,15 @@ function findInSteamLibraries(entry) {
   const libraryRoots = steamLibraryRoots();
   if (!libraryRoots.length) return null;
 
-  // 1. Re-resolve knownExePaths matching steamapps/common/...
+  // 1. Re-resolve knownExePaths in common or sourcemods under every library.
   const tails = [];
   for (const raw of entry?.knownExePaths || []) {
-    const m = String(raw).match(/steamapps[/\\]common[/\\](.+)$/i);
-    if (m) tails.push(m[1]);
+    const m = String(raw).match(/steamapps[/\\](common|sourcemods)[/\\](.+)$/i);
+    if (m) tails.push({ section: m[1].toLowerCase(), tail: m[2] });
   }
   for (const root of libraryRoots) {
-    for (const tail of tails) {
-      const full = path.join(root, "steamapps", "common", tail);
+    for (const candidate of tails) {
+      const full = path.join(root, "steamapps", candidate.section, candidate.tail);
       if (fs.existsSync(full)) return full;
     }
   }
@@ -1844,6 +1900,7 @@ function catalogEntryFromEdition(edition) {
       url: cfg.url || undefined,
       fileName: cfg.fileName || undefined,
       versionLabel: cfg.versionLabel || undefined,
+      steamPrerequisites: Array.isArray(cfg.steamPrerequisites) ? cfg.steamPrerequisites : undefined,
       knownExePaths: Array.isArray(cfg.knownExePaths) ? cfg.knownExePaths : undefined,
       launchArgs: Array.isArray(cfg.launchArgs) ? cfg.launchArgs : undefined,
       registryTitles: Array.isArray(cfg.registryTitles) ? cfg.registryTitles : undefined,
@@ -3819,7 +3876,7 @@ function stopInstallerPoll() {
   }
 }
 
-function startInstallerPoll(slug, entry, version) {
+function startInstallerPoll(slug, entry, version, onComplete) {
   stopInstallerPoll();
   stopExeScan(slug);
   installerPollSlug = slug;
@@ -3839,7 +3896,8 @@ function startInstallerPoll(slug, entry, version) {
     if (!known) return false;
     stopInstallerPoll();
     stopExeScan(slug);
-    markInstalledFromExe(slug, entry, known, version || "located");
+    const result = markInstalledFromExe(slug, entry, known, version || "located");
+    if (onComplete) onComplete(null, result);
     return true;
   };
 
@@ -3864,6 +3922,10 @@ function startInstallerPoll(slug, entry, version) {
         false,
         `Couldn't find ${title} automatically — choose the .exe in Library.`
       );
+      if (onComplete) {
+        onComplete(new Error(`Couldn't find ${title} after its installer closed.`));
+        onComplete = null;
+      }
       return;
     }
     tryKnownPath();
@@ -4998,6 +5060,8 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     entry.url = "https://www.projectquarm.com/";
   }
 
+  await ensureSteamPrerequisites(entry);
+
   if (entry.kind === "external") {
     await safeOpenExternal(steamDeepLinkFor(entry.url) || entry.url, {
       campaign: "launcher_install_external",
@@ -5119,10 +5183,15 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
       return result;
     }
-    startInstallerPoll(slug, { ...entry, ...editionExtra }, dl.version);
+    const result = await new Promise((resolve, reject) => {
+      startInstallerPoll(slug, { ...entry, ...editionExtra }, dl.version, (err, installed) => {
+        if (err) reject(err);
+        else resolve(installed);
+      });
+    });
     void reportInstall(slug);
     void telemetry.editionInstalled(editionInfoFor(slug, { version: dl?.version, ...editionExtra }));
-    return { status: "installer-opened", version: dl.version };
+    return result;
   }
 
   if (entry.kind === "direct-exe") {

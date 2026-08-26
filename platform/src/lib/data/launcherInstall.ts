@@ -11,6 +11,20 @@ import {
  * Used by seed:launcher-install and as fallback when Mongo has no recipe yet.
  */
 export const launcherInstallBySlug: Record<string, LauncherInstall> = {
+  "goldeneye-source": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://mirror.playbound.club/games/goldeneye-source/5.0.6/GoldenEye_Source_v5.0.6_full.exe",
+    fileName: "GoldenEye_Source_v5.0.6_full.exe",
+    versionLabel: "5.0.6",
+    knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource_run.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\sourcemods\\gesource_run.exe",
+    ],
+    connectArgs: ["+connect", "{host}:{port}"],
+    steamPrerequisites: [{ appId: "218", name: "Source SDK Base 2007" }],
+    note: "Installs Source SDK Base 2007 through Steam first, then runs the official GoldenEye: Source setup.",
+  },
   "volleyball-legends": {
     enabled: true,
     kind: "external",

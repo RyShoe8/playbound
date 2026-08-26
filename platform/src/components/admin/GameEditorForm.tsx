@@ -1981,6 +1981,30 @@ export function GameEditorForm({
                   </div>
                 )}
                 <div>
+                  <label className={label}>Steam prerequisites (app ID | name, one per line)</label>
+                  <textarea
+                    value={(form.launcherInstall?.steamPrerequisites ?? [])
+                      .map((item) => `${item.appId} | ${item.name}`)
+                      .join("\n")}
+                    onChange={(e) =>
+                      patchLauncher({
+                        steamPrerequisites: e.target.value
+                          .split("\n")
+                          .map((line) => {
+                            const [rawAppId, ...rawName] = line.split("|");
+                            const appId = rawAppId.replace(/\D/g, "").slice(0, 20);
+                            const name = rawName.join("|").trim();
+                            return appId && name ? { appId, name } : null;
+                          })
+                          .filter((item): item is { appId: string; name: string } => Boolean(item)),
+                      })
+                    }
+                    rows={2}
+                    className={area}
+                    placeholder="218 | Source SDK Base 2007"
+                  />
+                </div>
+                <div>
                   <label className={label}>Known exe paths (one per line, optional)</label>
                   <textarea
                     value={(form.launcherInstall?.knownExePaths ?? []).join("\n")}
