@@ -438,7 +438,7 @@ function paintServersTable() {
       <td>${escapeHtml(formatServerLocation(s))}</td>
       <td class="ping-cell" data-ping-id="${escapeHtml(id)}">${pingLabel}</td>
       <td>
-        <button class="btn-primary btn-sm btn-join" data-slug="${escapeHtml(_serversCache.slug)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>
+        <button class="btn-primary btn-sm btn-join" data-slug="${escapeHtml(_serversCache.slug)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}" data-mod="${escapeHtml(s.mod || "")}">Join</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -455,6 +455,7 @@ function paintServersTable() {
       const slug = btn.dataset.slug;
       const host = btn.dataset.host;
       const port = Number(btn.dataset.port);
+      const mod = btn.dataset.mod || undefined;
       const installed = await window.playbound.getInstalled();
       const has = (installed || []).some((g) => g.slug === slug);
       if (!has) {
@@ -476,7 +477,7 @@ function paintServersTable() {
       }
       setStatus(`Joining ${host}:${port}…`);
       try {
-        await window.playbound.play(slug, { host, port });
+        await window.playbound.play(slug, { host, port, mod });
         startGameSession(slug, slug);
       } catch (err) {
         setStatus(err.message || String(err), true);

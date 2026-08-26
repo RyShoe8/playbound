@@ -806,7 +806,13 @@ export function GlobalServerBrowser({
                           <>
                             {isOneClickSlug(effectiveGameSlug) ? (
                               <a
-                                href={launcherJoinUrl(effectiveGameSlug, s.host, s.port, s.name)}
+                                href={launcherJoinUrl(
+                                  effectiveGameSlug,
+                                  s.host,
+                                  s.port,
+                                  s.name,
+                                  s.mod
+                                )}
                                 onClick={() => {
                                   void telemetry.track("server_join_clicked", {
                                     serverId: `${s.host}:${s.port}`,

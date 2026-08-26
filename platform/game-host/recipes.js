@@ -88,7 +88,9 @@ export const recipes = {
     protocol: "tcp",
     binaries: gameBin("openra", ["OpenRA.Server", "openra-server"]),
     args: (port, ctx) => [
-      `Game.Mod=${openRaMod(ctx.editionSlug)}`,
+      // ctx.mod is an explicit override for the "official" edition, which is
+      // one client covering ra/cnc/d2k — editionSlug alone can't say which.
+      `Game.Mod=${ctx.mod || openRaMod(ctx.editionSlug)}`,
       `Server.Name=${ctx.name}`,
       `Server.ListenPort=${port}`,
       "Server.AdvertiseOnline=False",

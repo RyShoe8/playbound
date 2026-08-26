@@ -248,7 +248,7 @@ function renderDeepLinkView(ctx) {
       try {
         await window.playbound.play(
           ctx.slug,
-          { host, port, name: ctx.join?.name || "" },
+          { host, port, name: ctx.join?.name || "", mod: ctx.join?.gameMod || undefined },
           ctx.editionSlug || null
         );
         try {

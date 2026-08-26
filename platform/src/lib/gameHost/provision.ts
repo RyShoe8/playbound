@@ -29,6 +29,7 @@ type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
   editionSlug?: string | null;
+  openRaMod?: string | null;
   maxSize?: number;
   hosted?: PartyHostFields;
   save: () => Promise<unknown>;
@@ -95,6 +96,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     name,
     maxPlayers: Number(party.maxSize) || 8,
     editionSlug: party.editionSlug || null,
+    mod: party.openRaMod || null,
   });
 
   if ("error" in result) {

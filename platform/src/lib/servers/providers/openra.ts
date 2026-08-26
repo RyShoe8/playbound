@@ -98,6 +98,9 @@ export async function fetchOpenRaServers(): Promise<GameServer[]> {
       maxPlayers: row.maxplayers != null ? Number(row.maxplayers) : null,
       map: row.map || null,
       gameType: row.modtitle || row.mod || null,
+      // Raw mod key ("ra"/"cnc"/"d2k"/...) for the join command — gameType
+      // above is the display label and not always the same string.
+      mod: row.mod || null,
       location: locationFromCountryName(row.location),
       protected: Boolean(row.protected),
     });
