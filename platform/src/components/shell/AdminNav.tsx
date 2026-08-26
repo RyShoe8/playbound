@@ -127,6 +127,12 @@ const GLOBAL_GAME_CHILDREN: NavChild[] = [
     href: "/admin/games/mod-classifications",
     match: (p) => p.startsWith("/admin/games/mod-classifications"),
   },
+  {
+    label: "Discord",
+    icon: Bot,
+    href: "/admin/games/discord",
+    match: (p) => p.startsWith("/admin/games/discord"),
+  },
 ];
 
 /**

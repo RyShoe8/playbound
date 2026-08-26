@@ -21,6 +21,9 @@
  */
 
 import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   Client,
   GatewayIntentBits,
@@ -287,12 +290,30 @@ const SINGLE_CHANNEL_GAMES = new Set([
   "trigger-rally",
 ]);
 
+const _filename = fileURLToPath(import.meta.url);
+const _dirname = path.dirname(_filename);
+
+function getExcludedEditionSlugs() {
+  try {
+    const filePath = path.join(_dirname, "../discord-exclusions.json");
+    if (fs.existsSync(filePath)) {
+      return new Set(JSON.parse(fs.readFileSync(filePath, "utf-8")));
+    }
+  } catch (e) {
+    console.error("Failed to read discord-exclusions.json", e);
+  }
+  return new Set();
+}
+
 function isExcludedEdition(edition) {
   if (!edition) return false;
   const gameSlug = String(edition.gameSlug || "").toLowerCase().trim();
   if (SINGLE_CHANNEL_GAMES.has(gameSlug)) return true;
 
   const slug = String(edition.slug || "").toLowerCase().trim();
+  
+  if (getExcludedEditionSlugs().has(slug)) return true;
+
   const name = String(edition.name || "").toLowerCase().trim();
 
   // If it's OpenMW or KeeperFX or Daggerfall Unity or a custom server, do not exclude
