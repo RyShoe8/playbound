@@ -181,6 +181,13 @@ describe("multiplayer testing-wave installers", () => {
     expect(launcherInstallBySlug["slapshot-rebound"].url).toBe("steam://run/1173370");
   });
 
+  it("installs the full Ye Guild Clerk release instead of opening its Linktree", () => {
+    const recipe = launcherInstallBySlug["ye-guild-clerk"];
+    expect(recipe.kind).toBe("external");
+    expect(recipe.url).toBe("steam://run/3715020");
+    expect(recipe.steamAppId).toBe("3715020");
+  });
+
   it("installs Warfork anonymously without opening the Steam client", () => {
     const recipe = launcherInstallBySlug.warfork;
     expect(recipe.kind).toBe("steamcmd");
