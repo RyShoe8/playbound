@@ -55,6 +55,7 @@ interface PartyState {
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
   setEdition: (partyId: string, editionSlug: string | null) => Promise<void>;
+  setOpenRaMod: (partyId: string, mod: string | null) => Promise<void>;
   setName: (partyId: string, name: string | null) => Promise<void>;
   removeMember: (partyId: string, userId: string) => Promise<void>;
   transferLeadership: (partyId: string, userId: string) => Promise<void>;
@@ -440,6 +441,23 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to set party edition", err);
+    }
+  },
+
+  setOpenRaMod: async (partyId, mod) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ openRaMod: mod }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
+      }
+    } catch (err) {
+      console.error("Failed to set party OpenRA mod", err);
     }
   },
 

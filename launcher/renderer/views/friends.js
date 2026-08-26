@@ -2315,6 +2315,10 @@ async function launchPartyGame(party) {
         host: hosted.host,
         port: Number(hosted.port),
         name: state.accountState?.username || hosted.name || party.gameTitle || "",
+        // Explicit override for OpenRA's "official" edition, which is one
+        // client covering Red Alert/Tiberian Dawn/Dune 2000 — editionSlug
+        // alone can't say which one the party actually started.
+        mod: party.openRaMod || undefined,
       }, party.editionSlug || null);
       startGameSession(slug, party.gameTitle || slug);
       /*

@@ -68,6 +68,19 @@ export type PartyVisibility = (typeof PARTY_VISIBILITIES)[number];
 export const PARTY_MEMBER_ROLES = ["leader", "member"] as const;
 export type PartyMemberRole = (typeof PARTY_MEMBER_ROLES)[number];
 
+/**
+ * The three games bundled in OpenRA's stock client. Distinct from
+ * `editionSlug`, which for the "official" edition names the one client that
+ * can run any of them — see the comment on Party's `openRaMod` field.
+ */
+export const OPENRA_MODS = ["ra", "cnc", "d2k"] as const;
+export type OpenRaModSlug = (typeof OPENRA_MODS)[number];
+export const OPENRA_MOD_LABELS: Record<OpenRaModSlug, string> = {
+  ra: "Red Alert",
+  cnc: "Tiberian Dawn",
+  d2k: "Dune 2000",
+};
+
 /** Default cap per party — overridable at creation. */
 export const PARTY_MAX_SIZE = 8;
 
@@ -176,6 +189,12 @@ export type PartyPayload = {
   gameTitle: string | null;
   editionSlug: string | null;
   modSlugs: string[];
+  /**
+   * For `gameSlug === "openra"` only: which of Red Alert / Tiberian Dawn /
+   * Dune 2000 the party is playing. Null means unset — joiners resolve to
+   * "ra" the same way they always have, so this is purely additive.
+   */
+  openRaMod: OpenRaModSlug | null;
   status: PartyStatus;
   visibility: PartyVisibility;
   maxSize: number;

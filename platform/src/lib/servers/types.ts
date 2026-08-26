@@ -17,6 +17,13 @@ export type GameServer = {
   maxPlayers: number | null;
   map: string | null;
   gameType: string | null;
+  /**
+   * Raw client-join key for the provider's mod/variant, when the provider
+   * distinguishes one — e.g. OpenRA's "ra"/"cnc"/"d2k". Distinct from
+   * `gameType`, which is a display label. Null when the provider has only
+   * one variant or doesn't expose this.
+   */
+  mod?: string | null;
   location: ServerLocation | null;
   protected: boolean;
 };

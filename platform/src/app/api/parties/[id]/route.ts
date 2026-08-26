@@ -6,6 +6,7 @@ import {
   setPartyGame,
   setPartyHostMode,
   setPartyEdition,
+  setPartyOpenRaMod,
   setPartyName,
   endParty,
 } from "@/lib/playTogether/party";
@@ -77,6 +78,18 @@ export async function PATCH(req: Request, ctx: RouteContext) {
         id,
         userId,
         typeof body.editionSlug === "string" ? body.editionSlug : null
+      );
+      if ("error" in result) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      return NextResponse.json({ party: result.party });
+    }
+
+    if (body.openRaMod !== undefined) {
+      const result = await setPartyOpenRaMod(
+        id,
+        userId,
+        typeof body.openRaMod === "string" ? body.openRaMod : null
       );
       if ("error" in result) {
         return NextResponse.json({ error: result.error }, { status: result.status });

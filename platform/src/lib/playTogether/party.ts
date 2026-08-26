@@ -32,7 +32,9 @@ import {
   type PartyMemberPayload,
   type ConfigSyncMember,
   type ConfigSyncResult,
+  type OpenRaModSlug,
   normalizePartyName,
+  OPENRA_MODS,
 } from "@/lib/playTogether/types";
 import { STALE_AFTER_MS } from "@/lib/presence/types";
 import { trackPartyEvent, trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
@@ -453,6 +455,7 @@ function serializeParty(
     gameTitle,
     editionSlug: (doc.editionSlug as string) || null,
     modSlugs: (doc.modSlugs as string[]) || [],
+    openRaMod: (doc.openRaMod as PartyPayload["openRaMod"]) || null,
     status: (doc.status as PartyStatus) || "forming",
     visibility: (doc.visibility as PartyVisibility) || "friends",
     hasPassword: Boolean(doc.passwordHash),
@@ -1290,6 +1293,57 @@ export async function setPartyEdition(
     userId: leaderId,
   });
   const serialized = serializeParty(doc.toObject(), nameById, game.title);
+  return {
+    party: await attachConfigSync(serialized, leaderId),
+    status: 200,
+  };
+}
+
+/**
+ * Which of Red Alert / Tiberian Dawn / Dune 2000 an OpenRA party is playing.
+ *
+ * OpenRA's "official" edition is one client covering all three, so there is
+ * no edition slug to infer this from — without an explicit choice a joiner's
+ * launcher always assumed "ra" and got rejected by any other mod's server
+ * with "the server is running an incompatible mod". See openRaMod.ts.
+ */
+export async function setPartyOpenRaMod(
+  partyId: string,
+  leaderId: string,
+  mod: string | null
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can change this", status: 403 };
+  }
+  if (doc.status === "ended") {
+    return { error: "Party has ended", status: 400 };
+  }
+  if (doc.gameSlug !== "openra") {
+    return { error: "Not an OpenRA party", status: 400 };
+  }
+
+  const value = typeof mod === "string" ? mod.trim() : "";
+  if (value && !(OPENRA_MODS as readonly string[]).includes(value)) {
+    return { error: "Invalid mod", status: 400 };
+  }
+
+  doc.openRaMod = (value || null) as OpenRaModSlug | null;
+  doc.lastActivity = new Date();
+  await doc.save();
+
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const nameById = await resolveUsernames(memberIds);
+
+  trackPartyEvent("party_openra_mod_set", {
+    partyId: String(doc._id),
+    userId: leaderId,
+    openRaMod: value || null,
+  });
+  const serialized = serializeParty(doc.toObject(), nameById, "OpenRA");
   return {
     party: await attachConfigSync(serialized, leaderId),
     status: 200,

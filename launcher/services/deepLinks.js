@@ -116,7 +116,7 @@ function createDeepLinks(protocol) {
        */
       if (slug.includes("/")) return null;
 
-      /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string, editionSlug?: string, modSlugs?: string[] }} */
+      /** @type {{ action: string, slug: string, host?: string, port?: number, name?: string, gameMod?: string, editionSlug?: string, modSlugs?: string[] }} */
       const parsed = { action, slug };
       if (action === "join") {
         parsed.host = u.searchParams.get("host") || "";
@@ -124,6 +124,14 @@ function createDeepLinks(protocol) {
         const port = Number(u.searchParams.get("port") || 0);
         parsed.port = Number.isFinite(port) ? port : 0;
         parsed.name = u.searchParams.get("name") || "";
+        /*
+         * OpenRA engine variant (ra/cnc/d2k) for a server the site already
+         * knows the mod of — its master-server listing reports it per row.
+         * Named apart from the repeated `?mod=` catalog-mods param above,
+         * which is a different concept entirely.
+         */
+        const gameMod = u.searchParams.get("gameMod");
+        if (gameMod) parsed.gameMod = String(gameMod).trim().toLowerCase();
       }
       if (EDITION_ACTIONS.has(action)) {
         const edition = u.searchParams.get("edition");

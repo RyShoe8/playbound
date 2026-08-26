@@ -33,9 +33,17 @@ export function launcherInstallUrl(slug: string): string {
 }
 
 /** Join a multiplayer server via the PlayBound Launcher. */
-export function launcherJoinUrl(slug: string, host: string, port: number, name?: string): string {
+export function launcherJoinUrl(
+  slug: string,
+  host: string,
+  port: number,
+  name?: string,
+  /** OpenRA engine variant (ra/cnc/d2k) when the server list knows it. See deepLinks.js. */
+  gameMod?: string | null
+): string {
   const q = new URLSearchParams({ host, port: String(port) });
   if (name) q.set("name", name.slice(0, 80));
+  if (gameMod) q.set("gameMod", gameMod);
   return `playbound://join/${slug}?${q.toString()}`;
 }
 

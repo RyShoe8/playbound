@@ -198,6 +198,8 @@ export async function createHostRoom(opts: {
   name?: string;
   maxPlayers?: number;
   editionSlug?: string | null;
+  /** Explicit override for games edition alone can't disambiguate — see Party.openRaMod. */
+  mod?: string | null;
 }): Promise<GameHostRoom | { error: string }> {
   const cfg = hostConfig();
   if (!cfg) return { error: "Game host is not configured" };
@@ -213,6 +215,7 @@ export async function createHostRoom(opts: {
           name: opts.name,
           maxPlayers: opts.maxPlayers,
           editionSlug: opts.editionSlug || null,
+          mod: opts.mod || null,
         }),
       },
       CREATE_ROOM_TIMEOUT_MS

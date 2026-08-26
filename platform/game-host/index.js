@@ -425,7 +425,7 @@ function stopRoom(room) {
   if (byParty.get(room.partyId) === room.roomId) byParty.delete(room.partyId);
 }
 
-async function startRoom({ gameSlug, partyId, name, editionSlug }) {
+async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
   const existingId = byParty.get(partyId);
   if (existingId && rooms.has(existingId)) {
     return { room: rooms.get(existingId) };
@@ -480,6 +480,9 @@ async function startRoom({ gameSlug, partyId, name, editionSlug }) {
     partyId,
     name: String(name || `PlayBound ${gameSlug}`).slice(0, 40),
     editionSlug: editionSlug || "",
+    // Explicit override for games where edition alone can't say which mod to
+    // run — OpenRA's "official" edition is one client covering ra/cnc/d2k.
+    mod: mod || "",
   };
 
   if (recipe.prepareSpawn) {
@@ -731,6 +734,7 @@ const server = http.createServer(async (req, res) => {
         partyId,
         name: body.name,
         editionSlug: body.editionSlug,
+        mod: body.mod,
       });
       if (result.error) {
         json(res, 409, { error: result.error });

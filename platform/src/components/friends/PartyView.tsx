@@ -11,6 +11,8 @@ import {
   PARTY_NAME_MAX,
   PARTY_VISIBILITIES,
   PARTY_VISIBILITY_LABELS,
+  OPENRA_MODS,
+  OPENRA_MOD_LABELS,
   partyDisplayName,
 } from "@/lib/playTogether/types";
 import type { LaunchMethod } from "@/lib/data/types";
@@ -68,6 +70,7 @@ export function PartyView({
     provisionDiscord,
     setGame,
     setName,
+    setOpenRaMod,
   } = usePartyStore();
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -317,6 +320,29 @@ export function PartyView({
                   gameSlug={party.gameSlug}
                   editionSlug={party.editionSlug}
                 />
+              ) : null}
+              {party.gameSlug === "openra" ? (
+                <label className="mt-2 block">
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Which OpenRA game?
+                  </span>
+                  <PremiumSelect
+                    value={party.openRaMod || ""}
+                    onChange={(e) => void setOpenRaMod(party.id, e.target.value || null)}
+                  >
+                    <option value="">Red Alert (default)</option>
+                    {OPENRA_MODS.filter((m) => m !== "ra").map((m) => (
+                      <option key={m} value={m}>
+                        {OPENRA_MOD_LABELS[m]}
+                      </option>
+                    ))}
+                  </PremiumSelect>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    OpenRA&apos;s official client bundles all three — set this to whichever one
+                    you&apos;re actually hosting, or joiners get rejected as &quot;incompatible
+                    mod&quot;.
+                  </p>
+                </label>
               ) : null}
             </div>
           ) : hasGame ? (

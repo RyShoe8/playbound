@@ -2264,7 +2264,12 @@ function buildContextPayload() {
     installedPath: installed?.dir ?? null,
     defaultDir: path.join(gamesRoot(), entry.slug),
     join: context.action === "join"
-      ? { host: context.host || "", port: context.port || 0, name: context.name || "" }
+      ? {
+          host: context.host || "",
+          port: context.port || 0,
+          name: context.name || "",
+          gameMod: context.gameMod || null,
+        }
       : null,
   };
 }

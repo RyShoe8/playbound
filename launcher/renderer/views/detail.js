@@ -1877,7 +1877,7 @@ async function renderGameDetailView(slug, opts = {}) {
                   <td>${s.players == null ? "—" : `${s.players}/${s.maxPlayers ?? "—"}`}</td>
                   <td>${escapeHtml(s.map || "Standard")}</td>
                   <td>
-                    <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}">Join</button>
+                    <button class="btn-primary btn-sm btn-join-s" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}" data-mod="${escapeHtml(s.mod || "")}">Join</button>
                   </td>
                 </tr>
               `
@@ -1903,7 +1903,11 @@ async function renderGameDetailView(slug, opts = {}) {
         });
         sSec.querySelectorAll(".btn-join-s").forEach((b) => {
           b.addEventListener("click", async () => {
-            await window.playbound.play(slug, { host: b.dataset.host, port: Number(b.dataset.port) });
+            await window.playbound.play(slug, {
+              host: b.dataset.host,
+              port: Number(b.dataset.port),
+              mod: b.dataset.mod || undefined,
+            });
             startGameSession(slug, detail.title || slug);
           });
         });

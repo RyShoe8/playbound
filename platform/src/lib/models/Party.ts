@@ -109,6 +109,16 @@ const PartySchema = new Schema(
     editionSlug: { type: String, default: null },
     modSlugs: { type: [String], default: [] },
 
+    /*
+     * Which of OpenRA's bundled games (Red Alert / Tiberian Dawn / Dune 2000)
+     * this party is playing. OpenRA's "official" edition is one client that
+     * can run any of the three, so editionSlug alone cannot tell a joiner's
+     * launcher which Game.Mod to launch with — it always fell back to "ra",
+     * and a self-hosted Tiberian Dawn or Dune 2000 night made every join fail
+     * with "the server is running an incompatible mod". Null everywhere else.
+     */
+    openRaMod: { type: String, enum: ["ra", "cnc", "d2k", null], default: null },
+
     status: {
       type: String,
       enum: PARTY_STATUSES,
@@ -213,6 +223,7 @@ export type PartyDoc = {
   gameSlug: string;
   editionSlug?: string | null;
   modSlugs: string[];
+  openRaMod?: "ra" | "cnc" | "d2k" | null;
   status: string;
   visibility: string;
   passwordSalt?: string | null;
