@@ -742,6 +742,116 @@ export async function runStatusAction() {
   }
 }
 
+export function setInstallQueueState(queueData) {
+  state.installQueue = queueData || { active: null, queued: [], totalCount: 0 };
+  updateInstallQueueUI();
+}
+
+export function updateInstallQueueUI() {
+  const q = state.installQueue || { active: null, queued: [], totalCount: 0 };
+  const toggleBtn = document.getElementById("statusbar-queue-toggle");
+  const countBadge = document.getElementById("statusbar-queue-count");
+  const popoverCount = document.getElementById("queue-popover-count");
+
+  const total = q.totalCount != null ? q.totalCount : (q.active ? 1 : 0) + (q.queued?.length || 0);
+
+  if (toggleBtn && countBadge) {
+    if (total > 0) {
+      toggleBtn.classList.remove("hidden");
+      countBadge.textContent = total;
+    } else {
+      toggleBtn.classList.add("hidden");
+      document.getElementById("statusbar-queue-popover")?.classList.add("hidden");
+    }
+  }
+
+  if (popoverCount) {
+    popoverCount.textContent = `${total} active`;
+  }
+
+  renderQueuePopoverContent();
+}
+
+export function renderQueuePopoverContent() {
+  const container = document.getElementById("queue-popover-content");
+  if (!container) return;
+
+  const q = state.installQueue || { active: null, queued: [], totalCount: 0 };
+  const { active, queued } = q;
+
+  if (!active && (!queued || queued.length === 0)) {
+    container.innerHTML = `<div class="queue-empty-msg">No active downloads or queued installs.</div>`;
+    return;
+  }
+
+  let html = "";
+  if (active) {
+    const pct = active.pct != null ? active.pct : (active.total && active.received ? Math.round((active.received / active.total) * 100) : 0);
+    const sizeStr = active.total
+      ? `${fmtBytes(active.received || 0)} / ${fmtBytes(active.total)} (${pct}%)`
+      : (active.received ? fmtBytes(active.received) : "");
+    const phaseLabel = active.phase === "downloading"
+      ? (active.addon ? `Downloading ${active.addon}` : "Downloading files…")
+      : active.phase === "extracting"
+      ? "Extracting files…"
+      : active.phase === "installer-ready"
+      ? (active.addon || "Waiting for installer…")
+      : active.phase === "resolving"
+      ? "Resolving package…"
+      : (active.message || "Installing…");
+
+    html += `
+      <div class="queue-section-label">Currently Installing</div>
+      <div class="queue-active-card">
+        <div class="queue-card-header">
+          <span class="queue-card-title">${escapeHtml(active.title || active.slug)}</span>
+          ${active.editionSlug ? `<span class="chip" style="font-size:10px">${escapeHtml(active.editionSlug)}</span>` : ""}
+        </div>
+        <div class="queue-progress-bar-wrap">
+          <div class="queue-progress-bar" style="width: ${Math.max(4, pct)}%"></div>
+        </div>
+        <div class="queue-card-meta">
+          <span>${escapeHtml(phaseLabel)}</span>
+          <span>${escapeHtml(sizeStr)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  if (queued && queued.length > 0) {
+    html += `
+      <div class="queue-section-label" style="margin-top: 8px;">Next in Queue (${queued.length})</div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+    `;
+    queued.forEach((item, idx) => {
+      html += `
+        <div class="queue-item-row">
+          <div class="queue-item-left">
+            <span class="queue-pos-badge">#${idx + 1}</span>
+            <span class="queue-item-title">${escapeHtml(item.title || item.slug)}</span>
+          </div>
+          <span class="chip" style="font-size:10.5px;color:var(--text-dim)">Queued</span>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+export function toggleQueuePopover() {
+  const popover = document.getElementById("statusbar-queue-popover");
+  if (!popover) return;
+  const isHidden = popover.classList.contains("hidden");
+  if (isHidden) {
+    renderQueuePopoverContent();
+    popover.classList.remove("hidden");
+  } else {
+    popover.classList.add("hidden");
+  }
+}
+
 export function applyAccountToSidebar(acc) {
   state.accountState = acc || { connected: false };
   const connectionDot = document.getElementById("connection-dot");

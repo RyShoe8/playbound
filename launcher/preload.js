@@ -192,11 +192,14 @@ contextBridge.exposeInMainWorld("playbound", {
     ipcRenderer.on("couch-peer-send", (_event, data) => cb(data || {})),
   getControllerSupport: (slug) => ipcRenderer.invoke("get-controller-support", slug),
 
+  getInstallQueue: () => ipcRenderer.invoke("get-install-queue"),
   // Events
   onCatalogUpdated: (cb) => ipcRenderer.on("catalog-updated", (_event, data) => cb(data || [])),
   onLiveStatsUpdated: (cb) => ipcRenderer.on("live-stats-updated", (_event, data) => cb(data || {})),
   onContext: (cb) => ipcRenderer.on("context", (_event, data) => cb(data)),
   onProgress: (cb) => ipcRenderer.on("progress", (_event, data) => cb(data)),
+  onInstallQueueUpdated: (cb) =>
+    ipcRenderer.on("install-queue-updated", (_event, data) => cb(data || {})),
   onAccount: (cb) => ipcRenderer.on("account", (_event, data) => cb(data || {})),
   onInstallDetected: (cb) => ipcRenderer.on("install-detected", (_event, data) => cb(data || {})),
   onInstallDetectFailed: (cb) =>

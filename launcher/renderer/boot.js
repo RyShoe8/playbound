@@ -21,13 +21,16 @@ import {
   setCatalogCache,
   setCompatibilityFilter,
   setDiscoveryMode,
+  setInstallQueueState,
   setProgress,
   setStatus,
   setStatusAction,
   shouldReturnToFriendsAfterPartyInstall,
   clearPartyInstallReturn,
   state,
+  toggleQueuePopover,
   updateGamesFamilyNav,
+  updateInstallQueueUI,
   views,
   wireEnhanceSelect,
 } from "./shared.js";
@@ -362,14 +365,36 @@ function wireShell() {
 
   const statusMsg = document.getElementById("statusbar-msg");
   statusMsg?.addEventListener("click", () => {
-    void runStatusAction();
+    if (state.statusAction) {
+      void runStatusAction();
+    } else if (state.installQueue?.totalCount > 0) {
+      toggleQueuePopover();
+    }
   });
   statusMsg?.addEventListener("keydown", (e) => {
-    if (!state.statusAction) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      void runStatusAction();
+      if (state.statusAction) void runStatusAction();
+      else if (state.installQueue?.totalCount > 0) toggleQueuePopover();
     }
+  });
+
+  document.getElementById("statusbar-queue-toggle")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleQueuePopover();
+  });
+
+  document.getElementById("queue-popover-close")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.getElementById("statusbar-queue-popover")?.classList.add("hidden");
+  });
+
+  // Close queue popover when clicking outside
+  document.addEventListener("click", (e) => {
+    const popover = document.getElementById("statusbar-queue-popover");
+    if (!popover || popover.classList.contains("hidden")) return;
+    if (e.target.closest("#statusbar-queue-popover") || e.target.closest("#statusbar-queue-toggle")) return;
+    popover.classList.add("hidden");
   });
 
   const searchForm = document.getElementById("global-search-form");
@@ -516,30 +541,43 @@ function wireMainEvents() {
     }
   });
 
-  window.playbound.onProgress(({ phase, received, total, addon, message }) => {
-    if (phase === "resolving") setStatus("Resolving download package...");
+  window.playbound.onInstallQueueUpdated?.((data) => {
+    setInstallQueueState(data);
+  });
+
+  window.playbound.getInstallQueue?.().then((data) => {
+    if (data) setInstallQueueState(data);
+  }).catch(() => {});
+
+  window.playbound.onProgress(({ phase, received, total, addon, message, title, slug, queue, queueCount }) => {
+    if (queue) setInstallQueueState(queue);
+
+    const titlePrefix = title ? `${title}: ` : "";
+    const queuedText = queueCount && queueCount > 1 ? ` · (+${queueCount - 1} queued)` : "";
+
+    if (phase === "resolving") setStatus(`${titlePrefix}Resolving download package…${queuedText}`);
     else if (phase === "queued") {
       // No bar: this install has not started and has no progress of its own.
-      setStatus(message || "Queued — waiting for the current install to finish…");
+      setStatus(message || `${titlePrefix}Queued — waiting for current install to finish…`);
       setProgress(null);
     } else if (phase === "java") setStatus(message || "Installing Java…");
     else if (phase === "dosbox") setStatus(message || "Installing DOSBox…");
     else if (phase === "downloading") {
       const pct = total ? Math.round((received / total) * 100) : null;
       const prefix = addon ? `Downloading ${addon}...` : "Downloading...";
-      setStatus(`${prefix} ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}`);
+      setStatus(`${titlePrefix}${prefix} ${fmtBytes(received)}${total ? ` of ${fmtBytes(total)} (${pct}%)` : ""}${queuedText}`);
       setProgress(pct);
     } else if (phase === "extracting") {
-      setStatus("Extracting game files… this can take a few minutes");
+      setStatus(`${titlePrefix}Extracting game files… this can take a few minutes${queuedText}`);
       setProgress("indeterminate");
     } else if (phase === "installer-ready") {
-      setStatus(addon || "Waiting for the installer to finish…");
+      setStatus(addon || `${titlePrefix}Waiting for the installer to finish…`);
       setProgress(null);
     } else if (phase === "installing-base") {
-      setStatus("Installing required base game…");
+      setStatus(`${titlePrefix}Installing required base game…`);
       setProgress(null);
     } else if (phase === "done") {
-      setStatus("Complete!");
+      setStatus(`${titlePrefix}Complete!`);
       setProgress(null);
     }
   });
