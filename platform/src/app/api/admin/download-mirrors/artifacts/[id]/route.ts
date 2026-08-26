@@ -7,6 +7,7 @@ import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorEvent from "@/lib/models/MirrorEvent";
 import { calculateArtifactCacheScore } from "@/lib/mirrors/scoring";
 import { deleteArtifactCompletely } from "@/lib/mirrors/cacheManager";
+import { archivedArtifactStatusOnHost } from "@/lib/gameHost/client";
 
 export async function GET(
   _req: Request,
@@ -18,8 +19,26 @@ export async function GET(
   try {
     await dbConnect();
     const { id } = await params;
-    const artifact = await Artifact.findOne({ artifactId: id }).lean();
+    let artifact = await Artifact.findOne({ artifactId: id });
     if (!artifact) return NextResponse.json({ error: "Artifact not found" }, { status: 404 });
+
+    /*
+     * The signed-launcher uploader polls this route until vpsStatus is
+     * verified. Without a host refresh here, Mongo stayed "uploading" for the
+     * full poll window even after the VPS finished — the cache list refresh
+     * was the only place that synced, and that UI is not open during upload.
+     */
+    if (artifact.vpsStatus === "uploading") {
+      const remote = await archivedArtifactStatusOnHost(artifact.relativePath);
+      if (remote && remote.status !== "uploading") {
+        artifact.vpsStatus = remote.status === "verified" ? "verified" : "missing";
+        artifact.vpsStatusMessage =
+          remote.status === "verified"
+            ? null
+            : remote.message || "The VPS did not retain the archive transfer.";
+        await artifact.save();
+      }
+    }
 
     const sources = await MirrorSource.find({ artifactId: id }).lean();
     const recentAttempts = await MirrorAttempt.find({ artifactId: id })
@@ -33,7 +52,7 @@ export async function GET(
     const publicSources = sources.filter((source) => source.sourceType === "public");
 
     return NextResponse.json({
-      artifact,
+      artifact: artifact.toObject(),
       sources,
       scoreBreakdown: calculateArtifactCacheScore(artifact, publicSources),
       recentAttempts,
