@@ -138,6 +138,7 @@ export const launcherInstallSchema = z
     exeHint: optionalTrimmed,
     url: optionalTrimmed,
     fileName: optionalTrimmed,
+    uploadId: optionalTrimmed,
     versionLabel: optionalTrimmed,
     steamAppId: optionalTrimmed,
     steamPrerequisites: z
@@ -691,6 +692,7 @@ export function toPayloadLauncherInstall(
     exeHint: li.exeHint ?? null,
     url: li.url ?? null,
     fileName: li.fileName ?? null,
+    uploadId: li.uploadId ?? null,
     versionLabel: li.versionLabel ?? null,
     steamAppId: li.steamAppId ?? null,
     steamPrerequisites: li.steamPrerequisites ?? [],

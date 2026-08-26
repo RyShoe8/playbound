@@ -54,6 +54,8 @@ export type LauncherInstall = {
   exeHint?: string | null;
   url?: string | null;
   fileName?: string | null;
+  /** itch.io's upload_id for the specific file to grab when a page lists several downloads. */
+  uploadId?: string | null;
   versionLabel?: string | null;
   knownExePaths?: string[];
   /** Arguments passed to the installed executable when Play is pressed. */
@@ -119,6 +121,7 @@ export type LauncherCatalogEntry = {
   exeHint?: string;
   url?: string;
   fileName?: string;
+  uploadId?: string;
   versionLabel?: string;
   knownExePaths?: string[];
   launchArgs?: string[];
@@ -312,6 +315,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.exeHint) entry.exeHint = li.exeHint;
   if (li.url) entry.url = li.url;
   if (li.fileName) entry.fileName = li.fileName;
+  if (li.uploadId) entry.uploadId = li.uploadId;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;
   if (li.knownExePaths?.length) entry.knownExePaths = li.knownExePaths;
   if (li.launchArgs?.length) entry.launchArgs = li.launchArgs;

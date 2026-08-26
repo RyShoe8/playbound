@@ -32,6 +32,8 @@ const LauncherInstallSchema = new Schema(
     exeHint: { type: String, default: null },
     url: { type: String, default: null },
     fileName: { type: String, default: null },
+    /** itch.io's upload_id for the specific file a page's Download button should resolve — a page can list several. */
+    uploadId: { type: String, default: null },
     versionLabel: { type: String, default: null },
     steamAppId: { type: String, default: null },
     steamPrerequisites: {
