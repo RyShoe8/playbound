@@ -11,6 +11,14 @@ import {
  * Used by seed:launcher-install and as fallback when Mongo has no recipe yet.
  */
 export const launcherInstallBySlug: Record<string, LauncherInstall> = {
+  "ye-guild-clerk": {
+    enabled: true,
+    kind: "external",
+    url: "steam://run/3715020",
+    steamAppId: "3715020",
+    versionLabel: "Steam",
+    note: "Installs or launches the full free Steam release directly.",
+  },
   "goldeneye-source": {
     enabled: true,
     kind: "direct-installer",
