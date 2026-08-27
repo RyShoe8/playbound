@@ -30,6 +30,9 @@ export const PARTY_OPS_EVENTS = [
   "party_join_game",
   "party_hosted_ready",
   "party_hosted_failed",
+  "party_lan_ready",
+  "party_lan_failed",
+  "party_failed",
   "party_config_sync",
   "party_chat_failed",
 ] as const;

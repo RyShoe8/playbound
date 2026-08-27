@@ -62,13 +62,14 @@ export function managementUrl(): string | null {
 async function nb<T>(
   path: string,
   init: { method?: string; body?: unknown } = {}
-): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+): Promise<{ ok: true; data: T } | { ok: false; error: string; status?: number }> {
   const base = apiBase();
   const token = apiToken();
   if (!base || !token) return { ok: false, error: "Virtual LAN is not configured" };
 
+  const url = `${base}${path}`;
   try {
-    const res = await fetch(`${base}${path}`, {
+    const res = await fetch(url, {
       method: init.method || "GET",
       headers: {
         Authorization: `Token ${token}`,
@@ -79,25 +80,44 @@ async function nb<T>(
       // Never let a slow overlay API hold up a party launch.
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const body = await res.text();
-        if (body) {
-          const parsed = JSON.parse(body);
-          detail = parsed.message || parsed.error || body.slice(0, 100);
-        }
-      } catch {
-        /* ignore parse */
-      }
-      return { ok: false, error: detail ? `NetBird ${res.status}: ${detail}` : `NetBird ${res.status}` };
-    }
     const text = await res.text();
+    if (!res.ok) {
+      return { ok: false, status: res.status, error: formatNetBirdHttpError(res.status, path, text) };
+    }
     return { ok: true, data: (text ? JSON.parse(text) : {}) as T };
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
-    return { ok: false, error: `NetBird request failed: ${message}` };
+    return { ok: false, error: `NetBird request failed (${path}): ${message}` };
   }
+}
+
+/**
+ * Turn a management HTTP failure into something Ops can act on.
+ *
+ * A common self-host failure mode is the reverse proxy serving the Next.js
+ * dashboard for `/api/*` instead of the management service. That returns an
+ * HTML 404 that used to surface only as "NetBird 404", which looked like a
+ * missing group rather than a broken route.
+ */
+export function formatNetBirdHttpError(status: number, path: string, body: string): string {
+  const trimmed = (body || "").trim();
+  const looksLikeHtml = /^\s*<(!DOCTYPE|html)/i.test(trimmed) || /<_next\/static/i.test(trimmed);
+  if (looksLikeHtml) {
+    return (
+      `NetBird ${status} on ${path}: management API returned the dashboard HTML instead of JSON. ` +
+      `Reverse-proxy /api to the management service (dashboard alone is not enough).`
+    );
+  }
+  let detail = "";
+  if (trimmed) {
+    try {
+      const parsed = JSON.parse(trimmed) as { message?: string; error?: string };
+      detail = parsed.message || parsed.error || trimmed.slice(0, 160);
+    } catch {
+      detail = trimmed.slice(0, 160);
+    }
+  }
+  return detail ? `NetBird ${status} on ${path}: ${detail}` : `NetBird ${status} on ${path}`;
 }
 
 /** Setup keys must live at least a day per the API; parties never do. */

@@ -81,16 +81,22 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
     lan.status = "failed";
     lan.error = result.error;
     await party.save();
+    const netbirdStatus = /NetBird (\d+)/.exec(result.error)?.[1];
     trackPartyFailure("lan", {
       op: "provision",
       partyId: String(party._id),
       gameSlug: slug,
       message: result.error,
+      status: netbirdStatus ? Number(netbirdStatus) : undefined,
+      code: netbirdStatus ? `NETBIRD_${netbirdStatus}` : "NETBIRD_PROVISION_FAILED",
     });
     trackPartyEvent("party_lan_failed", {
       partyId: String(party._id),
       gameSlug: slug,
       message: result.error,
+      code: netbirdStatus ? `NETBIRD_${netbirdStatus}` : "NETBIRD_PROVISION_FAILED",
+      status: netbirdStatus ? Number(netbirdStatus) : undefined,
+      htmlDashboardLeak: /dashboard HTML instead of JSON/i.test(result.error),
     });
     return false;
   }
