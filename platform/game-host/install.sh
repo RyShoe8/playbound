@@ -68,6 +68,16 @@ else
   apt-get install -y --no-install-recommends minetest-server || true
 fi
 
+# Package units bind UDP 30000 and collide with PlayBound party hosts.
+systemctl stop minetest-server.service luanti-server.service 2>/dev/null || true
+systemctl disable minetest-server.service luanti-server.service 2>/dev/null || true
+# Some distros ship a socket-activated unit instead.
+systemctl stop minetest-server.socket luanti-server.socket 2>/dev/null || true
+systemctl disable minetest-server.socket luanti-server.socket 2>/dev/null || true
+pkill -x minetestserver 2>/dev/null || true
+pkill -x luantiserver 2>/dev/null || true
+fuser -k 30000/udp 30000/tcp 2>/dev/null || true
+
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/v//' | cut -d. -f1)" -lt 18 ]]; then
   echo "==> Node.js 20"
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -

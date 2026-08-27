@@ -1719,24 +1719,33 @@ export const editions: EditionSeed[] = [
     installMethod: "playbound_installer",
     installConfig: {
       playbound_installer: {
-        kind: "github-zip",
-        // dunelegacy/dunelegacy 404s; henricj's fork is the maintained one and
-        // is what the SourceForge project page points at for Windows builds.
-        repo: "henricj/dunelegacy",
         /*
-         * Plain x64 rather than the -avx2 build beside it: AVX2 needs CPU
-         * support the launcher cannot check before installing, and the plain
-         * build runs everywhere. "-win64" never existed in this repo's names.
+         * The henricj GitHub zip is engine-only (~3 MB) and does not ship the
+         * Dune II PAK assets. Campaign and multiplayer then fail with "need
+         * Dune 2 data files" after a long boot — while a SourceForge install
+         * (which bundles PAKs) still works from Library Play if that exe was
+         * located separately. Use the official Windows installer that includes
+         * the assets, matching the live catalog recipe.
          */
-        assetPattern: "^dunelegacy-x64-v.*\\.zip$",
+        kind: "direct-installer",
+        url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+        fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
+        versionLabel: "0.99.5",
         exeHint: "dunelegacy",
-        note: "Installs Dune Legacy modern engine with full campaign and skirmish support.",
+        knownExePaths: [
+          "%LOCALAPPDATA%\\Programs\\Dune Legacy\\dunelegacy.exe",
+          "%PROGRAMFILES%\\Dune Legacy\\dunelegacy.exe",
+          "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
+          "dunelegacy.exe",
+        ],
+        note: "Official standalone Windows installer with bundled Dune II PAK assets — no separate base-game purchase.",
       },
     },
     features: ["Singleplayer", "Multiplayer", "Mod Support", "Modern Controls", "High Resolution"],
     tags: ["RTS", "Classic", "Dune", "Open Source"],
     aliases: ["Dune Legacy Default"],
     verificationLevel: "playbound_verified",
+    verificationNote: "SourceForge Windows installer includes PAK data; GitHub zip alone does not.",
   },
   {
     gameSlug: "mrboom",

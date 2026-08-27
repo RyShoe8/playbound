@@ -21,10 +21,14 @@ import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playToge
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
 
+/** How long a pending overlay can sit before we treat the attempt as dead. */
+const LAN_PENDING_STALE_MS = 45_000;
+
 export type PartyLanFields = Partial<NetBirdParty> & {
   status?: PartyLanStatus;
   error?: string | null;
   provisionedAt?: Date | null;
+  pendingAt?: Date | null;
 };
 
 type PartyLike = Document & {
@@ -36,6 +40,20 @@ type PartyLike = Document & {
   lan?: PartyLanFields;
   save: () => Promise<unknown>;
 };
+
+function isLanPendingStale(lan?: PartyLanFields | null): boolean {
+  if (!lan || lan.status !== "pending") return false;
+  const started = lan.pendingAt ? new Date(lan.pendingAt).getTime() : 0;
+  // Missing timestamp = leftover from before pendingAt existed; safe to retry.
+  if (!started) return true;
+  return Date.now() - started > LAN_PENDING_STALE_MS;
+}
+
+/** True when Ready/Join should kick provisioning again (including stale pending). */
+export function partyLanNeedsProvision(lan?: PartyLanFields | null): boolean {
+  const status = lan?.status || "none";
+  return status === "none" || status === "failed" || isLanPendingStale(lan);
+}
 
 /**
  * Does this party need an overlay segment?
@@ -65,9 +83,11 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
 
   const lan = ensureLan(party);
   if (lan.status === "ready" && lan.setupKey) return true;
+  if (lan.status === "pending" && !isLanPendingStale(lan)) return false;
   if (!isVirtualLanConfigured()) return false;
 
   lan.status = "pending";
+  lan.pendingAt = new Date();
   lan.error = null;
   await party.save();
 
@@ -80,6 +100,7 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   if ("error" in result) {
     lan.status = "failed";
     lan.error = result.error;
+    lan.pendingAt = null;
     await party.save();
     const netbirdStatus = /NetBird (\d+)/.exec(result.error)?.[1];
     trackPartyFailure("lan", {
@@ -107,6 +128,7 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   lan.setupKeyId = result.setupKeyId;
   lan.setupKey = result.setupKey;
   lan.error = null;
+  lan.pendingAt = null;
   lan.provisionedAt = new Date();
   await party.save();
   trackPartyOk("lan", { op: "provision", partyId: String(party._id), gameSlug: slug });
@@ -154,6 +176,7 @@ export async function releasePartyLan(party: PartyLike): Promise<void> {
   lan.setupKey = null as unknown as undefined;
   lan.status = "none";
   lan.error = null;
+  lan.pendingAt = null;
 }
 
 /**

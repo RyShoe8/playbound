@@ -1463,10 +1463,12 @@ function buildPartyViewHtml(party) {
          <button type="button" id="btn-party-join-game" class="party-btn btn-primary"${
            joinDisabled
              ? ` disabled title="${
-                 hosted.status === "pending" || lan.status === "pending"
+                 lan.status === "pending"
+                   ? "Waiting for the party network"
+                   : hosted.status === "pending"
                    ? "Waiting for the PlayBound server"
-                   : hosted.status === "failed"
-                     ? "Could not start the PlayBound server"
+                   : hosted.status === "failed" || lan.status === "failed"
+                     ? "Could not start the party connection"
                      : "Ready up and wait for the server"
                }"`
              : ""

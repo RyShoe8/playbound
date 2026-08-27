@@ -217,7 +217,7 @@ function hostedLabel(party: ConnectAdminPartyRow) {
   return parts.join(" · ");
 }
 
-export function ConnectManager() {
+export function ConnectManager({ view = "game-servers" }: { view?: "game-servers" | "parties" }) {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -227,6 +227,9 @@ export function ConnectManager() {
   const [testingSlug, setTestingSlug] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const isParties = view === "parties";
+  const isServers = view === "game-servers";
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -362,34 +365,38 @@ export function ConnectManager() {
           <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
           Refresh
         </button>
-        <button
-          type="button"
-          onClick={() => void runEnsureMissing()}
-          disabled={ensureBusy || !data?.configured}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          <Server className="size-4" />
-          {ensureBusy ? "Ensuring…" : "Ensure missing games"}
-        </button>
-        <button
-          type="button"
-          onClick={() => void runTestAll()}
-          disabled={testAllBusy || testBusy || !data?.configured}
-          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-        >
-          {testAllBusy ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <CheckCircle2 className="size-4" />
-          )}
-          {testAllBusy ? "Testing all…" : "Test all games"}
-        </button>
+        {isServers ? (
+          <>
+            <button
+              type="button"
+              onClick={() => void runEnsureMissing()}
+              disabled={ensureBusy || !data?.configured}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <Server className="size-4" />
+              {ensureBusy ? "Ensuring…" : "Ensure missing games"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void runTestAll()}
+              disabled={testAllBusy || testBusy || !data?.configured}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              {testAllBusy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-4" />
+              )}
+              {testAllBusy ? "Testing all…" : "Test all games"}
+            </button>
+          </>
+        ) : null}
         {data?.host && (
           <span className="text-sm text-muted-foreground">
             VPS <span className="font-mono text-foreground">{data.host}</span>
           </span>
         )}
-        {testStatus && (
+        {isServers && testStatus && (
           <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             {(testBusy || testAllBusy) && <Loader2 className="size-4 animate-spin" />}
             {testStatus}
@@ -403,25 +410,27 @@ export function ConnectManager() {
         </div>
       )}
 
-      {data?.alerts?.map((alert) => (
-        <div
-          key={`${alert.title}-${alert.message}`}
-          className={`flex gap-3 rounded-lg border px-4 py-3 text-sm ${
-            alert.type === "error"
-              ? "border-red-500/30 bg-red-500/10"
-              : alert.type === "warning"
-                ? "border-amber-500/30 bg-amber-500/10"
-                : "border-border bg-secondary/40"
-          }`}
-        >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <div>
-            <p className="font-semibold">{alert.title}</p>
-            <p className="text-muted-foreground">{alert.message}</p>
+      {isServers &&
+        data?.alerts?.map((alert) => (
+          <div
+            key={`${alert.title}-${alert.message}`}
+            className={`flex gap-3 rounded-lg border px-4 py-3 text-sm ${
+              alert.type === "error"
+                ? "border-red-500/30 bg-red-500/10"
+                : alert.type === "warning"
+                  ? "border-amber-500/30 bg-amber-500/10"
+                  : "border-border bg-secondary/40"
+            }`}
+          >
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="font-semibold">{alert.title}</p>
+              <p className="text-muted-foreground">{alert.message}</p>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
+      {isParties ? (
       <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -504,21 +513,75 @@ export function ConnectManager() {
             </table>
           </div>
         )}
-        {data?.roomsError ? (
-          <p className="mt-3 text-xs text-amber-400">VPS rooms: {data.roomsError}</p>
-        ) : null}
-        {data?.configured && (data.rooms?.length ?? 0) > 0 ? (
-          <p className="mt-3 text-xs text-muted-foreground">
-            {data.rooms.length} dedicated VPS room{data.rooms.length === 1 ? "" : "s"} running
-            {data.health?.maxRooms != null
-              ? ` (${data.health?.rooms ?? 0}/${data.health.maxRooms} slots)`
-              : ""}
-            .
-          </p>
-        ) : null}
       </div>
+      ) : (
+      <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Servers currently running</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Dedicated processes on the VPS right now — every active game-host room, party-backed or not.
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold tabular-nums">{data?.rooms?.length ?? 0}</p>
+            <p className="text-xs text-muted-foreground">
+              {data?.health?.maxRooms != null
+                ? `of ${data.health.maxRooms} slots`
+                : "rooms"}
+            </p>
+          </div>
+        </div>
+        {data?.roomsError ? (
+          <p className="mb-3 text-sm text-amber-400">VPS rooms: {data.roomsError}</p>
+        ) : null}
+        {!data?.configured ? (
+          <p className="text-sm text-muted-foreground">Connect is not configured — no VPS rooms to list.</p>
+        ) : (data.rooms?.length ?? 0) === 0 ? (
+          <p className="text-sm text-muted-foreground">No dedicated servers running on the VPS right now.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Name</th>
+                  <th className="pb-2 pr-4 font-medium">Game</th>
+                  <th className="pb-2 pr-4 font-medium">Address</th>
+                  <th className="pb-2 pr-4 font-medium">Party</th>
+                  <th className="pb-2 font-medium">Started</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.rooms || []).map((room) => (
+                  <tr key={room.roomId} className="border-b border-border/50 align-top">
+                    <td className="py-2 pr-4">
+                      <p className="font-medium">{room.name || "—"}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{room.roomId.slice(-10)}</p>
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-xs">{room.gameSlug}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">
+                      {room.host}:{room.port}
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
+                      {room.partyId ? room.partyId.slice(-8) : "—"}
+                    </td>
+                    <td className="py-2 text-xs text-muted-foreground">
+                      {room.createdAt ? (
+                        <LocalTime value={new Date(room.createdAt).toISOString()} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      )}
 
-      {!data?.configured ? null : (
+      {isServers && !data?.configured ? null : isServers ? (
         <>
           {!metrics && agentOutdated ? (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
@@ -665,7 +728,7 @@ export function ConnectManager() {
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }

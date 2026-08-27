@@ -708,9 +708,16 @@ body {
   overflow: hidden;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--bg-card, #171421);
+  /*
+   * Opaque on purpose. --bg-card is rgba(..., 0.7) for glass cards; in a
+   * smaller window the denser page content shows through that alpha and the
+   * panel becomes hard to read. Fullsize often sits over emptier chrome so
+   * the translucency looked fine there.
+   */
+  background: #171421;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
   z-index: 80;
+  isolation: isolate;
 }
 
 .notif-panel-head,

@@ -12,6 +12,8 @@
 
 import http from "node:http";
 import https from "node:https";
+import net from "node:net";
+import dgram from "node:dgram";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -371,13 +373,51 @@ async function deleteArchivedFile(relativePath) {
   }
 }
 
-function allocPort(recipe, slug) {
+function probeTcpPort(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref();
+    server.once("error", () => resolve(false));
+    server.listen(port, "0.0.0.0", () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+function probeUdpPort(port) {
+  return new Promise((resolve) => {
+    const sock = dgram.createSocket("udp4");
+    sock.unref();
+    sock.once("error", () => {
+      try {
+        sock.close();
+      } catch {
+        /* ignore */
+      }
+      resolve(false);
+    });
+    sock.bind(port, "0.0.0.0", () => {
+      sock.close(() => resolve(true));
+    });
+  });
+}
+
+/** True when the OS will let us bind this port for the recipe's protocol. */
+async function isOsPortFree(port, protocol) {
+  const needTcp = protocol === "tcp" || protocol === "both" || !protocol;
+  const needUdp = protocol === "udp" || protocol === "both";
+  if (needTcp && !(await probeTcpPort(port))) return false;
+  if (needUdp && !(await probeUdpPort(port))) return false;
+  return true;
+}
+
+async function allocPort(recipe, slug) {
   for (let port = recipe.portStart; port <= recipe.portEnd; port += 1) {
     const key = `${slug}:${port}`;
-    if (!usedPorts.has(key)) {
-      usedPorts.add(key);
-      return port;
-    }
+    if (usedPorts.has(key)) continue;
+    if (!(await isOsPortFree(port, recipe.protocol))) continue;
+    usedPorts.add(key);
+    return port;
   }
   return null;
 }
@@ -504,7 +544,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
   const maxAttempts = Math.min(5, recipe.portEnd - recipe.portStart + 1);
   let lastError = `No free ports for ${gameSlug}`;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const port = allocPort(recipe, gameSlug);
+    const port = await allocPort(recipe, gameSlug);
     if (!port) return { error: lastError };
 
     if (recipe.prepareSpawn) {

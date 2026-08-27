@@ -6359,6 +6359,27 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  /*
+   * Dune Legacy needs Dune II PAK assets beside the exe (or under
+   * %APPDATA%\dunelegacy\data). The SourceForge installer ships them; the
+   * henricj GitHub zip does not. Party Join Game often targets the
+   * modern-engine edition path, so a PAK-less zip install fails here even when
+   * Library Play still hits a located SourceForge install that works.
+   */
+  if (slug === "dune-legacy" && !duneLegacyHasPakData(info.exe, info.dir)) {
+    const message =
+      "This Dune Legacy install is missing Dune II data files (PAKs). Remove it from your library and install again — PlayBound uses the official Windows package that includes them.";
+    void telemetry.launchFailed({
+      ...launchInfo(),
+      code: "DUNE_LEGACY_MISSING_PAK",
+      message,
+      phase: "resolve-install",
+    });
+    const pakErr = new Error(message);
+    pakErr.__launchFailedReported = true;
+    throw pakErr;
+  }
+
   // Prefer connectArgs stored on the edition install; fall back to catalog entry.
   let connectArgs = Array.isArray(info.connectArgs) ? info.connectArgs : null;
   const entry = catalog.find((e) => e.slug === slug);
@@ -9727,6 +9748,29 @@ function resolveGameDirForSlug(slug, editionSlug = null) {
   return exe ? path.dirname(exe) : null;
 }
 
+/** True when Dune Legacy can find at least one required original PAK. */
+function duneLegacyHasPakData(exePath, dir) {
+  const roots = [];
+  const base = dir || (exePath ? path.dirname(exePath) : null);
+  if (base) {
+    roots.push(base);
+    roots.push(path.join(base, "data"));
+  }
+  if (process.env.APPDATA) {
+    roots.push(path.join(process.env.APPDATA, "dunelegacy", "data"));
+  }
+  for (const root of roots) {
+    try {
+      if (fs.existsSync(path.join(root, "DUNE.PAK")) || fs.existsSync(path.join(root, "ATRE.PAK"))) {
+        return true;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return false;
+}
+
 /*
  * Put this machine on a party's overlay segment and point the game at it.
  *
@@ -9766,7 +9810,13 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
     if (enrollment?.error) return { error: enrollment.error };
 
     const joined = await virtualLan.joinNetwork(enrollment);
-    if (joined.error) return { error: joined.error };
+    if (joined.error) {
+      return {
+        error: joined.error,
+        needsInstall: Boolean(joined.needsInstall),
+        downloadUrl: joined.needsInstall ? virtualLan.DOWNLOAD_URL : undefined,
+      };
+    }
 
     const adapterName = await virtualLan.waitForAdapter();
     if (!adapterName) {
@@ -9809,7 +9859,15 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
     }
     return { ok: true, adapterName, adapterAddress, pointed };
   } catch (err) {
-    return { error: err.message };
+    const message = err?.message || String(err);
+    if (/spawn .*ENOENT|ENOENT/i.test(message)) {
+      return {
+        error: "PlayBound Connect needs the NetBird network client for this game.",
+        needsInstall: true,
+        downloadUrl: virtualLan.DOWNLOAD_URL,
+      };
+    }
+    return { error: message };
   }
 });
 

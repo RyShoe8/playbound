@@ -3,11 +3,11 @@ import Link from "next/link";
 import { ConnectManager } from "@/components/admin/ConnectManager";
 
 export const metadata: Metadata = {
-  title: "Game Servers — Connect Admin",
-  description: "PlayBound Connect dedicated hosting and VPS monitoring",
+  title: "Parties — Connect Admin",
+  description: "Live PlayBound parties, roster, and presence",
 };
 
-export default function ConnectGameServersPage() {
+export default function ConnectPartiesPage() {
   return (
     <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -18,9 +18,9 @@ export default function ConnectGameServersPage() {
           >
             ← Dashboard
           </Link>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">Game Servers</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">Parties</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Live VPS resources, dedicated game-host health, spawn tests, and rooms currently running on the VPS.
+            Active PlayBound parties from MongoDB — roster, ready state, and in-game presence.
           </p>
         </div>
         <Link
@@ -30,7 +30,7 @@ export default function ConnectGameServersPage() {
           Public Connect page
         </Link>
       </div>
-      <ConnectManager view="game-servers" />
+      <ConnectManager view="parties" />
     </div>
   );
 }

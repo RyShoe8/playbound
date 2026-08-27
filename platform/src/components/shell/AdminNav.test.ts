@@ -103,11 +103,12 @@ describe("admin nav structure", () => {
     });
   });
 
-  it("puts game servers and automated events under Connect", () => {
+  it("puts game servers, parties and automated events under Connect", () => {
     expect(subRow("/admin/connect/game-servers")).toMatchObject({
       section: "Connect",
       children: [
         { label: "Game Servers", href: "/admin/connect/game-servers" },
+        { label: "Parties", href: "/admin/connect/parties" },
         { label: "Event Planner", href: "/admin/connect/automated-events" },
       ],
     });

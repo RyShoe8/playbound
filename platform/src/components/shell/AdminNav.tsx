@@ -243,6 +243,12 @@ const CONNECT_CHILDREN: NavChild[] = [
       p.startsWith("/admin/game-servers"),
   },
   {
+    label: "Parties",
+    icon: Users,
+    href: "/admin/connect/parties",
+    match: (p) => p.startsWith("/admin/connect/parties"),
+  },
+  {
     label: "Event Planner",
     icon: CalendarDays,
     href: "/admin/connect/automated-events",
