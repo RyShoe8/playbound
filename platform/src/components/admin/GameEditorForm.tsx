@@ -232,6 +232,8 @@ export function GameEditorForm({
     isPcInstallCandidate(form) &&
     Boolean(form.launcherInstall?.kind) &&
     form.launcherInstall?.enabled !== false;
+  const browserOnlyLauncher =
+    launchSet.has("browser") && !launchSet.has("install");
 
   function patchLauncher(partial: Partial<NonNullable<GamePayload["launcherInstall"]>>) {
     setForm((prev) => {
@@ -1756,6 +1758,40 @@ export function GameEditorForm({
         </AdminCollapsibleSection>
 
         <AdminCollapsibleSection title="Launcher">
+          {browserOnlyLauncher ? (
+            <div className="space-y-3">
+              <p className="text-sm font-bold">Browser play (no Windows install)</p>
+              <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs">
+                <p className="font-semibold">This game opens in the browser.</p>
+                <p className="mt-1 text-muted-foreground">
+                  Play uses{" "}
+                  <code className="text-[10px]">{form.website || "the official site URL"}</code>.
+                  The desktop launcher lists it as an external browser title — no install recipe,
+                  exe hint, or package upload is needed.
+                </p>
+              </div>
+              {form.launcherInstall?.kind ? (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
+                  <p className="font-semibold text-amber-800 dark:text-amber-200">
+                    Stale install recipe on file
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    A previous desktop edition left a Windows install recipe saved. Clear it so the
+                    launcher catalog does not offer a zip download.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy || launcherSaving}
+                    onClick={() => patch("launcherInstall", null)}
+                    className="mt-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
+                  >
+                    Clear install recipe
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <>
           <p className="text-sm font-bold">Launcher install (Windows)</p>
           {onPlayboundLauncher ? (
             <>
@@ -2078,6 +2114,8 @@ export function GameEditorForm({
                 Updates only this recipe. It does not save any other game fields.
               </span>
             </div>
+          )}
+            </>
           )}
         </AdminCollapsibleSection>
 

@@ -1253,32 +1253,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     notes: "Infinity Engine reimplementation with local party host TCP/IP multiplayer.",
   },
 
-  "wipeout-rewrite": {
-    gameSlug: "wipeout-rewrite",
-    title: "wipEout Rewrite",
-    tier: "tier1_improved",
-    adapterType: "direct-ip",
-    protocol: "udp",
-    host: {
-      port: 7000,
-      protocol: "udp",
-      binaryHint: "wipeout-rewrite",
-    },
-    client: {
-      launchArguments: ["-connect", "{host}:{port}"],
-    },
-    selfHost: {
-      port: 7000,
-      protocol: "udp",
-      verified: true,
-      inGameSteps: ["Multiplayer", "Host Network Game"],
-    },
-    virtualLan: {
-      requiresBroadcast: true,
-    },
-    notes: "Native wipEout rewrite with local split-screen and direct IP/LAN multiplayer.",
-  },
-
   exult: {
     gameSlug: "exult",
     title: "Exult",

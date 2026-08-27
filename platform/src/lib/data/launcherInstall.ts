@@ -1088,17 +1088,6 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     connectArgs: ["-lobby", "{host}:{port}"],
     note: "Complete standalone Re-Volt (RVGL) 64-bit Windows release with original soundtrack and Dreamcast content.",
   },
-  "wipeout-rewrite": {
-    enabled: true,
-    kind: "github-zip",
-    repo: "wipeout-phantom-edition/wipeout-phantom-edition",
-    assetPattern: "wipeout-.*\\.zip$",
-    url: "https://github.com/wipeout-phantom-edition/wipeout-phantom-edition/releases/download/v1.2.256/wipeout-x64-release.zip",
-    fileName: "wipeout-x64-release.zip",
-    exeHint: "wipeout",
-    versionLabel: "v1.2.256",
-    note: "Enhanced 64-bit WipEout port with uncapped framerates, widescreen 4K support, and modern gamepads.",
-  },
   openhv: {
     enabled: true,
     kind: "github-zip",

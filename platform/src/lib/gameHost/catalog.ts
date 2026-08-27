@@ -235,7 +235,6 @@ const HOSTABLE_SLUG_ALIASES: Record<string, string> = {
   ss14: "space-station-14",
   rvgl: "re-volt-rvgl",
   revolt: "re-volt-rvgl",
-  wipeout: "wipeout-rewrite",
 };
 
 export function isHostableGame(slug: string | null | undefined): boolean {

@@ -358,6 +358,12 @@ export function deriveVirtualEdition(game: Game): Edition {
   };
 }
 
+/** Editions removed from seed but possibly still stored in Mongo. */
+function filterRetiredEditions(gameSlug: string, editions: Edition[]): Edition[] {
+  if (gameSlug !== "wipeout-rewrite") return editions;
+  return editions.filter((e) => e.slug !== "phantom-edition");
+}
+
 async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]> {
   await dbConnect();
   const docs = await EditionModel.find(filter).sort({ sortOrder: 1, name: 1 }).lean();
@@ -375,11 +381,11 @@ const loadStoredForGame = cache(async (gameSlug: string): Promise<Edition[]> => 
     const seeds = seedEditions
       .filter((s) => s.gameSlug === gameSlug && !dbSlugs.has(s.slug))
       .map(seedToEdition);
-    return [...fromDb, ...seeds];
+    return filterRetiredEditions(gameSlug, [...fromDb, ...seeds]);
   } catch (err) {
     console.error("[editions] read failed:", err);
     const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug);
-    return seeds.map(seedToEdition);
+    return filterRetiredEditions(gameSlug, seeds.map(seedToEdition));
   }
 });
 
@@ -496,11 +502,11 @@ export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[
     const seeds = seedEditions
       .filter((s) => s.gameSlug === gameSlug && !dbSlugs.has(s.slug))
       .map(seedToEdition);
-    return [...stored, ...seeds].sort(compareEditions);
+    return filterRetiredEditions(gameSlug, [...stored, ...seeds]).sort(compareEditions);
   } catch (err) {
     console.error("[editions] listAll failed:", err);
     const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug).map(seedToEdition);
-    return [...seeds].sort(compareEditions);
+    return filterRetiredEditions(gameSlug, seeds).sort(compareEditions);
   }
 }
 
