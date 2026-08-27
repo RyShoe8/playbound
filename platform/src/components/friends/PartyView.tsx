@@ -368,7 +368,7 @@ export function PartyView({
               * forming server-side.
               */}
             {isLeader && party.status !== "ended" ? (
-              <div className="max-w-md">
+              <div className="max-w-[240px]">
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Game
