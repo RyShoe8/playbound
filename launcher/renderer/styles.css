@@ -5158,7 +5158,7 @@ textarea.input-text {
 .party-header-controls .party-visibility-select { width: 100%; }
 .party-title { font-size: 18px; font-weight: 700; margin: 0; }
 .party-name-input { max-width: 380px; font-weight: 700; }
-.party-game-select { max-width: 380px; }
+.party-game-select { max-width: 240px; }
 .party-game-label { margin: 0; font-size: 14px; font-weight: 600; }
 .party-game-platform-note { margin: 6px 0 0; font-size: 11px; color: var(--text-muted); max-width: 380px; }
 .party-online-count { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
