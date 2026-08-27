@@ -1,4 +1,5 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
+import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -201,14 +202,18 @@ function renderDeepLinkView(ctx) {
       activeDeepLinkJob = key;
       setStatus(`Launching ${title}…`);
       try {
-        await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
-        try {
-          await window.playbound.clearContext();
-        } catch {
-          /* panel can still finish even if the context clear fails */
-        }
-        startGameSession(ctx.slug, title);
-        api.navigateTo("home");
+        const detail = ctx.entry || { title };
+        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
+          await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
+          try {
+            await window.playbound.clearContext();
+          } catch {
+            /* panel can still finish even if the context clear fails */
+          }
+          startGameSession(ctx.slug, title);
+          api.navigateTo("home");
+        }, ctx.slug);
+        if (!launched) return;
       } catch (err) {
         setStatus(err.message || String(err), true);
         const btn = document.getElementById("dl-act-run");
@@ -246,18 +251,22 @@ function renderDeepLinkView(ctx) {
       activeDeepLinkJob = key;
       setStatus(`Joining ${host}:${port}…`);
       try {
-        await window.playbound.play(
-          ctx.slug,
-          { host, port, name: ctx.join?.name || "", mod: ctx.join?.gameMod || undefined },
-          ctx.editionSlug || null
-        );
-        try {
-          await window.playbound.clearContext();
-        } catch {
-          /* panel can still finish even if the context clear fails */
-        }
-        startGameSession(ctx.slug, title);
-        api.navigateTo("home");
+        const detail = ctx.entry || { title };
+        const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
+          await window.playbound.play(
+            ctx.slug,
+            { host, port, name: ctx.join?.name || "", mod: ctx.join?.gameMod || undefined },
+            ctx.editionSlug || null
+          );
+          try {
+            await window.playbound.clearContext();
+          } catch {
+            /* panel can still finish even if the context clear fails */
+          }
+          startGameSession(ctx.slug, title);
+          api.navigateTo("home");
+        }, ctx.slug);
+        if (!launched) return;
       } catch (err) {
         setStatus(err.message || String(err), true);
         const btn = document.getElementById("dl-act-run");
