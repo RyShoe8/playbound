@@ -45,7 +45,7 @@ function buildWarzoneAutohostConfig(ctx) {
       alliances: 0,
       powerLevel: 1,
       bases: 2,
-      name: String(ctx.name || "PlayBound Warzone").slice(0, 40),
+      name: String(ctx.name || "PlayBound.club Party").slice(0, 40),
       techLevel: 1,
       spectatorHost: true,
       openSpectatorSlots: 4,
@@ -404,7 +404,7 @@ export const recipes = {
       "+port",
       String(port),
       "+hostname",
-      ctx.name || "PlayBound TF2",
+      ctx.name || "PlayBound.club Party",
     ],
   },
   "counter-strike-2": {
@@ -421,7 +421,7 @@ export const recipes = {
       "+maxplayers",
       "16",
       "+hostname",
-      ctx.name || "PlayBound CS2",
+      ctx.name || "PlayBound.club Party",
     ],
   },
   unvanquished: {
@@ -435,7 +435,7 @@ export const recipes = {
       String(port),
       "+set",
       "sv_hostname",
-      ctx.name || "PlayBound Unvanquished",
+      ctx.name || "PlayBound.club Party",
       "+map",
       "plat23",
     ],
@@ -489,13 +489,13 @@ export const recipes = {
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
       if (isChoc) {
-        return ["-port", String(port), "-servername", ctx.name || "PlayBound FreeDoom"];
+        return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party"];
       }
       return [
         "-port",
         String(port),
         "+sv_hostname",
-        ctx.name || "PlayBound FreeDoom",
+        ctx.name || "PlayBound.club Party",
       ];
     },
   },
@@ -527,7 +527,7 @@ export const recipes = {
     binaries: gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]),
     args: (port, ctx) => [
       "Game.Mod=hv",
-      `Server.Name=${ctx.name || "PlayBound OpenHV"}`,
+      `Server.Name=${ctx.name || "PlayBound.club Party"}`,
       `Server.ListenPort=${port}`,
       "Server.AdvertiseOnline=False",
     ],
@@ -551,7 +551,7 @@ export const recipes = {
         "-port",
         String(port),
         "-name",
-        ctx.name || "PlayBound RVGL",
+        ctx.name || "PlayBound.club Party",
         "-nosound",
       ];
       if (binary && binary.endsWith("xvfb-run") && realBin) {

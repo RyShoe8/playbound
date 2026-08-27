@@ -476,9 +476,22 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
   const port = allocPort(recipe, gameSlug);
   if (!port) return { error: `No free ports for ${gameSlug}` };
 
+  let serverName = String(name || "PlayBound.club Party").trim();
+  const existingNames = new Set(
+    Array.from(rooms.values())
+      .filter((r) => r.gameSlug === gameSlug)
+      .map((r) => r.name)
+  );
+  if (existingNames.has(serverName)) {
+    let i = 2;
+    while (existingNames.has(`${serverName} #${i}`)) i++;
+    serverName = `${serverName} #${i}`;
+  }
+  serverName = serverName.slice(0, 40);
+
   const ctx = {
     partyId,
-    name: String(name || `PlayBound ${gameSlug}`).slice(0, 40),
+    name: serverName,
     editionSlug: editionSlug || "",
     // Explicit override for games where edition alone can't say which mod to
     // run — OpenRA's "official" edition is one client covering ra/cnc/d2k.

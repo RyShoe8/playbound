@@ -6483,6 +6483,30 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   /*
+   * Xonotic ships a starter launcher (xonotic.exe) that detects architecture
+   * and spawns the real engine (xonotic-x86_64-sdl.exe / xonotic-x86_64-gl.exe),
+   * but drops CLI arguments like `+connect`. Target the native DarkPlaces engine
+   * binary directly so join arguments reach the engine.
+   */
+  if (slug === "xonotic") {
+    const xonoticExe =
+      findNamedPortableExe(info.dir, "xonotic-x86_64-sdl.exe") ||
+      findNamedPortableExe(info.dir, "xonotic-x86_64-gl.exe") ||
+      findNamedPortableExe(info.dir, "xonotic-x86-sdl.exe") ||
+      findNamedPortableExe(info.dir, "xonotic-x86-gl.exe") ||
+      findNamedPortableExe(info.dir, "xonotic-x86_64.exe") ||
+      findNamedPortableExe(info.dir, "xonotic-linux64-sdl") ||
+      findNamedPortableExe(info.dir, "xonotic-linux64-gl") ||
+      (info.dir ? findExecutable(info.dir, "xonotic.*sdl|xonotic.*gl|xonotic-x86") : null);
+
+    if (xonoticExe && (path.basename(launchPath).toLowerCase() === "xonotic.exe" || launchPath !== xonoticExe)) {
+      persistEditionExe(slug, edSlug, launchPath, xonoticExe);
+      launchPath = xonoticExe;
+      info = { ...info, exe: xonoticExe };
+    }
+  }
+
+  /*
    * Repair installs that recorded a DOS-era exe as the launch target.
    *
    * TES: Arena copies installed before findExecutable learned to read PE
