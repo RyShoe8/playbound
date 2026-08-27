@@ -48,6 +48,9 @@ const DOWNLOAD_DOMAINS = [
   "ballistica.net",
   "re-volt.io",
   "rvgl.org",
+  // Official GameJolt build resolver and download CDN.
+  "gamejolt.com",
+  "gamejolt.net",
   /*
    * RetroArch and every libretro core the launcher manages — see
    * services/ManagedRetroArch.js. Both the emulator itself and the seven cores
