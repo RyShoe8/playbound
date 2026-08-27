@@ -156,8 +156,13 @@ export async function releasePartyLan(party: PartyLike): Promise<void> {
  *
  * No setup key here — see `partyLanEnrollment`.
  */
-export function lanPayloadFromDoc(gameSlug: string, lan?: PartyLanFields | null) {
-  const config = getVirtualLanConfig(gameSlug);
+export function lanPayloadFromDoc(
+  gameSlug: string,
+  hostMode: string | null,
+  lan?: PartyLanFields | null
+) {
+  const needsOverlay = isVirtualLanGame(gameSlug) || hostMode === "self";
+  const config = needsOverlay ? getVirtualLanConfig(gameSlug) : null;
   if (!config) {
     return {
       enabled: false,

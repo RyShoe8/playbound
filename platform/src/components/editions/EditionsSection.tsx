@@ -45,7 +45,7 @@ export function EditionsSection({
           own install, community and verification status.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {visible.map((edition) => (
           <EditionCard
             key={edition.id}

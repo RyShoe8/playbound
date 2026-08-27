@@ -428,6 +428,10 @@ function serializeParty(
   const members = (doc.members as Array<Record<string, unknown>>) || [];
   const leaderId = String(doc.leaderId);
   const discord = (doc.discord as Record<string, unknown>) || {};
+  const hostMode =
+    (doc.hostMode as PartyHostMode | null) ||
+    (doc.gameSlug ? defaultHostMode(String(doc.gameSlug)) : null);
+
   return {
     id: String(doc._id),
     leaderId,
@@ -468,9 +472,7 @@ function serializeParty(
      * thing to drift. Null hostMode on an older party reads as the game's
      * default, same as everywhere else.
      */
-    hostMode:
-      (doc.hostMode as PartyHostMode | null) ||
-      (doc.gameSlug ? defaultHostMode(String(doc.gameSlug)) : null),
+    hostMode,
     hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
     /*
      * Only for a public self-hosted room. Party members reach the host over the
@@ -494,6 +496,7 @@ function serializeParty(
     ),
     lan: lanPayloadFromDoc(
       String(doc.gameSlug || ""),
+      hostMode,
       (doc.lan as Parameters<typeof lanPayloadFromDoc>[1]) || null
     ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
