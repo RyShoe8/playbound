@@ -5121,44 +5121,82 @@ textarea.input-text {
 }
 .party-panel-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 .party-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+/*
+ * Rows, not columns. The game select, the two settings dropdowns and the
+ * install status used to share one flex row at three different widths, which
+ * left the status card as the biggest thing in the panel and the server picker
+ * squeezed under the game.
+ */
+.party-header-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
 }
-.party-header-main { min-width: 0; flex: 1; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
-.party-header-side { flex: 1; min-width: 240px; max-width: 520px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.party-header-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.party-header-controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.party-header-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+.party-header-game { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.party-header-status { min-width: 0; }
+.party-header-public { padding: 16px; border-top: 1px solid var(--border); }
+@media (max-width: 900px) {
+  .party-header-grid { grid-template-columns: minmax(0, 1fr); }
+}
 .party-field-group { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 176px; }
 .party-field-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
-.party-header-side .party-hostmode-select,
-.party-header-side .party-visibility-select { width: 100%; }
+.party-header-controls .party-hostmode-select,
+.party-header-controls .party-visibility-select { width: 100%; }
 .party-title { font-size: 18px; font-weight: 700; margin: 0; }
 .party-name-input { max-width: 380px; font-weight: 700; }
 .party-game-select { max-width: 380px; }
-.party-game-label { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.party-game-label { margin: 0; font-size: 14px; font-weight: 600; }
 .party-game-platform-note { margin: 6px 0 0; font-size: 11px; color: var(--text-muted); max-width: 380px; }
 .party-online-count { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
 .party-public-server {
-  margin-top: 8px;
   width: 100%;
-  max-width: 420px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-primary);
-  padding: 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .party-public-server-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
+.party-public-server-head-actions { display: flex; align-items: center; gap: 8px; }
+.party-public-server-gate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+.party-public-server-gate.is-next {
+  border-color: color-mix(in srgb, var(--accent, #6c8cff) 40%, transparent);
+  background: color-mix(in srgb, var(--accent, #6c8cff) 8%, transparent);
+}
+.party-public-server-gate-text { margin: 0; font-size: 12px; font-weight: 600; }
+.party-public-server-ready { flex-shrink: 0; }
 .party-public-server-picked { margin: 0; font-size: 13px; font-weight: 600; }
 .party-public-server-addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 400; color: var(--text-muted); font-size: 11px; }
 .party-public-server-list {
@@ -5185,7 +5223,7 @@ textarea.input-text {
 .party-public-server-row:last-child { border-bottom: 0; }
 .party-public-server-row:hover:not(:disabled) { background: var(--bg-secondary); }
 .party-public-server-row.is-selected { background: color-mix(in srgb, var(--accent, #6c8cff) 12%, transparent); }
-.party-public-server-row:disabled { cursor: default; opacity: 0.85; }
+.party-public-server-row:disabled { cursor: not-allowed; opacity: 0.7; }
 .party-public-server-row-main { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .party-public-server-name { font-size: 12px; font-weight: 600; }
 .party-public-server-players { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
@@ -5380,32 +5418,43 @@ textarea.input-text {
 }
 .party-chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/*
+ * A status line, not a banner: at full card padding "everyone has the right
+ * version" was the largest element in the party header, announcing that
+ * nothing is wrong above the controls that need the room.
+ */
 .party-sync-card {
   margin-top: 0;
   width: 100%;
   text-align: left;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--bg-card);
-  padding: 16px;
+  padding: 10px 12px;
 }
 .party-sync-ready {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   background: rgba(52, 210, 123, 0.1);
+  border-color: rgba(52, 210, 123, 0.3);
   color: var(--success);
 }
-.party-sync-title { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+.party-sync-ready .party-sync-icon { flex-shrink: 0; margin-top: 1px; }
+.party-sync-ready .party-member-sub { color: inherit; opacity: 0.9; }
+.party-sync-title { margin: 0 0 2px; font-size: 12px; font-weight: 700; }
 .party-sync-blocked { padding: 0; }
 .party-sync-blocked-head {
-  padding: 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
   background: rgba(240, 113, 120, 0.12);
   color: var(--danger);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
 }
-.party-sync-blocked .party-member-sub { padding: 12px 16px 0; }
-.party-sync-list { list-style: none; margin: 0; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.party-sync-blocked .party-member-sub { padding: 10px 12px 0; }
+.party-sync-list { list-style: none; margin: 0; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
 .party-sync-row {
   display: flex;
   flex-wrap: wrap;
@@ -5414,7 +5463,7 @@ textarea.input-text {
   gap: 8px;
 }
 .party-sync-row-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.party-sync-who { font-size: 14px; font-weight: 600; }
+.party-sync-who { font-size: 13px; font-weight: 600; }
 .party-sync-install {
   display: inline-flex;
   align-items: center;

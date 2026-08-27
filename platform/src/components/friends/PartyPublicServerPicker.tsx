@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Lock, RefreshCw, Users } from "lucide-react";
+import { Check, Lock, RefreshCw, Users } from "lucide-react";
 import type { GameServer } from "@/lib/servers/types";
 import { usePartyStore } from "@/stores/partyStore";
 
@@ -160,6 +160,15 @@ export function PartyGameOnlineCount({ gameSlug }: { gameSlug: string }) {
   );
 }
 
+/**
+ * Why the viewer cannot pick right now, or null when they can.
+ *
+ * `ready` is the ordering the panel teaches: the server is the last thing
+ * settled before Join Game, so the list is inert — and says so — until the
+ * leader has readied up.
+ */
+export type PartyPublicServerGate = "leader" | "ready" | "locked";
+
 export function PartyPublicServerPicker({
   partyId,
   gameSlug,
@@ -167,7 +176,8 @@ export function PartyPublicServerPicker({
   selectedName,
   selectedHost,
   selectedPort,
-  canPick,
+  gate = null,
+  onReadyUp,
 }: {
   partyId: string;
   gameSlug: string;
@@ -175,10 +185,19 @@ export function PartyPublicServerPicker({
   selectedName?: string | null;
   selectedHost?: string | null;
   selectedPort?: number | null;
-  canPick: boolean;
+  gate?: PartyPublicServerGate | null;
+  /** Offered inline on the ready gate, so the next step is one click away. */
+  onReadyUp?: () => void;
 }) {
+  const canPick = gate === null;
+  /*
+   * Members and in-game parties get the pick, not the catalogue: a list of
+   * servers nobody at this screen can choose is noise, and skipping it skips
+   * the fetch behind it too.
+   */
+  const showList = gate === null || gate === "ready";
   const setPublicServer = usePartyStore((s) => s.setPublicServer);
-  const { servers, error, loading, refresh } = useGameServers(gameSlug);
+  const { servers, error, loading, refresh } = useGameServers(showList ? gameSlug : null);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -213,97 +232,145 @@ export function PartyPublicServerPicker({
   const selectedKey =
     selectedId || (selectedHost && selectedPort ? `${selectedHost}:${selectedPort}` : null);
   const players = servers ? sumPlayers(servers) : 0;
+  const hasSelection = Boolean(selectedName || selectedHost);
+
+  const gateNote =
+    gate === "leader"
+      ? hasSelection
+        ? null
+        : "Your party leader picks the server — you'll join whatever they choose."
+      : gate === "locked"
+        ? "Locked while the party is in a game."
+        : gate === "ready"
+          ? "Ready up first. Choosing the server is the last step before Join Game."
+          : null;
 
   return (
-    <div className="mt-3 w-full max-w-md rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <div>
+    <div className="w-full rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Public server
           </p>
-          {servers && servers.length > 0 ? (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {formatPlayers(players)} playing across {servers.length} server
-              {servers.length === 1 ? "" : "s"}
+          {hasSelection ? (
+            <p className="mt-1 text-sm font-semibold">
+              {selectedName || `${selectedHost}:${selectedPort}`}
+              {selectedHost && selectedPort ? (
+                <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">
+                  {selectedHost}:{selectedPort}
+                </span>
+              ) : null}
             </p>
-          ) : null}
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {canPick
+                ? "Choose where the party plays, then hit Join Game."
+                : "No server chosen yet."}
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => void refresh(true)}
-          className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"
-          title="Refresh server list"
-        >
-          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        {showList ? (
+          <div className="flex items-center gap-2">
+            {servers && servers.length > 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {formatPlayers(players)} playing across {servers.length} server
+                {servers.length === 1 ? "" : "s"}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void refresh(true)}
+              className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"
+              title="Refresh server list"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      {selectedName || selectedHost ? (
-        <p className="text-sm font-semibold">
-          {selectedName || `${selectedHost}:${selectedPort}`}
-          {selectedHost && selectedPort ? (
-            <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">
-              {selectedHost}:{selectedPort}
-            </span>
+      {gateNote ? (
+        <div
+          className={`flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 ${
+            gate === "ready"
+              ? "border border-primary/30 bg-primary/5"
+              : "border border-border bg-background/60"
+          }`}
+        >
+          <p className="text-xs font-semibold">{gateNote}</p>
+          {gate === "ready" && onReadyUp ? (
+            <button
+              type="button"
+              onClick={onReadyUp}
+              className="flex items-center gap-1.5 rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white hover:bg-green-700"
+            >
+              <Check className="size-3" /> Ready Up
+            </button>
           ) : null}
-        </p>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          {canPick ? "Pick a server for the party to join." : "Waiting for the leader to pick a server."}
-        </p>
-      )}
-
-      {servers && servers.length > 8 ? (
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search servers…"
-          className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
-        />
+        </div>
       ) : null}
 
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {!showList ? null : (
+        <>
+          {servers && servers.length > 8 ? (
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search servers…"
+              className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+            />
+          ) : null}
 
-      {loading && !servers ? (
-        <p className="text-xs text-muted-foreground">Loading servers…</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No public servers listed right now.</p>
-      ) : (
-        <ul className="max-h-52 overflow-y-auto divide-y divide-border rounded-md border border-border bg-background">
-          {filtered.map((server) => {
-            const id = serverKey(server);
-            const selected = selectedKey === id || (selectedHost === server.host && selectedPort === server.port);
-            const loc = formatLocation(server);
-            return (
-              <li key={id}>
-                <button
-                  type="button"
-                  disabled={!canPick || busyId === id}
-                  onClick={() => void pick(server)}
-                  className={`w-full text-left px-2.5 py-2 text-xs transition-colors ${
-                    selected ? "bg-primary/10" : canPick ? "hover:bg-secondary/80" : ""
-                  } disabled:opacity-70`}
-                >
-                  <span className="flex items-start justify-between gap-2">
-                    <span className="font-semibold leading-snug min-w-0">
-                      {server.protected ? <Lock className="inline size-3 mr-1 -mt-0.5" /> : null}
-                      {server.name || `${server.host}:${server.port}`}
-                    </span>
-                    <span className="shrink-0 text-muted-foreground tabular-nums">
-                      {server.players == null ? "—" : `${server.players}${server.maxPlayers ? `/${server.maxPlayers}` : ""}`}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 flex flex-wrap gap-x-2 text-muted-foreground">
-                    {server.map ? <span>{server.map}</span> : null}
-                    {loc ? <span>{loc}</span> : null}
-                    {server.gameType ? <span>{server.gameType}</span> : null}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+
+          {loading && !servers ? (
+            <p className="text-xs text-muted-foreground">Loading servers…</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No public servers listed right now.</p>
+          ) : (
+            <ul className="max-h-64 overflow-y-auto divide-y divide-border rounded-lg border border-border bg-background">
+              {filtered.map((server) => {
+                const id = serverKey(server);
+                const selected =
+                  selectedKey === id ||
+                  (selectedHost === server.host && selectedPort === server.port);
+                const loc = formatLocation(server);
+                return (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      disabled={!canPick || busyId === id}
+                      onClick={() => void pick(server)}
+                      className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                        selected ? "bg-primary/10" : canPick ? "hover:bg-secondary/80" : ""
+                      } disabled:cursor-not-allowed disabled:opacity-70`}
+                    >
+                      <span className="flex items-start justify-between gap-3">
+                        <span className="font-semibold leading-snug min-w-0">
+                          {server.protected ? (
+                            <Lock className="inline size-3 mr-1 -mt-0.5" />
+                          ) : null}
+                          {server.name || `${server.host}:${server.port}`}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground tabular-nums">
+                          {server.players == null
+                            ? "—"
+                            : `${server.players}${server.maxPlayers ? `/${server.maxPlayers}` : ""}`}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 flex flex-wrap gap-x-2 text-muted-foreground">
+                        {server.map ? <span>{server.map}</span> : null}
+                        {loc ? <span>{loc}</span> : null}
+                        {server.gameType ? <span>{server.gameType}</span> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );

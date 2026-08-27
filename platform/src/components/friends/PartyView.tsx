@@ -38,6 +38,7 @@ import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
 import {
   PartyGameOnlineCount,
   PartyPublicServerPicker,
+  type PartyPublicServerGate,
 } from "@/components/friends/PartyPublicServerPicker";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
@@ -85,8 +86,6 @@ export function PartyView({
   });
   const { mode, device } = useCompatibilityFilter();
 
-  if (!userId) return null;
-
   const isLeader = party.leaderId === userId;
   const me = party.members.find((m) => m.userId === userId);
   const isReady = me?.ready ?? false;
@@ -127,6 +126,13 @@ export function PartyView({
       ),
     [games, mode, device.type, party.requiredPlatforms]
   );
+
+  /*
+   * After the hooks, not before them. The session arrives a render late, so
+   * bailing out above useMemo changed the hook count between the first and
+   * second render of the same panel.
+   */
+  if (!userId) return null;
 
   const requiredPlatformLabels = (party.requiredPlatforms || []).map(
     (p) => ({ windows: "Windows", macos: "macOS", linux: "Linux" })[p] || p
@@ -172,6 +178,20 @@ export function PartyView({
     !inFlight &&
     ((Boolean(party.hosted?.enabled) && party.hosted?.status !== "ready") ||
       (Boolean(party.lan?.enabled) && !lanReady));
+  const publicMode = hasGame && party.hostMode === "public";
+  /*
+   * Ready-up comes first. The server a party lands on is the last thing decided
+   * before Join Game, and picking one while half the party is still installing
+   * left the panel showing a chosen server nobody could reach — so the list is
+   * inert until the leader is ready, and says which step it is waiting on.
+   */
+  const publicServerGate: PartyPublicServerGate | null = !isLeader
+    ? "leader"
+    : party.status === "ended" || inFlight
+      ? "locked"
+      : !isReady
+        ? "ready"
+        : null;
 
   function handleJoinGame(e?: React.MouseEvent) {
     if (joinConnectBlocked) {
@@ -258,192 +278,198 @@ export function PartyView({
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="bg-muted p-4 flex flex-col md:flex-row items-start justify-between gap-4 border-b border-border">
-        <div className="min-w-0 flex-1 space-y-2 w-full md:max-w-md">
-          {isLeader && party.status !== "ended" ? (
-            <input
-              type="text"
-              defaultValue={party.name || ""}
-              key={party.name || "unnamed"}
-              maxLength={PARTY_NAME_MAX}
-              placeholder={partyDisplayName(party)}
-              onBlur={(e) => {
-                const next = e.target.value.trim();
-                if (next !== (party.name || "")) void setName(party.id, next || null);
-              }}
-              className="h-10 w-full max-w-md rounded-lg border border-border bg-secondary/50 px-3 text-sm font-bold shadow-sm backdrop-blur"
-            />
-          ) : (
-            <h3 className="text-lg font-bold">{partyDisplayName(party)}</h3>
-          )}
-          {/*
-            * Available for as long as the party is alive, including while it is
-            * playing: finishing one game and picking another is how a party
-            * carries on, and changing the pick winds the party back to forming
-            * server-side.
-            */}
-          {isLeader && party.status !== "ended" ? (
-            <div className="max-w-md">
-              <label className="block">
-                <span className="sr-only">Party game</span>
-                <PremiumSelect
-                  value={party.gameSlug || ""}
-                  onChange={(e) => {
-                    if (e.target.value) void setGame(party.id, e.target.value);
-                  }}
-                >
-                  <option value="">Select a game</option>
-                  {partyGames.map((g) => (
-                    <option key={g.slug} value={g.slug}>
-                      {g.title}
-                    </option>
-                  ))}
-                  {/*
-                    Keeps whatever is already selected visible, including a game
-                    the filter now excludes. A party set to a singleplayer title
-                    before this filter existed would otherwise render a blank
-                    selector and look broken rather than merely out of date.
-                  */}
-                  {party.gameSlug && !partyGames.some((g) => g.slug === party.gameSlug) ? (
-                    <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
-                  ) : null}
-                </PremiumSelect>
-              </label>
-              {/*
-                A shorter list with no explanation reads as games having
-                disappeared; the leader cannot guess a member's OS is why.
-              */}
-              {requiredPlatformLabels.length > 1 ? (
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  Showing games that run on {requiredPlatformLabels.join(" and ")} — everyone in this
-                  party has to be able to play.
-                </p>
-              ) : null}
-              {party.gameSlug && party.hostMode !== "public" ? (
-                <PartyGameOnlineCount gameSlug={party.gameSlug} />
-              ) : null}
-              {party.gameSlug && party.hostMode === "public" ? (
-                <PartyPublicServerPicker
-                  partyId={party.id}
-                  gameSlug={party.gameSlug}
-                  selectedId={party.publicServer?.id}
-                  selectedName={party.publicServer?.name || party.hosted?.name}
-                  selectedHost={party.publicServer?.host || party.hosted?.host}
-                  selectedPort={party.publicServer?.port || party.hosted?.port}
-                  canPick={party.status !== "playing" && party.status !== "launching"}
-                />
-              ) : null}
-              {party.gameSlug ? (
-                <PartyHostInstallPicker
-                  partyId={party.id}
-                  gameSlug={party.gameSlug}
-                  editionSlug={party.editionSlug}
-                />
-              ) : null}
-              {party.gameSlug === "openra" ? (
-                <label className="mt-2 block">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    Which OpenRA game?
-                  </span>
+      <div className="bg-muted border-b border-border">
+        {/* Identity and the two party-wide settings */}
+        <div className="flex flex-col gap-4 p-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 flex-1 space-y-2">
+            {isLeader && party.status !== "ended" ? (
+              <input
+                type="text"
+                defaultValue={party.name || ""}
+                key={party.name || "unnamed"}
+                maxLength={PARTY_NAME_MAX}
+                placeholder={partyDisplayName(party)}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (next !== (party.name || "")) void setName(party.id, next || null);
+                }}
+                className="h-10 w-full max-w-md rounded-lg border border-border bg-secondary/50 px-3 text-sm font-bold shadow-sm backdrop-blur"
+              />
+            ) : (
+              <h3 className="text-lg font-bold">{partyDisplayName(party)}</h3>
+            )}
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <span className="capitalize">{party.status.replace("_", " ")}</span>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <Users className="size-3" /> {party.members.length} / {party.maxSize}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 md:justify-end">
+            {isLeader &&
+              party.status !== "ended" &&
+              party.hostModes &&
+              party.hostModes.length > 1 &&
+              !party.hosted?.roomCode && (
+                <div className="w-44">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                    Server Hosting
+                  </label>
                   <PremiumSelect
-                    value={party.openRaMod || ""}
-                    onChange={(e) => void setOpenRaMod(party.id, e.target.value || null)}
+                    value={party.hostMode || ""}
+                    onChange={(e) => void setHostMode(party.id, e.target.value)}
                   >
-                    <option value="">Red Alert (default)</option>
-                    {OPENRA_MODS.filter((m) => m !== "ra").map((m) => (
-                      <option key={m} value={m}>
-                        {OPENRA_MOD_LABELS[m]}
+                    {party.hostModes.map((o) => (
+                      <option key={o.mode} value={o.mode}>
+                        {o.label}
                       </option>
                     ))}
                   </PremiumSelect>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    OpenRA&apos;s official client bundles all three — set this to whichever one
-                    you&apos;re actually hosting, or joiners get rejected as &quot;incompatible
-                    mod&quot;.
-                  </p>
+                </div>
+              )}
+
+            {isLeader && party.status !== "ended" && (
+              <div className="w-44">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                  Who Can Play
                 </label>
-              ) : null}
-            </div>
-          ) : hasGame ? (
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                {party.gameTitle || party.gameSlug}
-              </p>
-              {party.hostModes && party.hostModes.length > 1 ? (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Host:{" "}
-                  {party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
-                    (party.hostMode === "self"
-                      ? "Host PC"
-                      : party.hostMode === "public"
-                        ? "Public server"
-                        : "PlayBound server")}
-                </p>
-              ) : null}
-              {party.gameSlug && party.hostMode !== "public" ? (
-                <PartyGameOnlineCount gameSlug={party.gameSlug} />
-              ) : null}
-              {party.gameSlug && party.hostMode === "public" ? (
-                <PartyPublicServerPicker
-                  partyId={party.id}
-                  gameSlug={party.gameSlug}
-                  selectedId={party.publicServer?.id}
-                  selectedName={party.publicServer?.name || party.hosted?.name}
-                  selectedHost={party.publicServer?.host || party.hosted?.host}
-                  selectedPort={party.publicServer?.port || party.hosted?.port}
-                  canPick={false}
-                />
-              ) : null}
-            </div>
-          ) : null}
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <span className="capitalize">{party.status.replace("_", " ")}</span>
-            <span>·</span>
-            <span className="flex items-center gap-1">
-              <Users className="size-3" /> {party.members.length} / {party.maxSize}
-            </span>
-          </p>
+                <PremiumSelect
+                  value={party.visibility}
+                  onChange={(e) =>
+                    void setVisibility(party.id, e.target.value as PartyPayload["visibility"])
+                  }
+                >
+                  {PARTY_VISIBILITIES.filter((v) => v !== "event").map((v) => (
+                    <option key={v} value={v}>
+                      {PARTY_VISIBILITY_LABELS[v]}
+                    </option>
+                  ))}
+                </PremiumSelect>
+              </div>
+            )}
+          </div>
         </div>
-        
-        <div className="w-full md:flex-1 flex flex-col items-stretch md:items-end gap-3 min-w-0">
-          {isLeader && party.status !== "ended" && party.hostModes && party.hostModes.length > 1 && !party.hosted?.roomCode && (
-            <div className="w-44 self-start md:self-end">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
-                Server Hosting
-              </label>
-              <PremiumSelect
-                value={party.hostMode || ""}
-                onChange={(e) => void setHostMode(party.id, e.target.value)}
-              >
-                {party.hostModes.map((o) => (
-                  <option key={o.mode} value={o.mode}>
-                    {o.label}
-                  </option>
-                ))}
-              </PremiumSelect>
-            </div>
-          )}
 
-          {isLeader && party.status !== "ended" && (
-            <div className="w-44 self-start md:self-end">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
-                Who Can Play
-              </label>
-              <PremiumSelect
-                value={party.visibility}
-                onChange={(e) => void setVisibility(party.id, e.target.value as PartyPayload["visibility"])}
-              >
-                {PARTY_VISIBILITIES.filter((v) => v !== "event").map((v) => (
-                  <option key={v} value={v}>
-                    {PARTY_VISIBILITY_LABELS[v]}
-                  </option>
-                ))}
-              </PremiumSelect>
-            </div>
-          )}
+        {/*
+          * What the party is playing, beside whether it can. Both used to sit in
+          * the same header row as the settings above — the game squeezed into a
+          * narrow column and the install status stacked under two 176px
+          * dropdowns, which is what made the panel read as three unrelated
+          * widths.
+          */}
+        <div className="grid gap-4 border-t border-border p-4 md:grid-cols-2">
+          <div className="min-w-0">
+            {/*
+              * Available for as long as the party is alive, including while it
+              * is playing: finishing one game and picking another is how a
+              * party carries on, and changing the pick winds the party back to
+              * forming server-side.
+              */}
+            {isLeader && party.status !== "ended" ? (
+              <div className="max-w-md">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Game
+                  </span>
+                  <PremiumSelect
+                    value={party.gameSlug || ""}
+                    onChange={(e) => {
+                      if (e.target.value) void setGame(party.id, e.target.value);
+                    }}
+                  >
+                    <option value="">Select a game</option>
+                    {partyGames.map((g) => (
+                      <option key={g.slug} value={g.slug}>
+                        {g.title}
+                      </option>
+                    ))}
+                    {/*
+                      Keeps whatever is already selected visible, including a game
+                      the filter now excludes. A party set to a singleplayer title
+                      before this filter existed would otherwise render a blank
+                      selector and look broken rather than merely out of date.
+                    */}
+                    {party.gameSlug && !partyGames.some((g) => g.slug === party.gameSlug) ? (
+                      <option value={party.gameSlug}>{party.gameTitle || party.gameSlug}</option>
+                    ) : null}
+                  </PremiumSelect>
+                </label>
+                {/*
+                  A shorter list with no explanation reads as games having
+                  disappeared; the leader cannot guess a member's OS is why.
+                */}
+                {requiredPlatformLabels.length > 1 ? (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Showing games that run on {requiredPlatformLabels.join(" and ")} — everyone in
+                    this party has to be able to play.
+                  </p>
+                ) : null}
+                {party.gameSlug && !publicMode ? (
+                  <PartyGameOnlineCount gameSlug={party.gameSlug} />
+                ) : null}
+                {party.gameSlug ? (
+                  <PartyHostInstallPicker
+                    partyId={party.id}
+                    gameSlug={party.gameSlug}
+                    editionSlug={party.editionSlug}
+                  />
+                ) : null}
+                {party.gameSlug === "openra" ? (
+                  <label className="mt-2 block">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      Which OpenRA game?
+                    </span>
+                    <PremiumSelect
+                      value={party.openRaMod || ""}
+                      onChange={(e) => void setOpenRaMod(party.id, e.target.value || null)}
+                    >
+                      <option value="">Red Alert (default)</option>
+                      {OPENRA_MODS.filter((m) => m !== "ra").map((m) => (
+                        <option key={m} value={m}>
+                          {OPENRA_MOD_LABELS[m]}
+                        </option>
+                      ))}
+                    </PremiumSelect>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      OpenRA&apos;s official client bundles all three — set this to whichever one
+                      you&apos;re actually hosting, or joiners get rejected as &quot;incompatible
+                      mod&quot;.
+                    </p>
+                  </label>
+                ) : null}
+              </div>
+            ) : hasGame ? (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Game
+                </p>
+                <p className="mt-1 text-sm font-semibold">{party.gameTitle || party.gameSlug}</p>
+                {party.hostModes && party.hostModes.length > 1 ? (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Host:{" "}
+                    {party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
+                      (party.hostMode === "self"
+                        ? "Host PC"
+                        : party.hostMode === "public"
+                          ? "Public server"
+                          : "PlayBound server")}
+                  </p>
+                ) : null}
+                {party.gameSlug && !publicMode ? (
+                  <PartyGameOnlineCount gameSlug={party.gameSlug} />
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                The leader hasn&apos;t picked a game yet.
+              </p>
+            )}
+          </div>
 
-          {session?.user && party.gameSlug && (
-            <div className="w-full">
+          {session?.user && party.gameSlug ? (
+            <div className="min-w-0">
               <PartyConfigSync
                 partyId={party.id}
                 gameSlug={party.gameSlug}
@@ -451,8 +477,29 @@ export function PartyView({
                 currentUserId={session.user.id}
               />
             </div>
-          )}
+          ) : null}
         </div>
+
+        {/*
+          * Full width, and last: this is the step after ready-up, so it reads in
+          * the order it is done rather than as a footnote beside the game.
+          */}
+        {publicMode && party.gameSlug ? (
+          <div className="border-t border-border p-4">
+            <PartyPublicServerPicker
+              partyId={party.id}
+              gameSlug={party.gameSlug}
+              selectedId={party.publicServer?.id}
+              selectedName={party.publicServer?.name || party.hosted?.name}
+              selectedHost={party.publicServer?.host || party.hosted?.host}
+              selectedPort={party.publicServer?.port || party.hosted?.port}
+              gate={publicServerGate}
+              onReadyUp={
+                publicServerGate === "ready" ? () => void setReady(party.id, true) : undefined
+              }
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* Members */}
@@ -573,12 +620,12 @@ export function PartyView({
             </p>
           )}
 
-          {party.hostMode === "public" &&
+          {publicMode &&
             party.hosted?.enabled &&
             party.hosted.status !== "ready" &&
             canJoinGame && (
               <p className="text-xs text-muted-foreground self-center">
-                Pick a public server to play on.
+                Now pick a server under <span className="font-semibold">Public server</span> above.
               </p>
             )}
 

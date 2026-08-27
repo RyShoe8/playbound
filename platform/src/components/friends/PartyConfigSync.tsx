@@ -81,7 +81,7 @@ export function PartyConfigSync({
    */
 
   if (!sync) {
-    return <div className="h-24 animate-pulse rounded-xl border border-border bg-card p-4" />;
+    return <div className="h-16 animate-pulse rounded-lg border border-border bg-card" />;
   }
 
   const isYouHost = Boolean(currentUserId) && sync.hostUserId === currentUserId;
@@ -103,14 +103,19 @@ export function PartyConfigSync({
           : "All members have the required game and editions installed."
         : "All members have the required game and editions installed.";
 
+    /*
+     * A status line, not a banner. At full card padding this was the largest
+     * thing in the party header — a green block announcing that nothing is
+     * wrong, above the controls that actually need the room.
+     */
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-border bg-green-500/10 p-4 text-green-700 dark:text-green-400">
-        <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
-        <div>
-          <h4 className="text-sm font-bold">{headline}</h4>
-          <p className="mt-1 text-xs opacity-90">{matchText}</p>
+      <div className="flex items-start gap-2.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2.5 text-green-700 dark:text-green-400">
+        <CheckCircle2 className="mt-px size-4 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-xs font-bold">{headline}</p>
+          <p className="text-xs opacity-90">{matchText}</p>
           {readiness?.phase === "waiting_ready" && (
-            <p className="mt-1 text-xs opacity-90">{readiness.detail}</p>
+            <p className="text-xs opacity-90">{readiness.detail}</p>
           )}
         </div>
       </div>
@@ -133,14 +138,14 @@ export function PartyConfigSync({
   const href = installHref(gameSlug, installEdition, sync.modSlugs);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-2 border-b border-border bg-destructive/10 p-3">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex items-center gap-2 border-b border-border bg-destructive/10 px-3 py-2">
         <AlertCircle className="size-4 text-destructive" />
-        <h4 className="text-sm font-bold text-destructive">Not everyone can play yet</h4>
+        <h4 className="text-xs font-bold text-destructive">Not everyone can play yet</h4>
       </div>
 
-      <div className="p-4">
-        <p className="mb-4 text-sm text-muted-foreground">
+      <div className="p-3">
+        <p className="mb-3 text-xs text-muted-foreground">
           {hostHasGame ? (
             isYouHost ? (
               <>
@@ -166,7 +171,7 @@ export function PartyConfigSync({
           )}
         </p>
 
-        <ul className="space-y-3">
+        <ul className="space-y-2.5">
           {outOfSync.map((m) => {
             const missing = missingSummary(m, sync.editionSlug);
             const isYou = Boolean(currentUserId) && m.userId === currentUserId;
@@ -175,7 +180,7 @@ export function PartyConfigSync({
             return (
               <li
                 key={m.userId}
-                className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                className="flex flex-wrap items-center justify-between gap-2 text-xs"
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <div className="flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-bold">
@@ -230,7 +235,7 @@ export function PartyConfigSync({
         </ul>
 
         {outOfSync.some((m) => Boolean(currentUserId) && m.userId === currentUserId) && (
-          <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
             Nothing happened?{" "}
             <Link
               href="/launcher"
