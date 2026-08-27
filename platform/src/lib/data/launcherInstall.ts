@@ -35,10 +35,19 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   "volleyball-legends": {
     enabled: true,
-    kind: "external",
-    url: "https://www.roblox.com/games/73956553001240/Volleyball-Legends",
+    kind: "direct-installer",
+    url: "https://setup.rbxcdn.com/RobloxPlayerInstaller.exe",
+    fileName: "RobloxPlayerInstaller.exe",
     versionLabel: "Roblox",
-    note: "Opens the official Volleyball Legends experience. Roblox installs its Player automatically when Play is selected.",
+    exeHint: "RobloxPlayerBeta",
+    registryTitles: ["Roblox", "Roblox Player"],
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Roblox\\Versions\\*\\RobloxPlayerBeta.exe",
+      "%LOCALAPPDATA%\\Programs\\Roblox\\RobloxPlayerBeta.exe",
+      "%PROGRAMFILES%\\Roblox\\Versions\\*\\RobloxPlayerBeta.exe",
+      "%PROGRAMFILES(X86)%\\Roblox\\Versions\\*\\RobloxPlayerBeta.exe",
+    ],
+    note: "Installs the official Roblox Player and launches Volleyball Legends directly.",
   },
   "c-dogs-retrarch": {
     enabled: true,

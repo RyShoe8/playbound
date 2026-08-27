@@ -176,7 +176,7 @@ describe("multiplayer testing-wave installers", () => {
   });
 
   it("uses official store handoffs for account-managed games", () => {
-    expect(launcherInstallBySlug["volleyball-legends"].url).toMatch(/^https:\/\/www\.roblox\.com\/games\//);
+    expect(launcherInstallBySlug["volleyball-legends"].url).toMatch(/RobloxPlayerInstaller\.exe/);
     expect(launcherInstallBySlug["sven-co-op"].url).toBe("steam://run/225840");
     expect(launcherInstallBySlug["slapshot-rebound"].url).toBe("steam://run/1173370");
   });
