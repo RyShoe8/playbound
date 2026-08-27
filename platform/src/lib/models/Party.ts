@@ -59,6 +59,8 @@ const PartyLanSchema = new Schema(
     },
     error: { type: String, default: null },
     provisionedAt: { type: Date, default: null },
+    /** When status entered pending — used to retry if a prior attempt died mid-flight. */
+    pendingAt: { type: Date, default: null },
   },
   { _id: false }
 );
@@ -260,6 +262,7 @@ export type PartyDoc = {
     status?: string;
     error?: string | null;
     provisionedAt?: Date | null;
+    pendingAt?: Date | null;
   };
   lastActivity: Date;
   endedAt?: Date | null;

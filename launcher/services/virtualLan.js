@@ -47,23 +47,48 @@ function cliCandidates() {
   if (process.platform === "win32") {
     const pf = process.env.ProgramFiles || "C:\\Program Files";
     const pf86 = process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
+    const local = process.env.LOCALAPPDATA || "";
     return [
       path.join(pf, "NetBird", "netbird.exe"),
       path.join(pf86, "NetBird", "netbird.exe"),
-      "netbird",
-    ];
+      local ? path.join(local, "Programs", "NetBird", "netbird.exe") : null,
+    ].filter(Boolean);
   }
   if (process.platform === "darwin") {
-    return ["/usr/local/bin/netbird", "/opt/homebrew/bin/netbird", "netbird"];
+    return ["/usr/local/bin/netbird", "/opt/homebrew/bin/netbird"];
   }
-  return ["/usr/bin/netbird", "/usr/local/bin/netbird", "netbird"];
+  return ["/usr/bin/netbird", "/usr/local/bin/netbird"];
 }
 
+/**
+ * Absolute path to the NetBird CLI, or null.
+ *
+ * Never return a bare `netbird` name. That made overlayStatus report
+ * "installed" and then execFile fail with `spawn netbird ENOENT` whenever the
+ * Program Files install was missing and PATH had no netbird either.
+ */
 function findCli() {
   for (const candidate of cliCandidates()) {
-    // A bare name has no path to test; leave it for execFile and PATH.
-    if (!candidate.includes(path.sep)) return candidate;
-    if (fs.existsSync(candidate)) return candidate;
+    try {
+      if (candidate && fs.existsSync(candidate)) return candidate;
+    } catch {
+      /* ignore */
+    }
+  }
+  try {
+    const finder = process.platform === "win32" ? "where.exe" : "which";
+    const out = require("child_process").execFileSync(finder, ["netbird"], {
+      encoding: "utf8",
+      timeout: 5_000,
+      windowsHide: true,
+    });
+    const first = String(out || "")
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .find(Boolean);
+    if (first && fs.existsSync(first)) return first;
+  } catch {
+    /* not on PATH */
   }
   return null;
 }
@@ -115,7 +140,12 @@ async function overlayStatus() {
  */
 async function joinNetwork({ managementUrl, setupKey }) {
   const cli = findCli();
-  if (!cli) return { error: "NetBird is not installed" };
+  if (!cli) {
+    return {
+      error: "PlayBound Connect needs the NetBird network client for this game.",
+      needsInstall: true,
+    };
+  }
   if (!managementUrl || !setupKey) return { error: "Missing network details" };
   // Our own management server only; never enrol against a URL we did not issue.
   if (!/^https:\/\/[\w.-]+(:\d+)?\/?$/.test(String(managementUrl))) {
@@ -129,7 +159,16 @@ async function joinNetwork({ managementUrl, setupKey }) {
     "--setup-key",
     String(setupKey),
   ]);
-  if (!res.ok) return { error: res.error || "Could not join the party network" };
+  if (!res.ok) {
+    const msg = res.error || "Could not join the party network";
+    if (/ENOENT/i.test(msg)) {
+      return {
+        error: "PlayBound Connect needs the NetBird network client for this game.",
+        needsInstall: true,
+      };
+    }
+    return { error: msg };
+  }
   return { ok: true };
 }
 

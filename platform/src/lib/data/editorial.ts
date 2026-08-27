@@ -4705,7 +4705,11 @@ export const editorial: Record<string, GameEditorial> = {
     faq: [
       {
         q: "Is Dune Legacy free to play?",
-        a: "Yes! Dune Legacy is completely free and open source under the GPL-2.0 license.",
+        a: "Yes! Dune Legacy is completely free and open source under the GPL-2.0 license. PlayBound installs the official Windows package that already includes the game data files.",
+      },
+      {
+        q: "Why does multiplayer say I need Dune 2 data files?",
+        a: "That message means the engine started without its PAK assets. The small GitHub engine zip does not include them; reinstall through PlayBound so you get the official Windows installer that bundles the data. Library Play can still work if an older SourceForge install was located separately.",
       },
       {
         q: "What improvements does Dune Legacy add over original Dune II?",

@@ -20,7 +20,7 @@ export default function ConnectGameServersPage() {
           </Link>
           <h1 className="mt-2 text-2xl font-bold tracking-tight">Game Servers</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Live VPS resources, dedicated game-host health, spawn tests, and active party rooms for PlayBound Connect.
+            Live VPS resources, dedicated game-host health, spawn tests, and rooms currently running on the VPS.
           </p>
         </div>
         <Link
@@ -30,7 +30,7 @@ export default function ConnectGameServersPage() {
           Public Connect page
         </Link>
       </div>
-      <ConnectManager />
+      <ConnectManager view="game-servers" />
     </div>
   );
 }

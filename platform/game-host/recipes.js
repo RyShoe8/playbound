@@ -168,11 +168,22 @@ export const recipes = {
         path.join(HOST_HOME, "logs", "minetest.log"),
       ];
     },
-    prepareSpawn: async (_port, ctx) => {
+    prepareSpawn: async (port, ctx) => {
       fs.mkdirSync(path.join(HOST_HOME, "logs"), { recursive: true });
       fs.mkdirSync(path.join(HOST_HOME, "luanti-worlds", `pb-${ctx.partyId.slice(-8)}`), {
         recursive: true,
       });
+      /*
+       * Ubuntu's minetest-server / luanti-server packages enable a systemd unit
+       * that owns UDP 30000 by default. Our in-memory port map cannot see that,
+       * so free the chosen port (and common orphans) before spawn.
+       */
+      try {
+        await execFileAsync("fuser", ["-k", `${port}/udp`, `${port}/tcp`]);
+      } catch {
+        /* port was free */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
     },
     spawnEnv: () => ({ HOME: HOST_HOME }),
   },

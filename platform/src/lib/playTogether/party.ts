@@ -55,6 +55,7 @@ import {
 import {
   lanPayloadFromDoc,
   provisionPartyLan,
+  partyLanNeedsProvision,
   releasePartyLan,
   type PartyLanFields,
 } from "@/lib/virtualLan/provision";
@@ -121,6 +122,7 @@ function resetPartyConnectState(doc: PartyDoc) {
   if (doc.lan) {
     doc.lan.status = "none";
     doc.lan.error = null;
+    doc.lan.pendingAt = null;
     doc.lan.groupId = undefined;
     doc.lan.policyId = undefined;
     doc.lan.setupKeyId = undefined;
@@ -151,8 +153,10 @@ async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
   }
   if (isVirtualLanGame(slug) || hostMode === "self") {
     const ls = doc.lan?.status || "none";
-    if (ls === "none" || ls === "failed") {
+    if (partyLanNeedsProvision(doc.lan)) {
       await provisionPartyLan(doc);
+    } else if (ls === "pending") {
+      /* In-flight — leave alone until stale. */
     }
   }
 }
@@ -190,10 +194,10 @@ async function ensurePartyConnectReady(
     let ls = doc.lan?.status || "none";
     if (ls === "ready" && doc.lan?.setupKey) {
       /* ready */
-    } else if (ls === "pending") {
+    } else if (ls === "pending" && !partyLanNeedsProvision(doc.lan)) {
       return { error: "Party network is still starting — wait a moment" };
     } else {
-      if (ls === "failed" || ls === "none") {
+      if (partyLanNeedsProvision(doc.lan)) {
         await provisionPartyLan(doc);
       }
       ls = doc.lan?.status || "none";

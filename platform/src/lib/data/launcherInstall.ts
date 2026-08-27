@@ -49,6 +49,21 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     note: "Installs the official Roblox Player and launches Volleyball Legends directly.",
   },
+  "dune-legacy": {
+    enabled: true,
+    kind: "direct-installer",
+    url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+    fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
+    versionLabel: "0.99.5",
+    exeHint: "dunelegacy",
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Programs\\Dune Legacy\\dunelegacy.exe",
+      "%PROGRAMFILES%\\Dune Legacy\\dunelegacy.exe",
+      "%PROGRAMFILES(X86)%\\Dune Legacy\\dunelegacy.exe",
+      "dunelegacy.exe",
+    ],
+    note: "Official standalone Windows installer with bundled Dune II PAK assets.",
+  },
   "c-dogs-retrarch": {
     enabled: true,
     kind: "github-zip",
@@ -347,11 +362,19 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://www.hedgewars.org/download/releases/Hedgewars-1.0.0.exe",
+    // CPack NSIS uses CPACK_PACKAGE_INSTALL_DIRECTORY "Hedgewars ${version}"
+    // → "Hedgewars 1.0.0", not bare "Hedgewars".
     knownExePaths: [
+      "%PROGRAMFILES%\\Hedgewars 1.0.0\\hedgewars.exe",
+      "%PROGRAMFILES(X86)%\\Hedgewars 1.0.0\\hedgewars.exe",
+      "%LOCALAPPDATA%\\Programs\\Hedgewars 1.0.0\\hedgewars.exe",
       "%PROGRAMFILES%\\Hedgewars\\hedgewars.exe",
       "%PROGRAMFILES(X86)%\\Hedgewars\\hedgewars.exe",
-      "%LOCALAPPDATA%\\Programs\\Hedgewars\\hedgewars.exe",
+      "%PROGRAMFILES%\\hedgewars\\hedgewars.exe",
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\common\\Hedgewars\\hedgewars.exe",
     ],
+    registryTitles: ["Hedgewars"],
+    exeHint: "hedgewars",
     connectArgs: ["--connect", "{host}:{port}"],
   },
   unvanquished: {
