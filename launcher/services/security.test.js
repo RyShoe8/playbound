@@ -67,6 +67,8 @@ function makeReference({ packaged }) {
     if (host === "swtor.com" || host.endsWith(".swtor.com")) return true;
     if (host === "runescape.com" || host.endsWith(".runescape.com")) return true;
     if (host === "xsolla.com" || host.endsWith(".xsolla.com")) return true;
+    if (host === "gamejolt.com" || host.endsWith(".gamejolt.com")) return true;
+    if (host === "gamejolt.net" || host.endsWith(".gamejolt.net")) return true;
     if (host === "dropbox.com" || host.endsWith(".dropbox.com")) return true;
     if (host === "bethsoft.com" || host.endsWith(".bethsoft.com")) return true;
     if (host === "playbound.club" || host.endsWith(".playbound.club")) return true;
@@ -103,7 +105,7 @@ const DOMAINS = [
   "wildfiregames.com", "gitlab.com", "gitlab-static.net", "zero-k.info", "hedgewars.org",
   "openarena.ws", "megaphilx.com", "villagersandheroes.com", "flightgear.org", "eqmaps.info",
   "albiononline.com", "guildwars2.com", "arena.net", "lotro.com", "daybreakgames.com",
-  "swtor.com", "runescape.com", "xsolla.com", "itch.io", "itch.zone", "archive.org",
+  "swtor.com", "runescape.com", "xsolla.com", "gamejolt.com", "gamejolt.net", "itch.io", "itch.zone", "archive.org",
   "codeberg.org", "myabandonware.com", "allegro.cc", "bzflag.org", "scummvm.org",
   "r2.cloudflarestorage.com", "hwcdn.net", "s3.amazonaws.com", "cloudfront.net",
   "fastly.net", "akamaihd.net", "azureedge.net", "dropbox.com", "dropboxusercontent.com", "playbound.club", "bethsoft.com", "localhost",
@@ -161,6 +163,7 @@ for (const packaged of [true, false]) {
   check("rejects a brand-alike vercel preview as API base in a packaged build", !sec.isAllowedApiBase("https://playbound-attacker.vercel.app"));
   check("still accepts sourceforge mirrors", sec.hostAllowedForDownload("downloads.sourceforge.net"));
   check("still accepts itch mirrors", sec.hostAllowedForDownload("itchio-mirror-7.b-cdn.net"));
+  check("accepts official GameJolt downloads", sec.hostAllowedForDownload("download.gamejolt.net"));
 }
 
 // Previews remain usable while developing.
