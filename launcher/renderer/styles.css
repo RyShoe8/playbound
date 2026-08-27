@@ -7828,7 +7828,6 @@ textarea.input-text {
   .editions-grid,
   .mods-grid,
   .servers-grid,
-  .events-grid,
   .gear-grid,
   .hardware-grid,
   .community-grid,
@@ -7837,7 +7836,6 @@ textarea.input-text {
   #games-grid,
   #editions-grid,
   #mods-grid,
-  #events-grid,
   #servers-grid,
   #home-recent-grid,
   #home-newest-grid,
@@ -7955,7 +7953,6 @@ textarea.input-text {
   .editions-grid,
   .mods-grid,
   .servers-grid,
-  .events-grid,
   .gear-grid,
   .hardware-grid,
   .community-grid,
@@ -7964,7 +7961,6 @@ textarea.input-text {
   #games-grid,
   #editions-grid,
   #mods-grid,
-  #events-grid,
   #servers-grid,
   #home-recent-grid,
   #home-newest-grid,
@@ -8037,7 +8033,6 @@ textarea.input-text {
   .editions-grid,
   .mods-grid,
   .servers-grid,
-  .events-grid,
   .gear-grid,
   .hardware-grid,
   .community-grid,
@@ -8046,7 +8041,15 @@ textarea.input-text {
   #games-grid,
   #editions-grid,
   #mods-grid,
-  #events-grid,
+  #servers-grid,
+  #home-recent-grid,
+  #home-newest-grid,
+  #home-popular-grid,
+  #home-free-offers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+    gap: 6px !important;
+  }
+  .card-art-title {
     padding: 20px 8px 6px;
   }
   .card-art-fallback {
@@ -8150,7 +8153,6 @@ textarea.input-text {
   .editions-grid,
   .mods-grid,
   .servers-grid,
-  .events-grid,
   .gear-grid,
   .hardware-grid,
   .community-grid,
@@ -8159,7 +8161,6 @@ textarea.input-text {
   #games-grid,
   #editions-grid,
   #mods-grid,
-  #events-grid,
   #servers-grid,
   #home-recent-grid,
   #home-newest-grid,
@@ -8232,7 +8233,6 @@ textarea.input-text {
   .editions-grid,
   .mods-grid,
   .servers-grid,
-  .events-grid,
   .gear-grid,
   .hardware-grid,
   .community-grid,
@@ -8241,7 +8241,6 @@ textarea.input-text {
   #games-grid,
   #editions-grid,
   #mods-grid,
-  #events-grid,
   #servers-grid,
   #home-recent-grid,
   #home-newest-grid,

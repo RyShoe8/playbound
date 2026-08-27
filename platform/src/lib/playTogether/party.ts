@@ -1162,7 +1162,30 @@ export async function setPartyGame(
 
   doc.gameSlug = slug;
   if (switchingGame) {
-    doc.editionSlug = null;
+    /*
+     * Leaving this null was fine for a single-edition game, but a game like
+     * Freedoom (GZDoom singleplayer vs. Zandronum multiplayer vs. DSDA
+     * speedrun) has no UI for the leader to pick one, so it stayed null
+     * forever — every install prompt then had nothing to scope to and fell
+     * back to the ambiguous base install, which is not necessarily one the
+     * party can actually connect with.
+     *
+     * A party is inherently a multiplayer context, so among several editions
+     * the only ones worth considering are the ones tagged "Multiplayer" —
+     * never a singleplayer-only edition, even if that happens to be the
+     * catalog's general-purpose default. Falls back to every edition only if
+     * none are tagged multiplayer (stale catalog data), and stays null for a
+     * single-edition game exactly as before, since there is nothing to
+     * disambiguate.
+     */
+    const editions = await listEditionsForGame(game);
+    if (editions.length > 1) {
+      const multiplayerEditions = editions.filter((e) => e.features?.includes("Multiplayer"));
+      const candidates = multiplayerEditions.length > 0 ? multiplayerEditions : editions;
+      doc.editionSlug = (candidates.find((e) => e.isDefault) ?? candidates[0]).slug;
+    } else {
+      doc.editionSlug = null;
+    }
     doc.modSlugs = [];
     /*
      * Host mode belongs to the game, not the party: "my computer" is a valid
@@ -2048,17 +2071,40 @@ async function checkConfigSyncUncached(partyId: string): Promise<ConfigSyncOutco
   }
 
   /*
+   * Which of this game's editions are even eligible for a party. A party is
+   * inherently a multiplayer context — a singleplayer-only edition can never
+   * be what the group actually launches together, no matter who has it
+   * installed, so it should never win as the reference build. Null means no
+   * such filtering is needed (one edition, or none tagged multiplayer at all,
+   * which is stale catalog data rather than something to enforce here).
+   */
+  const gameForEditions = await getGame(String(doc.gameSlug || ""), { includeTesting: true });
+  const gameEditions = gameForEditions ? await listEditionsForGame(gameForEditions) : [];
+  const multiplayerSlugs =
+    gameEditions.length > 1
+      ? new Set(
+          gameEditions.filter((e) => e.features?.includes("Multiplayer")).map((e) => e.slug)
+        )
+      : null;
+  const qualifies = (slug: string) => !multiplayerSlugs || multiplayerSlugs.has(slug);
+
+  /*
    * The host's actual install is the reference, not the party's declared
    * fields. Someone who picks a game and launches a heavily modded copy of it
    * is what everyone else has to match; the declared editionSlug is only a
    * label and is frequently empty.
    *
-   * When the host has nothing installed there is nothing to match, so the
-   * declared fields stand in. Without that fallback a host who has not
-   * installed yet would mark every other member incompatible with an empty
-   * config.
+   * When the host has nothing installed — or only a singleplayer edition
+   * installed for a game where multiplayer means something else — there is
+   * nothing to match, so the declared (multiplayer-defaulted) field stands
+   * in. Without that fallback a host who has not installed the right build
+   * yet would mark every other member incompatible with an empty config, or
+   * worse, point the whole party at a build with no netcode.
    */
-  const hostEditions = hostId ? installedByUser.get(hostId) : undefined;
+  const hostEditionsAll = hostId ? installedByUser.get(hostId) : undefined;
+  const hostEditions = hostEditionsAll
+    ? new Set([...hostEditionsAll].filter(qualifies))
+    : hostEditionsAll;
   const hostHasGame = Boolean(hostEditions && hostEditions.size > 0);
   const referenceSource: "host" | "party" = hostHasGame ? "host" : "party";
 
@@ -2068,11 +2114,15 @@ async function checkConfigSyncUncached(partyId: string): Promise<ConfigSyncOutco
   /*
    * The host's *default* build, not whichever edition happens to sort first.
    * With several installed, an arbitrary pick would point the party at a build
-   * the host is not actually launching.
+   * the host is not actually launching — but it still has to be one of the
+   * qualifying editions above, so a host with both GZDoom and Zandronum
+   * installed cannot have their GZDoom pick override Zandronum for everyone.
    */
+  const hostPrimary = hostId ? primaryByUser.get(hostId) : undefined;
   const hostEdition =
     hostHasGame && hostId
-      ? primaryByUser.get(hostId) ?? BASE_EDITION_KEY
+      ? (hostPrimary && hostEditions?.has(hostPrimary) ? hostPrimary : [...(hostEditions ?? [])][0]) ??
+        BASE_EDITION_KEY
       : null;
 
   const editionSlug = hostHasGame

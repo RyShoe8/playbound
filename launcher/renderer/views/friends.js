@@ -1882,7 +1882,13 @@ function paintPartyArea(partiesData, { force = false } = {}) {
   const slot = document.getElementById("friends-party-area");
   if (!slot) return;
   if (partiesData?.error) {
+    // Clearing the DOM without also clearing the signature leaves this
+    // blank forever: the next successful poll can return the exact same
+    // (unchanged) party data, compute the same signature, and the
+    // unchanged-signature guard below would skip repainting — even though
+    // there is nothing on screen to skip repainting over.
     slot.innerHTML = "";
+    slot.dataset.sig = "";
     return;
   }
   const mine = Array.isArray(partiesData?.myParties) ? partiesData.myParties : [];
