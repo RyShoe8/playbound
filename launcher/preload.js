@@ -105,7 +105,7 @@ contextBridge.exposeInMainWorld("playbound", {
   markNotificationsRead: (opts) => ipcRenderer.invoke("mark-notifications-read", opts || {}),
   playInviteAction: (inviteId, action) =>
     ipcRenderer.invoke("play-invite-action", inviteId, action),
-  getParties: () => ipcRenderer.invoke("get-parties"),
+  getParties: (opts) => ipcRenderer.invoke("get-parties", opts),
   createParty: (opts) => ipcRenderer.invoke("create-party", opts || {}),
   joinParty: (partyId, password) => ipcRenderer.invoke("join-party", partyId, password),
   leaveParty: (partyId) => ipcRenderer.invoke("leave-party", partyId),

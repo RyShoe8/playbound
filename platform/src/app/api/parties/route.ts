@@ -7,7 +7,16 @@ import {
 } from "@/lib/playTogether/party";
 import { PARTY_VISIBILITIES, type PartyVisibility } from "@/lib/playTogether/types";
 
-/** GET /api/parties — user's active parties + discoverable friend parties. */
+/**
+ * GET /api/parties — user's active parties + discoverable friend parties.
+ *
+ * `?discoverable=0` returns only the caller's own party. A member sitting in a
+ * lobby polls this once a second, and the discoverable half is the expensive
+ * half — a friend lookup plus a second party query plus their rosters — for a
+ * list that does not need to be a second old. Clients that ask for it on a
+ * slower cadence omit the key, and the response omits it too so they can tell
+ * "not asked for" from "none".
+ */
 export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);
   if (!userId) {
@@ -15,10 +24,13 @@ export async function GET(req: Request) {
   }
 
   try {
+    const wantDiscoverable =
+      new URL(req.url).searchParams.get("discoverable") !== "0";
     const [myParties, discoverable] = await Promise.all([
       listPartiesForUser(userId),
-      listDiscoverableParties(userId),
+      wantDiscoverable ? listDiscoverableParties(userId) : Promise.resolve(null),
     ]);
+    if (!wantDiscoverable) return NextResponse.json({ myParties });
     return NextResponse.json({ myParties, discoverable });
   } catch (err) {
     console.error("GET /api/parties failed:", err);

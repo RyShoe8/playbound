@@ -116,7 +116,17 @@ export function PartyHostInstallPicker({
     };
   }, [gameSlug, lockedEdition]);
 
+  /*
+   * The party payload already carries config-sync, and the panel polls it
+   * every second. Asking /sync for the same thing every 4s was a second
+   * request per viewer computing the identical read cluster — so the endpoint
+   * is only used when this renders somewhere the store has no party to read,
+   * and the store's own value drives the common case.
+   */
+  const hasStoreSync = storeSync !== undefined;
+
   useEffect(() => {
+    if (hasStoreSync) return;
     let cancelled = false;
     async function check() {
       try {
@@ -142,7 +152,7 @@ export function PartyHostInstallPicker({
       cancelled = true;
       clearInterval(timer);
     };
-  }, [partyId, gameSlug, editionSlug]);
+  }, [partyId, gameSlug, editionSlug, hasStoreSync]);
 
   /*
    * A member asked to render explicitly shows the list whenever they are
