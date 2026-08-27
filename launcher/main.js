@@ -3743,7 +3743,27 @@ function findMacApplication(entry) {
 function findKnownPathOnly(entry) {
   for (const raw of entry.knownExePaths || []) {
     const full = expandWinPath(raw);
-    if (full && fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
+    if (!full) continue;
+    if (full.includes("*")) {
+      const parts = full.split("*");
+      const baseDir = parts[0].replace(/[\\/]+$/, "");
+      const suffix = parts[1].replace(/^[\\/]+/, "");
+      if (fs.existsSync(baseDir)) {
+        try {
+          const subdirs = fs.readdirSync(baseDir, { withFileTypes: true });
+          for (const sub of subdirs) {
+            const candidate = path.join(baseDir, sub.name, suffix);
+            if (fs.existsSync(candidate) && isAllowedExecutablePath(candidate)) {
+              return candidate;
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      continue;
+    }
+    if (fs.existsSync(full) && isAllowedExecutablePath(full)) return full;
   }
   // Same paths, but under whichever Steam library the game actually landed in.
   const inSteam = findInSteamLibraries(entry);
@@ -6523,6 +6543,25 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       launchPath = zandronumExe;
       info = { ...info, exe: zandronumExe };
     }
+  }
+
+  /*
+   * Volleyball Legends is a Roblox experience. Launching via the `roblox://`
+   * protocol starts the desktop Roblox Player directly into the game without
+   * opening a browser tab.
+   */
+  if (slug === "volleyball-legends") {
+    await safeOpenExternal("roblox://experiences/start?placeId=73956553001240");
+    const settings = loadSettings();
+    if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
+    settings.recentlyPlayed[slug] = { lastPlayed: new Date().toISOString() };
+    saveSettings(settings);
+    return {
+      status: "launched",
+      connect: null,
+      manualConnect: false,
+      editionSlug: info.editionSlug || edSlug,
+    };
   }
 
   /*
