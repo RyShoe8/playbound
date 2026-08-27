@@ -497,7 +497,7 @@ function serializeParty(
     lan: lanPayloadFromDoc(
       String(doc.gameSlug || ""),
       hostMode,
-      (doc.lan as Parameters<typeof lanPayloadFromDoc>[1]) || null
+      (doc.lan as Parameters<typeof lanPayloadFromDoc>[2]) || null
     ),
     lastActivity: (doc.lastActivity as Date)?.toISOString() || new Date().toISOString(),
     createdAt: (doc.createdAt as Date)?.toISOString() || new Date().toISOString(),
