@@ -32,6 +32,7 @@ const gameControllerConfig = require("./services/gameControllerConfig");
 const { createCloudSaves } = require("./services/CloudSaves");
 const { createSettings } = require("./services/settings");
 const { createSecurity } = require("./services/security");
+const { resolveGameJoltBuild } = require("./services/gameJoltBuild");
 const { createDeepLinks } = require("./services/deepLinks");
 const { withOutboundUtm } = require("./utm");
 const {
@@ -1900,6 +1901,7 @@ function catalogEntryFromEdition(edition) {
       url: cfg.url || undefined,
       fileName: cfg.fileName || undefined,
       versionLabel: cfg.versionLabel || undefined,
+      gameJoltBuildId: cfg.gameJoltBuildId || undefined,
       steamPrerequisites: Array.isArray(cfg.steamPrerequisites) ? cfg.steamPrerequisites : undefined,
       knownExePaths: Array.isArray(cfg.knownExePaths) ? cfg.knownExePaths : undefined,
       launchArgs: Array.isArray(cfg.launchArgs) ? cfg.launchArgs : undefined,
@@ -2386,6 +2388,51 @@ function assetPatternsForEntry(entry) {
 }
 
 async function resolveDownload(entry) {
+  if (entry.kind === "gamejolt-build") {
+    const url = await resolveGameJoltBuild(entry.gameJoltBuildId);
+    const fromPath = path.basename(new URL(url).pathname);
+    return {
+      url,
+      name: entry.fileName || fromPath || `${entry.slug}.rar`,
+      version: entry.versionLabel || "GameJolt",
+    };
+  }
+
+  // Checked before the generic direct-zip fallback below: ballistica.net prunes
+  // older BombSquad build files as soon as a new version ships, so a stale
+  // catalog url 404s until the daily version-check cron patches it. Querying
+  // the live downloads page here avoids that gap entirely.
+  if (entry.kind === "ballistica-zip" || (entry.url && /ballistica\.net/i.test(entry.url))) {
+    try {
+      const res = await fetch("https://ballistica.net/downloads", {
+        headers: { "user-agent": "playbound-launcher" },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const html = await res.text();
+        let pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Windows_[^"<'\s]+\.zip/i;
+        if (process.platform === "darwin") {
+          pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Mac_[^"<'\s]+\.dmg/i;
+        } else if (process.platform === "linux") {
+          pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Linux_x86_64_[^"<'\s]+\.tar\.gz/i;
+        }
+        const m = html.match(pattern);
+        if (m && m[0]) {
+          const liveUrl = m[0];
+          const fileName = path.basename(new URL(liveUrl).pathname);
+          const versionMatch = fileName.match(/BombSquad_[^_]+_([^\.]+)\.zip/i);
+          return {
+            url: liveUrl,
+            name: fileName,
+            version: (versionMatch && versionMatch[1]) || entry.versionLabel || "latest",
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("Could not query live ballistica.net downloads page, falling back:", e?.message || e);
+    }
+  }
+
   if (
     entry.kind === "direct-zip" ||
     // Same fetch as direct-zip; extractArchive dispatches on the extension.
@@ -2441,37 +2488,6 @@ async function resolveDownload(entry) {
       name,
       version,
     };
-  }
-
-  if (entry.kind === "ballistica-zip" || (entry.url && /ballistica\.net/i.test(entry.url))) {
-    try {
-      const res = await fetch("https://ballistica.net/downloads", {
-        headers: { "user-agent": "playbound-launcher" },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (res.ok) {
-        const html = await res.text();
-        let pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Windows_[^"<'\s]+\.zip/i;
-        if (process.platform === "darwin") {
-          pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Mac_[^"<'\s]+\.dmg/i;
-        } else if (process.platform === "linux") {
-          pattern = /https:\/\/files\.ballistica\.net\/bombsquad\/builds\/BombSquad_Linux_x86_64_[^"<'\s]+\.tar\.gz/i;
-        }
-        const m = html.match(pattern);
-        if (m && m[0]) {
-          const liveUrl = m[0];
-          const fileName = path.basename(new URL(liveUrl).pathname);
-          const versionMatch = fileName.match(/BombSquad_[^_]+_([^\.]+)\.zip/i);
-          return {
-            url: liveUrl,
-            name: fileName,
-            version: (versionMatch && versionMatch[1]) || entry.versionLabel || "latest",
-          };
-        }
-      }
-    } catch (e) {
-      console.warn("Could not query live ballistica.net downloads page, falling back:", e?.message || e);
-    }
   }
 
   if (entry.kind === "itch-zip" || (entry.url && /itch\.io/i.test(entry.url))) {
@@ -3203,14 +3219,14 @@ function sevenZipBinary() {
   return null;
 }
 
-/** Extract a .7z. Mirrors extractZip: shell out, no extraction library. */
+/** Extract a .7z or .rar. Mirrors extractZip: shell out, no extraction library. */
 function extract7z(archivePath, destDir) {
   return new Promise((resolve, reject) => {
     const bin = sevenZipBinary();
     if (!bin) {
       reject(
         new Error(
-          "This game ships a .7z archive and the bundled 7-Zip helper is missing. Reinstall PlayBound."
+          "This game ships an archive that requires 7-Zip, but the bundled helper is missing. Reinstall PlayBound."
         )
       );
       return;
@@ -3311,7 +3327,7 @@ async function extractArchive(archivePath, destDir) {
     await extractDmg(archivePath, destDir);
     return;
   }
-  if (lower.endsWith(".7z")) {
+  if (lower.endsWith(".7z") || lower.endsWith(".rar")) {
     await extract7z(archivePath, destDir);
     return;
   }
@@ -8639,6 +8655,7 @@ ipcMain.handle("get-notifications", async () => {
   try {
     const res = await fetch(`${getApiBase()}/api/notifications`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
+      cache: "no-store",
     });
     if (!res.ok) return { items: [], unreadCount: 0, error: `HTTP ${res.status}` };
     return await res.json();

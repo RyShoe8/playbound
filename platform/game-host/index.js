@@ -473,9 +473,6 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
     return { error: missingDedicatedBinaryMessage(gameSlug, recipe) };
   }
 
-  const port = allocPort(recipe, gameSlug);
-  if (!port) return { error: `No free ports for ${gameSlug}` };
-
   let serverName = String(name || "PlayBound.club Party").trim();
   const existingNames = new Set(
     Array.from(rooms.values())
@@ -498,100 +495,116 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
     mod: mod || "",
   };
 
-  if (recipe.prepareSpawn) {
-    try {
-      await recipe.prepareSpawn(port, ctx);
-    } catch (err) {
-      freePort(gameSlug, port);
-      const message = err instanceof Error ? err.message : String(err);
-      return { error: `Could not prepare ${gameSlug} server directory: ${message}` };
+  // A port can be occupied by something outside our own bookkeeping (a stale
+  // process from a prior crash, a distro service squatting on the game's
+  // default port, …) that prepareSpawn's best-effort cleanup can't always
+  // clear — e.g. a root-owned systemd unit this agent's unprivileged user
+  // can't signal. Rather than surface that as a hard failure on the very
+  // first port, retry across a few ports in the recipe's range.
+  const maxAttempts = Math.min(5, recipe.portEnd - recipe.portStart + 1);
+  let lastError = `No free ports for ${gameSlug}`;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const port = allocPort(recipe, gameSlug);
+    if (!port) return { error: lastError };
+
+    if (recipe.prepareSpawn) {
+      try {
+        await recipe.prepareSpawn(port, ctx);
+      } catch (err) {
+        freePort(gameSlug, port);
+        const message = err instanceof Error ? err.message : String(err);
+        lastError = `Could not prepare ${gameSlug} server directory: ${message}`;
+        continue;
+      }
     }
-  }
 
-  const args = recipe.args(port, ctx, binary);
-  const hostHome = process.env.HOME || "/var/lib/playbound-host";
-  const spawnEnv = {
-    ...process.env,
-    HOME: hostHome,
-    ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
-  };
-  const cwd =
-    typeof recipe.cwd === "function"
-      ? recipe.cwd(port, ctx)
-      : recipe.cwd || path.dirname(binary);
-  const child = spawn(binary, args, {
-    cwd,
-    env: spawnEnv,
-    stdio: ["pipe", "pipe", "pipe"],
-    detached: true,
-  });
-
-  const roomId = `room_${crypto.randomBytes(8).toString("hex")}`;
-  const room = {
-    roomId,
-    partyId,
-    gameSlug,
-    name: ctx.name,
-    host: PUBLIC_IP,
-    port,
-    pid: child.pid || null,
-    child,
-    createdAt: Date.now(),
-  };
-
-  const startupLog = [];
-  const pushLog = (buf) => {
-    const line = String(buf).trim();
-    if (line) startupLog.push(line.slice(0, 400));
-    if (startupLog.length > 20) startupLog.shift();
-  };
-
-  child.stdout?.on("data", (buf) => {
-    pushLog(buf);
-    const line = String(buf).trim();
-    if (line) console.log(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
-  });
-  child.stderr?.on("data", (buf) => {
-    pushLog(buf);
-    const line = String(buf).trim();
-    if (line) console.warn(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
-  });
-  child.on("exit", (code) => {
-    console.log(`[${gameSlug}:${port}] exited ${code}`);
-    if (rooms.get(roomId) === room) stopRoom(room);
-  });
-
-  if (recipe.stdin) {
-    try {
-      child.stdin?.write(recipe.stdin(port, ctx));
-    } catch (err) {
-      console.warn("stdin write failed", err);
-    }
-  }
-
-  rooms.set(roomId, room);
-  byParty.set(partyId, roomId);
-
-  const graceMs = Number(recipe.startupGraceMs) || 800;
-  let exitCode = null;
-  const died = await new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(false), graceMs);
-    child.once("exit", (code) => {
-      exitCode = code;
-      clearTimeout(timer);
-      resolve(true);
-    });
-  });
-  if (died) {
-    stopRoom(room);
-    const tail = startupLog.at(-1);
-    const detail = tail ? `: ${tail}` : "";
-    return {
-      error: `${gameSlug} dedicated process exited immediately (code ${exitCode ?? "?"}${detail})`,
+    const args = recipe.args(port, ctx, binary);
+    const hostHome = process.env.HOME || "/var/lib/playbound-host";
+    const spawnEnv = {
+      ...process.env,
+      HOME: hostHome,
+      ...(typeof recipe.spawnEnv === "function" ? recipe.spawnEnv(port, ctx) : {}),
     };
+    const cwd =
+      typeof recipe.cwd === "function"
+        ? recipe.cwd(port, ctx)
+        : recipe.cwd || path.dirname(binary);
+    const child = spawn(binary, args, {
+      cwd,
+      env: spawnEnv,
+      stdio: ["pipe", "pipe", "pipe"],
+      detached: true,
+    });
+
+    const roomId = `room_${crypto.randomBytes(8).toString("hex")}`;
+    const room = {
+      roomId,
+      partyId,
+      gameSlug,
+      name: ctx.name,
+      host: PUBLIC_IP,
+      port,
+      pid: child.pid || null,
+      child,
+      createdAt: Date.now(),
+    };
+
+    const startupLog = [];
+    const pushLog = (buf) => {
+      const line = String(buf).trim();
+      if (line) startupLog.push(line.slice(0, 400));
+      if (startupLog.length > 20) startupLog.shift();
+    };
+
+    child.stdout?.on("data", (buf) => {
+      pushLog(buf);
+      const line = String(buf).trim();
+      if (line) console.log(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
+    });
+    child.stderr?.on("data", (buf) => {
+      pushLog(buf);
+      const line = String(buf).trim();
+      if (line) console.warn(`[${gameSlug}:${port}] ${line.slice(0, 200)}`);
+    });
+    child.on("exit", (code) => {
+      console.log(`[${gameSlug}:${port}] exited ${code}`);
+      if (rooms.get(roomId) === room) stopRoom(room);
+    });
+
+    if (recipe.stdin) {
+      try {
+        child.stdin?.write(recipe.stdin(port, ctx));
+      } catch (err) {
+        console.warn("stdin write failed", err);
+      }
+    }
+
+    rooms.set(roomId, room);
+    byParty.set(partyId, roomId);
+
+    const graceMs = Number(recipe.startupGraceMs) || 800;
+    let exitCode = null;
+    const died = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(false), graceMs);
+      child.once("exit", (code) => {
+        exitCode = code;
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
+    if (died) {
+      stopRoom(room);
+      const tail = startupLog.at(-1);
+      const detail = tail ? `: ${tail}` : "";
+      lastError = `${gameSlug} dedicated process exited immediately (code ${exitCode ?? "?"}${detail})`;
+      console.warn(`[${gameSlug}:${port}] ${lastError} — trying another port`);
+      continue;
+    }
+
+    return { room };
   }
 
-  return { room };
+  return { error: lastError };
 }
 
 function testPartyId(gameSlug) {

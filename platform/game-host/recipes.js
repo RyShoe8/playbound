@@ -23,6 +23,21 @@ const HOST_HOME = process.env.HOME || "/var/lib/playbound-host";
 const ET_HOME_ROOT = process.env.GAME_HOST_ET_HOME || "/var/lib/playbound-host/et";
 const WZ_CONFIG_DIR = path.join(HOST_HOME, "warzone");
 const WZ_AUTOHOST_DIR = path.join(WZ_CONFIG_DIR, "autohost");
+const TEEWORLDS_CONFIG_DIR = path.join(HOST_HOME, "teeworlds");
+
+function teeworldsConfigPath(ctx) {
+  const party = String(ctx.partyId || "default").replace(/[^a-zA-Z0-9_-]/g, "").slice(-24);
+  return path.join(TEEWORLDS_CONFIG_DIR, `pb-${party || "default"}.cfg`);
+}
+
+function teeworldsServerName(name) {
+  return String(name || "PlayBound Teeworlds")
+    // Console config is one command per line. Keep party names from becoming
+    // command separators or control characters in that file.
+    .replace(/[\x00-\x1f\x7f\";\\]+/g, " ")
+    .trim()
+    .slice(0, 40);
+}
 
 function warzoneAutohostId(ctx) {
   const raw = String(ctx.partyId || "default")
@@ -82,6 +97,32 @@ function openRaMod(editionSlug) {
 }
 
 export const recipes = {
+  teeworlds: {
+    portStart: 8303,
+    portEnd: 8323,
+    protocol: "udp",
+    binaries: gameBin("teeworlds", ["teeworlds_srv"]),
+    args: (_port, ctx) => ["-f", teeworldsConfigPath(ctx)],
+    prepareSpawn: async (port, ctx) => {
+      fs.mkdirSync(TEEWORLDS_CONFIG_DIR, { recursive: true });
+      fs.writeFileSync(
+        teeworldsConfigPath(ctx),
+        [
+          `sv_name ${teeworldsServerName(ctx.name)}`,
+          `sv_port ${port}`,
+          "sv_register 0",
+          "sv_map dm1",
+          "sv_gametype dm",
+          "sv_max_clients 16",
+          "sv_spectator_slots 0",
+          "sv_scorelimit 20",
+          "sv_timelimit 10",
+          "sv_motd Private PlayBound party server",
+          "",
+        ].join("\n")
+      );
+    },
+  },
   openra: {
     portStart: 1234,
     portEnd: 1250,
@@ -237,15 +278,16 @@ export const recipes = {
     protocol: "both",
     binaries: gameBin("bzflag", ["bzfs"]),
     args: (port) => ["-p", String(port), "-g", "-noTeamKills"],
+    // Scoped to this room's own port only — an unqualified `pkill -x bzfs`
+    // would tear down every other party's concurrent BZFlag room on this
+    // host, since bzfs gives every instance the same process name. If
+    // something still holds the port after this (e.g. a root-owned distro
+    // bzflag-server service this unprivileged agent can't signal), startRoom
+    // retries on the next port in the range rather than failing outright.
     prepareSpawn: async (port) => {
       try {
-        await execFileAsync("pkill", ["-x", "bzfs"]);
-      } catch {
-        /* none running */
-      }
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      try {
         await execFileAsync("fuser", ["-k", `${port}/tcp`, `${port}/udp`]);
+        await new Promise((resolve) => setTimeout(resolve, 400));
       } catch {
         /* port was free */
       }
