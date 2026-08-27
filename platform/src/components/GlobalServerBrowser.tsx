@@ -396,8 +396,8 @@ export function GlobalServerBrowser({
       try {
         const needGeo = !viewerGeoFetched.current;
         const [serversRes, geoRes] = await Promise.all([
+          // Shares the route's 30s cache; provider queries behind it are the expensive part.
           fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
-            cache: "no-store",
             credentials: "same-origin",
             signal: ac.signal,
           }),

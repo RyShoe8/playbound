@@ -433,6 +433,8 @@ async function renderFriendsView() {
   }
 
   await ensurePartyGames();
+  // Opening the view is a deliberate look at it, so the events strip re-reads.
+  upcomingEventsCache = { at: 0, data: upcomingEventsCache.data };
   await api.refreshFriendsData();
   syncFriendsPoll();
   markViewReady(container);
@@ -450,12 +452,30 @@ function syncFriendsPoll() {
   friendsPollInterval = setInterval(() => {
     const inLiveParty = Boolean(state._activeParty && state._activeParty.status !== "ended");
     if ((state.currentView === "friends" || inLiveParty) && state.accountState.connected) {
-      api.refreshFriendsData();
+      void pollFriendsData();
     } else {
       clearInterval(friendsPollInterval);
       friendsPollInterval = null;
     }
   }, friendsPollMs);
+}
+
+/*
+ * A tick that lands while the previous one is still open is dropped.
+ *
+ * A live party polls every 3s and each pass is several requests; on a slow
+ * connection they overlapped and queued, so the panel fell further behind the
+ * longer it stayed open. Only the poll goes through here — the mutation paths
+ * call refreshFriendsData directly because they have to see their own write.
+ */
+let friendsPollInFlight = null;
+
+function pollFriendsData() {
+  if (friendsPollInFlight) return friendsPollInFlight;
+  friendsPollInFlight = Promise.resolve(api.refreshFriendsData()).finally(() => {
+    friendsPollInFlight = null;
+  });
+  return friendsPollInFlight;
 }
 
 function setLocalPlaying(next) {
@@ -545,6 +565,57 @@ async function reconcilePartiesPayload(partiesData, retried = false) {
   return partiesData;
 }
 
+/*
+ * Friends' joinable parties, on their own cadence.
+ *
+ * The party payload has to stay current to the second while a lobby is live;
+ * the discoverable list beside it costs more to compute than the party itself
+ * and nobody minds it being a few seconds behind. Asking for it less often is
+ * the difference, and the last one stays on screen in between.
+ */
+const DISCOVERABLE_MIN_MS = 8000;
+let lastDiscoverableAt = 0;
+let lastDiscoverable = [];
+
+async function loadParties() {
+  if (!window.playbound.getParties) return null;
+  const includeDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
+  if (includeDiscoverable) lastDiscoverableAt = Date.now();
+  const data = await window.playbound.getParties(
+    includeDiscoverable ? undefined : { includeDiscoverable: false }
+  );
+  if (!data || data.error) return data;
+  if (Array.isArray(data.discoverable)) {
+    lastDiscoverable = data.discoverable;
+    return data;
+  }
+  return { ...data, discoverable: lastDiscoverable };
+}
+
+/*
+ * Scheduled events do not change on a party's cadence.
+ *
+ * A live party polls this view every 3s, and the events feed was one of the
+ * four requests each pass — for a list of things happening hours from now. It
+ * gets its own interval, and the party payload keeps the fast lane.
+ */
+const UPCOMING_EVENTS_TTL_MS = 60_000;
+let upcomingEventsCache = { at: 0, data: { events: [] } };
+
+async function loadUpcomingEvents() {
+  if (!window.playbound.getFriendsUpcomingEvents) return { events: [] };
+  if (Date.now() - upcomingEventsCache.at < UPCOMING_EVENTS_TTL_MS) {
+    return upcomingEventsCache.data;
+  }
+  // Stamped before the await so a slow request cannot stack up behind itself.
+  upcomingEventsCache = { at: Date.now(), data: upcomingEventsCache.data };
+  const data = await window.playbound
+    .getFriendsUpcomingEvents()
+    .catch(() => upcomingEventsCache.data);
+  upcomingEventsCache = { at: Date.now(), data: data || { events: [] } };
+  return upcomingEventsCache.data;
+}
+
 async function refreshFriendsData() {
   const content = document.getElementById("friends-content-area");
   if (!content) return;
@@ -554,8 +625,8 @@ async function refreshFriendsData() {
     const [friendsData, requestsData, partiesRaw, upcomingEventsData] = await Promise.all([
       window.playbound.getFriends(),
       window.playbound.getFriendRequests(),
-      window.playbound.getParties?.() ?? Promise.resolve(null),
-      window.playbound.getFriendsUpcomingEvents?.() ?? Promise.resolve({ events: [] }),
+      loadParties(),
+      loadUpcomingEvents(),
     ]);
     const partiesData = await reconcilePartiesPayload(partiesRaw);
     const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
@@ -1927,15 +1998,36 @@ async function fillPartyEditionPickers(slot, party) {
   }
 }
 
+/*
+ * One server list per game, shared by the count and the picker.
+ *
+ * The site's servers endpoint is CDN-cached for 30s, so asking more often than
+ * that cannot return anything new. `inFlight` matters because the count and
+ * the picker fill in the same tick after a repaint — without it, one repaint
+ * meant two identical requests.
+ */
 const partyServersCache = new Map();
+const partyServersInFlight = new Map();
 const PARTY_SERVERS_TTL_MS = 30_000;
 
 async function loadPartyServers(slug, force) {
+  if (!slug) return { servers: [] };
   const cached = partyServersCache.get(slug);
   if (!force && cached && Date.now() - cached.at < PARTY_SERVERS_TTL_MS) return cached.data;
-  const data = await window.playbound.getServers(slug).catch(() => ({ servers: [] }));
-  partyServersCache.set(slug, { at: Date.now(), data });
-  return data;
+  const pending = partyServersInFlight.get(slug);
+  if (pending) return pending;
+
+  const run = window.playbound
+    .getServers(slug)
+    // Keep the last good list rather than blanking a picker mid-scroll.
+    .catch(() => cached?.data ?? { servers: [] })
+    .then((data) => {
+      partyServersCache.set(slug, { at: Date.now(), data });
+      return data;
+    })
+    .finally(() => partyServersInFlight.delete(slug));
+  partyServersInFlight.set(slug, run);
+  return run;
 }
 
 function formatPartyPlayerCount(n) {
@@ -1955,82 +2047,80 @@ function partyServerLocation(server) {
   return "";
 }
 
-async function fillPartyOnlineCount(slot) {
+async function fillPartyOnlineCount(slot, force = false) {
   const el = slot.querySelector(".party-online-count");
   if (!el || el.hidden) return;
   const slug = el.dataset.slug;
   if (!slug) return;
   try {
-    const data = await loadPartyServers(slug, false);
+    const data = await loadPartyServers(slug, force);
     const servers = Array.isArray(data?.servers) ? data.servers : [];
     const players = servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
-    if (!players && servers.every((s) => s.players == null)) {
-      el.textContent = "";
-      return;
-    }
-    el.textContent = `${formatPartyPlayerCount(players)} playing online`;
+    const text =
+      !players && servers.every((s) => s.players == null)
+        ? ""
+        : `${formatPartyPlayerCount(players)} playing online`;
+    if (el.textContent !== text) el.textContent = text;
   } catch {
     el.textContent = "";
   }
 }
 
-async function fillPartyPublicServerPicker(slot) {
+function partyServerRowHtml(server, { canPick, selectedId, selectedHost, selectedPort }) {
+  const id = server.id || `${server.host}:${server.port}`;
+  const selected =
+    (selectedId && selectedId === id) ||
+    (selectedHost === server.host && String(selectedPort) === String(server.port));
+  const label = server.name || `${server.host}:${server.port}`;
+  const loc = partyServerLocation(server);
+  const count =
+    server.players == null
+      ? "—"
+      : `${server.players}${server.maxPlayers ? `/${server.maxPlayers}` : ""}`;
+  const meta = [server.map, loc, server.gameType].filter(Boolean).join(" · ");
+  return `<button type="button" class="party-public-server-row${selected ? " is-selected" : ""}"${
+    canPick ? "" : " disabled"
+  } data-id="${escapeHtml(id)}" data-host="${escapeHtml(server.host)}" data-port="${
+    Number(server.port) || 0
+  }" data-name="${escapeHtml(label)}" data-mod="${escapeHtml(
+    server.mod || ""
+  )}" data-protected="${server.protected ? "1" : "0"}">
+    <span class="party-public-server-row-main">
+      <span class="party-public-server-name">${server.protected ? `${ICON.lock} ` : ""}${escapeHtml(
+        label
+      )}</span>
+      <span class="party-public-server-players">${escapeHtml(count)}</span>
+    </span>
+    ${meta ? `<span class="party-public-server-meta">${escapeHtml(meta)}</span>` : ""}
+  </button>`;
+}
+
+/**
+ * Fill (or update) the public-server picker.
+ *
+ * The party card repaints for reasons that have nothing to do with servers, so
+ * rewriting the list every time would throw away the user's scroll position
+ * mid-pick. Rows are written only when they actually differ, and clicks are
+ * handled by one delegated listener on the container instead of one per row.
+ * Counts change only when the refresh button beside the list is pressed.
+ */
+async function fillPartyPublicServerPicker(slot, force = false) {
   const el = slot.querySelector("#party-public-server");
   if (!el) return;
   const slug = el.dataset.slug;
-  const partyId = el.dataset.partyId;
   const canPick = el.dataset.canPick === "1";
   const selectedId = el.dataset.selectedId || "";
   const selectedHost = el.dataset.selectedHost || "";
   const selectedPort = el.dataset.selectedPort || "";
   const selectedName = el.dataset.selectedName || "";
   if (!el.querySelector(".party-public-server-list")) {
-    el.innerHTML = `<p class="party-member-sub">Loading servers…</p>`;
-  }
-  try {
-    const data = await loadPartyServers(slug, false);
-    const servers = Array.isArray(data?.servers) ? data.servers : [];
-    const players = servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
-    const sorted = [...servers].sort((a, b) => (b.players || 0) - (a.players || 0));
     const picked =
-      selectedName ||
-      (selectedHost && selectedPort ? `${selectedHost}:${selectedPort}` : "");
-    const rows = sorted
-      .map((s) => {
-        const id = s.id || `${s.host}:${s.port}`;
-        const selected =
-          (selectedId && selectedId === id) ||
-          (selectedHost === s.host && String(selectedPort) === String(s.port));
-        const loc = partyServerLocation(s);
-        const count =
-          s.players == null ? "—" : `${s.players}${s.maxPlayers ? `/${s.maxPlayers}` : ""}`;
-        const meta = [s.map, loc, s.gameType].filter(Boolean).join(" · ");
-        return `<button type="button" class="party-public-server-row${selected ? " is-selected" : ""}"${
-          canPick ? "" : " disabled"
-        } data-id="${escapeHtml(id)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}" data-name="${escapeHtml(
-          s.name || `${s.host}:${s.port}`
-        )}" data-mod="${escapeHtml(s.mod || "")}" data-protected="${s.protected ? "1" : "0"}">
-          <span class="party-public-server-row-main">
-            <span class="party-public-server-name">${s.protected ? `${ICON.lock} ` : ""}${escapeHtml(
-              s.name || `${s.host}:${s.port}`
-            )}</span>
-            <span class="party-public-server-players">${escapeHtml(count)}</span>
-          </span>
-          ${meta ? `<span class="party-public-server-meta">${escapeHtml(meta)}</span>` : ""}
-        </button>`;
-      })
-      .join("");
+      selectedName || (selectedHost && selectedPort ? `${selectedHost}:${selectedPort}` : "");
     el.innerHTML = `
       <div class="party-public-server-head">
         <div>
           <p class="party-field-label">Public server</p>
-          <p class="party-member-sub">${
-            servers.length
-              ? `${formatPartyPlayerCount(players)} playing across ${servers.length} server${
-                  servers.length === 1 ? "" : "s"
-                }`
-              : "No public servers listed right now."
-          }</p>
+          <p class="party-member-sub party-public-server-summary">Loading servers…</p>
         </div>
         <button type="button" class="party-icon-btn party-public-server-refresh" title="Refresh">${ICON.refresh}</button>
       </div>
@@ -2044,42 +2134,84 @@ async function fillPartyPublicServerPicker(slot) {
                 : ""
             }</p>`
           : `<p class="party-member-sub">${
-              canPick ? "Pick a server for the party to join." : "Waiting for the leader to pick a server."
+              canPick
+                ? "Pick a server for the party to join."
+                : "Waiting for the leader to pick a server."
             }</p>`
       }
-      <div class="party-public-server-list">${rows || ""}</div>
+      <div class="party-public-server-list"></div>
     `;
-    const refreshBtn = el.querySelector(".party-public-server-refresh");
-    if (refreshBtn) {
-      refreshBtn.addEventListener("click", async () => {
-        partyServersCache.delete(slug);
-        await fillPartyPublicServerPicker(slot);
-        await fillPartyOnlineCount(slot);
-      });
+    wirePartyPublicServerPicker(el, slot);
+  }
+
+  const summaryEl = el.querySelector(".party-public-server-summary");
+  const listEl = el.querySelector(".party-public-server-list");
+  try {
+    const data = await loadPartyServers(slug, force);
+    const servers = Array.isArray(data?.servers) ? data.servers : [];
+    const players = servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
+    const sorted = [...servers].sort((a, b) => (b.players || 0) - (a.players || 0));
+
+    const summary = servers.length
+      ? `${formatPartyPlayerCount(players)} playing across ${servers.length} server${
+          servers.length === 1 ? "" : "s"
+        }`
+      : "No public servers listed right now.";
+    if (summaryEl && summaryEl.textContent !== summary) summaryEl.textContent = summary;
+
+    if (listEl) {
+      const rows = sorted
+        .map((s) => partyServerRowHtml(s, { canPick, selectedId, selectedHost, selectedPort }))
+        .join("");
+      if (listEl.dataset.rowSig !== rows) {
+        const scroll = listEl.scrollTop;
+        listEl.innerHTML = rows;
+        listEl.dataset.rowSig = rows;
+        listEl.scrollTop = scroll;
+      }
     }
-    el.querySelectorAll(".party-public-server-row").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (!canPick || !window.playbound.setPartyPublicServer) return;
-        btn.disabled = true;
-        try {
-          const res = await window.playbound.setPartyPublicServer(partyId, {
-            id: btn.dataset.id,
-            name: btn.dataset.name,
-            host: btn.dataset.host,
-            port: Number(btn.dataset.port),
-            mod: btn.dataset.mod || null,
-            protected: btn.dataset.protected === "1",
-          });
-          applyPartyResult(res, "Couldn't pick that server.");
-        } catch (err) {
-          setStatus(err.message || "Couldn't pick that server.", true);
-        }
-      });
-    });
   } catch (err) {
     console.warn("fillPartyPublicServerPicker:", err);
-    el.innerHTML = `<p class="party-member-sub">Couldn't load servers.</p>`;
+    if (summaryEl) summaryEl.textContent = "Couldn't load servers.";
   }
+}
+
+function wirePartyPublicServerPicker(el, slot) {
+  const partyId = el.dataset.partyId;
+
+  el.querySelector(".party-public-server-refresh")?.addEventListener("click", () => {
+    void fillPartyPublicServerPicker(slot, true);
+    void fillPartyOnlineCount(slot, true);
+  });
+
+  el.querySelector(".party-public-server-list")?.addEventListener("click", async (event) => {
+    const btn = event.target.closest(".party-public-server-row");
+    if (!btn || btn.disabled) return;
+    if (el.dataset.canPick !== "1" || !window.playbound.setPartyPublicServer) return;
+    btn.disabled = true;
+    try {
+      const ok = applyPartyResult(
+        await window.playbound.setPartyPublicServer(partyId, {
+          id: btn.dataset.id,
+          name: btn.dataset.name,
+          host: btn.dataset.host,
+          port: Number(btn.dataset.port),
+          mod: btn.dataset.mod || null,
+          protected: btn.dataset.protected === "1",
+        }),
+        "Couldn't pick that server."
+      );
+      /*
+       * A successful pick changes the payload and the card repaints over this
+       * row. A rejected one does not, and the rows are only rewritten when
+       * they differ — so nothing else would ever re-enable this button.
+       */
+      if (!ok) btn.disabled = false;
+    } catch (err) {
+      btn.disabled = false;
+      setStatus(err.message || "Couldn't pick that server.", true);
+    }
+  });
 }
 
 function partyAreaSignature(active, discoverable) {

@@ -336,32 +336,60 @@ async function resolveUsernames(
 }
 
 /**
- * Which OS each member is actually on, from presence.
+ * Everything a party payload needs to know about its people, in two reads.
  *
- * The party's game list has to be playable by everyone in it — a Windows-only
- * game is not a real option for a party with someone on Linux, and picking one
- * strands them at "not available for your platform" after the party has
- * already committed to it.
+ * `osById` is which OS each member is actually on, from presence. The party's
+ * game list has to be playable by everyone in it — a Windows-only game is not
+ * a real option for a party with someone on Linux, and picking one strands
+ * them at "not available for your platform" after the party has already
+ * committed to it. A member with no live presence row reports "unknown", and
+ * callers treat that as "do not constrain": someone who has not opened the
+ * launcher yet should not silently narrow everyone else's choices.
  *
- * A member with no live presence row reports "unknown", and callers treat that
- * as "do not constrain": someone who has not opened the launcher yet should
- * not silently narrow everyone else's choices.
+ * `partyIdById` comes free from the same presence read, so the list path can
+ * check whether presence still points at the right party without a third
+ * query on every poll.
  */
-async function resolveMemberOs(ids: string[]): Promise<Map<string, string>> {
-  if (ids.length === 0) return new Map();
-  const rows = await Presence.find({ userId: { $in: ids } })
-    .select("userId os lastSeenAt")
-    .sort({ lastSeenAt: -1 })
-    .lean();
-  const byUser = new Map<string, string>();
+type PartyPeople = {
+  nameById: Map<string, string>;
+  osById: Map<string, string>;
+  partyIdById: Map<string, string | null>;
+};
+
+const EMPTY_PEOPLE: PartyPeople = {
+  nameById: new Map(),
+  osById: new Map(),
+  partyIdById: new Map(),
+};
+
+async function resolvePartyPeople(ids: string[]): Promise<PartyPeople> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return EMPTY_PEOPLE;
+
+  const [users, rows] = await Promise.all([
+    User.find({ _id: { $in: unique } })
+      .select("username")
+      .lean(),
+    Presence.find({ userId: { $in: unique } })
+      .select("userId os lastSeenAt currentPartyId")
+      .sort({ lastSeenAt: -1 })
+      .lean(),
+  ]);
+
+  const nameById = new Map(
+    users.map((u) => [String(u._id), String(u.username || "Player")])
+  );
+  const osById = new Map<string, string>();
+  const partyIdById = new Map<string, string | null>();
   for (const row of rows) {
     const key = String((row as { userId: unknown }).userId);
     // Sorted newest first, so the first row for a user is their current device.
-    if (byUser.has(key)) continue;
-    const os = String((row as { os?: unknown }).os || "unknown");
-    byUser.set(key, os);
+    if (osById.has(key)) continue;
+    osById.set(key, String((row as { os?: unknown }).os || "unknown"));
+    const currentPartyId = (row as { currentPartyId?: unknown }).currentPartyId;
+    partyIdById.set(key, currentPartyId ? String(currentPartyId) : null);
   }
-  return byUser;
+  return { nameById, osById, partyIdById };
 }
 
 const SKIP_VOICE: PartyVoiceFollowup = {
@@ -473,18 +501,40 @@ async function pickCanonicalPartyDoc(
   return canonical;
 }
 
-async function partyPayloadForDoc(doc: Record<string, unknown>): Promise<PartyPayload> {
-  const memberIds = [
-    String(doc.leaderId),
-    ...((doc.members as Array<{ userId: unknown }>) || []).map((m) => String(m.userId)),
-  ];
+/**
+ * The one way a single party doc becomes a payload.
+ *
+ * Every mutation and read path goes through here so the shape a client gets
+ * back never depends on which endpoint produced it. When one path resolved
+ * member OS and another did not, `requiredPlatforms` and `members[].os`
+ * flipped between populated and empty on alternating responses, and both
+ * clients treat that as a real change: the launcher repainted the whole party
+ * card (dropping the server list mid-scroll) and the web panel re-rendered on
+ * every poll.
+ */
+async function partyPayloadForDoc(
+  doc: Record<string, unknown>,
+  opts: { people?: PartyPeople; gameTitle?: string | null } = {}
+): Promise<PartyPayload> {
   const gameSlug = String(doc.gameSlug || "");
-  const [nameById, game, osById] = await Promise.all([
-    resolveUsernames([...new Set(memberIds)]),
-    gameSlug ? getGame(gameSlug, { includeTesting: true }) : Promise.resolve(null),
-    resolveMemberOs([...new Set(memberIds)]),
+  const [people, gameTitle] = await Promise.all([
+    opts.people ? Promise.resolve(opts.people) : resolvePartyPeople(partyMemberIds(doc)),
+    opts.gameTitle !== undefined
+      ? Promise.resolve(opts.gameTitle)
+      : gameSlug
+        ? getGame(gameSlug, { includeTesting: true }).then((g) => g?.title || null)
+        : Promise.resolve(null),
   ]);
-  return serializeParty(doc, nameById, game?.title || null, osById);
+  return serializeParty(doc, people, gameTitle);
+}
+
+/** Leader plus roster, deduped — the set every payload needs names and OS for. */
+function partyMemberIds(doc: Record<string, unknown>): string[] {
+  const ids = [String(doc.leaderId)];
+  for (const m of (doc.members as Array<{ userId: unknown }>) || []) {
+    ids.push(String(m.userId));
+  }
+  return ids;
 }
 
 function hashPartyPassword(password: string, salt: string): string {
@@ -493,15 +543,10 @@ function hashPartyPassword(password: string, salt: string): string {
 
 function serializeParty(
   doc: Record<string, unknown>,
-  nameById: Map<string, string>,
-  gameTitle: string | null,
-  /*
-   * Optional so the call sites that only need names are unaffected; absent
-   * simply means no platform constraint is published, which is the same thing
-   * the filter does with an unknown member.
-   */
-  osById: Map<string, string> = new Map()
+  people: PartyPeople,
+  gameTitle: string | null
 ): PartyPayload {
+  const { nameById, osById } = people;
   const members = (doc.members as Array<Record<string, unknown>>) || [];
   const leaderId = String(doc.leaderId);
   const discord = (doc.discord as Record<string, unknown>) || {};
@@ -591,37 +636,72 @@ function serializeParty(
 
 async function attachConfigSync(
   party: PartyPayload,
-  viewerUserId?: string
+  viewerUserId?: string,
+  /*
+   * `doc` is the party row the caller already read: config-sync needs the same
+   * row the payload came from, and on the polling path that read has just
+   * happened, so handing it over saves a findById per poll per viewer.
+   *
+   * `fresh` is for callers that just changed one of the fields config-sync
+   * reports on. Serving them the cached value would answer with the state from
+   * before their own write.
+   */
+  opts: { doc?: Record<string, unknown>; fresh?: boolean } = {}
 ): Promise<PartyPayload> {
   if (!party.gameSlug || party.status === "ended") {
-    return { ...party, readiness: readinessFor(party, null) };
+    return applyConfigSync(party, null, viewerUserId);
   }
+  return applyConfigSync(party, await safeConfigSync(party.id, opts), viewerUserId);
+}
+
+/**
+ * Config-sync read that never fails the payload it belongs to.
+ *
+ * Split from `attachConfigSync` so a caller that already knows it wants sync
+ * can start this read alongside the other ones instead of after them — on the
+ * polling path it used to run strictly after the member lookup, which made one
+ * poll two serial round trips for data with no dependency between them.
+ */
+async function safeConfigSync(
+  partyId: string,
+  opts: { doc?: Record<string, unknown>; fresh?: boolean } = {}
+): Promise<ConfigSyncOutcome | null> {
   try {
-    const result = await checkConfigSync(party.id);
-    if ("error" in result) return { ...party, readiness: readinessFor(party, null) };
-    const selfPlaying = viewerUserId
-      ? Boolean(result.sync.members.find((m) => m.userId === viewerUserId)?.playing)
-      : false;
-    return {
-      ...party,
-      configSync: result.sync,
-      selfPlaying,
-      readiness: readinessFor(party, result.sync),
-    };
+    return await checkConfigSync(partyId, opts);
   } catch (err) {
     /*
      * Logged, not recorded.
      *
      * This catch fires on a failed database read, and the panel polls it every
-     * 1.5s. Writing an event here meant a struggling cluster generated a write
-     * per poll per viewer describing the fact that it was struggling — load
-     * caused by the reporting of load. trackPartyFailure now filters
+     * second. Writing an event here meant a struggling cluster generated a
+     * write per poll per viewer describing the fact that it was struggling —
+     * load caused by the reporting of load. trackPartyFailure now filters
      * infrastructure errors for exactly this reason; keeping the call would
      * still be misleading about where the failure gets seen.
      */
     console.warn("[party:sync] config-sync failed", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/** Fold a sync result (or the absence of one) into the payload. */
+function applyConfigSync(
+  party: PartyPayload,
+  outcome: ConfigSyncOutcome | null,
+  viewerUserId?: string
+): PartyPayload {
+  if (!outcome || "error" in outcome) {
     return { ...party, readiness: readinessFor(party, null) };
   }
+  const selfPlaying = viewerUserId
+    ? Boolean(outcome.sync.members.find((m) => m.userId === viewerUserId)?.playing)
+    : false;
+  return {
+    ...party,
+    configSync: outcome.sync,
+    selfPlaying,
+    readiness: readinessFor(party, outcome.sync),
+  };
 }
 
 /**
@@ -856,13 +936,8 @@ export async function joinParty(
   const alreadyMember = rp.members.some((m) => m.userId === userId);
   if (alreadyMember) {
     await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
-    const memberIds = doc.members.map((m: { userId: unknown }) => String(m.userId));
-    const [nameById, game] = await Promise.all([
-      resolveUsernames(memberIds),
-      getGame(doc.gameSlug, { includeTesting: true }),
-    ]);
     return {
-      party: serializeParty(doc.toObject(), nameById, game?.title || null),
+      party: await partyPayloadForDoc(doc.toObject()),
       status: 200,
       ...SKIP_VOICE,
     };
@@ -916,13 +991,7 @@ export async function joinParty(
 
   await setPresenceParty(userId, { partyId: String(doc._id), gameSlug: String(doc.gameSlug) });
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
-  const party = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const party = await partyPayloadForDoc(doc.toObject());
   trackPartyEvent("party_joined", {
     partyId: party.id,
     gameSlug: party.gameSlug || null,
@@ -1010,13 +1079,7 @@ export async function leaveParty(
     await cleanupPartyDiscordVoice(doc);
   }
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
-  const leftParty = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const leftParty = await partyPayloadForDoc(doc.toObject());
   trackPartyEvent("party_left", {
     partyId: String(doc._id),
     gameSlug: leftParty.gameSlug || null,
@@ -1139,14 +1202,8 @@ export async function removeMember(
   await doc.save();
   await setPresenceParty(targetId, { partyId: null });
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: await partyPayloadForDoc(doc.toObject()),
     status: 200,
   };
 }
@@ -1187,14 +1244,8 @@ export async function transferLeadership(
   doc.lastActivity = now;
   await doc.save();
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: await partyPayloadForDoc(doc.toObject()),
     status: 200,
   };
 }
@@ -1282,21 +1333,25 @@ export async function setPartyGame(
   await doc.save();
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  await Promise.all(
-    memberIds.map((userId) =>
-      setPresenceParty(userId, { partyId: String(doc._id), gameSlug: slug })
-    )
-  );
-  const nameById = await resolveUsernames(memberIds);
+  const plain = doc.toObject() as Record<string, unknown>;
+  const [, people] = await Promise.all([
+    Promise.all(
+      memberIds.map((userId) =>
+        setPresenceParty(userId, { partyId: String(doc._id), gameSlug: slug })
+      )
+    ),
+    resolvePartyPeople(partyMemberIds(plain)),
+  ]);
 
-  let updated = serializeParty(doc.toObject(), nameById, game.title);
+  let updated = await partyPayloadForDoc(plain, { people, gameTitle: game.title });
   trackPartyEvent("party_game_set", {
     partyId: updated.id,
     gameSlug: slug,
     userId: leaderId,
   });
   if (updated.gameSlug) {
-    const sync = await checkConfigSync(updated.id);
+    // The game just changed, so anything cached describes the previous one.
+    const sync = await checkConfigSync(updated.id, { doc: plain, fresh: true });
     if (!("error" in sync)) {
       updated = { ...updated, configSync: sync.sync };
       if (!sync.sync.allReady) {
@@ -1364,10 +1419,7 @@ export async function setPartyHostMode(
     trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
   }
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const nameById = await resolveUsernames(memberIds);
-  const game = slug ? await getGame(slug, { includeTesting: true }) : null;
-  return { party: serializeParty(doc.toObject(), nameById, game?.title || null), status: 200 };
+  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
 }
 
 /**
@@ -1436,10 +1488,7 @@ export async function setPartyPublicServer(
     port: server.port,
   });
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const nameById = await resolveUsernames(memberIds);
-  const game = await getGame(slug, { includeTesting: true });
-  return { party: serializeParty(doc.toObject(), nameById, game?.title || null), status: 200 };
+  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
 }
 
 export async function setPartyEdition(
@@ -1476,18 +1525,18 @@ export async function setPartyEdition(
   doc.lastActivity = new Date();
   await doc.save();
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const nameById = await resolveUsernames(memberIds);
-
   trackPartyEvent("party_edition_set", {
     partyId: String(doc._id),
     gameSlug: String(doc.gameSlug || "") || null,
     editionSlug: slug || null,
     userId: leaderId,
   });
-  const serialized = serializeParty(doc.toObject(), nameById, game.title);
+  const plain = doc.toObject() as Record<string, unknown>;
+  const serialized = await partyPayloadForDoc(plain, { gameTitle: game.title });
   return {
-    party: await attachConfigSync(serialized, leaderId),
+    // The edition is what config-sync compares against, so this read must see
+    // the write above rather than the value cached moments before it.
+    party: await attachConfigSync(serialized, leaderId, { doc: plain, fresh: true }),
     status: 200,
   };
 }
@@ -1528,17 +1577,15 @@ export async function setPartyOpenRaMod(
   doc.lastActivity = new Date();
   await doc.save();
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const nameById = await resolveUsernames(memberIds);
-
   trackPartyEvent("party_openra_mod_set", {
     partyId: String(doc._id),
     userId: leaderId,
     openRaMod: value || null,
   });
-  const serialized = serializeParty(doc.toObject(), nameById, "OpenRA");
+  const plain = doc.toObject() as Record<string, unknown>;
+  const serialized = await partyPayloadForDoc(plain, { gameTitle: "OpenRA" });
   return {
-    party: await attachConfigSync(serialized, leaderId),
+    party: await attachConfigSync(serialized, leaderId, { doc: plain }),
     status: 200,
   };
 }
@@ -1566,14 +1613,8 @@ export async function setPartyName(
     await renamePartyDiscordVoice(doc, doc.name);
   }
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    doc.gameSlug ? getGame(doc.gameSlug, { includeTesting: true }) : null,
-  ]);
-
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: await partyPayloadForDoc(doc.toObject()),
     status: 200,
   };
 }
@@ -1601,14 +1642,8 @@ export async function setVisibility(
   doc.lastActivity = new Date();
   await doc.save();
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: await partyPayloadForDoc(doc.toObject()),
     status: 200,
   };
 }
@@ -1646,14 +1681,8 @@ export async function setReady(
   await doc.save();
   await maybeProvisionPartyConnect(doc);
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
   return {
-    party: serializeParty(doc.toObject(), nameById, game?.title || null),
+    party: await partyPayloadForDoc(doc.toObject()),
     status: 200,
   };
 }
@@ -1695,13 +1724,7 @@ export async function joinPartyGame(
     await placePartyDiscordVoice(doc);
   }
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
-  const joined = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const joined = await partyPayloadForDoc(doc.toObject());
   trackPartyEvent("party_join_game", {
     partyId: joined.id,
     gameSlug: joined.gameSlug || null,
@@ -1786,18 +1809,8 @@ export async function exitPartyGame(
   const refreshed = await Party.findById(partyId);
   if (!refreshed) return { error: "Party not found", status: 404 };
 
-  const memberIds: string[] = refreshed.members.map((m: { userId: unknown }) =>
-    String(m.userId)
-  );
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    refreshed.gameSlug
-      ? getGame(String(refreshed.gameSlug), { includeTesting: true })
-      : Promise.resolve(null),
-  ]);
-
   return {
-    party: serializeParty(refreshed.toObject(), nameById, game?.title || null),
+    party: await partyPayloadForDoc(refreshed.toObject()),
     status: 200,
   };
 }
@@ -1828,13 +1841,7 @@ export async function launchParty(
   doc.lastActivity = now;
   await doc.save();
 
-  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames(memberIds),
-    getGame(doc.gameSlug, { includeTesting: true }),
-  ]);
-
-  const launched = serializeParty(doc.toObject(), nameById, game?.title || null);
+  const launched = await partyPayloadForDoc(doc.toObject());
   trackPartyEvent("party_join_game", {
     partyId: launched.id,
     gameSlug: launched.gameSlug || null,
@@ -1895,19 +1902,11 @@ export async function getParty(
   const doc = await Party.findById(partyId).lean();
   if (!doc) return { error: "Party not found", status: 404 };
 
-  const memberIds = (doc.members as Array<{ userId: unknown }>).map((m) =>
-    String(m.userId)
-  );
-  memberIds.push(String(doc.leaderId));
-  const [nameById, game] = await Promise.all([
-    resolveUsernames([...new Set(memberIds)]),
-    getGame(String(doc.gameSlug), { includeTesting: true }),
-  ]);
-
   return {
     party: await attachConfigSync(
-      serializeParty(doc, nameById, game?.title || null),
-      viewerUserId
+      await partyPayloadForDoc(doc as Record<string, unknown>),
+      viewerUserId,
+      { doc: doc as Record<string, unknown> }
     ),
     status: 200,
   };
@@ -1930,7 +1929,19 @@ export async function listPartiesForUser(
   let canonical = await pickCanonicalPartyDoc(docs as PartyDocLean[], userId);
   if (!canonical) return [];
 
-  if (String(canonical.leaderId) === userId) {
+  /*
+   * Healing a leader missing from their own roster is a repair, not a step in
+   * the read. Deciding that from the lean doc already in hand keeps the common
+   * case — a healthy party, polled several times a second — at one party read
+   * instead of two, and only pays for the hydrated document when there is
+   * actually something to fix.
+   */
+  if (
+    String(canonical.leaderId) === userId &&
+    !(canonical.members as Array<{ userId: unknown }>).some(
+      (m) => String(m.userId) === userId
+    )
+  ) {
     const full = await Party.findById(canonical._id);
     if (full) {
       canonical = (await ensureLeaderMembership(
@@ -1939,33 +1950,24 @@ export async function listPartiesForUser(
     }
   }
 
-  const allMemberIds = new Set<string>();
-  const slugs = new Set<string>();
-  for (const d of [canonical]) {
-    allMemberIds.add(String(d.leaderId));
-    for (const m of d.members as Array<{ userId: unknown }>) {
-      allMemberIds.add(String(m.userId));
-    }
-    if (d.gameSlug) slugs.add(String(d.gameSlug));
-  }
-
-  const [nameById, games] = await Promise.all([
-    resolveUsernames([...allMemberIds]),
-    Promise.all(
-      [...slugs].map(async (s) => {
-        const g = await getGame(s, { includeTesting: true });
-        return [s, g?.title || null] as const;
-      })
-    ),
+  /*
+   * The two reads a poll still needs, started together: who is in the party
+   * and whether their installs match. Neither depends on the other, and this
+   * is the request every member repeats every second while in a lobby.
+   */
+  const wantSync = Boolean(canonical.gameSlug) && canonical.status !== "ended";
+  const [people, sync] = await Promise.all([
+    resolvePartyPeople(partyMemberIds(canonical)),
+    wantSync ? safeConfigSync(String(canonical._id), { doc: canonical }) : null,
   ]);
-  const titleBySlug = new Map(games);
+  const party = applyConfigSync(
+    await partyPayloadForDoc(canonical, { people }),
+    sync,
+    userId
+  );
 
-  let party = serializeParty(canonical, nameById, titleBySlug.get(String(canonical.gameSlug)) || null);
-  party = await attachConfigSync(party, userId);
-
-  const presence = await Presence.findOne({ userId }).select("currentPartyId").lean();
-  const presencePartyId = presence?.currentPartyId ? String(presence.currentPartyId) : null;
-  if (presencePartyId !== party.id) {
+  // Presence's party pointer came back with the member OS read above.
+  if (people.partyIdById.get(userId) !== party.id) {
     await setPresenceParty(userId, {
       partyId: party.id,
       gameSlug: party.gameSlug || null,
@@ -2015,51 +2017,30 @@ export async function listDiscoverableParties(
       )
   );
 
-  if (filtered.length === 0) return [];
-
-  const allMemberIds = new Set<string>();
-  const slugs = new Set<string>();
-  for (const d of filtered) {
-    allMemberIds.add(String(d.leaderId));
-    for (const m of d.members as Array<{ userId: unknown }>) {
-      allMemberIds.add(String(m.userId));
-    }
-    if (d.gameSlug) slugs.add(String(d.gameSlug));
-  }
-
-  const [nameById, games] = await Promise.all([
-    resolveUsernames([...allMemberIds]),
-    Promise.all(
-      [...slugs].map(async (s) => {
-        const g = await getGame(s, { includeTesting: true });
-        return [s, g?.title || null] as const;
-      })
-    ),
-  ]);
-  const titleBySlug = new Map(games);
-
-  return filtered.map((d) =>
-    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
-  );
+  return serializePartyDocs(filtered as Array<Record<string, unknown>>);
 }
 
 const OPEN_PARTY_STATUSES = ["forming", "ready", "playing"] as const;
 
+/**
+ * Many docs, two people reads and one title read per distinct game.
+ *
+ * Used for every multi-party list so a browse page cannot fall behind on the
+ * payload shape a single party gets — the clients diff these payloads, and a
+ * field that only some paths populate reads as a change on every other poll.
+ */
 async function serializePartyDocs(
   docs: Array<Record<string, unknown>>
 ): Promise<PartyPayload[]> {
   if (docs.length === 0) return [];
-  const allMemberIds = new Set<string>();
+  const allMemberIds: string[] = [];
   const slugs = new Set<string>();
   for (const d of docs) {
-    allMemberIds.add(String(d.leaderId));
-    for (const m of (d.members as Array<{ userId: unknown }>) || []) {
-      allMemberIds.add(String(m.userId));
-    }
+    allMemberIds.push(...partyMemberIds(d));
     if (d.gameSlug) slugs.add(String(d.gameSlug));
   }
-  const [nameById, games] = await Promise.all([
-    resolveUsernames([...allMemberIds]),
+  const [people, games] = await Promise.all([
+    resolvePartyPeople(allMemberIds),
     Promise.all(
       [...slugs].map(async (s) => {
         const g = await getGame(s, { includeTesting: true });
@@ -2069,7 +2050,7 @@ async function serializePartyDocs(
   ]);
   const titleBySlug = new Map(games);
   return docs.map((d) =>
-    serializeParty(d, nameById, titleBySlug.get(String(d.gameSlug)) || null)
+    serializeParty(d, people, titleBySlug.get(String(d.gameSlug)) || null)
   );
 }
 
@@ -2149,22 +2130,78 @@ type ConfigSyncOutcome =
  * by up to the TTL, self-correcting on the next poll.
  */
 const CONFIG_SYNC_CACHE_TTL_MS = 2000;
+/*
+ * A lambda instance can stay warm across thousands of polls for parties that
+ * have long since ended, so the map is swept rather than left to grow. Entries
+ * are only ever valid for the TTL, which makes eviction free: anything expired
+ * is dead weight, not a cache miss waiting to happen.
+ */
+const CONFIG_SYNC_CACHE_MAX = 500;
 const configSyncCache = new Map<string, { expires: number; value: ConfigSyncOutcome }>();
 
-export async function checkConfigSync(partyId: string): Promise<ConfigSyncOutcome> {
-  const cached = configSyncCache.get(partyId);
-  const now = Date.now();
-  if (cached && cached.expires > now) return cached.value;
+/**
+ * Concurrent pollers of the same party share one in-flight computation.
+ *
+ * The TTL alone does not help a burst that arrives before the first read
+ * finishes — four members polling within the same 50ms all miss the cache and
+ * all run the read cluster. Keyed on the party, so a second caller awaits the
+ * first caller's promise instead of starting its own.
+ */
+const configSyncInFlight = new Map<string, Promise<ConfigSyncOutcome>>();
 
-  const value = await checkConfigSyncUncached(partyId);
-  configSyncCache.set(partyId, { expires: now + CONFIG_SYNC_CACHE_TTL_MS, value });
-  return value;
+function pruneConfigSyncCache(now: number) {
+  for (const [key, entry] of configSyncCache) {
+    if (entry.expires <= now) configSyncCache.delete(key);
+  }
+  // Still oversized after dropping the expired: evict oldest insertions.
+  while (configSyncCache.size > CONFIG_SYNC_CACHE_MAX) {
+    const oldest = configSyncCache.keys().next();
+    if (oldest.done) break;
+    configSyncCache.delete(oldest.value);
+  }
 }
 
-async function checkConfigSyncUncached(partyId: string): Promise<ConfigSyncOutcome> {
+export async function checkConfigSync(
+  partyId: string,
+  /**
+   * `doc` is an already-read party row, when the caller has one this fresh.
+   * `fresh` skips the cached value — for callers reading back their own write.
+   */
+  opts: { doc?: Record<string, unknown>; fresh?: boolean } = {}
+): Promise<ConfigSyncOutcome> {
+  const { doc: preloadedDoc, fresh } = opts;
+  const now = Date.now();
+  if (!fresh) {
+    const cached = configSyncCache.get(partyId);
+    if (cached && cached.expires > now) return cached.value;
+
+    const pending = configSyncInFlight.get(partyId);
+    if (pending) return pending;
+  }
+
+  const run = checkConfigSyncUncached(partyId, preloadedDoc).then((value) => {
+    configSyncCache.set(partyId, { expires: Date.now() + CONFIG_SYNC_CACHE_TTL_MS, value });
+    if (configSyncCache.size > CONFIG_SYNC_CACHE_MAX) pruneConfigSyncCache(Date.now());
+    return value;
+  });
+  configSyncInFlight.set(partyId, run);
+  // A `fresh` run can replace a pending one; only the current entry is cleared.
+  void run
+    .finally(() => {
+      if (configSyncInFlight.get(partyId) === run) configSyncInFlight.delete(partyId);
+    })
+    .catch(() => {});
+  return run;
+}
+
+async function checkConfigSyncUncached(
+  partyId: string,
+  preloadedDoc?: Record<string, unknown>
+): Promise<ConfigSyncOutcome> {
   await dbConnect();
 
-  const doc = await Party.findById(partyId).lean();
+  const doc = (preloadedDoc ??
+    (await Party.findById(partyId).lean())) as Record<string, unknown> | null;
   if (!doc) return { error: "Party not found", status: 404 };
 
   const memberIds = (doc.members as Array<{ userId: unknown }>).map((m) =>

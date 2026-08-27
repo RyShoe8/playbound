@@ -68,14 +68,17 @@ export function PartyConfigSync({
     void fetchParties();
   }, [partyId, gameSlug, editionSlug, fetchParties]);
 
-  // Fast pulse check while party members are syncing or installing
-  useEffect(() => {
-    if (sync?.allInSync) return;
-    const interval = setInterval(() => {
-      void fetchParties();
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [sync?.allInSync, fetchParties]);
+  /*
+   * No pulse of its own.
+   *
+   * This used to poll every 1.5s while members were still installing, on top
+   * of the store's own 1s lobby poll — two uncoordinated timers hitting
+   * /api/parties for the same payload, so a party that was not yet in sync
+   * asked for it about 1.7 times a second and got the same answer twice. The
+   * store already runs at its fast interval for exactly this situation
+   * (activeParty, not ended, viewer not in-game); the panel reads the sync
+   * block that poll brings back.
+   */
 
   if (!sync) {
     return <div className="h-24 animate-pulse rounded-xl border border-border bg-card p-4" />;

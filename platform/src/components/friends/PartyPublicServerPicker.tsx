@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Lock, RefreshCw, Users } from "lucide-react";
 import type { GameServer } from "@/lib/servers/types";
 import { usePartyStore } from "@/stores/partyStore";
@@ -32,47 +32,114 @@ function serverKey(server: GameServer): string {
   return server.id || `${server.host}:${server.port}`;
 }
 
+type ServerListEntry = { at: number; servers: GameServer[]; error: string | null };
+
+/*
+ * One server list per game, shared by every mount.
+ *
+ * The API route is CDN-cached for 30s, so refetching more often than that
+ * cannot return anything new — and the party panel mounts this in two places
+ * (the count and the picker) and remounts on party updates. The cache makes a
+ * remount instant instead of another round trip, and `inFlight` keeps two
+ * mounts in the same tick from both asking.
+ */
+const SERVER_LIST_TTL_MS = 30_000;
+const serverListCache = new Map<string, ServerListEntry>();
+const serverListInFlight = new Map<string, Promise<ServerListEntry>>();
+
+async function loadServerList(slug: string, force = false): Promise<ServerListEntry> {
+  const cached = serverListCache.get(slug);
+  if (!force && cached && Date.now() - cached.at < SERVER_LIST_TTL_MS) return cached;
+  const pending = serverListInFlight.get(slug);
+  if (pending) return pending;
+
+  const run = (async (): Promise<ServerListEntry> => {
+    let entry: ServerListEntry;
+    try {
+      const res = await fetch(`/api/games/${encodeURIComponent(slug)}/servers`, {
+        cache: force ? "no-store" : "default",
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as ServersResponse;
+      entry = {
+        at: Date.now(),
+        servers: Array.isArray(data.servers) ? data.servers : [],
+        error: data.error || null,
+      };
+    } catch {
+      // Keep the last good list rather than blanking a picker mid-scroll.
+      entry = {
+        at: Date.now(),
+        servers: cached?.servers ?? [],
+        error: "Couldn't load servers.",
+      };
+    }
+    serverListCache.set(slug, entry);
+    return entry;
+  })().finally(() => {
+    serverListInFlight.delete(slug);
+  });
+
+  serverListInFlight.set(slug, run);
+  return run;
+}
+
+/**
+ * Server list for a game, read when it appears and when asked.
+ *
+ * No timer: the endpoint is a shared 30s cache, and a picker polling it in the
+ * background would spend requests re-reading the same bytes. The refresh
+ * button beside the list is how a stale count gets replaced.
+ */
 function useGameServers(gameSlug: string | null | undefined) {
-  const [servers, setServers] = useState<GameServer[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{ slug: string; entry: ServerListEntry } | null>(null);
   const [loading, setLoading] = useState(false);
+  const mounted = useRef(true);
 
   useEffect(() => {
-    if (!gameSlug) {
-      setServers(null);
-      setError(null);
-      return;
-    }
-    let cancelled = false;
-    async function load() {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  /*
+   * Derived during render rather than reset in an effect: switching games
+   * falls back to whatever the cache already holds for the new one, which is
+   * usually a complete list and always better than a flash of "loading".
+   */
+  const entry = gameSlug
+    ? loaded?.slug === gameSlug
+      ? loaded.entry
+      : serverListCache.get(gameSlug) ?? null
+    : null;
+
+  const refresh = useCallback(
+    async (force = false) => {
+      if (!gameSlug) return;
       setLoading(true);
-      try {
-        const res = await fetch(`/api/games/${encodeURIComponent(gameSlug!)}/servers`);
-        if (cancelled) return;
-        if (!res.ok) {
-          setServers([]);
-          setError("Couldn't load servers.");
-          return;
-        }
-        const data = (await res.json()) as ServersResponse;
-        setServers(Array.isArray(data.servers) ? data.servers : []);
-        setError(data.error || null);
-      } catch {
-        if (!cancelled) {
-          setServers([]);
-          setError("Couldn't load servers.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void load();
+      const next = await loadServerList(gameSlug, force);
+      if (!mounted.current) return;
+      setLoaded({ slug: gameSlug, entry: next });
+      setLoading(false);
+    },
+    [gameSlug]
+  );
+
+  useEffect(() => {
+    if (!gameSlug) return;
+    let cancelled = false;
+    // Straight to the shared loader, so a cache hit lands without a spinner
+    // and without a second render pass.
+    void loadServerList(gameSlug).then((entry) => {
+      if (!cancelled) setLoaded({ slug: gameSlug, entry });
+    });
     return () => {
       cancelled = true;
     };
   }, [gameSlug]);
 
-  return { servers, error, loading, setServers, setError, setLoading };
+  return { servers: entry?.servers ?? null, error: entry?.error ?? null, loading, refresh };
 }
 
 /** Live player count for the party's game, when a provider exists. */
@@ -80,7 +147,7 @@ export function PartyGameOnlineCount({ gameSlug }: { gameSlug: string }) {
   const { servers, loading } = useGameServers(gameSlug);
   if (!servers || servers.length === 0) {
     return loading ? (
-      <p className="mt-1.5 text-xs text-muted-foreground">Checking who's online…</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{"Checking who's online…"}</p>
     ) : null;
   }
   const players = sumPlayers(servers);
@@ -111,7 +178,7 @@ export function PartyPublicServerPicker({
   canPick: boolean;
 }) {
   const setPublicServer = usePartyStore((s) => s.setPublicServer);
-  const { servers, error, loading, setServers, setError, setLoading } = useGameServers(gameSlug);
+  const { servers, error, loading, refresh } = useGameServers(gameSlug);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -124,25 +191,6 @@ export function PartyPublicServerPicker({
       return hay.includes(q);
     });
   }, [servers, query]);
-
-  async function refresh() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/games/${encodeURIComponent(gameSlug)}/servers`);
-      if (!res.ok) {
-        setError("Couldn't load servers.");
-        return;
-      }
-      const data = (await res.json()) as ServersResponse;
-      setServers(Array.isArray(data.servers) ? data.servers : []);
-      setError(data.error || null);
-    } catch {
-      setError("Couldn't load servers.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function pick(server: GameServer) {
     if (!canPick) return;
@@ -182,7 +230,7 @@ export function PartyPublicServerPicker({
         </div>
         <button
           type="button"
-          onClick={() => void refresh()}
+          onClick={() => void refresh(true)}
           className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"
           title="Refresh server list"
         >

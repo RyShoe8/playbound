@@ -85,6 +85,9 @@ let partyMutationInFlight = 0;
 
 const DEFAULT_PARTY_POLL_MS = 5000;
 const FAST_PARTY_POLL_MS = 1000;
+/** Slowest lane in the same request: friends' joinable parties. */
+const DISCOVERABLE_MIN_MS = 5000;
+let lastDiscoverableAt = 0;
 
 function refreshFriendsAfterPartyMutation() {
   void useFriendsStore.getState().fetchFriends();
@@ -146,11 +149,60 @@ function needsFastPartyPoll(party: PartyPayload | null): boolean {
   return !viewerIsInGame(party);
 }
 
+/**
+ * Polling-only fetch that collapses ticks landing on an open request.
+ *
+ * A lobby polls once a second, which is shorter than a slow party read on a
+ * cold function — without this, one slow response has the next tick fire
+ * anyway and the requests stack up, each one making the next slower.
+ *
+ * Mutations deliberately do not go through here: `leaveParty` and friends have
+ * to see their own write, and piggybacking on a request that started before it
+ * would hand them the state they just changed.
+ */
+let pollFetchInFlight: Promise<void> | null = null;
+
+function pollParties(get: () => PartyState): Promise<void> {
+  if (pollFetchInFlight) return pollFetchInFlight;
+  const run = get()
+    .fetchParties()
+    .finally(() => {
+      pollFetchInFlight = null;
+    });
+  pollFetchInFlight = run;
+  return run;
+}
+
+function documentHidden(): boolean {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
+}
+
+/**
+ * A hidden tab is polling for nobody.
+ *
+ * Browsers throttle background timers but do not stop them, so a party left
+ * open in another tab kept billing a party read every few seconds. Suspending
+ * while hidden and catching up the moment the tab comes back is both cheaper
+ * and more responsive than the throttled tick would have been.
+ */
+let visibilityWired = false;
+
+function wirePartyVisibility(get: () => PartyState) {
+  if (visibilityWired || typeof document === "undefined") return;
+  visibilityWired = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && pollSubscribers > 0) {
+      void pollParties(get);
+    }
+    syncPartyPoll(get);
+  });
+}
+
 function syncPartyPoll(get: () => PartyState) {
   const next = needsFastPartyPoll(get().activeParty)
     ? FAST_PARTY_POLL_MS
     : requestedPollMs;
-  if (pollSubscribers === 0) {
+  if (pollSubscribers === 0 || documentHidden()) {
     if (pollInterval) {
       clearInterval(pollInterval);
       pollInterval = null;
@@ -162,8 +214,43 @@ function syncPartyPoll(get: () => PartyState) {
   if (pollInterval) clearInterval(pollInterval);
   pollMs = next;
   pollInterval = setInterval(() => {
-    void get().fetchParties();
+    void pollParties(get);
   }, pollMs);
+}
+
+/**
+ * Mutation responses describe the party, not the sync.
+ *
+ * Most mutation endpoints serialize the party without the config-sync block —
+ * that is a separate read, and renaming a party has nothing to do with who has
+ * the game installed. Installing the response wholesale therefore dropped
+ * `configSync` and `readiness`, and the sync panel fell back to its loading
+ * skeleton after every unrelated change until the next poll refilled them.
+ * Carrying the previous values through keeps the panel on screen; the poll,
+ * at most a second later, is what corrects them.
+ */
+function applyPartyUpdate(prev: PartyPayload | null, next: PartyPayload): PartyPayload {
+  if (!prev || prev.id !== next.id) return next;
+  return {
+    ...next,
+    configSync: next.configSync ?? prev.configSync,
+    readiness: next.readiness ?? prev.readiness,
+  };
+}
+
+/**
+ * Unchanged payloads keep their previous object.
+ *
+ * Every poll used to install a brand-new party object, so a lobby at one poll
+ * per second re-rendered the whole panel — and remounted anything keyed off
+ * those objects, like the public-server list — once a second while nothing was
+ * happening. Comparing the serialized payload is cheap next to the render it
+ * avoids.
+ */
+function sameParty(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 export const usePartyStore = create<PartyState>((set, get) => ({
@@ -174,19 +261,37 @@ export const usePartyStore = create<PartyState>((set, get) => ({
 
   fetchParties: async () => {
     try {
-      const res = await fetch("/api/parties");
+      /*
+       * Friends' joinable parties are asked for on their own slower cadence:
+       * they cost more to compute than the caller's own party and nobody
+       * notices one appearing a few seconds later, while the party itself has
+       * to stay current to the second.
+       */
+      const wantDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
+      const res = await fetch(wantDiscoverable ? "/api/parties" : "/api/parties?discoverable=0");
       if (!res.ok) return;
       const data = await res.json();
+      if (wantDiscoverable) lastDiscoverableAt = Date.now();
       const myParties: PartyPayload[] = data.myParties || [];
       const nextActive = myParties[0] || null;
-      set((state) => ({
-        activeParty:
-          partyMutationInFlight > 0 && state.activeParty?.id === nextActive?.id
-            ? state.activeParty
-            : nextActive,
-        discoverableParties: data.discoverable || [],
-        loading: false,
-      }));
+      // Absent means "not asked for this time", which is not the same as none.
+      const nextDiscoverable: PartyPayload[] | null = Array.isArray(data.discoverable)
+        ? data.discoverable
+        : wantDiscoverable
+          ? []
+          : null;
+      set((state) => {
+        const keepActive =
+          (partyMutationInFlight > 0 && state.activeParty?.id === nextActive?.id) ||
+          sameParty(state.activeParty, nextActive);
+        const keepDiscoverable =
+          nextDiscoverable === null || sameParty(state.discoverableParties, nextDiscoverable);
+        return {
+          activeParty: keepActive ? state.activeParty : nextActive,
+          discoverableParties: keepDiscoverable ? state.discoverableParties : nextDiscoverable,
+          loading: false,
+        };
+      });
       syncPartyPoll(get);
     } catch (err) {
       console.error("Failed to fetch parties", err);
@@ -318,7 +423,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -333,7 +438,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -349,7 +454,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         const party = (data.party as PartyPayload) || null;
-        if (party) set({ activeParty: party });
+        if (party) set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, party) }));
         syncPartyPoll(get);
         refreshFriendsAfterPartyMutation();
         return party;
@@ -426,7 +531,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.party) {
-        set({ activeParty: data.party as PartyPayload });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party as PartyPayload) }));
         refreshFriendsAfterPartyMutation();
       } else if (previous?.id === partyId) {
         set({ activeParty: previous, error: data.error || "Failed to set party game" });
@@ -448,7 +553,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -465,7 +570,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -482,7 +587,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -499,7 +604,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -516,7 +621,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -531,7 +636,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -548,7 +653,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -565,7 +670,7 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       });
       if (res.ok) {
         const data = await res.json();
-        set({ activeParty: data.party });
+        set((s) => ({ activeParty: applyPartyUpdate(s.activeParty, data.party) }));
         refreshFriendsAfterPartyMutation();
       }
     } catch (err) {
@@ -576,7 +681,8 @@ export const usePartyStore = create<PartyState>((set, get) => ({
   startPolling: (intervalMs = DEFAULT_PARTY_POLL_MS) => {
     pollSubscribers += 1;
     requestedPollMs = intervalMs;
-    get().fetchParties();
+    wirePartyVisibility(get);
+    void pollParties(get);
     syncPartyPoll(get);
   },
 

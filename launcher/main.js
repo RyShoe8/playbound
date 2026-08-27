@@ -9612,9 +9612,18 @@ ipcMain.handle("report-gamepads", (_event, pads) => {
   return { count: lastKnownGamepads.length };
 });
 
-ipcMain.handle("get-parties", async () => {
+/*
+ * `includeDiscoverable: false` drops friends' joinable parties from the
+ * response. A live party polls this every few seconds and that half costs a
+ * friend lookup plus a second party query plus their rosters — for a list
+ * nobody minds seeing a few seconds late. The renderer asks for it on its own
+ * slower cadence and keeps the last one in between.
+ */
+ipcMain.handle("get-parties", async (_event, opts = {}) => {
+  const path =
+    opts && opts.includeDiscoverable === false ? "/api/parties?discoverable=0" : "/api/parties";
   try {
-    return await launcherJson("/api/parties");
+    return await launcherJson(path);
   } catch (err) {
     return { error: err.message };
   }
