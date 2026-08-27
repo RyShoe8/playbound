@@ -675,14 +675,14 @@ export function ConnectManager({ view = "game-servers" }: { view?: "game-servers
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {data.games.map((game) => {
+              {(data?.games ?? []).map((game) => {
                 const Icon = game.ready ? CheckCircle2 : game.installed ? AlertTriangle : XCircle;
                 const tone = game.ready
                   ? "text-emerald-400"
                   : game.installed
                     ? "text-amber-400"
                     : "text-red-400";
-                const spawnEntry = data.lastSpawnTest?.[game.slug];
+                const spawnEntry = data?.lastSpawnTest?.[game.slug];
                 const isTesting = testingSlug === game.slug;
                 return (
                   <div
