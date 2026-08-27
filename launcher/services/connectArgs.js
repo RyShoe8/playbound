@@ -57,6 +57,7 @@ const CLIENT_CONNECT_ARGS = {
   "aleph-one": ["-connect", "{host}:{port}"],
   alephone: ["-connect", "{host}:{port}"],
   freedoom: ["+connect", "{host}:{port}"],
+  zandronum: ["+connect", "{host}:{port}"],
   triplea: ["-Dserver.address={host}", "-Dserver.port={port}"],
   "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
   veloren: ["--connect", "{host}:{port}"],

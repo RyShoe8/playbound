@@ -1411,13 +1411,13 @@ export const editions: EditionSeed[] = [
   {
     gameSlug: "freedoom",
     slug: "gzdoom",
-    name: "Freedoom + GZDoom (Default)",
+    name: "Freedoom + GZDoom (Singleplayer)",
     shortDescription: "Modern OpenGL/Vulkan source port with dynamic lighting and mouselook.",
     description:
-      "The recommended way to experience Freedoom: Phase 1, Phase 2, and FreeDM. Bundled with GZDoom for uncapped framerates, widescreen 4K resolutions, ambient lighting, and controller support.",
-    type: "official",
-    isDefault: true,
-    sortOrder: 10,
+      "The recommended way to experience Freedoom: Phase 1, Phase 2, and FreeDM in singleplayer. Bundled with GZDoom for uncapped framerates, widescreen 4K resolutions, ambient lighting, and controller support.",
+    type: "community",
+    isDefault: false,
+    sortOrder: 20,
     links: {
       website: "https://freedoom.github.io",
       github: "https://github.com/freedoom/freedoom",
@@ -1434,7 +1434,7 @@ export const editions: EditionSeed[] = [
         note: "Bundles GZDoom engine with Freedoom Phase 1 & 2 game assets.",
       },
     },
-    features: ["Singleplayer", "Multiplayer", "Deathmatch", "Mod Support", "Controller Support", "OpenGL / Vulkan"],
+    features: ["Singleplayer", "Deathmatch", "Mod Support", "Controller Support", "OpenGL / Vulkan"],
     tags: ["Boomer Shooter", "Retro FPS", "GZDoom", "Open Source", "Controller Support"],
     aliases: ["Freedoom GZDoom", "Freedoom Official"],
     verificationLevel: "playbound_verified",
@@ -1442,13 +1442,13 @@ export const editions: EditionSeed[] = [
   {
     gameSlug: "freedoom",
     slug: "zandronum",
-    name: "Freedoom + Zandronum (Multiplayer & Party)",
+    name: "Freedoom + Zandronum (Multiplayer & Default)",
     shortDescription: "Leading multiplayer Doom engine supporting up to 64 players with client/server netcode, co-op, survival, and deathmatch.",
     description:
       "Zandronum brings robust client/server multiplayer netcode to Freedoom, supporting up to 64 players with minimal lag, spectator modes, and built-in voting. Perfect for online parties playing co-op campaigns, survival waves, capture the flag, invasion, and classic deathmatch.\n\nPre-configured with Freedoom Phase 1, Phase 2, and FreeDM IWADs, native controller/gamepad support, uncapped framerates, and instant PlayBound party connect.",
-    type: "community",
-    isDefault: false,
-    sortOrder: 15,
+    type: "official",
+    isDefault: true,
+    sortOrder: 10,
     links: {
       website: "https://zandronum.com/",
       wiki: "https://wiki.zandronum.com/",

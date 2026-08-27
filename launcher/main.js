@@ -6507,6 +6507,25 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   /*
+   * Freedoom multiplayer party joins require Zandronum rather than GZDoom,
+   * because GZDoom does not support dedicated client/server `+connect`.
+   * If joining a party or Zandronum exists in the install folder, prefer
+   * launching zandronum.exe.
+   */
+  if (slug === "freedoom" || slug === "zandronum") {
+    const zandronumExe =
+      findNamedPortableExe(info.dir, "zandronum.exe") ||
+      findNamedPortableExe(info.dir, "zandronum") ||
+      (info.dir ? findExecutable(info.dir, "zandronum") : null);
+
+    if (zandronumExe && (launchPath !== zandronumExe || /gzdoom/i.test(path.basename(launchPath)))) {
+      persistEditionExe(slug, edSlug, launchPath, zandronumExe);
+      launchPath = zandronumExe;
+      info = { ...info, exe: zandronumExe };
+    }
+  }
+
+  /*
    * Repair installs that recorded a DOS-era exe as the launch target.
    *
    * TES: Arena copies installed before findExecutable learned to read PE
