@@ -110,10 +110,14 @@ class GameLauncher {
    * Spawns a game process detached and returns the child process.
    * @param {string} targetPath - Path to the executable, .jar, or .app bundle
    * @param {string[]} args - Additional arguments
-   * @param {{ needsDosBox?: boolean }} [opts]
+   * @param {{ needsDosBox?: boolean, env?: Record<string, string | undefined> }} [opts]
    * @returns {import("child_process").ChildProcess}
    */
   static spawnGame(targetPath, args = [], opts = {}) {
+    const env =
+      opts.env && typeof opts.env === "object"
+        ? { ...process.env, ...opts.env }
+        : undefined;
     const launchPath = this.preferJarBesideLauncher(targetPath);
 
     if (/\.jar$/i.test(launchPath)) {
@@ -122,6 +126,7 @@ class GameLauncher {
         cwd: path.dirname(launchPath),
         detached: true,
         stdio: "ignore",
+        env,
         /*
          * false, for the same reason the native branch below says so.
          *
@@ -174,6 +179,7 @@ class GameLauncher {
         cwd: spec.cwd,
         detached: true,
         stdio: "ignore",
+        env,
         windowsHide: false,
         shell: false,
       });
@@ -192,6 +198,7 @@ class GameLauncher {
       cwd,
       detached: true,
       stdio: "ignore",
+      env,
       // false so GUI games (Godot/OpenCiv3) can show a window; jars keep console hidden above.
       windowsHide: false,
       shell: false,

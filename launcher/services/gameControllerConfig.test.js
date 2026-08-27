@@ -282,6 +282,13 @@ test("records why a native game has no writer", () => {
   assert.strictEqual(controllerSupportFor("mindustry").kind, "unwritable");
   assert.strictEqual(controllerSupportFor("openarena").kind, "config");
   assert.strictEqual(controllerSupportFor("no-such-game").kind, "unknown");
+  // Roleplay / point-and-click — do not offer the PlayBound controller modal.
+  assert.strictEqual(controllerSupportFor("space-station-14").kind, "unsupported");
+  assert.strictEqual(supportsControllerConfig("space-station-14"), false);
+  // Edition Play must still resolve when the UI briefly passes an edition slug.
+  for (const slug of ["re-volt-rvgl", "rvgl-original", "rvgl-online", "rvgl"]) {
+    assert.strictEqual(controllerSupportFor(slug).kind, "native", slug);
+  }
 });
 
 /* ── locating a config that is not in the install directory ────────────── */
@@ -460,7 +467,7 @@ test("no controller-capable game is left unassessed", () => {
 call-of-duty-mobile xonotic supertuxkart veloren endless-sky shattered-pixel-dungeon supertux
 warframe mega-man-unlimited rainbow-six-siege where-winds-meet flightgear freedoom daggerfall
 war-thunder team-fortress-2 genshin-impact valorant quake-champions holocure enlisted
-asphalt-legends privateer-gemini-gold space-station-14 openlara strikers-club brawlhalla
+asphalt-legends privateer-gemini-gold openlara strikers-club brawlhalla
 mrboom trigger-rally ysoccer wolfenstein-enemy-territory dc-universe-online`
     .split(/\s+/)
     .filter(Boolean);

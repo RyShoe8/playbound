@@ -2734,12 +2734,22 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
 
   const triggerPlay = async () => {
     try {
+      const pickList = (...cands) => {
+        for (const c of cands) {
+          if (Array.isArray(c) && c.length > 0) return c;
+        }
+        return [];
+      };
       const launched = await maybeOfferPhoneControllerThenPlay(
         {
           title: edition.gameTitle || edition.editionName,
+          slug: gameSlug,
+          gameSlug,
           editionName: edition.editionName,
-          features: edition.features || gameDetail?.features,
-          tags: edition.tags || gameDetail?.tags,
+          features: pickList(edition.features, gameDetail?.features),
+          tags: pickList(edition.tags, gameDetail?.tags),
+          gameFeatures: pickList(gameDetail?.features),
+          gameTags: pickList(gameDetail?.tags),
           controllerSupport: edition.controllerSupport || gameDetail?.controllerSupport,
           hasControllerSupport:
             edition.hasControllerSupport ?? gameDetail?.hasControllerSupport,

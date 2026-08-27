@@ -164,6 +164,7 @@ export const launcherInstallSchema = z
     overlayDest: optionalTrimmed,
     unwrapSingleRoot: z.boolean().optional(),
     needsDosBox: z.boolean().optional(),
+    needsDotNetMajor: z.number().int().positive().optional(),
   })
   .superRefine((val, ctx) => {
     if (!val.enabled) return;
@@ -710,6 +711,7 @@ export function toPayloadLauncherInstall(
     overlayDest: li.overlayDest ?? null,
     unwrapSingleRoot: li.unwrapSingleRoot || undefined,
     needsDosBox: li.needsDosBox || undefined,
+    needsDotNetMajor: li.needsDotNetMajor || undefined,
   };
 }
 

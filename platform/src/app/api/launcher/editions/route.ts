@@ -5,6 +5,7 @@ import { resolveInstallAction } from "@/lib/editionInstall";
 import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { absoluteMediaUrl } from "@/lib/launcherInstall";
 import type { Edition } from "@/lib/editionTypes";
+import { supportsController } from "@/lib/controller/support";
 
 /**
  * GET /api/launcher/editions          — every installable edition
@@ -71,6 +72,7 @@ export async function GET(req: Request) {
           verified: edition.verified,
           tags: edition.tags || [],
           features: edition.features || [],
+          hasControllerSupport: supportsController(edition),
           genres: game.genres || [],
           /*
            * Edition first, game as fallback — same pattern as sizeMB below.

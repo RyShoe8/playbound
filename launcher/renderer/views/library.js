@@ -674,11 +674,21 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       const curEd = selectedEdition();
       const catalogEntry = opts.catalogEntry;
       const catEd = (catalogEntry?.editions || []).find((x) => x.slug === ed);
+      const pickList = (...cands) => {
+        for (const c of cands) {
+          if (Array.isArray(c) && c.length > 0) return c;
+        }
+        return [];
+      };
       const detail = {
         title: game.title,
+        slug: game.slug,
+        gameSlug: game.slug,
         editionName: curEd?.editionName || catEd?.name || game.editionName || null,
-        features: curEd?.features || catEd?.features || catalogEntry?.features || game.features,
-        tags: curEd?.tags || catEd?.tags || catalogEntry?.tags || game.tags,
+        features: pickList(curEd?.features, catEd?.features, catalogEntry?.features, game.features),
+        tags: pickList(curEd?.tags, catEd?.tags, catalogEntry?.tags, game.tags),
+        gameFeatures: pickList(catalogEntry?.features, game.features),
+        gameTags: pickList(catalogEntry?.tags, game.tags),
         controllerSupport: curEd?.controllerSupport || catEd?.controllerSupport || catalogEntry?.controllerSupport || game.controllerSupport,
         hasControllerSupport: curEd?.hasControllerSupport ?? catEd?.hasControllerSupport ?? catalogEntry?.hasControllerSupport ?? game.hasControllerSupport,
       };
@@ -691,7 +701,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
             startGameSession(game.slug, game.title);
             setStatus(`Launched ${game.title}`);
           },
-          ed || game.slug
+          game.slug
         );
         if (!launched) return;
       } catch (err) {

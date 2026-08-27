@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.2.89",
+  "version": "0.2.90",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
@@ -26,6 +26,7 @@
     "test:catalog": "node services/catalogMerge.test.js",
     "test:exe-format": "node services/executableFormat.test.js",
     "test:dosbox": "node services/ManagedDosBox.test.js",
+    "test:dotnet": "node services/ManagedDotNet.test.js",
     "test:retroarch": "node services/ManagedRetroArch.test.js",
     "test:steamcmd": "node services/steamCmd.test.js",
     "test:steam-prerequisites": "node services/steamPrerequisites.test.js",

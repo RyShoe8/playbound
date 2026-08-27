@@ -22,6 +22,7 @@ const Platform = require("./platform");
 const GameLauncher = require("./services/GameLauncher");
 const { createManagedJava } = require("./services/ManagedJava");
 const { createManagedDosBox } = require("./services/ManagedDosBox");
+const { createManagedDotNet, requiredDotNetMajor } = require("./services/ManagedDotNet");
 const { createManagedRetroArch } = require("./services/ManagedRetroArch");
 const { createSteamCmdInstaller } = require("./services/steamCmd");
 const { steamAppState } = require("./services/steamPrerequisites");
@@ -1695,6 +1696,12 @@ function editionInstallDir(slug, editionSlug) {
 function installedEditionsPayload(slug, state = loadState()) {
   const game = ensureGameInstallRecord(state[slug]);
   const catEntry = catalog.find((e) => e.slug === slug);
+  const pickList = (...cands) => {
+    for (const c of cands) {
+      if (Array.isArray(c) && c.length > 0) return c;
+    }
+    return [];
+  };
   return listEditionEntries(game)
     .filter((e) => playableExePath(e) || e.pending)
     .map((e) => {
@@ -1710,10 +1717,14 @@ function installedEditionsPayload(slug, state = loadState()) {
         exe,
         pending: Boolean(e.pending) && !exe,
         connectArgs: Array.isArray(e.connectArgs) ? e.connectArgs : null,
-        features: e.features || catEd?.features || catEntry?.features || [],
-        tags: e.tags || catEd?.tags || catEntry?.tags || [],
+        features: pickList(e.features, catEd?.features, catEntry?.features),
+        tags: pickList(e.tags, catEd?.tags, catEntry?.tags),
         controllerSupport: e.controllerSupport || catEd?.controllerSupport || catEntry?.controllerSupport || null,
-        hasControllerSupport: e.hasControllerSupport ?? catEd?.hasControllerSupport ?? catEntry?.hasControllerSupport ?? null,
+        hasControllerSupport:
+          e.hasControllerSupport ??
+          catEd?.hasControllerSupport ??
+          catEntry?.hasControllerSupport ??
+          null,
       };
     });
 }
@@ -1927,6 +1938,9 @@ function catalogEntryFromEdition(edition) {
       editionType: edition.editionType || "official",
       editionId: edition.editionId,
       editionLinks: edition.links || null,
+      features: Array.isArray(edition.features) ? edition.features : [],
+      tags: Array.isArray(edition.tags) ? edition.tags : [],
+      hasControllerSupport: edition.hasControllerSupport ?? null,
     };
   }
   return null;
@@ -2083,6 +2097,7 @@ function buildSettingsPayload() {
     updateChannelPref: linkedCanUseAdminChannel ? updateChannelPref : "latest",
     javaRuntime: managedJava.status(),
     dosBoxRuntime: managedDosBox.status(),
+    dotNetRuntime: managedDotNet.status(),
   };
 }
 
@@ -2744,6 +2759,15 @@ const managedJava = createManagedJava({
   onProgress: (payload) => sendProgress(payload),
 });
 GameLauncher.managedJavaResolver = () => managedJava.findManagedJavaBinary();
+
+/** PlayBound-managed .NET Desktop Runtime for framework-dependent Windows titles. */
+const managedDotNet = createManagedDotNet({
+  userDataPath: app.getPath("userData"),
+  loadSettings,
+  saveSettings,
+  downloadTo,
+  onProgress: (payload) => sendProgress(payload),
+});
 
 /** Shared DOSBox Staging for TES: Arena official and later DOS titles. */
 const managedDosBox = createManagedDosBox({
@@ -4498,7 +4522,7 @@ async function applyControllerConfig(slug, installDir) {
 
 function markInstalled(
   slug,
-  { version, exe, dir, editionSlug, editionName, editionType, connectArgs, launchArgs }
+  { version, exe, dir, editionSlug, editionName, editionType, connectArgs, launchArgs, features, tags, hasControllerSupport }
 ) {
   stopExeScan(slug);
   stopInstallerPoll();
@@ -4526,6 +4550,22 @@ function markInstalled(
       : Array.isArray(prev.launchArgs)
         ? prev.launchArgs
         : undefined,
+    features: Array.isArray(features) && features.length
+      ? features
+      : Array.isArray(prev.features) && prev.features.length
+        ? prev.features
+        : undefined,
+    tags: Array.isArray(tags) && tags.length
+      ? tags
+      : Array.isArray(prev.tags) && prev.tags.length
+        ? prev.tags
+        : undefined,
+    hasControllerSupport:
+      typeof hasControllerSupport === "boolean"
+        ? hasControllerSupport
+        : typeof prev.hasControllerSupport === "boolean"
+          ? prev.hasControllerSupport
+          : undefined,
   };
   syncGameInstallSummary(game);
   state[slug] = game;
@@ -5055,6 +5095,18 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       task.status = "completed";
       task.phase = "done";
       task.message = `${title} complete!`;
+      /*
+       * Warm the .NET runtime while the player is still looking at "Installed".
+       * First Play then skips the download; failure here is fine — Play will
+       * retry and surface the error if it still can't get a runtime.
+       */
+      const entry = catalog.find((e) => e.slug === slug);
+      const major = requiredDotNetMajor({ ...entry, slug });
+      if (major && process.platform === "win32") {
+        void managedDotNet.ensureManagedDotNet({ major }).catch((err) => {
+          console.warn("[dotnet] warm install failed:", err?.message || err);
+        });
+      }
       return result;
     } catch (err) {
       task.status = "error";
@@ -5214,6 +5266,16 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
     editionType: entry.editionType || editionMeta?.editionType || "official",
     connectArgs: Array.isArray(entry.connectArgs) ? entry.connectArgs : undefined,
     launchArgs: Array.isArray(entry.launchArgs) ? entry.launchArgs : undefined,
+    features:
+      (Array.isArray(entry.features) && entry.features.length && entry.features) ||
+      (Array.isArray(editionMeta?.features) && editionMeta.features.length && editionMeta.features) ||
+      undefined,
+    tags:
+      (Array.isArray(entry.tags) && entry.tags.length && entry.tags) ||
+      (Array.isArray(editionMeta?.tags) && editionMeta.tags.length && editionMeta.tags) ||
+      undefined,
+    hasControllerSupport:
+      entry.hasControllerSupport ?? editionMeta?.hasControllerSupport ?? undefined,
   };
 
   if (entry.kind === "locate-then-zip") {
@@ -6736,6 +6798,46 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     }
   }
 
+  /*
+   * Windows SS14.Launcher (and anything else that declares needsDotNetMajor) is
+   * framework-dependent: without a matching Desktop Runtime the apphost opens
+   * Microsoft's download page. Install a private copy under userData when the
+   * machine does not already have one, then pass DOTNET_ROOT on spawn.
+   */
+  let launchEnv = undefined;
+  const dotNetMajor = requiredDotNetMajor({ ...entry, slug });
+  if (dotNetMajor && process.platform === "win32") {
+    sendProgress({
+      phase: "dotnet",
+      message: `Checking .NET ${dotNetMajor}…`,
+    });
+    const outcome = await managedDotNet.ensureManagedDotNet({ major: dotNetMajor });
+    if (!outcome.ok || (outcome.root == null && !outcome.skipped)) {
+      const message = outcome.error
+        ? `Couldn't install .NET ${dotNetMajor}: ${outcome.error}`
+        : `.NET ${dotNetMajor} Desktop Runtime is required to run this game.`;
+      void telemetry.launchFailed({
+        ...launchInfo(),
+        code: "DOTNET_MISSING",
+        message,
+        phase: "dotnet",
+      });
+      const out = new Error(message);
+      out.code = "DOTNET_MISSING";
+      out.__launchFailedReported = true;
+      throw out;
+    }
+    if (outcome.root) {
+      launchEnv = managedDotNet.launchEnv(outcome.root);
+      if (outcome.source === "managed" && !outcome.alreadyPresent) {
+        sendProgress({
+          phase: "dotnet",
+          message: `.NET ${outcome.version || dotNetMajor} ready — launching…`,
+        });
+      }
+    }
+  }
+
   // Repair modded editions before launching. Steam restores the original
   // executable on update or file verification, which silently strips the mod
   // loader; without this the player would just find the modded menus gone.
@@ -6765,7 +6867,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   try {
-    await spawnTrackedExe(slug, launchPath, args);
+    await spawnTrackedExe(slug, launchPath, args, { env: launchEnv });
   } catch (err) {
     const rawMessage = err?.message || String(err);
     const exeName = path.basename(launchPath || "") || "game";
@@ -6812,7 +6914,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       const offered = await offerManagedJavaInstall({ gameTitle: entry?.title || slug });
       if (offered.installed) {
         try {
-          await spawnTrackedExe(slug, launchPath, args);
+          await spawnTrackedExe(slug, launchPath, args, { env: launchEnv });
           // Fall through to success path below via jumping past failure
           void telemetry.editionLaunched(
             editionInfoFor(slug, {
@@ -7161,7 +7263,7 @@ function onSpawnedProcessGone(slug) {
  * Rejects on immediate spawn failure (ENOENT / missing Java) so Play Now is not a false success.
  * All launches wait briefly so a process that dies instantly is not reported as success.
  */
-function spawnTrackedExe(slug, exePath, args = []) {
+function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
   clearLaunchTracking(slug);
   if (!isAllowedExecutablePath(exePath)) {
     throw new Error("Executable path is outside allowed install locations");
@@ -7174,6 +7276,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
   try {
     child = GameLauncher.spawnGame(exePath, args, {
       needsDosBox: Boolean(catalog.find((e) => e.slug === slug)?.needsDosBox),
+      env: opts.env,
     });
   } catch (err) {
     const msg =
