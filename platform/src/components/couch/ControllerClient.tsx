@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BUTTON } from "@/lib/couch/protocol";
 
 type JoinState = {
@@ -71,6 +71,15 @@ export function ControllerClient({ code }: { code: string }) {
   const [hz, setHz] = useState(0);
   const [physicalLabel, setPhysicalLabel] = useState<string | null>(null);
 
+  // Twin Stick Mode (default off for massive face buttons in couch/action games)
+  const [twinStick, setTwinStick] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("playbound.couch.twinStick") === "true";
+    } catch {
+      return false;
+    }
+  });
+
   const padRef = useRef<PadState>({ ...EMPTY });
   const seqRef = useRef(0);
   const sendFnRef = useRef<(obj: unknown) => void>(() => {});
@@ -105,6 +114,23 @@ export function ControllerClient({ code }: { code: string }) {
     framesRef.current += 1;
     lastSentRef.current = performance.now();
   }, [join]);
+
+  const toggleTwinStick = () => {
+    setTwinStick((prev) => {
+      const next = !prev;
+      try {
+        sessionStorage.setItem("playbound.couch.twinStick", String(next));
+      } catch {
+        /* ignore */
+      }
+      if (!next) {
+        padRef.current.rx = 0;
+        padRef.current.ry = 0;
+        sendInput();
+      }
+      return next;
+    });
+  };
 
   // Join / reconnect (profile changes do not create a new controller)
   useEffect(() => {
@@ -148,8 +174,7 @@ export function ControllerClient({ code }: { code: string }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- join once per code
-  }, [code]);
+  }, [code, mode]);
 
   // Poll until approved + refresh endpoints
   useEffect(() => {
@@ -572,21 +597,23 @@ export function ControllerClient({ code }: { code: string }) {
     );
   }
 
-  /* ── The pad ─────────────────────────────────────────────────────────── */
+  /* ── The Pad ─────────────────────────────────────────────────────────── */
 
   return (
-    <main className="pbc-pad">
+    <main className={twinStick ? "pbc-pad is-twin-stick" : "pbc-pad"}>
       <ControllerStyles />
 
-      {/*
-        Portrait is not how anyone holds a controller, so it says so rather
-        than pretending. The pad stays live underneath — a nudge, not a wall.
-      */}
+      {/* Three-zone background ambient glow */}
+      <div className="pbc-ambient pbc-ambient-left" aria-hidden />
+      <div className="pbc-ambient pbc-ambient-right" aria-hidden />
+
+      {/* Portrait rotation nudge */}
       <div className="pbc-rotate" aria-hidden>
         <span className="pbc-rotate-icon">⟳</span>
         Turn your phone sideways
       </div>
 
+      {/* Center Top HUD Telemetry */}
       <header className="pbc-hud">
         <span className="pbc-hud-host">{join.hostLabel}</span>
         <span className="pbc-hud-sep" aria-hidden>
@@ -596,12 +623,13 @@ export function ControllerClient({ code }: { code: string }) {
         <StatusBar transport={transport} pingMs={pingMs} hz={hz} />
       </header>
 
-      {/* Shoulders sit on the top edge, where the index fingers already are. */}
+      {/* Shoulders docked in the upper corners */}
       <div className="pbc-shoulder pbc-shoulder-left">
         <TriggerButton
           label="LT"
           onValue={(v) => {
             padRef.current.lt = v;
+            sendInput();
           }}
         />
         <HoldButton label="LB" bit={BUTTON.LB} setBit={setBit} />
@@ -612,10 +640,12 @@ export function ControllerClient({ code }: { code: string }) {
           label="RT"
           onValue={(v) => {
             padRef.current.rt = v;
+            sendInput();
           }}
         />
       </div>
 
+      {/* Left Thumb Zone: Movement (Left Stick + D-Pad) anchored at bottom-left */}
       <div className="pbc-zone pbc-zone-left">
         <AnalogStick
           label="L"
@@ -627,22 +657,40 @@ export function ControllerClient({ code }: { code: string }) {
         <DPad setBit={setBit} />
       </div>
 
+      {/* Right Thumb Zone: Action (Face Buttons + Optional Right Stick) anchored at bottom-right */}
       <div className="pbc-zone pbc-zone-right">
+        {twinStick && (
+          <AnalogStick
+            label="R"
+            onChange={(x, y) => {
+              padRef.current.rx = x;
+              padRef.current.ry = y;
+            }}
+          />
+        )}
         <FaceCluster setBit={setBit} />
-        <AnalogStick
-          label="R"
-          onChange={(x, y) => {
-            padRef.current.rx = x;
-            padRef.current.ry = y;
-          }}
-        />
       </div>
 
-      {/* Menu keys live centre-bottom, out of thumb travel so they are hard to hit by accident. */}
+      {/* Menu / System utility bar docked center-bottom */}
       <div className="pbc-menu">
-        <HoldButton label="◀" bit={BUTTON.BACK} setBit={setBit} title="Back" />
+        <HoldButton label="◀" bit={BUTTON.BACK} setBit={setBit} title="Back / Select" />
+        
+        {/* Layout quick toggle: Action vs Twin Stick */}
+        <button
+          type="button"
+          className={twinStick ? "pbc-twin-btn is-active" : "pbc-twin-btn"}
+          onClick={toggleTwinStick}
+          aria-label={twinStick ? "Twin Stick Mode: On" : "Action Mode: Right Stick Off"}
+          title="Toggle Right Analog Stick"
+        >
+          <span className="pbc-twin-icon" aria-hidden>
+            {twinStick ? "🕹️" : "⚡"}
+          </span>
+          <span className="pbc-twin-text">{twinStick ? "Twin Stick" : "Action"}</span>
+        </button>
+
         <ModeToggle mode={mode} setMode={setMode} compact />
-        <HoldButton label="▶" bit={BUTTON.START} setBit={setBit} title="Start" />
+        <HoldButton label="▶" bit={BUTTON.START} setBit={setBit} title="Start / Menu" />
       </div>
     </main>
   );
@@ -717,35 +765,49 @@ function ModeToggle({
 /* ── Inputs ──────────────────────────────────────────────────────────── */
 
 /**
- * A short tap through the phone's own motor.
- *
- * Touch controls have no travel and no click, so without this a press is
- * confirmed only by whatever happens on the TV — which is exactly the feedback
- * loop a controller exists to shorten. Guarded because iOS Safari has no
- * vibrate at all and must not throw over it.
+ * A short haptic tap through the phone's vibration motor.
+ * Guarded against browsers/platforms (like iOS Safari) where navigator.vibrate is absent or restricted.
  */
-function tap(ms = 8) {
+function tap(ms = 10) {
   try {
     navigator.vibrate?.(ms);
   } catch {
-    /* no motor, or blocked — the visual press state still lands */
+    /* no motor, or blocked */
   }
 }
 
-/** Shared press wiring: pointer capture, haptics, and a class for the press state. */
+/** Shared press wiring: pointer capture, haptics, and instant visual state. */
 function pressProps(down: () => void, up: () => void) {
   return {
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
-      e.currentTarget.setPointerCapture(e.pointerId);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
       e.currentTarget.classList.add("is-down");
-      tap();
+      tap(10);
       down();
     },
     onPointerUp: (e: React.PointerEvent<HTMLElement>) => {
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        /* ignore */
+      }
       e.currentTarget.classList.remove("is-down");
       up();
     },
     onPointerCancel: (e: React.PointerEvent<HTMLElement>) => {
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        /* ignore */
+      }
       e.currentTarget.classList.remove("is-down");
       up();
     },
@@ -754,28 +816,30 @@ function pressProps(down: () => void, up: () => void) {
 }
 
 const FACE = [
-  { label: "Y", bit: BUTTON.Y, hue: "var(--pbc-y)", area: "y" },
-  { label: "X", bit: BUTTON.X, hue: "var(--pbc-x)", area: "x" },
-  { label: "B", bit: BUTTON.B, hue: "var(--pbc-b)", area: "b" },
-  { label: "A", bit: BUTTON.A, hue: "var(--pbc-a)", area: "a" },
+  { label: "Y", bit: BUTTON.Y, hue: "var(--pbc-y)", btn: "Y" },
+  { label: "X", bit: BUTTON.X, hue: "var(--pbc-x)", btn: "X" },
+  { label: "B", bit: BUTTON.B, hue: "var(--pbc-b)", btn: "B" },
+  { label: "A", bit: BUTTON.A, hue: "var(--pbc-a)", btn: "A" },
 ] as const;
 
 function FaceCluster({ setBit }: { setBit: (bit: number, down: boolean) => void }) {
   return (
     <div className="pbc-face">
-      {FACE.map(({ label, bit, hue, area }) => (
+      <div className="pbc-face-diamond" aria-hidden />
+      {FACE.map(({ label, bit, hue, btn }) => (
         <button
           key={label}
           type="button"
-          aria-label={label}
+          aria-label={`Button ${label}`}
+          data-btn={btn}
           className="pbc-face-btn"
-          style={{ gridArea: area, ["--btn" as string]: hue }}
+          style={{ ["--btn" as string]: hue }}
           {...pressProps(
             () => setBit(bit, true),
             () => setBit(bit, false)
           )}
         >
-          {label}
+          <span className="pbc-btn-label">{label}</span>
         </button>
       ))}
     </div>
@@ -798,6 +862,7 @@ function HoldButton({
       type="button"
       className="pbc-bumper"
       aria-label={title || label}
+      title={title || label}
       {...pressProps(
         () => setBit(bit, true),
         () => setBit(bit, false)
@@ -841,7 +906,7 @@ function AnalogStick({
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
-    const max = r.width * 0.34;
+    const max = r.width * 0.36;
     let dx = clientX - cx;
     let dy = clientY - cy;
     const mag = Math.hypot(dx, dy) || 1;
@@ -849,11 +914,32 @@ function AnalogStick({
       dx = (dx / mag) * max;
       dy = (dy / mag) * max;
     }
+    
+    // Smooth deadzone filtering (6%)
+    const normMag = Math.min(1, mag / max);
+    const deadzone = 0.06;
+    let filteredX = 0;
+    let filteredY = 0;
+    if (normMag > deadzone) {
+      const scaledMag = (normMag - deadzone) / (1 - deadzone);
+      filteredX = (dx / mag) * scaledMag;
+      filteredY = (dy / mag) * scaledMag;
+    }
+
     setKnob({ x: dx, y: dy });
-    onChange(clamp(dx / max, -1, 1), clamp(dy / max, -1, 1));
+    onChange(clamp(filteredX, -1, 1), clamp(filteredY, -1, 1));
   };
 
-  const end = () => {
+  const end = (e?: React.PointerEvent<HTMLElement>) => {
+    if (e) {
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     setActive(false);
     setKnob({ x: 0, y: 0 });
     onChange(0, 0);
@@ -864,45 +950,50 @@ function AnalogStick({
       ref={ref}
       className={active ? "pbc-stick is-active" : "pbc-stick"}
       onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          /* ignore */
+        }
         setActive(true);
-        tap(6);
+        tap(8);
         move(e.clientX, e.clientY);
       }}
       onPointerMove={(e) => {
-        if (e.buttons || e.pressure > 0) move(e.clientX, e.clientY);
+        if (active || e.buttons > 0) move(e.clientX, e.clientY);
       }}
       onPointerUp={end}
       onPointerCancel={end}
       onContextMenu={(e) => e.preventDefault()}
     >
       <span className="pbc-stick-ring" aria-hidden />
+      <span className="pbc-stick-crosshair" aria-hidden />
       <span
         className="pbc-stick-knob"
         style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       >
-        {label}
+        <span className="pbc-stick-label">{label}</span>
       </span>
     </div>
   );
 }
 
 const DPAD_KEYS = [
-  { label: "▲", bit: BUTTON.DPAD_UP, area: "u" },
-  { label: "◀", bit: BUTTON.DPAD_LEFT, area: "l" },
-  { label: "▶", bit: BUTTON.DPAD_RIGHT, area: "r" },
-  { label: "▼", bit: BUTTON.DPAD_DOWN, area: "d" },
+  { label: "▲", bit: BUTTON.DPAD_UP, area: "u", dir: "up" },
+  { label: "◀", bit: BUTTON.DPAD_LEFT, area: "l", dir: "left" },
+  { label: "▶", bit: BUTTON.DPAD_RIGHT, area: "r", dir: "right" },
+  { label: "▼", bit: BUTTON.DPAD_DOWN, area: "d", dir: "down" },
 ] as const;
 
 function DPad({ setBit }: { setBit: (bit: number, down: boolean) => void }) {
   return (
     <div className="pbc-dpad">
       <span className="pbc-dpad-hub" aria-hidden />
-      {DPAD_KEYS.map(({ label, bit, area }) => (
+      {DPAD_KEYS.map(({ label, bit, area, dir }) => (
         <button
           key={area}
           type="button"
-          aria-label={area}
+          aria-label={`D-Pad ${dir}`}
           className="pbc-dpad-key"
           style={{ gridArea: area }}
           {...pressProps(
@@ -917,40 +1008,27 @@ function DPad({ setBit }: { setBit: (bit: number, down: boolean) => void }) {
   );
 }
 
-
 /* ── Styles ──────────────────────────────────────────────────────────── */
 
-/**
- * One stylesheet rather than inline styles, because the things that make this
- * feel like a controller cannot be expressed inline: orientation media
- * queries, press states, and keyframes.
- *
- * Sizes are in vmin, not px. A pad measured in pixels is right on exactly one
- * phone — the previous 58px buttons and 130px sticks were tuned for a mid-size
- * device and left an SE cramped and a Max looking like a toy. vmin ties every
- * control to the short edge, which in landscape is the height, which is what
- * actually limits a thumb.
- */
 function ControllerStyles() {
   return (
     <style>{`
 :root {
   --pbc-ground: #07060B;
-  --pbc-ink: #F4F1FB;
-  --pbc-muted: #8F87A6;
-  --pbc-line: rgba(255,255,255,.10);
-  --pbc-raise: rgba(255,255,255,.055);
+  --pbc-ink: #F8FAFC;
+  --pbc-muted: #94A3B8;
+  --pbc-line: rgba(255,255,255,.12);
+  --pbc-raise: rgba(255,255,255,.06);
   --pbc-accent: #8B6DFF;
   --pbc-live: #3DD68C;
-  /* Canonical face colours. These are information, not decoration — every
-     console overlay and every button prompt in every game uses them. */
-  --pbc-a: #5BD98A;
-  --pbc-b: #FF6B6B;
-  --pbc-x: #6AA8FF;
-  --pbc-y: #F5CE5A;
-  /* Insets on all four edges. Landscape is the orientation this is used in,
-     and that is precisely when a notch eats the left or right edge — the
-     earlier layout only ever accounted for the bottom. */
+
+  /* Canonical Xbox face colours: High vibrancy & contrast */
+  --pbc-a: #3DD68C;
+  --pbc-b: #FF5C5C;
+  --pbc-x: #38BDF8;
+  --pbc-y: #FBBF24;
+
+  /* Safe area insets for notches / home indicator */
   --pbc-safe-t: env(safe-area-inset-top, 0px);
   --pbc-safe-r: env(safe-area-inset-right, 0px);
   --pbc-safe-b: env(safe-area-inset-bottom, 0px);
@@ -960,12 +1038,9 @@ function ControllerStyles() {
 .pbc-shell, .pbc-pad {
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(120% 90% at 50% -10%, rgba(139,109,255,.16), transparent 62%),
-    var(--pbc-ground);
+  background: var(--pbc-ground);
   color: var(--pbc-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Nothing here should ever select, callout, or bounce under a thumb. */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
@@ -978,7 +1053,51 @@ function ControllerStyles() {
   touch-action: none;
 }
 
-/* ── Connection screens ─────────────────────────────────────────────── */
+/* ── Three-Zone Ambient Backdrop ─────────────────────────────────────── */
+
+.pbc-ambient {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(50px);
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
+}
+
+/* Left zone: Indigo / Violet movement identity */
+.pbc-ambient-left {
+  width: clamp(240px, 60vmin, 380px);
+  height: clamp(240px, 60vmin, 380px);
+  left: -40px;
+  bottom: -40px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0.05) 55%, transparent 70%);
+}
+
+/* Right zone: Coral / Rose action identity */
+.pbc-ambient-right {
+  width: clamp(240px, 60vmin, 380px);
+  height: clamp(240px, 60vmin, 380px);
+  right: -40px;
+  bottom: -40px;
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.22) 0%, rgba(244, 63, 94, 0.05) 55%, transparent 70%);
+}
+
+/* ── Hit-Slop Expansion on all interactive controls ─────────────────── */
+
+.pbc-face-btn::before,
+.pbc-bumper::before,
+.pbc-trigger::before,
+.pbc-dpad-key::before,
+.pbc-twin-btn::before,
+.pbc-toggle-btn::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* ── Connection Screens ─────────────────────────────────────────────── */
 
 .pbc-shell {
   display: flex;
@@ -991,321 +1110,595 @@ function ControllerStyles() {
   padding: calc(var(--pbc-safe-t) + 16px) calc(var(--pbc-safe-r) + 16px) calc(var(--pbc-safe-b) + 16px) calc(var(--pbc-safe-l) + 16px);
   box-sizing: border-box;
 }
+
 .pbc-shell-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-align: center;
   max-width: 38ch;
   width: 100%;
   margin: auto;
 }
-.pbc-shell-bad { background: radial-gradient(120% 90% at 50% -10%, rgba(255,107,107,.16), transparent 62%), var(--pbc-ground); }
+
+.pbc-shell-bad {
+  background: radial-gradient(120% 90% at 50% -10%, rgba(255, 92, 92, 0.20), transparent 62%), var(--pbc-ground);
+}
 
 .pbc-eyebrow {
-  margin: 0; font-size: 11px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase; color: var(--pbc-muted);
-}
-.pbc-title {
-  margin: 0; font-size: clamp(22px, 6vw, 30px); font-weight: 700;
-  line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance;
-}
-.pbc-sub { margin: 0; color: var(--pbc-muted); font-size: 14px; line-height: 1.55; }
-.pbc-code {
-  margin: 4px 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px; letter-spacing: .34em; color: var(--pbc-muted);
-  padding-left: .34em; /* letter-spacing pads the right; balance it */
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--pbc-muted);
 }
 
-/* A slow breath, so "waiting" looks alive rather than hung. */
+.pbc-title {
+  margin: 0;
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.pbc-sub {
+  margin: 0;
+  color: var(--pbc-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.pbc-code {
+  margin: 6px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .38em;
+  color: var(--pbc-accent);
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(139, 109, 255, 0.10);
+  border: 1px solid rgba(139, 109, 255, 0.25);
+}
+
 .pbc-pulse {
-  width: 74px; height: 74px; border-radius: 50%; margin-bottom: 4px;
-  background: radial-gradient(circle, rgba(139,109,255,.55), transparent 68%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  margin-bottom: 6px;
+  background: radial-gradient(circle, rgba(139, 109, 255, 0.6), transparent 68%);
   animation: pbc-breathe 2.4s ease-in-out infinite;
 }
+
 @keyframes pbc-breathe {
   0%, 100% { transform: scale(.86); opacity: .55; }
-  50%      { transform: scale(1.06); opacity: 1; }
+  50%      { transform: scale(1.08); opacity: 1; }
 }
-.pbc-dot {
-  width: 9px; height: 9px; border-radius: 50%;
-  background: var(--pbc-muted); box-shadow: 0 0 0 4px rgba(255,255,255,.05);
-}
-.pbc-dot-live { background: var(--pbc-live); box-shadow: 0 0 0 4px rgba(61,214,140,.16); }
 
-/* ── Status ─────────────────────────────────────────────────────────── */
+.pbc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pbc-muted);
+  box-shadow: 0 0 0 4px rgba(255,255,255,.06);
+}
+
+.pbc-dot-live {
+  background: var(--pbc-live);
+  box-shadow: 0 0 0 4px rgba(61,214,140,.20), 0 0 12px var(--pbc-live);
+}
+
+/* ── Telemetry Status Bar ─────────────────────────────────────────────── */
 
 .pbc-status {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 11px; font-weight: 600; color: var(--pbc-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pbc-muted);
   font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
 }
-.pbc-status-led {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--pbc-muted);
-}
-.pbc-status-led-live { background: var(--pbc-live); box-shadow: 0 0 8px var(--pbc-live); }
-.pbc-status-transport { text-transform: uppercase; letter-spacing: .1em; }
-.pbc-status-num { opacity: .8; }
 
-/* ── Mode toggle ────────────────────────────────────────────────────── */
+.pbc-status-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pbc-muted);
+}
+
+.pbc-status-led-live {
+  background: var(--pbc-live);
+  box-shadow: 0 0 8px var(--pbc-live);
+}
+
+.pbc-status-transport {
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 10px;
+}
+
+.pbc-status-num {
+  opacity: .85;
+}
+
+/* ── Mode & Twin Stick Toggles ────────────────────────────────────────── */
 
 .pbc-toggle {
-  display: inline-flex; gap: 4px; padding: 4px;
-  border-radius: 999px; background: rgba(255,255,255,.05);
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
   border: 1px solid var(--pbc-line);
+  backdrop-filter: blur(8px);
 }
+
 .pbc-toggle-btn {
-  appearance: none; border: 0; background: transparent; color: var(--pbc-muted);
-  font: inherit; font-size: 12px; font-weight: 700;
-  padding: 7px 15px; border-radius: 999px; cursor: pointer;
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--pbc-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: none;
   transition: background .15s ease, color .15s ease;
 }
-.pbc-toggle-btn.is-on { background: var(--pbc-accent); color: #0b0713; }
-.pbc-toggle-compact .pbc-toggle-btn { font-size: 10px; padding: 5px 11px; }
 
-/* ── Pad chrome ─────────────────────────────────────────────────────── */
+.pbc-toggle-btn.is-on {
+  background: var(--pbc-accent);
+  color: #0b0713;
+  box-shadow: 0 2px 8px rgba(139,109,255,.4);
+}
+
+.pbc-toggle-compact .pbc-toggle-btn {
+  font-size: 10px;
+  padding: 4px 10px;
+}
+
+.pbc-twin-btn {
+  position: relative;
+  appearance: none;
+  border: 1px solid var(--pbc-line);
+  background: rgba(255,255,255,.06);
+  color: var(--pbc-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(8px);
+  touch-action: none;
+  transition: all .15s ease;
+}
+
+.pbc-twin-btn.is-active {
+  background: rgba(139, 109, 255, 0.22);
+  border-color: rgba(139, 109, 255, 0.6);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(139, 109, 255, 0.3);
+}
+
+.pbc-twin-icon {
+  font-size: 12px;
+}
+
+/* ── HUD & Menu Chrome ────────────────────────────────────────────────── */
 
 .pbc-hud {
-  position: absolute; top: calc(var(--pbc-safe-t) + 8px); left: 50%;
+  position: absolute;
+  top: calc(var(--pbc-safe-t) + 8px);
+  left: 50%;
   transform: translateX(-50%);
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11px; color: var(--pbc-muted); white-space: nowrap;
-  max-width: 60vw; overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--pbc-muted);
+  white-space: nowrap;
+  max-width: 65vw;
+  overflow: hidden;
+  z-index: 10;
+  backdrop-filter: blur(10px);
 }
-.pbc-hud-host { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.pbc-hud-player { font-weight: 700; color: var(--pbc-ink); }
-.pbc-hud-sep { opacity: .4; }
+
+.pbc-hud-host {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pbc-hud-player {
+  font-weight: 700;
+  color: var(--pbc-ink);
+}
+
+.pbc-hud-sep {
+  opacity: .35;
+}
 
 .pbc-menu {
-  position: absolute; bottom: calc(var(--pbc-safe-b) + 6px); left: 50%;
+  position: absolute;
+  bottom: calc(var(--pbc-safe-b) + 8px);
+  left: 50%;
   transform: translateX(-50%);
-  display: flex; align-items: center; gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
 }
 
-/* ── Shoulders: on the top edge, under the index fingers ────────────── */
+/* ── Shoulder Controls (Top Corners) ─────────────────────────────────── */
 
 .pbc-shoulder {
-  position: absolute; top: calc(var(--pbc-safe-t) + 6px);
-  display: flex; gap: 8px; align-items: flex-start;
+  position: absolute;
+  top: calc(var(--pbc-safe-t) + 6px);
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  z-index: 10;
 }
-.pbc-shoulder-left  { left: calc(var(--pbc-safe-l) + 10px); }
-.pbc-shoulder-right { right: calc(var(--pbc-safe-r) + 10px); }
+
+.pbc-shoulder-left  { left: calc(var(--pbc-safe-l) + 12px); }
+.pbc-shoulder-right { right: calc(var(--pbc-safe-r) + 12px); }
 
 .pbc-bumper, .pbc-trigger {
-  appearance: none; font: inherit; cursor: pointer;
-  color: var(--pbc-ink); font-weight: 700;
+  position: relative;
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--pbc-ink);
+  font-weight: 800;
   font-size: clamp(11px, 2.4vmin, 15px);
   border: 1px solid var(--pbc-line);
-  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 2px 6px rgba(0,0,0,.35);
+  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 3px 8px rgba(0,0,0,.4);
   touch-action: none;
   transition: transform .06s ease, background .06s ease, box-shadow .06s ease;
-}
-.pbc-bumper {
-  min-width: clamp(48px, 11vmin, 74px); height: clamp(44px, 9vmin, 54px);
-  border-radius: 12px;
-}
-/* Triggers read as taller than bumpers, the way they sit on real hardware. */
-.pbc-trigger {
-  min-width: clamp(48px, 11vmin, 74px); height: clamp(48px, 10.5vmin, 64px);
-  border-radius: 12px 12px 16px 16px;
-}
-.pbc-bumper.is-down, .pbc-trigger.is-down {
-  transform: translateY(2px) scale(.97);
-  background: linear-gradient(180deg, rgba(139,109,255,.45), rgba(139,109,255,.22));
-  box-shadow: inset 0 2px 6px rgba(0,0,0,.45);
+  backdrop-filter: blur(8px);
 }
 
-/* ── Thumb zones ────────────────────────────────────────────────────── */
+.pbc-bumper {
+  min-width: clamp(52px, 12vmin, 80px);
+  height: clamp(44px, 9.5vmin, 56px);
+  border-radius: 14px;
+}
+
+.pbc-trigger {
+  min-width: clamp(52px, 12vmin, 80px);
+  height: clamp(48px, 11vmin, 66px);
+  border-radius: 14px 14px 18px 18px;
+}
+
+.pbc-bumper.is-down, .pbc-trigger.is-down {
+  transform: translateY(2px) scale(.96);
+  background: linear-gradient(180deg, rgba(139,109,255,.55), rgba(139,109,255,.28));
+  border-color: rgba(139, 109, 255, 0.8);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.5), 0 0 16px rgba(139,109,255,.4);
+}
+
+/* ── Ergonomic Bottom-Outer Thumb Zones ──────────────────────────────── */
 
 /*
- * Thumb zones sit just below the vertical centre, not in the bottom corners.
- * Holding a phone sideways in two hands puts the thumbs a little under the
- * midline; anchoring to the bottom edge pushed every control into the last
- * third of the screen and left the rest empty.
+ * Anchored to the bottom-outer corners where the thumb's natural pivot arc rests.
  */
 .pbc-zone {
-  position: absolute; top: 50%; transform: translateY(-42%);
-  display: flex; align-items: center; gap: clamp(10px, 3vmin, 26px);
+  position: absolute;
+  bottom: calc(var(--pbc-safe-b) + clamp(10px, 3.2vmin, 26px));
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(10px, 2.8vmin, 24px);
+  z-index: 5;
 }
-.pbc-zone-left  { left: calc(var(--pbc-safe-l) + 12px); }
-.pbc-zone-right { right: calc(var(--pbc-safe-r) + 12px); }
 
-/* ── Analog stick ───────────────────────────────────────────────────── */
+.pbc-zone-left {
+  left: calc(var(--pbc-safe-l) + clamp(12px, 3.5vmin, 28px));
+}
+
+.pbc-zone-right {
+  right: calc(var(--pbc-safe-r) + clamp(12px, 3.5vmin, 28px));
+  flex-direction: row;
+}
+
+/* ── Face Buttons Cluster (Diamond Layout) ───────────────────────────── */
+
+/* Default: Action Mode (Right stick off) -> Huge buttons, spacious reach */
+.pbc-pad:not(.is-twin-stick) .pbc-face {
+  --face-btn-size: clamp(66px, 17.5vmin, 94px);
+  --face-font-size: clamp(22px, 5.2vmin, 32px);
+  position: relative;
+  width: calc(var(--face-btn-size) * 2.28);
+  height: calc(var(--face-btn-size) * 2.28);
+  flex-shrink: 0;
+}
+
+/* Twin-Stick Mode -> Scaled gracefully to fit right stick */
+.pbc-pad.is-twin-stick .pbc-face {
+  --face-btn-size: clamp(48px, 12vmin, 68px);
+  --face-font-size: clamp(16px, 3.6vmin, 22px);
+  position: relative;
+  width: calc(var(--face-btn-size) * 2.28);
+  height: calc(var(--face-btn-size) * 2.28);
+  flex-shrink: 0;
+}
+
+.pbc-face-diamond {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.03), transparent 70%);
+  pointer-events: none;
+}
+
+.pbc-face-btn {
+  --tx: 0px;
+  --ty: 0px;
+  position: absolute;
+  width: var(--face-btn-size);
+  height: var(--face-btn-size);
+  border-radius: 50%;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  font-size: var(--face-font-size);
+  color: var(--btn);
+  border: 2.5px solid color-mix(in oklab, var(--btn) 75%, transparent);
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--btn) 25%, transparent), transparent 72%),
+    rgba(255,255,255,.04);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.16), 0 4px 14px rgba(0,0,0,.5);
+  touch-action: none;
+  transform: translate(var(--tx), var(--ty));
+  transition: transform .06s ease, background .06s ease, box-shadow .06s ease, border-color .06s ease;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(6px);
+}
+
+/* Pure Diamond placement with 0 wasted grid perimeter */
+.pbc-face-btn[data-btn="Y"] { top: 0; left: 50%; --tx: -50%; --ty: 0; }
+.pbc-face-btn[data-btn="A"] { bottom: 0; left: 50%; --tx: -50%; --ty: 0; }
+.pbc-face-btn[data-btn="X"] { left: 0; top: 50%; --tx: 0; --ty: -50%; }
+.pbc-face-btn[data-btn="B"] { right: 0; top: 50%; --tx: 0; --ty: -50%; }
+
+.pbc-btn-label {
+  display: inline-block;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.pbc-face-btn.is-down {
+  transform: translate(var(--tx), calc(var(--ty) + 2px)) scale(.94);
+  background: radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--btn) 65%, transparent), transparent 80%), rgba(255,255,255,.08);
+  border-color: var(--btn);
+  box-shadow: inset 0 3px 10px rgba(0,0,0,.6), 0 0 24px color-mix(in oklab, var(--btn) 60%, transparent);
+}
+
+/* ── Analog Sticks ──────────────────────────────────────────────────── */
 
 .pbc-stick {
   position: relative;
-  width: clamp(112px, 39vmin, 208px); aspect-ratio: 1;
+  width: clamp(118px, 35vmin, 180px);
+  aspect-ratio: 1;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255,255,255,.07), rgba(255,255,255,.02) 60%, transparent 72%),
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.08), rgba(255,255,255,.02) 60%, transparent 72%),
     rgba(255,255,255,.03);
-  border: 1px solid var(--pbc-line);
+  border: 1.5px solid var(--pbc-line);
   touch-action: none;
   transition: border-color .12s ease;
+  flex-shrink: 0;
+  backdrop-filter: blur(6px);
 }
-.pbc-stick.is-active { border-color: rgba(139,109,255,.5); }
+
+.pbc-pad.is-twin-stick .pbc-stick {
+  width: clamp(108px, 30vmin, 155px);
+}
+
+.pbc-stick.is-active {
+  border-color: rgba(139,109,255,.6);
+  box-shadow: 0 0 20px rgba(139, 109, 255, 0.2);
+}
+
 .pbc-stick-ring {
-  position: absolute; inset: 18%; border-radius: 50%;
-  border: 1px dashed rgba(255,255,255,.09);
-}
-.pbc-stick-knob {
-  position: absolute; left: 50%; top: 50%;
-  width: 44%; aspect-ratio: 1; border-radius: 50%;
-  display: grid; place-items: center;
-  font-weight: 800; font-size: clamp(12px, 2.6vmin, 17px); color: var(--pbc-ink);
-  background: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.07));
-  box-shadow: inset 0 2px 0 rgba(255,255,255,.22), 0 6px 16px rgba(0,0,0,.5);
-  /* No transition on transform — a stick that eases is a stick that lags. */
-}
-.pbc-stick.is-active .pbc-stick-knob {
-  background: linear-gradient(180deg, rgba(139,109,255,.55), rgba(139,109,255,.28));
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255,255,255,.12);
+  pointer-events: none;
 }
 
-/* ── Face buttons ───────────────────────────────────────────────────── */
-
-.pbc-face {
-  display: grid;
-  grid-template-areas: ". y ." "x . b" ". a .";
-  gap: clamp(4px, 1.2vmin, 10px);
-}
-.pbc-face-btn {
-  appearance: none; cursor: pointer; font: inherit;
-  width: clamp(50px, 15vmin, 92px); aspect-ratio: 1; border-radius: 50%;
-  font-weight: 800; font-size: clamp(15px, 3.4vmin, 24px);
-  color: var(--btn);
-  border: 2px solid color-mix(in oklab, var(--btn) 70%, transparent);
+.pbc-stick-crosshair {
+  position: absolute;
+  inset: 0;
   background:
-    radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--btn) 22%, transparent), transparent 70%),
-    rgba(255,255,255,.04);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 3px 10px rgba(0,0,0,.45);
-  touch-action: none;
-  transition: transform .06s ease, background .06s ease, box-shadow .06s ease;
-}
-.pbc-face-btn.is-down {
-  transform: translateY(2px) scale(.94);
-  background: radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--btn) 62%, transparent), transparent 78%), rgba(255,255,255,.06);
-  box-shadow: inset 0 3px 8px rgba(0,0,0,.5), 0 0 18px color-mix(in oklab, var(--btn) 40%, transparent);
+    linear-gradient(rgba(255,255,255,.05), rgba(255,255,255,.05)) center/1px 70% no-repeat,
+    linear-gradient(rgba(255,255,255,.05), rgba(255,255,255,.05)) center/70% 1px no-repeat;
+  pointer-events: none;
 }
 
-/* ── D-pad ──────────────────────────────────────────────────────────── */
+.pbc-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: clamp(13px, 2.8vmin, 18px);
+  color: var(--pbc-ink);
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.25), 0 8px 20px rgba(0,0,0,.6);
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,.15);
+}
+
+.pbc-stick.is-active .pbc-stick-knob {
+  background: linear-gradient(180deg, rgba(139,109,255,.65), rgba(139,109,255,.32));
+  border-color: rgba(139, 109, 255, 0.7);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.3), 0 0 16px rgba(139,109,255,.5);
+}
+
+.pbc-stick-label {
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+
+/* ── D-Pad ──────────────────────────────────────────────────────────── */
 
 .pbc-dpad {
   position: relative;
   display: grid;
-  grid-template-areas: ". u ." "l . r" ". d .";
+  grid-template-areas:
+    ". u ."
+    "l . r"
+    ". d .";
   gap: 2px;
+  flex-shrink: 0;
 }
+
 .pbc-dpad-key {
-  appearance: none; cursor: pointer; font: inherit;
-  width: clamp(44px, 12vmin, 74px); aspect-ratio: 1;
-  color: var(--pbc-ink); font-size: clamp(11px, 2.4vmin, 16px);
+  position: relative;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  width: clamp(46px, 12vmin, 72px);
+  aspect-ratio: 1;
+  color: var(--pbc-ink);
+  font-size: clamp(12px, 2.5vmin, 17px);
   border: 1px solid var(--pbc-line);
-  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 6px rgba(0,0,0,.35);
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 3px 8px rgba(0,0,0,.4);
   touch-action: none;
-  transition: transform .06s ease, background .06s ease;
+  transition: transform .06s ease, background .06s ease, border-color .06s ease;
+  backdrop-filter: blur(6px);
 }
-/* Rounded only on the outer corners, so the four keys read as one cross. */
+
 [style*="grid-area: u"].pbc-dpad-key { border-radius: 12px 12px 3px 3px; }
 [style*="grid-area: d"].pbc-dpad-key { border-radius: 3px 3px 12px 12px; }
 [style*="grid-area: l"].pbc-dpad-key { border-radius: 12px 3px 3px 12px; }
 [style*="grid-area: r"].pbc-dpad-key { border-radius: 3px 12px 12px 3px; }
+
 .pbc-dpad-key.is-down {
   transform: scale(.94);
-  background: linear-gradient(180deg, rgba(139,109,255,.45), rgba(139,109,255,.22));
+  background: linear-gradient(180deg, rgba(139,109,255,.55), rgba(139,109,255,.28));
+  border-color: rgba(139,109,255,.8);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.5), 0 0 14px rgba(139,109,255,.4);
 }
+
 .pbc-dpad-hub {
-  position: absolute; inset: 0; margin: auto;
-  width: clamp(44px, 12vmin, 74px); aspect-ratio: 1;
-  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
-  border-top: 1px solid var(--pbc-line); border-bottom: 1px solid var(--pbc-line);
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: clamp(46px, 12vmin, 72px);
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border-top: 1px solid var(--pbc-line);
+  border-bottom: 1px solid var(--pbc-line);
   pointer-events: none;
 }
 
-/* ── Orientation ────────────────────────────────────────────────────── */
+/* ── Orientation & Media Queries ─────────────────────────────────────── */
 
 .pbc-rotate { display: none; }
 
-/*
- * Portrait. The pad still works, but the thumb zones stack instead of sitting
- * in opposite corners, and a nudge appears — the old layout simply ran the
- * same column layout in both orientations, which is why it never sat right
- * held sideways.
- */
 @media (orientation: portrait) {
-  /*
-   * The pad becomes a bottom-weighted column: both thumb clusters stack within
-   * reach of the bottom edge, because in portrait one hand is holding the phone
-   * and neither thumb reaches the middle.
-   */
   .pbc-pad {
-    display: flex; flex-direction: column;
-    justify-content: flex-end; align-items: center;
-    gap: clamp(12px, 3.5vh, 34px);
-    padding: 0 12px calc(var(--pbc-safe-b) + 84px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: clamp(14px, 4vh, 36px);
+    padding: 0 12px calc(var(--pbc-safe-b) + 90px);
   }
-  .pbc-zone {
-    /* Both must be reset: position alone leaves the landscape transform,
-       which is what pulled the clusters off-centre. */
-    position: static; transform: none;
-    width: 100%; justify-content: center;
-    gap: clamp(12px, 5vw, 30px);
-  }
-  .pbc-zone-right { flex-direction: row-reverse; }
 
-  /* Shoulders keep the top corners; the HUD drops below them so the two stop
-     sharing the same line. */
+  .pbc-zone {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: center;
+    gap: clamp(12px, 5vw, 32px);
+  }
+
+  .pbc-zone-right {
+    flex-direction: row-reverse;
+  }
+
   .pbc-hud {
-    top: auto; bottom: calc(var(--pbc-safe-b) + 54px);
-    max-width: 90vw; justify-content: center;
+    top: auto;
+    bottom: calc(var(--pbc-safe-b) + 60px);
+    max-width: 92vw;
+    justify-content: center;
   }
+
   .pbc-rotate {
-    display: flex; align-items: center; gap: 8px;
-    position: absolute; top: calc(var(--pbc-safe-t) + 78px); left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    top: calc(var(--pbc-safe-t) + 76px);
+    left: 50%;
     transform: translateX(-50%);
-    font-size: 12px; font-weight: 600; color: var(--pbc-muted);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pbc-muted);
     white-space: nowrap;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--pbc-line);
   }
-  .pbc-rotate-icon { font-size: 16px; animation: pbc-rock 2.2s ease-in-out infinite; display: inline-block; }
-  @keyframes pbc-rock { 0%,100% { transform: rotate(-12deg); } 50% { transform: rotate(78deg); } }
+
+  .pbc-rotate-icon {
+    font-size: 16px;
+    animation: pbc-rock 2.2s ease-in-out infinite;
+    display: inline-block;
+  }
+
+  @keyframes pbc-rock {
+    0%, 100% { transform: rotate(-12deg); }
+    50%      { transform: rotate(78deg); }
+  }
 }
 
-/* A short landscape phone has no room for a wide gap between stick and d-pad. */
 @media (orientation: landscape) and (max-height: 480px) {
-  .pbc-shell {
-    padding: calc(var(--pbc-safe-t) + 10px) calc(var(--pbc-safe-r) + 16px) calc(var(--pbc-safe-b) + 10px) calc(var(--pbc-safe-l) + 16px);
+  .pbc-zone {
+    gap: clamp(8px, 2vmin, 16px);
+    bottom: calc(var(--pbc-safe-b) + 6px);
   }
-  .pbc-shell-inner {
-    gap: 8px;
-    max-width: 48ch;
+  .pbc-hud {
+    font-size: 10px;
+    top: calc(var(--pbc-safe-t) + 4px);
   }
-  .pbc-title {
-    font-size: clamp(16px, 4.5vh, 22px);
+  .pbc-menu {
+    bottom: calc(var(--pbc-safe-b) + 4px);
+    gap: 6px;
   }
-  .pbc-sub {
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .pbc-pulse {
-    width: 46px;
-    height: 46px;
-  }
-  .pbc-toggle {
-    margin-top: 4px;
-  }
-  .pbc-zone { gap: clamp(6px, 2vmin, 14px); }
-  .pbc-hud { font-size: 10px; }
-  .pbc-stick { width: clamp(104px, 34vmin, 150px); }
-  .pbc-face-btn { width: clamp(46px, 13vmin, 74px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pbc-pulse, .pbc-rotate-icon { animation: none; }
-  .pbc-face-btn, .pbc-bumper, .pbc-trigger, .pbc-dpad-key { transition: none; }
+  .pbc-face-btn, .pbc-bumper, .pbc-trigger, .pbc-dpad-key, .pbc-twin-btn { transition: none; }
 }
 `}</style>
   );
 }
-
