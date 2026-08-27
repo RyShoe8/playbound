@@ -420,17 +420,21 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   },
   freedoom: {
     enabled: true,
-    kind: "github-zip",
-    repo: "ZDoom/gzdoom",
-    // GZDoom renamed its release assets: they are now "gzdoom-<ver>-windows.zip"
-    // and the old "Windows-64bit.zip" pattern matched nothing, which made the
-    // install fail at download time while the recipe still looked valid.
-    // Anchored on .zip so the "-windows-pdb.7z" debug archive cannot match.
-    assetPattern: "gzdoom-.*-windows\\.zip$",
-    exeHint: "gzdoom",
+    kind: "direct-zip",
+    url: "https://zandronum.com/downloads/zandronum3.2.1-win64-base.zip",
+    fileName: "zandronum3.2.1-win64-base.zip",
+    exeHint: "zandronum",
     overlayUrl: "https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip",
     overlayFileName: "freedoom-0.13.0.zip",
-    note: "Bundles the GZDoom source port with Freedoom Phase 1 & 2 IWADs for one-click play.",
+    connectArgs: ["+connect", "{host}:{port}"],
+    knownExePaths: [
+      "%LOCALAPPDATA%\\Zandronum\\zandronum.exe",
+      "%PROGRAMFILES%\\Zandronum\\zandronum.exe",
+      "%PROGRAMFILES(X86)%\\Zandronum\\zandronum.exe",
+      "~/PlayBound/Games/freedoom/zandronum/zandronum.exe",
+      "~/PlayBound/Games/freedoom/zandronum.exe",
+    ],
+    note: "Bundles the Zandronum multiplayer source port with Freedoom Phase 1 & 2 IWADs for one-click play.",
   },
   freelancer: {
     /*
