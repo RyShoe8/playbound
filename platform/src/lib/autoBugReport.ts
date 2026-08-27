@@ -116,24 +116,44 @@ export async function maybeUpsertAutoBugFromTelemetry(opts: {
     "party_hosted_failed",
     "party_chat_failed",
     "exe_locate_failed",
+    "party_lan_failed",
+    "party_failed",
   ]);
   if (!failureEvents.has(event)) return;
 
   const props = opts.properties || {};
+  const area = typeof props.area === "string" ? props.area : "";
+  // party_failed covers Discord/sync/host/etc — only auto-bug NetBird/LAN.
+  if (event === "party_failed" && area !== "lan") return;
+
   const sourceProp = typeof props.source === "string" ? props.source : "";
   const source: BugReportSource = sourceProp === "website" ? "website" : "launcher";
+
+  const code =
+    typeof props.code === "string"
+      ? props.code
+      : typeof props.status === "number"
+        ? `NETBIRD_${props.status}`
+        : event === "party_lan_failed" || area === "lan"
+          ? "NETBIRD_PROVISION_FAILED"
+          : null;
 
   await upsertAutoBugReport({
     event,
     source,
-    code: typeof props.code === "string" ? props.code : null,
+    code,
     message: typeof props.message === "string" ? props.message : null,
     gameSlug: typeof props.gameSlug === "string" ? props.gameSlug : null,
     editionSlug: typeof props.editionSlug === "string" ? props.editionSlug : null,
     gameTitle: typeof props.gameTitle === "string" ? props.gameTitle : null,
     launcherVersion: typeof props.launcherVersion === "string" ? props.launcherVersion : null,
     platform: typeof props.platform === "string" ? props.platform : null,
-    phase: typeof props.phase === "string" ? props.phase : null,
+    phase:
+      typeof props.phase === "string"
+        ? props.phase
+        : typeof props.op === "string"
+          ? props.op
+          : area || null,
     userAgent: opts.userAgent || null,
     userId: opts.userId || null,
   });

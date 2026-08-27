@@ -113,6 +113,29 @@ sudo journalctl -u playbound-reflector -f
 Until all three are set, `provisionPartyLan` no-ops and parties behave exactly as
 they did before — nothing breaks, virtual LAN just does nothing.
 
+## Troubleshoot: `NetBird 404` on Ready / Join Game
+
+Symptom in the party UI: after Ready (Beyond All Reason self-host defaults to
+the overlay), LAN status fails with **NetBird 404**.
+
+Check from any machine:
+
+```bash
+curl -sI -H 'Accept: application/json' https://netbird.playbound.club/api/groups
+```
+
+- **Good:** `401`/`403` JSON (API is up; token missing/wrong is fine for this probe).
+- **Bad:** `404` with `content-type: text/html` — the reverse proxy is sending
+  `/api/*` to the **dashboard** Next.js app instead of the **management**
+  service. Dashboard on `/` can look healthy while every party provision fails.
+
+Fix the compose/proxy so `/api` → management and `/` → dashboard, then recreate
+the proxy container. Until that is fixed, PlayBound cannot create groups, policies,
+or setup keys.
+
+Failed provisions emit `party_lan_failed` telemetry and open/bump an Admin bug
+report automatically.
+
 ## Verifying it actually works
 
 Nothing above proves anything. The test that does, from two machines on
