@@ -8359,11 +8359,16 @@ ipcMain.handle("open-folder", async (_event, dir) => {
 ipcMain.handle("clear-context", () => clearContext());
 /**
  * Open a Discord invite in the desktop app when it is installed, falling back
- * to the browser otherwise.
+ * to the browser only if that handoff itself fails.
  *
  * Handing the raw https invite to the browser — which is what this used to do —
  * always landed people in web Discord even with the app open, so party voice
- * never actually joined the channel they were already signed into.
+ * never actually joined the channel they were already signed into. An earlier
+ * version of this then opened the browser invite unconditionally alongside
+ * the app every time, as a safety net for discord:// silently landing on a
+ * blank home screen instead of the channel — but that meant two windows
+ * opening on every single click, which is worse than the rare silent miss it
+ * was guarding against.
  *
  * The discord:// URL is rebuilt here from a validated invite code rather than
  * forwarded, so the security allowlist stays https-only and no caller can push
@@ -8396,19 +8401,21 @@ ipcMain.handle("open-discord-invite", async (_event, inviteUrl) => {
     }
   }
 
-  // Always open the https invite too — discord:// often brings the app up without
-  // joining the channel (blank home screen). The website opens this as a fallback.
+  if (openedApp) {
+    return { ok: true, openedApp: true };
+  }
+
+  // Discord isn't installed, or every deep-link attempt above threw — the
+  // web invite is the only way left to join.
   try {
     await safeOpenExternal(httpsUrl, {
       campaign: "launcher_party_voice",
       skipUtm: isDiscordUrl(httpsUrl),
     });
-    return { ok: true, openedApp };
+    return { ok: true, openedApp: false };
   } catch (err) {
     console.warn("open-discord-invite blocked:", err?.message || err);
-    return openedApp
-      ? { ok: true, openedApp: true }
-      : { ok: false, error: err?.message || String(err) };
+    return { ok: false, error: err?.message || String(err) };
   }
 });
 
