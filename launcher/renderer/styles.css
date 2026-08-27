@@ -5094,8 +5094,11 @@ textarea.input-text {
   border-bottom: 1px solid var(--border);
 }
 .party-header-main { min-width: 0; flex: 1; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
-.party-header-side { flex: 1; min-width: 240px; max-width: 520px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.party-header-side .party-visibility-select { width: 176px; }
+.party-header-side { flex: 1; min-width: 240px; max-width: 520px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.party-field-group { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 176px; }
+.party-field-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+.party-header-side .party-hostmode-select,
+.party-header-side .party-visibility-select { width: 100%; }
 .party-title { font-size: 18px; font-weight: 700; margin: 0; }
 .party-name-input { max-width: 380px; font-weight: 700; }
 .party-game-select { max-width: 380px; }

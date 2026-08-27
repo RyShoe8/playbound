@@ -1381,38 +1381,38 @@ function buildPartyViewHtml(party) {
       }`
     : "";
 
-  const visibilityHtml =
-    isLeader && !ended
-      ? `<select class="input-text party-visibility-select" id="party-visibility-select" aria-label="Who can join">
-           ${VISIBILITY_OPTIONS.map(
-             (o) =>
-               `<option value="${o.value}"${party.visibility === o.value ? " selected" : ""}>${escapeHtml(
-                 PARTY_VISIBILITY_LABELS[o.value]
-               )}</option>`
-           ).join("")}
-         </select>`
-      : "";
-
-  /*
-   * Modes come from the party payload, resolved server-side — the renderer has
-   * no access to the adapter registry and should not carry a second copy of
-   * which games can be hosted where. Fewer than two is not a choice, so no
-   * picker is drawn. Locked once a room is live, matching what the API allows.
-   */
   const hostModes = Array.isArray(party.hostModes) ? party.hostModes : [];
   const canPickHost = isLeader && !ended && hostModes.length > 1 && !party.hosted?.roomCode;
   const hostModeHtml = canPickHost
-    ? `<select class="input-text party-hostmode-select" id="party-hostmode-select" aria-label="Where the game runs">
-         ${hostModes
-           .map(
-             (o) =>
-               `<option value="${escapeHtml(o.mode)}"${party.hostMode === o.mode ? " selected" : ""}>${escapeHtml(
-                 o.label
-               )}</option>`
-           )
-           .join("")}
-       </select>`
+    ? `<div class="party-field-group">
+         <label class="party-field-label" for="party-hostmode-select">Server Hosting</label>
+         <select class="input-text party-hostmode-select" id="party-hostmode-select" aria-label="Server Hosting">
+           ${hostModes
+             .map(
+               (o) =>
+                 `<option value="${escapeHtml(o.mode)}"${party.hostMode === o.mode ? " selected" : ""}>${escapeHtml(
+                   o.label
+                 )}</option>`
+             )
+             .join("")}
+         </select>
+       </div>`
     : "";
+
+  const visibilityHtml =
+    isLeader && !ended
+      ? `<div class="party-field-group">
+           <label class="party-field-label" for="party-visibility-select">Who Can Play</label>
+           <select class="input-text party-visibility-select" id="party-visibility-select" aria-label="Who Can Play">
+             ${VISIBILITY_OPTIONS.map(
+               (o) =>
+                 `<option value="${o.value}"${party.visibility === o.value ? " selected" : ""}>${escapeHtml(
+                   PARTY_VISIBILITY_LABELS[o.value]
+                 )}</option>`
+             ).join("")}
+           </select>
+         </div>`
+      : "";
 
   const membersHtml = (party.members || [])
     .map((m) => {
