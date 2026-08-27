@@ -1049,6 +1049,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     fileName: "rvgl_full_win64_original.zip",
     exeHint: "rvgl",
     versionLabel: "v23.1030a",
+    connectArgs: ["-lobby", "{host}:{port}"],
     note: "Complete standalone Re-Volt (RVGL) 64-bit Windows release with original soundtrack and Dreamcast content.",
   },
   "wipeout-rewrite": {

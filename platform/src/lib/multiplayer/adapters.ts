@@ -1186,7 +1186,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       binaryHint: "rvgl",
     },
     client: {
-      launchArguments: ["-connect", "{host}:{port}"],
+      launchArguments: ["-lobby", "{host}:{port}"],
     },
     selfHost: {
       port: 2310,

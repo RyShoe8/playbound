@@ -716,6 +716,14 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
   },
+  revolt: {
+    kind: "native",
+    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
+  },
+  rvgl: {
+    kind: "native",
+    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
+  },
   supertux: { kind: "native", note: "SDL2 binds a pad on detection; defaults cover the whole game." },
   supertuxkart: { kind: "native", note: "Detects pads on first run and writes its own mapping." },
   veloren: { kind: "native", note: "Analog movement, camera and combat are bound by default." },

@@ -1,4 +1,5 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
+import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -2313,36 +2314,58 @@ async function launchPartyGame(party) {
     }
   }
 
+  const games = partyGamesCache || [];
+  const catalogGame = games.find((g) => g.slug === slug);
+  const detail = {
+    title: party.gameTitle || catalogGame?.title || slug,
+    slug,
+    controllerSupport: catalogGame?.controllerSupport,
+    hasControllerSupport: catalogGame?.hasControllerSupport,
+    features: catalogGame?.features,
+    tags: catalogGame?.tags,
+  };
+
   const hosted = party.hosted || {};
   if (hosted.status === "ready" && hosted.host && hosted.port) {
     const address = `${hosted.host}:${hosted.port}`;
     try {
-      setStatus(`Joining ${address}…`);
-      const res = await window.playbound.play(slug, {
-        host: hosted.host,
-        port: Number(hosted.port),
-        name: state.accountState?.username || hosted.name || party.gameTitle || "",
-        // Explicit override for OpenRA's "official" edition, which is one
-        // client covering Red Alert/Tiberian Dawn/Dune 2000 — editionSlug
-        // alone can't say which one the party actually started.
-        mod: party.openRaMod || undefined,
-      }, party.editionSlug || null);
-      startGameSession(slug, party.gameTitle || slug);
-      /*
-       * A few clients have no command-line join and only take an address from
-       * their own menu. Launching and saying nothing looks identical to a
-       * failed auto-connect, so hand the player the address instead.
-       */
-      if (res?.manualConnect) {
-        void window.playbound.clipboardWrite?.(address);
-        setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
-      } else {
-        const steps =
-          Array.isArray(hosted.steps) && hosted.steps.length
-            ? ` Then: ${hosted.steps.join(" → ")}.`
-            : "";
-        setStatus(`Joining ${party.gameTitle || slug} at ${address}…${steps}`);
-      }
+      const launched = await maybeOfferPhoneControllerThenPlay(
+        detail,
+        async () => {
+          setStatus(`Joining ${address}…`);
+          const res = await window.playbound.play(
+            slug,
+            {
+              host: hosted.host,
+              port: Number(hosted.port),
+              name: state.accountState?.username || hosted.name || party.gameTitle || "",
+              // Explicit override for OpenRA's "official" edition, which is one
+              // client covering Red Alert/Tiberian Dawn/Dune 2000 — editionSlug
+              // alone can't say which one the party actually started.
+              mod: party.openRaMod || undefined,
+            },
+            party.editionSlug || null
+          );
+          startGameSession(slug, party.gameTitle || slug);
+          /*
+           * A few clients have no command-line join and only take an address from
+           * their own menu. Launching and saying nothing looks identical to a
+           * failed auto-connect, so hand the player the address instead.
+           */
+          if (res?.manualConnect) {
+            void window.playbound.clipboardWrite?.(address);
+            setStatus(`Copied ${address} — join it from the game's multiplayer menu.`);
+          } else {
+            const steps =
+              Array.isArray(hosted.steps) && hosted.steps.length
+                ? ` Then: ${hosted.steps.join(" → ")}.`
+                : "";
+            setStatus(`Joining ${party.gameTitle || slug} at ${address}…${steps}`);
+          }
+        },
+        party.editionSlug || slug
+      );
+      if (!launched) return;
     } catch (err) {
       setStatus(err.message || String(err), true);
     }
@@ -2390,8 +2413,6 @@ async function launchPartyGame(party) {
     if (!ready) return;
   }
 
-  const games = partyGamesCache || [];
-  const catalogGame = games.find((g) => g.slug === slug);
   if (catalogGame?.kind === "external" && catalogGame.url) {
     window.playbound.openExternal(catalogGame.url);
     return;
@@ -2403,11 +2424,18 @@ async function launchPartyGame(party) {
   }
 
   try {
-    setStatus("Checking Java / launching…");
-    const edition = party.editionSlug || party.installedEditionSlug || null;
-    await window.playbound.play(slug, null, edition);
-    startGameSession(slug, party.gameTitle || slug);
-    setStatus(`Launched ${party.gameTitle || slug}`);
+    const launched = await maybeOfferPhoneControllerThenPlay(
+      detail,
+      async () => {
+        setStatus("Checking Java / launching…");
+        const edition = party.editionSlug || party.installedEditionSlug || null;
+        await window.playbound.play(slug, null, edition);
+        startGameSession(slug, party.gameTitle || slug);
+        setStatus(`Launched ${party.gameTitle || slug}`);
+      },
+      party.editionSlug || slug
+    );
+    if (!launched) return;
   } catch (err) {
     const msg = err?.message || String(err || "Launch failed");
     console.warn("launchPartyGame failed:", msg);

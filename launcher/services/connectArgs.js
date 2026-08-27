@@ -77,6 +77,9 @@ const CLIENT_CONNECT_ARGS = {
   // this, playGame's client-connect override launched the vanilla client.
   mindustry: ["{host}:{port}"],
   ysoccer: ["--connect={host}", "--tcp-port={port}", "--udp-port={port}"],
+  "re-volt-rvgl": ["-lobby", "{host}:{port}"],
+  revolt: ["-lobby", "{host}:{port}"],
+  rvgl: ["-lobby", "{host}:{port}"],
 
   // In-game Room Code / Lobby Joins / Direct Network — no CLI join; show host:port to paste.
   holocure: null,
