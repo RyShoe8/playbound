@@ -115,8 +115,36 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     }
     return { ...game, launcherInstall: merged };
   }
-  if (seed) return { ...game, launcherInstall: seed };
-  return game;
+  if (seed) return repairBrowserOnlyFromSeed({ ...game, launcherInstall: seed });
+  return repairBrowserOnlyFromSeed(game);
+}
+
+/**
+ * When seed drops a desktop install (e.g. wipEout → browser-only), stale Mongo
+ * fields must not keep offering a Windows zip or Phantom Edition paths.
+ */
+function repairBrowserOnlyFromSeed(game: Game): Game {
+  const seed = seedBySlug.get(game.slug);
+  if (!seed?.launchMethods?.includes("browser") || seed.launchMethods.includes("install")) {
+    return game;
+  }
+  if (seed.launcherInstall?.enabled && seed.launcherInstall?.kind) {
+    return game;
+  }
+  return {
+    ...game,
+    tagline: seed.tagline || game.tagline,
+    description: seed.description || game.description,
+    platforms: seed.platforms?.length ? seed.platforms : game.platforms,
+    features: seed.features?.length ? seed.features : game.features,
+    launchMethods: seed.launchMethods,
+    browserPlayable: true,
+    steamDeck: seed.steamDeck ?? false,
+    sizeMB: seed.sizeMB ?? game.sizeMB,
+    website: seed.website || game.website,
+    githubRepo: seed.githubRepo,
+    launcherInstall: undefined,
+  };
 }
 
 const ALLOWED_GENRES = new Set<string>(GENRES);
@@ -232,7 +260,7 @@ function toGame(doc: LeanGame): Game {
     gogStoreUrl: (doc.gogStoreUrl as string) || undefined,
     externalIds: (doc.externalIds as Game["externalIds"]) || undefined,
   };
-  return attachLauncherInstall(base, doc);
+  return repairBrowserOnlyFromSeed(attachLauncherInstall(base, doc));
 }
 
 function mapCommunityLinks(raw: unknown): Game["communityLinks"] | undefined {
@@ -309,7 +337,7 @@ function overlayForMongoOnly(slug: string) {
 }
 
 function seedGameWithInstall(g: Game): Game {
-  return attachLauncherInstall(g);
+  return repairBrowserOnlyFromSeed(attachLauncherInstall(g));
 }
 
 /** Seed local /games/... paths mostly 404; only keep remote seed media. */
