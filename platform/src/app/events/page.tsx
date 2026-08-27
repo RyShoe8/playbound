@@ -21,11 +21,24 @@ export const metadata: Metadata = pageMetadata({
 
 export const dynamic = "force-dynamic";
 
+type ListedEvent = Awaited<ReturnType<typeof listPublicEvents>>[number];
+
+/** Pull matching events into one exclusive bucket so a card never repeats. */
+function takeExclusive(
+  pool: ListedEvent[],
+  claimed: Set<string>,
+  predicate: (e: ListedEvent) => boolean
+): ListedEvent[] {
+  const items = pool.filter((e) => !claimed.has(e.id) && predicate(e));
+  for (const e of items) claimed.add(e.id);
+  return items;
+}
+
 export default async function EventsPage() {
   const [eventsRaw, session, pastRaw, openPartiesRaw] = await Promise.all([
     listPublicEvents({ limit: 80 }),
     getServerSession(authOptions),
-    listPublicEvents({ includePast: true, limit: 20 }),
+    listPublicEvents({ includePast: true, limit: 40 }),
     listOpenPublicParties(100),
   ]);
   const [events, past, openParties] = await Promise.all([
@@ -36,34 +49,52 @@ export default async function EventsPage() {
   const isAdmin = session?.user?.role === "admin";
 
   const now = Date.now();
-  const soon = events.filter((e) => {
-    const t = new Date(e.startsAt).getTime();
-    return e.status === "live" || (t >= now && t - now < 48 * 3600_000);
-  });
-  const gameNights = events.filter((e) => e.eventType === "game_night");
-  const tournaments = events.filter((e) => e.eventType === "tournament");
-  const scheduledParties = events.filter((e) => e.eventType === "party");
-  const featured = events.filter((e) => e.featured);
-  const pastOnly = past.filter(
-    (e) => e.status === "completed" || new Date(e.endsAt).getTime() < now
-  );
+  const activeIds = new Set(events.map((e) => e.id));
+  const pastOnly = past
+    .filter(
+      (e) =>
+        !activeIds.has(e.id) &&
+        (e.status === "completed" ||
+          e.status === "cancelled" ||
+          (e.endsAt ? new Date(e.endsAt).getTime() < now : false))
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.endsAt || b.startsAt).getTime() -
+        new Date(a.endsAt || a.startsAt).getTime()
+    );
 
-  // Collect ids of events already shown in a categorized section so the
-  // catch-all "Upcoming" list never duplicates a card.
-  const shownIds = new Set<string>();
-  for (const list of [featured, soon, gameNights, tournaments, scheduledParties]) {
-    for (const e of list) shownIds.add(e.id);
-  }
-  const upcoming = events.filter((e) => !shownIds.has(e.id));
+  /*
+   * One card, one section. Priority: imminent/live → featured → type → leftover.
+   * Without exclusivity a featured live Game Night landed in three sections.
+   */
+  const claimed = new Set<string>();
+  const soon = takeExclusive(
+    events,
+    claimed,
+    (e) => {
+      const t = new Date(e.startsAt).getTime();
+      return e.status === "live" || (t >= now && t - now < 48 * 3600_000);
+    }
+  );
+  const featured = takeExclusive(events, claimed, (e) => Boolean(e.featured));
+  const gameNights = takeExclusive(events, claimed, (e) => e.eventType === "game_night");
+  const tournaments = takeExclusive(events, claimed, (e) => e.eventType === "tournament");
+  const scheduledParties = takeExclusive(events, claimed, (e) => e.eventType === "party");
+  const upcoming = events.filter((e) => !claimed.has(e.id));
 
   const titles = new Map<string, string>();
   await Promise.all(
-    [...new Set(events.map((e) => e.gameSlug).filter(Boolean) as string[])].map(
-      async (slug) => {
-        const g = await getGame(slug);
-        if (g) titles.set(slug, g.title);
-      }
-    )
+    [
+      ...new Set(
+        [...events, ...pastOnly]
+          .map((e) => e.gameSlug)
+          .filter(Boolean) as string[]
+      ),
+    ].map(async (slug) => {
+      const g = await getGame(slug);
+      if (g) titles.set(slug, g.title);
+    })
   );
 
   function Section({
@@ -71,7 +102,7 @@ export default async function EventsPage() {
     items,
   }: {
     title: string;
-    items: typeof events;
+    items: ListedEvent[];
   }) {
     if (!items.length) return null;
     return (
@@ -89,6 +120,8 @@ export default async function EventsPage() {
       </section>
     );
   }
+
+  const hasActive = events.length > 0;
 
   return (
     <div className="space-y-10 px-4 py-6 sm:px-6 lg:px-8">
@@ -108,19 +141,23 @@ export default async function EventsPage() {
 
       <OpenPartiesSection parties={openParties} />
 
-      {events.length === 0 ? (
+      {!hasActive ? (
         <EmptyHint>No upcoming scheduled events yet. Check back soon.</EmptyHint>
-      ) : (
+      ) : null}
+
+      {hasActive ? (
         <>
-          <Section title="Featured" items={featured} />
           <Section title="Happening soon" items={soon} />
+          <Section title="Featured" items={featured} />
           <Section title="Game Nights" items={gameNights} />
           <Section title="Tournaments" items={tournaments} />
           <Section title="Parties" items={scheduledParties} />
           <Section title="Upcoming" items={upcoming} />
-          <Section title="Past events" items={pastOnly.slice(0, 6)} />
         </>
-      )}
+      ) : null}
+
+      {/* Past stays visible even when nothing is live or upcoming. */}
+      <Section title="Past events" items={pastOnly.slice(0, 6)} />
     </div>
   );
 }

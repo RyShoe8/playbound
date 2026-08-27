@@ -144,7 +144,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),
   getModsCatalog: () => ipcRenderer.invoke("get-mods-catalog"),
   getGearCatalog: () => ipcRenderer.invoke("get-gear-catalog"),
-  getEvents: () => ipcRenderer.invoke("get-events"),
+  getEvents: (opts) => ipcRenderer.invoke("get-events", opts || {}),
   getEventDetail: (id) => ipcRenderer.invoke("get-event-detail", id),
   createEvent: (data) => ipcRenderer.invoke("create-event", data),
   uploadEventCover: (fileBuffer, fileName, mimeType) =>
@@ -193,6 +193,8 @@ contextBridge.exposeInMainWorld("playbound", {
   getControllerSupport: (slug) => ipcRenderer.invoke("get-controller-support", slug),
 
   getInstallQueue: () => ipcRenderer.invoke("get-install-queue"),
+  cancelInstallQueueItem: (slug, editionSlug) =>
+    ipcRenderer.invoke("cancel-install-queue-item", slug, editionSlug || null),
   // Events
   onCatalogUpdated: (cb) => ipcRenderer.on("catalog-updated", (_event, data) => cb(data || [])),
   onLiveStatsUpdated: (cb) => ipcRenderer.on("live-stats-updated", (_event, data) => cb(data || {})),

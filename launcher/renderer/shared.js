@@ -814,6 +814,7 @@ export function renderQueuePopoverContent() {
           <span>${escapeHtml(phaseLabel)}</span>
           <span>${escapeHtml(sizeStr)}</span>
         </div>
+        <button type="button" class="queue-cancel-btn" data-queue-cancel-slug="${escapeHtml(active.slug)}" data-queue-cancel-edition="${escapeHtml(active.editionSlug || "")}">Cancel</button>
       </div>
     `;
   }
@@ -830,7 +831,10 @@ export function renderQueuePopoverContent() {
             <span class="queue-pos-badge">#${idx + 1}</span>
             <span class="queue-item-title">${escapeHtml(item.title || item.slug)}</span>
           </div>
-          <span class="chip" style="font-size:10.5px;color:var(--text-dim)">Queued</span>
+          <div class="queue-item-actions">
+            <span class="chip" style="font-size:10.5px;color:var(--text-dim)">Queued</span>
+            <button type="button" class="queue-cancel-btn" data-queue-cancel-slug="${escapeHtml(item.slug)}" data-queue-cancel-edition="${escapeHtml(item.editionSlug || "")}">Cancel</button>
+          </div>
         </div>
       `;
     });

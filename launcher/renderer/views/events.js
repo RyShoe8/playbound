@@ -452,61 +452,86 @@ async function renderEventsView() {
   const events = filterRelatedByDiscovery(res.events || [], (ev) => ev.gameSlug);
   const sectionsHost = document.getElementById("events-sections");
 
-  if (!events.length) {
-    if (sectionsHost) {
-      sectionsHost.innerHTML = `<p class="view-sub">No upcoming events. Host one with + Create Event above!</p>`;
-    }
-    markViewReady(container);
-    return;
-  }
+  const pastRes =
+    (await cacheInvoke("events-past", CACHE_TTL.events, () =>
+      window.playbound.getEvents?.({ past: true })
+    )) || { events: [] };
+  const pastAll = filterRelatedByDiscovery(pastRes.events || [], (ev) => ev.gameSlug);
 
   /*
-   * Same groupings the website's events page uses, in the same order. An empty
-   * section renders nothing, exactly as its Section component returns null.
+   * Same exclusive groupings as the website. One card per section — without
+   * that a featured live Game Night showed up three times.
    */
   const now = Date.now();
   const startOf = (ev) => (ev.startsAt ? new Date(ev.startsAt).getTime() : 0);
+  const claimed = new Set();
+  const take = (predicate) => {
+    const items = events.filter((ev) => !claimed.has(ev.id) && predicate(ev));
+    for (const ev of items) claimed.add(ev.id);
+    return items;
+  };
+  const activeIds = new Set(events.map((ev) => ev.id));
+  const pastOnly = pastAll
+    .filter(
+      (ev) =>
+        !activeIds.has(ev.id) &&
+        (ev.status === "completed" ||
+          ev.status === "cancelled" ||
+          (ev.endsAt && new Date(ev.endsAt).getTime() < now))
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.endsAt || b.startsAt).getTime() -
+        new Date(a.endsAt || a.startsAt).getTime()
+    )
+    .slice(0, 6);
+
   const groups = [
-    ["Featured", events.filter((ev) => ev.featured)],
     [
       "Happening soon",
-      events.filter(
+      take(
         (ev) =>
           ev.status === "live" ||
           (startOf(ev) >= now && startOf(ev) - now < 48 * 3600_000)
       ),
     ],
-    ["Game Nights", events.filter((ev) => ev.eventType === "game_night")],
-    ["Tournaments", events.filter((ev) => ev.eventType === "tournament")],
-    ["Parties", events.filter((ev) => ev.eventType === "party")],
-    ["Upcoming", events],
-    [
-      "Past events",
-      events
-        .filter((ev) => ev.status === "completed" || (ev.endsAt && new Date(ev.endsAt).getTime() < now))
-        .slice(0, 6),
-    ],
+    ["Featured", take((ev) => Boolean(ev.featured))],
+    ["Game Nights", take((ev) => ev.eventType === "game_night")],
+    ["Tournaments", take((ev) => ev.eventType === "tournament")],
+    ["Parties", take((ev) => ev.eventType === "party")],
+    ["Upcoming", events.filter((ev) => !claimed.has(ev.id))],
+    ["Past events", pastOnly],
   ];
 
   if (sectionsHost) {
     sectionsHost.replaceChildren();
-    for (const [title, items] of groups) {
-      if (!items.length) continue;
+    if (!events.length && !pastOnly.length) {
+      sectionsHost.innerHTML = `<p class="view-sub">No upcoming events. Host one with + Create Event above!</p>`;
+    } else {
+      if (!events.length) {
+        const empty = document.createElement("p");
+        empty.className = "view-sub";
+        empty.textContent = "No upcoming events. Host one with + Create Event above!";
+        sectionsHost.appendChild(empty);
+      }
+      for (const [title, items] of groups) {
+        if (!items.length) continue;
 
-      const section = document.createElement("section");
-      section.className = "events-section";
+        const section = document.createElement("section");
+        section.className = "events-section";
 
-      const heading = document.createElement("h2");
-      heading.className = "events-section-title";
-      heading.textContent = title;
-      section.appendChild(heading);
+        const heading = document.createElement("h2");
+        heading.className = "events-section-title";
+        heading.textContent = title;
+        section.appendChild(heading);
 
-      const grid = document.createElement("div");
-      grid.className = "events-grid";
-      for (const ev of items) grid.appendChild(createEventCard(ev));
-      section.appendChild(grid);
+        const grid = document.createElement("div");
+        grid.className = "events-grid";
+        for (const ev of items) grid.appendChild(createEventCard(ev));
+        section.appendChild(grid);
 
-      sectionsHost.appendChild(section);
+        sectionsHost.appendChild(section);
+      }
     }
   }
 

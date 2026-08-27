@@ -29,12 +29,12 @@ export interface ResolvedDownloadResponse {
  * Resolves the 3-tier ordered download sources for an artifact.
  *
  * Ordering:
- * 1. Healthy Public Mirror (priority 100)
- * 2. Cloudflare R2 Hot Cache (priority 90)
+ * 1. Cloudflare R2 Hot Cache (priority 100)
+ * 2. Healthy Public Mirror (priority 90)
  * 3. PlayBound VPS Authoritative Archive (priority 50)
  *
- * If public mirror is degraded (priority 70), R2 becomes preferred.
- * If public mirror is failing/offline (priority 0), it is demoted to last.
+ * If public mirror is degraded (priority 70), R2 stays preferred.
+ * If public mirror is failing/offline (priority 10), it is demoted to last.
  */
 export async function resolveDownloadSources(
   artifactIdOrSlug: string,
@@ -60,9 +60,25 @@ export async function resolveDownloadSources(
 
   const resolvedSources: ResolvedDownloadSource[] = [];
 
-  // 1. Process Public Mirrors
+  // 1. Process Cloudflare R2 Hot Cache
+  if (artifact.r2Status === "cached") {
+    try {
+      const presignedUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 3600);
+      resolvedSources.push({
+        sourceId: `r2-${artifact.artifactId}`,
+        type: "r2",
+        url: presignedUrl,
+        priority: 100,
+        healthStatus: "healthy",
+      });
+    } catch (err) {
+      console.warn(`[Resolution] Failed generating R2 presigned URL for ${artifact.artifactId}:`, err);
+    }
+  }
+
+  // 2. Process Public Mirrors
   for (const src of rawSources.filter((s) => s.sourceType === "public")) {
-    let priority = 100;
+    let priority = 90;
     if (src.healthStatus === "degraded") priority = 70;
     else if (src.healthStatus === "failing" || src.healthStatus === "offline") priority = 10;
 
@@ -73,22 +89,6 @@ export async function resolveDownloadSources(
       priority,
       healthStatus: src.healthStatus,
     });
-  }
-
-  // 2. Process Cloudflare R2 Hot Cache
-  if (artifact.r2Status === "cached") {
-    try {
-      const presignedUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 3600);
-      resolvedSources.push({
-        sourceId: `r2-${artifact.artifactId}`,
-        type: "r2",
-        url: presignedUrl,
-        priority: 90,
-        healthStatus: "healthy",
-      });
-    } catch (err) {
-      console.warn(`[Resolution] Failed generating R2 presigned URL for ${artifact.artifactId}:`, err);
-    }
   }
 
   // 3. Process PlayBound VPS Authoritative Archive

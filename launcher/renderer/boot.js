@@ -389,6 +389,18 @@ function wireShell() {
     document.getElementById("statusbar-queue-popover")?.classList.add("hidden");
   });
 
+  document.getElementById("queue-popover-content")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-queue-cancel-slug]");
+    if (!btn || !window.playbound?.cancelInstallQueueItem) return;
+    e.stopPropagation();
+    const slug = btn.dataset.queueCancelSlug;
+    const editionSlug = btn.dataset.queueCancelEdition || null;
+    btn.disabled = true;
+    void window.playbound.cancelInstallQueueItem(slug, editionSlug).then((res) => {
+      if (res?.error) setStatus(res.error, true);
+    });
+  });
+
   // Close queue popover when clicking outside
   document.addEventListener("click", (e) => {
     const popover = document.getElementById("statusbar-queue-popover");
