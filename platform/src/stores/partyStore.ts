@@ -54,6 +54,7 @@ interface PartyState {
     error?: string | null;
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
+  setHostMode: (partyId: string, hostMode: string) => Promise<void>;
   setEdition: (partyId: string, editionSlug: string | null) => Promise<void>;
   setOpenRaMod: (partyId: string, mod: string | null) => Promise<void>;
   setName: (partyId: string, name: string | null) => Promise<void>;
@@ -424,6 +425,23 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       console.error("Failed to set party game", err);
     } finally {
       partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+    }
+  },
+
+  setHostMode: async (partyId, hostMode) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hostMode }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
+      }
+    } catch (err) {
+      console.error("Failed to set party host mode", err);
     }
   },
 

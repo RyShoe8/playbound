@@ -69,6 +69,7 @@ export function PartyView({
     endParty,
     provisionDiscord,
     setGame,
+    setHostMode,
     setName,
     setOpenRaMod,
   } = usePartyStore();
@@ -344,11 +345,38 @@ export function PartyView({
                   </p>
                 </label>
               ) : null}
+              {party.hostModes && party.hostModes.length > 1 ? (
+                <label className="mt-2 block">
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Where the game runs
+                  </span>
+                  <PremiumSelect
+                    value={party.hostMode || ""}
+                    onChange={(e) => void setHostMode(party.id, e.target.value)}
+                  >
+                    {party.hostModes.map((o) => (
+                      <option key={o.mode} value={o.mode}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </PremiumSelect>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {party.hostModes.find((o) => o.mode === party.hostMode)?.hint}
+                  </p>
+                </label>
+              ) : null}
             </div>
           ) : hasGame ? (
-            <p className="text-sm font-semibold text-muted-foreground">
-              {party.gameTitle || party.gameSlug}
-            </p>
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">
+                {party.gameTitle || party.gameSlug}
+              </p>
+              {party.hostModes && party.hostModes.length > 1 ? (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Host: {party.hostModes.find((o) => o.mode === party.hostMode)?.label || (party.hostMode === "self" ? "Host PC" : "PlayBound server")}
+                </p>
+              ) : null}
+            </div>
           ) : null}
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             <span className="capitalize">{party.status.replace("_", " ")}</span>

@@ -60,11 +60,11 @@ describe("host mode configuration", () => {
     expect(hostModeOptions("league-of-legends")).toEqual([]);
   });
 
-  it("prefers self-hosting when the game supports it", () => {
-    // Safe because the party overlay carries reachability; see hostModes.ts.
-    expect(defaultHostMode("warzone-2100")).toBe("self");
+  it("prefers dedicated hosting when available, falling back to self-hosting", () => {
+    // Dedicated servers are managed on the VPS for zero-config party launch.
+    expect(defaultHostMode("warzone-2100")).toBe("dedicated");
+    expect(defaultHostMode("openra")).toBe("dedicated");
     expect(defaultHostMode("marathon-2")).toBe("self");
-    // Falls back rather than returning nothing when only the VPS can host.
     expect(defaultHostMode("ysoccer")).toBe("dedicated");
   });
 

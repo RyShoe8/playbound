@@ -87,6 +87,7 @@ describe("admin nav structure", () => {
         { label: "Developers" },
         { label: "Collections" },
         { label: "Mod Classifications" },
+        { label: "Discord" },
       ],
     });
   });

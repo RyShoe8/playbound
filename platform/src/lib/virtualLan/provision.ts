@@ -16,6 +16,7 @@ import {
   type NetBirdParty,
 } from "./client";
 import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
+import { defaultHostMode } from "@/lib/multiplayer/hostModes";
 import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
@@ -161,7 +162,8 @@ export function lanPayloadFromDoc(
   hostMode: string | null,
   lan?: PartyLanFields | null
 ) {
-  const needsOverlay = isVirtualLanGame(gameSlug) || hostMode === "self";
+  const resolvedMode = hostMode || defaultHostMode(gameSlug);
+  const needsOverlay = isVirtualLanGame(gameSlug) || resolvedMode === "self";
   const config = needsOverlay ? getVirtualLanConfig(gameSlug) : null;
   if (!config) {
     return {
