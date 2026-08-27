@@ -220,7 +220,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-zip",
     url: "https://dl.xonotic.org/xonotic-0.8.6.zip",
-    exeHint: "xonotic.*x64|xonotic",
+    exeHint: "xonotic.*sdl|xonotic.*gl|xonotic.*x64|xonotic",
     connectArgs: ["+connect", "{host}:{port}"],
   },
   mindustry: {

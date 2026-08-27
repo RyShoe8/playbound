@@ -84,7 +84,7 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.error = null;
   await party.save();
 
-  const name = `PlayBound ${slug}`.slice(0, 40);
+  const name = "PlayBound.club Party";
   /*
    * The agent keys its recipes by its own slug, which is not always the
    * catalog's — 0 A.D. is `0ad` here and `0-ad` on the box. Sending the
