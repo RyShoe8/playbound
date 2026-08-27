@@ -2343,12 +2343,14 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     .join("");
 
   const thatOneThingHtml = gameDetail?.thatOneThing
-    ? `<section class="detail-section detail-tot-card">
-        <div class="tot-icon">✦</div>
-        <div class="tot-content">
-          <div class="tot-label">That One Thing</div>
-          <h3 class="tot-title">Why ${escapeHtml(edition.editionName)} sticks with us</h3>
-          <p class="tot-text">${escapeHtml(gameDetail.thatOneThing)}</p>
+    ? `<section class="detail-section">
+        <div class="detail-one-thing-card">
+          <div class="detail-one-thing-mark" aria-hidden="true">✦</div>
+          <div>
+            <div class="detail-one-thing-kicker">That One Thing</div>
+            <h2>Why ${escapeHtml(edition.editionName || gameDetail?.title || "")} sticks with us</h2>
+            <p>${escapeHtml(gameDetail.thatOneThing)}</p>
+          </div>
         </div>
       </section>`
     : "";
