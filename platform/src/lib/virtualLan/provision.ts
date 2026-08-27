@@ -73,7 +73,7 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
 
   const result = await createPartyNetwork({
     partyId: String(party._id),
-    name: `PlayBound ${slug}`.slice(0, 40),
+    name: "PlayBound.club Party",
     maxPeers: Number(party.maxSize) || 8,
   });
 
