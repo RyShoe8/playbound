@@ -1446,11 +1446,13 @@ function buildPartyViewHtml(party) {
       : "";
 
   const gameHtml = isLeader && !ended
-    ? `<select class="input-text party-game-select" id="party-game-select" aria-label="Party game" style="max-width: 380px;">
+    ? `<label class="party-field-label" for="party-game-select">Game</label>
+       <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
        </select>${platformNoteHtml}`
     : hasGame
-    ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${
+    ? `<p class="party-field-label">Game</p>
+       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${
         Array.isArray(party.hostModes) && party.hostModes.length > 1
           ? `<p class="party-game-platform-note">Host: ${escapeHtml(
               party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
@@ -1462,26 +1464,34 @@ function buildPartyViewHtml(party) {
             )}</p>`
           : ""
       }`
-    : "";
+    : `<p class="party-member-sub">The leader hasn't picked a game yet.</p>`;
 
   const onlineCountHtml = hasGame
     ? `<p class="party-online-count" data-slug="${escapeHtml(party.gameSlug)}"${
         party.hostMode === "public" ? " hidden" : ""
       }></p>`
     : "";
-  const canPickPublic =
-    isLeader &&
-    !ended &&
-    party.hostMode === "public" &&
-    party.status !== "playing" &&
-    party.status !== "launching";
+  /*
+   * Ready-up comes first, and the picker says which step it is waiting on.
+   * The server is the last thing settled before Join Game, so an inert list
+   * with the reason beside it reads as an order to follow; a live one beside
+   * the game select read as an optional detail.
+   */
+  const publicGate = !isLeader
+    ? "leader"
+    : ended || inFlight
+    ? "locked"
+    : !isReady
+    ? "ready"
+    : "";
   const publicPicked = party.publicServer || null;
   const publicServerHtml =
     party.hostMode === "public" && hasGame
       ? `<div class="party-public-server" id="party-public-server"
            data-party-id="${escapeHtml(party.id)}"
            data-slug="${escapeHtml(party.gameSlug)}"
-           data-can-pick="${canPickPublic ? "1" : "0"}"
+           data-can-pick="${publicGate ? "0" : "1"}"
+           data-gate="${publicGate}"
            data-selected-id="${escapeHtml(publicPicked?.id || "")}"
            data-selected-host="${escapeHtml(publicPicked?.host || hosted.host || "")}"
            data-selected-port="${escapeHtml(String(publicPicked?.port || hosted.port || ""))}"
@@ -1589,7 +1599,7 @@ function buildPartyViewHtml(party) {
 
   const hostedNoteHtml =
     party.hostMode === "public" && hosted.enabled && hosted.status !== "ready"
-      ? `<p class="view-sub party-inline-note">Pick a public server to play on.</p>`
+      ? `<p class="view-sub party-inline-note">Now pick a server under <strong>Public server</strong> above.</p>`
       : hosted.enabled && hosted.status === "pending"
       ? `<p class="view-sub party-inline-note">Starting PlayBound server…</p>`
       : hosted.enabled && hosted.status === "failed"
@@ -1639,24 +1649,32 @@ function buildPartyViewHtml(party) {
     <div class="friends-section" style="margin-bottom: 24px">
       <div class="party-panel">
         <div class="party-header">
-          <div class="party-header-main">
-            ${titleHtml}
-            ${gameHtml}
-            ${onlineCountHtml}
-            ${publicServerHtml}
-            <p class="party-meta">
-              <span>${escapeHtml(partyStatusLabel(party.status))}</span>
-              <span>·</span>
-              <span class="party-meta-count">${ICON.users} ${(party.members || []).length} / ${
-                party.maxSize || 8
-              }</span>
-            </p>
+          <div class="party-header-top">
+            <div class="party-header-main">
+              ${titleHtml}
+              <p class="party-meta">
+                <span>${escapeHtml(partyStatusLabel(party.status))}</span>
+                <span>·</span>
+                <span class="party-meta-count">${ICON.users} ${(party.members || []).length} / ${
+                  party.maxSize || 8
+                }</span>
+              </p>
+            </div>
+            <div class="party-header-controls">
+              ${hostModeHtml}
+              ${visibilityHtml}
+            </div>
           </div>
-          <div class="party-header-side">
-            ${hostModeHtml}
-            ${visibilityHtml}
-            ${buildPartyConfigSyncHtml(party, userId)}
+          <div class="party-header-grid">
+            <div class="party-header-game">
+              ${gameHtml}
+              ${onlineCountHtml}
+            </div>
+            <div class="party-header-status">
+              ${buildPartyConfigSyncHtml(party, userId)}
+            </div>
           </div>
+          ${publicServerHtml ? `<div class="party-header-public">${publicServerHtml}</div>` : ""}
         </div>
 
         <div class="party-members">
@@ -1746,6 +1764,7 @@ function buildPartyConfigSyncHtml(party, userId) {
         ? `<p class="party-member-sub">${escapeHtml(readiness.detail)}</p>`
         : "";
     return `<div class="party-sync-card party-sync-ready">
+      <span class="party-sync-icon">${ICON.check}</span>
       <div>
         <h4 class="party-sync-title">${escapeHtml(headline)}</h4>
         <p class="party-member-sub">${escapeHtml(matchLine)}</p>
@@ -2103,46 +2122,87 @@ function partyServerRowHtml(server, { canPick, selectedId, selectedHost, selecte
  * mid-pick. Rows are written only when they actually differ, and clicks are
  * handled by one delegated listener on the container instead of one per row.
  * Counts change only when the refresh button beside the list is pressed.
+ *
+ * The list itself is only built for someone who could act on it: a member, or
+ * a party mid-game, sees the pick and the reason it is theirs to make or not.
  */
 async function fillPartyPublicServerPicker(slot, force = false) {
   const el = slot.querySelector("#party-public-server");
   if (!el) return;
   const slug = el.dataset.slug;
   const canPick = el.dataset.canPick === "1";
+  const gate = el.dataset.gate || "";
   const selectedId = el.dataset.selectedId || "";
   const selectedHost = el.dataset.selectedHost || "";
   const selectedPort = el.dataset.selectedPort || "";
   const selectedName = el.dataset.selectedName || "";
-  if (!el.querySelector(".party-public-server-list")) {
-    const picked =
-      selectedName || (selectedHost && selectedPort ? `${selectedHost}:${selectedPort}` : "");
+  /*
+   * A member, or a party already in a game, gets the pick and nothing else —
+   * a list of servers they cannot choose from is noise, and skipping it skips
+   * the request behind it.
+   */
+  const showList = gate === "" || gate === "ready";
+  const picked =
+    selectedName || (selectedHost && selectedPort ? `${selectedHost}:${selectedPort}` : "");
+  const gateNote =
+    gate === "leader"
+      ? picked
+        ? ""
+        : "Your party leader picks the server — you'll join whatever they choose."
+      : gate === "locked"
+      ? "Locked while the party is in a game."
+      : gate === "ready"
+      ? "Ready up first. Choosing the server is the last step before Join Game."
+      : "";
+  if (!el.dataset.shell) {
     el.innerHTML = `
       <div class="party-public-server-head">
         <div>
           <p class="party-field-label">Public server</p>
-          <p class="party-member-sub party-public-server-summary">Loading servers…</p>
+          ${
+            picked
+              ? `<p class="party-public-server-picked">${escapeHtml(picked)}${
+                  selectedHost && selectedPort
+                    ? ` <span class="party-public-server-addr">${escapeHtml(
+                        selectedHost
+                      )}:${escapeHtml(String(selectedPort))}</span>`
+                    : ""
+                }</p>`
+              : `<p class="party-member-sub">${
+                  canPick
+                    ? "Choose where the party plays, then hit Join Game."
+                    : "No server chosen yet."
+                }</p>`
+          }
         </div>
-        <button type="button" class="party-icon-btn party-public-server-refresh" title="Refresh">${ICON.refresh}</button>
+        ${
+          showList
+            ? `<div class="party-public-server-head-actions">
+                 <span class="party-member-sub party-public-server-summary">Loading servers…</span>
+                 <button type="button" class="party-icon-btn party-public-server-refresh" title="Refresh">${ICON.refresh}</button>
+               </div>`
+            : ""
+        }
       </div>
       ${
-        picked
-          ? `<p class="party-public-server-picked">${escapeHtml(picked)}${
-              selectedHost && selectedPort
-                ? ` <span class="party-public-server-addr">${escapeHtml(selectedHost)}:${escapeHtml(
-                    String(selectedPort)
-                  )}</span>`
-                : ""
-            }</p>`
-          : `<p class="party-member-sub">${
-              canPick
-                ? "Pick a server for the party to join."
-                : "Waiting for the leader to pick a server."
-            }</p>`
+        gateNote
+          ? `<div class="party-public-server-gate${gate === "ready" ? " is-next" : ""}">
+               <p class="party-public-server-gate-text">${escapeHtml(gateNote)}</p>
+               ${
+                 gate === "ready"
+                   ? `<button type="button" class="party-btn btn-success party-public-server-ready">${ICON.check} Ready Up</button>`
+                   : ""
+               }
+             </div>`
+          : ""
       }
-      <div class="party-public-server-list"></div>
+      ${showList ? `<div class="party-public-server-list"></div>` : ""}
     `;
+    el.dataset.shell = "1";
     wirePartyPublicServerPicker(el, slot);
   }
+
+  if (!showList) return;
 
   const summaryEl = el.querySelector(".party-public-server-summary");
   const listEl = el.querySelector(".party-public-server-list");
@@ -2182,6 +2242,20 @@ function wirePartyPublicServerPicker(el, slot) {
   el.querySelector(".party-public-server-refresh")?.addEventListener("click", () => {
     void fillPartyPublicServerPicker(slot, true);
     void fillPartyOnlineCount(slot, true);
+  });
+
+  /*
+   * Ready-up from where the order is explained, rather than sending the leader
+   * back down to the actions row and up again to pick.
+   */
+  el.querySelector(".party-public-server-ready")?.addEventListener("click", async (event) => {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    const ok = applyPartyResult(
+      await window.playbound.setPartyReady(partyId, true),
+      "Couldn't update your ready state."
+    );
+    if (!ok) btn.disabled = false;
   });
 
   el.querySelector(".party-public-server-list")?.addEventListener("click", async (event) => {
