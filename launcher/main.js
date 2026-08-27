@@ -3405,11 +3405,19 @@ function findExecutable(dir, exeHint) {
   if (candidates.length === 0) return null;
 
   if (exeHint) {
-    const hintClean = String(exeHint).replace(/\.exe$/i, "");
-    const hint = new RegExp(hintClean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-    const hinted = candidates.filter((e) => hint.test(e.name));
-    if (hinted.length > 0) {
-      return preferRunnableCandidate(hinted);
+    const parts = String(exeHint)
+      .split("|")
+      .map((p) => p.trim().replace(/\.exe$/i, ""))
+      .filter(Boolean);
+    if (parts.length > 0) {
+      const pattern = parts
+        .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|");
+      const hint = new RegExp(pattern, "i");
+      const hinted = candidates.filter((e) => hint.test(e.name));
+      if (hinted.length > 0) {
+        return preferRunnableCandidate(hinted);
+      }
     }
   }
   return preferRunnableCandidate(candidates);
@@ -6443,6 +6451,34 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       }
     } catch {
       /* ignore heal persist */
+    }
+  }
+
+  /*
+   * Unvanquished ships a Qt updater (UnvanquishedUpdater.exe) that downloads
+   * the game engine (daemon.exe). If the engine binary exists in the install
+   * folder, prefer launching daemon.exe directly. If only the updater exists,
+   * pass `-connect <host:port>` instead of idTech's `+connect <host:port>` so
+   * the updater's CLI parser does not error with "too many command line arguments".
+   */
+  if (slug === "unvanquished") {
+    const daemonExe =
+      findNamedPortableExe(info.dir, "daemon.exe") ||
+      findNamedPortableExe(info.dir, "daemon64.exe") ||
+      findNamedPortableExe(info.dir, "unvanquished.exe") ||
+      findNamedPortableExe(info.dir, "daemon") ||
+      (info.dir ? findExecutable(info.dir, "daemon") : null);
+
+    if (daemonExe && (/updater/i.test(path.basename(launchPath)) || launchPath !== daemonExe)) {
+      persistEditionExe(slug, edSlug, launchPath, daemonExe);
+      launchPath = daemonExe;
+      info = { ...info, exe: daemonExe };
+    } else if (/updater/i.test(path.basename(launchPath)) && join?.host && join?.port) {
+      const hostPort = `${join.host}:${join.port}`;
+      args = args.filter((a) => a !== "+connect" && a !== hostPort);
+      if (!args.includes("-connect")) {
+        args.push("-connect", hostPort);
+      }
     }
   }
 

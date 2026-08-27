@@ -350,7 +350,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     kind: "github-zip",
     repo: "Unvanquished/updater",
     assetPattern: "UnvUpdaterWin\\.zip$",
-    exeHint: "UnvanquishedUpdater|updater",
+    exeHint: "daemon|unvanquished|UnvanquishedUpdater|updater",
     note: "Installs the Unvanquished updater, which downloads the game.",
     connectArgs: ["+connect", "{host}:{port}"],
   },
