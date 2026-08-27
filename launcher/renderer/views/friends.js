@@ -1371,7 +1371,14 @@ function buildPartyViewHtml(party) {
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
        </select>${platformNoteHtml}`
     : hasGame
-    ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>`
+    ? `<p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${
+        Array.isArray(party.hostModes) && party.hostModes.length > 1
+          ? `<p class="party-game-platform-note">Host: ${escapeHtml(
+              party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
+                (party.hostMode === "self" ? "Host PC" : "PlayBound server")
+            )}</p>`
+          : ""
+      }`
     : "";
 
   const visibilityHtml =

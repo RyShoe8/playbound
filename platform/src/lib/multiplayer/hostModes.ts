@@ -197,6 +197,7 @@ export function hostModesFor(gameSlug: string): PartyHostMode[] {
  */
 export function defaultHostMode(gameSlug: string): PartyHostMode | null {
   const modes = hostModesFor(gameSlug);
+  if (modes.includes("dedicated")) return "dedicated";
   if (modes.includes("self")) return "self";
   return modes[0] ?? null;
 }

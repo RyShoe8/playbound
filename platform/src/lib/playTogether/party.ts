@@ -140,14 +140,15 @@ function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
 async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
   if (!doc.gameSlug || !partyConnectCanAutoProvision(doc)) return;
   const slug = String(doc.gameSlug);
+  const hostMode = (doc.hostMode as PartyHostMode | null) || defaultHostMode(slug);
 
-  if (isHostableGame(slug)) {
+  if (hostMode === "dedicated" && isHostableGame(slug)) {
     const hs = (doc.hosted?.status || "none") as HostedStatus;
     if (hs === "none" || hs === "failed") {
       await provisionPartyHost(doc);
     }
   }
-  if (isVirtualLanGame(slug)) {
+  if (isVirtualLanGame(slug) || hostMode === "self") {
     const ls = doc.lan?.status || "none";
     if (ls === "none" || ls === "failed") {
       await provisionPartyLan(doc);
@@ -159,8 +160,9 @@ async function ensurePartyConnectReady(
   doc: PartyDoc
 ): Promise<{ ok: true } | { error: string }> {
   const slug = String(doc.gameSlug || "");
+  const hostMode = (doc.hostMode as PartyHostMode | null) || defaultHostMode(slug);
 
-  if (isHostableGame(slug)) {
+  if (hostMode === "dedicated" && isHostableGame(slug)) {
     await reconcilePartyHostAlive(doc);
     let hs = (doc.hosted?.status || "none") as HostedStatus;
     if (hs === "ready" && doc.hosted?.host && doc.hosted?.port) {
@@ -183,7 +185,7 @@ async function ensurePartyConnectReady(
     }
   }
 
-  if (isVirtualLanGame(slug)) {
+  if (isVirtualLanGame(slug) || hostMode === "self") {
     let ls = doc.lan?.status || "none";
     if (ls === "ready" && doc.lan?.setupKey) {
       /* ready */
@@ -492,7 +494,8 @@ function serializeParty(
     },
     hosted: hostedPayloadFromDoc(
       String(doc.gameSlug || ""),
-      (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[1]) || null
+      hostMode,
+      (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[2]) || null
     ),
     lan: lanPayloadFromDoc(
       String(doc.gameSlug || ""),
@@ -1240,9 +1243,17 @@ export async function setPartyHostMode(
   }
 
   if (doc.hostMode !== hostMode) {
+    if (doc.hosted?.roomId) {
+      await releasePartyHost(doc);
+    }
+    if (doc.lan?.groupId) {
+      await releasePartyLan(doc);
+    }
     doc.hostMode = hostMode as PartyHostMode;
+    resetPartyConnectState(doc);
     doc.lastActivity = new Date();
     await doc.save();
+    await maybeProvisionPartyConnect(doc);
     trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
   }
 

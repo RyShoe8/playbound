@@ -12,6 +12,7 @@ import {
   isHostableGame,
   type HostedStatus,
 } from "./catalog";
+import { defaultHostMode } from "@/lib/multiplayer/hostModes";
 import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
 
 export type PartyHostFields = {
@@ -161,9 +162,13 @@ export async function releasePartyHost(party: PartyLike): Promise<void> {
 
 export function hostedPayloadFromDoc(
   gameSlug: string,
+  hostMode: string | null,
   hosted?: PartyHostFields | null
 ) {
+  const resolvedMode = hostMode || defaultHostMode(gameSlug);
+  const isDedicated = resolvedMode === "dedicated";
   const base = emptyHostedPayload(gameSlug);
+  const enabled = isDedicated && isHostableGame(gameSlug);
   /*
    * Same reasoning as the virtual-LAN payload: without this the launcher
    * cannot tell "the room is still starting" from "this deployment has no game
@@ -171,10 +176,10 @@ export function hostedPayloadFromDoc(
    * something that would never become ready.
    */
   const configured = isGameHostConfigured();
-  const steps = base.enabled ? getHostedInGameSteps(gameSlug) : [];
-  if (!hosted) return { ...base, configured, steps };
+  const steps = enabled ? getHostedInGameSteps(gameSlug) : [];
+  if (!hosted) return { ...base, enabled, configured, steps };
   return {
-    enabled: base.enabled,
+    enabled,
     configured,
     status: (hosted.status as HostedStatus) || "none",
     host: hosted.host || null,
