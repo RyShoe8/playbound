@@ -345,26 +345,6 @@ export function PartyView({
                   </p>
                 </label>
               ) : null}
-              {party.hostModes && party.hostModes.length > 1 ? (
-                <label className="mt-2 block">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    Where the game runs
-                  </span>
-                  <PremiumSelect
-                    value={party.hostMode || ""}
-                    onChange={(e) => void setHostMode(party.id, e.target.value)}
-                  >
-                    {party.hostModes.map((o) => (
-                      <option key={o.mode} value={o.mode}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </PremiumSelect>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {party.hostModes.find((o) => o.mode === party.hostMode)?.hint}
-                  </p>
-                </label>
-              ) : null}
             </div>
           ) : hasGame ? (
             <div>
@@ -388,8 +368,29 @@ export function PartyView({
         </div>
         
         <div className="w-full md:flex-1 flex flex-col items-stretch md:items-end gap-3 min-w-0">
+          {isLeader && party.status !== "ended" && party.hostModes && party.hostModes.length > 1 && !party.hosted?.roomCode && (
+            <div className="w-44 self-start md:self-end">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                Server Hosting
+              </label>
+              <PremiumSelect
+                value={party.hostMode || ""}
+                onChange={(e) => void setHostMode(party.id, e.target.value)}
+              >
+                {party.hostModes.map((o) => (
+                  <option key={o.mode} value={o.mode}>
+                    {o.label}
+                  </option>
+                ))}
+              </PremiumSelect>
+            </div>
+          )}
+
           {isLeader && party.status !== "ended" && (
             <div className="w-44 self-start md:self-end">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">
+                Who Can Play
+              </label>
               <PremiumSelect
                 value={party.visibility}
                 onChange={(e) => void setVisibility(party.id, e.target.value as PartyPayload["visibility"])}
