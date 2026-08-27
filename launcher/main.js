@@ -9478,7 +9478,10 @@ async function launcherJson(path, { method = "GET", body } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    return { error: data.error || `HTTP ${res.status}` };
+    // Some routes (e.g. party Discord voice) attach extra fields like
+    // needsDiscordLink to an error response on purpose — callers rely on
+    // those, so only the error message gets a fallback, not the whole body.
+    return { ...data, error: data.error || `HTTP ${res.status}` };
   }
   return data;
 }
