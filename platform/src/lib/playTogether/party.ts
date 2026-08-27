@@ -98,6 +98,7 @@ type PartyDoc = Document & {
   gameSlug: string;
   status: PartyStatus;
   members: RuleMember[];
+  hostMode?: PartyHostMode | null;
   hosted?: PartyHostFields;
   lan?: PartyLanFields;
   maxSize?: number;

@@ -169,3 +169,5 @@ main().catch((err) => {
   console.error("verify-maintenance failed:", err);
   process.exit(1);
 });
+
+export {};
