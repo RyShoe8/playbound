@@ -2601,6 +2601,7 @@ async function resolveModDownload(install) {
 
 const installQueue = [];
 let activeInstallTask = null;
+let activeDownloadSignal = null;
 
 function getInstallQueueSnapshot() {
   const queued = installQueue.filter((t) => t.status === "queued").map((t, idx) => ({
@@ -2655,6 +2656,7 @@ async function downloadTo(url, dest, attempts = 3) {
         res = await fetch(current, {
           headers: { "user-agent": "playbound-launcher", accept: "*/*" },
           redirect: "manual",
+          signal: activeDownloadSignal || undefined,
         });
         if (res.status >= 300 && res.status < 400) {
           const location = res.headers.get("location");
@@ -2690,6 +2692,9 @@ async function downloadTo(url, dest, attempts = 3) {
       let received = 0;
       let lastSent = 0;
       for (;;) {
+        if (activeDownloadSignal?.aborted) {
+          throw new Error("Download cancelled");
+        }
         const { done, value } = await reader.read();
         if (done) break;
         received += value.length;
@@ -2707,6 +2712,9 @@ async function downloadTo(url, dest, attempts = 3) {
       return;
     } catch (err) {
       lastErr = err;
+      if (activeDownloadSignal?.aborted || String(err?.message || "").includes("Download cancelled")) {
+        throw new Error("Download cancelled");
+      }
       const cause = err && typeof err === "object" ? err.cause : null;
       const detail =
         (cause && (cause.code || cause.message)) ||
@@ -3325,13 +3333,9 @@ async function extractArchive(archivePath, destDir) {
   await fsp.mkdir(destDir, { recursive: true });
   if (lower.endsWith(".dmg")) {
     await extractDmg(archivePath, destDir);
-    return;
-  }
-  if (lower.endsWith(".7z") || lower.endsWith(".rar")) {
+  } else if (lower.endsWith(".7z") || lower.endsWith(".rar")) {
     await extract7z(archivePath, destDir);
-    return;
-  }
-  if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
+  } else if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz") || lower.endsWith(".tar.xz")) {
     if (process.platform === "win32") {
       throw new Error("tar archives are not supported on Windows installs");
     }
@@ -3346,9 +3350,25 @@ async function extractArchive(archivePath, destDir) {
         code === 0 ? resolve() : reject(new Error(`tar extract failed: ${err || code}`))
       );
     });
-    return;
+  } else {
+    await extractZip(archivePath, destDir);
   }
-  await extractZip(archivePath, destDir);
+  repairUnixExtractedBinaries(destDir);
+}
+
+function repairUnixExtractedBinaries(destDir) {
+  if (process.platform === "win32" || !destDir) return;
+  for (const name of [
+    "xonotic-linux64-sdl",
+    "xonotic-linux64-gl",
+    "openarena.x86_64",
+    "openarena",
+    "daemon",
+    "daemon64",
+  ]) {
+    const found = findNamedPortableExe(destDir, name);
+    if (found) ensureUnixExecutable(found);
+  }
 }
 
 /* ── executable discovery ──────────────────────────────────── */
@@ -3460,6 +3480,22 @@ function preferRunnableCandidate(entries) {
  * (YSoccer ships a bundled JRE beside ysoccer.exe), rather than asking the
  * player to install a separate Java runtime for a package that already has one.
  */
+/** Zip extracts on Linux often drop the executable bit; repair before spawn. */
+function ensureUnixExecutable(exePath) {
+  if (process.platform === "win32" || !exePath) return exePath;
+  try {
+    const st = fs.statSync(exePath);
+    if (!st.isFile()) return exePath;
+    const mode = st.mode & 0o777;
+    if ((mode & 0o111) === 0) {
+      fs.chmodSync(exePath, mode | 0o755);
+    }
+  } catch {
+    /* ignore */
+  }
+  return exePath;
+}
+
 function findNamedPortableExe(dir, expectedName) {
   const target = String(expectedName || "").toLowerCase();
   if (!dir || !target || !fs.existsSync(dir)) return null;
@@ -4953,6 +4989,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   const title = entry?.title || slug;
   const coverImage = entry?.coverImage || null;
 
+  const abortController = new AbortController();
   const task = {
     id: key,
     slug,
@@ -4969,6 +5006,8 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       ? `Queued — waiting for ${activeInstallTask.title || "current install"} to finish…`
       : `Installing ${title}…`,
     startedAt: Date.now(),
+    cancelled: false,
+    abortController,
   };
 
   installQueue.push(task);
@@ -4999,10 +5038,16 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       }
     }
     await waitFor;
+    if (task.cancelled) {
+      const err = new Error("Install cancelled");
+      err.code = "INSTALL_CANCELLED";
+      throw err;
+    }
     task.status = "active";
     task.phase = "resolving";
     task.message = `Installing ${title}…`;
     activeInstallTask = task;
+    activeDownloadSignal = abortController.signal;
     broadcastInstallQueue();
 
     try {
@@ -5019,6 +5064,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     } finally {
       if (activeInstallTask === task) {
         activeInstallTask = null;
+        activeDownloadSignal = null;
       }
       const idx = installQueue.indexOf(task);
       if (idx >= 0) installQueue.splice(idx, 1);
@@ -5026,7 +5072,9 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     }
   })()
     .catch((err) => {
-      reportInstallFailed(slug, editionSlug || null, err, "install");
+      if (err?.code !== "INSTALL_CANCELLED" && !String(err?.message || "").includes("Download cancelled")) {
+        reportInstallFailed(slug, editionSlug || null, err, "install");
+      }
       throw err;
     })
     .finally(() => {
@@ -5036,6 +5084,25 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
   gameInstallJobs.set(key, job);
   installQueueTail = job.catch(() => {});
   return job;
+}
+
+function cancelInstallQueueItem(slug, editionSlug) {
+  const key = installJobKey(slug, editionSlug);
+  const task = installQueue.find((t) => t.id === key);
+  if (!task) return { ok: false, error: "Install not found in queue" };
+
+  task.cancelled = true;
+  task.message = "Cancelled";
+
+  if (activeInstallTask === task) {
+    task.abortController?.abort();
+    return { ok: true };
+  }
+
+  const idx = installQueue.indexOf(task);
+  if (idx >= 0) installQueue.splice(idx, 1);
+  broadcastInstallQueue();
+  return { ok: true };
 }
 
 async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
@@ -6558,8 +6625,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
 
     if (xonoticExe && (path.basename(launchPath).toLowerCase() === "xonotic.exe" || launchPath !== xonoticExe)) {
       persistEditionExe(slug, edSlug, launchPath, xonoticExe);
-      launchPath = xonoticExe;
-      info = { ...info, exe: xonoticExe };
+      launchPath = ensureUnixExecutable(xonoticExe);
+      info = { ...info, exe: launchPath };
+    } else if (xonoticExe) {
+      launchPath = ensureUnixExecutable(launchPath);
     }
   }
 
@@ -6723,7 +6792,10 @@ async function playGameInner(slug, join = null, editionSlug = null) {
        * Name both rather than echoing the raw `spawn <path> EACCES`.
        */
       code = "SPAWN_EACCES";
-      message = `Windows blocked ${exeName} from starting. It may need administrator rights, or antivirus may be holding it — try Open Folder and running it once yourself, or use Locate to pick the game executable.`;
+      message =
+        process.platform === "linux"
+          ? `Couldn't run ${exeName} — it may be missing execute permission. Try Open Folder, or reinstall so PlayBound can fix permissions.`
+          : `Windows blocked ${exeName} from starting. It may need administrator rights, or antivirus may be holding it — try Open Folder and running it once yourself, or use Locate to pick the game executable.`;
     } else if (
       err?.code === "UNKNOWN" ||
       /^spawn\s+UNKNOWN/i.test(rawMessage) ||
@@ -7094,6 +7166,7 @@ function spawnTrackedExe(slug, exePath, args = []) {
   if (!isAllowedExecutablePath(exePath)) {
     throw new Error("Executable path is outside allowed install locations");
   }
+  exePath = ensureUnixExecutable(exePath);
   const isJar = /\.jar$/i.test(exePath);
   const EARLY_WATCH_MS = 2000;
 
@@ -8136,6 +8209,9 @@ ipcMain.handle("choose-directory", async (_event, defaultPath) => {
     installGame(slug, targetDir, editionSlug || null, addons)
   );
 ipcMain.handle("get-install-queue", () => getInstallQueueSnapshot());
+ipcMain.handle("cancel-install-queue-item", (_event, slug, editionSlug) =>
+  cancelInstallQueueItem(slug, editionSlug || null)
+);
 ipcMain.handle("install-mod", (_event, slug, baseDir) => installMod(slug, baseDir || null));
 ipcMain.handle("locate-exe", (_event, slug) => locateGameExecutable(slug));
 ipcMain.handle("scan-library-candidates", () => listLibraryScanCandidates());
@@ -8657,9 +8733,11 @@ ipcMain.handle("get-gear-detail", async (_event, slug) => {
     return null;
   }
 });
-ipcMain.handle("get-events", async () => {
+ipcMain.handle("get-events", async (_event, opts) => {
   try {
-    const res = await fetch(`${getApiBase()}/api/events`, {
+    const past = Boolean(opts?.past);
+    const qs = past ? "?past=1" : "";
+    const res = await fetch(`${getApiBase()}/api/events${qs}`, {
       headers: launcherApiHeaders({ accept: "application/json" }),
     });
     if (!res.ok) return { events: [] };

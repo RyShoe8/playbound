@@ -1332,11 +1332,16 @@ function buildPartyViewHtml(party) {
   const hosted = party.hosted || {};
   const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
   const lan = party.lan || {};
-  const lanReady = lan.enabled && lan.status === "ready";
-  const joinConnectWaiting =
+  /*
+   * Join stays clickable once you're ready — join-game provisions the server
+   * and returns a clear wait/error if connect isn't up yet. Disabling while
+   * status is none/pending left the button dead after ready-up when the UI
+   * didn't repaint or provisioning hadn't finished.
+   */
+  const joinConnectFailed =
     !inFlight &&
-    ((hosted.enabled && hosted.status !== "ready") || (lan.enabled && !lanReady));
-  const joinDisabled = joinConnectWaiting;
+    ((hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed"));
+  const joinDisabled = joinConnectFailed;
   const voiceEnabled = party.voiceEnabled !== false;
   const hasDiscordVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
   const showLaunchVoice = voiceEnabled || hasDiscordVoice;
@@ -1463,14 +1468,12 @@ function buildPartyViewHtml(party) {
          <button type="button" id="btn-party-join-game" class="party-btn btn-primary"${
            joinDisabled
              ? ` disabled title="${
-                 lan.status === "pending"
-                   ? "Waiting for the party network"
-                   : hosted.status === "pending"
-                   ? "Waiting for the PlayBound server"
-                   : hosted.status === "failed" || lan.status === "failed"
-                     ? "Could not start the party connection"
-                     : "Ready up and wait for the server"
+                 hosted.status === "failed" || lan.status === "failed"
+                   ? hosted.error || lan.error || "Could not start the party connection"
+                   : "Could not start the party connection"
                }"`
+             : hosted.status === "pending" || lan.status === "pending"
+             ? ` title="Server is starting — click to join when ready"`
              : ""
          }>${ICON.play} Join Game</button>
          ${
@@ -1837,6 +1840,7 @@ function partyAreaSignature(active, discoverable) {
       requiredPlatforms: (active.requiredPlatforms || []).join(","),
       members: (active.members || []).map((m) => [m.userId, m.username, m.role, m.ready]),
       hosted: active.hosted || null,
+      lan: active.lan || null,
       discord: active.discord || null,
       voiceEnabled: active.voiceEnabled !== false,
       configSync: active.configSync
@@ -2054,6 +2058,7 @@ function wirePartyView(slot, party) {
         "Couldn't update your ready state."
       );
       if (!ok) readyBtn.disabled = false;
+      else blurPartyFocus();
     });
   }
 

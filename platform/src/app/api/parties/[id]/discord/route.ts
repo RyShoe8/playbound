@@ -32,15 +32,6 @@ export async function POST(req: Request, ctx: RouteContext) {
       return NextResponse.json({ error: "You are not in this party" }, { status: 403 });
     }
 
-    const isLeader = String(party.leaderId) === userId;
-    const channelReady = Boolean(party.discord?.voiceChannelId) && !party.discord?.cleanedAt;
-    if (!channelReady && !isLeader) {
-      return NextResponse.json(
-        { error: "Voice isn't ready yet. Ask the host to launch voice." },
-        { status: 400 }
-      );
-    }
-
     const voice = await syncPartyVoiceForMember(party, userId);
     const inviteUrl = voice.inviteUrl || party.discord?.inviteUrl || null;
 
