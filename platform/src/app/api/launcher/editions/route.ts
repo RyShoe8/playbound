@@ -70,6 +70,7 @@ export async function GET(req: Request) {
           verificationLevel: edition.verificationLevel,
           verified: edition.verified,
           tags: edition.tags || [],
+          features: edition.features || [],
           genres: game.genres || [],
           /*
            * Edition first, game as fallback — same pattern as sizeMB below.

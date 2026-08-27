@@ -47,6 +47,7 @@ import {
 } from "@/lib/playTogether/discordPartyProvision";
 import {
   hostedPayloadFromDoc,
+  hostedPayloadForPublicServer,
   provisionPartyHost,
   reconcilePartyHostAlive,
   releasePartyHost,
@@ -67,6 +68,7 @@ import {
   hostModeOptions,
   isValidHostMode,
   publicLobbyPortFor,
+  resolvedHostMode,
   type PartyHostMode,
 } from "@/lib/multiplayer/hostModes";
 import {
@@ -102,12 +104,63 @@ type PartyDoc = Document & {
   hostMode?: PartyHostMode | null;
   hosted?: PartyHostFields;
   lan?: PartyLanFields;
+  publicServer?: PublicServerFields | null;
+  openRaMod?: OpenRaModSlug | null;
   maxSize?: number;
   editionSlug?: string | null;
   lastActivity?: Date;
   discord?: { voiceChannelId?: string | null; relocatedAt?: Date | null };
   save: () => Promise<unknown>;
 };
+
+type PublicServerFields = {
+  id?: string | null;
+  name?: string | null;
+  host?: string | null;
+  port?: number | null;
+  mod?: string | null;
+  protected?: boolean;
+};
+
+function serializePublicServer(
+  server: PublicServerFields | null | undefined
+): PartyPayload["publicServer"] {
+  if (!server?.host || !server?.port) return null;
+  return {
+    id: server.id || null,
+    name: server.name || null,
+    host: server.host,
+    port: server.port,
+    mod: server.mod || null,
+    protected: Boolean(server.protected),
+  };
+}
+
+function parsePublicServer(raw: unknown): PublicServerFields | { error: string } {
+  if (!raw || typeof raw !== "object") {
+    return { error: "Pick a public server to play on." };
+  }
+  const o = raw as Record<string, unknown>;
+  const host = typeof o.host === "string" ? o.host.trim() : "";
+  const port = typeof o.port === "number" ? o.port : Number(o.port);
+  if (!host || host.length > 253 || /\s/.test(host) || /[/\\]/.test(host)) {
+    return { error: "That server address is not valid." };
+  }
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return { error: "That server port is not valid." };
+  }
+  const name = typeof o.name === "string" ? o.name.trim().slice(0, 120) : "";
+  const id = typeof o.id === "string" ? o.id.trim().slice(0, 200) : "";
+  const mod = typeof o.mod === "string" ? o.mod.trim().slice(0, 40) : "";
+  return {
+    id: id || `${host}:${port}`,
+    name: name || `${host}:${port}`,
+    host,
+    port,
+    mod: mod || null,
+    protected: Boolean(o.protected),
+  };
+}
 
 function resetPartyConnectState(doc: PartyDoc) {
   if (doc.hosted) {
@@ -128,6 +181,14 @@ function resetPartyConnectState(doc: PartyDoc) {
     doc.lan.setupKeyId = undefined;
     doc.lan.setupKey = undefined;
   }
+  doc.publicServer = {
+    id: null,
+    name: null,
+    host: null,
+    port: null,
+    mod: null,
+    protected: false,
+  };
 }
 
 function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
@@ -143,7 +204,9 @@ function partyConnectCanAutoProvision(doc: PartyDoc): boolean {
 async function maybeProvisionPartyConnect(doc: PartyDoc): Promise<void> {
   if (!doc.gameSlug || !partyConnectCanAutoProvision(doc)) return;
   const slug = String(doc.gameSlug);
-  const hostMode = (doc.hostMode as PartyHostMode | null) || defaultHostMode(slug);
+  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+
+  if (hostMode === "public") return;
 
   if (hostMode === "dedicated" && isHostableGame(slug)) {
     const hs = (doc.hosted?.status || "none") as HostedStatus;
@@ -165,7 +228,14 @@ async function ensurePartyConnectReady(
   doc: PartyDoc
 ): Promise<{ ok: true } | { error: string }> {
   const slug = String(doc.gameSlug || "");
-  const hostMode = (doc.hostMode as PartyHostMode | null) || defaultHostMode(slug);
+  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+
+  if (hostMode === "public") {
+    if (!doc.publicServer?.host || !doc.publicServer?.port) {
+      return { error: "Pick a public server to play on." };
+    }
+    return { ok: true };
+  }
 
   if (hostMode === "dedicated" && isHostableGame(slug)) {
     await reconcilePartyHostAlive(doc);
@@ -435,9 +505,12 @@ function serializeParty(
   const members = (doc.members as Array<Record<string, unknown>>) || [];
   const leaderId = String(doc.leaderId);
   const discord = (doc.discord as Record<string, unknown>) || {};
-  const hostMode =
-    (doc.hostMode as PartyHostMode | null) ||
-    (doc.gameSlug ? defaultHostMode(String(doc.gameSlug)) : null);
+  const hostMode = resolvedHostMode(
+    String(doc.gameSlug || ""),
+    doc.hostMode as PartyHostMode | null,
+    doc.hosted as { roomId?: string | null } | null
+  );
+  const publicServer = serializePublicServer(doc.publicServer as PublicServerFields | null);
 
   return {
     id: String(doc._id),
@@ -481,6 +554,7 @@ function serializeParty(
      */
     hostMode,
     hostModes: doc.gameSlug ? hostModeOptions(String(doc.gameSlug)) : [],
+    publicServer: hostMode === "public" ? publicServer : null,
     /*
      * Only for a public self-hosted room. Party members reach the host over the
      * overlay and need no mapping at all; this is what the launcher would have
@@ -488,7 +562,7 @@ function serializeParty(
      * that does not apply.
      */
     selfHostPort:
-      doc.gameSlug && doc.hostMode === "self" && doc.visibility === "public"
+      doc.gameSlug && hostMode === "self" && doc.visibility === "public"
         ? publicLobbyPortFor(String(doc.gameSlug))
         : null,
     eventId: doc.eventId ? String(doc.eventId) : null,
@@ -497,11 +571,14 @@ function serializeParty(
       textChannelId: (discord.textChannelId as string) || null,
       inviteUrl: (discord.inviteUrl as string) || null,
     },
-    hosted: hostedPayloadFromDoc(
-      String(doc.gameSlug || ""),
-      hostMode,
-      (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[2]) || null
-    ),
+    hosted:
+      hostMode === "public"
+        ? hostedPayloadForPublicServer(doc.publicServer as PublicServerFields | null)
+        : hostedPayloadFromDoc(
+            String(doc.gameSlug || ""),
+            hostMode,
+            (doc.hosted as Parameters<typeof hostedPayloadFromDoc>[2]) || null
+          ),
     lan: lanPayloadFromDoc(
       String(doc.gameSlug || ""),
       hostMode,
@@ -1281,13 +1358,87 @@ export async function setPartyHostMode(
     resetPartyConnectState(doc);
     doc.lastActivity = new Date();
     await doc.save();
-    await maybeProvisionPartyConnect(doc);
+    if (hostMode !== "public") {
+      await maybeProvisionPartyConnect(doc);
+    }
     trackPartyEvent("party_host_mode_set", { partyId: String(doc._id), gameSlug: slug, userId: leaderId, hostMode });
   }
 
   const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
   const nameById = await resolveUsernames(memberIds);
   const game = slug ? await getGame(slug, { includeTesting: true }) : null;
+  return { party: serializeParty(doc.toObject(), nameById, game?.title || null), status: 200 };
+}
+
+/**
+ * Pick a community dedicated server for a party on public host mode.
+ *
+ * Leader-only. Refused while playing so members are not sent to a different
+ * address mid-session. Switching games or host modes already clears the pick.
+ */
+export async function setPartyPublicServer(
+  partyId: string,
+  leaderId: string,
+  raw: unknown
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) {
+    return { error: "Only the leader can pick the public server", status: 403 };
+  }
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  if (doc.status === "playing" || doc.status === "launching") {
+    return { error: "Can't change servers while the party is in a game", status: 400 };
+  }
+
+  const slug = String(doc.gameSlug || "");
+  if (!slug) return { error: "Pick a game first", status: 400 };
+
+  const hostMode = resolvedHostMode(slug, doc.hostMode, doc.hosted);
+  if (hostMode !== "public") {
+    return { error: "This party is not set to a public server", status: 400 };
+  }
+  if (!isValidHostMode(slug, "public")) {
+    return { error: "This game has no public server list", status: 400 };
+  }
+
+  const parsed = parsePublicServer(raw);
+  if ("error" in parsed) {
+    return { error: parsed.error, status: 400 };
+  }
+
+  const server = parsed;
+  doc.hostMode = "public";
+  doc.publicServer = {
+    id: server.id || `${server.host}:${server.port}`,
+    name: server.name || `${server.host}:${server.port}`,
+    host: server.host,
+    port: server.port,
+    mod: server.mod || null,
+    protected: Boolean(server.protected),
+  };
+  if (
+    slug === "openra" &&
+    server.mod &&
+    (OPENRA_MODS as readonly string[]).includes(server.mod)
+  ) {
+    doc.openRaMod = server.mod as OpenRaModSlug;
+  }
+  doc.lastActivity = new Date();
+  await doc.save();
+  trackPartyEvent("party_public_server_set", {
+    partyId: String(doc._id),
+    gameSlug: slug,
+    userId: leaderId,
+    host: server.host,
+    port: server.port,
+  });
+
+  const memberIds: string[] = doc.members.map((m: { userId: unknown }) => String(m.userId));
+  const nameById = await resolveUsernames(memberIds);
+  const game = await getGame(slug, { includeTesting: true });
   return { party: serializeParty(doc.toObject(), nameById, game?.title || null), status: 200 };
 }
 
@@ -2135,6 +2286,11 @@ async function checkConfigSyncUncached(partyId: string): Promise<ConfigSyncOutco
       : hostEdition
     : declaredEdition;
 
+  const editionName =
+    editionSlug && gameEditions.length
+      ? gameEditions.find((e) => e.slug === editionSlug)?.name || editionSlug
+      : null;
+
   const modSlugs = hostHasGame
     ? [...(hostId ? modsByUser.get(hostId) ?? new Set<string>() : new Set<string>())].sort()
     : declaredMods;
@@ -2184,6 +2340,7 @@ async function checkConfigSyncUncached(partyId: string): Promise<ConfigSyncOutco
     sync: {
       gameSlug: String(doc.gameSlug),
       editionSlug,
+      editionName,
       modSlugs,
       members,
       allInSync: everyoneInSync,

@@ -148,3 +148,22 @@ export function editionSupportsMultiplayer(
   return MULTIPLAYER_PATTERNS.some((pattern) => pattern.test(descHaystack));
 }
 
+/**
+ * Stricter than editionSupportsMultiplayer — for party install pickers.
+ *
+ * Deathmatch on a GZDoom singleplayer edition must not put that build in the
+ * party picker: PlayBound parties need a client/server edition (Zandronum), not
+ * an SP port that merely lists deathmatch as a game mode. Aligns with
+ * setPartyGame, which only auto-picks editions tagged Multiplayer.
+ */
+export function editionSupportsPartyPlay(
+  edition: EditionMultiplayerInput | null | undefined
+): boolean {
+  if (!edition) return false;
+  const feat = (edition.features || []).map((f) => f.toLowerCase());
+  if (feat.some((f) => /multi[-\s]?player/.test(f))) return true;
+  // Private-server editions are party-shaped even without the feature tag.
+  if (edition.type === "private") return true;
+  return false;
+}
+

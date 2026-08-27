@@ -10,7 +10,7 @@ import {
 } from "@/lib/playTogether/types";
 import { telemetry } from "@/lib/telemetry";
 import { isHostableGame } from "@/lib/gameHost/catalog";
-import { defaultHostMode, hostModeOptions, type PartyHostMode } from "@/lib/multiplayer/hostModes";
+import { defaultHostMode, hostModeOptions, canUsePublicServer, type PartyHostMode } from "@/lib/multiplayer/hostModes";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 import { Checkbox } from "@/components/ui/Checkbox";
 
@@ -109,9 +109,11 @@ export function CreatePartyPanel({ gameSlug, onCreated }: { gameSlug?: string; o
       <div>
         <h4 className="font-bold">Create a Party</h4>
         <p className="text-sm text-muted-foreground">
-          {gameSlug && isHostableGame(gameSlug)
-            ? "PlayBound will start a public server for this game so friends can join without port forwarding."
-            : "Host a lobby, invite friends, then pick a game in the party window."}
+          {gameSlug && canUsePublicServer(gameSlug)
+            ? "Join a public dedicated server from the live list once the party is up, or host on your PC or a PlayBound server instead."
+            : gameSlug && isHostableGame(gameSlug)
+              ? "PlayBound will start a public server for this game so friends can join without port forwarding."
+              : "Host a lobby, invite friends, then pick a game in the party window."}
         </p>
       </div>
 

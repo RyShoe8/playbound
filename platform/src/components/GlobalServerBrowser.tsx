@@ -804,7 +804,8 @@ export function GlobalServerBrowser({
                           )
                         ) : (
                           <>
-                            {isOneClickSlug(effectiveGameSlug) ? (
+                            {installedGames.has(effectiveGameSlug) &&
+                            isOneClickSlug(effectiveGameSlug) ? (
                               <a
                                 href={launcherJoinUrl(
                                   effectiveGameSlug,

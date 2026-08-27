@@ -35,6 +35,10 @@ import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 import { PartyHostInstallPicker } from "@/components/friends/PartyHostInstallPicker";
 import { PartyChat } from "@/components/friends/PartyChat";
 import { PartyConfigSync } from "@/components/friends/PartyConfigSync";
+import {
+  PartyGameOnlineCount,
+  PartyPublicServerPicker,
+} from "@/components/friends/PartyPublicServerPicker";
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
 
 export type PartyGameOption = {
@@ -315,6 +319,20 @@ export function PartyView({
                   party has to be able to play.
                 </p>
               ) : null}
+              {party.gameSlug && party.hostMode !== "public" ? (
+                <PartyGameOnlineCount gameSlug={party.gameSlug} />
+              ) : null}
+              {party.gameSlug && party.hostMode === "public" ? (
+                <PartyPublicServerPicker
+                  partyId={party.id}
+                  gameSlug={party.gameSlug}
+                  selectedId={party.publicServer?.id}
+                  selectedName={party.publicServer?.name || party.hosted?.name}
+                  selectedHost={party.publicServer?.host || party.hosted?.host}
+                  selectedPort={party.publicServer?.port || party.hosted?.port}
+                  canPick={party.status !== "playing" && party.status !== "launching"}
+                />
+              ) : null}
               {party.gameSlug ? (
                 <PartyHostInstallPicker
                   partyId={party.id}
@@ -353,8 +371,28 @@ export function PartyView({
               </p>
               {party.hostModes && party.hostModes.length > 1 ? (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Host: {party.hostModes.find((o) => o.mode === party.hostMode)?.label || (party.hostMode === "self" ? "Host PC" : "PlayBound server")}
+                  Host:{" "}
+                  {party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
+                    (party.hostMode === "self"
+                      ? "Host PC"
+                      : party.hostMode === "public"
+                        ? "Public server"
+                        : "PlayBound server")}
                 </p>
+              ) : null}
+              {party.gameSlug && party.hostMode !== "public" ? (
+                <PartyGameOnlineCount gameSlug={party.gameSlug} />
+              ) : null}
+              {party.gameSlug && party.hostMode === "public" ? (
+                <PartyPublicServerPicker
+                  partyId={party.id}
+                  gameSlug={party.gameSlug}
+                  selectedId={party.publicServer?.id}
+                  selectedName={party.publicServer?.name || party.hosted?.name}
+                  selectedHost={party.publicServer?.host || party.hosted?.host}
+                  selectedPort={party.publicServer?.port || party.hosted?.port}
+                  canPick={false}
+                />
               ) : null}
             </div>
           ) : null}
@@ -531,9 +569,18 @@ export function PartyView({
 
           {party.hosted?.enabled && party.hosted.status === "pending" && (
             <p className="text-xs text-muted-foreground self-center">
-              Starting public server…
+              Starting PlayBound server…
             </p>
           )}
+
+          {party.hostMode === "public" &&
+            party.hosted?.enabled &&
+            party.hosted.status !== "ready" &&
+            canJoinGame && (
+              <p className="text-xs text-muted-foreground self-center">
+                Pick a public server to play on.
+              </p>
+            )}
 
           {party.hosted?.enabled && party.hosted.status === "failed" && (
             <p className="text-xs text-destructive self-center">

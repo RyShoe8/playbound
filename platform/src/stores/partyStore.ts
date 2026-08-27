@@ -32,7 +32,7 @@ interface PartyState {
     eventId?: string | null;
     password?: string | null;
     wantVoice?: boolean;
-    /** "self" | "dedicated"; the server validates it against the game. */
+    /** "self" | "dedicated" | "public"; the server validates it against the game. */
     hostMode?: string | null;
   }) => Promise<(PartyPayload & { needsDiscordLink?: boolean; inviteUrl?: string | null }) | null>;
   joinParty: (
@@ -55,6 +55,17 @@ interface PartyState {
   }>;
   setGame: (partyId: string, gameSlug: string) => Promise<void>;
   setHostMode: (partyId: string, hostMode: string) => Promise<void>;
+  setPublicServer: (
+    partyId: string,
+    server: {
+      id?: string | null;
+      name?: string | null;
+      host: string;
+      port: number;
+      mod?: string | null;
+      protected?: boolean;
+    }
+  ) => Promise<void>;
   setEdition: (partyId: string, editionSlug: string | null) => Promise<void>;
   setOpenRaMod: (partyId: string, mod: string | null) => Promise<void>;
   setName: (partyId: string, name: string | null) => Promise<void>;
@@ -442,6 +453,23 @@ export const usePartyStore = create<PartyState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to set party host mode", err);
+    }
+  },
+
+  setPublicServer: async (partyId, server) => {
+    try {
+      const res = await fetch(`/api/parties/${partyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ publicServer: server }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        set({ activeParty: data.party });
+        refreshFriendsAfterPartyMutation();
+      }
+    } catch (err) {
+      console.error("Failed to set party public server", err);
     }
   },
 

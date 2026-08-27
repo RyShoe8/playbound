@@ -16,6 +16,18 @@ import {
  * One active party per leader at a time (unique partial index).
  */
 
+const PartyPublicServerSchema = new Schema(
+  {
+    id: { type: String, default: null },
+    name: { type: String, default: null },
+    host: { type: String, default: null },
+    port: { type: Number, default: null },
+    mod: { type: String, default: null },
+    protected: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const PartyHostedSchema = new Schema(
   {
     roomId: { type: String, default: null },
@@ -146,16 +158,23 @@ const PartySchema = new Schema(
     },
 
     /*
-     * Where the room runs: "self" on the leader's own machine, "dedicated" on
-     * the PlayBound VPS. Null on parties created before host modes existed and
-     * on games that offer only one, and every reader treats that as the game's
-     * own default — so old parties keep behaving exactly as they did.
+     * Where the room runs: "public" on a community dedicated server, "self" on
+     * the leader's own machine, "dedicated" on the PlayBound VPS. Null on
+     * parties created before host modes existed, and every reader treats that
+     * as the game's own default — so old parties keep behaving exactly as they
+     * did.
      */
     hostMode: {
       type: String,
-      enum: ["self", "dedicated", null],
+      enum: ["self", "dedicated", "public", null],
       default: null,
     },
+
+    /*
+     * Community dedicated server picked from the live list. Only meaningful
+     * when hostMode is "public"; Join Game maps it into the hosted payload.
+     */
+    publicServer: { type: PartyPublicServerSchema, default: () => ({}) },
 
     // Optional association with a PlatformEvent (4K).
     eventId: {
@@ -232,8 +251,16 @@ export type PartyDoc = {
   passwordHash?: string | null;
   voiceEnabled?: boolean;
   maxSize: number;
-  /** "self" | "dedicated"; null means the game's default for parties predating host modes. */
-  hostMode?: "self" | "dedicated" | null;
+  /** "self" | "dedicated" | "public"; null means the game's default for parties predating host modes. */
+  hostMode?: "self" | "dedicated" | "public" | null;
+  publicServer?: {
+    id?: string | null;
+    name?: string | null;
+    host?: string | null;
+    port?: number | null;
+    mod?: string | null;
+    protected?: boolean;
+  } | null;
   eventId?: Types.ObjectId | null;
   discord: {
     voiceChannelId?: string | null;
