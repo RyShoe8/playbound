@@ -430,6 +430,10 @@ function paintServersTable() {
     const ping = state.serversState.pingById[id];
     const pingLabel =
       ping === undefined ? "…" : ping == null ? "—" : `${ping} ms`;
+    const slug = _serversCache.slug;
+    const isInstalled = Boolean(state._installedGameSlugs?.has(slug));
+    const actionLabel = isInstalled ? "Join" : "Install";
+    const actionClass = isInstalled ? "btn-primary" : "btn-secondary";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${escapeHtml(s.name)}</strong>${s.gameType ? `<div class="server-meta">${escapeHtml(s.gameType)}</div>` : ""}</td>
@@ -438,7 +442,7 @@ function paintServersTable() {
       <td>${escapeHtml(formatServerLocation(s))}</td>
       <td class="ping-cell" data-ping-id="${escapeHtml(id)}">${pingLabel}</td>
       <td>
-        <button class="btn-primary btn-sm btn-join" data-slug="${escapeHtml(_serversCache.slug)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}" data-mod="${escapeHtml(s.mod || "")}">Join</button>
+        <button class="${actionClass} btn-sm btn-join" data-slug="${escapeHtml(slug)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}" data-mod="${escapeHtml(s.mod || "")}" data-installed="${isInstalled ? "1" : "0"}">${escapeHtml(actionLabel)}</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -456,17 +460,27 @@ function paintServersTable() {
       const host = btn.dataset.host;
       const port = Number(btn.dataset.port);
       const mod = btn.dataset.mod || undefined;
-      const installed = await window.playbound.getInstalled();
-      const has = (installed || []).some((g) => g.slug === slug);
+      const alreadyInstalled = btn.dataset.installed === "1";
+      let has = alreadyInstalled;
       if (!has) {
-        const go = confirm(`${slug} is not installed. Install now?`);
-        if (!go) return;
+        const installed = await window.playbound.getInstalled();
+        has = (installed || []).some((g) => g.slug === slug);
+      }
+      if (!has) {
         setStatus(`Installing ${slug}…`);
         try {
           const res = await window.playbound.install(slug);
           if (res.status === "installer-opened") {
             setStatus("Installer opened — waiting for installer to finish…");
             setProgress(null);
+            api.openGameDetail(slug, state.currentView);
+            return;
+          }
+          // Refresh installed set so the next paint shows Join.
+          const refreshed = await window.playbound.getInstalled();
+          state._installedGameSlugs = new Set((refreshed || []).map((g) => g.slug));
+          if (!state._installedGameSlugs.has(slug)) {
+            setStatus("Install started — open the game page if you need to finish setup.");
             api.openGameDetail(slug, state.currentView);
             return;
           }

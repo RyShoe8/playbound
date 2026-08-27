@@ -7,7 +7,7 @@ import type { InstallAction } from "@/lib/editionInstall";
 import { telemetry } from "@/lib/telemetry";
 import { usePartyStore } from "@/stores/partyStore";
 
-import { editionSupportsMultiplayer } from "@/lib/multiplayer/support";
+import { editionSupportsPartyPlay } from "@/lib/multiplayer/support";
 
 function withPartyInstallReturn(href: string): string {
   if (!href.startsWith("playbound://install/")) return href;
@@ -24,14 +24,11 @@ type EditionOption = {
 /**
  * Edition install list for someone in the party who does not have the game.
  *
- * Originally leader-only, which left everyone else with a single "install the
- * right version" link and no way to see what the versions were. Any member
- * missing the game gets the list now; only the leader's choice changes what the
- * party is playing, because a member picking a build would silently redirect
- * everyone else's install.
+ * Only party-playable editions (Multiplayer / Co-op features). A Freedoom host
+ * must not be offered GZDoom or DSDA — those cannot join a PlayBound party.
  *
- * Hidden once a reference exists — at that point there is nothing to choose,
- * the party has a version and the job is to match it exactly.
+ * When the party already locked an edition (setPartyGame picks Zandronum), show
+ * that one install instead of a multi-choice picker.
  */
 export function PartyHostInstallPicker({
   partyId,
@@ -61,6 +58,9 @@ export function PartyHostInstallPicker({
   const storeHostMember = storeSync?.members?.find((m) => m.isHost);
   const storeHostHasGame =
     Boolean(storeHostMember?.hasGame) || Boolean(storeSync?.allInSync) || storeSync?.referenceSource === "host";
+  const lockedEdition =
+    (editionSlug && editionSlug !== "__base__" ? editionSlug : null) ||
+    (storeSync?.editionSlug && storeSync.editionSlug !== "__base__" ? storeSync.editionSlug : null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,10 +74,27 @@ export function PartyHostInstallPicker({
         }
         const data = await res.json();
         const rawEditions = Array.isArray(data.editions) ? data.editions : [];
-        const mpEditions = rawEditions.filter((ed: Record<string, unknown>) =>
-          editionSupportsMultiplayer(ed as unknown as Parameters<typeof editionSupportsMultiplayer>[0])
+        const partyEditions = rawEditions.filter((ed: Record<string, unknown>) =>
+          editionSupportsPartyPlay(ed as unknown as Parameters<typeof editionSupportsPartyPlay>[0])
         );
-        const listToDisplay = mpEditions.length > 0 ? mpEditions : rawEditions;
+        /*
+         * Prefer party-playable editions. If the catalog has none tagged yet,
+         * fall back to the full list rather than showing an empty picker — but
+         * never prefer a known SP list when Multiplayer editions exist.
+         */
+        let listToDisplay = partyEditions.length > 0 ? partyEditions : rawEditions;
+        if (lockedEdition) {
+          const locked = listToDisplay.find(
+            (ed: { slug: string }) => ed.slug === lockedEdition
+          );
+          if (locked) listToDisplay = [locked];
+          else {
+            const fromAll = rawEditions.find(
+              (ed: { slug: string }) => ed.slug === lockedEdition
+            );
+            if (fromAll) listToDisplay = [fromAll];
+          }
+        }
         setEditions(
           listToDisplay.map(
             (edition: { slug: string; name: string; installAction: InstallAction }) => ({
@@ -97,7 +114,7 @@ export function PartyHostInstallPicker({
     return () => {
       cancelled = true;
     };
-  }, [gameSlug]);
+  }, [gameSlug, lockedEdition]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,12 +161,18 @@ export function PartyHostInstallPicker({
 
   if (editions.length === 0) return null;
 
+  const singleLocked = Boolean(lockedEdition) && editions.length === 1;
+
   return (
     <div className="mt-2 max-w-md space-y-2">
       <p className="text-xs text-muted-foreground">
-        {canSetEdition
-          ? "You don't have this installed yet. Pick a version for the party — then everyone else can match it."
-          : "You don't have this installed yet. Install any version to join in — the party will match whoever sets it first."}
+        {singleLocked
+          ? canSetEdition
+            ? `You don't have this installed yet. Install ${editions[0].name} so the party can play together.`
+            : `You don't have this installed yet. Install ${editions[0].name} to match the party.`
+          : canSetEdition
+          ? "You don't have this installed yet. Pick a multiplayer version for the party — then everyone else can match it."
+          : "You don't have this installed yet. Install the multiplayer version to join in."}
       </p>
       <ul className="space-y-2">
         {editions.map((edition) => {

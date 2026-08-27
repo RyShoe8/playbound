@@ -123,6 +123,8 @@ export type ConfigSyncMember = {
 export type ConfigSyncResult = {
   gameSlug: string;
   editionSlug: string | null;
+  /** Human label for editionSlug — so install CTAs can name the build. */
+  editionName: string | null;
   modSlugs: string[];
   members: ConfigSyncMember[];
   /**
@@ -205,14 +207,27 @@ export type PartyPayload = {
    */
   requiredPlatforms: string[];
   /** Where the room runs. Null when the game offers no PlayBound-run multiplayer. */
-  hostMode: "self" | "dedicated" | null;
+  hostMode: "self" | "dedicated" | "public" | null;
   /** Modes this game supports, in display order. Fewer than two means no picker. */
   hostModes: Array<{
-    mode: "self" | "dedicated";
+    mode: "self" | "dedicated" | "public";
     available: boolean;
     label: string;
     hint: string;
   }>;
+  /**
+   * Community dedicated server the party picked. Present only when hostMode is
+   * `public`; Join Game uses the same host/port via `hosted` so existing
+   * launchers still connect.
+   */
+  publicServer: {
+    id: string | null;
+    name: string | null;
+    host: string | null;
+    port: number | null;
+    mod: string | null;
+    protected: boolean;
+  } | null;
   /**
    * Port to open for a public self-hosted room, or null. Party members reach a
    * self-hosted host over the overlay and need no mapping, so this is set only

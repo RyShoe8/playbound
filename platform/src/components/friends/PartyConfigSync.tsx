@@ -186,12 +186,12 @@ export function PartyConfigSync({
                   </span>
                 </div>
 
-                {showInstall && !m.hasGame && sync.referenceSource === "party" ? (
+                {showInstall && !m.hasGame && sync.referenceSource === "party" && !installEdition ? (
                   /*
                    * Nobody has established a version yet, so there is nothing to
-                   * match — show the actual editions rather than a single
-                   * "install the right version" link that cannot know which one
-                   * is right.
+                   * match — show the actual multiplayer editions rather than a
+                   * single "install the right version" link that cannot know
+                   * which one is right.
                    */
                   <PartyHostInstallPicker
                     partyId={partyId}
@@ -213,7 +213,12 @@ export function PartyConfigSync({
                     }
                     className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground"
                   >
-                    <Download className="size-3" /> Install the right version
+                    <Download className="size-3" />{" "}
+                    {sync.editionName
+                      ? `Install ${sync.editionName}`
+                      : installEdition
+                      ? "Install required edition"
+                      : "Install the game"}
                   </a>
                 ) : null}
               </li>

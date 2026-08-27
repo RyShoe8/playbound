@@ -1412,7 +1412,7 @@ export function listVirtualLanGames(): GameMultiplayerAdapter[] {
 }
 
 /** Where a party's room actually runs. */
-export type PartyHostMode = "dedicated" | "self";
+export type PartyHostMode = "dedicated" | "self" | "public";
 
 export const DEFAULT_HOST_MODE: PartyHostMode = "dedicated";
 

@@ -13,6 +13,7 @@ import {
   hostModesFor,
   isValidHostMode,
   publicLobbyPortFor,
+  resolvedHostMode,
 } from "./hostModes";
 
 describe("host mode configuration", () => {
@@ -34,8 +35,8 @@ describe("host mode configuration", () => {
 
   it("offers both modes only when the game really supports both", () => {
     // Warzone 2100 is the case that motivated the picker: a VPS dedicated
-    // server and a client that can also host.
-    expect(hostModesFor("warzone-2100")).toEqual(["self", "dedicated"]);
+    // server, a client that can also host, and a public master list.
+    expect(hostModesFor("warzone-2100")).toEqual(["public", "self", "dedicated"]);
     expect(canSelfHost("warzone-2100")).toBe(true);
     expect(canUseDedicated("warzone-2100")).toBe(true);
   });
@@ -60,10 +61,9 @@ describe("host mode configuration", () => {
     expect(hostModeOptions("league-of-legends")).toEqual([]);
   });
 
-  it("prefers dedicated hosting when available, falling back to self-hosting", () => {
-    // Dedicated servers are managed on the VPS for zero-config party launch.
-    expect(defaultHostMode("warzone-2100")).toBe("dedicated");
-    expect(defaultHostMode("openra")).toBe("dedicated");
+  it("prefers a public dedicated server when the game has a live list", () => {
+    expect(defaultHostMode("warzone-2100")).toBe("public");
+    expect(defaultHostMode("openra")).toBe("public");
     expect(defaultHostMode("marathon-2")).toBe("self");
     expect(defaultHostMode("ysoccer")).toBe("dedicated");
   });
@@ -80,7 +80,21 @@ describe("host mode configuration", () => {
   it("only offers a picker when there is a real choice", () => {
     // One option is not a choice; the UI hides the control in that case.
     expect(hostModeOptions("ysoccer").length).toBe(1);
-    expect(hostModeOptions("warzone-2100").length).toBe(2);
+    expect(hostModeOptions("warzone-2100").length).toBe(3);
+  });
+
+  it("offers public servers only when a real list exists", () => {
+    expect(hostModesFor("openra")[0]).toBe("public");
+    expect(hostModesFor("old-school-runescape")).toEqual(["public"]);
+    // Steam concurrent count is not a server list.
+    expect(hostModesFor("marathon-2")).toEqual(["self"]);
+    expect(hostModesFor("league-of-legends")).toEqual([]);
+  });
+
+  it("keeps a live VPS room on dedicated when hostMode was never stored", () => {
+    expect(resolvedHostMode("openra", null, { roomId: "room-1" })).toBe("dedicated");
+    expect(resolvedHostMode("openra", null, {})).toBe("public");
+    expect(resolvedHostMode("openra", "self", { roomId: "room-1" })).toBe("self");
   });
 
   it("supplies a public-lobby port for self-hostable games", () => {

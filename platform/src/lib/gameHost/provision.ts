@@ -190,3 +190,33 @@ export function hostedPayloadFromDoc(
     steps,
   };
 }
+
+/**
+ * Join Game already speaks `hosted.host:hosted.port`. Mapping a picked public
+ * server into that shape means existing launchers connect without a rebuild
+ * that understands `publicServer`.
+ *
+ * `configured: true` is load-bearing: the launcher treats configured=false as
+ * "this deployment has no game host", which is the VPS path, not a community
+ * list.
+ */
+export function hostedPayloadForPublicServer(server?: {
+  host?: string | null;
+  port?: number | null;
+  name?: string | null;
+} | null) {
+  const host = typeof server?.host === "string" && server.host.trim() ? server.host.trim() : null;
+  const port = typeof server?.port === "number" && server.port > 0 ? server.port : null;
+  const picked = Boolean(host && port);
+  return {
+    enabled: true,
+    configured: true,
+    status: (picked ? "ready" : "none") as HostedStatus,
+    host: picked ? host : null,
+    port: picked ? port : null,
+    name: picked ? server?.name || null : null,
+    error: picked ? null : "Pick a public server to play on.",
+    roomCode: null as string | null,
+    steps: [] as string[],
+  };
+}

@@ -1228,6 +1228,8 @@ const ICON = {
   logout: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
   download: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`,
   send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`,
+  lock: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  refresh: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
 };
 
 /**
@@ -1381,11 +1383,39 @@ function buildPartyViewHtml(party) {
         Array.isArray(party.hostModes) && party.hostModes.length > 1
           ? `<p class="party-game-platform-note">Host: ${escapeHtml(
               party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
-                (party.hostMode === "self" ? "Host PC" : "PlayBound server")
+                (party.hostMode === "self"
+                  ? "Host PC"
+                  : party.hostMode === "public"
+                    ? "Public server"
+                    : "PlayBound server")
             )}</p>`
           : ""
       }`
     : "";
+
+  const onlineCountHtml = hasGame
+    ? `<p class="party-online-count" data-slug="${escapeHtml(party.gameSlug)}"${
+        party.hostMode === "public" ? " hidden" : ""
+      }></p>`
+    : "";
+  const canPickPublic =
+    isLeader &&
+    !ended &&
+    party.hostMode === "public" &&
+    party.status !== "playing" &&
+    party.status !== "launching";
+  const publicPicked = party.publicServer || null;
+  const publicServerHtml =
+    party.hostMode === "public" && hasGame
+      ? `<div class="party-public-server" id="party-public-server"
+           data-party-id="${escapeHtml(party.id)}"
+           data-slug="${escapeHtml(party.gameSlug)}"
+           data-can-pick="${canPickPublic ? "1" : "0"}"
+           data-selected-id="${escapeHtml(publicPicked?.id || "")}"
+           data-selected-host="${escapeHtml(publicPicked?.host || hosted.host || "")}"
+           data-selected-port="${escapeHtml(String(publicPicked?.port || hosted.port || ""))}"
+           data-selected-name="${escapeHtml(publicPicked?.name || hosted.name || "")}"></div>`
+      : "";
 
   const hostModes = Array.isArray(party.hostModes) ? party.hostModes : [];
   const canPickHost = isLeader && !ended && hostModes.length > 1 && !party.hosted?.roomCode;
@@ -1487,8 +1517,10 @@ function buildPartyViewHtml(party) {
     : "";
 
   const hostedNoteHtml =
-    hosted.enabled && hosted.status === "pending"
-      ? `<p class="view-sub party-inline-note">Starting public server…</p>`
+    party.hostMode === "public" && hosted.enabled && hosted.status !== "ready"
+      ? `<p class="view-sub party-inline-note">Pick a public server to play on.</p>`
+      : hosted.enabled && hosted.status === "pending"
+      ? `<p class="view-sub party-inline-note">Starting PlayBound server…</p>`
       : hosted.enabled && hosted.status === "failed"
       ? `<p class="party-inline-note party-hosted-error">${escapeHtml(
           hosted.error || "Could not start the PlayBound server."
@@ -1539,6 +1571,8 @@ function buildPartyViewHtml(party) {
           <div class="party-header-main">
             ${titleHtml}
             ${gameHtml}
+            ${onlineCountHtml}
+            ${publicServerHtml}
             <p class="party-meta">
               <span>${escapeHtml(partyStatusLabel(party.status))}</span>
               <span>·</span>
@@ -1658,14 +1692,22 @@ function buildPartyConfigSyncHtml(party, userId) {
     (sync.editionSlug && sync.editionSlug !== "__base__" ? sync.editionSlug : null) ||
     (hostMember?.installedEditionSlug && hostMember.installedEditionSlug !== "__base__"
       ? hostMember.installedEditionSlug
-      : null);
+      : null) ||
+    (party.editionSlug && party.editionSlug !== "__base__" ? party.editionSlug : null);
   const href = installHref(party.gameSlug, installEdition, sync.modSlugs || []);
+  const installLabel = sync.editionName
+    ? `Install ${sync.editionName}`
+    : installEdition
+    ? "Install required edition"
+    : "Install the game";
 
   const rows = out
     .map((m) => {
       const missing = missingSummary(m, sync.editionSlug);
       const isYou = String(m.userId) === String(userId);
       const showInstall = isYou;
+      const showEditionPicker =
+        showInstall && !m.hasGame && sync.referenceSource === "party" && !installEdition;
       return `<li class="party-sync-row">
         <div class="party-sync-row-main">
           <div class="party-member-avatar">${escapeHtml((m.username || "?").charAt(0).toUpperCase())}</div>
@@ -1675,10 +1717,14 @@ function buildPartyConfigSyncHtml(party, userId) {
           )}</span>
         </div>
         ${
-          showInstall
+          showEditionPicker
+            ? `<div class="party-edition-picker" data-party-id="${escapeHtml(party.id)}" data-game-slug="${escapeHtml(
+                party.gameSlug
+              )}" data-can-set="${isYouHost ? "1" : "0"}"><span class="party-member-sub">Loading editions…</span></div>`
+            : showInstall
             ? `<button type="button" class="party-sync-install btn-party-install" data-href="${escapeHtml(
                 href
-              )}">${ICON.download} Install the right version</button>`
+              )}">${ICON.download} ${escapeHtml(installLabel)}</button>`
             : ""
         }
       </li>`;
@@ -1820,6 +1866,222 @@ function buildPartyDiscoveryHtml(parties) {
   `;
 }
 
+function editionSupportsPartyPlay(ed) {
+  const feat = (ed.features || ed.editionFeatures || []).map((f) => String(f).toLowerCase());
+  return feat.some((f) => /multi[-\s]?player/.test(f));
+}
+
+async function fillPartyEditionPickers(slot, party) {
+  const pickers = slot.querySelectorAll(".party-edition-picker");
+  if (!pickers.length || !window.playbound.getEditions) return;
+
+  for (const el of pickers) {
+    const gameSlug = el.dataset.gameSlug;
+    const partyId = el.dataset.partyId;
+    const canSet = el.dataset.canSet === "1";
+    if (!gameSlug) continue;
+    try {
+      const res = await window.playbound.getEditions(gameSlug);
+      const all = Array.isArray(res?.editions) ? res.editions : [];
+      const partyPlay = all.filter(editionSupportsPartyPlay);
+      const list = partyPlay.length > 0 ? partyPlay : all;
+      if (!list.length) {
+        el.innerHTML = `<span class="party-member-sub">No installable editions found.</span>`;
+        continue;
+      }
+      el.innerHTML = `
+        <p class="party-member-sub" style="margin:0 0 6px">Pick a multiplayer version:</p>
+        <div class="party-edition-picker-list">
+          ${list
+            .map((ed) => {
+              const slug = ed.editionSlug || ed.slug;
+              const name = ed.editionName || ed.name || slug;
+              const href = installHref(gameSlug, slug, []);
+              return `<button type="button" class="party-sync-install btn-party-install party-edition-pick-btn" data-href="${escapeHtml(
+                href
+              )}" data-edition="${escapeHtml(slug)}" data-party-id="${escapeHtml(
+                partyId
+              )}" data-can-set="${canSet ? "1" : "0"}">${ICON.download} ${escapeHtml(name)}</button>`;
+            })
+            .join("")}
+        </div>
+      `;
+      el.querySelectorAll(".party-edition-pick-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const edition = btn.dataset.edition;
+          if (btn.dataset.canSet === "1" && edition && window.playbound.setPartyEdition) {
+            await window.playbound.setPartyEdition(partyId, edition);
+          }
+          const href = btn.dataset.href;
+          if (href && window.playbound.openDeepLink) {
+            markPartyInstallReturn(gameSlug);
+            void window.playbound.openDeepLink(href);
+          }
+          void api.refreshFriendsData();
+        });
+      });
+    } catch (err) {
+      console.warn("fillPartyEditionPickers:", err);
+      el.innerHTML = `<span class="party-member-sub">Couldn't load editions.</span>`;
+    }
+  }
+}
+
+const partyServersCache = new Map();
+const PARTY_SERVERS_TTL_MS = 30_000;
+
+async function loadPartyServers(slug, force) {
+  const cached = partyServersCache.get(slug);
+  if (!force && cached && Date.now() - cached.at < PARTY_SERVERS_TTL_MS) return cached.data;
+  const data = await window.playbound.getServers(slug).catch(() => ({ servers: [] }));
+  partyServersCache.set(slug, { at: Date.now(), data });
+  return data;
+}
+
+function formatPartyPlayerCount(n) {
+  try {
+    return Number(n).toLocaleString();
+  } catch {
+    return String(n);
+  }
+}
+
+function partyServerLocation(server) {
+  const loc = server?.location;
+  if (!loc) return "";
+  if (loc.region && loc.region.length > 2) return loc.region;
+  const code = String(loc.countryCode || "").toUpperCase();
+  if (code && code !== "ZZ" && code !== "XX") return code;
+  return "";
+}
+
+async function fillPartyOnlineCount(slot) {
+  const el = slot.querySelector(".party-online-count");
+  if (!el || el.hidden) return;
+  const slug = el.dataset.slug;
+  if (!slug) return;
+  try {
+    const data = await loadPartyServers(slug, false);
+    const servers = Array.isArray(data?.servers) ? data.servers : [];
+    const players = servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
+    if (!players && servers.every((s) => s.players == null)) {
+      el.textContent = "";
+      return;
+    }
+    el.textContent = `${formatPartyPlayerCount(players)} playing online`;
+  } catch {
+    el.textContent = "";
+  }
+}
+
+async function fillPartyPublicServerPicker(slot) {
+  const el = slot.querySelector("#party-public-server");
+  if (!el) return;
+  const slug = el.dataset.slug;
+  const partyId = el.dataset.partyId;
+  const canPick = el.dataset.canPick === "1";
+  const selectedId = el.dataset.selectedId || "";
+  const selectedHost = el.dataset.selectedHost || "";
+  const selectedPort = el.dataset.selectedPort || "";
+  const selectedName = el.dataset.selectedName || "";
+  if (!el.querySelector(".party-public-server-list")) {
+    el.innerHTML = `<p class="party-member-sub">Loading servers…</p>`;
+  }
+  try {
+    const data = await loadPartyServers(slug, false);
+    const servers = Array.isArray(data?.servers) ? data.servers : [];
+    const players = servers.reduce((n, s) => n + (Number(s.players) || 0), 0);
+    const sorted = [...servers].sort((a, b) => (b.players || 0) - (a.players || 0));
+    const picked =
+      selectedName ||
+      (selectedHost && selectedPort ? `${selectedHost}:${selectedPort}` : "");
+    const rows = sorted
+      .map((s) => {
+        const id = s.id || `${s.host}:${s.port}`;
+        const selected =
+          (selectedId && selectedId === id) ||
+          (selectedHost === s.host && String(selectedPort) === String(s.port));
+        const loc = partyServerLocation(s);
+        const count =
+          s.players == null ? "—" : `${s.players}${s.maxPlayers ? `/${s.maxPlayers}` : ""}`;
+        const meta = [s.map, loc, s.gameType].filter(Boolean).join(" · ");
+        return `<button type="button" class="party-public-server-row${selected ? " is-selected" : ""}"${
+          canPick ? "" : " disabled"
+        } data-id="${escapeHtml(id)}" data-host="${escapeHtml(s.host)}" data-port="${Number(s.port) || 0}" data-name="${escapeHtml(
+          s.name || `${s.host}:${s.port}`
+        )}" data-mod="${escapeHtml(s.mod || "")}" data-protected="${s.protected ? "1" : "0"}">
+          <span class="party-public-server-row-main">
+            <span class="party-public-server-name">${s.protected ? `${ICON.lock} ` : ""}${escapeHtml(
+              s.name || `${s.host}:${s.port}`
+            )}</span>
+            <span class="party-public-server-players">${escapeHtml(count)}</span>
+          </span>
+          ${meta ? `<span class="party-public-server-meta">${escapeHtml(meta)}</span>` : ""}
+        </button>`;
+      })
+      .join("");
+    el.innerHTML = `
+      <div class="party-public-server-head">
+        <div>
+          <p class="party-field-label">Public server</p>
+          <p class="party-member-sub">${
+            servers.length
+              ? `${formatPartyPlayerCount(players)} playing across ${servers.length} server${
+                  servers.length === 1 ? "" : "s"
+                }`
+              : "No public servers listed right now."
+          }</p>
+        </div>
+        <button type="button" class="party-icon-btn party-public-server-refresh" title="Refresh">${ICON.refresh}</button>
+      </div>
+      ${
+        picked
+          ? `<p class="party-public-server-picked">${escapeHtml(picked)}${
+              selectedHost && selectedPort
+                ? ` <span class="party-public-server-addr">${escapeHtml(selectedHost)}:${escapeHtml(
+                    String(selectedPort)
+                  )}</span>`
+                : ""
+            }</p>`
+          : `<p class="party-member-sub">${
+              canPick ? "Pick a server for the party to join." : "Waiting for the leader to pick a server."
+            }</p>`
+      }
+      <div class="party-public-server-list">${rows || ""}</div>
+    `;
+    const refreshBtn = el.querySelector(".party-public-server-refresh");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", async () => {
+        partyServersCache.delete(slug);
+        await fillPartyPublicServerPicker(slot);
+        await fillPartyOnlineCount(slot);
+      });
+    }
+    el.querySelectorAll(".party-public-server-row").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!canPick || !window.playbound.setPartyPublicServer) return;
+        btn.disabled = true;
+        try {
+          const res = await window.playbound.setPartyPublicServer(partyId, {
+            id: btn.dataset.id,
+            name: btn.dataset.name,
+            host: btn.dataset.host,
+            port: Number(btn.dataset.port),
+            mod: btn.dataset.mod || null,
+            protected: btn.dataset.protected === "1",
+          });
+          applyPartyResult(res, "Couldn't pick that server.");
+        } catch (err) {
+          setStatus(err.message || "Couldn't pick that server.", true);
+        }
+      });
+    });
+  } catch (err) {
+    console.warn("fillPartyPublicServerPicker:", err);
+    el.innerHTML = `<p class="party-member-sub">Couldn't load servers.</p>`;
+  }
+}
+
 function partyAreaSignature(active, discoverable) {
   return JSON.stringify([
     active && {
@@ -1829,12 +2091,16 @@ function partyAreaSignature(active, discoverable) {
       visibility: active.visibility,
       gameSlug: active.gameSlug,
       gameTitle: active.gameTitle,
+      editionSlug: active.editionSlug || null,
       leaderId: active.leaderId,
       maxSize: active.maxSize,
       // Both, not just the pick: switching games changes which modes exist, and
       // the picker has to appear or disappear with them.
       hostMode: active.hostMode || null,
       hostModes: (active.hostModes || []).map((m) => m.mode),
+      publicServer: active.publicServer
+        ? [active.publicServer.id, active.publicServer.host, active.publicServer.port]
+        : null,
       // Someone joining on another OS changes which games are offered, so the
       // picker has to repaint when this does.
       requiredPlatforms: (active.requiredPlatforms || []).join(","),
@@ -1848,6 +2114,8 @@ function partyAreaSignature(active, discoverable) {
             active.configSync.allInSync !== undefined
               ? active.configSync.allInSync
               : active.configSync.allReady,
+            active.configSync.editionSlug || null,
+            active.configSync.editionName || null,
             (active.configSync.members || []).map((m) => [
               m.userId,
               m.hasGame,
@@ -2070,6 +2338,10 @@ function wirePartyView(slot, party) {
       void window.playbound.openDeepLink(href);
     });
   });
+
+  void fillPartyEditionPickers(slot, party);
+  void fillPartyOnlineCount(slot);
+  void fillPartyPublicServerPicker(slot);
 
   const joinGameBtn = slot.querySelector("#btn-party-join-game");
   if (joinGameBtn) {

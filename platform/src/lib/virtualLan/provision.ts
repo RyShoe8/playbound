@@ -192,7 +192,8 @@ export function lanPayloadFromDoc(
   lan?: PartyLanFields | null
 ) {
   const resolvedMode = hostMode || defaultHostMode(gameSlug);
-  const needsOverlay = isVirtualLanGame(gameSlug) || resolvedMode === "self";
+  const needsOverlay =
+    resolvedMode !== "public" && (isVirtualLanGame(gameSlug) || resolvedMode === "self");
   const config = needsOverlay ? getVirtualLanConfig(gameSlug) : null;
   if (!config) {
     return {

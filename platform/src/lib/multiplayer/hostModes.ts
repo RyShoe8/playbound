@@ -1,5 +1,6 @@
 /**
- * Where a party's game server runs: the PlayBound VPS, or the host's own PC.
+ * Where a party's game server runs: a public dedicated server from the live
+ * list, the PlayBound VPS, or the host's own PC.
  *
  * This is the one place Connect answers that question, for the site, the
  * launcher API and the admin views alike.
@@ -26,6 +27,7 @@
  */
 
 import { HOSTABLE_GAMES, isHostableGame } from "@/lib/gameHost/catalog";
+import { hasServerBrowser } from "@/lib/servers/browserGames";
 import {
   getMultiplayerAdapter,
   MULTIPLAYER_ADAPTERS,
@@ -177,29 +179,63 @@ export function canUseDedicated(gameSlug: string): boolean {
 }
 
 /**
+ * True when the game has a live public dedicated-server list the party can
+ * pick from. Steam-concurrent-only titles are not a list of servers.
+ */
+export function canUsePublicServer(gameSlug: string): boolean {
+  const adapter = getMultiplayerAdapter(gameSlug);
+  return hasServerBrowser(gameSlug) || hasServerBrowser(adapter.gameSlug);
+}
+
+/**
  * Every host mode a game supports.
  *
  * Empty means the game has no PlayBound-run multiplayer, and callers should
- * show no picker at all.
+ * show no picker at all. Public is listed first when it exists — joining a
+ * community server is the usual choice; hosting locally or on PlayBound is
+ * the alternative.
  */
 export function hostModesFor(gameSlug: string): PartyHostMode[] {
   const modes: PartyHostMode[] = [];
+  if (canUsePublicServer(gameSlug)) modes.push("public");
   if (canSelfHost(gameSlug)) modes.push("self");
   if (canUseDedicated(gameSlug)) modes.push("dedicated");
   return modes;
 }
 
 /**
- * The mode to preselect: self-hosting wherever the game supports it.
+ * The mode to preselect: a public dedicated server when the game has a list,
+ * otherwise a PlayBound VPS room, otherwise the leader's own PC.
  *
- * Safe because the party overlay carries reachability — see the file header.
- * A game that cannot be client-hosted falls back to the VPS.
+ * Legacy parties with a live VPS room and a null hostMode are resolved through
+ * `resolvedHostMode` so they do not silently switch to public.
  */
 export function defaultHostMode(gameSlug: string): PartyHostMode | null {
   const modes = hostModesFor(gameSlug);
+  if (modes.includes("public")) return "public";
   if (modes.includes("dedicated")) return "dedicated";
   if (modes.includes("self")) return "self";
   return modes[0] ?? null;
+}
+
+/**
+ * Where this party actually plays, including the pre-hostMode documents that
+ * stored null and meant "use the game's default".
+ *
+ * A live VPS room (`hosted.roomId`) pins the read to dedicated even if the
+ * default has since moved to public — otherwise an in-progress OpenRA night
+ * would lose its address the moment this shipped.
+ */
+export function resolvedHostMode(
+  gameSlug: string,
+  hostMode: PartyHostMode | string | null | undefined,
+  hosted?: { roomId?: string | null } | null
+): PartyHostMode | null {
+  if (hostMode === "public" || hostMode === "self" || hostMode === "dedicated") {
+    return hostMode;
+  }
+  if (hosted?.roomId) return "dedicated";
+  return defaultHostMode(gameSlug);
 }
 
 /** Is this a mode the game actually supports? Guards untrusted input. */
@@ -210,6 +246,12 @@ export function isValidHostMode(gameSlug: string, mode: unknown): mode is PartyH
 /** Picker options, in display order, with copy explaining the tradeoff. */
 export function hostModeOptions(gameSlug: string): HostModeOption[] {
   return [
+    {
+      mode: "public" as const,
+      available: canUsePublicServer(gameSlug),
+      label: "Public server",
+      hint: "Join a community dedicated server from the live list. You will play with whoever is already there — not a private room.",
+    },
     {
       mode: "self" as const,
       available: canSelfHost(gameSlug),

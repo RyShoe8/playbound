@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { supportsMultiplayer, supportsLauncherParty, hasServerBrowser } from "./support";
+import { supportsMultiplayer, supportsLauncherParty, hasServerBrowser, editionSupportsPartyPlay } from "./support";
 
 describe("supportsMultiplayer", () => {
   it("counts the play modes that used to be missed", () => {
@@ -100,6 +100,33 @@ describe("supportsLauncherParty", () => {
     for (const c of cases) {
       if (supportsLauncherParty(c)) expect(supportsMultiplayer(c)).toBe(true);
     }
+  });
+});
+
+describe("editionSupportsPartyPlay", () => {
+  it("keeps networked party editions", () => {
+    expect(
+      editionSupportsPartyPlay({
+        name: "Freedoom + Zandronum (Multiplayer & Default)",
+        features: ["Multiplayer", "Co-op", "Deathmatch"],
+      })
+    ).toBe(true);
+  });
+
+  it("excludes SP ports that only list Deathmatch", () => {
+    // GZDoom Freedoom edition: deathmatch as a mode, not PlayBound party netcode.
+    expect(
+      editionSupportsPartyPlay({
+        name: "Freedoom + GZDoom (Singleplayer)",
+        features: ["Singleplayer", "Deathmatch", "Mod Support"],
+      })
+    ).toBe(false);
+    expect(
+      editionSupportsPartyPlay({
+        name: "Freedoom + DSDA-Doom (Speedrunning)",
+        features: ["Singleplayer", "Demo Recording", "Speedrunning"],
+      })
+    ).toBe(false);
   });
 });
 

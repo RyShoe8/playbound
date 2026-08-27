@@ -5140,6 +5140,56 @@ textarea.input-text {
 .party-game-select { max-width: 380px; }
 .party-game-label { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-muted); }
 .party-game-platform-note { margin: 6px 0 0; font-size: 11px; color: var(--text-muted); max-width: 380px; }
+.party-online-count { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
+.party-public-server {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.party-public-server-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.party-public-server-picked { margin: 0; font-size: 13px; font-weight: 600; }
+.party-public-server-addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 400; color: var(--text-muted); font-size: 11px; }
+.party-public-server-list {
+  max-height: 220px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.party-public-server-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.party-public-server-row:last-child { border-bottom: 0; }
+.party-public-server-row:hover:not(:disabled) { background: var(--bg-secondary); }
+.party-public-server-row.is-selected { background: color-mix(in srgb, var(--accent, #6c8cff) 12%, transparent); }
+.party-public-server-row:disabled { cursor: default; opacity: 0.85; }
+.party-public-server-row-main { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.party-public-server-name { font-size: 12px; font-weight: 600; }
+.party-public-server-players { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.party-public-server-meta { font-size: 11px; color: var(--text-muted); }
 .party-meta {
   margin: 0;
   display: flex;
@@ -5378,6 +5428,17 @@ textarea.input-text {
   font-weight: 700;
   font-family: var(--font-sans);
   cursor: pointer;
+}
+
+.party-edition-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.party-edition-picker-list .party-sync-install {
+  justify-content: flex-start;
 }
 
 .party-field { display: flex; flex-direction: column; gap: 8px; }

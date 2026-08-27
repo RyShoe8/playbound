@@ -88,7 +88,12 @@ export default async function PlayWithFriendsPage({
   const crossPlay = game.features.some((f) => /cross-?play/i.test(f));
   const multiPlatform = game.platforms.length > 1;
 
-  const leadAnswer = managed
+  const hasPublic = modes.some((m) => m.mode === "public");
+  const leadAnswer = hasPublic
+    ? modes.length > 1
+      ? `${game.title} can join a public dedicated server from the live list, or you can host a private room on your own PC or a PlayBound server. Joining a public server is the default.`
+      : `${game.title} has a public dedicated-server list. Start a party, pick a server, and Join Game puts everyone on that address.`
+    : managed
     ? modes.length > 1
       ? `${game.title} works with PlayBound Connect two ways: host it yourself on your own PC, or run it on a PlayBound server. ${
           preferred === "self" ? "Self-hosting is the default" : "A PlayBound server is the default"
