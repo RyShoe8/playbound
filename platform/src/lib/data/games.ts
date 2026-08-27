@@ -4361,6 +4361,7 @@ const facts: Game[] = [
       assetPattern: "SS14.Launcher_Windows.zip",
       exeHint: "SS14.Launcher.exe",
       knownExePaths: ["SS14.Launcher.exe"],
+      needsDotNetMajor: 10,
       versionLabel: "v0.39.1",
       /*
        * The launcher is the whole install. Game content is fetched per server

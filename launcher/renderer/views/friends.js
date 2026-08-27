@@ -2810,6 +2810,7 @@ async function launchPartyGame(party) {
   const detail = {
     title: party.gameTitle || catalogGame?.title || slug,
     slug,
+    gameSlug: slug,
     controllerSupport: catalogGame?.controllerSupport,
     hasControllerSupport: catalogGame?.hasControllerSupport,
     features: catalogGame?.features,
@@ -2854,7 +2855,7 @@ async function launchPartyGame(party) {
             setStatus(`Joining ${party.gameTitle || slug} at ${address}…${steps}`);
           }
         },
-        party.editionSlug || slug
+        slug
       );
       if (!launched) return;
     } catch (err) {
@@ -2924,7 +2925,7 @@ async function launchPartyGame(party) {
         startGameSession(slug, party.gameTitle || slug);
         setStatus(`Launched ${party.gameTitle || slug}`);
       },
-      party.editionSlug || slug
+      slug
     );
     if (!launched) return;
   } catch (err) {

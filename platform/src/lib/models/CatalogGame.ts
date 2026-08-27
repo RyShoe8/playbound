@@ -67,6 +67,7 @@ const LauncherInstallSchema = new Schema(
     overlayDest: { type: String, default: null },
     unwrapSingleRoot: { type: Boolean, default: false },
     needsDosBox: { type: Boolean, default: false },
+    needsDotNetMajor: { type: Number, default: null },
   },
   { _id: false }
 );

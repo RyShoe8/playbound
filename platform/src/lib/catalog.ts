@@ -53,6 +53,9 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.overlayDest && seed?.overlayDest) merged.overlayDest = seed.overlayDest;
     if (!merged.unwrapSingleRoot && seed?.unwrapSingleRoot) merged.unwrapSingleRoot = true;
     if (!merged.needsDosBox && seed?.needsDosBox) merged.needsDosBox = true;
+    if (!merged.needsDotNetMajor && seed?.needsDotNetMajor) {
+      merged.needsDotNetMajor = seed.needsDotNetMajor;
+    }
     if (!merged.launchArgs?.length && seed?.launchArgs?.length) merged.launchArgs = seed.launchArgs;
     // ET: Legacy has no GitHub release assets and the former database recipe
     // was an external download-page hand-off. Serve the verified official
@@ -115,8 +118,8 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     }
     return { ...game, launcherInstall: merged };
   }
-  if (seed) return repairBrowserOnlyFromSeed({ ...game, launcherInstall: seed });
-  return repairBrowserOnlyFromSeed(game);
+  if (seed) return repairControllerClaims(repairBrowserOnlyFromSeed({ ...game, launcherInstall: seed }));
+  return repairControllerClaims(repairBrowserOnlyFromSeed(game));
 }
 
 /**
@@ -145,6 +148,20 @@ function repairBrowserOnlyFromSeed(game: Game): Game {
     githubRepo: seed.githubRepo,
     launcherInstall: undefined,
   };
+}
+
+/*
+ * Space Station 14 is keyboard/mouse roleplay. A stale Mongo feature list still
+ * carried "Controller Support", which made the launcher offer a pad modal that
+ * cannot deliver a playable gamepad experience.
+ */
+function repairControllerClaims(game: Game): Game {
+  if (game.slug !== "space-station-14") return game;
+  const features = (game.features || []).filter(
+    (f) => String(f).toLowerCase() !== "controller support"
+  );
+  if (features.length === (game.features || []).length) return game;
+  return { ...game, features };
 }
 
 const ALLOWED_GENRES = new Set<string>(GENRES);
@@ -260,7 +277,7 @@ function toGame(doc: LeanGame): Game {
     gogStoreUrl: (doc.gogStoreUrl as string) || undefined,
     externalIds: (doc.externalIds as Game["externalIds"]) || undefined,
   };
-  return repairBrowserOnlyFromSeed(attachLauncherInstall(base, doc));
+  return repairControllerClaims(repairBrowserOnlyFromSeed(attachLauncherInstall(base, doc)));
 }
 
 function mapCommunityLinks(raw: unknown): Game["communityLinks"] | undefined {
@@ -337,7 +354,7 @@ function overlayForMongoOnly(slug: string) {
 }
 
 function seedGameWithInstall(g: Game): Game {
-  return repairBrowserOnlyFromSeed(attachLauncherInstall(g));
+  return repairControllerClaims(repairBrowserOnlyFromSeed(attachLauncherInstall(g)));
 }
 
 /** Seed local /games/... paths mostly 404; only keep remote seed media. */

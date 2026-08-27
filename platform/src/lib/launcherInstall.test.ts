@@ -127,6 +127,19 @@ describe("TES Arena freeware vs OpenTESArena", () => {
     });
     expect(entry.needsDosBox).toBe(true);
   });
+
+  it("passes needsDotNetMajor through to the launcher catalog", () => {
+    const entry = toLauncherCatalogEntry({
+      ...base,
+      launcherInstall: {
+        enabled: true,
+        kind: "github-zip",
+        repo: "space-wizards/SS14.Launcher",
+        needsDotNetMajor: 10,
+      },
+    });
+    expect(entry.needsDotNetMajor).toBe(10);
+  });
 });
 
 describe("first-party MMO launcher installs", () => {

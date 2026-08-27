@@ -18,16 +18,30 @@ function pb() {
   return window.playbound;
 }
 
+/** Prefer the first non-empty array — empty `[]` must not block game-level fallbacks. */
+function firstNonEmptyList(...candidates) {
+  for (const c of candidates) {
+    if (Array.isArray(c) && c.length > 0) return c;
+  }
+  return [];
+}
+
 /**
  * Catalog / detail / config signal that this title can use a gamepad.
+ *
+ * `slug` must be the **game** slug (not an edition slug). Edition Play paths
+ * often have features on the edition while the controller config map is keyed
+ * by the parent game — pass `detail.gameSlug` or the game slug as `slug`.
  */
 export async function gameSupportsController(detail, slug) {
   if (detail) {
     if (detail.hasControllerSupport === true) return true;
     if (detail.hasControllerSupport === false) return false;
+    const features = firstNonEmptyList(detail.features, detail.gameFeatures);
+    const tags = firstNonEmptyList(detail.tags, detail.gameTags);
     const hay = [
-      ...(detail.features || []),
-      ...(detail.tags || []),
+      ...features,
+      ...tags,
       String(detail.controllerSupport || ""),
       String(detail.title || ""),
       String(detail.editionName || ""),
@@ -39,11 +53,14 @@ export async function gameSupportsController(detail, slug) {
       if (/\b(controller|gamepad|joystick|flightstick|hotas|wheel|marathon|alephone|aleph one)\b/.test(hay)) return true;
     }
   }
-  const gameSlug = slug || detail?.slug;
+  // Prefer parent game slug: edition slugs like `rvgl-online` are not in the
+  // controller config map and would falsely skip the Play prompt.
+  const gameSlug = detail?.gameSlug || slug || detail?.slug;
   if (gameSlug) {
     try {
       const clean = String(gameSlug).toLowerCase().replace(/^custom-/, "");
       const support = await window.playbound.getControllerSupport?.(clean);
+      if (support?.kind === "unsupported") return false;
       if (support && (support.kind === "native" || support.kind === "config" || support.kind === "unwritable")) {
         return true;
       }

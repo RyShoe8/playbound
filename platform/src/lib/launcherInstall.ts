@@ -99,6 +99,13 @@ export type LauncherInstall = {
    */
   needsDosBox?: boolean;
   /**
+   * Windows-only: framework-dependent titles that need this .NET major
+   * (Desktop Runtime). PlayBound downloads a portable copy under userData and
+   * launches with DOTNET_ROOT when the machine does not already have one.
+   * Space Station 14's SS14.Launcher is the first — net10.0.
+   */
+  needsDotNetMajor?: number;
+  /**
    * Prompt for an existing install before doing anything else.
    *
    * Pairs with "locate-then-zip" for games PlayBound must not distribute: the
@@ -155,6 +162,8 @@ export type LauncherCatalogEntry = {
   overlayDest?: string;
   unwrapSingleRoot?: boolean;
   needsDosBox?: boolean;
+  /** Windows: portable .NET Desktop Runtime major to ensure before Play. */
+  needsDotNetMajor?: number;
   /** Ask the player to locate a copy they own before installing anything. */
   requiresBaseDir?: boolean;
 };
@@ -332,6 +341,9 @@ export function toLauncherCatalogEntry(input: {
   if (li.overlayDest) entry.overlayDest = li.overlayDest;
   if (li.unwrapSingleRoot) entry.unwrapSingleRoot = true;
   if (li.needsDosBox) entry.needsDosBox = true;
+  if (typeof li.needsDotNetMajor === "number" && li.needsDotNetMajor > 0) {
+    entry.needsDotNetMajor = li.needsDotNetMajor;
+  }
   /*
    * Without this the launcher never learns it must ask for an existing copy,
    * so an owner-supplied game would fall through to a normal install and fail

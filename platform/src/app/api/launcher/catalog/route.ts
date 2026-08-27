@@ -14,6 +14,7 @@ import { requestIncludesTesting } from "@/lib/requestIncludesTesting";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { accessFieldsForLauncher } from "@/lib/launcherCommerce";
 import { formatEditionChipName, getDisplayEditionsForGame } from "@/lib/data/editions";
+import { supportsController } from "@/lib/controller/support";
 
 export async function GET(req: Request) {
   try {
@@ -30,6 +31,9 @@ export async function GET(req: Request) {
           name: formatEditionChipName(e.name),
           type: e.type,
           isDefault: e.isDefault,
+          features: Array.isArray(e.features) ? e.features : [],
+          tags: Array.isArray(e.tags) ? e.tags : [],
+          hasControllerSupport: supportsController(e),
         }));
 
         // PC-installable games: full launcher recipe

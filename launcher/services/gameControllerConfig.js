@@ -716,6 +716,14 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
   },
+  "rvgl-original": {
+    kind: "native",
+    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
+  },
+  "rvgl-online": {
+    kind: "native",
+    note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
+  },
   revolt: {
     kind: "native",
     note: "RVGL provides native configurable gamepad input; PlayBound preserves the player's own mapping.",
@@ -745,8 +753,9 @@ const NO_CONFIG_NEEDED = {
     note: "Mobile title run through an emulator — the pad is bound in the emulator, not the game.",
   },
   "space-station-14": {
-    kind: "native",
-    note: "Robust engine reads a pad through its own input system; bound in-game.",
+    kind: "unsupported",
+    note:
+      "Round-based roleplay with heavy point-and-click and typing. The developers treat a gamepad as a non-starter — Steam Input community layouts exist, but PlayBound does not offer a controller path that would work well.",
   },
   "star-trek-online": { kind: "native", note: "Native gamepad layout for PC & console." },
   "path-of-exile": { kind: "native", note: "Native controller detection and custom UI layout." },

@@ -193,6 +193,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     assetPattern: "^SS14\\.Launcher_Windows\\.zip$",
     exeHint: "SS14.Launcher",
     knownExePaths: ["SS14.Launcher.exe"],
+    // Windows zip is framework-dependent (net10.0); Linux/mac ship their own runtime.
+    needsDotNetMajor: 10,
   },
   "warzone-2100": {
     enabled: true,
