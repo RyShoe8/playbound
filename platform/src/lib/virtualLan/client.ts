@@ -28,7 +28,8 @@ export type NetBirdParty = {
 function apiBase(): string | null {
   const raw = process.env.NETBIRD_API_URL;
   if (!raw) return null;
-  return raw.replace(/\/+$/, "");
+  const trimmed = raw.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
 }
 
 function apiToken(): string | null {
@@ -79,7 +80,17 @@ async function nb<T>(
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
-      return { ok: false, error: `NetBird ${res.status}` };
+      let detail = "";
+      try {
+        const body = await res.text();
+        if (body) {
+          const parsed = JSON.parse(body);
+          detail = parsed.message || parsed.error || body.slice(0, 100);
+        }
+      } catch {
+        /* ignore parse */
+      }
+      return { ok: false, error: detail ? `NetBird ${res.status}: ${detail}` : `NetBird ${res.status}` };
     }
     const text = await res.text();
     return { ok: true, data: (text ? JSON.parse(text) : {}) as T };
