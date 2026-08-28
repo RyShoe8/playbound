@@ -153,6 +153,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getCatalog: (opts) => ipcRenderer.invoke("get-catalog", opts || {}),
   refreshCatalog: () => ipcRenderer.invoke("get-catalog", { refresh: true }),
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
+  getServerIndex: () => ipcRenderer.invoke("get-server-index"),
   pingServers: (servers) => ipcRenderer.invoke("ping-servers", servers),
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),
   getModsCatalog: () => ipcRenderer.invoke("get-mods-catalog"),

@@ -2884,7 +2884,7 @@ async function launchPartyGame(party) {
    * and the room still works for the party itself.
    */
   const selfHostPort = party.selfHostPort;
-  const isLeader = party.leaderId === state.accountState?.userId;
+  const isLeader = String(party.leaderId) === String(currentUserId(party));
   if (isLeader && party.hostMode === "self" && selfHostPort?.port) {
     try {
       const mapped = await window.playbound.prepareSelfHost?.({
@@ -3013,7 +3013,6 @@ async function launchPartyGame(party) {
     return;
   }
 
-  const isLeader = String(party.leaderId) === String(currentUserId(party));
   let peerConnect = null;
   if (!isLeader && lan.enabled) {
     const leaderMember = (party.members || []).find(
