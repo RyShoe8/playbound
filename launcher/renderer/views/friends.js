@@ -27,8 +27,9 @@ let friendsPollMs = 5000;
 let localPlaying = false;
 let playPollWired = false;
 
-const FRIENDS_POLL_MS = 5000;
-const LIVE_PARTY_POLL_MS = 3000;
+// Shared with the website — platform/src/lib/realtime/cadence.json.
+const FRIENDS_POLL_MS = window.playbound?.cadence?.friendsPollMs ?? 5000;
+const LIVE_PARTY_POLL_MS = window.playbound?.cadence?.livePartyPollMs ?? 3000;
 
 /*
  * Party constants, copied from platform/src/lib/playTogether/types.ts so the
@@ -573,7 +574,7 @@ async function reconcilePartiesPayload(partiesData, retried = false) {
  * and nobody minds it being a few seconds behind. Asking for it less often is
  * the difference, and the last one stays on screen in between.
  */
-const DISCOVERABLE_MIN_MS = 8000;
+const DISCOVERABLE_MIN_MS = window.playbound?.cadence?.discoverablePartiesMinMs ?? 8000;
 let lastDiscoverableAt = 0;
 let lastDiscoverable = [];
 
@@ -599,7 +600,7 @@ async function loadParties() {
  * four requests each pass — for a list of things happening hours from now. It
  * gets its own interval, and the party payload keeps the fast lane.
  */
-const UPCOMING_EVENTS_TTL_MS = 60_000;
+const UPCOMING_EVENTS_TTL_MS = window.playbound?.cadence?.upcomingEventsTtlMs ?? 60_000;
 let upcomingEventsCache = { at: 0, data: { events: [] } };
 
 async function loadUpcomingEvents() {
@@ -2740,7 +2741,7 @@ function wirePartyView(slot, party) {
         return;
       }
       void refreshPartyChat(party);
-    }, 2500);
+    }, window.playbound?.cadence?.partyChatPollMs ?? 2500);
   }
 
   const chatForm = slot.querySelector("#party-chat-form");

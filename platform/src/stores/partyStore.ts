@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { PartyPayload, PartyVisibility } from "@/lib/playTogether/types";
 import { presenceSnapshot, usePresenceStore } from "@/stores/presenceStore";
 import { useFriendsStore } from "@/stores/friendsStore";
+import { CADENCE } from "@/lib/realtime/cadence";
 
 /**
  * Client-side party state.
@@ -83,7 +84,7 @@ let requestedPollMs = 5000;
 /** While > 0, polling must not overwrite activeParty with stale roster data. */
 let partyMutationInFlight = 0;
 
-const DEFAULT_PARTY_POLL_MS = 5000;
+const DEFAULT_PARTY_POLL_MS = CADENCE.friendsPollMs;
 const FAST_PARTY_POLL_MS = 1000;
 /** Slowest lane in the same request: friends' joinable parties. */
 const DISCOVERABLE_MIN_MS = 5000;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Bell } from "lucide-react";
+import { CADENCE } from "@/lib/realtime/cadence";
 import { useFriendsStore } from "@/stores/friendsStore";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -106,7 +107,7 @@ export function NotificationBell() {
     }
     startPolling(30000);
     const kickoff = window.setTimeout(() => void refresh(), 0);
-    const t = setInterval(() => void refresh(), 45000);
+    const t = setInterval(() => void refresh(), CADENCE.notificationPollMs);
     return () => {
       clearTimeout(kickoff);
       clearInterval(t);

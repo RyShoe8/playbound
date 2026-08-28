@@ -4,8 +4,9 @@ import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { usePartyStore } from "@/stores/partyStore";
 import { watchPartySyncFocus } from "@/lib/watchPartySync";
+import { CADENCE } from "@/lib/realtime/cadence";
 
-const GLOBAL_PARTY_POLL_MS = 5000;
+const GLOBAL_PARTY_POLL_MS = CADENCE.friendsPollMs;
 
 /**
  * Keeps party state fresh while the user is in a live party, even off /friends,

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
+import { CADENCE } from "@/lib/realtime/cadence";
 import { DiscordLinkPrompt } from "@/components/friends/DiscordLinkPrompt";
 
 type ChatMessage = {
@@ -51,7 +52,7 @@ export function PartyChat({
 
   useEffect(() => {
     void load();
-    const timer = setInterval(() => void load(lastIdRef.current), 2000);
+    const timer = setInterval(() => void load(lastIdRef.current), CADENCE.partyChatPollMs);
     return () => clearInterval(timer);
   }, [load]);
 
