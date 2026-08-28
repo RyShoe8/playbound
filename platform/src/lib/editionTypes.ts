@@ -158,6 +158,10 @@ export interface EditionInstallConfig {
     assetPattern?: string | null;
     exeHint?: string | null;
     url?: string | null;
+    /** macOS-specific download URL (usually a .dmg or .zip with a .app bundle). */
+    urlMac?: string | null;
+    /** Linux-specific download URL (usually a .tar.gz, .AppImage, or .deb). */
+    urlLinux?: string | null;
     fileName?: string | null;
     versionLabel?: string | null;
     knownExePaths?: string[];

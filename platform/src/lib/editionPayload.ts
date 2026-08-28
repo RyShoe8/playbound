@@ -85,6 +85,8 @@ const installConfigSchema = z
         assetPattern: z.string().trim().max(200).nullish(),
         exeHint: z.string().trim().max(200).nullish(),
         url: z.string().trim().max(500).nullish(),
+        urlMac: z.string().trim().max(500).nullish(),
+        urlLinux: z.string().trim().max(500).nullish(),
         fileName: z.string().trim().max(200).nullish(),
         versionLabel: z.string().trim().max(100).nullish(),
         knownExePaths: z.array(z.string().trim().max(300)).max(20).optional(),
