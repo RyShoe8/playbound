@@ -399,7 +399,12 @@ export const recipes = {
     portEnd: 20615,
     protocol: "udp",
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
-    args: (port) => ["-autostart-nonrandom=1", `--port=${port}`],
+    args: (port) => [
+      "-autostart-headless",
+      "-autostart-headless-autociv",
+      "-autostart-nonrandom=1",
+      `--port=${port}`,
+    ],
   },
   bombsquad: {
     portStart: 43210,
