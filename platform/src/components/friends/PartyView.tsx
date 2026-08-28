@@ -409,7 +409,15 @@ export function PartyView({
                 {party.gameSlug && !publicMode ? (
                   <PartyGameOnlineCount gameSlug={party.gameSlug} />
                 ) : null}
-                {party.gameSlug ? (
+                {/*
+                  PartyConfigSync below already renders one of these per member
+                  who is missing the game once nobody has a reference install
+                  (referenceSource === "party") — that includes the viewer, so
+                  showing this one too duplicated the exact same install card.
+                  Once someone installs, referenceSource flips to "host" and
+                  this one becomes the only source again.
+                */}
+                {party.gameSlug && party.configSync?.referenceSource !== "party" ? (
                   <PartyHostInstallPicker
                     partyId={party.id}
                     gameSlug={party.gameSlug}
