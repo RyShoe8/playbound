@@ -1678,3 +1678,33 @@ export function listSelfHostCandidates(): Array<{
     .filter((a): a is GameMultiplayerAdapter & { selfHost: SelfHostConfig } => Boolean(a.selfHost))
     .map((a) => ({ gameSlug: a.gameSlug, title: a.title, selfHost: a.selfHost }));
 }
+
+const SLUG_ALIASES: Record<string, string> = {
+  "0-ad": "0ad",
+  "marathon-infinity": "marathon",
+  "aleph-one": "marathon",
+  "alephone": "marathon",
+  "zandronum": "freedoom",
+  "revolt": "re-volt-rvgl",
+  "rvgl": "re-volt-rvgl",
+  "uqm": "the-ur-quan-masters",
+  "wolfenstein": "wolfenstein-enemy-territory",
+};
+
+/** Returns the client CLI connect template arguments, null for in-game menu join, or undefined if unknown. */
+export function getConnectArgsTemplate(gameSlug: string): string[] | null | undefined {
+  const canonical = SLUG_ALIASES[gameSlug] || gameSlug;
+  const adapter = MULTIPLAYER_ADAPTERS[canonical];
+  if (!adapter) return undefined;
+  if (adapter.client?.inGameJoinPrompt) return null;
+  return adapter.client?.launchArguments || null;
+}
+
+/** Returns the canonical port for the game or 0 if unknown. */
+export function getDefaultGamePort(gameSlug: string): number {
+  const canonical = SLUG_ALIASES[gameSlug] || gameSlug;
+  const adapter = MULTIPLAYER_ADAPTERS[canonical];
+  if (!adapter) return 0;
+  return adapter.host?.port || adapter.selfHost?.port || 0;
+}
+
