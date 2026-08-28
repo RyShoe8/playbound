@@ -6,6 +6,7 @@
  */
 
 import { escapeHtml, setStatus, views, api } from "../shared.js";
+import { CADENCE } from "../cadence.js";
 
 let wired = false;
 let signalSince = 0;
@@ -110,9 +111,9 @@ async function refresh() {
  * waits to be noticed mid-session, which is why it stays low rather than
  * decaying further — see cadence.json.
  */
-const SIGNAL_ACTIVE_MS = window.playbound?.cadence?.couchSignalActiveMs ?? 500;
-const SIGNAL_IDLE_MS = window.playbound?.cadence?.couchSignalIdleMs ?? 2000;
-const SIGNAL_IDLE_AFTER = window.playbound?.cadence?.couchSignalIdleAfterEmptyPolls ?? 6;
+const SIGNAL_ACTIVE_MS = CADENCE.couchSignalActiveMs;
+const SIGNAL_IDLE_MS = CADENCE.couchSignalIdleMs;
+const SIGNAL_IDLE_AFTER = CADENCE.couchSignalIdleAfterEmptyPolls;
 
 let emptySignalPolls = 0;
 let signalPollMs = SIGNAL_ACTIVE_MS;

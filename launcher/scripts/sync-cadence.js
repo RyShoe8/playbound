@@ -33,7 +33,18 @@ const sourcePath = path.join(
   "realtime",
   "cadence.json"
 );
-const outPath = path.join(launcherDir, "services", "cadence.js");
+
+/*
+ * Written into renderer/ as an ES module, not services/ as CommonJS.
+ *
+ * The obvious home was preload.js bridging a require()d module, but a
+ * sandboxed preload can only require Electron's small built-in set — pointing
+ * it at a local file throws "module not found" before the bridge is created,
+ * which leaves window.playbound undefined and the whole app dead on boot.
+ * The renderer is already ESM and imports its own modules freely, so it reads
+ * this one directly and preload stays out of it.
+ */
+const outPath = path.join(launcherDir, "renderer", "cadence.js");
 
 function main() {
   if (!fs.existsSync(sourcePath)) {
@@ -71,11 +82,11 @@ function main() {
     "// Canonical source: platform/src/lib/realtime/cadence.json",
     "// Edit there; both the website and this launcher read the same numbers.",
     "",
-    "module.exports = ",
+    "export const CADENCE = ",
   ].join("\n");
 
   fs.writeFileSync(outPath, header + JSON.stringify(parsed, null, 2) + ";\n", "utf-8");
-  console.log(`[sync-cadence] Wrote ${keys.length} cadence value(s) to services/cadence.js`);
+  console.log(`[sync-cadence] Wrote ${keys.length} cadence value(s) to renderer/cadence.js`);
 }
 
 main();
