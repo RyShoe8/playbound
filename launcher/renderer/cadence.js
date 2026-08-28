@@ -2,7 +2,7 @@
 // Canonical source: platform/src/lib/realtime/cadence.json
 // Edit there; both the website and this launcher read the same numbers.
 
-module.exports = {
+export const CADENCE = {
   "notificationPollMs": 10000,
   "friendsPollMs": 5000,
   "livePartyPollMs": 3000,
