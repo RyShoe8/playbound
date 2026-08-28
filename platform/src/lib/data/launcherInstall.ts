@@ -1001,10 +1001,10 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
 
   holocure: {
     enabled: true,
-    kind: "itch-zip",
-    url: "https://kay-yu.itch.io/holocure",
+    kind: "direct-zip",
+    url: "https://mirror.playbound.club/launcher-packages/games/holocure/1787200318272-HoloCure.zip",
     fileName: "HoloCure.zip",
-    versionLabel: "latest",
+    versionLabel: "0.7.1 (latest)",
     exeHint: "HoloCure|holocure",
     knownExePaths: [
       "%LOCALAPPDATA%\\HoloCure\\HoloCure.exe",
@@ -1014,7 +1014,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
       "~/.local/share/HoloCure/HoloCure.exe",
       "~/.steam/steam/steamapps/common/HoloCure/HoloCure.exe",
     ],
-    note: "Downloads and extracts the official standalone HoloCure build from itch.io. Runs on Windows and Linux (via Wine/Proton/Steam Deck).",
+    note: "Downloads and extracts the official standalone HoloCure build. Runs on Windows and Linux (via Wine/Proton/Steam Deck).",
   },
 
   daggerfall: {

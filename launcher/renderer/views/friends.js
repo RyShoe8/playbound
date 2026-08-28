@@ -2289,11 +2289,6 @@ async function fillPartyPublicServerPicker(slot, force = false) {
         gateNote
           ? `<div class="party-public-server-gate${gate === "ready" ? " is-next" : ""}">
                <p class="party-public-server-gate-text">${escapeHtml(gateNote)}</p>
-               ${
-                 gate === "ready"
-                   ? `<button type="button" class="party-btn btn-success party-public-server-ready">${ICON.check} Ready Up</button>`
-                   : ""
-               }
              </div>`
           : ""
       }
