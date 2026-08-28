@@ -4,6 +4,7 @@ const path = require("path");
 const Platform = require("../platform");
 const { shouldLaunchThroughDosBox, dosExecutableMessage } = require("./executableFormat");
 const { dosBoxLaunchSpec } = require("./ManagedDosBox");
+const { requiresCompatibilityRunner, buildRunnerLaunchSpec } = require("./CompatibilityRunner");
 
 const JAVA_MISSING_MSG =
   "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
@@ -180,6 +181,21 @@ class GameLauncher {
         detached: true,
         stdio: "ignore",
         env,
+        windowsHide: false,
+        shell: false,
+      });
+    }
+
+    if (requiresCompatibilityRunner(launchPath)) {
+      const runnerSpec = buildRunnerLaunchSpec(launchPath, args, {
+        gameSlug: opts.gameSlug,
+        runner: opts.runner,
+      });
+      return spawn(runnerSpec.command, runnerSpec.args, {
+        cwd: runnerSpec.cwd,
+        detached: true,
+        stdio: "ignore",
+        env: { ...(env || process.env), ...runnerSpec.env },
         windowsHide: false,
         shell: false,
       });
