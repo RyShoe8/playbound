@@ -2978,13 +2978,23 @@ async function launchPartyGame(party) {
    * already marked playing by then, so blocking here produced "session in
    * progress" beside a game that never started.
    */
-  if (hosted.enabled && hosted.configured === false) {
+  /*
+   * hosted.enabled only means this game *type* can run on the VPS — it says
+   * nothing about whether this particular party chose to. A self-hosted
+   * managed-server party (Freeciv, etc.) never provisions a VPS room, so
+   * gating on hosted.enabled alone left every non-leader stuck on "waiting
+   * for the PlayBound server" forever, never reaching the peer-connect path
+   * below even once the party's own overlay was ready.
+   */
+  const usingDedicatedHost = hosted.enabled && party.hostMode !== "self";
+
+  if (usingDedicatedHost && hosted.configured === false) {
     setStatus(
       "PlayBound server is unavailable — this game needs a hosted server to play together.",
       true
     );
     return;
-  } else if (hosted.enabled && hosted.status !== "ready") {
+  } else if (usingDedicatedHost && hosted.status !== "ready") {
     setStatus(
       hosted.status === "failed"
         ? hosted.error || "Could not start the PlayBound server. Try Join Game again."
@@ -3012,7 +3022,7 @@ async function launchPartyGame(party) {
     return;
   }
 
-  if (hosted.enabled) {
+  if (usingDedicatedHost) {
     setStatus("Waiting for the PlayBound server — try Join Game again in a moment.");
     return;
   }
