@@ -3025,6 +3025,10 @@ async function launchPartyGame(party) {
       const defaultPort =
         slug === "freeciv"
           ? 5556
+          : slug === "openarena" || slug === "wolfenstein-enemy-territory"
+          ? 27960
+          : slug === "xonotic"
+          ? 26000
           : slug === "srb2"
           ? 5029
           : slug === "jfsw"
