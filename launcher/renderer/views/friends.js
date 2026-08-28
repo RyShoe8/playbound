@@ -1401,7 +1401,6 @@ function buildPartyViewHtml(party) {
   const hasGame = Boolean(party.gameSlug);
   const ended = party.status === "ended";
   const inFlight = party.status === "launching" || party.status === "playing";
-  const isLeader = String(party.leaderId) === String(userId);
   const hosted = party.hosted || {};
   const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
   const lan = party.lan || {};
