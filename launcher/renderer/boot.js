@@ -787,7 +787,17 @@ async function boot() {
     await navigateTo("home");
   }
 
-  void refreshAccountStatus();
+  /*
+   * The notification poll is gated on being signed in, and wireNotifications()
+   * runs before the account is known — so on a cold start with an already
+   * signed-in session it saw connected:false, skipped starting its timer, and
+   * nothing ever started it again. onAccount only fires on an auth *flip*
+   * (sign in / sign out), which never happens when you were already signed in
+   * from the last session, so the bell badge stayed empty until you clicked it.
+   * Kick the poll once the account is actually resolved, same as the
+   * onAccount path already does.
+   */
+  void refreshAccountStatus().then(() => onNotificationsAccountChanged());
 
   const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
   idle(() => {
