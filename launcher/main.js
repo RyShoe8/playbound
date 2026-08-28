@@ -60,6 +60,7 @@ const {
   joinsFromInGameMenu,
   applyConnectTemplates,
   staticLaunchArgs,
+  defaultGamePort,
 } = require("./services/connectArgs");
 const { createHostService } = require("./services/couch/hostService");
 const gamepadBridge = require("./services/gamepadBridge");
@@ -6613,19 +6614,22 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     : Array.isArray(entry?.launchArgs)
       ? [...entry.launchArgs]
       : [];
-  if (join?.host && join?.port && Array.isArray(connectArgs)) {
-    args.push(...applyConnectTemplates(connectArgs, join, edSlug));
+  const resolvedPort = Number(join?.port) || defaultGamePort(slug) || Number(entry?.port) || 0;
+  const resolvedJoin = join?.host ? { ...join, port: resolvedPort } : null;
+
+  if (resolvedJoin?.host && Array.isArray(connectArgs) && connectArgs.length > 0) {
+    args.push(...applyConnectTemplates(connectArgs, resolvedJoin, edSlug));
   } else {
     // All-or-nothing: a half-applied connect line is worse than none. See
     // staticLaunchArgs in services/connectArgs.js.
     args.push(...staticLaunchArgs(connectArgs));
   }
 
-  if (join?.host && join?.port) {
+  if (resolvedJoin?.host) {
     void telemetry.track("join_attempted", {
       ...launchInfo(),
-      host: join.host,
-      port: join.port,
+      host: resolvedJoin.host,
+      port: resolvedJoin.port,
       connectArgsApplied: args.length > 0,
       manualConnect: Boolean(!connectArgs?.length),
     });
