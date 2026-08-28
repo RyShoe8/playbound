@@ -498,7 +498,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     client: {
       launchArguments: ["--autoconnect", "--server", "{host}", "--port", "{port}"],
     },
-    notes: "Freeciv dedicated server. Client needs --autoconnect or GTK opens the start screen instead of joining.",
+    selfHost: {
+      port: 5556,
+      protocol: "tcp",
+      verified: true,
+      inGameSteps: [
+        "Host: Start Network Game / Start New Game (starts server on port 5556)",
+        "Friends: Connect to Network Game → Enter Host's IP address and Port 5556",
+      ],
+    },
+    virtualLan: {
+      inGameSteps: [
+        "Host: Start Network Game / Start New Game",
+        "Friends: Connect to Network Game → Enter Host's Virtual LAN IP and Port 5556",
+      ],
+    },
+    notes: "Freeciv dedicated or self-hosted server on port 5556.",
   },
 
   supertuxkart: {
@@ -506,14 +521,13 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     title: "SuperTuxKart",
     tier: "tier1_improved",
     adapterType: "virtual-lan",
-    protocol: "both",
+    protocol: "udp",
     client: {
       inGameJoinPrompt: true,
     },
     selfHost: {
       port: 2759,
       protocol: "both",
-      binaryHint: "supertuxkart",
       verified: true,
       inGameSteps: [
         "Host: Online → Create Server (LAN / Virtual LAN)",
@@ -646,8 +660,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     selfHost: {
       port: 1333,
       protocol: "udp",
-      binaryHint: "opentyrian",
-      argsTemplate: ["--net-player-number=1", "-p", "{port}"],
       verified: true,
       inGameSteps: [
         "Host launches in Player 1 network mode",
@@ -677,7 +689,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     selfHost: {
       port: 5029,
       protocol: "udp",
-      binaryHint: "srb2win",
       verified: true,
       inGameSteps: [
         "Host: Multiplayer → Host Network Game",
@@ -705,7 +716,6 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     selfHost: {
       port: 1997,
       protocol: "udp",
-      binaryHint: "sw",
       verified: true,
       inGameSteps: [
         "Host: WangBang Multiplayer → Host Net Game",
