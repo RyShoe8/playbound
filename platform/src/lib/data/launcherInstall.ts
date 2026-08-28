@@ -53,6 +53,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+    urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
+    urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
     fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
     versionLabel: "0.99.5",
     exeHint: "dunelegacy",
@@ -261,6 +263,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://sourceforge.net/projects/wesnoth/files/wesnoth-1.18/wesnoth-1.18.7/wesnoth-1.18.7-win64.exe/download",
+    urlMac: "https://downloads.sourceforge.net/project/wesnoth/wesnoth-1.18/wesnoth-1.18.7/Wesnoth_1.18.7.dmg",
+    urlLinux: "https://downloads.sourceforge.net/project/wesnoth/wesnoth-1.18/wesnoth-1.18.7/wesnoth-1.18.7.tar.bz2",
     fileName: "wesnoth-1.18.7-win64.exe",
     versionLabel: "1.18.7",
     knownExePaths: [
@@ -292,6 +296,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://gitlab.com/veloren/airshipper/-/releases/v0.17.0/downloads/binaries/windows-installer-x86_64",
+    urlMac: "https://gitlab.com/veloren/airshipper/-/releases/v0.17.0/downloads/binaries/macos-client-x86_64.zip",
+    urlLinux: "https://gitlab.com/veloren/airshipper/-/releases/v0.17.0/downloads/binaries/linux-client-x86_64.zip",
     fileName: "airshipper-installer.exe",
     versionLabel: "0.17.0",
     note: "Installs Airshipper, which downloads and updates Veloren.",
@@ -364,6 +370,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://www.hedgewars.org/download/releases/Hedgewars-1.0.0.exe",
+    urlMac: "https://www.hedgewars.org/download/releases/Hedgewars-1.0.0.dmg",
     // CPack NSIS uses CPACK_PACKAGE_INSTALL_DIRECTORY "Hedgewars ${version}"
     knownExePaths: [
       "%PROGRAMFILES%\\Hedgewars 1.0.0\\hedgewars.exe",
@@ -422,6 +429,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // Keep in sync with FREECIV_VERSION in platform/game-host/install.sh — party
     // hosting rejects clients when the VPS apt server is older than this build.
     url: "https://files.freeciv.org/packages/windows/Freeciv-3.2.5-msys2-win64-10-gtk4-setup.exe",
+    urlMac: "https://files.freeciv.org/packages/macos/freeciv-3.1.0-beta1-MacOS.tar.gz",
     fileName: "Freeciv-3.2.5-msys2-win64-10-gtk4-setup.exe",
     versionLabel: "3.2.5",
     exeHint: "freeciv-gtk4",
@@ -457,6 +465,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-installer",
     url: "https://download.flightgear.org/release-2024.1/flightgear-2024.1.6-windows-amd64.exe",
+    urlMac: "https://download.flightgear.org/release-2024.1/flightgear-2024.1.6-macos-universal.dmg",
+    urlLinux: "https://download.flightgear.org/release-2024.1/flightgear-2024.1.6-linux-amd64.AppImage",
     fileName: "flightgear-2024.1.6-windows-amd64.exe",
     versionLabel: "2024.1.6",
     exeHint: "fgfs",
@@ -536,6 +546,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // download 404'd. Verified against the SourceForge 0.8 file listing.
     kind: "direct-installer",
     url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-win32.exe",
+    urlMac: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-macos.dmg",
     fileName: "uqm-0.8-win32.exe",
     exeHint: "uqm",
     overlayUrl: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8.0-content.uqm",
@@ -573,6 +584,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     // own download host instead.
     kind: "direct-installer",
     url: "https://download.bzflag.org/bzflag/windows/2.4.30/bzflag-2.4.30.exe",
+    urlMac: "https://download.bzflag.org/bzflag/macos/2.4.30/BZFlag-2.4.30-macOS.zip",
     fileName: "bzflag-2.4.30.exe",
     versionLabel: "2.4.30",
     exeHint: "bzflag",
@@ -1104,6 +1116,8 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     enabled: true,
     kind: "direct-zip",
     url: "https://distribute.re-volt.io/releases/rvgl_full_win64_original.zip",
+    urlMac: "https://distribute.re-volt.io/releases/rvgl_full_macos_original.dmg",
+    urlLinux: "https://distribute.re-volt.io/releases/rvgl_full_linux_original.zip",
     fileName: "rvgl_full_win64_original.zip",
     exeHint: "rvgl",
     versionLabel: "v23.1030a",
@@ -1120,5 +1134,15 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     exeHint: "OpenHV",
     versionLabel: "20250725",
     note: "Official OpenHV portable 64-bit Windows release.",
+  },
+  srb2: {
+    enabled: true,
+    kind: "direct-zip",
+    url: "https://github.com/STJr/SRB2/releases/download/SRB2_release_2.2.13/SRB2-v2213-Full.zip",
+    urlMac: "https://github.com/STJr/SRB2/releases/download/SRB2_release_2.2.13/SRB2-2.2.13-macOS-Installer.dmg",
+    fileName: "SRB2-v2213-Full.zip",
+    exeHint: "srb2win",
+    versionLabel: "2.2.13",
+    note: "Official 3D Sonic platformer built on a modified Doom engine.",
   },
 };

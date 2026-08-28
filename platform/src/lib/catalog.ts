@@ -56,6 +56,8 @@ function attachLauncherInstall(game: Game, doc?: LeanGame): Game {
     if (!merged.needsDotNetMajor && seed?.needsDotNetMajor) {
       merged.needsDotNetMajor = seed.needsDotNetMajor;
     }
+    if (!merged.urlMac && seed?.urlMac) merged.urlMac = seed.urlMac;
+    if (!merged.urlLinux && seed?.urlLinux) merged.urlLinux = seed.urlLinux;
     if (!merged.launchArgs?.length && seed?.launchArgs?.length) merged.launchArgs = seed.launchArgs;
     // ET: Legacy has no GitHub release assets and the former database recipe
     // was an external download-page hand-off. Serve the verified official

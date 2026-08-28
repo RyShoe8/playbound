@@ -31,6 +31,8 @@ const LauncherInstallSchema = new Schema(
     assetPattern: { type: String, default: null },
     exeHint: { type: String, default: null },
     url: { type: String, default: null },
+    urlMac: { type: String, default: null },
+    urlLinux: { type: String, default: null },
     fileName: { type: String, default: null },
     /** itch.io's upload_id for the specific file a page's Download button should resolve — a page can list several. */
     uploadId: { type: String, default: null },

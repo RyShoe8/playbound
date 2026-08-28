@@ -53,6 +53,8 @@ export type LauncherInstall = {
   assetPattern?: string | null;
   exeHint?: string | null;
   url?: string | null;
+  urlMac?: string | null;
+  urlLinux?: string | null;
   fileName?: string | null;
   /** itch.io's upload_id for the specific file to grab when a page lists several downloads. */
   uploadId?: string | null;
@@ -127,6 +129,8 @@ export type LauncherCatalogEntry = {
   assetPattern?: string;
   exeHint?: string;
   url?: string;
+  urlMac?: string;
+  urlLinux?: string;
   fileName?: string;
   uploadId?: string;
   versionLabel?: string;
@@ -323,6 +327,8 @@ export function toLauncherCatalogEntry(input: {
   if (li.assetPattern) entry.assetPattern = li.assetPattern;
   if (li.exeHint) entry.exeHint = li.exeHint;
   if (li.url) entry.url = li.url;
+  if (li.urlMac) entry.urlMac = li.urlMac;
+  if (li.urlLinux) entry.urlLinux = li.urlLinux;
   if (li.fileName) entry.fileName = li.fileName;
   if (li.uploadId) entry.uploadId = li.uploadId;
   if (li.versionLabel) entry.versionLabel = li.versionLabel;

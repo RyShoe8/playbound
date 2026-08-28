@@ -152,6 +152,15 @@ function toEdition(doc: LeanEdition): Edition {
       installMethod = seedMatch.installMethod ?? installMethod;
     }
 
+    if (seedMatch?.installConfig?.playbound_installer && installConfig.playbound_installer) {
+      if (!installConfig.playbound_installer.urlMac && seedMatch.installConfig.playbound_installer.urlMac) {
+        installConfig.playbound_installer.urlMac = seedMatch.installConfig.playbound_installer.urlMac;
+      }
+      if (!installConfig.playbound_installer.urlLinux && seedMatch.installConfig.playbound_installer.urlLinux) {
+        installConfig.playbound_installer.urlLinux = seedMatch.installConfig.playbound_installer.urlLinux;
+      }
+    }
+
     return {
       id: String(doc._id),
       gameId: doc.gameId ? String(doc.gameId) : undefined,

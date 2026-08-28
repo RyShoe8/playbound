@@ -2386,6 +2386,7 @@ function pickGithubAsset(assets, assetPattern) {
 function assetPatternsForEntry(entry) {
   const patterns = [];
   const macPat = entry?.assetPatternMac || entry?.macAssetPattern;
+  const linuxPat = entry?.assetPatternLinux || entry?.linuxAssetPattern;
   const winPat = entry?.assetPattern;
   if (process.platform === "darwin") {
     if (macPat) patterns.push(macPat);
@@ -2397,9 +2398,19 @@ function assetPatternsForEntry(entry) {
       "\\.jar$"
     );
     if (winPat) patterns.push(winPat);
+  } else if (process.platform === "linux") {
+    if (linuxPat) patterns.push(linuxPat);
+    if (winPat && !/(win|windows|\.exe)/i.test(winPat)) patterns.push(winPat);
+    patterns.push(
+      "(linux|ubuntu|appimage).*\\.(zip|tar\\.gz|tar\\.xz|appimage)$",
+      "\\.(appimage)$",
+      "\\.jar$"
+    );
+    if (winPat) patterns.push(winPat);
   } else {
     if (winPat) patterns.push(winPat);
     if (macPat) patterns.push(macPat);
+    if (linuxPat) patterns.push(linuxPat);
   }
   return [...new Set(patterns.filter(Boolean))];
 }
@@ -2457,22 +2468,46 @@ async function resolveDownload(entry) {
     entry.kind === "direct-installer" ||
     entry.kind === "direct-exe"
   ) {
+    let effectiveUrl = entry.url;
+    if (process.platform === "darwin" && entry.urlMac) {
+      effectiveUrl = entry.urlMac;
+    } else if (process.platform === "linux" && entry.urlLinux) {
+      effectiveUrl = entry.urlLinux;
+    }
+
+    if (!effectiveUrl) {
+      throw new Error(`No download URL configured for ${entry.title || entry.slug || "this game"}`);
+    }
+
     if (
       process.platform === "darwin" &&
       (entry.kind === "direct-installer" || entry.kind === "direct-exe") &&
-      /\.(exe|msi)$/i.test(String(entry.url || entry.fileName || ""))
+      !entry.urlMac &&
+      /\.(exe|msi)$/i.test(String(effectiveUrl || entry.fileName || ""))
     ) {
       throw new Error(
         "This game only ships a Windows installer in the catalog. On Mac, use Locate to select the .app if you already installed it."
       );
     }
-    let name = entry.fileName || path.basename(new URL(entry.url).pathname) || `${entry.slug}.bin`;
-    if (name === "download" || !name.includes(".")) {
-      const parts = new URL(entry.url).pathname.split("/").filter(Boolean);
-      const fromPath = parts.find((p) => /\.(exe|zip|msi|dmg|jar)$/i.test(p));
-      name = entry.fileName || fromPath || `${entry.slug}.bin`;
+    let name = entry.fileName;
+    try {
+      const urlFileName = path.basename(new URL(effectiveUrl).pathname);
+      if (effectiveUrl !== entry.url || !name || name === "download" || !name.includes(".")) {
+        if (urlFileName && urlFileName !== "download" && urlFileName.includes(".")) {
+          name = urlFileName;
+        }
+      }
+    } catch {}
+    if (!name || name === "download" || !name.includes(".")) {
+      try {
+        const parts = new URL(effectiveUrl).pathname.split("/").filter(Boolean);
+        const fromPath = parts.find((p) => /\.(exe|zip|7z|rar|msi|dmg|jar|tar\.gz|tar\.xz|tgz|appimage|bin)$/i.test(p));
+        name = fromPath || entry.fileName || `${entry.slug}.bin`;
+      } catch {
+        name = entry.fileName || `${entry.slug}.bin`;
+      }
     }
-    return { url: entry.url, name, version: entry.versionLabel || "fixed" };
+    return { url: effectiveUrl, name, version: entry.versionLabel || "fixed" };
   }
 
   if (entry.kind === "openttd-zip") {

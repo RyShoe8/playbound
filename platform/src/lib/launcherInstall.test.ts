@@ -208,4 +208,21 @@ describe("multiplayer testing-wave installers", () => {
     expect(recipe.url ?? null).toBeNull();
     expect(recipe.note).toMatch(/No Steam client or account required/i);
   });
+
+  it("forwards urlMac and urlLinux to catalog entries", () => {
+    const entry = toLauncherCatalogEntry({
+      ...base,
+      launcherInstall: {
+        enabled: true,
+        kind: "direct-zip",
+        url: "https://x.test/win.zip",
+        urlMac: "https://x.test/mac.dmg",
+        urlLinux: "https://x.test/linux.tar.gz",
+      },
+    });
+    expect(entry.url).toBe("https://x.test/win.zip");
+    expect(entry.urlMac).toBe("https://x.test/mac.dmg");
+    expect(entry.urlLinux).toBe("https://x.test/linux.tar.gz");
+  });
 });
+

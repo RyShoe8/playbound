@@ -1729,6 +1729,8 @@ export const editions: EditionSeed[] = [
          */
         kind: "direct-installer",
         url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+        urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
+        urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
         fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
         versionLabel: "0.99.5",
         exeHint: "dunelegacy",
@@ -2338,6 +2340,7 @@ export const editions: EditionSeed[] = [
         // 0.8.0 zip and this URL 404'd. See launcherInstall.ts for the same fix.
         kind: "direct-installer",
         url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-win32.exe",
+        urlMac: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-macos.dmg",
         fileName: "uqm-0.8-win32.exe",
         exeHint: "uqm",
         versionLabel: "0.8 Remaster",
@@ -2377,6 +2380,7 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "direct-installer",
         url: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-win32.exe",
+        urlMac: "https://downloads.sourceforge.net/project/sc2/UQM/0.8/uqm-0.8-macos.dmg",
         fileName: "uqm-0.8-win32.exe",
         exeHint: "uqm",
         versionLabel: "0.8 Classic",
@@ -3443,6 +3447,8 @@ export const editions: EditionSeed[] = [
       playbound_installer: {
         kind: "direct-zip",
         url: "https://distribute.re-volt.io/releases/rvgl_full_win64_original.zip",
+        urlMac: "https://distribute.re-volt.io/releases/rvgl_full_macos_original.dmg",
+        urlLinux: "https://distribute.re-volt.io/releases/rvgl_full_linux_original.zip",
         fileName: "rvgl_full_win64_original.zip",
         exeHint: "rvgl",
         note: "Complete standalone Re-Volt (RVGL) 64-bit Windows release.",
