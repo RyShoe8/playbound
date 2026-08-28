@@ -8837,6 +8837,52 @@ ipcMain.handle("get-bootstrap-state", () => ({
   context: buildContextPayload(),
   version: app.getVersion(),
 }));
+function probeServerLatency(host, port, timeoutMs = 2000) {
+  return new Promise((resolve) => {
+    if (!host) return resolve(null);
+    const start = Date.now();
+    let doneCalled = false;
+    let sock = null;
+    const done = (ok) => {
+      if (doneCalled) return;
+      doneCalled = true;
+      try {
+        sock?.destroy();
+      } catch {
+        /* ignore */
+      }
+      resolve(ok ? Math.max(1, Date.now() - start) : null);
+    };
+
+    try {
+      sock = net.createConnection({
+        host,
+        port: Number(port) || 80,
+        timeout: timeoutMs,
+      });
+      sock.on("connect", () => done(true));
+      sock.on("timeout", () => done(false));
+      sock.on("error", () => done(false));
+    } catch {
+      done(false);
+    }
+  });
+}
+
+ipcMain.handle("ping-servers", async (_event, servers) => {
+  if (!Array.isArray(servers) || !servers.length) return {};
+  const results = {};
+  const queue = servers.slice(0, 30);
+  await Promise.all(
+    queue.map(async (srv) => {
+      const id = srv.id || `${srv.host}:${srv.port}`;
+      const ping = await probeServerLatency(srv.host, srv.port);
+      if (ping != null) results[id] = ping;
+    })
+  );
+  return results;
+});
+
 ipcMain.handle("get-servers", async (_event, slug) => {
   try {
     const res = await fetch(`${getApiBase()}/api/games/${encodeURIComponent(slug)}/servers`, {
