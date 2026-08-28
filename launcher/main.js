@@ -3662,11 +3662,33 @@ if (-not $hit) { return }
         const root = stripRegQuotes(hit.InstallLocation);
         if (root && fs.existsSync(root)) {
           const candidates = [];
-          if (entry.exeHint) candidates.push(path.join(root, entry.exeHint));
-          candidates.push(path.join(root, "binaries", "system", "pyrogenesis.exe"));
+          if (entry.exeHint) {
+            const hint = entry.exeHint;
+            candidates.push(path.join(root, hint));
+            if (!/\.exe$/i.test(hint)) {
+              candidates.push(
+                path.join(root, `${hint}.exe`),
+                path.join(root, "bin", `${hint}.exe`),
+                path.join(root, "bin", hint)
+              );
+            } else {
+              candidates.push(path.join(root, "bin", hint));
+            }
+          }
+          candidates.push(
+            path.join(root, "binaries", "system", "pyrogenesis.exe"),
+            path.join(root, "bin", "hedgewars.exe"),
+            path.join(root, "hedgewars.exe")
+          );
           for (const raw of entry.knownExePaths || []) {
             const base = path.basename(expandWinPath(raw));
-            if (base) candidates.push(path.join(root, base), path.join(root, "binaries", "system", base));
+            if (base) {
+              candidates.push(
+                path.join(root, base),
+                path.join(root, "bin", base),
+                path.join(root, "binaries", "system", base)
+              );
+            }
           }
           for (const c of candidates) {
             if (c && fs.existsSync(c)) {
