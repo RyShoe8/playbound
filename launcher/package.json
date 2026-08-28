@@ -1,6 +1,6 @@
 {
   "name": "playbound-launcher",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "PlayBound App — discover, install, update, and launch free PC games and servers.",
   "main": "bootstrap.js",
   "scripts": {
