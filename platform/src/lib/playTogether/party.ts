@@ -37,6 +37,7 @@ import {
   OPENRA_MODS,
 } from "@/lib/playTogether/types";
 import { STALE_AFTER_MS } from "@/lib/presence/types";
+import { sharedCacheGet, sharedCacheSet } from "@/lib/realtime/sharedCache";
 import { trackPartyEvent, trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
 import { setPresenceParty, clearPresenceForParty } from "@/lib/presence/server";
 import {
@@ -2139,6 +2140,12 @@ const CONFIG_SYNC_CACHE_TTL_MS = 2000;
 const CONFIG_SYNC_CACHE_MAX = 500;
 const configSyncCache = new Map<string, { expires: number; value: ConfigSyncOutcome }>();
 
+/*
+ * Versioned so a change to the payload shape cannot be served stale entries
+ * written by the previous deploy, which share the store across rollouts.
+ */
+const configSyncCacheKey = (partyId: string) => `pb:cfgsync:v1:${partyId}`;
+
 /**
  * Concurrent pollers of the same party share one in-flight computation.
  *
@@ -2179,7 +2186,44 @@ export async function checkConfigSync(
     if (pending) return pending;
   }
 
-  const run = checkConfigSyncUncached(partyId, preloadedDoc).then((value) => {
+  const run = (async (): Promise<ConfigSyncOutcome> => {
+    /*
+     * Second tier: a cache shared across function instances.
+     *
+     * The Map above only helps when the next poll lands on the same warm
+     * instance. Four party members polling at once usually do not — and under
+     * a burst almost never do, because that is exactly when Vercel scales out
+     * and every new instance starts empty. The shared entry means they share
+     * one database read instead of doing four identical ones.
+     *
+     * Checked after the local Map (which is free and faster) and skipped
+     * entirely for `fresh` reads. Every failure mode here — unconfigured,
+     * unreachable, slow, malformed — returns null and falls through to the
+     * read below, so this can only ever save work, never block it.
+     */
+    if (!fresh) {
+      const shared = await sharedCacheGet<ConfigSyncOutcome>(configSyncCacheKey(partyId));
+      if (shared) {
+        // Populate the local tier so this instance skips the hop next time.
+        configSyncCache.set(partyId, {
+          expires: Date.now() + CONFIG_SYNC_CACHE_TTL_MS,
+          value: shared,
+        });
+        return shared;
+      }
+    }
+
+    const value = await checkConfigSyncUncached(partyId, preloadedDoc);
+    /*
+     * Only successful reads are shared. Publishing a "party not found" would
+     * hand that answer to every other instance for the full TTL, and a
+     * transient failure would look like a deleted party across the fleet.
+     */
+    if (!("error" in value)) {
+      void sharedCacheSet(configSyncCacheKey(partyId), value, CONFIG_SYNC_CACHE_TTL_MS);
+    }
+    return value;
+  })().then((value) => {
     configSyncCache.set(partyId, { expires: Date.now() + CONFIG_SYNC_CACHE_TTL_MS, value });
     if (configSyncCache.size > CONFIG_SYNC_CACHE_MAX) pruneConfigSyncCache(Date.now());
     return value;
