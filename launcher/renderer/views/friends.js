@@ -2113,6 +2113,16 @@ async function fillPartyOnlineCount(slot, force = false) {
   }
 }
 
+const partyServerPings = new Map();
+
+function partyServerPingBadge(ping) {
+  if (ping == null) return `<span class="party-server-ping ping-unknown" title="Ping probing…">⚡ —</span>`;
+  const pingNum = Number(ping);
+  const cls = pingNum < 65 ? "ping-fast" : pingNum < 140 ? "ping-medium" : "ping-slow";
+  const icon = pingNum < 65 ? "🟢" : pingNum < 140 ? "🟡" : "🔴";
+  return `<span class="party-server-ping ${cls}" title="${pingNum}ms latency">${icon} ${pingNum}ms</span>`;
+}
+
 function partyServerRowHtml(server, { canPick, selectedId, selectedHost, selectedPort }) {
   const id = server.id || `${server.host}:${server.port}`;
   const selected =
@@ -2124,7 +2134,8 @@ function partyServerRowHtml(server, { canPick, selectedId, selectedHost, selecte
     server.players == null
       ? "—"
       : `${server.players}${server.maxPlayers ? `/${server.maxPlayers}` : ""}`;
-  const meta = [server.map, loc, server.gameType].filter(Boolean).join(" · ");
+  const ping = partyServerPings.get(id) ?? server.ping ?? null;
+
   return `<button type="button" class="party-public-server-row${selected ? " is-selected" : ""}"${
     canPick ? "" : " disabled"
   } data-id="${escapeHtml(id)}" data-host="${escapeHtml(server.host)}" data-port="${
@@ -2132,13 +2143,22 @@ function partyServerRowHtml(server, { canPick, selectedId, selectedHost, selecte
   }" data-name="${escapeHtml(label)}" data-mod="${escapeHtml(
     server.mod || ""
   )}" data-protected="${server.protected ? "1" : "0"}">
-    <span class="party-public-server-row-main">
-      <span class="party-public-server-name">${server.protected ? `${ICON.lock} ` : ""}${escapeHtml(
-        label
-      )}</span>
-      <span class="party-public-server-players">${escapeHtml(count)}</span>
-    </span>
-    ${meta ? `<span class="party-public-server-meta">${escapeHtml(meta)}</span>` : ""}
+    <div class="party-server-card-top">
+      <div class="party-server-name-wrap">
+        ${server.protected ? `<span class="party-server-lock" title="Password Protected">${ICON.lock}</span>` : ""}
+        <span class="party-server-name">${escapeHtml(label)}</span>
+      </div>
+      <div class="party-server-metrics">
+        ${partyServerPingBadge(ping)}
+        <span class="party-server-players-pill" title="Active Players / Max">${ICON.users} <strong>${escapeHtml(count)}</strong></span>
+      </div>
+    </div>
+    <div class="party-server-chips">
+      ${server.map ? `<span class="party-server-chip chip-map" title="Map">🗺️ <span>${escapeHtml(server.map)}</span></span>` : ""}
+      ${server.gameType ? `<span class="party-server-chip chip-mode" title="Game Mode">⚔️ <span>${escapeHtml(server.gameType)}</span></span>` : ""}
+      ${loc ? `<span class="party-server-chip chip-loc" title="Server Region">📍 <span>${escapeHtml(loc)}</span></span>` : ""}
+      <span class="party-server-chip chip-addr" title="Server Host:Port">🌐 <code>${escapeHtml(server.host)}:${escapeHtml(String(server.port))}</code></span>
+    </div>
   </button>`;
 }
 
@@ -2257,6 +2277,29 @@ async function fillPartyPublicServerPicker(slot, force = false) {
         listEl.dataset.rowSig = rows;
         listEl.scrollTop = scroll;
       }
+    }
+
+    if (window.playbound?.pingServers && sorted.length > 0) {
+      void window.playbound.pingServers(sorted.slice(0, 25)).then((pings) => {
+        if (pings && typeof pings === "object") {
+          let changed = false;
+          for (const [sId, p] of Object.entries(pings)) {
+            if (partyServerPings.get(sId) !== p) {
+              partyServerPings.set(sId, p);
+              changed = true;
+            }
+          }
+          if (changed && listEl) {
+            const rowsWithPings = sorted
+              .map((s) => partyServerRowHtml(s, { canPick, selectedId, selectedHost, selectedPort }))
+              .join("");
+            const scroll = listEl.scrollTop;
+            listEl.innerHTML = rowsWithPings;
+            listEl.dataset.rowSig = rowsWithPings;
+            listEl.scrollTop = scroll;
+          }
+        }
+      });
     }
   } catch (err) {
     console.warn("fillPartyPublicServerPicker:", err);
