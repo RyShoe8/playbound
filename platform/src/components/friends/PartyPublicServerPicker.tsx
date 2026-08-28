@@ -298,15 +298,6 @@ export function PartyPublicServerPicker({
           }`}
         >
           <p className="text-xs font-semibold">{gateNote}</p>
-          {gate === "ready" && onReadyUp ? (
-            <button
-              type="button"
-              onClick={onReadyUp}
-              className="flex items-center gap-1.5 rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white hover:bg-green-700"
-            >
-              <Check className="size-3" /> Ready Up
-            </button>
-          ) : null}
         </div>
       ) : null}
 
