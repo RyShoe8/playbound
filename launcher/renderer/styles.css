@@ -865,6 +865,134 @@ body {
   color: #06140c;
 }
 
+/* ── Floating Notification Toasts ────────────────────────── */
+
+.pb-toast-container {
+  position: fixed;
+  top: 56px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 380px;
+  width: calc(100vw - 40px);
+}
+
+.pb-toast {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #1b1728;
+  border: 1px solid var(--primary, #7c6aef);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 24px rgba(124, 106, 239, 0.25);
+  animation: pb-toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.pb-toast.closing {
+  transform: translateY(-8px) scale(0.96);
+  opacity: 0;
+}
+
+@keyframes pb-toast-in {
+  from {
+    transform: translateY(-16px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.pb-toast-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pb-toast-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pb-toast-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pb-toast-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-main, #fff);
+}
+
+.pb-toast-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+}
+
+.pb-toast-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.pb-toast-body {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.pb-toast-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pb-toast-btn {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.pb-toast-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.pb-toast-btn.primary {
+  background: var(--color-play, #34d27b);
+  border-color: transparent;
+  color: #06140c;
+}
+
+.pb-toast-btn.primary:hover {
+  background: #2ebd6c;
+}
+
 /* Mod Cards */
 .mod-card .card-art {
   aspect-ratio: 16 / 10;

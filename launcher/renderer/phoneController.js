@@ -316,7 +316,6 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       setStatus("Could not enable phone controller — launching without it", true);
     } else {
       ensureCouchBackground();
-      showPhoneJoinBanner(state);
       
       const pairChoice = await promptPhoneControllerPairing({
         session: state.session,
@@ -324,12 +323,15 @@ export async function maybeOfferPhoneControllerThenPlay(detail, playFn, slug) {
       });
 
       if (pairChoice === "cancel") {
+        document.getElementById("phone-controller-banner")?.remove();
         setStatus("Launch cancelled");
         return false;
       }
       if (pairChoice === "skip") {
+        document.getElementById("phone-controller-banner")?.remove();
         setStatus("Launching with PC controls…");
       } else {
+        showPhoneJoinBanner(state);
         setStatus("Phone controller paired — launching game…");
       }
     }

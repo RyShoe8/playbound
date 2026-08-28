@@ -5333,6 +5333,361 @@ export const editorial: Record<string, GameEditorial> = {
       },
     ],
   },
+
+  "cataclysm-dda": {
+    qualityBar: clearsAll(
+      "Cataclysm: Dark Days Ahead clears the PlayBound Bar: 100% free and open-source under CC-BY-SA 3.0, actively maintained by hundreds of contributors for over a decade, completely self-contained with modern tilesets and audio, and stands as one of the deepest simulation roguelikes ever made."
+    ),
+    longDescription:
+      "Cataclysm: Dark Days Ahead (CDDA) is an open-source, turn-based post-apocalyptic survival roguelike of unmatched systemic depth. Set in a near-future New England decimated by multiple simultaneous cataclysms—zombie outbreaks, extradimensional portals, robotic revolts, and fungal blooms—the game leaves you with nothing but your initial profession, starting traits, and an unrelenting imperative to survive.\n\nWhat sets CDDA apart from every other survival game is its uncompromising commitment to physical simulation. Every item has weight, volume, length, and material properties. Clothing layers dictate warmth, encumbrance, and ballistic protection. Wounds require specific medical treatments—splints for fractured limbs, antiseptic and bandages for infected bites, and surgical procedures for internal shrapnel. Food spoils based on ambient temperature, humidity, and preservation techniques like smoking, dehydrating, and canning.\n\nThe vehicular crafting system is legendary in the roguelike genre. Players can salvage scrap metal, solar panels, diesel engines, turrets, and welding rigs to design custom mobile fortresses from scratch. Frame by frame, you can build anything from a silent electric solar-powered reconnaissance trike to a heavily armored, 16-wheel amphibious battle wagon equipped with automated laser turrets, onboard kitchens, and cryogenic freezers.\n\nProgression is vast and emergent. Characters can augment their physiology through cybernetic bionics (CBMs), undergo hazardous genetic mutations, master complex martial arts stances, and recruit AI survivors to build self-sustaining fortified communes. With rich tileset graphics, full sound effects, atmospheric ambient music, and complete modding support, CDDA delivers thousands of hours of emergent, unscripted survival drama.",
+    whyWePickedIt:
+      "Cataclysm: DDA is the gold standard of open-source game development—a living, breathing simulation where thousands of community contributors have built one of the most intricate and rewarding survival sandboxes in PC gaming history.",
+    bestFor: [
+      "Fans of deep simulation roguelikes such as Dwarf Fortress, Caves of Qud, and Project Zomboid",
+      "Players who love in-depth crafting, vehicle engineering, and base fortification",
+      "Hardcore survival enthusiasts who want realistic biology, weather, and injury mechanics",
+      "Gamers who thrive on emergent storytelling and consequence-heavy permadeath",
+    ],
+    notFor: [
+      "Players seeking fast-paced real-time action or casual arcade survival",
+      "Those who dislike complex keyboard controls and steep initial learning curves",
+      "Gamers who prefer linear, guided quest campaigns with cinematics",
+    ],
+    comparableTo: [
+      "Dwarf Fortress (Adventure Mode)",
+      "Project Zomboid",
+      "Caves of Qud",
+      "Neo Scavenger",
+      "UnReal World",
+      "Cataclysm: Bright Nights",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the modern Tiles x64 release through PlayBound Launcher.",
+      },
+      {
+        platform: "windows",
+        text: "Extract and run cataclysm-tiles.exe to start playing immediately.",
+      },
+      {
+        platform: "windows",
+        text: "Select 'New Game' → 'Custom World' to configure scenario presets and world generation.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Cataclysm: Dark Days Ahead free?",
+        a: "Yes! CDDA is 100% free and open-source software licensed under CC-BY-SA 3.0. There are no paid tiers or microtransactions.",
+      },
+      {
+        q: "Does this version have graphics and sound?",
+        a: "Yes! PlayBound installs the official modern Tiles build, which includes graphical sprites, UI themes, and full soundpacks out of the box.",
+      },
+      {
+        q: "Can I customize or turn off permadeath?",
+        a: "Yes! While permadeath is the default roguelike experience, you can customize world settings, enable save backups, or use debug menus to tailor difficulty.",
+      },
+      {
+        q: "Can I build and drive custom vehicles?",
+        a: "Yes! The vehicle construction system allows you to build, customize, and maintain functional land and water vehicles from individual frames, engines, wheels, and electronics.",
+      },
+    ],
+  },
+
+  yorg: {
+    qualityBar: clearsAll(
+      "YORG clears the PlayBound Bar: 100% free and open-source under GPL-3.0, finished and fully playable, actively maintained on modern 64-bit systems, self-contained with custom 3D tracks, and delivers chaotic arcade combat racing."
+    ),
+    longDescription:
+      "YORG (Yorg's an Open Racing Game) is an open-source 3D arcade racing title inspired by classic top-down and chase-cam vehicular combat games like Micro Machines, Mashed, and Rollcage. Blending high-speed drifting with explosive power-ups, YORG turns every circuit into a high-stakes battleground where precise driving lines and ruthless weapon timing are equally essential.\n\nPlayers compete across a wide variety of themed tracks—from futuristic neon highways and tropical island coastlines to industrial complexes and mountain passes. The vehicle physics strike a satisfying balance between accessible arcade responsiveness and skill-based drifting, rewarding drivers who use handbrakes to sweep around tight hairpins while dodging enemy rocket barrages and oil slicks.\n\nMultiplayer is at the core of the YORG experience. Supporting local split-screen for up to 4 players alongside challenging AI opponents, the game is built for party sessions. Pick up missiles, speed turbos, shield deflectors, and deployable mines to disrupt opponents and fight your way to the top of the podium across single races, elimination rounds, and championship seasons.",
+    whyWePickedIt:
+      "YORG fills a classic void in free PC gaming: a fun, approachable, controller-friendly 3D combat racer that lets friends sit on a couch or connect gamepads for immediate split-screen party chaos.",
+    bestFor: [
+      "Fans of arcade combat racers like Micro Machines, Blur, and Mario Kart",
+      "Groups looking for quick, competitive local split-screen multiplayer",
+      "Players who enjoy weapon power-ups, drifting, and obstacle-filled tracks",
+    ],
+    notFor: [
+      "Sim-racing enthusiasts seeking realistic telemetry and tire modeling",
+      "Players looking for licensed real-world cars and professional motorsport circuits",
+    ],
+    comparableTo: [
+      "Mashed: Fully Loaded",
+      "Micro Machines V4",
+      "Super Indie Karts",
+      "Table Top Racing",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download and extract the standalone YORG 64-bit portable package.",
+      },
+      {
+        platform: "windows",
+        text: "Run yorg.exe to launch.",
+      },
+      {
+        platform: "windows",
+        text: "Connect gamepads and configure player controls in the Options menu.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is YORG completely free?",
+        a: "Yes! YORG is open-source software licensed under GPL-3.0 with no ads or microtransactions.",
+      },
+      {
+        q: "Does YORG support gamepads and split-screen?",
+        a: "Yes! YORG supports up to 4 simultaneous players on USB gamepads or keyboards with native split-screen rendering.",
+      },
+      {
+        q: "What game modes are included?",
+        a: "YORG features Championship Tournaments, Quick Race, Time Trials, and Elimination Battle modes.",
+      },
+      {
+        q: "What are the system requirements?",
+        a: "YORG runs smoothly on any dual-core CPU with 2 GB RAM and basic OpenGL 3.0 compatible graphics.",
+      },
+    ],
+  },
+
+  torcs: {
+    qualityBar: clearsAll(
+      "TORCS clears the PlayBound Bar: 100% free and open-source under GPL-2.0, completely finished and widely used as an AI & physics testbed, actively maintained, stands independently with extensive car/track rosters, and provides genuine sim-racing physics."
+    ),
+    longDescription:
+      "TORCS (The Open Racing Car Simulator) is one of the most respected and foundational open-source 3D motorsport simulations in gaming history. Created to deliver realistic racing vehicle dynamics without commercial paywalls, TORCS features a comprehensive simulation engine accounting for suspension geometry, aerodynamic downforce, tire grip curves, mechanical transmission gearing, and damage modeling.\n\nThe game offers an extensive collection of over 50 car categories—ranging from lightweight open-wheel formula racers and historic classic grand prix roadsters to high-downforce GT endurance cars and stock rally machines. Over 20 international racing circuits and off-road dirt tracks test your throttle feathering, braking points, and racing line precision.\n\nBeyond its realistic driving physics, TORCS is famous for its sophisticated programmed AI drivers and modular architecture. Players can compete in custom Single Races, Practice Sessions, and multi-round Championship Grand Prix seasons against up to 50 concurrent computer opponents, or hook up dual gamepads/wheels for local split-screen competition.",
+    whyWePickedIt:
+      "TORCS is a monument to open motorsport simulation. Its authentic physics model, rich car variety, and accessible split-screen mode prove that serious sim racing can thrive in open source.",
+    bestFor: [
+      "Sim-racing enthusiasts and physics-driven motorsport fans",
+      "Players with racing wheels, pedals, or analog gamepads who enjoy tuning vehicles",
+      "Gamers looking for deep offline championship racing against challenging AI grids",
+    ],
+    notFor: [
+      "Casual arcade racing fans looking for automatic drifting and nitro boosts",
+      "Players expecting modern ray-traced AAA car interior visual presentations",
+    ],
+    comparableTo: [
+      "Speed Dreams",
+      "Live for Speed",
+      "Grand Prix Legends",
+      "rFactor (Classic)",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the portable TORCS package via PlayBound Launcher.",
+      },
+      {
+        platform: "windows",
+        text: "Run wtorcs.exe to start the simulator.",
+      },
+      {
+        platform: "windows",
+        text: "Configure your steering wheel, gamepad, or keyboard in the Drivers & Controls settings.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is TORCS completely free?",
+        a: "Yes! TORCS is 100% free and open-source software licensed under GPL-2.0.",
+      },
+      {
+        q: "Does TORCS support steering wheels and pedals?",
+        a: "Yes! TORCS features native support for USB racing wheels, force feedback devices, gamepads, and keyboards.",
+      },
+      {
+        q: "Can I race against AI opponents?",
+        a: "Yes! TORCS includes multiple sophisticated AI driver algorithms capable of racing in large, competitive grids.",
+      },
+      {
+        q: "What are the system requirements?",
+        a: "TORCS is very lightweight, requiring only a 1.5 GHz CPU, 1 GB RAM, and any basic OpenGL-compatible graphics card.",
+      },
+    ],
+  },
+
+  "stunt-rally": {
+    qualityBar: clearsAll(
+      "Stunt Rally clears the PlayBound Bar: 100% free and open-source under GPL-3.0, finished with over 170 tracks and 30 sceneries, actively maintained on modern OSes, self-contained with custom 3D assets, and delivers exceptional stunt rally gameplay."
+    ),
+    longDescription:
+      "Stunt Rally takes the high-speed thrills of rally driving and blends them with the outrageous acrobatic geometry of TrackMania and Rush 2049. Powered by the VDrift physics engine and OGRE graphics rendering, Stunt Rally delivers high-octane racing across more than 170 handcrafted tracks situated in over 30 distinct planetary biomes—from desert canyons and snowy alpine summits to futuristic alien worlds, lush jungles, and floating sky islands.\n\nCourses are designed with extreme verticality and wild stunt elements: massive loop-the-loops, death-defying corkscrews, transparent pipes, dynamic jump ramps, and hazardous obstacles. Vehicles range from agile lightweight rally hatchbacks and hypercars to heavy monster trucks and hovercraft, each featuring unique suspension rebound, center-of-gravity handling, and nitro boost capacity.\n\nStunt Rally includes an immensely powerful built-in 3D Track Editor, allowing players to sculpt terrain, paint surface splats, generate procedural road ribbons, and place interactive stunt props. Supporting single races, multi-tier championship challenges, ghost time-trials, and 2-to-4 player split-screen racing, it is one of the most content-rich open-source driving games ever created.",
+    whyWePickedIt:
+      "With over 170 tracks, incredible physics variety, dynamic weather, and an integrated track editor, Stunt Rally is a masterclass in community-driven arcade stunt racing.",
+    bestFor: [
+      "Fans of TrackMania, Rush 2049, and extreme arcade stunt driving",
+      "Players who love drifting through loop-the-loops, pipes, and massive aerial jumps",
+      "Track creators who want a fully-featured in-game 3D circuit editor",
+      "Groups looking for 2-to-4 player split-screen racing on PC",
+    ],
+    notFor: [
+      "Players looking for strict real-world WRC rally simulation without stunt elements",
+      "Gamers with very old integrated graphics cards that lack shader model support",
+    ],
+    comparableTo: [
+      "TrackMania",
+      "San Francisco Rush 2049",
+      "Distance",
+      "Grip: Combat Racing",
+      "VDrift",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the portable Stunt Rally package through PlayBound Launcher.",
+      },
+      {
+        platform: "windows",
+        text: "Run stuntrally.exe to launch.",
+      },
+      {
+        platform: "windows",
+        text: "Connect your controller and select Championship, Single Race, or Track Editor.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Stunt Rally free?",
+        a: "Yes! Stunt Rally is free and open source under GPL-3.0.",
+      },
+      {
+        q: "How many tracks and vehicles are included?",
+        a: "The game features over 170 tracks across 30+ visual sceneries and more than 20 diverse vehicles.",
+      },
+      {
+        q: "Does Stunt Rally support split-screen?",
+        a: "Yes! Up to 4 players can race simultaneously in local split-screen mode on a single monitor.",
+      },
+      {
+        q: "Can I create my own tracks?",
+        a: "Yes! Stunt Rally includes an intuitive and powerful in-game 3D track editor for building custom roads and stunt elements.",
+      },
+    ],
+  },
+
+  srb2: {
+    qualityBar: clearsAll(
+      "Sonic Robo Blast 2 clears the PlayBound Bar: 100% free and open-source under GPL-2.0, completely finished with dozens of expansive 3D zones, actively maintained by Sonic Team Junior for over two decades, independent from commercial dependencies, and stands as one of the greatest fan games ever crafted."
+    ),
+    longDescription:
+      "Sonic Robo Blast 2 (SRB2) is a legendary 3D open-source Sonic the Hedgehog platformer built from a heavily modified Doom Legacy engine. What began in the late 1990s as an ambitious community endeavor has evolved into a towering masterwork of 3D platforming design, capturing the physics, momentum, and sense of speed of classic Genesis Sonic titles while translating them flawlessly into full 3D environments.\n\nUnlike many 3D platformers that rely on automated speed pads and scripted camera rails, SRB2 is driven by pure physics and player agency. Controlling Sonic, Tails, or Knuckles, players navigate sprawling, multi-tiered 3D zones filled with alternate pathways, hidden emblem collectibles, secret bonus stages, and intricate boss encounters. Sonic commands high-speed momentum and the thok dash, Tails can fly and carry teammates to towering shortcuts, and Knuckles can glide and climb vertical cliff faces.\n\nMultiplayer is where SRB2 shines even brighter. Built on Doom's robust network architecture, SRB2 supports cooperative campaign runs, competitive Match deathmatches with ring weapons, high-speed Circuit Races, and intense team-based Capture the Flag (CTF). With comprehensive gamepad controls, 60+ FPS uncapped rendering, custom character skins, and an enormous ecosystem of community add-ons, SRB2 is an essential multiplayer experience.",
+    whyWePickedIt:
+      "SRB2 is a triumph of open-source fan game engineering. By transforming the classic Doom engine into a momentum-based 3D Sonic wonderland with full online co-op and competitive modes, it delivers timeless platforming joy.",
+    bestFor: [
+      "Sonic fans who love momentum-based 3D platforming without automated rails",
+      "Multiplayer groups looking for online Co-op, Match deathmatch, and Race modes",
+      "Retro gaming enthusiasts and Doom modding historians",
+      "Players who enjoy uncovering secret stages, emblems, and custom character add-ons",
+    ],
+    notFor: [
+      "Players who dislike retro low-poly 90s visual aesthetics",
+      "Those who prefer modern 2D side-scrolling Sonic games exclusively",
+    ],
+    comparableTo: [
+      "Sonic the Hedgehog (Classic Genesis Trilogy)",
+      "Sonic Adventure",
+      "Sonic Robo Blast 2 Kart",
+      "Doom Legacy (Engine)",
+      "Super Mario 64",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download the complete SRB2 release via PlayBound Launcher.",
+      },
+      {
+        platform: "windows",
+        text: "Run srb2win.exe to launch.",
+      },
+      {
+        platform: "windows",
+        text: "Connect your gamepad and configure analog controls in the Options menu.",
+      },
+      {
+        platform: "windows",
+        text: "Select Single Player, or click 'Join Game' in PlayBound to join party multiplayer.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Sonic Robo Blast 2 free?",
+        a: "Yes! SRB2 is 100% free and open source under the GPL-2.0 license.",
+      },
+      {
+        q: "How does multiplayer work?",
+        a: "SRB2 supports online Co-op, Match, Circuit Race, and Capture the Flag modes with up to 32 simultaneous players over Virtual LAN or direct IP.",
+      },
+      {
+        q: "Does SRB2 have controller support?",
+        a: "Yes! SRB2 features full native support for modern gamepads (Xbox, PlayStation, USB controllers) with analog steering and camera controls.",
+      },
+      {
+        q: "Can I download custom characters and levels?",
+        a: "Yes! The SRB2 community on mb.srb2.org has created thousands of custom characters, level packs, and total conversions.",
+      },
+    ],
+  },
+
+  jfsw: {
+    qualityBar: clearsAll(
+      "Shadow Warrior (JFSW) clears the PlayBound Bar: 100% free and open-source engine under GPL-2.0, completely finished, actively maintained on 64-bit systems, bundled with official 3D Realms Shareware data, and delivers legendary classic Build-engine FPS action."
+    ),
+    longDescription:
+      "Shadow Warrior (JFSW) is Jonathon Fowler's acclaimed modern source port of 3D Realms' legendary 1997 Build-engine first-person shooter. Following in the footsteps of Duke Nukem 3D and Blood, Shadow Warrior puts you in the boots of Lo Wang, an elite bodyguard battling the demonic hordes of corporate overlord Zilla across sprawling interactive levels.\n\nJFSW brings the classic shooter into the modern era with true 3D mouselook, widescreen high-definition resolutions, uncapped framerates, CD audio soundtrack support, and full controller integration. The Build engine's iconic interactivity is in full force: drive forklifts and heavy construction tanks, climb ladders, pilot RC bomb cars, and slice enemies in half with the katana or blast them with the iconic four-barrel riot gun and sticky bombs.\n\nFor multiplayer, JFSW supports the legendary WangBang deathmatch and cooperative campaign modes over modern network connections. Pre-packaged with the official 3D Realms Shareware episode ('Enter the Wang'), players can jump straight into the action with one-click installation.",
+    whyWePickedIt:
+      "Shadow Warrior is one of the pillars of the 1990s Build engine holy trinity. JFSW provides the definitive, faithful way to experience Lo Wang's explosive action on modern hardware without DOS emulation hurdles.",
+    bestFor: [
+      "Fans of classic 90s Build engine shooters (Duke Nukem 3D, Blood, Redneck Rampage)",
+      "Boomer shooter enthusiasts who appreciate fast movement, secrets, and interactive environments",
+      "Multiplayer groups looking for classic WangBang deathmatch action",
+    ],
+    notFor: [
+      "Players sensitive to 1990s irreverent arcade action-movie humor",
+      "Those who prefer modern tactical military cover shooters",
+    ],
+    comparableTo: [
+      "Duke Nukem 3D (JFDuke3D / EDuke32)",
+      "Blood (NBlood)",
+      "Redneck Rampage",
+      "Ion Fury",
+      "Dusk",
+    ],
+    installSteps: [
+      {
+        platform: "windows",
+        text: "Download JFSW pre-bundled with official shareware data via PlayBound Launcher.",
+      },
+      {
+        platform: "windows",
+        text: "Run sw.exe to launch immediately in high resolution.",
+      },
+      {
+        platform: "windows",
+        text: "Configure mouse aim, resolution, and controller bindings in the Options menu.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is JFSW free?",
+        a: "Yes! JFSW is an open-source engine port licensed under GPL-2.0 bundled with the official free 3D Realms Shareware episode.",
+      },
+      {
+        q: "Can I use my full registered Shadow Warrior GRP file?",
+        a: "Yes! If you own the full game on Steam or GOG, simply copy your SW.GRP file into the game directory to unlock all registered episodes.",
+      },
+      {
+        q: "Does JFSW support modern widescreen resolutions?",
+        a: "Yes! JFSW natively supports 1080p, 1440p, 4K, and ultra-wide aspect ratios with full 3D mouselook.",
+      },
+      {
+        q: "Can I play multiplayer with friends?",
+        a: "Yes! JFSW supports WangBang deathmatch and Co-op multiplayer over Virtual LAN and direct IP.",
+      },
+    ],
+  },
 };
 
 /** Merge editorial content onto a factual catalog entry. */

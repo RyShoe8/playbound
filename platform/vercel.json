@@ -22,19 +22,16 @@
     },
     {
       "path": "/api/cron/presence-sweep",
-      "schedule": "* * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/events",
-      "schedule": "* * * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/game-host-ensure",
       "schedule": "45 4 * * *"
-    },
-    {
-      "path": "/api/cron/automated-event-planner",
-      "schedule": "*/10 * * * *"
     }
   ]
 }
+

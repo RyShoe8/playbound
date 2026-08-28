@@ -20,6 +20,14 @@
     DetailPrint "Setting up PlayBound networking…"
     ExecWait 'msiexec /i "$INSTDIR\resources\netbird\netbird_installer.msi" /quiet' $1
     DetailPrint "NetBird setup exit code $1"
+
+    ; Clean up NetBird desktop shortcuts so only PlayBound is on the user's desktop
+    SetShellVarContext all
+    Delete "$DESKTOP\NetBird.lnk"
+    Delete "$DESKTOP\NetBird*.lnk"
+    SetShellVarContext current
+    Delete "$DESKTOP\NetBird.lnk"
+    Delete "$DESKTOP\NetBird*.lnk"
     Goto netbird_done
   netbird_skip:
     DetailPrint "NetBird setup not bundled; will install on first party join."

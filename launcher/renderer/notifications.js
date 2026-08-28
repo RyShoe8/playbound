@@ -1,16 +1,19 @@
 /**
- * Launcher notification bell — same Mongo notifications as the site, with
+ * Launcher notification bell & live toast popups — same Mongo notifications as the site, with
  * readAt synced through /api/notifications/read so web + launcher stay aligned.
  */
 import { api, setStatus, state } from "./shared.js";
 
-const POLL_MS = 45_000;
+const POLL_MS = 6_000;
+const TOAST_DURATION_MS = 15_000;
 
 let pollTimer = null;
 let items = [];
 let unreadCount = 0;
 let panelOpen = false;
 let wired = false;
+const seenNotificationIds = new Set();
+let initialLoadDone = false;
 
 function escapeHtml(s) {
   return String(s ?? "")
@@ -42,6 +45,7 @@ function els() {
     list: document.getElementById("notif-panel-list"),
     markAll: document.getElementById("notif-mark-all"),
     wrap: document.getElementById("notif-bell-wrap"),
+    toastContainer: document.getElementById("pb-toast-container"),
   };
 }
 
@@ -71,6 +75,135 @@ export function closeNotificationsPanel() {
   setPanelOpen(false);
 }
 
+function dismissToast(el) {
+  if (!el || el.dataset.dismissed) return;
+  el.dataset.dismissed = "1";
+  el.classList.add("closing");
+  setTimeout(() => el.remove(), 200);
+}
+
+/**
+ * Show a floating in-app toast notification card when a new notification arrives.
+ */
+function showNotificationToast(n) {
+  const container = els().toastContainer || document.getElementById("pb-toast-container");
+  if (!container) return;
+
+  const partyId = n.meta?.partyId || "";
+  const inviteId = n.meta?.inviteId || "";
+  const icon =
+    n.type === "party_invite" || n.type === "party_joined"
+      ? "👥"
+      : n.type === "play_invite"
+      ? "🎮"
+      : n.type?.startsWith("friend")
+      ? "👤"
+      : "🔔";
+
+  let actionsHtml = "";
+  if (n.type === "party_invite" && partyId) {
+    actionsHtml = `
+      <button type="button" class="pb-toast-btn primary" data-action="toast-join-party" data-party="${escapeHtml(
+        partyId
+      )}" data-id="${escapeHtml(n.id)}">Join Party</button>
+      <button type="button" class="pb-toast-btn" data-action="toast-decline" data-id="${escapeHtml(
+        n.id
+      )}">Decline</button>
+    `;
+  } else if (n.type === "play_invite" && inviteId) {
+    actionsHtml = `
+      <button type="button" class="pb-toast-btn primary" data-action="toast-accept-invite" data-invite="${escapeHtml(
+        inviteId
+      )}" data-id="${escapeHtml(n.id)}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(
+      n.meta?.gameSlug || ""
+    )}">Play</button>
+      <button type="button" class="pb-toast-btn" data-action="toast-decline-invite" data-invite="${escapeHtml(
+        inviteId
+      )}" data-id="${escapeHtml(n.id)}">Decline</button>
+    `;
+  } else {
+    actionsHtml = `
+      <button type="button" class="pb-toast-btn primary" data-action="toast-open" data-id="${escapeHtml(
+        n.id
+      )}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(n.meta?.gameSlug || "")}">View</button>
+    `;
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "pb-toast";
+  toast.dataset.id = n.id;
+  toast.innerHTML = `
+    <div class="pb-toast-head">
+      <div class="pb-toast-title-wrap">
+        <span class="pb-toast-icon">${icon}</span>
+        <span class="pb-toast-title">${escapeHtml(n.title)}</span>
+      </div>
+      <button type="button" class="pb-toast-close" aria-label="Dismiss">✕</button>
+    </div>
+    ${n.body ? `<p class="pb-toast-body">${escapeHtml(n.body)}</p>` : ""}
+    <div class="pb-toast-actions">
+      ${actionsHtml}
+    </div>
+  `;
+
+  // Close button
+  toast.querySelector(".pb-toast-close")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dismissToast(toast);
+  });
+
+  // Action buttons
+  toast.querySelector('[data-action="toast-join-party"]')?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    dismissToast(toast);
+    if (partyId && window.playbound?.joinParty) {
+      const res = await window.playbound.joinParty(partyId);
+      if (res?.error) {
+        setStatus(res.error, true);
+      } else {
+        setStatus("Joined party!");
+      }
+    }
+    void markRead(n.id);
+    await api.navigateTo?.("friends");
+    if (api.refreshFriendsData) void api.refreshFriendsData();
+  });
+
+  toast.querySelector('[data-action="toast-decline"]')?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dismissToast(toast);
+    void markRead(n.id);
+  });
+
+  toast.querySelector('[data-action="toast-accept-invite"]')?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    dismissToast(toast);
+    await window.playbound.playInviteAction?.(inviteId, "accept");
+    void markRead(n.id);
+    await openHref(n.href || (n.meta?.gameSlug ? `/games/${n.meta.gameSlug}` : "/friends"), n.meta);
+  });
+
+  toast.querySelector('[data-action="toast-decline-invite"]')?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    dismissToast(toast);
+    await window.playbound.playInviteAction?.(inviteId, "decline");
+    void markRead(n.id);
+    void refresh();
+  });
+
+  toast.querySelector('[data-action="toast-open"]')?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    dismissToast(toast);
+    void markRead(n.id);
+    await openHref(n.href || (n.meta?.gameSlug ? `/games/${n.meta.gameSlug}` : "/friends"), n.meta);
+  });
+
+  container.appendChild(toast);
+
+  // Auto-dismiss after 15 seconds
+  setTimeout(() => dismissToast(toast), TOAST_DURATION_MS);
+}
+
 async function refresh() {
   if (!window.playbound?.getNotifications) return;
   if (!state.accountState?.connected) {
@@ -81,9 +214,29 @@ async function refresh() {
   }
   try {
     const data = await window.playbound.getNotifications();
+    const prevItems = items;
     items = Array.isArray(data?.items) ? data.items : [];
     setBadge(data?.unreadCount ?? items.filter((n) => !n.readAt).length);
     paintList();
+
+    // Check for newly arriving unread notifications to toast
+    if (!initialLoadDone) {
+      initialLoadDone = true;
+      for (const item of items) {
+        seenNotificationIds.add(item.id);
+      }
+    } else {
+      for (const item of items) {
+        if (!item.readAt && !seenNotificationIds.has(item.id)) {
+          seenNotificationIds.add(item.id);
+          showNotificationToast(item);
+          void window.playbound.showDesktopNotification?.({
+            title: item.title,
+            body: item.body || "",
+          });
+        }
+      }
+    }
   } catch {
     /* ignore */
   }
@@ -326,3 +479,4 @@ export function wireNotifications() {
 export function onNotificationsAccountChanged() {
   syncPoll();
 }
+

@@ -185,6 +185,12 @@ const LOCATIONS = {
     include: ["tyrian.sav", "opentyrian.cfg", "tyrian.cfg"],
     note: "Save and settings live beside the executable.",
   },
+  "opentyrian-2000": {
+    verified: "OpenTyrian 2000 save and config location",
+    resolve: (c) => c.installDir || null,
+    include: ["tyrian.sav", "opentyrian.cfg", "tyrian.cfg"],
+    note: "Save and settings live beside the executable.",
+  },
   "tes-arena": {
     verified: "documented — Arena save games directory",
     resolve: (c) => (c.installDir ? path.join(c.installDir, "SAVE") : null),
@@ -208,6 +214,39 @@ const LOCATIONS = {
   openmohaa: {
     verified: "documented — OpenMOHAA save directory in Documents",
     resolve: (c) => path.join(c.documents, "My Games", "OpenMOHAA", "save"),
+  },
+  "cataclysm-dda": {
+    verified: "documented — CDDA portable save directory",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),
+  },
+  srb2: {
+    verified: "documented — Sonic Robo Blast 2 gamedata and saves",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "luafiles") : null),
+  },
+  jfsw: {
+    verified: "documented — JFSW portable save and config directory",
+    resolve: (c) => c.installDir || null,
+    include: ["*.sav", "jfsw.cfg"],
+  },
+  yorg: {
+    verified: "documented — YORG settings and profile directory",
+    resolve: (c) => path.join(c.appData, "yorg"),
+  },
+  torcs: {
+    verified: "documented — TORCS drivers and championship saves",
+    resolve: (c) => path.join(c.userProfile || c.appData, ".torcs"),
+  },
+  "stunt-rally": {
+    verified: "documented — Stunt Rally championship and ghost tracks",
+    resolve: (c) => path.join(c.userProfile || c.appData, ".stuntrally"),
+  },
+  "gradius-remake": {
+    verified: "documented — portable save / config in install folder",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),
+  },
+  gradius: {
+    verified: "documented — portable save / config in install folder",
+    resolve: (c) => (c.installDir ? path.join(c.installDir, "save") : null),
   },
 };
 

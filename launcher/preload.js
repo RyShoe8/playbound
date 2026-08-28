@@ -103,6 +103,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getFriendsUpcomingEvents: () => ipcRenderer.invoke("get-friends-upcoming-events"),
   getNotifications: () => ipcRenderer.invoke("get-notifications"),
   markNotificationsRead: (opts) => ipcRenderer.invoke("mark-notifications-read", opts || {}),
+  showDesktopNotification: (opts) => ipcRenderer.invoke("show-desktop-notification", opts || {}),
   playInviteAction: (inviteId, action) =>
     ipcRenderer.invoke("play-invite-action", inviteId, action),
   getParties: (opts) => ipcRenderer.invoke("get-parties", opts),
@@ -113,6 +114,8 @@ contextBridge.exposeInMainWorld("playbound", {
   setPartyGame: (partyId, gameSlug) => ipcRenderer.invoke("update-party", partyId, { gameSlug }),
   setPartyEdition: (partyId, editionSlug) =>
     ipcRenderer.invoke("update-party", partyId, { editionSlug: editionSlug || null }),
+  setPartyOpenRaMod: (partyId, openRaMod) =>
+    ipcRenderer.invoke("update-party", partyId, { openRaMod: openRaMod || null }),
   setPartyHostMode: (partyId, hostMode) => ipcRenderer.invoke("update-party", partyId, { hostMode }),
   setPartyPublicServer: (partyId, publicServer) =>
     ipcRenderer.invoke("update-party", partyId, { publicServer }),
