@@ -246,23 +246,23 @@ export function PartyPublicServerPicker({
           : null;
 
   return (
-    <div className="w-full rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+    <div className="w-full rounded-xl border border-border bg-secondary/30 p-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Public server
           </p>
           {hasSelection ? (
-            <p className="mt-1 text-sm font-semibold">
+            <p className="mt-1.5 text-base font-semibold">
               {selectedName || `${selectedHost}:${selectedPort}`}
               {selectedHost && selectedPort ? (
-                <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">
+                <span className="ml-2 font-mono text-sm font-normal text-muted-foreground">
                   {selectedHost}:{selectedPort}
                 </span>
               ) : null}
             </p>
           ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-base text-muted-foreground">
               {canPick
                 ? "Choose where the party plays, then hit Join Game."
                 : "No server chosen yet."}
@@ -272,7 +272,7 @@ export function PartyPublicServerPicker({
         {showList ? (
           <div className="flex items-center gap-2">
             {servers && servers.length > 0 ? (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 {formatPlayers(players)} playing across {servers.length} server
                 {servers.length === 1 ? "" : "s"}
               </span>
@@ -309,7 +309,7 @@ export function PartyPublicServerPicker({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search servers…"
-              className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
             />
           ) : null}
 
@@ -320,7 +320,7 @@ export function PartyPublicServerPicker({
           ) : filtered.length === 0 ? (
             <p className="text-xs text-muted-foreground">No public servers listed right now.</p>
           ) : (
-            <ul className="max-h-64 overflow-y-auto divide-y divide-border rounded-lg border border-border bg-background">
+            <ul className="max-h-96 overflow-y-auto divide-y divide-border rounded-lg border border-border bg-background">
               {filtered.map((server) => {
                 const id = serverKey(server);
                 const selected =
@@ -333,12 +333,12 @@ export function PartyPublicServerPicker({
                       type="button"
                       disabled={!canPick || busyId === id}
                       onClick={() => void pick(server)}
-                      className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                      className={`w-full text-left px-4 py-3.5 text-sm transition-colors ${
                         selected ? "bg-primary/10" : canPick ? "hover:bg-secondary/80" : ""
                       } disabled:cursor-not-allowed disabled:opacity-70`}
                     >
                       <span className="flex items-start justify-between gap-3">
-                        <span className="font-semibold leading-snug min-w-0">
+                        <span className="text-base font-semibold leading-snug min-w-0">
                           {server.protected ? (
                             <Lock className="inline size-3 mr-1 -mt-0.5" />
                           ) : null}
@@ -350,7 +350,7 @@ export function PartyPublicServerPicker({
                             : `${server.players}${server.maxPlayers ? `/${server.maxPlayers}` : ""}`}
                         </span>
                       </span>
-                      <span className="mt-0.5 flex flex-wrap gap-x-2 text-muted-foreground">
+                      <span className="mt-1.5 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
                         {server.map ? <span>{server.map}</span> : null}
                         {loc ? <span>{loc}</span> : null}
                         {server.gameType ? <span>{server.gameType}</span> : null}

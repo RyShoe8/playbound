@@ -178,15 +178,18 @@ export function hostedPayloadFromDoc(
   const configured = isGameHostConfigured();
   const steps = enabled ? getHostedInGameSteps(gameSlug) : [];
   if (!hosted) return { ...base, enabled, configured, steps };
+  const ready = hosted.status === "ready" && Boolean(hosted.host && hosted.port);
   return {
     enabled,
     configured,
     status: (hosted.status as HostedStatus) || "none",
-    host: hosted.host || null,
-    port: typeof hosted.port === "number" ? hosted.port : null,
-    name: hosted.name || null,
+    // Never disclose or launch against an allocated address while its game
+    // process is still loading. The agent only marks ready after port bind.
+    host: ready ? hosted.host || null : null,
+    port: ready && typeof hosted.port === "number" ? hosted.port : null,
+    name: ready ? hosted.name || null : null,
     error: hosted.error || null,
-    roomCode: hosted.roomCode || null,
+    roomCode: ready ? hosted.roomCode || null : null,
     steps,
   };
 }

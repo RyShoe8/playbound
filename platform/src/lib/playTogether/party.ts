@@ -78,6 +78,7 @@ import {
   libraryHasRequiredEdition,
 } from "@/lib/playTogether/editionMatch";
 import { computePartyReadiness } from "@/lib/playTogether/partyReadiness";
+import { preferredPartyEditionSlug } from "@/lib/playTogether/partyEdition";
 import { applyPresenceFreshness } from "@/lib/friends/presenceMask";
 import {
   editionsFromRow,
@@ -103,6 +104,8 @@ type PartyDoc = Document & {
   status: PartyStatus;
   members: RuleMember[];
   hostMode?: PartyHostMode | null;
+  selfHostReady?: boolean;
+  selfHostReadyAt?: Date | null;
   hosted?: PartyHostFields;
   lan?: PartyLanFields;
   publicServer?: PublicServerFields | null;
@@ -164,6 +167,8 @@ function parsePublicServer(raw: unknown): PublicServerFields | { error: string }
 }
 
 function resetPartyConnectState(doc: PartyDoc) {
+  doc.selfHostReady = false;
+  doc.selfHostReadyAt = null;
   if (doc.hosted) {
     doc.hosted.status = "none";
     doc.hosted.error = null;
@@ -611,6 +616,8 @@ function serializeParty(
       doc.gameSlug && hostMode === "self" && doc.visibility === "public"
         ? publicLobbyPortFor(String(doc.gameSlug))
         : null,
+    selfHostReady:
+      hostMode === "self" && doc.status === "playing" && Boolean(doc.selfHostReady),
     eventId: doc.eventId ? String(doc.eventId) : null,
     discord: {
       voiceChannelId: (discord.voiceChannelId as string) || null,
@@ -1288,7 +1295,7 @@ export async function setPartyGame(
     await releasePartyHost(doc);
     await releasePartyLan(doc);
   }
-  if (switchingGame && wasInSession) {
+  if (switchingGame) {
     doc.status = "forming";
     for (const member of doc.members) member.ready = false;
   }
@@ -1311,14 +1318,6 @@ export async function setPartyGame(
      * single-edition game exactly as before, since there is nothing to
      * disambiguate.
      */
-    const editions = await listEditionsForGame(game);
-    if (editions.length > 1) {
-      const multiplayerEditions = editions.filter((e) => e.features?.includes("Multiplayer"));
-      const candidates = multiplayerEditions.length > 0 ? multiplayerEditions : editions;
-      doc.editionSlug = (candidates.find((e) => e.isDefault) ?? candidates[0]).slug;
-    } else {
-      doc.editionSlug = null;
-    }
     doc.modSlugs = [];
     /*
      * Host mode belongs to the game, not the party: "my computer" is a valid
@@ -1330,6 +1329,13 @@ export async function setPartyGame(
     doc.hostMode = defaultHostMode(slug);
     resetPartyConnectState(doc);
   }
+  /*
+   * Also repair parties created before multiplayer-aware edition selection.
+   * Re-selecting the same game used to leave Freedoom locked to GZDoom, so
+   * every member was told to install an edition that cannot join the party.
+   */
+  const editions = await listEditionsForGame(game);
+  doc.editionSlug = preferredPartyEditionSlug(editions, doc.editionSlug);
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -1522,7 +1528,12 @@ export async function setPartyEdition(
     }
   }
 
-  doc.editionSlug = slug || null;
+  const previousEdition = doc.editionSlug || null;
+  const newEdition = slug || null;
+  if (previousEdition !== newEdition) {
+    for (const member of doc.members) member.ready = false;
+  }
+  doc.editionSlug = newEdition;
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -1574,7 +1585,12 @@ export async function setPartyOpenRaMod(
     return { error: "Invalid mod", status: 400 };
   }
 
-  doc.openRaMod = (value || null) as OpenRaModSlug | null;
+  const previousMod = doc.openRaMod || null;
+  const newMod = (value || null) as OpenRaModSlug | null;
+  if (previousMod !== newMod) {
+    for (const member of doc.members) member.ready = false;
+  }
+  doc.openRaMod = newMod;
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -1712,12 +1728,21 @@ export async function joinPartyGame(
   }
 
   const firstLaunch = doc.status !== "playing" && doc.status !== "launching";
+  const hostMode = resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted);
+  const isLeader = String(doc.leaderId) === userId;
+  if (hostMode === "self" && !isLeader && !doc.selfHostReady) {
+    return { error: "Waiting for host", status: 400 };
+  }
   const connect = await ensurePartyConnectReady(doc);
   if ("error" in connect) {
     return { error: connect.error, status: 400 };
   }
   if (firstLaunch) {
-    doc.status = "playing";
+    doc.status = hostMode === "self" ? "launching" : "playing";
+    if (hostMode === "self") {
+      doc.selfHostReady = false;
+      doc.selfHostReadyAt = null;
+    }
     doc.lastActivity = new Date();
     await doc.save();
     await placePartyDiscordVoice(doc);
@@ -1780,6 +1805,8 @@ async function tryEndPartySession(doc: PartyDoc): Promise<boolean> {
 
   const rp = toRuleParty(doc.toObject());
   doc.status = derivePartyStatus("forming", rp.members);
+  doc.selfHostReady = false;
+  doc.selfHostReadyAt = null;
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -1838,7 +1865,12 @@ export async function launchParty(
   }
 
   const now = new Date();
-  doc.status = "playing";
+  const hostMode = resolvedHostMode(String(doc.gameSlug), doc.hostMode, doc.hosted);
+  doc.status = hostMode === "self" ? "launching" : "playing";
+  if (hostMode === "self") {
+    doc.selfHostReady = false;
+    doc.selfHostReadyAt = null;
+  }
   doc.lastActivity = now;
   await doc.save();
 
@@ -1857,6 +1889,27 @@ export async function launchParty(
     party: launched,
     status: 200,
   };
+}
+
+/** Leader acknowledgement after its launcher observes the local server bind. */
+export async function markSelfHostReady(
+  partyId: string,
+  leaderId: string
+): Promise<{ party: PartyPayload; status: 200 } | { error: string; status: 400 | 403 | 404 }> {
+  await dbConnect();
+  const doc = await Party.findById(partyId);
+  if (!doc) return { error: "Party not found", status: 404 };
+  if (String(doc.leaderId) !== leaderId) return { error: "Only the host can ready the server", status: 403 };
+  if (resolvedHostMode(String(doc.gameSlug || ""), doc.hostMode, doc.hosted) !== "self") {
+    return { error: "Party is not self-hosted", status: 400 };
+  }
+  if (doc.status === "ended") return { error: "Party has ended", status: 400 };
+  doc.selfHostReady = true;
+  doc.selfHostReadyAt = new Date();
+  doc.status = "playing";
+  doc.lastActivity = new Date();
+  await doc.save();
+  return { party: await partyPayloadForDoc(doc.toObject()), status: 200 };
 }
 
 export async function endParty(
@@ -2344,7 +2397,10 @@ async function checkConfigSyncUncached(
   const hostHasGame = Boolean(hostEditions && hostEditions.size > 0);
   const referenceSource: "host" | "party" = hostHasGame ? "host" : "party";
 
-  const declaredEdition = (doc.editionSlug as string) || null;
+  const declaredEdition = preferredPartyEditionSlug(
+    gameEditions,
+    (doc.editionSlug as string) || null
+  );
   const declaredMods = (doc.modSlugs as string[]) || [];
 
   /*

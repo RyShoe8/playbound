@@ -121,11 +121,15 @@ contextBridge.exposeInMainWorld("playbound", {
     ipcRenderer.invoke("update-party", partyId, { publicServer }),
   prepareSelfHost: (input) => ipcRenderer.invoke("prepare-self-host", input || {}),
   releaseSelfHost: (input) => ipcRenderer.invoke("release-self-host", input || {}),
+  startHedgewarsLocalServer: (input) => ipcRenderer.invoke("start-hedgewars-local-server", input || {}),
+  stopHedgewarsLocalServer: () => ipcRenderer.invoke("stop-hedgewars-local-server"),
   setPartyName: (partyId, name) => ipcRenderer.invoke("update-party", partyId, { name }),
   setPartyVisibility: (partyId, visibility) =>
     ipcRenderer.invoke("update-party", partyId, { visibility }),
   setPartyReady: (partyId, ready) => ipcRenderer.invoke("set-party-ready", partyId, ready),
   partyJoinGame: (partyId) => ipcRenderer.invoke("party-join-game", partyId),
+  markSelfHostReady: (partyId) => ipcRenderer.invoke("mark-self-host-ready", partyId),
+  probeLocalServer: (port) => ipcRenderer.invoke("probe-local-server", port),
   exitPartyGame: (partyId) => ipcRenderer.invoke("exit-party-game", partyId),
   endParty: (partyId) => ipcRenderer.invoke("end-party", partyId),
   removePartyMember: (partyId, userId) =>

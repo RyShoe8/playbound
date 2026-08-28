@@ -170,6 +170,12 @@ const PartySchema = new Schema(
       default: null,
     },
 
+    // Set only after the leader's launcher confirms the local game server is
+    // actually listening. `status: launching` alone merely means Start Game
+    // was clicked and is not safe for members to connect to.
+    selfHostReady: { type: Boolean, default: false },
+    selfHostReadyAt: { type: Date, default: null },
+
     /*
      * Community dedicated server picked from the live list. Only meaningful
      * when hostMode is "public"; Join Game maps it into the hosted payload.
@@ -253,6 +259,8 @@ export type PartyDoc = {
   maxSize: number;
   /** "self" | "dedicated" | "public"; null means the game's default for parties predating host modes. */
   hostMode?: "self" | "dedicated" | "public" | null;
+  selfHostReady?: boolean;
+  selfHostReadyAt?: Date | null;
   publicServer?: {
     id?: string | null;
     name?: string | null;

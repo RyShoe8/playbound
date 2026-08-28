@@ -98,7 +98,7 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
   bzflag: {
     slug: "bzflag",
     title: "BZFlag",
-    defaultPort: 5154,
+    defaultPort: 5155,
     portEnd: 5174,
     protocol: "both",
   },
@@ -134,7 +134,7 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     slug: "0-ad",
     title: "0 A.D.",
     defaultPort: 20595,
-    portEnd: 20615,
+    portEnd: 20595,
     protocol: "udp",
   },
   bombsquad: {
