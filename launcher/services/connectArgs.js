@@ -101,6 +101,35 @@ const CLIENT_CONNECT_ARGS = {
   openlara: null,
 };
 
+const DEFAULT_GAME_PORTS = {
+  openarena: 27960,
+  "wolfenstein-enemy-territory": 27960,
+  xonotic: 26000,
+  freeciv: 5556,
+  srb2: 5029,
+  jfsw: 1997,
+  "opentyrian-2000": 1333,
+  opentyrian: 1333,
+  openttd: 3979,
+  openra: 1234,
+  luanti: 30000,
+  mindustry: 6567,
+  "hurry-curry": 8888,
+  zandronum: 10666,
+  freedoom: 10666,
+  veloren: 14004,
+  unvanquished: 27960,
+  bzflag: 5154,
+  keeperfx: 5555,
+  triplea: 3303,
+  "0ad": 20595,
+  "0-ad": 20595,
+};
+
+function defaultGamePort(slug) {
+  return DEFAULT_GAME_PORTS[String(slug || "").toLowerCase()] || 0;
+}
+
 /** Templates for a slug, or null when the client cannot join from the CLI. */
 function clientConnectArgs(slug) {
   const key = String(slug || "");
@@ -159,4 +188,5 @@ module.exports = {
   joinsFromInGameMenu,
   applyConnectTemplates,
   staticLaunchArgs,
+  defaultGamePort,
 };
