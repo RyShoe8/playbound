@@ -4023,9 +4023,30 @@ function startInstallerPoll(slug, entry, version, onComplete) {
   const maxMs = 10 * 60 * 1000;
   const title = entry?.title || slug;
 
-  const tryKnownPath = () => {
-    invalidateUninstallCache(entry);
-    const known = findKnownExecutable(entry);
+  /*
+   * Two costs, polled at very different rates.
+   *
+   * findKnownExecutable falls back, on a miss, to a synchronous depth-5 walk
+   * of the whole games directory plus a registry scan. Running that every
+   * 1.5s for ten minutes is ~400 full walks on the main process, which blocks
+   * IPC and makes the entire UI stutter while an install "finishes" — the
+   * exact freeze the comment on startExeScan warns about, just scoped to the
+   * games folder instead of the drive.
+   *
+   * The common case does not need any of it: an installer writes to a known
+   * path, so the cheap existsSync list resolves it. Poll that every tick, and
+   * let the expensive fallbacks run only occasionally, for the genuinely
+   * unusual install that landed somewhere unlisted.
+   */
+  const DEEP_EVERY_N_TICKS = 8; // ~12s between deep checks at a 1.5s tick
+  let tick = 0;
+
+  const tryKnownPath = ({ deep }) => {
+    let known = findKnownPathOnly(entry);
+    if (!known && deep) {
+      invalidateUninstallCache(entry);
+      known = findKnownExecutable(entry);
+    }
     if (!known) return false;
     stopInstallerPoll();
     stopExeScan(slug);
@@ -4034,8 +4055,8 @@ function startInstallerPoll(slug, entry, version, onComplete) {
     return true;
   };
 
-  // Immediate known-path check (installer may already be done / re-run).
-  if (tryKnownPath()) return;
+  // Immediate check (installer may already be done / re-run); deep is fine once.
+  if (tryKnownPath({ deep: true })) return;
 
   if (win && !win.isDestroyed()) {
     win.webContents.send("install-scan", {
@@ -4061,7 +4082,8 @@ function startInstallerPoll(slug, entry, version, onComplete) {
       }
       return;
     }
-    tryKnownPath();
+    tick += 1;
+    tryKnownPath({ deep: tick % DEEP_EVERY_N_TICKS === 0 });
   }, 1500);
 }
 
