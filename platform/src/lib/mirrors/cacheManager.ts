@@ -6,6 +6,8 @@ import MirrorSource from "@/lib/models/MirrorSource";
 import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorJob from "@/lib/models/MirrorJob";
 import CatalogGame from "@/lib/models/CatalogGame";
+import Edition from "@/lib/models/Edition";
+import { editions as seedEditions } from "@/lib/data/editions";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { ensureArtifact } from "@/lib/mirrors/ensureArtifact";
 import type { ArtifactType } from "@/lib/models/Artifact";
@@ -58,11 +60,29 @@ export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: str
 /**
  * Some older artifact rows were created before the launcher reported its
  * source URL. The catalog recipe is an explicit, read-only fallback for that
- * exact game; it does not alter the game, the artifact, or any source record.
+ * exact game or edition; it does not alter the game, the artifact, or any source record.
  */
-export async function catalogArchiveSourceUrl(gameSlug: string | null | undefined): Promise<string | null> {
+export async function catalogArchiveSourceUrl(
+  gameSlug: string | null | undefined,
+  editionSlug?: string | null | undefined
+): Promise<string | null> {
   const slug = String(gameSlug || "").trim();
+  const eSlug = String(editionSlug || "").trim();
   if (!slug) return null;
+
+  if (eSlug) {
+    const doc = await Edition.findOne({ gameSlug: slug, slug: eSlug }).select("installConfig").lean();
+    const config = (doc?.installConfig || {}) as { url?: string; repo?: string; urlMac?: string; urlLinux?: string };
+    const seed = seedEditions.find((e) => e.gameSlug === slug && e.slug === eSlug);
+    const url = String(config.url || seed?.installConfig?.url || "").trim();
+    if (/^https:\/\//i.test(url)) {
+      if (/itch\.io/i.test(url)) {
+        const direct = await resolveItchDownloadUrl(url);
+        if (direct) return direct;
+      }
+      return url;
+    }
+  }
 
   const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
   const stored = doc?.launcherInstall as { kind?: string; url?: string | null; uploadId?: string | null } | undefined;

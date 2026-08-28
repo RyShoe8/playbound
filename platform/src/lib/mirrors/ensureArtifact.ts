@@ -50,7 +50,9 @@ export async function ensureArtifact(input: {
     artifactType: input.artifactType || "game",
     filename: input.filename || artifactId,
     relativePath: input.gameSlug
-      ? `games/${input.gameSlug}/${input.version || "unknown"}/${input.filename || artifactId}`
+      ? input.artifactType === "edition"
+        ? `games/${input.gameSlug}/editions/${input.version || "default"}/${input.filename || artifactId}`
+        : `games/${input.gameSlug}/${input.version || "unknown"}/${input.filename || artifactId}`
       : `artifacts/${artifactId}`,
     sizeBytes: input.sizeBytes || 0,
     sha256: input.sha256 || "",
