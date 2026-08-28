@@ -361,6 +361,25 @@ export function DownloadMirrorsManager() {
     }
   }
 
+  async function handlePruneOld() {
+    if (!confirm("Clean out old/superseded versions from the database? Only current active install files will be retained.")) return;
+    setBusyAction("prune-old");
+    try {
+      const res = await fetch("/api/admin/download-mirrors/cache/prune-old", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not clean old versions");
+      setMessage({ text: data.message, type: "success" });
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not clean old versions";
+      setMessage({ text: msg, type: "error" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   async function handleEvict(artifactId: string) {
     if (!confirm("Are you sure you want to evict this artifact from R2? The authoritative VPS archive will be preserved.")) return;
     setBusyAction(`evict-${artifactId}`);
@@ -771,6 +790,14 @@ export function DownloadMirrorsManager() {
             className="h-9 px-3 rounded-lg border border-border bg-secondary/40 hover:bg-secondary/80 text-muted-foreground hover:text-foreground text-sm flex items-center gap-1.5 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </button>
+          <button
+            onClick={() => void handlePruneOld()}
+            disabled={loading || busyAction === "prune-old"}
+            title="Clean out obsolete versions from the database, retaining only current active install files."
+            className="h-9 px-3 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-sm font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Trash2 className={`w-3.5 h-3.5 ${busyAction === "prune-old" ? "animate-spin" : ""}`} /> Clean Old Versions
           </button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import Artifact from "@/lib/models/Artifact";
 import MirrorSource from "@/lib/models/MirrorSource";
 import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import { getMirrorSettings } from "@/lib/mirrors/cacheManager";
+import { filterCurrentArtifacts } from "@/lib/mirrors/currentArtifacts";
 import { fetchGameHostMetrics } from "@/lib/gameHost/client";
 
 export async function GET() {
@@ -16,8 +17,9 @@ export async function GET() {
 
     const settings = await getMirrorSettings();
 
-    // 1. Artifact & Cache Stats
-    const allArtifacts = await Artifact.find({}).lean();
+    // 1. Artifact & Cache Stats (filtered to current install files)
+    const rawArtifacts = await Artifact.find({}).lean();
+    const allArtifacts = await filterCurrentArtifacts(rawArtifacts);
     const cachedArtifacts = allArtifacts.filter((a) => a.r2Status === "cached");
 
     const r2BytesUsed = cachedArtifacts.reduce((sum, a) => sum + (a.sizeBytes || 0), 0);

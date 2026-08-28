@@ -156,10 +156,16 @@ async function main() {
   );
 
   let ymlUrl: string | null = null;
+  let adminYmlUrl: string | null = null;
+  let prodYmlUrl: string | null = null;
+
   if (existsSync(ymlPath)) {
-    ymlUrl = await uploadBlob(`launcher/${ymlName}`, ymlPath, "text/yaml; charset=utf-8");
+    // Always sync both admin feed (e.g. admin.yml) and prod feed (e.g. latest.yml)
+    adminYmlUrl = await uploadBlob(`launcher/${cfg.adminYml}`, ymlPath, "text/yaml; charset=utf-8");
+    prodYmlUrl = await uploadBlob(`launcher/${cfg.prodYml}`, ymlPath, "text/yaml; charset=utf-8");
+    ymlUrl = isAdmin ? adminYmlUrl : prodYmlUrl;
   } else {
-    console.warn(`  warning: ${ymlName} missing — auto-update checks will fail until present`);
+    console.warn(`  warning: ${ymlPath} missing — auto-update checks will fail until present`);
   }
 
   if (existsSync(blockmapPath)) {
@@ -172,23 +178,10 @@ async function main() {
     console.warn("  warning: .blockmap missing — delta updates unavailable");
   }
 
-  // The admin alias is always refreshed; a public release adds the prod one.
-  const aliasName = cfg.adminAlias;
-  const aliasUrl = await uploadBlob(`launcher/${aliasName}`, setupPath, "application/octet-stream");
-
-  /*
-   * A public release also refreshes the admin channel, so admin testers are
-   * never left on an older build than everyone else.
-   */
-  let prodAliasUrl: string | null = null;
-  let prodYmlUrl: string | null = null;
-  if (!isAdmin) {
-    if (existsSync(ymlPath)) {
-      prodYmlUrl = await uploadBlob(`launcher/${cfg.prodYml}`, ymlPath, "text/yaml; charset=utf-8");
-    }
-    prodAliasUrl = await uploadBlob(`launcher/${cfg.prodAlias}`, setupPath, "application/octet-stream");
-    console.log(`  published to public aliases → ${cfg.prodAlias} / ${cfg.prodYml}`);
-  }
+  // Always refresh both admin alias and prod alias
+  const aliasUrl = await uploadBlob(`launcher/${cfg.adminAlias}`, setupPath, "application/octet-stream");
+  const prodAliasUrl = await uploadBlob(`launcher/${cfg.prodAlias}`, setupPath, "application/octet-stream");
+  console.log(`  published to feeds & aliases → ${cfg.prodAlias}, ${cfg.adminAlias}, ${cfg.prodYml}, ${cfg.adminYml}`);
 
   const feedBase = (prodAliasUrl || aliasUrl).replace(/\/[^/]+$/, "/");
 
