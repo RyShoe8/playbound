@@ -173,11 +173,13 @@ export function PartyView({
    */
   const waitForHostedRoom = Boolean(party.hosted?.enabled && !joinUrl && !browserHref);
   const inFlight = party.status === "playing" || party.status === "launching";
+  const memberWaitingForHost =
+    !isLeader && party.hostMode === "self" && !party.selfHostReady;
   const lanReady = Boolean(party.lan?.enabled && party.lan?.status === "ready");
   const joinConnectBlocked =
-    !inFlight &&
-    ((Boolean(party.hosted?.enabled) && party.hosted?.status !== "ready") ||
-      (Boolean(party.lan?.enabled) && !lanReady));
+    memberWaitingForHost ||
+    (Boolean(party.hosted?.enabled) && party.hosted?.status !== "ready") ||
+    (Boolean(party.lan?.enabled) && !lanReady);
   const publicMode = hasGame && party.hostMode === "public";
   /*
    * Ready-up comes first. The server a party lands on is the last thing decided
@@ -581,7 +583,7 @@ export function PartyView({
                   className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary font-bold text-primary-foreground text-sm hover:bg-primary/90 shadow-sm disabled:opacity-50"
                 >
                   <Play className="size-4 fill-current" />
-                  Join Game
+                  {memberWaitingForHost ? "Waiting for host" : "Join Game"}
                 </button>
               ) : (
                 <a
@@ -601,7 +603,7 @@ export function PartyView({
                   }`}
                 >
                   <Play className="size-4 fill-current" />
-                  Join Game
+                  {memberWaitingForHost ? "Waiting for host" : "Join Game"}
                 </a>
               )}
               {party.hosted?.roomCode ? (

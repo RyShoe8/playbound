@@ -234,6 +234,8 @@ export type PartyPayload = {
    * when someone outside the party could be joining.
    */
   selfHostPort: { port: number; protocol: "udp" | "tcp" | "both" } | null;
+  /** True only after the leader launcher observes the self-hosted server port listening. */
+  selfHostReady: boolean;
   eventId: string | null;
   /** True when a password is required; the hash is never returned. */
   hasPassword: boolean;

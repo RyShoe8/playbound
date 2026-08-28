@@ -306,25 +306,15 @@ export const recipes = {
     args: (port) => ["-p", String(port)],
   },
   bzflag: {
-    portStart: 5154,
+    // Ubuntu's bzflag-server unit commonly owns/restarts on the default 5154.
+    // PlayBound rooms use the adjacent range instead of racing that service.
+    portStart: 5155,
     portEnd: 5174,
     protocol: "both",
     binaries: gameBin("bzflag", ["bzfs"]),
-    args: (port) => ["-p", String(port), "-g", "-noTeamKills"],
-    // Scoped to this room's own port only — an unqualified `pkill -x bzfs`
-    // would tear down every other party's concurrent BZFlag room on this
-    // host, since bzfs gives every instance the same process name. If
-    // something still holds the port after this (e.g. a root-owned distro
-    // bzflag-server service this unprivileged agent can't signal), startRoom
-    // retries on the next port in the range rather than failing outright.
-    prepareSpawn: async (port) => {
-      try {
-        await execFileAsync("fuser", ["-k", `${port}/tcp`, `${port}/udp`]);
-        await new Promise((resolve) => setTimeout(resolve, 400));
-      } catch {
-        /* port was free */
-      }
-    },
+    // With no -world/-c/-cr, BZFS generates a random FFA world. Keep this
+    // ephemeral room private and enable the familiar jump/ricochet rules.
+    args: (port) => ["-p", String(port), "-offa", "-q", "-j", "+r", "+s", "10", "-mp", "8"],
   },
   supertuxkart: {
     portStart: 2759,
@@ -396,15 +386,21 @@ export const recipes = {
   },
   "0-ad": {
     portStart: 20595,
-    portEnd: 20615,
+    // Pyrogenesis exposes no supported CLI override for its host port.
+    portEnd: 20595,
     protocol: "udp",
     binaries: gameBin("0-ad", ["pyrogenesis", "0ad"]),
-    args: (port) => [
-      "-autostart-headless",
-      "-autostart-headless-autociv",
-      "-autostart-nonrandom=1",
-      `--port=${port}`,
+    args: (_port, ctx) => [
+      "-autostart=random/mainland",
+      "-autostart-host",
+      `-autostart-host-players=${Math.max(2, Math.min(Number(ctx.maxPlayers) || 8, 8))}`,
+      "-autostart-playername=PlayBound Server",
+      "-autostart-seed=-1",
+      "-autostart-nonvisual",
+      "-quickstart",
+      "-nosound",
     ],
+    startupReadyTimeoutMs: 30_000,
   },
   bombsquad: {
     portStart: 43210,

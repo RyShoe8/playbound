@@ -88,7 +88,17 @@ export async function catalogArchiveSourceUrl(
   const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
   const stored = doc?.launcherInstall as { kind?: string; url?: string | null; uploadId?: string | null } | undefined;
   const seed = launcherInstallBySlug[slug];
-  const recipe = stored?.kind && stored.kind !== "external" ? stored : seed;
+  // A stored itch recipe can outlive its signed CDN URL while the curated
+  // seed has already moved the package to a durable PlayBound mirror.
+  const useCuratedMirror =
+    /^https:\/\//i.test(String(seed?.url || "")) &&
+    !/itch\.io/i.test(String(seed?.url || "")) &&
+    /itch\.io/i.test(String(stored?.url || ""));
+  const recipe = useCuratedMirror
+    ? seed
+    : stored?.kind && stored.kind !== "external"
+      ? stored
+      : seed;
   const url = String(recipe?.url || "").trim();
   if (!/^https:\/\//i.test(url)) return null;
 
@@ -432,6 +442,26 @@ export async function archiveArtifactToVps(
     if (r2.exists) {
       sourceUrl = await getR2PresignedDownloadUrl(artifact.relativePath, 60 * 60);
       sourceLabel = "R2 hot cache";
+    }
+  }
+  /*
+   * Prefer a current catalog URL when it names this exact file. Operational
+   * MirrorSource rows are historical telemetry and may contain expired itch
+   * CDN links; HoloCure's recorded source returned 403 even though its curated
+   * package URL was current. Exact filename matching prevents substituting a
+   * sibling edition or a different package.
+   */
+  if (!sourceUrl && artifact.gameSlug && artifact.filename) {
+    const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug);
+    if (catalogUrl) {
+      try {
+        if (decodeURIComponent(new URL(catalogUrl).pathname).split("/").pop() === artifact.filename) {
+          sourceUrl = catalogUrl;
+          sourceLabel = "current catalog download";
+        }
+      } catch {
+        /* Fall through to the explicitly selected/recorded source. */
+      }
     }
   }
   // The admin cache row already has this exact URL from its Public sources

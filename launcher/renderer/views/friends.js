@@ -515,6 +515,7 @@ if (!playPollWired) {
 async function notifyPartyGameClosed(slug) {
   const party = state._activeParty;
   if (!party?.id || party.gameSlug !== slug) return;
+  if (slug === "hedgewars") void window.playbound.stopHedgewarsLocalServer?.();
   if (party.status !== "playing" && party.status !== "launching") return;
   if (!window.playbound.exitPartyGame) return;
 
@@ -1347,6 +1348,7 @@ const ICON = {
   check: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
   phone: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
   play: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>`,
+  loader: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.9s" repeatCount="indefinite"/></path></svg>`,
   logout: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
   download: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`,
   send: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`,
@@ -1456,7 +1458,8 @@ function buildPartyViewHtml(party) {
   const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
   const lan = party.lan || {};
   const isPeerOrLan = !hosted.enabled || lan.enabled;
-  const waitingForLeader = !isLeader && !inFlight && isPeerOrLan;
+  const waitingForLeader =
+    !isLeader && isPeerOrLan && (party.hostMode !== "self" ? !inFlight : !party.selfHostReady);
   const canJoinGame = hasGame && !ended && (isReady || inFlight);
   /*
    * Join stays clickable once you're ready — join-game provisions the server
@@ -1467,7 +1470,12 @@ function buildPartyViewHtml(party) {
   const joinConnectFailed =
     !inFlight &&
     ((hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed"));
-  const joinDisabled = joinConnectFailed || waitingForLeader;
+  const memberWaitingForConnect =
+    !isLeader &&
+    ((party.hostMode === "self" && !party.selfHostReady) ||
+      (hosted.enabled && hosted.status !== "ready") ||
+      (lan.enabled && lan.status !== "ready"));
+  const joinDisabled = joinConnectFailed || waitingForLeader || memberWaitingForConnect;
   const voiceEnabled = party.voiceEnabled !== false;
   const hasDiscordVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
   const showLaunchVoice = voiceEnabled || hasDiscordVoice;
@@ -1654,10 +1662,13 @@ function buildPartyViewHtml(party) {
          </button>`
       : "";
 
-  const joinButtonText = isLeader && !inFlight ? "Start Game" : waitingForLeader ? "Waiting for Host…" : "Join Game";
-  const joinButtonIcon = waitingForLeader ? ICON.loader : ICON.play;
+  const waitingForServer = !isLeader && memberWaitingForConnect && !waitingForLeader;
+  const joinButtonText = isLeader && !inFlight ? "Start Game" : waitingForLeader ? "Waiting for host" : waitingForServer ? "Server Starting…" : "Join Game";
+  const joinButtonIcon = waitingForLeader || waitingForServer ? ICON.loader : ICON.play;
   const joinTitle = waitingForLeader
     ? "The party host must start the game first"
+    : waitingForServer
+    ? "The game server is still starting"
     : hosted.status === "failed" || lan.status === "failed"
     ? hosted.error || lan.error || "Could not start the party connection"
     : hosted.status === "pending" || lan.status === "pending"
@@ -3135,6 +3146,32 @@ async function launchPartyGame(party) {
     }
   }
 
+  /*
+   * Hedgewars' GUI can spawn this same helper from its menus, but doing it
+   * here lets the host use the exact hwplay:// lobby handoff that dedicated
+   * rooms already use. The frontend has no supported CLI command for creating
+   * a room, so the final Create Room click remains in Hedgewars itself.
+   */
+  if (slug === "hedgewars" && isLeader && party.hostMode === "self") {
+    const meta = (await window.playbound.getConnectMeta?.(slug)) || {};
+    const port = Number(party.port || catalogGame?.port || meta.defaultPort || 46631);
+    const server = await window.playbound.startHedgewarsLocalServer?.({
+      port,
+      editionSlug: party.editionSlug || null,
+    });
+    if (server?.ok) {
+      peerConnect = {
+        host: "127.0.0.1",
+        port,
+        name: state.accountState?.username || "",
+      };
+    } else {
+      // Some third-party packages omit the optional server binary. Preserve
+      // Hedgewars' existing in-game Start Server path for those installs.
+      console.warn("Hedgewars local server helper unavailable:", server?.error || "unknown error");
+    }
+  }
+
   try {
     const launched = await maybeOfferPhoneControllerThenPlay(
       detail,
@@ -3143,16 +3180,26 @@ async function launchPartyGame(party) {
         const edition = party.editionSlug || party.installedEditionSlug || null;
         const res = await window.playbound.play(slug, peerConnect, edition);
         startGameSession(slug, party.gameTitle || slug);
+        if (isLeader && party.hostMode === "self") {
+          const connectMeta = (await window.playbound.getConnectMeta?.(slug)) || {};
+          const listenPort = Number(party.port || catalogGame?.port || connectMeta.defaultPort || 0);
+          if (listenPort > 0 && connectMeta.protocol !== "udp") {
+            void reportSelfHostWhenListening(party, listenPort);
+            setStatus("Game launched — start the server in-game. Party members will unlock automatically.");
+          }
+        }
         maybeShowLaunchGuidance(res, {
           title: party.gameTitle || slug,
           slug,
           address: peerConnect?.host ? `${peerConnect.host}:${peerConnect.port}` : null,
         });
-        setStatus(
-          peerConnect?.host
-            ? `Joining ${party.gameTitle || slug} via party network…`
-            : `Launched ${party.gameTitle || slug}`
-        );
+        if (!(isLeader && party.hostMode === "self")) {
+          setStatus(
+            peerConnect?.host
+              ? `Joining ${party.gameTitle || slug} via party network…`
+              : `Launched ${party.gameTitle || slug}`
+          );
+        }
       },
       slug
     );
@@ -3165,6 +3212,35 @@ async function launchPartyGame(party) {
       markPartyInstallReturn(slug);
       api.navigateTo("gameDetail", { slug });
     }
+  }
+}
+
+/**
+ * A self-host click is not server readiness. Keep probing in the background
+ * while the host uses the game's menus, then publish readiness only after the
+ * TCP listener exists. Freeciv can sit at its title screen indefinitely before
+ * "Start Network Game", so this intentionally outlives the click handler.
+ */
+async function reportSelfHostWhenListening(party, port) {
+  if (!window.playbound.probeLocalServer || !window.playbound.markSelfHostReady) return;
+  const deadline = Date.now() + 30 * 60 * 1000;
+  while (Date.now() < deadline) {
+    const active = state._activeParty;
+    if (!active || String(active.id) !== String(party.id) || active.status === "ended") return;
+    try {
+      const probe = await window.playbound.probeLocalServer(port);
+      if (probe?.listening) {
+        const result = await window.playbound.markSelfHostReady(party.id);
+        if (!result?.error) {
+          setStatus("Server ready — party members can join now.");
+          void api.refreshFriendsData();
+        }
+        return;
+      }
+    } catch {
+      // A closed port is the expected state while the host is still in menus.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 }
 

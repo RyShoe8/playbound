@@ -88,7 +88,7 @@ export function PartyHostInstallPicker({
             (ed: { slug: string }) => ed.slug === lockedEdition
           );
           if (locked) listToDisplay = [locked];
-          else {
+          else if (partyEditions.length === 0) {
             const fromAll = rawEditions.find(
               (ed: { slug: string }) => ed.slug === lockedEdition
             );

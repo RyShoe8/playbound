@@ -5295,10 +5295,10 @@ textarea.input-text {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   background: var(--bg-surface, #151720);
-  padding: 14px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 .party-public-server-head {
   display: flex;
@@ -5315,7 +5315,7 @@ textarea.input-text {
   margin-bottom: 2px;
 }
 .party-public-server-head-actions { display: flex; align-items: center; gap: 8px; }
-.party-public-server-summary { font-size: 12px; font-weight: 600; color: #94a3b8; }
+.party-public-server-summary { font-size: 14px; font-weight: 600; color: #94a3b8; }
 .party-public-server-gate {
   display: flex;
   align-items: center;
@@ -5333,26 +5333,26 @@ textarea.input-text {
 }
 .party-public-server-gate-text { margin: 0; font-size: 12.5px; font-weight: 600; color: #e2e8f0; }
 .party-public-server-ready { flex-shrink: 0; }
-.party-public-server-picked { margin: 0; font-size: 13.5px; font-weight: 700; color: #ffffff; }
-.party-public-server-addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 500; color: #94a3b8; font-size: 11.5px; }
+.party-public-server-picked { margin: 0; font-size: 16px; font-weight: 700; color: #ffffff; }
+.party-public-server-addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 500; color: #94a3b8; font-size: 13px; }
 .party-public-server-list {
-  max-height: 280px;
+  max-height: 420px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  padding: 6px;
+  padding: 8px;
   background: rgba(0, 0, 0, 0.25);
 }
 .party-public-server-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 10px 12px;
+  padding: 14px 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
@@ -5385,7 +5385,7 @@ textarea.input-text {
   overflow: hidden;
 }
 .party-server-name {
-  font-size: 13.5px;
+  font-size: 15.5px;
   font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
@@ -5404,7 +5404,7 @@ textarea.input-text {
   flex-shrink: 0;
 }
 .party-server-ping {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   padding: 2px 7px;
@@ -5434,7 +5434,7 @@ textarea.input-text {
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
 .party-server-players-pill {
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #e0e7ff;
   background: rgba(99, 102, 241, 0.18);
@@ -5456,7 +5456,7 @@ textarea.input-text {
   gap: 6px;
 }
 .party-server-chip {
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;

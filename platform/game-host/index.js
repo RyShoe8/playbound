@@ -18,7 +18,7 @@ import { spawn } from "node:child_process";
 import crypto from "node:crypto";
 import path from "node:path";
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rename, rm, stat } from "node:fs/promises";
+import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { resolveRecipe, listInstalled, listGameHostStatus, missingDedicatedBinaryMessage, recipes } from "./recipes.js";
@@ -305,6 +305,57 @@ async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSig
   try {
     await mkdir(path.dirname(target), { recursive: true });
     /*
+     * Some legacy catalog packages already live in this VPS archive under a
+     * launcher-packages path. Archiving their artifact record used to fetch
+     * mirror.playbound.club back through nginx and the public network, which
+     * can 404/hairpin even though the source file is on this same disk.
+     * HoloCure is one such package. Copy locally, but only after archivePath
+     * applies the same traversal guard used for every target.
+     */
+    if (source.hostname.toLowerCase() === "mirror.playbound.club") {
+      let sourceRelative = "";
+      try {
+        sourceRelative = decodeURIComponent(source.pathname).replace(/^\/+/, "");
+      } catch {
+        sourceRelative = "";
+      }
+      const localSource = archivePath(sourceRelative);
+      if (localSource) {
+        try {
+          const sourceFile = await stat(localSource);
+          if (sourceFile.isFile()) {
+            if (path.resolve(localSource) !== path.resolve(target)) {
+              await copyFile(localSource, temp);
+            } else {
+              const actual = sha256 ? await sha256File(localSource) : null;
+              if (sourceFile.size !== Number(sizeBytes)) {
+                return { error: `Archive size mismatch (expected ${sizeBytes}, got ${sourceFile.size})` };
+              }
+              if (sha256 && actual.toLowerCase() !== String(sha256).toLowerCase()) {
+                return { error: "Archive checksum mismatch" };
+              }
+              return { ok: true, sizeBytes: sourceFile.size };
+            }
+            const copied = await stat(temp);
+            if (copied.size !== Number(sizeBytes)) {
+              return { error: `Archive size mismatch (expected ${sizeBytes}, got ${copied.size})` };
+            }
+            if (sha256) {
+              const actual = await sha256File(temp);
+              if (actual.toLowerCase() !== String(sha256).toLowerCase()) {
+                return { error: "Archive checksum mismatch" };
+              }
+            }
+            await rename(temp, target);
+            return { ok: true, sizeBytes: copied.size };
+          }
+        } catch (err) {
+          if (err?.code !== "ENOENT") throw err;
+          // Not actually present locally; retain the normal HTTPS fallback.
+        }
+      }
+    }
+    /*
      * A flat 1-hour ceiling was too tight: a 2GB GoldenEye installer took
      * ~50 minutes on this VPS's real link and a bigger artifact (up to
      * MIRROR_ARCHIVE_MAX_BYTES, 20GB by default) would never finish in an
@@ -395,7 +446,12 @@ async function queueArchive(input) {
   const target = archivePath(input?.relativePath);
   if (!target) return { error: "Invalid archive path" };
   const existing = await archiveStatus(input.relativePath);
-  if (existing.error) return existing;
+  if (existing.error) {
+    // A failed transfer is retryable. Keeping the failed in-memory job made
+    // every later Archive click replay the old 403 forever without issuing a
+    // new request, even after its source URL was corrected.
+    archiveJobs.delete(input.relativePath);
+  }
   if (existing.status === "verified") return existing;
   if (existing.status === "uploading") return existing;
 
@@ -458,6 +514,17 @@ async function isOsPortFree(port, protocol) {
   if (needTcp && !(await probeTcpPort(port))) return false;
   if (needUdp && !(await probeUdpPort(port))) return false;
   return true;
+}
+
+/** Wait until the spawned game server has actually claimed its listen port. */
+async function waitForServerPort(port, protocol, child, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) return false;
+    if (!(await isOsPortFree(port, protocol))) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
 }
 
 async function allocPort(recipe, slug) {
@@ -640,9 +707,11 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
 
     const startupLog = [];
     const pushLog = (buf) => {
-      const line = String(buf).trim();
-      if (line) startupLog.push(line.slice(0, 400));
-      if (startupLog.length > 20) startupLog.shift();
+      for (const line of String(buf).split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (trimmed) startupLog.push(trimmed.slice(0, 400));
+        if (startupLog.length > 20) startupLog.shift();
+      }
     };
 
     child.stdout?.on("data", (buf) => {
@@ -671,23 +740,30 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
     rooms.set(roomId, room);
     byParty.set(partyId, roomId);
 
-    const graceMs = Number(recipe.startupGraceMs) || 800;
-    let exitCode = null;
-    const died = await new Promise((resolve) => {
-      const timer = setTimeout(() => resolve(false), graceMs);
-      child.once("exit", (code) => {
-        exitCode = code;
-        clearTimeout(timer);
-        resolve(true);
-      });
-    });
-    if (died) {
+    const readyTimeoutMs = Number(recipe.startupReadyTimeoutMs) || 10_000;
+    const portReady = await waitForServerPort(port, recipe.protocol, child, readyTimeoutMs);
+    if (!portReady) {
       stopRoom(room);
-      const tail = startupLog.at(-1);
+      const tail = startupLog.slice(-3).join(" | ");
       const detail = tail ? `: ${tail}` : "";
-      lastError = `${gameSlug} dedicated process exited immediately (code ${exitCode ?? "?"}${detail})`;
+      const exitDetail = child.exitCode !== null ? ` (code ${child.exitCode})` : "";
+      lastError = `${gameSlug} dedicated server did not bind port ${port} within ${readyTimeoutMs}ms${exitDetail}${detail}`;
       console.warn(`[${gameSlug}:${port}] ${lastError} — trying another port`);
       continue;
+    }
+
+    // Some servers bind before their map/world finishes loading. Preserve a
+    // recipe's extra stabilization window after the authoritative port bind.
+    const graceMs = Number(recipe.startupGraceMs) || 0;
+    if (graceMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, graceMs));
+      if (child.exitCode !== null || child.signalCode !== null) {
+        stopRoom(room);
+        const tail = startupLog.slice(-3).join(" | ");
+        const detail = tail ? `: ${tail}` : "";
+        lastError = `${gameSlug} dedicated process exited during startup stabilization${detail}`;
+        continue;
+      }
     }
 
     return { room };

@@ -87,6 +87,25 @@ describe("game host catalog", () => {
     }
   });
 
+  it("uses supported headless 0 A.D. autostart options", async () => {
+    const { recipes } = await import("../../../game-host/recipes.js");
+    const args = recipes["0-ad"].args(20595, { maxPlayers: 4 });
+    expect(args).toContain("-autostart=random/mainland");
+    expect(args).toContain("-autostart-host");
+    expect(args).toContain("-autostart-nonvisual");
+    expect(args).not.toContain("-autostart-headless");
+    expect(args.some((arg: string) => arg.startsWith("--port="))).toBe(false);
+  });
+
+  it("keeps BZFlag party rooms off the distro-owned default port", async () => {
+    const { recipes } = await import("../../../game-host/recipes.js");
+    const recipe = recipes.bzflag;
+    expect(recipe.portStart).toBe(5155);
+    expect(recipe.args(5155)).toEqual(
+      expect.arrayContaining(["-p", "5155", "-offa", "-q"])
+    );
+  });
+
   it("returns an empty hosted payload with enabled=true for hostable slugs", () => {
     const p = emptyHostedPayload("openra");
     expect(p.enabled).toBe(true);

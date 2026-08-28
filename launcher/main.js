@@ -3018,7 +3018,18 @@ async function downloadResilientArtifact({ slug, artifactId: requestedArtifactId
     /* fallback to directUrl */
   }
 
-  const sources = resolved?.sources || [{ type: "public", url: directUrl, sourceId: "direct-catalog" }];
+  /*
+   * Mirror metadata is operational state and can lag the catalog. A resolved
+   * artifact used to replace the catalog URL entirely, so one stale public/VPS
+   * source returning 404 made an otherwise healthy install impossible. Always
+   * retain the current catalog URL as the final source, deduped by URL.
+   * HoloCure exposed this after its archive moved while the artifact row still
+   * pointed at the previous location.
+   */
+  const sources = Array.isArray(resolved?.sources) ? [...resolved.sources] : [];
+  if (directUrl && !sources.some((source) => source?.url === directUrl)) {
+    sources.push({ type: "public", url: directUrl, sourceId: "direct-catalog" });
+  }
   const sha256 = expectedSha256 || resolved?.artifact?.sha256 || null;
   const artifactId = resolved?.artifact?.id || requestedArtifactId || slug;
 
@@ -10220,6 +10231,86 @@ ipcMain.handle("party-join-game", async (_event, partyId) => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+let hedgewarsLocalServer = null;
+
+function stopHedgewarsLocalServer() {
+  if (!hedgewarsLocalServer) return;
+  try {
+    hedgewarsLocalServer.kill();
+  } catch {
+    /* It may already have exited. */
+  }
+  hedgewarsLocalServer = null;
+}
+
+ipcMain.handle("stop-hedgewars-local-server", () => {
+  stopHedgewarsLocalServer();
+  return { ok: true };
+});
+
+ipcMain.handle("start-hedgewars-local-server", async (_event, input = {}) => {
+  const port = Number(input.port) || 46631;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return { ok: false, error: "Invalid Hedgewars server port." };
+  }
+  if (hedgewarsLocalServer && !hedgewarsLocalServer.killed) {
+    const listening = await probeServerLatency("127.0.0.1", port, 750);
+    if (listening != null) return { ok: true };
+    stopHedgewarsLocalServer();
+  }
+
+  const gameDir = resolveGameDirForSlug("hedgewars", input.editionSlug || null);
+  if (!gameDir) return { ok: false, error: "Hedgewars installation folder was not found." };
+  const names = process.platform === "win32"
+    ? ["hedgewars-server.exe", "hedgewars-server"]
+    : ["hedgewars-server"];
+  const roots = [gameDir, path.join(gameDir, "bin"), path.dirname(gameDir)];
+  const serverExe = roots.flatMap((root) => names.map((name) => path.join(root, name))).find((p) => fs.existsSync(p));
+  if (!serverExe) {
+    return { ok: false, error: "This Hedgewars install does not include hedgewars-server." };
+  }
+
+  try {
+    const child = spawn(serverExe, [`--port=${port}`, "--dedicated=False"], {
+      cwd: path.dirname(serverExe),
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    hedgewarsLocalServer = child;
+    child.once("exit", () => {
+      if (hedgewarsLocalServer === child) hedgewarsLocalServer = null;
+    });
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const listening = await probeServerLatency("127.0.0.1", port, 500);
+      if (listening != null) return { ok: true };
+      if (child.exitCode != null) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    stopHedgewarsLocalServer();
+    return { ok: false, error: "Hedgewars local server did not start." };
+  } catch (err) {
+    stopHedgewarsLocalServer();
+    return { ok: false, error: err?.message || String(err) };
+  }
+});
+
+ipcMain.handle("mark-self-host-ready", async (_event, partyId) => {
+  try {
+    return await launcherJson(`/api/parties/${encodeURIComponent(partyId)}/self-host-ready`, {
+      method: "POST",
+    });
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle("probe-local-server", async (_event, rawPort) => {
+  const port = Number(rawPort);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return { listening: false };
+  const ms = await probeServerLatency("127.0.0.1", port, 750);
+  return { listening: Number.isFinite(ms) };
 });
 
 ipcMain.handle("exit-party-game", async (_event, partyId) => {
