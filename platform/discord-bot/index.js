@@ -148,8 +148,8 @@ function eventTextChannelName(raw, fallbackId) {
   return `💬-${slugified || "event"}`.slice(0, 90);
 }
 
-/** Category a temporary channel belongs under: the Events category. */
-const EVENTS_CATEGORY_NAME = "EVENTS";
+/** Category a temporary channel belongs under: the Event Rooms category. */
+const EVENTS_CATEGORY_NAME = "Event Rooms";
 
 async function resolveGameCategoryId(guild, gameSlug) {
   const slug = String(gameSlug || "").trim();
@@ -171,9 +171,24 @@ async function resolveGameCategoryId(guild, gameSlug) {
 }
 
 /**
- * Event channels always live in the shared Events category.
+ * Event channels always live in the shared Event Rooms category.
  */
 async function resolveEventCategoryId(guild, _gameSlug) {
+  // If an existing category is called "EVENTS" or "Events", rename it to "Event Rooms" for seamless migration
+  const existingOld = guild.channels.cache.find(
+    (c) => c && c.type === ChannelType.GuildCategory && (c.name === "EVENTS" || c.name === "Events")
+  );
+  const existingNew = guild.channels.cache.find(
+    (c) => c && c.type === ChannelType.GuildCategory && c.name === EVENTS_CATEGORY_NAME
+  );
+  if (!existingNew && existingOld) {
+    try {
+      await existingOld.setName(EVENTS_CATEGORY_NAME, "Migrate category name to Event Rooms");
+      return existingOld.id;
+    } catch (err) {
+      console.warn("Could not rename existing Events category:", err?.message || err);
+    }
+  }
   const cat = await ensureCategory(guild, EVENTS_CATEGORY_NAME);
   return cat.id;
 }
@@ -186,6 +201,9 @@ function isSharedCategoryName(name) {
   const n = String(name || "");
   return (
     n === EVENTS_CATEGORY_NAME ||
+    n === "Event Rooms" ||
+    n === "EVENTS" ||
+    n === "Events" ||
     n.startsWith("GAME CHANNELS") ||
     n === "PlayBound Parties"
   );
@@ -998,7 +1016,10 @@ function isGameOrEventCategoryName(name) {
   return (
     n.startsWith("GAME CHANNELS") ||
     n.startsWith("Event —") ||
-    n.startsWith("PlayBound —")
+    n.startsWith("PlayBound —") ||
+    n === "Event Rooms" ||
+    n === "EVENTS" ||
+    n === "Events"
   );
 }
 
@@ -1015,6 +1036,36 @@ async function findServerGeneral(guild) {
   );
   const preferred = generals.find((c) => !isGameOrEventCategoryName(c.parent?.name));
   return preferred || generals[0] || null;
+}
+
+/** Server #events — dedicated channel for scheduled events and pop-up game nights. */
+async function ensureEventsChannel(guild) {
+  const configured = process.env.DISCORD_EVENTS_CHANNEL_ID;
+  if (configured) {
+    const ch = await guild.channels.fetch(configured).catch(() => null);
+    if (ch?.isTextBased()) return ch;
+  }
+  await guild.channels.fetch();
+  const candidates = [...guild.channels.cache.values()].filter(
+    (c) =>
+      c &&
+      c.type === ChannelType.GuildText &&
+      c.name.toLowerCase() === "events"
+  );
+  const preferred = candidates.find((c) => !isGameOrEventCategoryName(c.parent?.name));
+  if (preferred) return preferred;
+  if (candidates[0]) return candidates[0];
+
+  try {
+    return await guild.channels.create({
+      name: "events",
+      type: ChannelType.GuildText,
+      reason: "PlayBound events announcement channel",
+    });
+  } catch (err) {
+    console.warn("ensureEventsChannel create failed:", err?.message || err);
+    return null;
+  }
 }
 
 async function announceNewCatalogGame(payload) {
@@ -1247,6 +1298,45 @@ const server = http.createServer(async (req, res) => {
       await text.send({
         content: `**${title || "PlayBound Event"}** is gathering here.\nJoin voice: ${invite.url}\nEvent page: ${SITE_URL}/events/${eventId || ""}`,
       });
+
+      // Post gathering announcement into the server #events channel
+      try {
+        const eventsChannel = await ensureEventsChannel(guild);
+        if (eventsChannel?.isTextBased()) {
+          const eventUrl = `${SITE_URL}/events/${eventId || ""}`;
+          let coverImage = null;
+          if (gameSlug && games) {
+            try {
+              const g = await games.findOne({ slug: String(gameSlug).trim() });
+              if (g?.coverImage) coverImage = g.coverImage;
+            } catch {}
+          }
+          const embed = new EmbedBuilder()
+            .setColor(0x3b82f6)
+            .setTitle(`🎮 ${title || "PlayBound Event"}`)
+            .setURL(eventUrl)
+            .setDescription(
+              `An event room is now open!\n\n` +
+              `🔊 **Voice Room:** ${invite.url}\n` +
+              `💬 **Chat Room:** <#${text.id}>\n\n` +
+              `🎟️ **[Join Event & Details](${eventUrl})**`
+            )
+            .setFooter({ text: "PlayBound Event Planner" })
+            .setTimestamp();
+
+          if (coverImage) {
+            embed.setThumbnail(coverImage.startsWith("http") ? coverImage : `${SITE_URL}${coverImage}`);
+          }
+
+          await eventsChannel.send({
+            content: `**${title || "PlayBound Event"}** is gathering now in <#${text.id}>!`,
+            embeds: [embed],
+          });
+        }
+      } catch (postErr) {
+        console.warn("Failed to post event to #events channel:", postErr?.message || postErr);
+      }
+
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
         JSON.stringify({
@@ -1259,6 +1349,61 @@ const server = http.createServer(async (req, res) => {
       );
     } catch (err) {
       console.error("events/voice", err);
+      res.writeHead(500);
+      res.end(String(err?.message || err));
+    }
+    return;
+  }
+
+  // Post event announcement directly to the server #events channel
+  if (req.method === "POST" && (req.url === "/events/announce" || req.url === "/events/webhook")) {
+    if (!requireSecret(req, res)) return;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const payload = JSON.parse(body || "{}");
+      const guild = await client.guilds.fetch(GUILD_ID);
+      const eventsChannel = await ensureEventsChannel(guild);
+      if (!eventsChannel?.isTextBased()) {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Could not find or create #events channel" }));
+        return;
+      }
+
+      const sendOptions = {};
+      if (payload.content) sendOptions.content = payload.content;
+      if (Array.isArray(payload.embeds) && payload.embeds.length > 0) {
+        sendOptions.embeds = payload.embeds;
+      } else if (payload.embed) {
+        sendOptions.embeds = [payload.embed];
+      } else if (payload.title) {
+        const embed = new EmbedBuilder()
+          .setColor(0x3b82f6)
+          .setTitle(String(payload.title).slice(0, 256))
+          .setURL(payload.url || (payload.eventId ? `${SITE_URL}/events/${payload.eventId}` : `${SITE_URL}/events`))
+          .setDescription(String(payload.description || "A community event is scheduled!").slice(0, 4000))
+          .setFooter({ text: "PlayBound Event Planner" })
+          .setTimestamp();
+        if (payload.imageUrl || payload.coverImage) {
+          const img = payload.imageUrl || payload.coverImage;
+          embed.setThumbnail(img.startsWith("http") ? img : `${SITE_URL}${img}`);
+        }
+        sendOptions.embeds = [embed];
+      }
+
+      if (Array.isArray(payload.components) && payload.components.length > 0) {
+        sendOptions.components = payload.components;
+      }
+
+      if (!sendOptions.content && (!sendOptions.embeds || sendOptions.embeds.length === 0)) {
+        sendOptions.content = `**${payload.title || "PlayBound Event"}** has been scheduled!`;
+      }
+
+      const msg = await eventsChannel.send(sendOptions);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ success: true, messageId: msg.id, channelId: eventsChannel.id }));
+    } catch (err) {
+      console.error("events/announce", err);
       res.writeHead(500);
       res.end(String(err?.message || err));
     }

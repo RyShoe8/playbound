@@ -9,11 +9,20 @@ const freedoom = [
 
 describe("preferredPartyEditionSlug", () => {
   it("repairs a stale singleplayer party edition", () => {
-    expect(preferredPartyEditionSlug(freedoom, "gzdoom")).toBe("zandronum");
+    expect(preferredPartyEditionSlug(freedoom, "gzdoom", "freedoom")).toBe("zandronum");
   });
 
   it("keeps an existing multiplayer party edition", () => {
-    expect(preferredPartyEditionSlug(freedoom, "zandronum")).toBe("zandronum");
+    expect(preferredPartyEditionSlug(freedoom, "zandronum", "freedoom")).toBe("zandronum");
+  });
+
+  it("requires Zandronum even when stale database metadata has no Multiplayer tag", () => {
+    const staleFreedoom = freedoom.map((edition) => ({
+      ...edition,
+      isDefault: edition.slug === "gzdoom",
+      features: ["Singleplayer"],
+    }));
+    expect(preferredPartyEditionSlug(staleFreedoom, "gzdoom", "freedoom")).toBe("zandronum");
   });
 
   it("does not lock a single-edition game", () => {

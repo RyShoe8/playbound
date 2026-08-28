@@ -78,7 +78,10 @@ import {
   libraryHasRequiredEdition,
 } from "@/lib/playTogether/editionMatch";
 import { computePartyReadiness } from "@/lib/playTogether/partyReadiness";
-import { preferredPartyEditionSlug } from "@/lib/playTogether/partyEdition";
+import {
+  preferredPartyEditionSlug,
+  requiredPartyEditionSlug,
+} from "@/lib/playTogether/partyEdition";
 import { applyPresenceFreshness } from "@/lib/friends/presenceMask";
 import {
   editionsFromRow,
@@ -1335,7 +1338,7 @@ export async function setPartyGame(
    * every member was told to install an edition that cannot join the party.
    */
   const editions = await listEditionsForGame(game);
-  doc.editionSlug = preferredPartyEditionSlug(editions, doc.editionSlug);
+  doc.editionSlug = preferredPartyEditionSlug(editions, doc.editionSlug, slug);
   doc.lastActivity = new Date();
   await doc.save();
 
@@ -2369,11 +2372,14 @@ async function checkConfigSyncUncached(
    */
   const gameForEditions = await getGame(String(doc.gameSlug || ""), { includeTesting: true });
   const gameEditions = gameForEditions ? await listEditionsForGame(gameForEditions) : [];
+  const requiredEdition = requiredPartyEditionSlug(String(doc.gameSlug || ""));
   const multiplayerSlugs =
     gameEditions.length > 1
-      ? new Set(
-          gameEditions.filter((e) => e.features?.includes("Multiplayer")).map((e) => e.slug)
-        )
+      ? requiredEdition && gameEditions.some((edition) => edition.slug === requiredEdition)
+        ? new Set([requiredEdition])
+        : new Set(
+            gameEditions.filter((e) => e.features?.includes("Multiplayer")).map((e) => e.slug)
+          )
       : null;
   const qualifies = (slug: string) => !multiplayerSlugs || multiplayerSlugs.has(slug);
 
@@ -2399,7 +2405,8 @@ async function checkConfigSyncUncached(
 
   const declaredEdition = preferredPartyEditionSlug(
     gameEditions,
-    (doc.editionSlug as string) || null
+    (doc.editionSlug as string) || null,
+    String(doc.gameSlug || "")
   );
   const declaredMods = (doc.modSlugs as string[]) || [];
 

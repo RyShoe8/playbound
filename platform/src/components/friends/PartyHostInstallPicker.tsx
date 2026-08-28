@@ -8,6 +8,7 @@ import { telemetry } from "@/lib/telemetry";
 import { usePartyStore } from "@/stores/partyStore";
 
 import { editionSupportsPartyPlay } from "@/lib/multiplayer/support";
+import { requiredPartyEditionSlug } from "@/lib/playTogether/partyEdition";
 
 function withPartyInstallReturn(href: string): string {
   if (!href.startsWith("playbound://install/")) return href;
@@ -74,6 +75,7 @@ export function PartyHostInstallPicker({
         }
         const data = await res.json();
         const rawEditions = Array.isArray(data.editions) ? data.editions : [];
+        const requiredSlug = requiredPartyEditionSlug(gameSlug);
         const partyEditions = rawEditions.filter((ed: Record<string, unknown>) =>
           editionSupportsPartyPlay(ed as unknown as Parameters<typeof editionSupportsPartyPlay>[0])
         );
@@ -82,8 +84,15 @@ export function PartyHostInstallPicker({
          * fall back to the full list rather than showing an empty picker — but
          * never prefer a known SP list when Multiplayer editions exist.
          */
-        let listToDisplay = partyEditions.length > 0 ? partyEditions : rawEditions;
-        if (lockedEdition) {
+        const requiredEdition = requiredSlug
+          ? rawEditions.find((ed: { slug: string }) => ed.slug === requiredSlug)
+          : null;
+        let listToDisplay = requiredEdition
+          ? [requiredEdition]
+          : partyEditions.length > 0
+            ? partyEditions
+            : rawEditions;
+        if (lockedEdition && !requiredEdition) {
           const locked = listToDisplay.find(
             (ed: { slug: string }) => ed.slug === lockedEdition
           );

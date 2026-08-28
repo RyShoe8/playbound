@@ -4,7 +4,7 @@
  *
  * Events follow the same channel lifecycle as parties (see
  * playTogether/discordPartyProvision.ts): the channel is named after the
- * event and renamed when the event is, it lives in a shared Events category
+ * event and renamed when the event is, it lives in a shared Event Rooms category
  * while no game is chosen, and it moves into the game's area once one is.
  */
 
@@ -114,7 +114,7 @@ export async function renameEventDiscordVoice(event: EventLike): Promise<boolean
 
 /**
  * Moves the event's channels into its game's area, or back to the shared
- * Events category when the game is cleared. Unlike the party equivalent there
+ * Event Rooms category when the game is cleared. Unlike the party equivalent there
  * is no one-shot guard: an event's game can change more than once, and the
  * channel has to follow it each time.
  */

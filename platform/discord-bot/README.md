@@ -59,3 +59,10 @@ When a game is **created already published** or **first published** on productio
 Optional env: `DISCORD_GENERAL_CHANNEL_ID` to pin the exact channel.
 
 The post includes title, description, game page URL, and a screenshot (or cover) embed image.
+
+## Event Planner & Pop-Up Game Nights
+
+- **Event Rooms category**: Temporary voice and text rooms created for Game Nights and tournaments live under the `Event Rooms` category.
+- **#events channel**: When event rooms are provisioned or scheduled announcements are sent (`POST /events/announce`), the bot posts event cards directly into the server's `#events` channel.
+- Optional env: `DISCORD_EVENTS_CHANNEL_ID` to pin the exact events channel.
+
