@@ -1111,6 +1111,33 @@ const commands = [
     .addStringOption((o) => o.setName("slug").setDescription("Game slug").setRequired(true)),
 ].map((c) => c.toJSON());
 
+async function syncEventChannelsOnStartup(guild) {
+  try {
+    const channels = await guild.channels.fetch();
+    const existingOld = channels.find(
+      (c) => c && c.type === ChannelType.GuildCategory && c.name.toLowerCase() === "events"
+    );
+    const existingNew = channels.find(
+      (c) => c && c.type === ChannelType.GuildCategory && c.name === EVENTS_CATEGORY_NAME
+    );
+
+    if (!existingNew && existingOld) {
+      console.log(`[events] Renaming existing category "${existingOld.name}" -> "${EVENTS_CATEGORY_NAME}"`);
+      await existingOld.setName(EVENTS_CATEGORY_NAME, "Migrate category name to Event Rooms");
+    } else if (!existingNew && !existingOld) {
+      console.log(`[events] Creating category "${EVENTS_CATEGORY_NAME}"`);
+      await ensureCategory(guild, EVENTS_CATEGORY_NAME);
+    }
+
+    const eventsCh = await ensureEventsChannel(guild);
+    if (eventsCh) {
+      console.log(`[events] Found/ensured #${eventsCh.name} channel (id: ${eventsCh.id})`);
+    }
+  } catch (err) {
+    console.warn("[events] Startup event channels sync warning:", err?.message || err);
+  }
+}
+
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   try {
@@ -1126,6 +1153,15 @@ client.once("clientReady", async () => {
       "Re-invite with both bot + applications.commands scopes, e.g.\n" +
         `https://discord.com/oauth2/authorize?client_id=${client.user.id}&permissions=268446720&scope=bot%20applications.commands&guild_id=${GUILD_ID}`
     );
+  }
+
+  try {
+    const guild = await client.guilds.fetch(GUILD_ID);
+    if (guild) {
+      await syncEventChannelsOnStartup(guild);
+    }
+  } catch (err) {
+    console.warn("Startup event channels sync error:", err?.message || err);
   }
 
   try {
