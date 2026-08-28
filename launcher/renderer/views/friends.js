@@ -1401,10 +1401,13 @@ function buildPartyViewHtml(party) {
   const hasGame = Boolean(party.gameSlug);
   const ended = party.status === "ended";
   const inFlight = party.status === "launching" || party.status === "playing";
-  const canJoinGame = hasGame && !ended && (isReady || inFlight);
+  const isLeader = String(party.leaderId) === String(userId);
   const hosted = party.hosted || {};
   const hostedReady = hosted.status === "ready" && hosted.host && hosted.port;
   const lan = party.lan || {};
+  const isPeerOrLan = !hosted.enabled || lan.enabled;
+  const waitingForLeader = !isLeader && !inFlight && isPeerOrLan;
+  const canJoinGame = hasGame && !ended && (isReady || inFlight);
   /*
    * Join stays clickable once you're ready — join-game provisions the server
    * and returns a clear wait/error if connect isn't up yet. Disabling while
@@ -1414,7 +1417,7 @@ function buildPartyViewHtml(party) {
   const joinConnectFailed =
     !inFlight &&
     ((hosted.enabled && hosted.status === "failed") || (lan.enabled && lan.status === "failed"));
-  const joinDisabled = joinConnectFailed;
+  const joinDisabled = joinConnectFailed || waitingForLeader;
   const voiceEnabled = party.voiceEnabled !== false;
   const hasDiscordVoice = Boolean(party.discord?.inviteUrl || party.discord?.voiceChannelId);
   const showLaunchVoice = voiceEnabled || hasDiscordVoice;
@@ -1597,19 +1600,21 @@ function buildPartyViewHtml(party) {
          </button>`
       : "";
 
+  const joinButtonText = isLeader && !inFlight ? "Start Game" : waitingForLeader ? "Waiting for Host…" : "Join Game";
+  const joinButtonIcon = waitingForLeader ? ICON.loader : ICON.play;
+  const joinTitle = waitingForLeader
+    ? "The party host must start the game first"
+    : hosted.status === "failed" || lan.status === "failed"
+    ? hosted.error || lan.error || "Could not start the party connection"
+    : hosted.status === "pending" || lan.status === "pending"
+    ? "Server is starting — click to join when ready"
+    : "";
+
   const joinGameHtml = canJoinGame
     ? `<div class="party-join-wrap">
          <button type="button" id="btn-party-join-game" class="party-btn btn-primary"${
-           joinDisabled
-             ? ` disabled title="${
-                 hosted.status === "failed" || lan.status === "failed"
-                   ? hosted.error || lan.error || "Could not start the party connection"
-                   : "Could not start the party connection"
-               }"`
-             : hosted.status === "pending" || lan.status === "pending"
-             ? ` title="Server is starting — click to join when ready"`
-             : ""
-         }>${ICON.play} Join Game</button>
+           joinDisabled ? ` disabled` : ""
+         }${joinTitle ? ` title="${escapeHtml(joinTitle)}"` : ""}>${joinButtonIcon} ${escapeHtml(joinButtonText)}</button>
          ${
            hosted.roomCode
              ? `<p class="party-host-line party-room-code">Room Code: ${escapeHtml(String(hosted.roomCode))}</p>`
