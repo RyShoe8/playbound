@@ -578,6 +578,16 @@ const DISCOVERABLE_MIN_MS = window.playbound?.cadence?.discoverablePartiesMinMs 
 let lastDiscoverableAt = 0;
 let lastDiscoverable = [];
 
+/** Carry the last discoverable list across passes that skipped fetching it. */
+function withCachedDiscoverable(data) {
+  if (!data || data.error) return data;
+  if (Array.isArray(data.discoverable)) {
+    lastDiscoverable = data.discoverable;
+    return data;
+  }
+  return { ...data, discoverable: lastDiscoverable };
+}
+
 async function loadParties() {
   if (!window.playbound.getParties) return null;
   const includeDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
@@ -585,12 +595,51 @@ async function loadParties() {
   const data = await window.playbound.getParties(
     includeDiscoverable ? undefined : { includeDiscoverable: false }
   );
-  if (!data || data.error) return data;
-  if (Array.isArray(data.discoverable)) {
-    lastDiscoverable = data.discoverable;
-    return data;
+  return withCachedDiscoverable(data);
+}
+
+/*
+ * Friends + requests + parties in one request.
+ *
+ * These three are always needed together and polled every 3s while a party is
+ * live; separately that is three serverless invocations per pass, each
+ * re-authenticating and re-opening the same DB connection. /api/party-sync
+ * composes them from the same server-side functions, so the shapes are
+ * identical.
+ *
+ * Falls back to the three individual calls whenever the merged one is
+ * unavailable — an older build, or a launcher pointed at a deployment that
+ * predates the endpoint — so a version skew degrades to the old cost rather
+ * than an empty panel.
+ */
+async function loadFriendsBundle() {
+  const includeDiscoverable = Date.now() - lastDiscoverableAt >= DISCOVERABLE_MIN_MS;
+
+  if (window.playbound.getPartySync) {
+    if (includeDiscoverable) lastDiscoverableAt = Date.now();
+    const data = await window.playbound.getPartySync(
+      includeDiscoverable ? undefined : { includeDiscoverable: false }
+    );
+    if (data && !data.error) {
+      return {
+        friendsData: { friends: data.friends },
+        requestsData: { incoming: data.incoming, outgoing: data.outgoing },
+        partiesRaw: withCachedDiscoverable({
+          myParties: data.myParties,
+          ...(Array.isArray(data.discoverable) ? { discoverable: data.discoverable } : {}),
+        }),
+      };
+    }
+    // Merged call failed — do not consume the discoverable throttle window.
+    if (includeDiscoverable) lastDiscoverableAt = 0;
   }
-  return { ...data, discoverable: lastDiscoverable };
+
+  const [friendsData, requestsData, partiesRaw] = await Promise.all([
+    window.playbound.getFriends(),
+    window.playbound.getFriendRequests(),
+    loadParties(),
+  ]);
+  return { friendsData, requestsData, partiesRaw };
 }
 
 /*
@@ -623,12 +672,11 @@ async function refreshFriendsData() {
 
   try {
     await ensurePartyGames();
-    const [friendsData, requestsData, partiesRaw, upcomingEventsData] = await Promise.all([
-      window.playbound.getFriends(),
-      window.playbound.getFriendRequests(),
-      loadParties(),
+    const [bundle, upcomingEventsData] = await Promise.all([
+      loadFriendsBundle(),
       loadUpcomingEvents(),
     ]);
+    const { friendsData, requestsData, partiesRaw } = bundle;
     const partiesData = await reconcilePartiesPayload(partiesRaw);
     const friends = Array.isArray(friendsData?.friends) ? friendsData.friends : [];
     state._createPartyFriends = friends;

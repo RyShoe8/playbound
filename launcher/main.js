@@ -9840,6 +9840,31 @@ ipcMain.handle("get-parties", async (_event, opts = {}) => {
 });
 
 /*
+ * Friends + friend requests + parties in one request.
+ *
+ * The friends view needs all three every pass and polls every 3s while a
+ * party is live. Asked for separately that is three round trips and three
+ * serverless invocations, each re-authenticating and re-opening the same
+ * database connection, for data that is always used together.
+ *
+ * /api/party-sync returns the same shapes composed from the same functions,
+ * so the caller can destructure it exactly as before. Sections fail
+ * independently server-side; a whole-request failure still falls back to the
+ * three separate calls so a deploy skew cannot leave the panel blank.
+ */
+ipcMain.handle("get-party-sync", async (_event, opts = {}) => {
+  const path =
+    opts && opts.includeDiscoverable === false
+      ? "/api/party-sync?discoverable=0"
+      : "/api/party-sync";
+  try {
+    return await launcherJson(path);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+/*
  * Awaited, not fired off.
  *
  * The party response carries `configSync`, which the server computes from the
