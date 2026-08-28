@@ -90,18 +90,24 @@ export async function filterCurrentArtifacts<T extends MinimalArtifact>(artifact
     Array.from(latestLauncherByPlatform.values()).map((entry) => entry.artifact.artifactId)
   );
 
-  // 3. For each active game slug, keep the latest / matching artifact
-  const gameArtifactsBySlug = new Map<string, T[]>();
+  // 3. For each active game slug, keep the latest / matching base game artifact
+  const baseGameArtifactsBySlug = new Map<string, T[]>();
+  const editionArtifacts = new Set<string>();
+
   for (const art of artifacts) {
-    if (art.gameSlug) {
-      const list = gameArtifactsBySlug.get(art.gameSlug) || [];
+    if (art.artifactType === "edition") {
+      if (art.gameSlug && activeGameMap.has(art.gameSlug)) {
+        editionArtifacts.add(art.artifactId);
+      }
+    } else if (art.gameSlug && art.artifactType !== "mod" && art.artifactType !== "tool") {
+      const list = baseGameArtifactsBySlug.get(art.gameSlug) || [];
       list.push(art);
-      gameArtifactsBySlug.set(art.gameSlug, list);
+      baseGameArtifactsBySlug.set(art.gameSlug, list);
     }
   }
 
   const currentGameArtifactIds = new Set<string>();
-  for (const [slug, arts] of gameArtifactsBySlug.entries()) {
+  for (const [slug, arts] of baseGameArtifactsBySlug.entries()) {
     // Check if the game is active in catalog
     if (!activeGameMap.has(slug)) continue;
     const recipe = activeGameMap.get(slug);
@@ -129,11 +135,16 @@ export async function filterCurrentArtifacts<T extends MinimalArtifact>(artifact
     if (art.artifactType === "launcher" || art.artifactId.startsWith("playbound-launcher-")) {
       return currentLauncherArtifactIds.has(art.artifactId);
     }
-    // Current game artifact
-    if (art.gameSlug) {
+    // Current edition artifact
+    if (art.artifactType === "edition") {
+      return editionArtifacts.has(art.artifactId);
+    }
+    // Current base game artifact
+    if (art.gameSlug && art.artifactType !== "mod" && art.artifactType !== "tool") {
       return currentGameArtifactIds.has(art.artifactId);
     }
     // Non-game artifacts (e.g. shared tools/mods) that have active sources
     return art.artifactType === "mod" || art.artifactType === "tool";
   });
 }
+
