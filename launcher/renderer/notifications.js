@@ -4,7 +4,12 @@
  */
 import { api, setStatus, state } from "./shared.js";
 
-const POLL_MS = 6_000;
+/*
+ * Shared with the website — see platform/src/lib/realtime/cadence.json.
+ * Notifications are the only delivery path for party/play invites and
+ * "party launched", so this is a UX-critical interval, not a background one.
+ */
+const POLL_MS = window.playbound?.cadence?.notificationPollMs ?? 10_000;
 const TOAST_DURATION_MS = 15_000;
 
 let pollTimer = null;

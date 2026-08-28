@@ -1,0 +1,15 @@
+{
+  "_comment": "CANONICAL polling cadences for web AND launcher. Single source of truth — do not hardcode these numbers anywhere else. The launcher gets a generated copy at build time via launcher/scripts/sync-cadence.js; see cadence.ts for what each value means and why it is set where it is.",
+
+  "notificationPollMs": 10000,
+
+  "friendsPollMs": 5000,
+  "livePartyPollMs": 3000,
+  "partyChatPollMs": 2500,
+  "discoverablePartiesMinMs": 8000,
+  "upcomingEventsTtlMs": 60000,
+
+  "couchSignalActiveMs": 500,
+  "couchSignalIdleMs": 2000,
+  "couchSignalIdleAfterEmptyPolls": 6
+}

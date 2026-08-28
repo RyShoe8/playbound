@@ -1,6 +1,15 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+/*
+ * Polling intervals shared with the website, generated from
+ * platform/src/lib/realtime/cadence.json by scripts/sync-cadence.js. Bridged
+ * here rather than fetched: they are build-time constants, and the renderer
+ * is ESM so it cannot require() the module itself.
+ */
+const cadence = require("./services/cadence");
+
 contextBridge.exposeInMainWorld("playbound", {
+  cadence,
   platform: {
     getOS: () => (process.platform === "win32" ? "windows" : process.platform === "darwin" ? "macos" : "linux"),
     getOSVersion: () => process.getSystemVersion(),

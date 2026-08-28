@@ -99,11 +99,37 @@ async function refresh() {
   else stopSignalPoll();
 }
 
-function startSignalPoll() {
-  if (pollTimer) return;
+/*
+ * Signalling is bursty: a flurry of offer/ice while a phone connects, then
+ * silence for the rest of the session. Polling flat out at the active rate
+ * throughout meant ~120 requests a minute to be told nothing had happened.
+ *
+ * So: poll fast while messages are arriving, decay to the idle rate after
+ * enough consecutive empty replies, and snap straight back the moment
+ * anything shows up. The idle rate is the ceiling on how long a SECOND phone
+ * waits to be noticed mid-session, which is why it stays low rather than
+ * decaying further — see cadence.json.
+ */
+const SIGNAL_ACTIVE_MS = window.playbound?.cadence?.couchSignalActiveMs ?? 500;
+const SIGNAL_IDLE_MS = window.playbound?.cadence?.couchSignalIdleMs ?? 2000;
+const SIGNAL_IDLE_AFTER = window.playbound?.cadence?.couchSignalIdleAfterEmptyPolls ?? 6;
+
+let emptySignalPolls = 0;
+let signalPollMs = SIGNAL_ACTIVE_MS;
+
+function scheduleSignalPoll(intervalMs) {
+  if (pollTimer) window.clearInterval(pollTimer);
+  signalPollMs = intervalMs;
   pollTimer = window.setInterval(() => {
     void pollSignals();
-  }, 500);
+  }, intervalMs);
+}
+
+function startSignalPoll() {
+  if (pollTimer) return;
+  // A session always starts with a handshake pending, so begin at full rate.
+  emptySignalPolls = 0;
+  scheduleSignalPoll(SIGNAL_ACTIVE_MS);
 }
 
 function stopSignalPoll() {
@@ -111,6 +137,8 @@ function stopSignalPoll() {
     window.clearInterval(pollTimer);
     pollTimer = null;
   }
+  emptySignalPolls = 0;
+  signalPollMs = SIGNAL_ACTIVE_MS;
 }
 
 async function pollSignals() {
@@ -118,6 +146,18 @@ async function pollSignals() {
   if (!session) return;
   const res = await pb().couchSignalPoll(signalSince);
   const messages = res?.messages || [];
+
+  if (messages.length > 0) {
+    // Something is happening — go back to full rate for the rest of it.
+    emptySignalPolls = 0;
+    if (signalPollMs !== SIGNAL_ACTIVE_MS) scheduleSignalPoll(SIGNAL_ACTIVE_MS);
+  } else {
+    emptySignalPolls += 1;
+    if (emptySignalPolls >= SIGNAL_IDLE_AFTER && signalPollMs !== SIGNAL_IDLE_MS) {
+      scheduleSignalPoll(SIGNAL_IDLE_MS);
+    }
+  }
+
   for (const m of messages) {
     signalSince = Math.max(signalSince, m.timestamp || 0);
     let payload;

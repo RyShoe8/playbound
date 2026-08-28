@@ -119,6 +119,11 @@ function main() {
   //    which npm does not run for dist:dev / dist:prod.
   run("Syncing game catalog", path.join(__dirname, "sync-catalog.js"), [], env);
 
+  // 4b. Regenerate services/cadence.js from the website's canonical
+  //     cadence.json, so both clients poll at the same intervals. Soft-fails
+  //     and keeps the committed copy when platform/ is not in the checkout.
+  run("Syncing poll cadences", path.join(__dirname, "sync-cadence.js"), [], env);
+
   // 5. Refuse to package JavaScript that Electron cannot parse. A malformed
   //    main.js otherwise produces a valid-looking installer that replaces the
   //    working app and then fails before the first window can open.
