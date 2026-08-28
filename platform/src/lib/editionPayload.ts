@@ -183,6 +183,8 @@ export const editionPayloadSchema = z
     languages: z.array(z.string().trim().min(1).max(60)).max(60).default([]),
 
     version: z.string().trim().max(80).optional(),
+    firstPlaySteps: z.array(installStepSchema).max(30).default([]),
+    multiplayerGamingSteps: z.array(installStepSchema).max(30).default([]),
     patchNotes: z
       .array(
         z.object({

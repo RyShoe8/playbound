@@ -180,6 +180,10 @@ export interface Game {
   thatOneThing?: string;
   /** Structured per-platform install guide. */
   installSteps?: InstallStep[];
+  /** Optional first-time setup steps (account creation, profile setup, etc.). */
+  firstPlaySteps?: InstallStep[];
+  /** Optional manual multiplayer joining / server navigation steps. */
+  multiplayerGamingSteps?: InstallStep[];
   /** 5–8 entries. Drives FAQPage structured data and question-shaped H2s. */
   faq?: GameFaq[];
   /** Concrete situations this game suits, e.g. "low-spec laptop". */

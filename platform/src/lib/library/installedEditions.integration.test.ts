@@ -12,6 +12,7 @@ import { libraryHasRequiredEdition } from "@/lib/playTogether/editionMatch";
  *
  *   npm install --no-save mongodb-memory-server && npx vitest run src/lib/library
  */
+// @ts-expect-error optional dev dependency for local integration runs
 let MongoMemoryServer: typeof import("mongodb-memory-server").MongoMemoryServer | null = null;
 try {
   ({ MongoMemoryServer } = require("mongodb-memory-server"));

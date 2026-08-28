@@ -50,6 +50,15 @@ const PatchNoteSchema = new Schema(
   { _id: false }
 );
 
+const InstallStepSchema = new Schema(
+  {
+    platform: { type: String, enum: ["all", "windows", "macos", "linux"], default: "all" },
+    text: { type: String, required: true },
+    command: { type: String, default: null },
+  },
+  { _id: false }
+);
+
 const FaqSchema = new Schema(
   {
     q: { type: String, required: true },
@@ -139,6 +148,8 @@ const EditionSchema = new Schema(
     languages: { type: [String], default: [] },
 
     version: { type: String, default: null },
+    firstPlaySteps: { type: [InstallStepSchema], default: [] },
+    multiplayerGamingSteps: { type: [InstallStepSchema], default: [] },
     patchNotes: { type: [PatchNoteSchema], default: [] },
     faq: { type: [FaqSchema], default: [] },
 

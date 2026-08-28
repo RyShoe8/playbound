@@ -310,96 +310,147 @@ export function QualityBarEditor({
   );
 }
 
-/** Install steps and FAQ — auto-derived on save, editable here. */
+/** Reusable editor for structured step lists (install, first play, multiplayer). */
+export function StepListEditor({
+  title,
+  description,
+  steps,
+  onStepsChange,
+  placeholder = "Step instruction…",
+}: {
+  title: string;
+  description?: string;
+  steps: InstallStep[];
+  onStepsChange: (next: InstallStep[]) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-bold">{title}</p>
+      {description ? (
+        <p className="mt-1 text-[11px] text-muted-foreground">{description}</p>
+      ) : null}
+
+      <div className="mt-3 space-y-2">
+        {steps.map((step, i) => (
+          <div key={i} className="rounded-lg border border-border p-2.5">
+            <div className="flex gap-2">
+              <PremiumSelect
+                value={step.platform}
+                onChange={(e) => {
+                  const next = [...steps];
+                  next[i] = {
+                    ...step,
+                    platform: e.target.value as InstallStep["platform"],
+                  };
+                  onStepsChange(next);
+                }}
+                className={`${field} mt-0 !w-32 shrink-0`}
+              >
+                <option value="all">All</option>
+                <option value="windows">Windows</option>
+                <option value="macos">macOS</option>
+                <option value="linux">Linux</option>
+              </PremiumSelect>
+              <button
+                type="button"
+                onClick={() => onStepsChange(steps.filter((_, x) => x !== i))}
+                className="ml-auto shrink-0 rounded-lg border border-border px-2.5 text-muted-foreground hover:text-foreground"
+                aria-label={`Remove step ${i + 1}`}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <textarea
+              rows={2}
+              value={step.text}
+              placeholder={placeholder}
+              onChange={(e) => {
+                const next = [...steps];
+                next[i] = { ...step, text: e.target.value };
+                onStepsChange(next);
+              }}
+              className={area}
+            />
+            <input
+              value={step.command ?? ""}
+              placeholder="Optional command"
+              onChange={(e) => {
+                const next = [...steps];
+                next[i] = { ...step, command: e.target.value || undefined };
+                onStepsChange(next);
+              }}
+              className={`${field} font-mono text-xs`}
+            />
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          onStepsChange([...steps, { platform: "all", text: "" }])
+        }
+        className="mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
+      >
+        <Plus className="size-3" /> Add step
+      </button>
+    </div>
+  );
+}
+
+/** Install steps, First Play steps, Multiplayer steps, and FAQ — editable in admin. */
 export function DerivedContentEditor({
   installSteps,
+  firstPlaySteps = [],
+  multiplayerGamingSteps = [],
   faq,
   onInstallStepsChange,
+  onFirstPlayStepsChange,
+  onMultiplayerGamingStepsChange,
   onFaqChange,
 }: {
   installSteps: InstallStep[];
+  firstPlaySteps?: InstallStep[];
+  multiplayerGamingSteps?: InstallStep[];
   faq: GameFaq[];
   onInstallStepsChange: (next: InstallStep[]) => void;
+  onFirstPlayStepsChange?: (next: InstallStep[]) => void;
+  onMultiplayerGamingStepsChange?: (next: InstallStep[]) => void;
   onFaqChange: (next: GameFaq[]) => void;
 }) {
   return (
     <section className="space-y-5 rounded-xl border border-border bg-card p-4">
-      <div>
-        <p className="text-sm font-bold">Install steps</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Generated from catalog facts when you save if left empty. Powers the
-          install page and its HowTo structured data. Edit freely — your version
-          always wins.
-        </p>
+      <StepListEditor
+        title="Install steps"
+        description="Generated from catalog facts when you save if left empty. Powers the install page and its HowTo structured data. Edit freely — your version always wins."
+        steps={installSteps}
+        onStepsChange={onInstallStepsChange}
+      />
 
-        <div className="mt-3 space-y-2">
-          {installSteps.map((step, i) => (
-            <div key={i} className="rounded-lg border border-border p-2.5">
-              <div className="flex gap-2">
-                <PremiumSelect
-                  value={step.platform}
-                  onChange={(e) => {
-                    const next = [...installSteps];
-                    next[i] = {
-                      ...step,
-                      platform: e.target.value as InstallStep["platform"],
-                    };
-                    onInstallStepsChange(next);
-                  }}
-                  // !w-32 is load-bearing: `field` bakes in w-full, and Tailwind's
-                  // stylesheet order let that win over a plain w-32 appended
-                  // after it, stretching the select to fill the row and pushing
-                  // the ml-auto remove button out past the card's right edge.
-                  className={`${field} mt-0 !w-32 shrink-0`}
-                >
-                  <option value="all">All</option>
-                  <option value="windows">Windows</option>
-                  <option value="macos">macOS</option>
-                  <option value="linux">Linux</option>
-                </PremiumSelect>
-                <button
-                  type="button"
-                  onClick={() => onInstallStepsChange(installSteps.filter((_, x) => x !== i))}
-                  className="ml-auto shrink-0 rounded-lg border border-border px-2.5 text-muted-foreground hover:text-foreground"
-                  aria-label={`Remove step ${i + 1}`}
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
-              <textarea
-                rows={2}
-                value={step.text}
-                onChange={(e) => {
-                  const next = [...installSteps];
-                  next[i] = { ...step, text: e.target.value };
-                  onInstallStepsChange(next);
-                }}
-                className={area}
-              />
-              <input
-                value={step.command ?? ""}
-                placeholder="Optional command"
-                onChange={(e) => {
-                  const next = [...installSteps];
-                  next[i] = { ...step, command: e.target.value || undefined };
-                  onInstallStepsChange(next);
-                }}
-                className={`${field} font-mono text-xs`}
-              />
-            </div>
-          ))}
+      {onFirstPlayStepsChange ? (
+        <div className="border-t border-border pt-4">
+          <StepListEditor
+            title="First Play Steps (First-Time Guidance)"
+            description="Optional steps shown to players on their first 1-2 launches (e.g. create profile, configure controls, register account)."
+            steps={firstPlaySteps}
+            onStepsChange={onFirstPlayStepsChange}
+            placeholder="e.g. In the main menu, create a player profile..."
+          />
         </div>
+      ) : null}
 
-        <button
-          type="button"
-          onClick={() =>
-            onInstallStepsChange([...installSteps, { platform: "all", text: "" }])
-          }
-          className="mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold"
-        >
-          <Plus className="size-3" /> Add step
-        </button>
-      </div>
+      {onMultiplayerGamingStepsChange ? (
+        <div className="border-t border-border pt-4">
+          <StepListEditor
+            title="Multiplayer Gaming Steps (Manual Join / Server Navigation)"
+            description="Optional in-game navigation steps to reach party multiplayer servers or lobbies (use {address}, {host}, or {port} for dynamic substitution)."
+            steps={multiplayerGamingSteps}
+            onStepsChange={onMultiplayerGamingStepsChange}
+            placeholder="e.g. Click Gather > Manual > Enter {address} and click Connect..."
+          />
+        </div>
+      ) : null}
 
       <div className="border-t border-border pt-4">
         <p className="text-sm font-bold">FAQ</p>

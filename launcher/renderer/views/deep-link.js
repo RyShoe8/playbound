@@ -1,5 +1,6 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
+import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -204,13 +205,17 @@ function renderDeepLinkView(ctx) {
       try {
         const detail = ctx.entry || { title };
         const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
-          await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
+          const res = await window.playbound.play(ctx.slug, ctx.join, ctx.editionSlug || null);
           try {
             await window.playbound.clearContext();
           } catch {
             /* panel can still finish even if the context clear fails */
           }
           startGameSession(ctx.slug, title);
+          maybeShowLaunchGuidance(res, {
+            title,
+            slug: ctx.slug,
+          });
           api.navigateTo("home");
         }, ctx.slug);
         if (!launched) return;
@@ -253,7 +258,7 @@ function renderDeepLinkView(ctx) {
       try {
         const detail = ctx.entry || { title };
         const launched = await maybeOfferPhoneControllerThenPlay(detail, async () => {
-          await window.playbound.play(
+          const res = await window.playbound.play(
             ctx.slug,
             { host, port, name: ctx.join?.name || "", mod: ctx.join?.gameMod || undefined },
             ctx.editionSlug || null
@@ -263,6 +268,12 @@ function renderDeepLinkView(ctx) {
           } catch {
             /* panel can still finish even if the context clear fails */
           }
+          startGameSession(ctx.slug, title);
+          maybeShowLaunchGuidance(res, {
+            title,
+            slug: ctx.slug,
+            address: `${host}:${port}`,
+          });
           startGameSession(ctx.slug, title);
           api.navigateTo("home");
         }, ctx.slug);

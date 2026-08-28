@@ -1297,8 +1297,12 @@ export function GameEditorForm({
 
           <DerivedContentEditor
             installSteps={form.installSteps ?? []}
+            firstPlaySteps={form.firstPlaySteps ?? []}
+            multiplayerGamingSteps={form.multiplayerGamingSteps ?? []}
             faq={form.faq ?? []}
             onInstallStepsChange={(next) => patch("installSteps", next)}
+            onFirstPlayStepsChange={(next) => patch("firstPlaySteps", next)}
+            onMultiplayerGamingStepsChange={(next) => patch("multiplayerGamingSteps", next)}
             onFaqChange={(next) => patch("faq", next)}
           />
         </AdminCollapsibleSection>

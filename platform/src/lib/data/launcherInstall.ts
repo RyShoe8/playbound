@@ -52,7 +52,7 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
   "dune-legacy": {
     enabled: true,
     kind: "direct-installer",
-    url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+    url: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe",
     urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
     urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
     fileName: "DuneLegacy-0.99.5-Windows-x64.exe",

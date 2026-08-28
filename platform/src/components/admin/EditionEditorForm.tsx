@@ -36,6 +36,7 @@ import {
   EvidencePanel,
   ProseField,
   SourceMaterialPanel,
+  StepListEditor,
 } from "@/components/admin/EditorialFields";
 import { AdminCollapsibleSection } from "@/components/admin/AdminCollapsibleSection";
 import { SizeInput } from "@/components/admin/SizeInput";
@@ -1068,6 +1069,27 @@ export function EditionEditorForm({
           notes={form.patchNotes}
           onChange={(patchNotes) => patch("patchNotes", patchNotes)}
         />
+      </AdminCollapsibleSection>
+
+      <AdminCollapsibleSection title="First Play & Multiplayer Steps">
+        <div className="space-y-6">
+          <StepListEditor
+            title="First Play Steps (First-Time Guidance)"
+            description="Optional steps shown to players on their first 1-2 launches (e.g. create profile, configure controls, register account)."
+            steps={form.firstPlaySteps ?? []}
+            onStepsChange={(steps) => patch("firstPlaySteps", steps)}
+            placeholder="e.g. In the main menu, create a player profile..."
+          />
+          <div className="border-t border-border pt-4">
+            <StepListEditor
+              title="Multiplayer Gaming Steps (Manual Join / Server Navigation)"
+              description="Optional in-game navigation steps to reach party multiplayer servers or lobbies (use {address}, {host}, or {port} for dynamic substitution)."
+              steps={form.multiplayerGamingSteps ?? []}
+              onStepsChange={(steps) => patch("multiplayerGamingSteps", steps)}
+              placeholder="e.g. Click Gather > Manual > Enter {address} and click Connect..."
+            />
+          </div>
+        </div>
       </AdminCollapsibleSection>
 
       <AdminCollapsibleSection title="Certification">

@@ -7158,7 +7158,13 @@ async function playGameInner(slug, join = null, editionSlug = null) {
 
   const settings = loadSettings();
   if (!settings.recentlyPlayed) settings.recentlyPlayed = {};
-  settings.recentlyPlayed[slug] = { lastPlayed: new Date().toISOString() };
+  const currentRecent = settings.recentlyPlayed[slug] || {};
+  const newLaunchCount = Number(currentRecent.launchCount || 0) + 1;
+  settings.recentlyPlayed[slug] = {
+    ...currentRecent,
+    lastPlayed: new Date().toISOString(),
+    launchCount: newLaunchCount,
+  };
   saveSettings(settings);
 
   // Touch summary so "primary" edition matches last played.
@@ -7167,6 +7173,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     const g = ensureGameInstallRecord(st[slug]);
     if (g.editions?.[edSlug]) {
       g.editions[edSlug].installedAt = new Date().toISOString();
+      g.editions[edSlug].launchCount = newLaunchCount;
       syncGameInstallSummary(g);
       st[slug] = g;
       saveState(st);
@@ -7175,11 +7182,56 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     /* ignore */
   }
 
+  // Resolve First Play Steps and Multiplayer Gaming Steps
+  const editionObj = entry?.editions?.find((ed) => ed.slug === (info.editionSlug || edSlug));
+  const rawFirstPlay =
+    (Array.isArray(editionObj?.firstPlaySteps) && editionObj.firstPlaySteps.length > 0)
+      ? editionObj.firstPlaySteps
+      : (Array.isArray(entry?.firstPlaySteps) && entry.firstPlaySteps.length > 0)
+      ? entry.firstPlaySteps
+      : null;
+
+  const rawMultiplayer =
+    (Array.isArray(editionObj?.multiplayerGamingSteps) && editionObj.multiplayerGamingSteps.length > 0)
+      ? editionObj.multiplayerGamingSteps
+      : (Array.isArray(entry?.multiplayerGamingSteps) && entry.multiplayerGamingSteps.length > 0)
+      ? entry.multiplayerGamingSteps
+      : null;
+
+  const formatStepList = (stepsList) => {
+    if (!Array.isArray(stepsList)) return null;
+    const fullAddress = join?.host && join?.port ? `${join.host}:${join.port}` : (join?.host || "");
+    return stepsList.map((s) => {
+      if (typeof s === "string") {
+        return s
+          .replace(/\{address\}/g, fullAddress)
+          .replace(/\{host\}/g, join?.host || "")
+          .replace(/\{port\}/g, String(join?.port || ""));
+      }
+      if (s && typeof s === "object" && s.text) {
+        return {
+          ...s,
+          text: s.text
+            .replace(/\{address\}/g, fullAddress)
+            .replace(/\{host\}/g, join?.host || "")
+            .replace(/\{port\}/g, String(join?.port || "")),
+        };
+      }
+      return s;
+    });
+  };
+
+  const firstPlaySteps = newLaunchCount <= 2 ? formatStepList(rawFirstPlay) : null;
+  const multiplayerGamingSteps = formatStepList(rawMultiplayer);
+
   return {
     status: "launched",
     connect: args.length > 0 && join?.host ? `${join.host}:${join.port}` : null,
     manualConnect: Boolean(join?.host && join?.port && !connectArgs?.length),
     editionSlug: info.editionSlug || edSlug,
+    launchCount: newLaunchCount,
+    firstPlaySteps,
+    multiplayerGamingSteps,
   };
 }
 

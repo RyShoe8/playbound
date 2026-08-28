@@ -1,4 +1,5 @@
 import { createFreeOfferCard, createGameCard, createModCard } from "../cards.js";
+import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -1498,8 +1499,12 @@ async function renderGameDetailView(slug, opts = {}) {
           detail,
           async () => {
             setStatus("Checking Java / launching…");
-            await window.playbound.play(slug);
+            const res = await window.playbound.play(slug);
             startGameSession(slug, detail.title || slug);
+            maybeShowLaunchGuidance(res, {
+              title: detail.title || slug,
+              slug,
+            });
             setStatus(`Launched ${detail.title || slug}`);
           },
           slug
@@ -1903,12 +1908,19 @@ async function renderGameDetailView(slug, opts = {}) {
         });
         sSec.querySelectorAll(".btn-join-s").forEach((b) => {
           b.addEventListener("click", async () => {
-            await window.playbound.play(slug, {
-              host: b.dataset.host,
-              port: Number(b.dataset.port),
+            const host = b.dataset.host;
+            const port = Number(b.dataset.port);
+            const res = await window.playbound.play(slug, {
+              host,
+              port,
               mod: b.dataset.mod || undefined,
             });
             startGameSession(slug, detail.title || slug);
+            maybeShowLaunchGuidance(res, {
+              title: detail.title || slug,
+              slug,
+              address: host && port ? `${host}:${port}` : host || null,
+            });
           });
         });
       }
@@ -2756,8 +2768,12 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
         },
         async () => {
           setStatus("Checking Java / launching…");
-          await window.playbound.play(gameSlug, null, editionSlug);
+          const res = await window.playbound.play(gameSlug, null, editionSlug);
           startGameSession(gameSlug, edition.gameTitle || gameSlug);
+          maybeShowLaunchGuidance(res, {
+            title: edition.editionName || edition.gameTitle || gameSlug,
+            slug: gameSlug,
+          });
           setStatus(`Launched ${edition.editionName || edition.gameTitle || gameSlug}`);
         },
         gameSlug

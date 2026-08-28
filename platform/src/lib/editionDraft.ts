@@ -6,6 +6,7 @@ import type {
   InstallMethod,
 } from "@/lib/editionTypes";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import type { InstallStep } from "@/lib/data/types";
 
 /**
  * Draft shapes for the admin edition form.
@@ -46,6 +47,8 @@ export interface EditionDraft {
   serverName: string;
   languages: string[];
   version: string;
+  firstPlaySteps: InstallStep[];
+  multiplayerGamingSteps: InstallStep[];
   patchNotes: EditionPatchNote[];
   faq: EditionFaqItem[];
   verified: boolean;
@@ -79,6 +82,8 @@ export function emptyEditionDraft(gameSlug: string): EditionDraft {
     serverName: "",
     languages: [],
     version: "",
+    firstPlaySteps: [],
+    multiplayerGamingSteps: [],
     patchNotes: [],
     faq: [],
     verified: false,
@@ -129,6 +134,8 @@ export function editionToDraft(edition: Edition): EditionDraft {
     serverName: edition.serverName ?? "",
     languages: edition.languages,
     version: edition.version ?? "",
+    firstPlaySteps: edition.firstPlaySteps ?? [],
+    multiplayerGamingSteps: edition.multiplayerGamingSteps ?? [],
     patchNotes: edition.patchNotes ?? [],
     faq: edition.faq ?? [],
     verified: edition.verified,

@@ -228,6 +228,8 @@ const CatalogGameSchema = new Schema(
     whyWePickedIt: { type: String, default: null },
     thatOneThing: { type: String, default: null },
     installSteps: { type: [InstallStepSchema], default: [] },
+    firstPlaySteps: { type: [InstallStepSchema], default: [] },
+    multiplayerGamingSteps: { type: [InstallStepSchema], default: [] },
     faq: { type: [FaqSchema], default: [] },
     bestFor: { type: [String], default: [] },
     notFor: { type: [String], default: [] },

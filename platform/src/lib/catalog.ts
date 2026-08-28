@@ -265,6 +265,14 @@ function toGame(doc: LeanGame): Game {
       (doc.installSteps as Game["installSteps"])?.length
         ? (doc.installSteps as Game["installSteps"])
         : seed?.installSteps ?? extra?.installSteps,
+    firstPlaySteps:
+      (doc.firstPlaySteps as Game["firstPlaySteps"])?.length
+        ? (doc.firstPlaySteps as Game["firstPlaySteps"])
+        : seed?.firstPlaySteps ?? [],
+    multiplayerGamingSteps:
+      (doc.multiplayerGamingSteps as Game["multiplayerGamingSteps"])?.length
+        ? (doc.multiplayerGamingSteps as Game["multiplayerGamingSteps"])
+        : seed?.multiplayerGamingSteps ?? [],
     faq: (doc.faq as Game["faq"])?.length
       ? (doc.faq as Game["faq"])
       : seed?.faq ?? extra?.faq,

@@ -1,4 +1,5 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
+import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -508,8 +509,13 @@ function paintServersTable() {
       }
       setStatus(`Joining ${host}:${port}…`);
       try {
-        await window.playbound.play(slug, { host, port, mod });
+        const res = await window.playbound.play(slug, { host, port, mod });
         startGameSession(slug, slug);
+        maybeShowLaunchGuidance(res, {
+          title: slug,
+          slug,
+          address: `${host}:${port}`,
+        });
       } catch (err) {
         setStatus(err.message || String(err), true);
       }
