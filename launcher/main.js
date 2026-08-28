@@ -6005,6 +6005,24 @@ async function installLocateThenZip(slug, entry, editionExtra) {
     }
   }
 
+  // Some editions pin a direct overlay URL (for example P99), while others
+  // track an upstream GitHub release (for example OpenMOHAA). Resolve the
+  // payload before copying the base game so a bad release configuration does
+  // not leave behind a large, incomplete install.
+  let overlay;
+  const configuredOverlayUrl = entry.overlayUrl || entry.url;
+  if (configuredOverlayUrl) {
+    overlay = {
+      url: configuredOverlayUrl,
+      name: entry.overlayFileName || entry.fileName || "overlay.zip",
+      version: entry.versionLabel || "located+overlay",
+    };
+  } else if (entry.repo) {
+    overlay = await resolveDownload(entry);
+  } else {
+    throw new Error("No overlay download source configured for this edition.");
+  }
+
   const gameDir =
     editionExtra.editionSlug && editionExtra.editionSlug !== DEFAULT_EDITION_SLUG
       ? editionInstallDir(slug, editionExtra.editionSlug)
@@ -6015,13 +6033,10 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   await fsp.mkdir(path.dirname(gameDir), { recursive: true });
   await fsp.cp(sourceDir, gameDir, { recursive: true });
 
-  const overlayUrl = entry.overlayUrl || entry.url;
-  if (!overlayUrl) throw new Error("No overlay zip URL configured for this edition.");
-
   sendProgress({ phase: "resolving" });
-  const overlayName = entry.overlayFileName || entry.fileName || "overlay.zip";
+  const overlayName = entry.overlayFileName || overlay.name || "overlay.zip";
   const downloadPath = path.join(app.getPath("temp"), "playbound-launcher", overlayName);
-  await downloadTo(overlayUrl, downloadPath);
+  await downloadTo(overlay.url, downloadPath);
   sendProgress({ phase: "extracting" });
   // Merge overlay into the copied Titanium tree (do not delete gameDir).
   await extractArchive(downloadPath, gameDir);
@@ -6030,7 +6045,7 @@ async function installLocateThenZip(slug, entry, editionExtra) {
   const exe = findExecutable(gameDir, baseExeHint);
   if (!exe) throw new Error(`Install copied, but ${baseExeHint} was not found.`);
 
-  const version = entry.versionLabel || "located+overlay";
+  const version = entry.versionLabel || overlay.version || "located+overlay";
   markInstalled(slug, {
     version,
     exe,
