@@ -177,6 +177,19 @@ function sanitizeTags(tags: string[]): string[] {
   return Array.isArray(normalized) ? (normalized as string[]) : tags;
 }
 
+function pickPlatforms(docPlatforms?: string[], seedPlatforms?: string[]): string[] {
+  // If the curated seed restricts platforms to Windows-only or Windows+Web (no native macOS or Linux packages),
+  // honor the seed platforms so macOS/Linux users receive accurate guidance.
+  if (
+    seedPlatforms?.length &&
+    !seedPlatforms.includes("macOS") &&
+    !seedPlatforms.includes("Linux")
+  ) {
+    return seedPlatforms;
+  }
+  return docPlatforms?.length ? docPlatforms : (seedPlatforms ?? []);
+}
+
 function toGame(doc: LeanGame): Game {
   const seed = seedBySlug.get(String(doc.slug));
   const extra = overlayForMongoOnly(String(doc.slug));
@@ -202,7 +215,7 @@ function toGame(doc: LeanGame): Game {
     // fields that are absent from an older document; it must never turn an
     // explicitly drafted game back into a public one.
     status,
-    platforms: (doc.platforms as string[])?.length ? (doc.platforms as string[]) : (seed?.platforms ?? []),
+    platforms: pickPlatforms(doc.platforms as string[], seed?.platforms),
     features: (doc.features as string[])?.length ? (doc.features as string[]) : (seed?.features ?? []),
     maxPlayers: typeof doc.maxPlayers === "number" ? doc.maxPlayers : null,
     launchMethods: (doc.launchMethods as LaunchMethod[])?.length ? (doc.launchMethods as LaunchMethod[]) : (seed?.launchMethods ?? ["install"]),

@@ -55,6 +55,10 @@ const {
   dosExecutableMessage,
 } = require("./services/executableFormat");
 const {
+  detectAvailableRunners,
+  resolveDefaultRunner,
+} = require("./services/CompatibilityRunner");
+const {
   clientConnectArgs,
   hasClientConnectArgs,
   isSymmetricPeerGame,
@@ -2611,13 +2615,19 @@ async function resolveDownload(entry) {
 
 async function resolveModDownload(install) {
   if (install.downloadKind === "direct-zip") {
-    if (!install.url) throw new Error("Mod has no direct download URL");
-    let name = path.basename(new URL(install.url).pathname) || "mod.zip";
+    let effectiveUrl = install.url || install.directUrl;
+    if (process.platform === "darwin" && (install.urlMac || install.directUrlMac)) {
+      effectiveUrl = install.urlMac || install.directUrlMac;
+    } else if (process.platform === "linux" && (install.urlLinux || install.directUrlLinux)) {
+      effectiveUrl = install.urlLinux || install.directUrlLinux;
+    }
+    if (!effectiveUrl) throw new Error("Mod has no direct download URL");
+    let name = path.basename(new URL(effectiveUrl).pathname) || "mod.zip";
     // ContentDB and similar end with /download/
     if (!/\.(zip|jar)$/i.test(name) || /^download$/i.test(name)) {
       name = `${install.slug || "mod"}.zip`;
     }
-    return { url: install.url, name, version: install.versionLabel || "fixed" };
+    return { url: effectiveUrl, name, version: install.versionLabel || "fixed" };
   }
   if (install.downloadKind !== "github-zip") {
     throw new Error(`Unsupported mod download kind: ${install.downloadKind}`);
@@ -2630,7 +2640,13 @@ async function resolveModDownload(install) {
   });
   if (res.ok) {
     const release = await res.json();
-    const asset = pickGithubAsset(release.assets, install.assetPattern || "\\.zip$");
+    const pattern =
+      process.platform === "darwin" && install.assetPatternMac
+        ? install.assetPatternMac
+        : process.platform === "linux" && install.assetPatternLinux
+          ? install.assetPatternLinux
+          : install.assetPattern || "\\.zip$";
+    const asset = pickGithubAsset(release.assets, pattern);
     if (asset) {
       return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
     }
@@ -7398,6 +7414,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
   let child;
   try {
     child = GameLauncher.spawnGame(exePath, args, {
+      gameSlug: slug,
       needsDosBox: Boolean(catalog.find((e) => e.slug === slug)?.needsDosBox),
       env: opts.env,
     });
@@ -9464,6 +9481,19 @@ ipcMain.handle("get-app-version", () => ({
     ? { version: pendingUpdate.version, releaseDate: pendingUpdate.releaseDate || null }
     : null,
 }));
+ipcMain.handle("get-compatibility-runners", async () => {
+  try {
+    const runners = detectAvailableRunners({ appUserData: app.getPath("userData") });
+    const defaultRunner = resolveDefaultRunner(runners);
+    return {
+      supported: process.platform !== "win32",
+      runners,
+      defaultRunnerId: defaultRunner ? defaultRunner.id : null,
+    };
+  } catch (err) {
+    return { supported: process.platform !== "win32", runners: [], defaultRunnerId: null, error: err.message };
+  }
+});
 
 /* ── Couch Mode (phone → virtual controller) ───────────────────────── */
 const couchHost = createHostService({

@@ -119,6 +119,24 @@ const UPDATES: PlatformUrlUpdate[] = [
   },
 ];
 
+const PLATFORM_AUDIT_UPDATES: { slug: string; platforms: string[] }[] = [
+  { slug: "mega-man-unlimited", platforms: ["Windows"] },
+  { slug: "metal-slug-remake", platforms: ["Windows"] },
+  { slug: "freelancer", platforms: ["Windows"] },
+  { slug: "star-wars-galaxies", platforms: ["Windows"] },
+  { slug: "jfsw", platforms: ["Windows"] },
+  { slug: "privateer-gemini-gold", platforms: ["Windows"] },
+  { slug: "airforce", platforms: ["Windows"] },
+  { slug: "stunt-rally", platforms: ["Windows"] },
+  { slug: "torcs", platforms: ["Windows"] },
+  { slug: "trigger-rally", platforms: ["Windows", "Web"] },
+  { slug: "yorg", platforms: ["Windows"] },
+  { slug: "freedoom", platforms: ["Windows"] },
+  { slug: "zero-k", platforms: ["Windows"] },
+  { slug: "hurry-curry", platforms: ["Windows", "Web"] },
+  { slug: "everquest", platforms: ["Windows"] },
+];
+
 async function main() {
   const isDryRun = process.argv.includes("--dry-run");
 
@@ -180,11 +198,23 @@ async function main() {
     }
   }
 
+  console.log(`\n[push-platform-urls] Updating audited Windows-only platforms...`);
+  let platformDocsUpdated = 0;
+  for (const p of PLATFORM_AUDIT_UPDATES) {
+    const existing = await CatalogGame.findOne({ slug: p.slug }).lean();
+    if (!existing) continue;
+    console.log(`[CatalogGame:Platforms] ${p.slug} -> $set platforms:`, p.platforms);
+    if (!isDryRun) {
+      const res = await CatalogGame.updateOne({ slug: p.slug }, { $set: { platforms: p.platforms } });
+      if (res.modifiedCount > 0) platformDocsUpdated++;
+    }
+  }
+
   console.log(`\n[push-platform-urls] Done!`);
   if (isDryRun) {
     console.log(`Dry run complete. No database changes were made.`);
   } else {
-    console.log(`Updated ${gamesUpdated} CatalogGame documents and ${editionsUpdated} Edition documents.`);
+    console.log(`Updated ${gamesUpdated} recipes, ${editionsUpdated} editions, and ${platformDocsUpdated} platform arrays.`);
   }
 
   process.exit(0);

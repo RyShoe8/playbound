@@ -50,7 +50,11 @@ const CatalogModSchema = new Schema(
       default: "github-zip",
     },
     assetPattern: { type: String, default: null },
+    assetPatternMac: { type: String, default: null },
+    assetPatternLinux: { type: String, default: null },
     directUrl: { type: String, default: null },
+    directUrlMac: { type: String, default: null },
+    directUrlLinux: { type: String, default: null },
     /** Path under the base game install dir (e.g. "mods"). Empty = game root. */
     installRelativePath: { type: String, default: "mods" },
     art: { type: GameArtSchema, required: true },
