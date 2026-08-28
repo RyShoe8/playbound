@@ -2744,7 +2744,6 @@ async function prepareVirtualLan(party, lan) {
 
   if (res?.needsInstall) {
     setStatus(res.error, true);
-    if (res.downloadUrl) window.playbound.openExternal(res.downloadUrl);
     return false;
   }
   if (res?.error) {
