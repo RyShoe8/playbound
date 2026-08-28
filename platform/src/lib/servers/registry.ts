@@ -3,6 +3,7 @@ import { fetchBeyondAllReasonServers } from "./providers/beyond-all-reason";
 import { fetchEverQuestServers } from "./providers/everquest";
 import { fetchFlightGearServers } from "./providers/flightgear";
 import { fetchFreecivServers } from "./providers/freeciv";
+import { fetchHurryCurryServers } from "./providers/hurry-curry";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenArenaServers } from "./providers/openarena";
 import { fetchOpenRaServers } from "./providers/openra";
@@ -72,6 +73,8 @@ async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
 const providers: Record<string, ServerProvider> = {
   openra: { slug: "openra", fetchServers: fetchOpenRaServers },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
+  // First-party registry; servers opt in with the server's --register flag.
+  "hurry-curry": { slug: "hurry-curry", fetchServers: fetchHurryCurryServers },
   // Listing + detail enrich runs on the always-on Master Adapter (~2 min)
   openttd: { slug: "openttd", fetchServers: () => fetchRemoteMaster("openttd") },
   // UDP query_port enrichment runs on the always-on Master Adapter

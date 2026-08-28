@@ -1462,31 +1462,45 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     title: "Hurry Curry!",
     tier: "tier1_improved",
     adapterType: "managed-server",
-    protocol: "udp",
+    /*
+     * TCP, port 27032. The client speaks WebSocket + JSON, which is TCP —
+     * this said UDP on port 8888, which is not a port the game uses at all,
+     * so the firewall opened the wrong protocol on the wrong port and no
+     * client could ever complete a handshake. Authoritative source is the
+     * project's own protocol.md "Ports" section:
+     *   443   – all uses with TLS (wss)
+     *   27032 – game server WebSocket
+     *   27033 – registry API HTTP
+     *   27034 – lobby server WebSocket
+     */
+    protocol: "tcp",
     host: {
-      port: 8888,
-      protocol: "udp",
+      port: 27032,
+      protocol: "tcp",
       binaryHint: "hurrycurry-server",
     },
     client: {
       inGameJoinPrompt: true,
     },
     selfHost: {
-      port: 8888,
-      protocol: "both",
+      port: 27032,
+      protocol: "tcp",
       verified: true,
       inGameSteps: [
-        "Host: Run hurrycurry-server (listens on port 8888)",
-        "Friends: In-game → Join Game → Connect to Host's IP address on port 8888",
+        "Host: PlayBound starts hurrycurry-server on port 27032",
+        "Friends: In-game → Join Game → connect to the host's address on port 27032",
       ],
     },
     virtualLan: {
       inGameSteps: [
-        "Host: Start server",
-        "Friends: Join Game → Enter Host's Virtual LAN IP",
+        "Host: Click Join Game to start the kitchen",
+        "Friends: Click Join Game to connect over the party network",
       ],
     },
-    notes: "Fast-paced cooperative kitchen frenzy connecting to dedicated or self-hosted server on UDP/TCP port 8888.",
+    notes:
+      "Cooperative kitchen game. WebSocket/JSON over TCP 27032 (or 443 with TLS). " +
+      "Public servers announce themselves to registry.hurrycurry.org, which is where " +
+      "the server list and player counts come from.",
   },
 };
 
