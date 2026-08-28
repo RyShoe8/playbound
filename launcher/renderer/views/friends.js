@@ -1445,14 +1445,37 @@ function buildPartyViewHtml(party) {
         )} — everyone in this party has to be able to play.</p>`
       : "";
 
+  const openRaModHtml =
+    party.gameSlug === "openra"
+      ? isLeader && !ended
+        ? `<div class="party-field-group" style="margin-top: 8px;">
+             <label class="party-field-label" for="party-openra-mod-select">OpenRA Mod / Game</label>
+             <select class="input-text party-openra-mod-select" id="party-openra-mod-select" aria-label="OpenRA Mod">
+               <option value=""${!party.openRaMod || party.openRaMod === "ra" ? " selected" : ""}>Red Alert (default)</option>
+               <option value="cnc"${party.openRaMod === "cnc" ? " selected" : ""}>Tiberian Dawn</option>
+               <option value="d2k"${party.openRaMod === "d2k" ? " selected" : ""}>Dune 2000</option>
+               <option value="ts"${party.openRaMod === "ts" ? " selected" : ""}>Tiberian Sun</option>
+             </select>
+           </div>`
+        : `<p class="party-game-platform-note" style="margin-top: 4px;">Game: ${escapeHtml(
+            party.openRaMod === "cnc"
+              ? "Tiberian Dawn"
+              : party.openRaMod === "d2k"
+              ? "Dune 2000"
+              : party.openRaMod === "ts"
+              ? "Tiberian Sun"
+              : "Red Alert (default)"
+          )}</p>`
+      : "";
+
   const gameHtml = isLeader && !ended
     ? `<label class="party-field-label" for="party-game-select">Game</label>
        <select class="input-text party-game-select" id="party-game-select" aria-label="Party game">
          ${partyGameOptionsHtml(party.gameSlug || "", party)}
-       </select>${platformNoteHtml}`
+       </select>${openRaModHtml}${platformNoteHtml}`
     : hasGame
     ? `<p class="party-field-label">Game</p>
-       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${
+       <p class="party-game-label">${escapeHtml(party.gameTitle || party.gameSlug)}</p>${openRaModHtml}${
         Array.isArray(party.hostModes) && party.hostModes.length > 1
           ? `<p class="party-game-platform-note">Host: ${escapeHtml(
               party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
@@ -2298,6 +2321,7 @@ function partyAreaSignature(active, discoverable) {
       gameSlug: active.gameSlug,
       gameTitle: active.gameTitle,
       editionSlug: active.editionSlug || null,
+      openRaMod: active.openRaMod || null,
       leaderId: active.leaderId,
       maxSize: active.maxSize,
       // Both, not just the pick: switching games changes which modes exist, and
@@ -2468,6 +2492,26 @@ function wirePartyView(slot, party) {
       }
     });
     enhanceSelect(gameSelect);
+  }
+
+  const openRaModSelect = slot.querySelector("#party-openra-mod-select");
+  if (openRaModSelect) {
+    openRaModSelect.addEventListener("change", async () => {
+      const val = openRaModSelect.value || null;
+      partyMutationInFlight += 1;
+      try {
+        const res = await (window.playbound.setPartyOpenRaMod?.(partyId, val) ??
+          window.playbound.setPartyEdition?.(partyId, val));
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        applyPartyResult(res, "Couldn't change OpenRA game mode.");
+        void api.refreshFriendsData();
+      } catch (err) {
+        partyMutationInFlight = Math.max(0, partyMutationInFlight - 1);
+        setStatus(err.message || "Couldn't change OpenRA game mode.", true);
+        void api.refreshFriendsData();
+      }
+    });
+    enhanceSelect(openRaModSelect);
   }
 
   const hostModeSelect = slot.querySelector("#party-hostmode-select");

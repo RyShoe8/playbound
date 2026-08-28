@@ -63,10 +63,10 @@ Automated maintenance is expected to keep writing:
   human editing one game on purpose.
 
 # Adding a new game is a six-step job, not a catalog row
+ 
+> [!IMPORTANT]
+> **MANDATORY POLICY FOR ALL AI AGENTS & DEVELOPERS:**
+> Every AI agent must read and follow `docs/new-game-checklist.md` **before** adding any game.
+> **Games must ONLY be entered via a browser and the PlayBound Admin Panel (`/admin/games`).**
+> Never add games as bare unverified code rows. Work through all six steps for every game added in the same session.
 
-Install recipe and a title are not a finished addition. Editorial completeness,
-multiplayer wiring, controller wiring, total-conversion editions, and the mods
-list have all been skipped in past sessions because nothing forced a second
-look once the game installed and ran. **Read `docs/new-game-checklist.md` and
-work through all six steps for every game added**, in the same session it's
-added — not deferred "for later," which is how steps 3–6 get forgotten.

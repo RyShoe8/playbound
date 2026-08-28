@@ -124,10 +124,6 @@ const providers: Record<string, ServerProvider> = {
     slug: "wolfenstein-enemy-territory",
     fetchServers: fetchWolfensteinEnemyTerritoryServers,
   },
-  wolfenstein: {
-    slug: "wolfenstein",
-    fetchServers: fetchWolfensteinEnemyTerritoryServers,
-  },
   "counter-strike-2": {
     slug: "counter-strike-2",
     fetchServers: fetchCounterStrike2Servers,

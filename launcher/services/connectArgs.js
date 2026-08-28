@@ -39,7 +39,6 @@ const CLIENT_CONNECT_ARGS = {
   // (or ignores the address on the start screen) and both players sit in
   // single-player instead of the party dedicated server.
   freeciv: ["--autoconnect", "--server", "{host}", "--port", "{port}"],
-  supertuxkart: ["--connect-now={host}:{port}"],
   bzflag: ["{host}:{port}"],
   // Quake-lineage engines all inherit the same console command.
   xonotic: ["+connect", "{host}:{port}"],
@@ -62,10 +61,16 @@ const CLIENT_CONNECT_ARGS = {
   "space-station-14": ["--connect-address", "ss14://{host}:{port}"],
   veloren: ["--connect", "{host}:{port}"],
   "wolfenstein-enemy-territory": ["+connect", "{host}:{port}"],
+  wolfenstein: ["--join", "{host}"],
   "beyond-all-reason": ["--connect={host}:{port}"],
   "zero-k": ["--connect={host}:{port}"],
   flightgear: ["--multiplay=out,10,{host},{port}"],
   mrboom: ["-c", "{host}"],
+  
+  // Third-party engines / Source Ports
+  "the-ur-quan-masters": null,
+  uqm: null,
+  daggersfall: null,
   morrowind: ["--connect={host}:{port}"],
   tes3mp: ["--connect={host}:{port}"],
 
@@ -81,8 +86,13 @@ const CLIENT_CONNECT_ARGS = {
   "re-volt-rvgl": ["-lobby", "{host}:{port}"],
   revolt: ["-lobby", "{host}:{port}"],
   rvgl: ["-lobby", "{host}:{port}"],
+  "opentyrian-2000": ["--net={host}:{port}", "--net-player-number=2"],
+  opentyrian: ["--net={host}:{port}", "--net-player-number=2"],
+  srb2: ["+connect", "{host}:{port}"],
+  jfsw: ["-net", "{host}:{port}"],
 
   // In-game Room Code / Lobby Joins / Direct Network — no CLI join; show host:port to paste.
+  supertuxkart: null,
   holocure: null,
   hedgewars: null,
   openciv3: null,

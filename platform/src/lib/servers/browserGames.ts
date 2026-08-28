@@ -28,7 +28,6 @@ const DEDICATED_SERVER_GAMES: ReadonlySet<string> = new Set([
   "morrowind",
   "tes3mp",
   "wolfenstein-enemy-territory",
-  "wolfenstein",
   "counter-strike-2",
   "freeciv",
   "openarena",

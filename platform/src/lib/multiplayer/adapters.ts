@@ -468,7 +468,19 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
-    notes: "Odamex, Zandronum and GZDoom client/server party connect supporting up to 64 players with full gamepad support.",
+    virtualLan: {
+      inGameSteps: [
+        "Host: Multiplayer → Host Network Game (Zandronum)",
+        "Friends: Multiplayer → Join Network Game (or +connect directly)",
+      ],
+    },
+    selfHost: {
+      port: 10666,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: ["Multiplayer", "Host Network Game"],
+    },
+    notes: "Freedoom + Zandronum / Odamex client/server party connect supporting up to 64 players with full gamepad support.",
   },
 
   freeciv: {
@@ -493,18 +505,28 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "supertuxkart",
     title: "SuperTuxKart",
     tier: "tier1_improved",
-    adapterType: "managed-server",
-    protocol: "custom",
-    host: {
+    adapterType: "virtual-lan",
+    protocol: "both",
+    client: {
+      inGameJoinPrompt: true,
+    },
+    selfHost: {
       port: 2759,
       protocol: "both",
       binaryHint: "supertuxkart",
-      argsTemplate: ["--lan-server={name}", "--port={port}", "--no-graphics"],
+      verified: true,
+      inGameSteps: [
+        "Host: Online → Create Server (LAN / Virtual LAN)",
+        "Friends: Online → Join Server → Connect to Host Virtual LAN IP",
+      ],
     },
-    client: {
-      launchArguments: ["--connect-now={host}:{port}"],
+    virtualLan: {
+      inGameSteps: [
+        "Host: Online → Create Server → Choose Tracks and Mode",
+        "Friends: Online → Find Server (LAN tab) or enter Host IP",
+      ],
     },
-    notes: "Automated dedicated server instance with --connect-now CLI connect.",
+    notes: "SuperTuxKart online multiplayer with in-game lobby and LAN discovery on port 2759.",
   },
 
   "0ad": {
@@ -529,24 +551,32 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "beyond-all-reason",
     title: "Beyond All Reason",
     tier: "tier1_improved",
-    adapterType: "direct-ip",
+    adapterType: "virtual-lan",
     protocol: "udp",
-    client: {
-      launchArguments: ["--connect={host}:{port}"],
+    virtualLan: {
+      inGameSteps: [
+        "Host: Multiplayer → Host Custom Battle",
+        "Friends: Multiplayer → Custom Battles → Join host's room",
+        "Ready Up → Start Game",
+      ],
     },
-    notes: "Recoil/Spring lobby — not VPS-provisioned yet.",
+    notes: "Recoil/Spring lobby over Virtual LAN. Join via in-game Custom Battles or Direct IP.",
   },
 
   "zero-k": {
     gameSlug: "zero-k",
     title: "Zero-K",
     tier: "tier1_improved",
-    adapterType: "direct-ip",
+    adapterType: "virtual-lan",
     protocol: "udp",
-    client: {
-      launchArguments: ["--connect={host}:{port}"],
+    virtualLan: {
+      inGameSteps: [
+        "Host: Multiplayer → Host Custom Room",
+        "Friends: Multiplayer → Custom Battles → Join host's room",
+        "Ready Up → Start Game",
+      ],
     },
-    notes: "Spring RTS lobby — not VPS-provisioned yet.",
+    notes: "Spring RTS lobby over Virtual LAN. Join via in-game Custom Battles or Direct IP.",
   },
 
   flightgear: {
@@ -608,19 +638,150 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "opentyrian-2000",
     title: "OpenTyrian 2000",
     tier: "tier1_improved",
-    adapterType: "direct-ip",
-    protocol: "custom",
+    adapterType: "virtual-lan",
+    protocol: "udp",
     client: {
-      launchArguments: ["-C", "{host}"],
-      inGameSteps: ["Wait for the netplay session to sync, then start a two-player game."],
+      launchArguments: ["--net={host}:{port}", "--net-player-number=2"],
     },
     selfHost: {
-      port: 55435,
-      protocol: "tcp",
+      port: 1333,
+      protocol: "udp",
+      binaryHint: "opentyrian",
+      argsTemplate: ["--net-player-number=1", "-p", "{port}"],
       verified: true,
-      inGameSteps: ["Netplay -> Host", "Start hosting"],
+      inGameSteps: [
+        "Host launches in Player 1 network mode",
+        "Friend connects automatically as Player 2 over Virtual LAN",
+        "Local / Couch: Main Menu → Two Player Arcade Mode",
+      ],
     },
-    notes: "RetroArch netplay sharing the local co-op mode. Peer-hosted; no dedicated server exists.",
+    virtualLan: {
+      inGameSteps: [
+        "Host: Click Join Game to launch as Player 1",
+        "Friends: Click Join Game to connect as Player 2",
+        "Local / Couch: Main Menu → Two Player Arcade Mode (Controller / Phone Controller)",
+      ],
+    },
+    notes: "OpenTyrian SDL2 native network multiplayer on UDP port 1333 + 2-player local arcade mode.",
+  },
+
+  srb2: {
+    gameSlug: "srb2",
+    title: "Sonic Robo Blast 2",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: {
+      launchArguments: ["+connect", "{host}:{port}"],
+    },
+    selfHost: {
+      port: 5029,
+      protocol: "udp",
+      binaryHint: "srb2win",
+      verified: true,
+      inGameSteps: [
+        "Host: Multiplayer → Host Network Game",
+        "Friends: Multiplayer → Join (or automatically connects via +connect)",
+      ],
+    },
+    virtualLan: {
+      inGameSteps: [
+        "Host: Multiplayer → Host Network Game (Co-op, Match, Race, or CTF)",
+        "Friends: Multiplayer → Join Network Game (or +connect directly)",
+      ],
+    },
+    notes: "Sonic Robo Blast 2 3D Doom engine network multiplayer on UDP port 5029.",
+  },
+
+  jfsw: {
+    gameSlug: "jfsw",
+    title: "Shadow Warrior (JFSW)",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "udp",
+    client: {
+      launchArguments: ["-net", "{host}:{port}"],
+    },
+    selfHost: {
+      port: 1997,
+      protocol: "udp",
+      binaryHint: "sw",
+      verified: true,
+      inGameSteps: [
+        "Host: WangBang Multiplayer → Host Net Game",
+        "Friends: Join Net Game (or launch with -net {host}:{port})",
+      ],
+    },
+    virtualLan: {
+      inGameSteps: [
+        "Host: WangBang Multiplayer → Host Net Game",
+        "Friends: Join Net Game via Virtual LAN",
+      ],
+    },
+    notes: "Build engine WangBang deathmatch and co-op multiplayer over Virtual LAN.",
+  },
+
+  yorg: {
+    gameSlug: "yorg",
+    title: "YORG",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    virtualLan: {
+      inGameSteps: [
+        "Local / Couch: Main Menu → Split-Screen",
+        "Plug in 2–4 Gamepads or use Phone Controllers",
+      ],
+    },
+    selfHost: {
+      port: 5555,
+      protocol: "both",
+      verified: true,
+      inGameSteps: ["Start YORG", "Select Split-Screen Mode"],
+    },
+    notes: "3D combat racing with local split-screen multiplayer.",
+  },
+
+  torcs: {
+    gameSlug: "torcs",
+    title: "TORCS",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    virtualLan: {
+      inGameSteps: [
+        "Local / Couch: Race → Split-Screen Race",
+        "Configure Player 1 and Player 2 Controls",
+      ],
+    },
+    selfHost: {
+      port: 28012,
+      protocol: "both",
+      verified: true,
+      inGameSteps: ["Start TORCS", "Select Split-Screen Race"],
+    },
+    notes: "Open racing car simulator with local split-screen racing.",
+  },
+
+  "stunt-rally": {
+    gameSlug: "stunt-rally",
+    title: "Stunt Rally",
+    tier: "tier1_improved",
+    adapterType: "virtual-lan",
+    protocol: "custom",
+    virtualLan: {
+      inGameSteps: [
+        "Local / Couch: Single Race / Championship → Split-Screen (2–4 Players)",
+        "Configure gamepads for each player",
+      ],
+    },
+    selfHost: {
+      port: 27500,
+      protocol: "both",
+      verified: true,
+      inGameSteps: ["Start Stunt Rally", "Select Split-Screen Mode"],
+    },
+    notes: "3D stunt & rally racing with 2–4 player split-screen multiplayer.",
   },
 
   starcraft: {
@@ -782,7 +943,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     adapterType: "direct-ip",
     protocol: "udp",
     host: { port: 5029, protocol: "udp", binaryHint: "ecwolf" },
-    client: { launchArguments: ["--join", "{host}:{port}"] },
+    client: { launchArguments: ["--join", "{host}"] },
     virtualLan: {
       requiresBroadcast: false,
       inGameSteps: ["The party leader starts ECWolf after every player has joined the PlayBound party."],
@@ -1304,6 +1465,7 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
  */
 const ADAPTER_SLUG_ALIASES: Record<string, string> = {
   "0-ad": "0ad",
+  opentyrian: "opentyrian-2000",
 };
 
 /**
@@ -1321,6 +1483,7 @@ const ADAPTER_SLUG_ALIASES: Record<string, string> = {
 export const EXPECTED_NON_CATALOG_ADAPTERS: ReadonlySet<string> = new Set([
   // Alternative spellings.
   "0-ad",
+  "opentyrian",
   "marathon",
   "alephone",
   "aleph-one",

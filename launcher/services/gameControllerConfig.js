@@ -404,6 +404,20 @@ const GAMES = {
       return trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
     },
   },
+  "opentyrian-2000": {
+    file: "opentyrian.cfg",
+    verified: "OpenTyrian 2000 alias to opentyrian controller config",
+    needsConfig(text) {
+      return !/^section 'joystick'/m.test(String(text || ""));
+    },
+    apply(text, profile) {
+      const original = String(text ?? "");
+      if (!/^section 'video'/m.test(original) && original.trim() !== "") return null;
+      const block = openTyrianJoystickBlock(profile);
+      const trimmed = original.replace(/\s*$/, "");
+      return trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
+    },
+  },
   /**
    * FlightGear — `fgfsrc`, a list of the same options you would pass on the
    * command line, one per line.
@@ -691,6 +705,10 @@ const NO_CONFIG_NEEDED = {
     kind: "native",
     note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
   },
+  "gradius-remake": {
+    kind: "native",
+    note: "The Godot project ships explicit joypad buttons and axes for movement, fire, upgrades, start and select.",
+  },
   "apex-legends": { kind: "native", note: "Ships Xbox and PlayStation controller layouts." },
   "among-us": { kind: "native", note: "Native controller navigation and gameplay bindings." },
   "goose-goose-duck": { kind: "native", note: "Steam build ships full Xbox controller support." },
@@ -792,6 +810,11 @@ const NO_CONFIG_NEEDED = {
   mrboom: { kind: "native", note: "Native multi-gamepad support for up to 8 simultaneous controllers." },
   "dc-universe-online": { kind: "native", note: "Native gamepad layout for powers, combos, and flight." },
   pixreveal: { kind: "native", note: "Companion smartphone / touchscreen controller support." },
+  srb2: { kind: "native", note: "Doom engine native XInput/DirectInput gamepad bindings." },
+  jfsw: { kind: "native", note: "JFSW Build engine native gamepad support with analog movement and aiming." },
+  yorg: { kind: "native", note: "Native SDL2 multi-gamepad split-screen support." },
+  torcs: { kind: "native", note: "Native steering wheel, joystick, and controller input." },
+  "stunt-rally": { kind: "native", note: "Native 2-4 player gamepad and split-screen controller support." },
   mindustry: {
     kind: "unwritable",
     note: "Settings live in a binary settings.bin, which we will not rewrite.",

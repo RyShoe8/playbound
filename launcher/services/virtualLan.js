@@ -128,13 +128,13 @@ async function autoInstallNetBird(onProgress) {
 
   onProgress?.("Installing network client (approve the Windows prompt)…");
 
-  // PowerShell Start-Process -Wait -Verb RunAs triggers a single UAC prompt
-  // and blocks until the MSI completes.
+  // PowerShell Start-Process -Wait -Verb RunAs triggers a single UAC prompt,
+  // runs msiexec quietly, and cleans up the NetBird desktop shortcut.
   const ps = [
     "-NoProfile",
     "-NonInteractive",
     "-Command",
-    `Start-Process msiexec -ArgumentList '/i','"${msi}"','/quiet' -Verb RunAs -Wait; exit $LASTEXITCODE`,
+    `Start-Process cmd -ArgumentList '/c','msiexec /i "${msi}" /quiet & del /f /q "%PUBLIC%\\Desktop\\NetBird*.lnk" "%USERPROFILE%\\Desktop\\NetBird*.lnk"' -Verb RunAs -Wait; exit $LASTEXITCODE`,
   ];
   const res = await run("powershell", ps);
 

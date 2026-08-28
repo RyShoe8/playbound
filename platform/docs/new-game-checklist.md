@@ -1,5 +1,11 @@
 # New game checklist
 
+> [!IMPORTANT]
+> **MANDATORY POLICY FOR ALL AI AGENTS & DEVELOPERS:**
+> Every AI agent must read and follow this checklist **before** adding any game to PlayBound.
+> **Games must ONLY be entered via a browser and the PlayBound Admin Panel (`/admin/games`).**
+> Never create raw, bare catalog rows or bypass the human/browser admin verification workflow.
+
 A catalog row with a title, a working install, and nothing else is not a
 finished addition. Work through every item below for each game before
 considering it done — this list exists because these steps have been skipped
@@ -8,6 +14,12 @@ before, not because they're hypothetical risks.
 Do this per game, not per batch. A session that adds three games and defers
 editorial/multiplayer/mods "for later" has added three unfinished rows, not
 three games.
+
+## 0. Entry Method — Browser & Admin Panel Only
+
+- Always create and manage new games through the **PlayBound Admin Panel** (`/admin/games` or `/admin/games/[slug]`) via the browser subagent or active admin session.
+- Ensure all required form fields pass validation before toggling `Published`.
+- Never insert unverified draft rows directly into files without clearing the 8-item editorial and verification gates.
 
 ## 1. Install — one-click through the launcher wherever possible
 

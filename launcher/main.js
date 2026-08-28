@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage, screen, safeStorage, session, Notification } = require("electron");
 
 // GPU Acceleration & Rendering Switches for silky-smooth scrolling on all hardware
 app.commandLine.appendSwitch("enable-gpu-rasterization");
@@ -9763,6 +9763,30 @@ ipcMain.handle("create-party", async (_event, opts = {}) => {
   } catch (err) {
     return { error: err.message };
   }
+});
+
+ipcMain.handle("show-desktop-notification", async (_event, opts) => {
+  try {
+    if (Notification && Notification.isSupported()) {
+      const notif = new Notification({
+        title: opts?.title || "PlayBound",
+        body: opts?.body || "",
+        urgency: "critical",
+      });
+      notif.on("click", () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      });
+      notif.show();
+      return { ok: true };
+    }
+  } catch (err) {
+    console.warn("show-desktop-notification failed:", err?.message || err);
+  }
+  return { ok: false };
 });
 
 ipcMain.handle("join-party", async (_event, partyId, password) => {
