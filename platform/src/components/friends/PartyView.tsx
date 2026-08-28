@@ -457,12 +457,17 @@ export function PartyView({
                 {party.hostModes && party.hostModes.length > 1 ? (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Host:{" "}
-                    {party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
-                      (party.hostMode === "self"
-                        ? "Host PC"
-                        : party.hostMode === "public"
-                          ? "Public server"
-                          : "PlayBound server")}
+                    {/*
+                      "My computer" is the hostMode option's own label, written
+                      from the leader's point of view — showing it to everyone
+                      else says the game runs on THEIR PC, which is only true
+                      for the leader. Naming the actual person is correct for
+                      every viewer.
+                    */}
+                    {party.hostMode === "self"
+                      ? party.leaderUsername || "Party leader"
+                      : party.hostModes.find((o) => o.mode === party.hostMode)?.label ||
+                        (party.hostMode === "public" ? "Public server" : "PlayBound server")}
                   </p>
                 ) : null}
                 {party.gameSlug && !publicMode ? (
