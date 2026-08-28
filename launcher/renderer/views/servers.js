@@ -20,6 +20,36 @@ import {
   views,
 } from "../shared.js";
 
+const MMO_SLUGS = new Set([
+  "everquest",
+  "asherons-call",
+  "old-school-runescape",
+  "star-wars-galaxies",
+  "city-of-heroes",
+  "entropia-universe",
+  "eve-online",
+  "tibia",
+  "runescape",
+  "albion-online",
+  "guild-wars-2",
+  "lotro",
+  "dc-universe-online",
+  "star-trek-online",
+  "palia",
+]);
+
+function getDedicatedServerPlayerCount(liveStats, supportedGames) {
+  if (!liveStats || !Array.isArray(liveStats.byGame)) return 0;
+  const supportedSlugs = new Set((supportedGames || []).map((g) => g.slug));
+  let total = 0;
+  for (const entry of liveStats.byGame) {
+    if (supportedSlugs.has(entry.slug) && !MMO_SLUGS.has(entry.slug)) {
+      total += Number(entry.playingNow) || 0;
+    }
+  }
+  return total;
+}
+
 async function renderServersView() {
   const container = views.servers;
   container.innerHTML = `
@@ -57,17 +87,7 @@ async function renderServersView() {
     </div>
     <p class="view-sub" id="servers-note" style="margin-top: 8px"></p>
     <p class="servers-stats" id="servers-stats"></p>
-    <div id="servers-table-wrap">
-      <div class="empty-hint">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-server">
-          <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
-          <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
-          <line x1="6" x2="6.01" y1="6" y2="6"/>
-          <line x1="6" x2="6.01" y1="18" y2="18"/>
-        </svg>
-        <p>Choose a game from the picker to browse its live servers.</p>
-      </div>
-    </div>
+    <div id="servers-table-wrap"></div>
   `;
 
   document.getElementById("servers-refresh").addEventListener("click", () => {
@@ -190,21 +210,26 @@ async function refreshServersPickersAndList() {
   fillModDropdown(state.serversState.selectedSlug);
 
   const totalSupported = state._supportedServerGames.length;
+  const totalNonMmoPlayers = getDedicatedServerPlayerCount(state._liveStats, state._supportedServerGames);
+  const playerText = totalNonMmoPlayers > 0 ? ` · ${totalNonMmoPlayers.toLocaleString()} players on dedicated or hosted servers` : "";
+
   note.textContent = state.serversState.installedOnly
-    ? `Showing ${supported.length} installed title(s) with live browsers.`
-    : `${totalSupported} live browser(s).`;
+    ? `Showing ${supported.length} installed Games${playerText}`
+    : `${totalSupported} Games${playerText}`;
   note.dataset.baseNote = note.textContent;
 
   await fetchAndShowServers(state.serversState.selectedSlug, selectedModOrNull());
 }
 
 async function loadServersBrowser() {
-  const [index, modsRes, installed, installedMods] = await Promise.all([
+  const [index, modsRes, installed, installedMods, liveStats] = await Promise.all([
     window.playbound.getServerIndex(),
     window.playbound.getModsCatalog(),
     window.playbound.getInstalled(),
     window.playbound.getInstalledMods?.() || Promise.resolve([]),
+    window.playbound.getLiveStats?.().catch(() => null),
   ]);
+  state._liveStats = liveStats;
   state._modsCatalog = Array.isArray(modsRes.mods) ? modsRes.mods : [];
   state._supportedServerGames = (Array.isArray(index.games) ? index.games : []).filter((g) => g.supported);
   state._installedGameSlugs = new Set((installed || []).map((g) => g.slug));
@@ -233,15 +258,7 @@ async function fetchAndShowServers(baseSlug, mod) {
   if (!wrap) return;
 
   if (!baseSlug) {
-    wrap.innerHTML = `<div class="empty-hint">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-server">
-          <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
-          <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
-          <line x1="6" x2="6.01" y1="6" y2="6"/>
-          <line x1="6" x2="6.01" y1="18" y2="18"/>
-        </svg>
-        <p>Choose a game from the picker to browse its live servers.</p>
-      </div>`;
+    wrap.innerHTML = "";
     return;
   }
 
