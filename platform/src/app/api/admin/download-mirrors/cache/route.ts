@@ -27,6 +27,9 @@ export async function GET() {
 
     const items = await Promise.all(artifacts.map(async (a) => {
       const artSources = sourceMap.get(a.artifactId) || [];
+      const archiveSource = [...artSources]
+        .filter((source) => /^https:\/\//i.test(String(source.url || "")))
+        .sort((a, b) => a.priority - b.priority || a.createdAt.getTime() - b.createdAt.getTime())[0];
       let editionSlug: string | undefined;
       if (a.artifactType === "edition") {
         const match = (a as { relativePath?: string }).relativePath?.match(/\/editions\/([^/]+)\//) ||

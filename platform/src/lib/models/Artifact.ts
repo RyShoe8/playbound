@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type ArtifactType =
   | "game"
+  | "edition"
   | "game_patch"
   | "mod"
   | "modpack"
@@ -65,6 +66,7 @@ const ArtifactSchema = new Schema<IArtifact>(
       required: true,
       enum: [
         "game",
+        "edition",
         "game_patch",
         "mod",
         "modpack",
