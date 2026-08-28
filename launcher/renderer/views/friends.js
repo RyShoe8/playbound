@@ -3277,17 +3277,15 @@ async function fillCreatePartyPanel() {
       if (nameInput) nameInput.value = "";
 
       /*
-       * Provision the voice channel when it was asked for, but do not open
-       * Discord. Creating a party threw the player straight into a chat app
-       * before they had done anything with the party, which is not what
-       * ticking "voice channel" asked for — it asked for the channel to exist.
-       * Launch Voice in the party window is the deliberate act of joining it.
+       * If voice was requested, trigger Discord provisioning in the background.
+       * Do not block party creation or show bot-offline errors here — Launch Voice
+       * in the party view is the deliberate act of joining and handles errors on-demand.
        */
       if (wantVoice) {
-        submit.textContent = "Starting voice…";
-        const voice = await window.playbound.provisionPartyDiscord(res.party.id);
-        if (voice?.error && !voice?.inviteUrl) setStatus(voice.error, true);
-        else setStatus("Party created — voice channel ready. Use Launch Voice to join it.");
+        void window.playbound.provisionPartyDiscord?.(res.party.id).catch(() => {});
+        setStatus("Party created — use Launch Voice to join voice.");
+      } else {
+        setStatus("Party created.");
       }
       const slot = document.getElementById("friends-party-area");
       if (slot) slot.dataset.sig = "";

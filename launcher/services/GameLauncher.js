@@ -9,7 +9,7 @@ const JAVA_MISSING_MSG =
   "Java 17+ is required to run this game. PlayBound can install it for you — try Play again, or install Java from Settings.";
 
 const JAVA_EARLY_EXIT_MSG =
-  "The game exited immediately. Install or update Java 17+ from https://adoptium.net/ then try again.";
+  "The game exited immediately after launch. Try updating GPU drivers, updating Java, or open the folder to run manually.";
 
 /**
  * GameLauncher abstraction that handles executing games based on capabilities
@@ -125,7 +125,7 @@ class GameLauncher {
       const child = spawn(javaBin, ["-jar", launchPath, ...args], {
         cwd: path.dirname(launchPath),
         detached: true,
-        stdio: "ignore",
+        stdio: ["ignore", "ignore", "pipe"],
         env,
         /*
          * false, for the same reason the native branch below says so.
