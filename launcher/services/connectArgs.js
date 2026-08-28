@@ -106,10 +106,25 @@ const CLIENT_CONNECT_ARGS = {
   srb2: ["+connect", "{host}:{port}"],
   jfsw: ["-net", "{host}:{port}"],
 
+  /*
+   * Hedgewars joins by URL, not by flag.
+   *
+   * There is no --connect: the shipped 1.0.0 frontend's entire long-option
+   * list is --nick/--port/--fullscreen/… and nothing to name a server, so the
+   * `["--connect", "{host}:{port}"]` the catalog recipe carried could never
+   * have worked. What it does support is a positional hwplay:// URL —
+   * "hwplay://<HOST>[:<PORT>]", per the project's HWPlaySchemeSyntax page —
+   * which is exactly how its own web server list links work. Port is optional
+   * and defaults to 46631, the same port the adapter already hosts on.
+   *
+   * This was previously null, meaning "paste the address in-game", which
+   * worked but made joining a party manual for no reason.
+   */
+  hedgewars: ["hwplay://{host}:{port}"],
+
   // In-game Room Code / Lobby Joins / Direct Network — no CLI join; show host:port to paste.
   supertuxkart: null,
   holocure: null,
-  hedgewars: null,
   openciv3: null,
   "dungeon-keeper-gold": null,
   starcraft: null,
@@ -129,7 +144,13 @@ const DEFAULT_GAME_PORTS = {
   openra: 1234,
   luanti: 30000,
   mindustry: 6567,
-  "hurry-curry": 8888,
+  // Hedgewars' own default when an hwplay:// URL omits the port.
+  hedgewars: 46631,
+  /*
+   * Hurry Curry's server is a WebSocket listener on 27032 (protocol.md
+   * "Ports"); 8888 was never a port the game uses.
+   */
+  "hurry-curry": 27032,
   zandronum: 10666,
   freedoom: 10666,
   veloren: 14004,

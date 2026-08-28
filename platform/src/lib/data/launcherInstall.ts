@@ -389,7 +389,15 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     ],
     registryTitles: ["Hedgewars", "Hedgewars 1.0.0"],
     exeHint: "hedgewars",
-    connectArgs: ["--connect", "{host}:{port}"],
+    /*
+     * Hedgewars has no --connect: the 1.0.0 frontend's long options are
+     * --nick/--port/--fullscreen/… with nothing to name a server, so this
+     * previously said `["--connect", "{host}:{port}"]` and could never have
+     * worked. Joining is a positional hwplay:// URL instead —
+     * "hwplay://<HOST>[:<PORT>]", per the project's HWPlaySchemeSyntax page,
+     * defaulting to 46631, which is the port the adapter hosts on.
+     */
+    connectArgs: ["hwplay://{host}:{port}"],
   },
   unvanquished: {
     enabled: true,
