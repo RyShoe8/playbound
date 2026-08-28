@@ -17,6 +17,44 @@ import {
 import { checkR2ObjectExists, deleteObjectFromR2, getR2PresignedDownloadUrl } from "./r2Client";
 import { calculateArtifactCacheScore, evaluateSourceHealth } from "./scoring";
 
+/** Resolves an itch.io game page to its direct pre-signed CDN download URL. */
+export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: string | null): Promise<string | null> {
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const uploadMatches = [...html.matchAll(/data-upload_id=["'](\d+)["']/g)].map((m) => m[1]);
+    if (!uploadMatches.length) return null;
+    const uploadId = uploadIdHint || uploadMatches[0];
+    const csrfMatch =
+      html.match(/csrf_token["']?\s*[:=]\s*["']([^"']+)["']/i) ||
+      html.match(/name=["']csrf_token["']\s+value=["']([^"']+)["']/i);
+    const postRes = await fetch(
+      `${pageUrl.replace(/\/+$/, "")}/file/${uploadId}?source=game_download`,
+      {
+        method: "POST",
+        headers: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          cookie: res.headers.get("set-cookie") || "",
+          "x-requested-with": "XMLHttpRequest",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: csrfMatch ? `csrf_token=${encodeURIComponent(csrfMatch[1])}` : "",
+      }
+    );
+    if (!postRes.ok) return null;
+    const json = (await postRes.json()) as { url?: string };
+    return json.url || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Some older artifact rows were created before the launcher reported its
  * source URL. The catalog recipe is an explicit, read-only fallback for that
@@ -27,11 +65,17 @@ export async function catalogArchiveSourceUrl(gameSlug: string | null | undefine
   if (!slug) return null;
 
   const doc = await CatalogGame.findOne({ slug }).select("launcherInstall").lean();
-  const stored = doc?.launcherInstall as { kind?: string; url?: string | null } | undefined;
+  const stored = doc?.launcherInstall as { kind?: string; url?: string | null; uploadId?: string | null } | undefined;
   const seed = launcherInstallBySlug[slug];
   const recipe = stored?.kind && stored.kind !== "external" ? stored : seed;
   const url = String(recipe?.url || "").trim();
-  return /^https:\/\//i.test(url) ? url : null;
+  if (!/^https:\/\//i.test(url)) return null;
+
+  if (/itch\.io/i.test(url)) {
+    const direct = await resolveItchDownloadUrl(url, recipe?.uploadId);
+    if (direct) return direct;
+  }
+  return url;
 }
 
 /**
@@ -420,6 +464,14 @@ export async function archiveArtifactToVps(
     }
     if (!sourceUrl) {
       return { success: false, message: "There is no file available to move: this artifact is not physically in R2 and no direct HTTPS download source was recorded." };
+    }
+  }
+
+  if (sourceUrl && /itch\.io/i.test(sourceUrl)) {
+    const direct = await resolveItchDownloadUrl(sourceUrl);
+    if (direct) {
+      sourceUrl = direct;
+      sourceLabel = "resolved itch.io CDN";
     }
   }
 

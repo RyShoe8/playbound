@@ -203,6 +203,44 @@ async function sha256File(file) {
   return hash.digest("hex");
 }
 
+/** Resolves an itch.io game page to its direct pre-signed CDN download URL. */
+async function resolveItchDownloadUrl(pageUrl) {
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const uploadMatches = [...html.matchAll(/data-upload_id=["'](\d+)["']/g)].map((m) => m[1]);
+    if (!uploadMatches.length) return null;
+    const uploadId = uploadMatches[0];
+    const csrfMatch =
+      html.match(/csrf_token["']?\s*[:=]\s*["']([^"']+)["']/i) ||
+      html.match(/name=["']csrf_token["']\s+value=["']([^"']+)["']/i);
+    const postRes = await fetch(
+      `${pageUrl.replace(/\/+$/, "")}/file/${uploadId}?source=game_download`,
+      {
+        method: "POST",
+        headers: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          cookie: res.headers.get("set-cookie") || "",
+          "x-requested-with": "XMLHttpRequest",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: csrfMatch ? `csrf_token=${encodeURIComponent(csrfMatch[1])}` : "",
+      }
+    );
+    if (!postRes.ok) return null;
+    const json = await postRes.json();
+    return json.url || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Streams a GET over node:https, following redirects manually.
  *
@@ -218,8 +256,14 @@ async function sha256File(file) {
  */
 function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
   return new Promise((resolve, reject) => {
+    const defaultHeaders = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "*/*",
+      ...headers,
+    };
     const attempt = (u, redirectsLeft) => {
-      const req = https.get(u, { headers, signal }, (res) => {
+      const req = https.get(u, { headers: defaultHeaders, signal }, (res) => {
         const status = res.statusCode || 0;
         if (status >= 300 && status < 400 && res.headers.location) {
           res.resume();
@@ -241,9 +285,14 @@ function httpsGetStream(targetUrl, { headers, signal, maxRedirects = 5 } = {}) {
 async function archiveFromUrl({ url, relativePath, sha256, sizeBytes }, abortSignal = undefined) {
   const target = archivePath(relativePath);
   if (!target) return { error: "Invalid archive path" };
+  let effectiveUrl = String(url || "").trim();
+  if (/itch\.io/i.test(effectiveUrl)) {
+    const resolved = await resolveItchDownloadUrl(effectiveUrl);
+    if (resolved) effectiveUrl = resolved;
+  }
   let source;
   try {
-    source = new URL(String(url || ""));
+    source = new URL(effectiveUrl);
   } catch {
     return { error: "Invalid archive URL" };
   }
