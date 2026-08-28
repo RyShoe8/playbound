@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ExternalLink, Monitor, Terminal } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import { getDeveloper } from "@/lib/developers";
@@ -86,6 +86,74 @@ export async function GameInstallContent({ game }: { game: Game }) {
           ))}
         </ol>
       </section>
+
+      {game.firstPlaySteps && game.firstPlaySteps.length > 0 && (
+        <section>
+          <h3 className="text-xl font-bold">First Play Guide</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Recommended first-time setup and configuration steps when launching {game.title}.
+          </p>
+          <ol className="mt-4 space-y-4">
+            {game.firstPlaySteps.map((step, i) => (
+              <li
+                key={i}
+                className="rounded-xl border border-primary/20 bg-primary/5 p-5"
+              >
+                <div className="flex items-start gap-4">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="leading-relaxed break-words text-foreground">{step.text}</p>
+                    {step.command && (
+                      <pre className="mt-3 overflow-x-auto rounded-lg bg-background p-3 text-xs">
+                        <code className="flex items-center gap-2">
+                          <Terminal className="size-3 shrink-0 text-primary" />
+                          {step.command}
+                        </code>
+                      </pre>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {game.multiplayerGamingSteps && game.multiplayerGamingSteps.length > 0 && (
+        <section>
+          <h3 className="text-xl font-bold">Multiplayer Gaming Steps</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            How to join and navigate multiplayer lobbies and servers in {game.title}.
+          </p>
+          <ol className="mt-4 space-y-4">
+            {game.multiplayerGamingSteps.map((step, i) => (
+              <li
+                key={i}
+                className="rounded-xl border border-border bg-card p-5"
+              >
+                <div className="flex items-start gap-4">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-foreground">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="leading-relaxed break-words text-muted-foreground">{step.text}</p>
+                    {step.command && (
+                      <pre className="mt-3 overflow-x-auto rounded-lg bg-background p-3 text-xs">
+                        <code className="flex items-center gap-2">
+                          <Terminal className="size-3 shrink-0 text-primary" />
+                          {step.command}
+                        </code>
+                      </pre>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       <section>
         <h3 className="text-xl font-bold">System requirements</h3>

@@ -12,6 +12,7 @@ import type {
   VerificationLevel,
 } from "@/lib/editionTypes";
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import type { InstallStep } from "@/lib/data/types";
 import {
   ARENA_GAMEFILES_FILE,
   ARENA_GAMEFILES_URL,
@@ -57,6 +58,8 @@ export type EditionSeed = {
   serverName?: string | null;
   languages?: string[];
   version?: string | null;
+  firstPlaySteps?: InstallStep[];
+  multiplayerGamingSteps?: InstallStep[];
   faq?: { q: string; a: string }[];
   verificationLevel?: VerificationLevel;
   verificationNote?: string | null;
@@ -1728,7 +1731,7 @@ export const editions: EditionSeed[] = [
          * the assets, matching the live catalog recipe.
          */
         kind: "direct-installer",
-        url: "https://sourceforge.net/projects/dunelegacy/files/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe/download",
+        url: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-Windows-x64.exe",
         urlMac: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.5-macOS.dmg",
         urlLinux: "https://downloads.sourceforge.net/project/dunelegacy/dunelegacy/0.98.0aplpha/DuneLegacy-0.99.3-Linux-x64.tar.gz",
         fileName: "DuneLegacy-0.99.5-Windows-x64.exe",
@@ -3425,6 +3428,15 @@ export const editions: EditionSeed[] = [
     tags: ["Party Game", "Physics", "Multiplayer", "Arcade"],
     aliases: ["BombSquad PC", "Ballistica PC"],
     version: "1.8.0",
+    firstPlaySteps: [
+      { platform: "all", text: "Create or customize your player profile and character appearance in the main menu." },
+      { platform: "all", text: "Configure keyboard keys or plug in USB/Bluetooth gamepads in Settings > Controllers." },
+    ],
+    multiplayerGamingSteps: [
+      { platform: "all", text: "In the BombSquad main menu, click **Gather** (or **Play**)." },
+      { platform: "all", text: "Select **Manual** to connect directly via IP address." },
+      { platform: "all", text: "Enter the party server IP address and port ({address}) and click **Connect**." },
+    ],
     verificationLevel: "official",
   },
   {

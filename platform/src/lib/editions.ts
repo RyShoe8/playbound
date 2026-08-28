@@ -2,7 +2,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import dbConnect from "@/lib/db";
 import EditionModel from "@/lib/models/Edition";
-import type { Game } from "@/lib/data/types";
+import type { Game, InstallStep } from "@/lib/data/types";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import type { LauncherInstall } from "@/lib/launcherInstall";
 import { editions as seedEditions, type EditionSeed } from "@/lib/data/editions";
@@ -61,6 +61,8 @@ function seedToEdition(seed: EditionSeed): Edition {
     serverName: seed.serverName ?? undefined,
     languages: seed.languages ?? [],
     version: seed.version ?? undefined,
+    firstPlaySteps: seed.firstPlaySteps ?? [],
+    multiplayerGamingSteps: seed.multiplayerGamingSteps ?? [],
     faq: seed.faq ?? [],
     patchNotes: [],
     verified: seed.verificationLevel === "official" || seed.verificationLevel === "playbound_verified",
@@ -214,6 +216,14 @@ function toEdition(doc: LeanEdition): Edition {
     languages: (doc.languages as string[]) ?? [],
 
     version: (doc.version as string) || undefined,
+    firstPlaySteps:
+      Array.isArray(doc.firstPlaySteps) && doc.firstPlaySteps.length > 0
+        ? (doc.firstPlaySteps as InstallStep[])
+        : seedMatch?.firstPlaySteps ?? [],
+    multiplayerGamingSteps:
+      Array.isArray(doc.multiplayerGamingSteps) && doc.multiplayerGamingSteps.length > 0
+        ? (doc.multiplayerGamingSteps as InstallStep[])
+        : seedMatch?.multiplayerGamingSteps ?? [],
     patchNotes: (doc.patchNotes as Edition["patchNotes"]) ?? [],
     faq: (doc.faq as Edition["faq"]) ?? [],
 

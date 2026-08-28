@@ -15,6 +15,7 @@
  */
 
 import type { HardwareRequirementsBlock } from "@/lib/hardware/types";
+import type { InstallStep } from "@/lib/data/types";
 
 /** What kind of experience this edition is. */
 export const EDITION_TYPES = [
@@ -321,6 +322,8 @@ export interface Edition {
   languages: string[];
 
   version?: string;
+  firstPlaySteps?: InstallStep[];
+  multiplayerGamingSteps?: InstallStep[];
   patchNotes: EditionPatchNote[];
   faq: EditionFaqItem[];
 

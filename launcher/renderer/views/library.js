@@ -1,4 +1,5 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
+import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -697,8 +698,12 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
           detail,
           async () => {
             setStatus(`Checking Java / launching ${game.title}…`);
-            await window.playbound.play(game.slug, null, ed);
+            const res = await window.playbound.play(game.slug, null, ed);
             startGameSession(game.slug, game.title);
+            maybeShowLaunchGuidance(res, {
+              title: game.title,
+              slug: game.slug,
+            });
             setStatus(`Launched ${game.title}`);
           },
           game.slug

@@ -1,6 +1,7 @@
 import { createFreeOfferCard, createGameCard } from "../cards.js";
 import { CADENCE } from "../cadence.js";
 import { maybeOfferPhoneControllerThenPlay } from "../phoneController.js";
+import { maybeShowLaunchGuidance } from "../guidanceModal.js";
 import {
   api,
   buildActivityPanelHtml,
@@ -2994,6 +2995,11 @@ async function launchPartyGame(party) {
             party.editionSlug || null
           );
           startGameSession(slug, party.gameTitle || slug);
+          maybeShowLaunchGuidance(res, {
+            title: party.gameTitle || slug,
+            slug,
+            address,
+          });
           /*
            * A few clients have no command-line join and only take an address from
            * their own menu. Launching and saying nothing looks identical to a
@@ -3135,8 +3141,13 @@ async function launchPartyGame(party) {
       async () => {
         setStatus("Checking Java / launching…");
         const edition = party.editionSlug || party.installedEditionSlug || null;
-        await window.playbound.play(slug, peerConnect, edition);
+        const res = await window.playbound.play(slug, peerConnect, edition);
         startGameSession(slug, party.gameTitle || slug);
+        maybeShowLaunchGuidance(res, {
+          title: party.gameTitle || slug,
+          slug,
+          address: peerConnect?.host ? `${peerConnect.host}:${peerConnect.port}` : null,
+        });
         setStatus(
           peerConnect?.host
             ? `Joining ${party.gameTitle || slug} via party network…`

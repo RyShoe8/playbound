@@ -4994,6 +4994,15 @@ const facts: Game[] = [
       versionLabel: "1.8.0",
       note: "Official BombSquad Windows standalone package with full gamepad and LAN party support.",
     },
+    firstPlaySteps: [
+      { platform: "all", text: "Create or customize your player profile and character appearance in the main menu." },
+      { platform: "all", text: "Configure keyboard keys or plug in USB/Bluetooth gamepads in Settings > Controllers." },
+    ],
+    multiplayerGamingSteps: [
+      { platform: "all", text: "In the BombSquad main menu, click **Gather** (or **Play**)." },
+      { platform: "all", text: "Select **Manual** to connect directly via IP address." },
+      { platform: "all", text: "Enter the party server IP address and port ({address}) and click **Connect**." },
+    ],
   },
   {
     slug: "re-volt-rvgl",

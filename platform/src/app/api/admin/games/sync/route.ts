@@ -109,6 +109,8 @@ export async function POST(req: Request) {
       longDescription: g.longDescription ?? null,
       whyWePickedIt: g.whyWePickedIt ?? null,
       installSteps: g.installSteps ?? [],
+      firstPlaySteps: g.firstPlaySteps ?? [],
+      multiplayerGamingSteps: g.multiplayerGamingSteps ?? [],
       faq: g.faq ?? [],
       bestFor: g.bestFor ?? [],
       notFor: g.notFor ?? [],
