@@ -1446,18 +1446,32 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     gameSlug: "hurry-curry",
     title: "Hurry Curry!",
     tier: "tier1_improved",
-    adapterType: "virtual-lan",
-    protocol: "custom",
-    virtualLan: {
-      requiresBroadcast: true,
+    adapterType: "managed-server",
+    protocol: "udp",
+    host: {
+      port: 8888,
+      protocol: "udp",
+      binaryHint: "hurrycurry-server",
+    },
+    client: {
+      inGameJoinPrompt: true,
     },
     selfHost: {
       port: 8888,
       protocol: "both",
       verified: true,
-      inGameSteps: ["Start Game", "Plug in 1–4 controllers"],
+      inGameSteps: [
+        "Host: Run hurrycurry-server (listens on port 8888)",
+        "Friends: In-game → Join Game → Connect to Host's IP address on port 8888",
+      ],
     },
-    notes: "Fast-paced couch co-op kitchen action with native 4-player gamepad and virtual party support.",
+    virtualLan: {
+      inGameSteps: [
+        "Host: Start server",
+        "Friends: Join Game → Enter Host's Virtual LAN IP",
+      ],
+    },
+    notes: "Fast-paced cooperative kitchen frenzy connecting to dedicated or self-hosted server on UDP/TCP port 8888.",
   },
 };
 
