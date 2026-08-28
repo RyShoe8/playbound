@@ -74,7 +74,8 @@ export async function catalogArchiveSourceUrl(
     const doc = await Edition.findOne({ gameSlug: slug, slug: eSlug }).select("installConfig").lean();
     const config = (doc?.installConfig || {}) as { url?: string; repo?: string; urlMac?: string; urlLinux?: string };
     const seed = seedEditions.find((e) => e.gameSlug === slug && e.slug === eSlug);
-    const url = String(config.url || seed?.installConfig?.url || "").trim();
+    const seedConfig = seed?.installConfig as { url?: string; repo?: string } | undefined;
+    const url = String(config.url || seedConfig?.url || "").trim();
     if (/^https:\/\//i.test(url)) {
       if (/itch\.io/i.test(url)) {
         const direct = await resolveItchDownloadUrl(url);
