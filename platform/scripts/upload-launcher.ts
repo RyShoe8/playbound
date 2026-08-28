@@ -160,9 +160,12 @@ async function main() {
   let prodYmlUrl: string | null = null;
 
   if (existsSync(ymlPath)) {
-    // Always sync both admin feed (e.g. admin.yml) and prod feed (e.g. latest.yml)
+    // Admin channel always gets updated.
     adminYmlUrl = await uploadBlob(`launcher/${cfg.adminYml}`, ymlPath, "text/yaml; charset=utf-8");
-    prodYmlUrl = await uploadBlob(`launcher/${cfg.prodYml}`, ymlPath, "text/yaml; charset=utf-8");
+    if (!isAdmin) {
+      // Production/public channel (latest.yml) is ONLY updated for signed releases or explicit public promotes.
+      prodYmlUrl = await uploadBlob(`launcher/${cfg.prodYml}`, ymlPath, "text/yaml; charset=utf-8");
+    }
     ymlUrl = isAdmin ? adminYmlUrl : prodYmlUrl;
   } else {
     console.warn(`  warning: ${ymlPath} missing — auto-update checks will fail until present`);
@@ -178,10 +181,15 @@ async function main() {
     console.warn("  warning: .blockmap missing — delta updates unavailable");
   }
 
-  // Always refresh both admin alias and prod alias
+  // Admin alias is always refreshed with the latest build
   const aliasUrl = await uploadBlob(`launcher/${cfg.adminAlias}`, setupPath, "application/octet-stream");
-  const prodAliasUrl = await uploadBlob(`launcher/${cfg.prodAlias}`, setupPath, "application/octet-stream");
-  console.log(`  published to feeds & aliases → ${cfg.prodAlias}, ${cfg.adminAlias}, ${cfg.prodYml}, ${cfg.adminYml}`);
+  let prodAliasUrl: string | null = null;
+  if (!isAdmin) {
+    prodAliasUrl = await uploadBlob(`launcher/${cfg.prodAlias}`, setupPath, "application/octet-stream");
+    console.log(`  published to public and admin feeds/aliases → ${cfg.prodAlias}, ${cfg.adminAlias}, ${cfg.prodYml}, ${cfg.adminYml}`);
+  } else {
+    console.log(`  published to ADMIN channel only → ${cfg.adminAlias}, ${cfg.adminYml} (public latest channel untouched)`);
+  }
 
   const feedBase = (prodAliasUrl || aliasUrl).replace(/\/[^/]+$/, "/");
 

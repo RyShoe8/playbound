@@ -21,9 +21,16 @@ Windows artifact names:
 
 - Installer: `launcher/dist/PlayBound-Setup-<version>.exe`
 - Portable: `launcher/dist/PlayBound-Launcher-Portable-<version>.exe`
-- Signed update feed: `latest.yml`
-- Unsigned update feed: `admin.yml`
-- Site aliases on Blob: `PlayBound-Launcher-Setup.exe` (public) and `PlayBound-Launcher-Setup-Admin.exe` (unsigned)
+- Signed update feed: `latest.yml` (public users)
+- Unsigned update feed: `admin.yml` (admins and internal testers)
+- Site aliases on Blob: `PlayBound-Launcher-Setup.exe` (public signed) and `PlayBound-Launcher-Setup-Admin.exe` (unsigned admin)
+
+> [!IMPORTANT]
+> **Channel Separation Policy:**
+> - **Regular users must NEVER receive unsigned releases.** They listen to the `latest` channel (`latest.yml`), which only receives signed production builds.
+> - **Admins and internal testers** have accounts linked with admin permissions and listen to the `admin` channel (`admin.yml`), allowing rapid iteration with unsigned builds.
+> - Running `npm run upload:launcher` without `--prod` uploads **exclusively to the `admin` channel** (`admin.yml` and `PlayBound-Launcher-Setup-Admin.exe`), leaving the public channel untouched.
+> - Only `npm run upload:launcher -- --prod` (for signed builds) or explicit `--promote-prod --i-know-its-unsigned` touches the public `latest.yml` / `PlayBound-Launcher-Setup.exe`.
 
 Mac: `PlayBound-macOS-<version>.dmg` + `latest-mac.yml` / `admin-mac.yml`  
 Linux: `PlayBound-Linux-<version>.AppImage` + `latest-linux.yml` / `admin-linux.yml`
