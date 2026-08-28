@@ -2914,7 +2914,15 @@ async function prepareVirtualLan(party, lan) {
         ? `On the party network as "${res.adapterName}".${steps}`
         : `On the party network as "${res.adapterName}". Pick that adapter in-game.${steps}`
     );
-    return true;
+    /*
+     * Truthy object rather than `true`: callers still gate on it the same way,
+     * but a peer-to-peer game needs the addresses that came back with it.
+     */
+    return {
+      ok: true,
+      isLeader: Boolean(res?.isLeader),
+      peerAddresses: Array.isArray(res?.peerAddresses) ? res.peerAddresses : [],
+    };
   } finally {
     unlistenProgress?.();
   }
@@ -3062,9 +3070,10 @@ async function launchPartyGame(party) {
    * either way and silence would read as a dead button.
    */
   const lan = party.lan || {};
+  let lanReady = null;
   if (lan.enabled) {
-    const ready = await prepareVirtualLan(party, lan);
-    if (!ready) return;
+    lanReady = await prepareVirtualLan(party, lan);
+    if (!lanReady) return;
   }
 
   if (catalogGame?.kind === "external" && catalogGame.url) {
@@ -3077,32 +3086,51 @@ async function launchPartyGame(party) {
     return;
   }
 
+  /*
+   * Who this player dials, and which seat they take.
+   *
+   * Two shapes here. A hosted peer game has a leader everyone else connects
+   * to, so only non-leaders get an address. A symmetric peer game (OpenTyrian)
+   * has no host at all: both sides dial each other simultaneously and take
+   * different seats, so the leader needs an address too — previously it got
+   * none and launched with no network flags, which left the joiner dialling
+   * someone who was never listening.
+   *
+   * Addresses come from prepareVirtualLan's response, not the party payload:
+   * lanAddress is deliberately withheld from that payload, so `peerAddresses`
+   * (everyone but you) is the only source. The old code read
+   * `member.lanAddress` off the payload, which was always undefined.
+   */
   let peerConnect = null;
-  if (!isLeader && lan.enabled) {
-    const leaderMember = (party.members || []).find(
-      (m) => String(m.userId) === String(party.leaderId)
-    );
-    const leaderAddress = leaderMember?.lanAddress || lan.leaderAddress || null;
-    if (leaderAddress) {
-      const defaultPort =
-        slug === "freeciv"
-          ? 5556
-          : slug === "openarena" || slug === "wolfenstein-enemy-territory"
-          ? 27960
-          : slug === "xonotic"
-          ? 26000
-          : slug === "srb2"
-          ? 5029
-          : slug === "jfsw"
-          ? 1997
-          : slug === "opentyrian-2000" || slug === "opentyrian"
-          ? 1333
-          : 0;
+  if (lan.enabled) {
+    const meta = (await window.playbound.getConnectMeta?.(slug)) || {};
+    const symmetric = Boolean(meta.symmetric);
+    const peerAddresses = lanReady?.peerAddresses || [];
+    const wantsPeer = symmetric || !isLeader;
+
+    if (wantsPeer && peerAddresses.length > 0) {
+      const port = Number(party.port || catalogGame?.port || meta.defaultPort || 0);
       peerConnect = {
-        host: leaderAddress,
-        port: Number(party.port || catalogGame?.port || defaultPort || 0),
+        // One opponent in a two-player peer game; the first peer is the one.
+        host: peerAddresses[0],
+        port,
         name: state.accountState?.username || "",
+        // Seat 1 is the leader's, 2 is everyone else's. Ignored by games whose
+        // connect args carry no {playerNumber}.
+        playerNumber: isLeader ? 1 : 2,
       };
+    } else if (wantsPeer) {
+      /*
+       * On the overlay but nobody else has enrolled yet. Launching now starts
+       * a session the other side cannot join, and for a symmetric game that
+       * is a guaranteed dead lobby rather than a slow one.
+       */
+      setStatus(
+        symmetric
+          ? "Waiting for the other player to join the party network — try Join Game again in a moment."
+          : "Waiting for the host to join the party network — try Join Game again in a moment."
+      );
+      return;
     }
   }
 

@@ -86,8 +86,23 @@ const CLIENT_CONNECT_ARGS = {
   "re-volt-rvgl": ["-lobby", "{host}:{port}"],
   revolt: ["-lobby", "{host}:{port}"],
   rvgl: ["-lobby", "{host}:{port}"],
-  "opentyrian-2000": ["--net={host}:{port}", "--net-player-number=2"],
-  opentyrian: ["--net={host}:{port}", "--net-player-number=2"],
+  /*
+   * OpenTyrian 2000 is symmetric peer-to-peer, not host/joiner: per the
+   * engine's own --help, both players run `--net=HOST[:PORT]` pointed at each
+   * other, at the same time, and take seats 1 and 2 via --net-player-number.
+   * There is no server to connect to, so the seat cannot be hardcoded to 2 —
+   * that had both sides claiming player 2. See SYMMETRIC_PEER_GAMES.
+   */
+  "opentyrian-2000": [
+    "--net={host}:{port}",
+    "--net-player-number={playerNumber}",
+    "--net-player-name={name}",
+  ],
+  opentyrian: [
+    "--net={host}:{port}",
+    "--net-player-number={playerNumber}",
+    "--net-player-name={name}",
+  ],
   srb2: ["+connect", "{host}:{port}"],
   jfsw: ["-net", "{host}:{port}"],
 
@@ -137,6 +152,27 @@ function clientConnectArgs(slug) {
   return CLIENT_CONNECT_ARGS[key];
 }
 
+/**
+ * Games where both players connect to each other, rather than one hosting.
+ *
+ * The party model assumes a host: the leader launches plainly and everyone
+ * else is handed its address. These games have no server — each side passes
+ * the *other* side's address and a distinct seat number, simultaneously. Left
+ * on the default path the leader launched with no network flags at all, so
+ * the joiner dialled a peer that was never listening and both sat in
+ * single-player.
+ *
+ * Membership means two things to the launch path: the leader also needs a
+ * peer address, and the seat number comes from who is leader rather than
+ * being fixed.
+ */
+const SYMMETRIC_PEER_GAMES = new Set(["opentyrian-2000", "opentyrian"]);
+
+/** True when both sides dial each other instead of one hosting. */
+function isSymmetricPeerGame(slug) {
+  return SYMMETRIC_PEER_GAMES.has(String(slug || ""));
+}
+
 /** True when this slug's connect syntax is owned here rather than by the catalog. */
 function hasClientConnectArgs(slug) {
   return Object.prototype.hasOwnProperty.call(CLIENT_CONNECT_ARGS, String(slug || ""));
@@ -156,10 +192,18 @@ function applyConnectTemplates(templates, join, editionSlug) {
       .replaceAll("{name}", join?.name || "")
       // OpenRA needs the mod named or it joins with whatever it last had open.
       .replaceAll("{mod}", mod || "ra")
+      /*
+       * Which seat this player takes in a two-player peer game. Both sides run
+       * the same command line except for this, and if they agree on it they
+       * both pilot the same ship and neither sees the other. Defaults to 2,
+       * the joining side, because that is the only case that existed before
+       * peer games could be hosted from inside a party.
+       */
+      .replaceAll("{playerNumber}", String(join?.playerNumber || 2))
   );
 }
 
-const TEMPLATE_TOKEN = /\{(host|port|name|mod)\}/;
+const TEMPLATE_TOKEN = /\{(host|port|name|mod|playerNumber)\}/;
 
 /**
  * Args to pass on a plain launch — one with no server to join.
@@ -183,8 +227,10 @@ function staticLaunchArgs(connectArgs) {
 
 module.exports = {
   CLIENT_CONNECT_ARGS,
+  SYMMETRIC_PEER_GAMES,
   clientConnectArgs,
   hasClientConnectArgs,
+  isSymmetricPeerGame,
   joinsFromInGameMenu,
   applyConnectTemplates,
   staticLaunchArgs,

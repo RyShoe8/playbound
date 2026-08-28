@@ -57,6 +57,7 @@ const {
 const {
   clientConnectArgs,
   hasClientConnectArgs,
+  isSymmetricPeerGame,
   joinsFromInGameMenu,
   applyConnectTemplates,
   staticLaunchArgs,
@@ -9852,6 +9853,20 @@ ipcMain.handle("get-parties", async (_event, opts = {}) => {
  * independently server-side; a whole-request failure still falls back to the
  * three separate calls so a deploy skew cannot leave the panel blank.
  */
+/*
+ * Connect facts for a slug, read from services/connectArgs.js.
+ *
+ * The renderer needs both when building a peer connection and cannot require
+ * that module: it is ESM, and preload runs sandboxed so it cannot require
+ * local files either. Sending them over IPC keeps connectArgs.js the single
+ * definition rather than growing a second copy of the port table in the
+ * renderer.
+ */
+ipcMain.handle("get-connect-meta", (_event, slug) => ({
+  symmetric: isSymmetricPeerGame(slug),
+  defaultPort: defaultGamePort(slug) || 0,
+}));
+
 ipcMain.handle("get-party-sync", async (_event, opts = {}) => {
   const path =
     opts && opts.includeDiscoverable === false
@@ -10217,7 +10232,22 @@ ipcMain.handle("prepare-virtual-lan", async (event, opts) => {
       }
     }
     reportProgress("Party network connected.");
-    return { ok: true, adapterName, adapterAddress, pointed };
+    /*
+     * peerAddresses/isLeader come back from the enrolment POST above and used
+     * to be dropped here. Peer-to-peer games need them: each side dials the
+     * other's overlay address, and the seat number depends on who is leader.
+     * lanAddress is deliberately absent from the party payload (it is
+     * credential-adjacent), so this response is the only way the renderer can
+     * learn where its peers are.
+     */
+    return {
+      ok: true,
+      adapterName,
+      adapterAddress,
+      pointed,
+      isLeader: Boolean(reported?.isLeader),
+      peerAddresses: Array.isArray(reported?.peerAddresses) ? reported.peerAddresses : [],
+    };
   } catch (err) {
     const message = err?.message || String(err);
     if (/spawn .*ENOENT|ENOENT/i.test(message)) {

@@ -155,6 +155,7 @@ contextBridge.exposeInMainWorld("playbound", {
   getServers: (slug) => ipcRenderer.invoke("get-servers", slug),
   getServerIndex: () => ipcRenderer.invoke("get-server-index"),
   getPartySync: (opts) => ipcRenderer.invoke("get-party-sync", opts || {}),
+  getConnectMeta: (slug) => ipcRenderer.invoke("get-connect-meta", slug),
   pingServers: (servers) => ipcRenderer.invoke("ping-servers", servers),
   getAllServers: () => ipcRenderer.invoke("get-all-servers"),
   getModsCatalog: () => ipcRenderer.invoke("get-mods-catalog"),
