@@ -187,6 +187,28 @@ export const recipes = {
     },
     spawnEnv: () => ({ HOME: HOST_HOME }),
   },
+  /*
+   * Hurry Curry! — WebSocket/JSON over TCP.
+   *
+   * `--listen` takes a full SocketAddr and defaults to [::]:27032; binding
+   * [::] covers v4 and v6. Deliberately NOT passing --register: a PlayBound
+   * party room is private to that party, and announcing every ephemeral room
+   * to the public registry at registry.hurrycurry.org would spam a
+   * community list with rooms nobody outside the party can use.
+   */
+  "hurry-curry": {
+    portStart: 27032,
+    portEnd: 27052,
+    protocol: "tcp",
+    binaries: gameBin("hurry-curry", ["hurrycurry-server"]),
+    args: (port, ctx) => [
+      "--listen",
+      `[::]:${port}`,
+      "--name",
+      String(ctx.name || "PlayBound Hurry Curry").slice(0, 40),
+    ],
+    spawnEnv: () => ({ HOME: HOST_HOME }),
+  },
   mindustry: {
     portStart: 6567,
     portEnd: 6587,

@@ -53,6 +53,20 @@ export const HOSTABLE_GAMES: Record<string, HostableGame> = {
     portEnd: 6587,
     protocol: "both",
   },
+  /*
+   * TCP: the client connects over WebSocket, so the listener is TCP even
+   * though the adapter previously claimed UDP. 27032 is the game server port
+   * from the project's protocol.md; 27033-27035 are the registry, lobby and
+   * map-editor services, so the room range starts above them to avoid
+   * colliding with anything the server itself might bind.
+   */
+  "hurry-curry": {
+    slug: "hurry-curry",
+    title: "Hurry Curry!",
+    defaultPort: 27032,
+    portEnd: 27052,
+    protocol: "tcp",
+  },
   ysoccer: {
     slug: "ysoccer",
     title: "YSoccer",

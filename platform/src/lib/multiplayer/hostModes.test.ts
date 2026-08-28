@@ -98,9 +98,16 @@ describe("host mode configuration", () => {
   });
 
   it("supplies a public-lobby port for self-hostable games", () => {
-    // Mr. Boom and OpenTyrian both host through RetroArch netplay.
+    // Mr. Boom hosts through RetroArch netplay.
     expect(publicLobbyPortFor("mrboom")).toEqual({ port: 55435, protocol: "tcp" });
-    expect(publicLobbyPortFor("opentyrian-2000")).toEqual({ port: 55435, protocol: "tcp" });
+    /*
+     * OpenTyrian 2000 does NOT go through RetroArch — it has its own built-in
+     * peer-to-peer netplay. Per the engine's own --help, `-p/--net-port=PORT`
+     * defaults to 1333 and the transport is UDP (it uses UDP hole punching to
+     * avoid needing a forwarded port at all). This previously asserted
+     * RetroArch's 55435/tcp, which the adapter has never claimed.
+     */
+    expect(publicLobbyPortFor("opentyrian-2000")).toEqual({ port: 1333, protocol: "udp" });
     // GoldenEye: Source is a Source sourcemod on the engine's default port.
     expect(publicLobbyPortFor("goldeneye-source")).toEqual({ port: 27015, protocol: "udp" });
   });
