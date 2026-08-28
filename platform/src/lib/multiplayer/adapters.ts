@@ -568,7 +568,12 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
       port: 20595,
       protocol: "udp",
       binaryHint: "pyrogenesis",
-      argsTemplate: ["-autostart-nonrandom=1", "--port={port}"],
+      argsTemplate: [
+        "-autostart-headless",
+        "-autostart-headless-autociv",
+        "-autostart-nonrandom=1",
+        "--port={port}",
+      ],
     },
     client: {
       launchArguments: ["-autostart={host}:{port}"],
