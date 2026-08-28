@@ -79,6 +79,13 @@ export function ControllerClient({ code }: { code: string }) {
       return false;
     }
   });
+  const [showLeftStick, setShowLeftStick] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("playbound.couch.show-left-stick") !== "false";
+    } catch {
+      return true;
+    }
+  });
 
   const padRef = useRef<PadState>({ ...EMPTY });
   const seqRef = useRef(0);
@@ -126,6 +133,23 @@ export function ControllerClient({ code }: { code: string }) {
       if (!next) {
         padRef.current.rx = 0;
         padRef.current.ry = 0;
+        sendInput();
+      }
+      return next;
+    });
+  };
+
+  const toggleLeftStick = () => {
+    setShowLeftStick((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("playbound.couch.show-left-stick", String(next));
+      } catch {
+        /* ignore */
+      }
+      if (!next) {
+        padRef.current.lx = 0;
+        padRef.current.ly = 0;
         sendInput();
       }
       return next;
@@ -645,15 +669,17 @@ export function ControllerClient({ code }: { code: string }) {
         />
       </div>
 
-      {/* Left Thumb Zone: Movement (Left Stick + D-Pad) anchored at bottom-left */}
-      <div className="pbc-zone pbc-zone-left">
-        <AnalogStick
-          label="L"
-          onChange={(x, y) => {
-            padRef.current.lx = x;
-            padRef.current.ly = y;
-          }}
-        />
+      {/* Left Thumb Zone: Movement (Left Stick + D-Pad) */}
+      <div className={showLeftStick ? "pbc-zone pbc-zone-left" : "pbc-zone pbc-zone-left is-stickless"}>
+        {showLeftStick && (
+          <AnalogStick
+            label="L"
+            onChange={(x, y) => {
+              padRef.current.lx = x;
+              padRef.current.ly = y;
+            }}
+          />
+        )}
         <DPad setBit={setBit} />
       </div>
 
@@ -690,6 +716,16 @@ export function ControllerClient({ code }: { code: string }) {
         </button>
 
         <ModeToggle mode={mode} setMode={setMode} compact />
+        <button
+          type="button"
+          className={showLeftStick ? "pbc-twin-btn is-active" : "pbc-twin-btn"}
+          onClick={toggleLeftStick}
+          aria-pressed={showLeftStick}
+          title="Show or hide the left analog stick"
+        >
+          <span className="pbc-twin-icon" aria-hidden>🕹️</span>
+          <span className="pbc-twin-text">L stick</span>
+        </button>
         <HoldButton label="▶" bit={BUTTON.START} setBit={setBit} title="Start / Menu" />
       </div>
     </main>
@@ -1682,8 +1718,11 @@ function ControllerStyles() {
 
 @media (orientation: landscape) and (max-height: 480px) {
   .pbc-zone {
-    gap: clamp(8px, 2vmin, 16px);
-    bottom: calc(var(--pbc-safe-b) + 6px);
+    top: 48%;
+    bottom: auto;
+    transform: translateY(-40%);
+    align-items: center;
+    gap: clamp(18px, 4vw, 34px);
   }
   .pbc-hud {
     font-size: 10px;
