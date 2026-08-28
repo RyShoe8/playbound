@@ -2966,15 +2966,45 @@ async function launchPartyGame(party) {
     return;
   }
 
+  const isLeader = String(party.leaderId) === String(currentUserId(party));
+  let peerConnect = null;
+  if (!isLeader && lan.enabled) {
+    const leaderMember = (party.members || []).find(
+      (m) => String(m.userId) === String(party.leaderId)
+    );
+    const leaderAddress = leaderMember?.lanAddress || lan.leaderAddress || null;
+    if (leaderAddress) {
+      const defaultPort =
+        slug === "freeciv"
+          ? 5556
+          : slug === "srb2"
+          ? 5029
+          : slug === "jfsw"
+          ? 1997
+          : slug === "opentyrian-2000" || slug === "opentyrian"
+          ? 1333
+          : 0;
+      peerConnect = {
+        host: leaderAddress,
+        port: Number(party.port || catalogGame?.port || defaultPort || 0),
+        name: state.accountState?.username || "",
+      };
+    }
+  }
+
   try {
     const launched = await maybeOfferPhoneControllerThenPlay(
       detail,
       async () => {
         setStatus("Checking Java / launching…");
         const edition = party.editionSlug || party.installedEditionSlug || null;
-        await window.playbound.play(slug, null, edition);
+        await window.playbound.play(slug, peerConnect, edition);
         startGameSession(slug, party.gameTitle || slug);
-        setStatus(`Launched ${party.gameTitle || slug}`);
+        setStatus(
+          peerConnect?.host
+            ? `Joining ${party.gameTitle || slug} via party network…`
+            : `Launched ${party.gameTitle || slug}`
+        );
       },
       slug
     );

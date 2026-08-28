@@ -5887,16 +5887,17 @@ const facts: Game[] = [
       min: {
         ramMB: 2048,
         storageMB: 1500,
-        apis: ["opengl", "directx"],
+        apis: ["opengl", "dx9"],
         cpuText: "2.0 GHz Dual-Core CPU",
         gpuText: "Shader Model 3.0 graphics card",
       },
       recommended: {
         ramMB: 4096,
         storageMB: 2048,
-        apis: ["opengl", "directx"],
+        apis: ["opengl", "dx9"],
         cpuText: "Quad-Core 3.0 GHz CPU",
         gpuText: "Dedicated gaming GPU",
+        notes: "GeForce GTX 750 or Radeon R7 class GPU recommended.",
       },
       provenance: {
         source: "playbound_verified",
@@ -5979,7 +5980,7 @@ const facts: Game[] = [
     description:
       "JFSW (Jonathon Fowler's Shadow Warrior) brings 3D Realms' legendary 1997 Build-engine shooter to modern systems. Enjoy true 3D freelook, widescreen resolutions, uncapped framerates, full gamepad support, and WangBang deathmatch / co-op multiplayer.",
     developerSlug: "jonof",
-    genres: ["Shooter", "Action", "Retro FPS"],
+    genres: ["Shooter", "Action"],
     tags: ["Boomer Shooter", "Build Engine", "Retro FPS", "90s", "Classic", "Ninja", "WangBang"],
     license: "Open Source (GPL-2.0)",
     releaseYear: 1997,
