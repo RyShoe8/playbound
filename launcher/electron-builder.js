@@ -101,6 +101,11 @@ module.exports = {
       filter: ["**/*"],
     },
     {
+      from: "resources/netbird",
+      to: "netbird",
+      filter: ["**/*"],
+    },
+    {
       from: "resources/scripts",
       to: "scripts",
       filter: ["**/*"],

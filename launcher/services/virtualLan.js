@@ -93,7 +93,62 @@ function findCli() {
   return null;
 }
 
-const DOWNLOAD_URL = "https://app.netbird.io/install";
+/**
+ * Path to the bundled MSI inside the app's extraResources.
+ *
+ * electron-builder places extraResources under `process.resourcesPath`.
+ * In development `resourcesPath` falls back to the source tree, so this
+ * still resolves during `npm start`.
+ */
+function bundledMsiPath() {
+  const base = process.resourcesPath || path.join(__dirname, "..");
+  return path.join(base, "netbird", "netbird_installer.msi");
+}
+
+/**
+ * Silently install the bundled NetBird MSI.
+ *
+ * Called automatically when `overlayStatus` finds no CLI. NSIS already runs
+ * this during Setup, so it only fires for portable builds, users who
+ * declined UAC at install time, or when NetBird was uninstalled.
+ *
+ * `msiexec /quiet` requires elevation, so this shells out through
+ * PowerShell's `Start-Process -Verb RunAs` to trigger a single UAC prompt.
+ * The user sees one dialog the first time they join a party; never again.
+ */
+async function autoInstallNetBird() {
+  const msi = bundledMsiPath();
+  try {
+    if (!fs.existsSync(msi)) {
+      return { error: "Bundled NetBird installer not found.", needsInstall: true };
+    }
+  } catch {
+    return { error: "Could not check for bundled NetBird installer.", needsInstall: true };
+  }
+
+  // PowerShell Start-Process -Wait -Verb RunAs triggers a single UAC prompt
+  // and blocks until the MSI completes.
+  const ps = [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    `Start-Process msiexec -ArgumentList '/i','"${msi}"','/quiet' -Verb RunAs -Wait; exit $LASTEXITCODE`,
+  ];
+  const res = await run("powershell", ps);
+
+  // Verify the CLI is now discoverable.
+  const cli = findCli();
+  if (cli) return { ok: true };
+
+  // The MSI ran but the CLI still is not where we expect it. Either the user
+  // declined UAC or the install failed silently.
+  const hint = /canceled|cancelled|denied|elevation/i.test(`${res.stdout}${res.stderr}`)
+    ? "Administrator access was declined."
+    : "The installer ran but NetBird was not found afterwards.";
+  return { error: hint, needsInstall: true };
+}
+
+const DOWNLOAD_URL = "https://pkgs.netbird.io/windows/x64";
 
 /**
  * State of the overlay client on this machine.
@@ -103,9 +158,24 @@ const DOWNLOAD_URL = "https://app.netbird.io/install";
  * installed NetBird still refuses an unelevated launcher.
  */
 async function overlayStatus() {
-  const cli = findCli();
+  let cli = findCli();
+
+  // Auto-install from the bundled MSI if NetBird is not present.
   if (!cli) {
-    return { installed: false, connected: false, downloadUrl: DOWNLOAD_URL };
+    const install = await autoInstallNetBird();
+    if (!install.ok) {
+      return {
+        installed: false,
+        connected: false,
+        error: install.error,
+        needsInstall: true,
+        downloadUrl: DOWNLOAD_URL,
+      };
+    }
+    cli = findCli();
+    if (!cli) {
+      return { installed: false, connected: false, downloadUrl: DOWNLOAD_URL };
+    }
   }
 
   const res = await run(cli, ["status"]);

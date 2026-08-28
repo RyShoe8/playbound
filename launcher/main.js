@@ -9975,17 +9975,17 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
   try {
     const status = await virtualLan.overlayStatus();
     if (!status.installed) {
+      // overlayStatus already tried auto-install; if we're still here the
+      // bundled MSI was missing or the user declined UAC.
       return {
-        error: "PlayBound Connect needs the NetBird network client for this game.",
+        error: status.error || "PlayBound Connect could not install the network client automatically. Please restart PlayBound as administrator.",
         needsInstall: true,
-        downloadUrl: status.downloadUrl,
       };
     }
     if (status.error) {
       return {
         error: status.error,
         needsElevation: Boolean(status.needsElevation),
-        downloadUrl: status.downloadUrl,
       };
     }
 
@@ -10052,9 +10052,8 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
     const message = err?.message || String(err);
     if (/spawn .*ENOENT|ENOENT/i.test(message)) {
       return {
-        error: "PlayBound Connect needs the NetBird network client for this game.",
+        error: "PlayBound Connect could not start the network client. Please restart PlayBound as administrator.",
         needsInstall: true,
-        downloadUrl: virtualLan.DOWNLOAD_URL,
       };
     }
     return { error: message };

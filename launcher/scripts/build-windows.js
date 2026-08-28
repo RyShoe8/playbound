@@ -97,6 +97,9 @@ function main() {
   // 1. Vendor ViGEmBus redistributable (skipped if already pinned).
   run("Vendoring ViGEmBus setup", path.join(__dirname, "vendor-vigem.js"), [], env);
 
+  // 1b. Vendor NetBird MSI for silent overlay-network install.
+  run("Vendoring NetBird setup", path.join(__dirname, "vendor-netbird.js"), [], env);
+
   // 2. Vendor Nefarius.ViGEm.Client.dll for the PowerShell host (if missing).
   run("Vendoring ViGEm client DLL", path.join(__dirname, "vendor-vigem-client.js"), [], env);
 
