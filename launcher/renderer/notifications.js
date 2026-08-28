@@ -2,7 +2,7 @@
  * Launcher notification bell — same Mongo notifications as the site, with
  * readAt synced through /api/notifications/read so web + launcher stay aligned.
  */
-import { api, state } from "./shared.js";
+import { api, setStatus, state } from "./shared.js";
 
 const POLL_MS = 45_000;
 
@@ -124,8 +124,11 @@ async function openHref(href, meta = {}) {
     await api.openEventDetail?.(decodeURIComponent(eventMatch[1]), "events");
     return;
   }
-  if (path.startsWith("/friends") || path.startsWith("/party") || meta?.partyId) {
+  const partyMatch = href?.match(/[?&]party=([^&]+)/) || href?.match(/\/party\/([^/?]+)/);
+  const partyId = meta?.partyId || (partyMatch ? decodeURIComponent(partyMatch[1]) : null);
+  if (path.startsWith("/friends") || path.startsWith("/party") || partyId) {
     await api.navigateTo?.("friends");
+    if (api.refreshFriendsData) void api.refreshFriendsData();
     return;
   }
   if (path.startsWith("/events")) {
@@ -155,6 +158,7 @@ function paintList() {
     .map((n) => {
       const unread = !n.readAt;
       const inviteId = n.meta?.inviteId || "";
+      const partyId = n.meta?.partyId || "";
       const actions = Array.isArray(n.meta?.actions) ? n.meta.actions : [];
       let actionHtml = "";
       if (n.type === "play_invite" && inviteId) {
@@ -168,19 +172,28 @@ function paintList() {
             inviteId
           )}" data-id="${escapeHtml(n.id)}">Decline</button>
         </div>`;
+      } else if (n.type === "party_invite" && partyId) {
+        actionHtml = `<div class="notif-actions">
+          <button type="button" class="notif-action primary" data-action="join-party" data-party="${escapeHtml(
+            partyId
+          )}" data-id="${escapeHtml(n.id)}" data-href="${escapeHtml(n.href || "")}">Join Party</button>
+          <button type="button" class="notif-action" data-action="decline-party" data-id="${escapeHtml(
+            n.id
+          )}">Decline</button>
+        </div>`;
       } else if (actions.includes("join")) {
         actionHtml = `<div class="notif-actions">
-          <button type="button" class="notif-action primary" data-action="open" data-id="${escapeHtml(
+          <button type="button" class="notif-action primary" data-action="${partyId ? "join-party" : "open"}" data-id="${escapeHtml(
             n.id
           )}" data-href="${escapeHtml(n.href || "")}" data-slug="${escapeHtml(
           n.meta?.gameSlug || ""
-        )}">Join</button>
+        )}" data-party="${escapeHtml(partyId)}">Join</button>
         </div>`;
       }
       return `<li class="notif-item${unread ? " unread" : ""}" data-id="${escapeHtml(n.id)}">
-        <button type="button" class="notif-item-main" data-action="open" data-id="${escapeHtml(
+        <button type="button" class="notif-item-main" data-action="${n.type === "party_invite" && partyId ? "join-party" : "open"}" data-id="${escapeHtml(
           n.id
-        )}" data-href="${escapeHtml(n.href || "/friends")}" data-slug="${escapeHtml(n.meta?.gameSlug || "")}">
+        )}" data-href="${escapeHtml(n.href || "/friends")}" data-slug="${escapeHtml(n.meta?.gameSlug || "")}" data-party="${escapeHtml(partyId)}">
           <span class="notif-title">${escapeHtml(n.title)}</span>
           ${n.body ? `<span class="notif-body">${escapeHtml(n.body)}</span>` : ""}
           <span class="notif-when">${escapeHtml(formatWhen(n.createdAt))}</span>
@@ -201,6 +214,27 @@ async function onListClick(e) {
   const slug = btn.dataset.slug;
   const item = items.find((n) => n.id === id);
 
+  if (action === "join-party") {
+    const partyId = btn.dataset.party || item?.meta?.partyId;
+    if (partyId && window.playbound?.joinParty) {
+      const res = await window.playbound.joinParty(partyId);
+      if (res?.error) {
+        setStatus(res.error, true);
+      } else {
+        setStatus("Joined party!");
+      }
+    }
+    if (item && !item.readAt) await markRead(id);
+    setPanelOpen(false);
+    await api.navigateTo?.("friends");
+    if (api.refreshFriendsData) void api.refreshFriendsData();
+    return;
+  }
+  if (action === "decline-party") {
+    if (item && !item.readAt) await markRead(id);
+    await refresh();
+    return;
+  }
   if (action === "accept-invite" && inviteId) {
     await window.playbound.playInviteAction?.(inviteId, "accept");
     if (item && !item.readAt) await markRead(id);
@@ -215,6 +249,15 @@ async function onListClick(e) {
     return;
   }
   if (action === "open") {
+    const partyId = btn.dataset.party || item?.meta?.partyId;
+    if (item?.type === "party_invite" && partyId && window.playbound?.joinParty) {
+      const res = await window.playbound.joinParty(partyId);
+      if (res?.error) {
+        setStatus(res.error, true);
+      } else {
+        setStatus("Joined party!");
+      }
+    }
     if (item && !item.readAt) await markRead(id);
     setPanelOpen(false);
     await openHref(href || (slug ? `/games/${slug}` : "/friends"), item?.meta);

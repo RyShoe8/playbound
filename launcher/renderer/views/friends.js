@@ -2733,38 +2733,46 @@ async function prepareVirtualLan(party, lan) {
     return false;
   }
 
-  setStatus("Connecting to the party network…");
-  const res = await window.playbound.prepareVirtualLan({
-    partyId: party.id,
-    slug: party.gameSlug,
-    editionSlug: party.editionSlug || null,
-    adapterFile: lan.adapterFile || null,
-    isLeader: String(party.leaderId) === String(currentUserId(party)),
+  const unlistenProgress = window.playbound.onVirtualLanProgress?.((msg) => {
+    if (msg) setStatus(msg);
   });
 
-  if (res?.needsInstall) {
-    setStatus(res.error, true);
-    return false;
-  }
-  if (res?.error) {
-    setStatus(res.error, true);
-    return false;
-  }
-  if (lan.adapterFile && !res?.pointed) {
-    setStatus(
-      "Could not point the game at the party network. Launching would open a LAN menu nobody else is on.",
-      true
-    );
-    return false;
-  }
+  try {
+    setStatus("Connecting to the party network…");
+    const res = await window.playbound.prepareVirtualLan({
+      partyId: party.id,
+      slug: party.gameSlug,
+      editionSlug: party.editionSlug || null,
+      adapterFile: lan.adapterFile || null,
+      isLeader: String(party.leaderId) === String(currentUserId(party)),
+    });
 
-  const steps = Array.isArray(lan.steps) && lan.steps.length ? ` Then: ${lan.steps.join(" → ")}.` : "";
-  setStatus(
-    res?.pointed
-      ? `On the party network as "${res.adapterName}".${steps}`
-      : `On the party network as "${res.adapterName}". Pick that adapter in-game.${steps}`
-  );
-  return true;
+    if (res?.needsInstall) {
+      setStatus(res.error, true);
+      return false;
+    }
+    if (res?.error) {
+      setStatus(res.error, true);
+      return false;
+    }
+    if (lan.adapterFile && !res?.pointed) {
+      setStatus(
+        "Could not point the game at the party network. Launching would open a LAN menu nobody else is on.",
+        true
+      );
+      return false;
+    }
+
+    const steps = Array.isArray(lan.steps) && lan.steps.length ? ` Then: ${lan.steps.join(" → ")}.` : "";
+    setStatus(
+      res?.pointed
+        ? `On the party network as "${res.adapterName}".${steps}`
+        : `On the party network as "${res.adapterName}". Pick that adapter in-game.${steps}`
+    );
+    return true;
+  } finally {
+    unlistenProgress?.();
+  }
 }
 
 /**
@@ -3097,7 +3105,7 @@ function openPartyVoice(inviteUrl) {
   // Desktop Discord first — openExternal would always land in web Discord.
   void (window.playbound.openDiscordInvite?.(inviteUrl) ??
     window.playbound.openExternal(inviteUrl));
-  setStatus("Opening party voice…");
+  setStatus("Opened party voice in Discord.");
 }
 
 async function handleLaunchPartyVoice(partyId, party, voiceBtn, errorEl) {
@@ -3125,10 +3133,12 @@ async function handleLaunchPartyVoice(partyId, party, voiceBtn, errorEl) {
         void window.playbound.openDiscordInvite?.("https://discord.com/app");
         return;
       }
+      const errMsg = res?.error || "Could not launch Discord voice.";
       if (errorEl) {
-        errorEl.textContent = res?.error || "Could not launch Discord voice.";
+        errorEl.textContent = errMsg;
         errorEl.style.display = "block";
       }
+      setStatus(errMsg, true);
       return;
     }
 
@@ -3138,10 +3148,12 @@ async function handleLaunchPartyVoice(partyId, party, voiceBtn, errorEl) {
     blurPartyFocus();
     void api.refreshFriendsData();
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : "Could not launch Discord voice.";
     if (errorEl) {
-      errorEl.textContent = err instanceof Error ? err.message : "Could not launch Discord voice.";
+      errorEl.textContent = errMsg;
       errorEl.style.display = "block";
     }
+    setStatus(errMsg, true);
   } finally {
     if (voiceBtn) {
       voiceBtn.disabled = false;
