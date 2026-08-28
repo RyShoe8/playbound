@@ -6957,10 +6957,13 @@ async function playGameInner(slug, join = null, editionSlug = null) {
     const exeName = path.basename(launchPath || "") || "game";
     let code = "UNKNOWN";
     let message = rawMessage;
-    if (err?.code === "JAVA_MISSING" || /Java 17\+/i.test(rawMessage)) {
+    if (err?.code === "JAVA_MISSING" || (/Java 17\+/i.test(rawMessage) && !/exited immediately/i.test(rawMessage))) {
       code = "JAVA_MISSING";
-    } else if (/exited immediately/i.test(rawMessage)) {
+    } else if (err?.code === "JAVA_EARLY_EXIT" || /exited immediately/i.test(rawMessage)) {
       code = "JAVA_EARLY_EXIT";
+      message = isJar
+        ? `The game exited immediately after launch (${path.basename(launchPath || "game")}). Open Folder and try running it manually, check GPU drivers, or reinstall.`
+        : rawMessage;
     } else if (err?.code === "SHELL_LAUNCH_BLOCKED" || /bat\/\.cmd launcher/i.test(rawMessage)) {
       code = "SHELL_LAUNCH_BLOCKED";
     } else if (/outside allowed install locations/i.test(rawMessage)) {
@@ -7031,12 +7034,13 @@ async function playGameInner(slug, join = null, editionSlug = null) {
           };
         } catch (retryErr) {
           const retryMessage = retryErr?.message || String(retryErr);
+          const retryCode = retryErr?.code || (isJar ? "JAVA_EARLY_EXIT" : "SPAWN_FAILED");
           void telemetry.launchFailed({
             ...editionInfoFor(slug, {
               version: info.version,
               editionSlug: info.editionSlug || edSlug,
             }),
-            code: "JAVA_MISSING",
+            code: retryCode,
             message: retryMessage,
             phase: "spawn-after-java-install",
           });
@@ -7413,11 +7417,30 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
     }
   }
 
+  let earlyStderr = "";
+  if (child.stderr) {
+    child.stderr.on("data", (chunk) => {
+      if (earlyStderr.length < 2048) {
+        earlyStderr += chunk.toString("utf8");
+      }
+    });
+  }
+
   return new Promise((resolve, reject) => {
     let settled = false;
+    const cleanupChildStreams = () => {
+      if (child.stderr) {
+        try {
+          child.stderr.destroy();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
     const succeed = () => {
       if (settled) return;
       settled = true;
+      cleanupChildStreams();
       try {
         child.unref();
       } catch {
@@ -7430,6 +7453,7 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
     const fail = (err) => {
       if (settled) return;
       settled = true;
+      cleanupChildStreams();
       clearLaunchTracking(slug);
       const code = err?.code;
       if (code === "ENOENT") {
@@ -7445,11 +7469,18 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
       reject(err instanceof Error ? err : new Error(String(err)));
     };
 
+    const firstLineErr = earlyStderr.trim().split(/\r?\n/)[0]?.trim();
     const earlyExitMsg = isJar
-      ? GameLauncher.JAVA_EARLY_EXIT_MSG
+      ? (firstLineErr
+          ? `The game exited immediately after launch: ${firstLineErr.slice(0, 200)}`
+          : GameLauncher.JAVA_EARLY_EXIT_MSG)
       : `The game exited immediately after launch (${path.basename(exePath)}). Open Folder and try running it manually, check GPU drivers, or reinstall.`;
 
-    const failEarly = () => fail(new Error(earlyExitMsg));
+    const failEarly = () => {
+      const err = new Error(earlyExitMsg);
+      err.code = isJar ? "JAVA_EARLY_EXIT" : "EARLY_EXIT";
+      fail(err);
+    };
 
     const processStillAlive = () => {
       if (child.exitCode == null && child.signalCode == null && child.pid) return true;
