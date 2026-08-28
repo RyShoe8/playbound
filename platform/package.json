@@ -51,6 +51,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1111.0",
     "@base-ui/react": "^1.6.0",
     "@getbrevo/brevo": "^5.0.4",
+    "@upstash/redis": "^1.38.3",
     "@vercel/blob": "^2.6.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -80,11 +81,11 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "node-unrar-js": "^2.0.2",
     "shadcn": "^4.12.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5",
-    "vitest": "^3.2.4",
-    "node-unrar-js": "^2.0.2"
+    "vitest": "^3.2.4"
   }
 }
