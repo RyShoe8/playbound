@@ -133,6 +133,11 @@ function toEdition(doc: LeanEdition): Edition {
     const seedMatch = seedEditions.find(
       (s) => s.gameSlug === gameSlugStr && s.slug === editionSlugStr
     );
+    // Freedoom's engine choice is functional, not cosmetic: GZDoom is the
+    // singleplayer build while Zandronum is the party-compatible build. Keep
+    // old Mongo rows from overriding those curated labels/capabilities and
+    // causing party clients to present the wrong installer.
+    const useCuratedFreedoomMetadata = gameSlugStr === "freedoom" && Boolean(seedMatch);
     if (
       seedMatch &&
       (JSON.stringify(installConfig).includes("sahaquiel.us") ||
@@ -168,16 +173,20 @@ function toEdition(doc: LeanEdition): Edition {
       gameId: doc.gameId ? String(doc.gameId) : undefined,
       gameSlug: gameSlugStr,
       slug: editionSlugStr,
-      name: str(doc.name),
-      shortDescription: str(doc.shortDescription),
+      name: useCuratedFreedoomMetadata ? seedMatch!.name : str(doc.name),
+      shortDescription: useCuratedFreedoomMetadata
+        ? seedMatch!.shortDescription
+        : str(doc.shortDescription),
       description: str(doc.description),
 
-      type: (doc.type as EditionType) ?? "community",
+      type: useCuratedFreedoomMetadata
+        ? seedMatch!.type ?? "community"
+        : (doc.type as EditionType) ?? "community",
       status: (doc.status as EditionStatus) ?? "active",
       visibility: (doc.visibility as EditionVisibility) ?? "public",
 
-      sortOrder: Number(doc.sortOrder) || 0,
-      isDefault: Boolean(doc.isDefault),
+      sortOrder: useCuratedFreedoomMetadata ? seedMatch!.sortOrder ?? 0 : Number(doc.sortOrder) || 0,
+      isDefault: useCuratedFreedoomMetadata ? Boolean(seedMatch!.isDefault) : Boolean(doc.isDefault),
 
       branding: {
         logo: (branding.logo as string) || undefined,
@@ -209,9 +218,9 @@ function toEdition(doc: LeanEdition): Edition {
       Array.isArray(doc.platforms) && doc.platforms.length > 0
         ? (doc.platforms as string[])
         : seedMatch?.platforms,
-    features: (doc.features as string[]) ?? [],
-    tags: (doc.tags as string[]) ?? [],
-    aliases: (doc.aliases as string[]) ?? [],
+    features: useCuratedFreedoomMetadata ? seedMatch!.features ?? [] : (doc.features as string[]) ?? [],
+    tags: useCuratedFreedoomMetadata ? seedMatch!.tags ?? [] : (doc.tags as string[]) ?? [],
+    aliases: useCuratedFreedoomMetadata ? seedMatch!.aliases ?? [] : (doc.aliases as string[]) ?? [],
     serverName: (doc.serverName as string) || undefined,
     languages: (doc.languages as string[]) ?? [],
 

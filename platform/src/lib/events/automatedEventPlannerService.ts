@@ -152,9 +152,19 @@ export async function sendAdvanceDiscordAnnouncement(params: {
   };
 
   try {
-    const res = await fetch(webhookUrl, {
+    const isBotWorker = !webhookUrl.includes("/api/webhooks/");
+    const targetUrl = isBotWorker
+      ? `${webhookUrl.replace(/\/$/, "")}/events/announce`
+      : webhookUrl;
+    const botSecret = process.env.BOT_WEBHOOK_SECRET || process.env.DISCORD_BOT_WEBHOOK_SECRET;
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (isBotWorker && botSecret) {
+      headers["authorization"] = `Bearer ${botSecret}`;
+    }
+
+    const res = await fetch(targetUrl, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10_000),
     });
@@ -274,9 +284,19 @@ export async function sendSilentDiscordAnnouncement(params: {
   };
 
   try {
-    const res = await fetch(webhookUrl, {
+    const isBotWorker = !webhookUrl.includes("/api/webhooks/");
+    const targetUrl = isBotWorker
+      ? `${webhookUrl.replace(/\/$/, "")}/events/announce`
+      : webhookUrl;
+    const botSecret = process.env.BOT_WEBHOOK_SECRET || process.env.DISCORD_BOT_WEBHOOK_SECRET;
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (isBotWorker && botSecret) {
+      headers["authorization"] = `Bearer ${botSecret}`;
+    }
+
+    const res = await fetch(targetUrl, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10_000),
     });

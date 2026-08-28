@@ -574,7 +574,8 @@ done < <(node --input-type=module -e '
   const { recipes } = await import(pathToFileURL(process.argv[1]).href);
   for (const [slug, r] of Object.entries(recipes)) {
     const protos = r.protocol === "both" ? ["tcp", "udp"] : [r.protocol];
-    for (const proto of protos) console.log(r.portStart + ":" + r.portEnd + " " + proto + " " + slug);
+    const range = r.portStart === r.portEnd ? String(r.portStart) : r.portStart + ":" + r.portEnd;
+    for (const proto of protos) console.log(range + " " + proto + " " + slug);
   }
 ' "$AGENT_DIR/recipes.js")
 
