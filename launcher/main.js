@@ -5161,21 +5161,41 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
 }
 
 function cancelInstallQueueItem(slug, editionSlug) {
-  const key = installJobKey(slug, editionSlug);
-  const task = installQueue.find((t) => t.id === key);
+  const normEdition = editionSlug || null;
+  const key = installJobKey(slug, normEdition);
+  let task = installQueue.find(
+    (t) => t.id === key || (t.slug === slug && (t.editionSlug || null) === normEdition)
+  );
+  if (!task) {
+    task = installQueue.find((t) => t.slug === slug);
+  }
   if (!task) return { ok: false, error: "Install not found in queue" };
 
   task.cancelled = true;
+  task.status = "cancelled";
   task.message = "Cancelled";
 
-  if (activeInstallTask === task) {
+  try {
     task.abortController?.abort();
-    return { ok: true };
+  } catch (err) {
+    console.warn("abort failed:", err);
+  }
+
+  if (activeInstallTask === task) {
+    activeInstallTask = null;
+    activeDownloadSignal = null;
   }
 
   const idx = installQueue.indexOf(task);
   if (idx >= 0) installQueue.splice(idx, 1);
+  gameInstallJobs.delete(task.id);
+  gameInstallJobs.delete(key);
+
   broadcastInstallQueue();
+  sendProgress({ phase: "cancelled", slug, message: "Install cancelled." });
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("install-scan", { slug, phase: "cancelled", message: "Install cancelled." });
+  }
   return { ok: true };
 }
 
