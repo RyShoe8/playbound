@@ -21,6 +21,8 @@ export const CATALOG_GAME_SLUG_ALIASES: Record<string, string> = {
    */
   "gradius-remake": "gradius",
   "metal-slug": "metal-slug-remake",
+  openlara: "tomb-raider-123",
+  openmohaa: "medal-of-honor-allied-assault",
   "re-volt": "re-volt-rvgl",
   revolt: "re-volt-rvgl",
   rvgl: "re-volt-rvgl",

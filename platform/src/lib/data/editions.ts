@@ -1828,7 +1828,7 @@ export const editions: EditionSeed[] = [
     verificationLevel: "playbound_verified",
   },
   {
-    gameSlug: "openmohaa",
+    gameSlug: "medal-of-honor-allied-assault",
     slug: "openmohaa",
     name: "OpenMOHAA Modern Engine (Default)",
     shortDescription: "Modern 64-bit id Tech 3 engine with widescreen 4K and raw input.",
