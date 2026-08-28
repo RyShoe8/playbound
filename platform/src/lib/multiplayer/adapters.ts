@@ -403,7 +403,22 @@ export const MULTIPLAYER_ADAPTERS: Record<string, GameMultiplayerAdapter> = {
     client: {
       launchArguments: ["+connect", "{host}:{port}"],
     },
-    notes: "Quake III dedicated server with +connect CLI argument.",
+    selfHost: {
+      port: 27960,
+      protocol: "udp",
+      verified: true,
+      inGameSteps: [
+        "Host: Multiplayer → Create Server → Fight",
+        "Friends: Click 'Join Game' in Launcher (or in-game: press ~ and type \\connect <host_ip>:27960)",
+      ],
+    },
+    virtualLan: {
+      inGameSteps: [
+        "Host: Multiplayer → Create Server → Fight",
+        "Friends: Click 'Join Game' in Launcher or in-game: Multiplayer → Specify → Host IP : 27960",
+      ],
+    },
+    notes: "Quake III dedicated server with +connect CLI argument and Virtual LAN auto-connect.",
   },
 
   xonotic: {
