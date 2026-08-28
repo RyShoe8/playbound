@@ -132,6 +132,11 @@ contextBridge.exposeInMainWorld("playbound", {
   provisionPartyDiscord: (partyId) => ipcRenderer.invoke("provision-party-discord", partyId),
   // Join the party's overlay segment and point the game's saved-adapter file at it.
   prepareVirtualLan: (opts) => ipcRenderer.invoke("prepare-virtual-lan", opts),
+  onVirtualLanProgress: (cb) => {
+    const listener = (_event, msg) => cb(msg);
+    ipcRenderer.on("virtual-lan-progress", listener);
+    return () => ipcRenderer.removeListener("virtual-lan-progress", listener);
+  },
   getPartyChat: (partyId, after) => ipcRenderer.invoke("get-party-chat", partyId, after || null),
   sendPartyChat: (partyId, content) => ipcRenderer.invoke("send-party-chat", partyId, content),
   /** Prefers the Discord desktop app, falls back to the browser. */

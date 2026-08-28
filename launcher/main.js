@@ -9970,10 +9970,19 @@ function duneLegacyHasPakData(exePath, dir) {
  * file leaves the player picking from a dropdown anyway. Each failure returns
  * a reason the party window can show verbatim rather than a bare false.
  */
-ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
+ipcMain.handle("prepare-virtual-lan", async (event, opts) => {
   const { partyId, slug, adapterFile, editionSlug, isLeader } = opts || {};
+  const reportProgress = (msg) => {
+    try {
+      event?.sender?.send("virtual-lan-progress", msg);
+    } catch {
+      /* ignore */
+    }
+  };
+
   try {
-    const status = await virtualLan.overlayStatus();
+    reportProgress("Checking network client…");
+    const status = await virtualLan.overlayStatus(reportProgress);
     if (!status.installed) {
       // overlayStatus already tried auto-install; if we're still here the
       // bundled MSI was missing or the user declined UAC.
@@ -9993,13 +10002,14 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
      * The setup key is fetched rather than carried in the party payload — it
      * enrols a machine, so it only ever travels to a confirmed member.
      */
+    reportProgress("Enrolling in party network…");
     const enrollment = await launcherJson(
       `/api/parties/${encodeURIComponent(partyId)}/lan`,
       { method: "POST" }
     );
     if (enrollment?.error) return { error: enrollment.error };
 
-    const joined = await virtualLan.joinNetwork(enrollment);
+    const joined = await virtualLan.joinNetwork(enrollment, reportProgress);
     if (joined.error) {
       return {
         error: joined.error,
@@ -10008,15 +10018,17 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
       };
     }
 
-    const adapterName = await virtualLan.waitForAdapter();
+    const adapterName = await virtualLan.waitForAdapter(45_000, reportProgress);
     if (!adapterName) {
       return { error: "The network adapter did not come up. Try Join Game again." };
     }
 
-    const adapterAddress = await virtualLan.resolveAdapterAddress();
+    const adapterAddress = await virtualLan.waitForAdapterAddress(45_000, reportProgress);
     if (!adapterAddress) {
       return { error: "The party network came up without an address. Try Join Game again." };
     }
+
+    reportProgress("Registering network presence…");
     const reported = await launcherJson(
       `/api/parties/${encodeURIComponent(partyId)}/lan`,
       { method: "POST", body: { address: adapterAddress } }
@@ -10038,6 +10050,7 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
 
     let pointed = false;
     if (adapterFile) {
+      reportProgress("Pointing game at network adapter…");
       const gameDir = resolveGameDirForSlug(slug, editionSlug || null);
       pointed = await virtualLan.writeAdapterFile(gameDir, adapterFile, adapterName);
       if (!pointed) {
@@ -10047,6 +10060,7 @@ ipcMain.handle("prepare-virtual-lan", async (_event, opts) => {
         };
       }
     }
+    reportProgress("Party network connected.");
     return { ok: true, adapterName, adapterAddress, pointed };
   } catch (err) {
     const message = err?.message || String(err);

@@ -116,7 +116,7 @@ function bundledMsiPath() {
  * PowerShell's `Start-Process -Verb RunAs` to trigger a single UAC prompt.
  * The user sees one dialog the first time they join a party; never again.
  */
-async function autoInstallNetBird() {
+async function autoInstallNetBird(onProgress) {
   const msi = bundledMsiPath();
   try {
     if (!fs.existsSync(msi)) {
@@ -125,6 +125,8 @@ async function autoInstallNetBird() {
   } catch {
     return { error: "Could not check for bundled NetBird installer.", needsInstall: true };
   }
+
+  onProgress?.("Installing network client (approve the Windows prompt)…");
 
   // PowerShell Start-Process -Wait -Verb RunAs triggers a single UAC prompt
   // and blocks until the MSI completes.
@@ -138,7 +140,16 @@ async function autoInstallNetBird() {
 
   // Verify the CLI is now discoverable.
   const cli = findCli();
-  if (cli) return { ok: true };
+  if (cli) {
+    onProgress?.("Starting network service…");
+    // Wait briefly for the NetBird service to finish starting up.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const status = await run(cli, ["status"]);
+      if (status.ok || !status.stderr.toLowerCase().includes("daemon")) break;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    return { ok: true };
+  }
 
   // The MSI ran but the CLI still is not where we expect it. Either the user
   // declined UAC or the install failed silently.
@@ -157,12 +168,12 @@ const DOWNLOAD_URL = "https://pkgs.netbird.io/windows/x64";
  * the common one: the CLI talks to a privileged service, so a perfectly
  * installed NetBird still refuses an unelevated launcher.
  */
-async function overlayStatus() {
+async function overlayStatus(onProgress) {
   let cli = findCli();
 
   // Auto-install from the bundled MSI if NetBird is not present.
   if (!cli) {
-    const install = await autoInstallNetBird();
+    const install = await autoInstallNetBird(onProgress);
     if (!install.ok) {
       return {
         installed: false,
@@ -208,7 +219,7 @@ async function overlayStatus() {
  * `netbird up` is idempotent — an already-connected peer re-registers against
  * the new key and picks up the party's group rather than erroring.
  */
-async function joinNetwork({ managementUrl, setupKey }) {
+async function joinNetwork({ managementUrl, setupKey }, onProgress) {
   const cli = findCli();
   if (!cli) {
     return {
@@ -222,24 +233,29 @@ async function joinNetwork({ managementUrl, setupKey }) {
     return { error: "Invalid management URL" };
   }
 
-  const res = await run(cli, [
-    "up",
-    "--management-url",
-    String(managementUrl),
-    "--setup-key",
-    String(setupKey),
-  ]);
-  if (!res.ok) {
-    const msg = res.error || "Could not join the party network";
-    if (/ENOENT/i.test(msg)) {
+  onProgress?.("Connecting to party network…");
+
+  // Retry up to 3 times in case the daemon was starting up.
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await run(cli, [
+      "up",
+      "--management-url",
+      String(managementUrl),
+      "--setup-key",
+      String(setupKey),
+    ]);
+    if (res.ok) return { ok: true };
+    lastError = res.error || "Could not join the party network";
+    if (/ENOENT/i.test(lastError)) {
       return {
         error: "PlayBound Connect needs the NetBird network client for this game.",
         needsInstall: true,
       };
     }
-    return { error: msg };
+    await new Promise((r) => setTimeout(r, 1500));
   }
-  return { ok: true };
+  return { error: lastError || "Could not join the party network" };
 }
 
 async function leaveNetwork() {
@@ -250,8 +266,8 @@ async function leaveNetwork() {
 
 /**
  * The adapter's *friendly* name — what the game shows in its dropdown and what
- * its saved-adapter file expects. The CLI reports interface details, not the
- * Windows friendly name, so this has to come from the OS.
+ * its saved-adapter file expects. On Windows, NetBird creates a Wintun interface
+ * named `wt0` (or `wt*`) with description `WireGuard Tunnel`.
  */
 async function resolveAdapterName() {
   if (process.platform !== "win32") return null;
@@ -259,7 +275,7 @@ async function resolveAdapterName() {
     "-NoProfile",
     "-NonInteractive",
     "-Command",
-    "(Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*NetBird*' -or $_.Name -like '*netbird*' } | Select-Object -First 1).Name",
+    "(Get-NetAdapter | Where-Object { $_.InterfaceDescription -like '*NetBird*' -or $_.Name -like '*netbird*' -or $_.InterfaceDescription -like '*WireGuard*' -or $_.Name -like 'wt*' } | Select-Object -First 1).Name",
   ]);
   if (!res.ok) return null;
   const name = res.stdout.trim();
@@ -267,12 +283,31 @@ async function resolveAdapterName() {
 }
 
 async function resolveAdapterAddress() {
+  // First attempt: read the assigned NetBird IP directly from CLI status JSON.
+  const cli = findCli();
+  if (cli) {
+    const statusRes = await run(cli, ["status", "--json"]);
+    if (statusRes.ok) {
+      try {
+        const data = JSON.parse(statusRes.stdout);
+        const rawIp = data?.netbirdIp;
+        if (rawIp) {
+          const ip = String(rawIp).split("/")[0].trim();
+          if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip)) return ip;
+        }
+      } catch {
+        /* fallback to OS query */
+      }
+    }
+  }
+
+  // Fallback: PowerShell query for wt* or NetBird adapter IPv4 address.
   if (process.platform !== "win32") return null;
   const res = await run("powershell", [
     "-NoProfile",
     "-NonInteractive",
     "-Command",
-    "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -like '*netbird*' } | Select-Object -First 1).IPAddress",
+    "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -like '*netbird*' -or $_.InterfaceAlias -like 'wt*' } | Select-Object -First 1).IPAddress",
   ]);
   if (!res.ok) return null;
   const address = res.stdout.trim();
@@ -334,13 +369,28 @@ async function startDiscoveryBridge({ localAddress, getPeerAddresses }) {
  * Wait for the adapter to come up. `up` returns before the interface is
  * registered, so the caller would otherwise write an empty adapter name.
  */
-async function waitForAdapter(timeoutMs = 30_000) {
+async function waitForAdapter(timeoutMs = 45_000, onProgress) {
   const deadline = Date.now() + timeoutMs;
+  onProgress?.("Configuring virtual network adapter…");
   for (;;) {
     const name = await resolveAdapterName();
     if (name) return name;
     if (Date.now() >= deadline) return null;
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+}
+
+/**
+ * Wait for the virtual adapter to receive its overlay IP address.
+ */
+async function waitForAdapterAddress(timeoutMs = 45_000, onProgress) {
+  const deadline = Date.now() + timeoutMs;
+  onProgress?.("Acquiring network address…");
+  for (;;) {
+    const address = await resolveAdapterAddress();
+    if (address) return address;
+    if (Date.now() >= deadline) return null;
+    await new Promise((r) => setTimeout(r, 1500));
   }
 }
 
@@ -373,5 +423,6 @@ module.exports = {
   startDiscoveryBridge,
   stopDiscoveryBridge,
   waitForAdapter,
+  waitForAdapterAddress,
   writeAdapterFile,
 };
