@@ -155,6 +155,7 @@ export async function GET() {
     logs,
     candidateGames,
     hostConfigured: hostHealth?.configured ?? false,
+    botConfigured: Boolean(process.env.DISCORD_BOT_WEBHOOK_URL),
   });
 }
 

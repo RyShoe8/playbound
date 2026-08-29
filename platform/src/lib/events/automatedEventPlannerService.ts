@@ -71,6 +71,34 @@ export async function saveAutomatedEventConfig(
   return doc;
 }
 
+function resolveDiscordAnnouncementTarget(customUrl?: string | null): {
+  targetUrl: string | null;
+  isBotWorker: boolean;
+} {
+  const botWorkerUrl = process.env.DISCORD_BOT_WEBHOOK_URL?.trim();
+  const configured = customUrl?.trim() || process.env.AUTONOMOUS_DISCORD_WEBHOOK_URL?.trim();
+
+  // If a PlayBound Discord Bot worker is available, prefer it so that announcements
+  // are guaranteed to post strictly to the dedicated #events channel via bot permissions,
+  // preventing channel-locked Discord webhooks (which often default to #general)
+  // from posting to the wrong channel.
+  let url = configured;
+  if (!url || (botWorkerUrl && url.includes("/api/webhooks/"))) {
+    url = botWorkerUrl || configured;
+  }
+
+  if (!url || !url.startsWith("http")) {
+    return { targetUrl: null, isBotWorker: false };
+  }
+
+  const isBotWorker = !url.includes("/api/webhooks/");
+  const targetUrl = isBotWorker
+    ? `${url.replace(/\/$/, "")}/events/announce`
+    : url;
+
+  return { targetUrl, isBotWorker };
+}
+
 /**
  * Dispatches a Discord webhook notification for when an event is scheduled in advance.
  */
@@ -85,13 +113,10 @@ export async function sendAdvanceDiscordAnnouncement(params: {
   eventId?: string | null;
   coverImage?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
-  const webhookUrl =
-    params.webhookUrl?.trim() ||
-    process.env.AUTONOMOUS_DISCORD_WEBHOOK_URL ||
-    process.env.DISCORD_BOT_WEBHOOK_URL;
+  const { targetUrl, isBotWorker } = resolveDiscordAnnouncementTarget(params.webhookUrl);
 
-  if (!webhookUrl || !webhookUrl.startsWith("http")) {
-    return { ok: false, error: "No valid Discord Webhook URL configured" };
+  if (!targetUrl) {
+    return { ok: false, error: "No valid Discord Webhook URL or Bot Worker configured" };
   }
 
   const startTimestampUnix = Math.floor(params.startsAt.getTime() / 1000);
@@ -152,10 +177,6 @@ export async function sendAdvanceDiscordAnnouncement(params: {
   };
 
   try {
-    const isBotWorker = !webhookUrl.includes("/api/webhooks/");
-    const targetUrl = isBotWorker
-      ? `${webhookUrl.replace(/\/$/, "")}/events/announce`
-      : webhookUrl;
     const botSecret = process.env.BOT_WEBHOOK_SECRET || process.env.DISCORD_BOT_WEBHOOK_SECRET;
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (isBotWorker && botSecret) {
@@ -196,13 +217,10 @@ export async function sendSilentDiscordAnnouncement(params: {
   customTitle?: string | null;
   customMessage?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
-  const webhookUrl =
-    params.webhookUrl?.trim() ||
-    process.env.AUTONOMOUS_DISCORD_WEBHOOK_URL ||
-    process.env.DISCORD_BOT_WEBHOOK_URL;
+  const { targetUrl, isBotWorker } = resolveDiscordAnnouncementTarget(params.webhookUrl);
 
-  if (!webhookUrl || !webhookUrl.startsWith("http")) {
-    return { ok: false, error: "No valid Discord Webhook URL configured" };
+  if (!targetUrl) {
+    return { ok: false, error: "No valid Discord Webhook URL or Bot Worker configured" };
   }
 
   const joinParams = new URLSearchParams({
@@ -284,10 +302,6 @@ export async function sendSilentDiscordAnnouncement(params: {
   };
 
   try {
-    const isBotWorker = !webhookUrl.includes("/api/webhooks/");
-    const targetUrl = isBotWorker
-      ? `${webhookUrl.replace(/\/$/, "")}/events/announce`
-      : webhookUrl;
     const botSecret = process.env.BOT_WEBHOOK_SECRET || process.env.DISCORD_BOT_WEBHOOK_SECRET;
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (isBotWorker && botSecret) {

@@ -1046,15 +1046,24 @@ async function ensureEventsChannel(guild) {
     if (ch?.isTextBased()) return ch;
   }
   await guild.channels.fetch();
-  const candidates = [...guild.channels.cache.values()].filter(
-    (c) =>
-      c &&
-      c.type === ChannelType.GuildText &&
-      c.name.toLowerCase() === "events"
+  const allText = [...guild.channels.cache.values()].filter(
+    (c) => c && c.type === ChannelType.GuildText
   );
-  const preferred = candidates.find((c) => !isGameOrEventCategoryName(c.parent?.name));
-  if (preferred) return preferred;
-  if (candidates[0]) return candidates[0];
+
+  // 1. Exact match for "events"
+  const exact = allText.filter((c) => c.name.toLowerCase() === "events");
+  const preferredExact = exact.find((c) => !isGameOrEventCategoryName(c.parent?.name));
+  if (preferredExact) return preferredExact;
+  if (exact[0]) return exact[0];
+
+  // 2. Fuzzy match for channels with "event" in name (e.g. 📅-events, game-events, event-announcements)
+  const fuzzy = allText.filter(
+    (c) =>
+      c.name.toLowerCase().includes("event") &&
+      !c.name.toLowerCase().includes("general") &&
+      !isGameOrEventCategoryName(c.parent?.name)
+  );
+  if (fuzzy[0]) return fuzzy[0];
 
   try {
     return await guild.channels.create({
