@@ -57,6 +57,29 @@ three games.
   PlayBound specifically; why-we-picked-it is mission-framed ("We picked X
   because…"), not a personal anecdote. See the `feedback-editorial-voice`
   memory for the full standard and a worked example.
+- Before writing, read these published pages as the canonical examples of
+  PlayBound's editorial voice:
+  - [Marathon 2](https://playbound.club/games/marathon-2) — concrete sensory
+    detail, a strong opinion, and historical context without sounding like a
+    museum placard.
+  - [HoloCure - Save the Fans!](https://playbound.club/games/holocure) — warm,
+    delighted, specific, and willing to say when a free game is absurdly more
+    generous than expected.
+  - [Mega Man Unlimited](https://playbound.club/games/mega-man-unlimited) —
+    candid about legal/status caveats while still making a sharp case for why
+    the game is worth somebody's time.
+- Write like an enthusiastic, well-informed friend who has a point of view.
+  Name the weapon, animation, enemy, system, joke, frustration, or surprise
+  that makes the game memorable. Prefer vivid claims ("an emulator and a
+  prayer," "lost three hours") over category prose ("offers engaging combat
+  and progression"). It is fine to be funny, skeptical, delighted, or blunt.
+  Do not sound like a press release, encyclopedia entry, store description,
+  feature matrix, or AI-generated product summary.
+- Every section has a different job: the tagline makes a promise; **That One
+  Thing** gives the one detail we would excitedly tell a friend; the long
+  description explains what playing actually feels like and names the honest
+  catches; **Why we picked it** makes PlayBound's opinion unmistakable. Do not
+  repeat the same neutral facts in all four fields.
 - PlayBound Bar checkboxes are a claim, not a formality. Only check **Tested
   by PlayBound** after actually installing and playing it yourself. A game
   with that box unchecked stays in **Testing** status, not **Published** —
