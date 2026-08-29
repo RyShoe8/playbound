@@ -33,7 +33,8 @@
     "test:controller": "node services/gameControllerConfig.test.js",
     "test:couch": "node services/couch/protocol.test.js",
     "test:runner": "node services/CompatibilityRunner.test.js",
-    "test:gamelauncher": "node services/GameLauncher.test.js"
+    "test:gamelauncher": "node services/GameLauncher.test.js",
+    "test:vigem": "node services/couch/windowsVigem.test.js"
   },
   "author": "PlayBound",
   "license": "MIT",
