@@ -29,47 +29,71 @@ function shortMapLabel(hash: string): string {
 }
 
 /**
+ * Fast aggregate player count query for live stats and card views.
+ * Bypasses per-map YAML fetches and GeoIP queries to complete in ~2-3 seconds.
+ */
+export async function fetchOpenRaPlayerCount(): Promise<{ players: number; servers: number }> {
+  const res = await fetch("https://master.openra.net/games?protocol=2&type=json", {
+    headers: { "user-agent": "PlayBound/1.0", accept: "application/json" },
+    next: { revalidate: 30 },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) throw new Error(`OpenRA master returned ${res.status}`);
+  const rows = (await res.json()) as OpenRaRow[];
+  if (!Array.isArray(rows)) return { players: 0, servers: 0 };
+  let players = 0;
+  for (const row of rows) {
+    players += Number(row.players) || 0;
+  }
+  return { players, servers: rows.length };
+}
+
+/**
  * Resolve OpenRA map UIDs to Resource Center titles (batch YAML).
- * Unknown / official bundled maps stay as short labels.
+ * Batches are processed in parallel with a safe timeout so slow/unreachable
+ * maps never hang the server list.
  */
 async function resolveMapTitles(hashes: string[]): Promise<Map<string, string>> {
   const titles = new Map<string, string>();
   const unique = [...new Set(hashes.filter(Boolean))];
   const batchSize = 40;
+  const batches: string[][] = [];
 
   for (let i = 0; i < unique.length; i += batchSize) {
-    const batch = unique.slice(i, i + batchSize);
-    try {
-      const url = `https://resource.openra.net/map/hash/${batch.join(",")}/yaml`;
-      const res = await fetch(url, {
-        headers: { "user-agent": "PlayBound/1.0", accept: "text/yaml,*/*" },
-        next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(12_000),
-      });
-      if (!res.ok) continue;
-      const text = await res.text();
-      // Format:
-      // <hash>:
-      // 	title: Some Map
-      let current: string | null = null;
-      for (const line of text.split(/\r?\n/)) {
-        const header = line.match(/^([0-9a-f]{40})\s*:\s*$/i);
-        if (header) {
-          current = header[1].toLowerCase();
-          continue;
-        }
-        if (!current) continue;
-        const title = line.match(/^\s+title:\s*(.+)\s*$/i);
-        if (title) {
-          const value = title[1].trim().replace(/^["']|["']$/g, "");
-          if (value) titles.set(current, value);
-          current = null;
-        }
-      }
-    } catch {
-      // Fail soft — leave unresolved hashes for short labels
-    }
+    batches.push(unique.slice(i, i + batchSize));
   }
+
+  await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const url = `https://resource.openra.net/map/hash/${batch.join(",")}/yaml`;
+        const res = await fetch(url, {
+          headers: { "user-agent": "PlayBound/1.0", accept: "text/yaml,*/*" },
+          next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (!res.ok) return;
+        const text = await res.text();
+        let current: string | null = null;
+        for (const line of text.split(/\r?\n/)) {
+          const header = line.match(/^([0-9a-f]{40})\s*:\s*$/i);
+          if (header) {
+            current = header[1].toLowerCase();
+            continue;
+          }
+          if (!current) continue;
+          const title = line.match(/^\s+title:\s*(.+)\s*$/i);
+          if (title) {
+            const value = title[1].trim().replace(/^["']|["']$/g, "");
+            if (value) titles.set(current, value);
+            current = null;
+          }
+        }
+      } catch {
+        // Fail soft — leave unresolved hashes for short labels
+      }
+    })
+  );
 
   return titles;
 }
@@ -109,14 +133,18 @@ export async function fetchOpenRaServers(): Promise<GameServer[]> {
   mapped.sort((a, b) => (b.players ?? -1) - (a.players ?? -1) || a.name.localeCompare(b.name));
   const capped = mapped.slice(0, MAX_SERVERS);
 
-  const titles = await resolveMapTitles(
+  const titlesPromise = resolveMapTitles(
     capped.map((s) => s.map).filter((m): m is string => Boolean(m))
   );
-  for (const server of capped) {
+  const geoPromise = attachGeo(capped);
+
+  const [titles, serversWithGeo] = await Promise.all([titlesPromise, geoPromise]);
+
+  for (const server of serversWithGeo) {
     if (!server.map) continue;
     const key = server.map.toLowerCase();
     server.map = titles.get(key) || shortMapLabel(server.map);
   }
 
-  return attachGeo(capped);
+  return serversWithGeo;
 }

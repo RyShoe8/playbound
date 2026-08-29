@@ -6,7 +6,7 @@ import { fetchFreecivServers } from "./providers/freeciv";
 import { fetchHurryCurryServers } from "./providers/hurry-curry";
 import { fetchLuantiServers } from "./providers/luanti";
 import { fetchOpenArenaServers } from "./providers/openarena";
-import { fetchOpenRaServers } from "./providers/openra";
+import { fetchOpenRaPlayerCount, fetchOpenRaServers } from "./providers/openra";
 import { fetchRemoteMaster } from "./providers/remote";
 import { fetchSuperTuxKartServers } from "./providers/supertuxkart";
 import { fetchTeamFortress2Servers } from "./providers/team-fortress-2";
@@ -71,7 +71,7 @@ async function fetchRemoteWithLobbyAuth(slug: string): Promise<GameServer[]> {
 }
 
 const providers: Record<string, ServerProvider> = {
-  openra: { slug: "openra", fetchServers: fetchOpenRaServers },
+  openra: { slug: "openra", fetchServers: fetchOpenRaServers, fetchPlayerCount: fetchOpenRaPlayerCount },
   luanti: { slug: "luanti", fetchServers: fetchLuantiServers },
   // First-party registry; servers opt in with the server's --register flag.
   "hurry-curry": { slug: "hurry-curry", fetchServers: fetchHurryCurryServers },
@@ -439,4 +439,20 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
     console.error(`[servers] ${slug}:`, err);
     return { supported: true, servers: [], updatedAt, error: message };
   }
+}
+
+export async function getPlayerCountForGame(
+  slug: string
+): Promise<{ players: number; servers: number }> {
+  const provider = providers[slug];
+  if (!provider) return { players: 0, servers: 0 };
+  if (provider.fetchPlayerCount) {
+    return provider.fetchPlayerCount();
+  }
+  const result = await listServersForGame(slug);
+  const servers = result.servers ?? [];
+  return {
+    players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
+    servers: servers.length,
+  };
 }
