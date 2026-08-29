@@ -8746,6 +8746,53 @@ ipcMain.handle("play", (_event, slug, join, editionSlug) =>
   playGame(slug, join || null, editionSlug || null)
 );
 ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
+
+/**
+ * Whether "Join Multiplayer" can do what it says for this game.
+ *
+ * The connect syntax lives in services/connectArgs.js, which is the launcher's
+ * own knowledge and not something the website can see — so this is answered
+ * here rather than by the API. An entry that is explicitly null means the
+ * client joins from an in-game menu, which is not a one-click join.
+ */
+ipcMain.on("join-capability", (event, slug) => {
+  let canCommandLineJoin = false;
+  try {
+    canCommandLineJoin = hasClientConnectArgs(slug) && !joinsFromInGameMenu(slug);
+  } catch {
+    canCommandLineJoin = false;
+  }
+  event.returnValue = { canCommandLineJoin };
+});
+
+/**
+ * The server Join Multiplayer would drop the player into.
+ *
+ * Asked of the site rather than computed here: the ranking, the population
+ * window and the latency cut are shared with the website so both offer the
+ * same server, and the site is already talking to every master server. A
+ * failure returns a reason rather than throwing, because the button turns each
+ * one into different words.
+ */
+ipcMain.handle("find-best-server", async (_event, slug) => {
+  const clean = String(slug || "").trim();
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(clean)) return { server: null, reason: "unsupported" };
+  try {
+    const res = await fetch(
+      `${getApiBase()}/api/games/${encodeURIComponent(clean)}/best-server`,
+      {
+        headers: launcherApiHeaders({ accept: "application/json" }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000),
+      }
+    );
+    if (!res.ok) return { server: null, reason: "unsupported" };
+    return await res.json();
+  } catch (err) {
+    console.warn("[join] best-server lookup failed:", err?.message || err);
+    return { server: null, reason: "none-suitable" };
+  }
+});
 ipcMain.handle("post-telemetry", async (_event, payload) => {
   try {
     const body =

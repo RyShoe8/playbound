@@ -37,6 +37,15 @@ contextBridge.exposeInMainWorld("playbound", {
     return ipcRenderer.invoke("play", slug, join || null, editionSlug || null);
   },
   playMod: (slug) => ipcRenderer.invoke("play-mod", slug),
+  /**
+   * Whether this game can be joined from the command line.
+   *
+   * Synchronous because the library renders a button on it, and the answer is
+   * a lookup in a static table in the main process — going async would mean
+   * every card flickering a button in after paint.
+   */
+  joinCapability: (slug) => ipcRenderer.sendSync("join-capability", slug),
+  findBestServer: (slug) => ipcRenderer.invoke("find-best-server", slug),
   postTelemetry: (payload) => ipcRenderer.invoke("post-telemetry", payload),
   uninstall: (slug, editionSlug) => ipcRenderer.invoke("uninstall", slug, editionSlug || null),
   getInstalled: () => ipcRenderer.invoke("get-installed"),

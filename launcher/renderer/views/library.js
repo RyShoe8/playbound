@@ -979,6 +979,9 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         });
         group.appendChild(play);
 
+        const joinBtn = buildJoinMultiplayerButton(game, ed);
+        if (joinBtn) group.appendChild(joinBtn);
+
         const menuItems = [
           {
             label: "Open folder",
@@ -1427,6 +1430,70 @@ async function toggleOpenCiv3DisplayPanel(block, game) {
       setStatus(err.message || String(err), true);
     }
   });
+}
+
+/**
+ * "Join Multiplayer" — one click into a server worth playing on.
+ *
+ * Only rendered for games the launcher can actually join from the command
+ * line. A button that launches the game and leaves the player to find the
+ * server themselves is not the thing being offered, so games that join from an
+ * in-game menu do not get one.
+ *
+ * The server is chosen when the button is pressed, not when the library is
+ * rendered: deciding it up front would mean polling every provider in the
+ * catalog on every visit to this page, and the answer goes stale in seconds
+ * anyway. The button therefore starts optimistic and reports honestly when
+ * nothing good is available, which is the same shape as Play failing.
+ */
+function buildJoinMultiplayerButton(game, ed) {
+  const slug = game?.slug;
+  if (!slug) return null;
+  const caps = window.playbound?.joinCapability?.(slug);
+  if (!caps?.canCommandLineJoin) return null;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-secondary btn-sm btn-lib-join";
+  btn.textContent = "Join Multiplayer";
+  btn.title = "Find a server with players on it and join";
+
+  btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Finding…";
+    try {
+      const best = await window.playbound.findBestServer(slug);
+      if (!best?.server) {
+        // Each reason needs different words: "nobody is on" and "we could not
+        // judge these servers" are not the same problem for the player.
+        const message =
+          best?.reason === "no-servers"
+            ? `No ${game.title} servers are listed right now.`
+            : best?.reason === "unsupported"
+              ? `PlayBound does not track ${game.title} servers.`
+              : `No ${game.title} server has enough players and a good connection right now.`;
+        setStatus(message, true);
+        return;
+      }
+      const s = best.server;
+      setStatus(`Joining ${s.name || `${s.host}:${s.port}`} — ${s.players}/${s.maxPlayers} players`);
+      await window.playbound.play(
+        slug,
+        { host: s.host, port: s.port, name: s.name, mod: s.mod || undefined },
+        ed?.slug || undefined
+      );
+    } catch (err) {
+      setStatus(err?.message || String(err), true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  return btn;
 }
 
 function buildModsDisclosure(gameMods, modTitles) {
