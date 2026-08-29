@@ -6595,6 +6595,61 @@ function persistEditionExe(slug, edSlug, previousExe, exePath) {
   }
 }
 
+async function maybePrepareRenegadeX(info) {
+  if (process.platform !== "win32") return;
+  const gameDir = info?.dir || (info?.exe ? path.dirname(info.exe) : null);
+
+  const candidates = [
+    path.join(gameDir || "", "redist", "UE3Redist.exe"),
+    path.join(gameDir || "", "Binaries", "Redist", "UE3Redist.exe"),
+    "C:\\Program Files\\Totem Arts Launcher\\redist\\UE3Redist.exe",
+    "C:\\Program Files (x86)\\Totem Arts Launcher\\redist\\UE3Redist.exe",
+  ];
+  const redistExe = candidates.find((p) => fs.existsSync(p));
+
+  // 1. Pre-seed Totem Arts Launcher config so it never shows the warning
+  try {
+    const taConfigDir = path.join(process.env.APPDATA || "", "ta-games-launcher");
+    const taConfigFile = path.join(taConfigDir, "config.json");
+    let cfg = {};
+    if (fs.existsSync(taConfigFile)) {
+      try {
+        cfg = JSON.parse(fs.readFileSync(taConfigFile, "utf8"));
+      } catch {}
+    } else {
+      fs.mkdirSync(taConfigDir, { recursive: true });
+    }
+    if (!cfg.redist_installed) {
+      cfg.redist_installed = true;
+      fs.writeFileSync(taConfigFile, JSON.stringify(cfg, null, "\t"), "utf8");
+    }
+  } catch (err) {
+    console.warn("[renegade-x] Could not pre-seed Totem Arts config:", err?.message || err);
+  }
+
+  // 2. If UE3Redist.exe is found and not yet executed on this machine, run it silently
+  if (redistExe) {
+    const markerFile = path.join(
+      process.env.LOCALAPPDATA || "",
+      "playbound-ue3redist-installed.marker"
+    );
+    if (!fs.existsSync(markerFile)) {
+      try {
+        const { spawn } = require("child_process");
+        const child = spawn(redistExe, ["/q", "/norestart"], {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
+        });
+        child.unref();
+        fs.writeFileSync(markerFile, new Date().toISOString(), "utf8");
+      } catch (err) {
+        console.warn("[renegade-x] UE3Redist silent execution failed:", err?.message || err);
+      }
+    }
+  }
+}
+
 async function playGameInner(slug, join = null, editionSlug = null) {
   const state = loadState();
   const game = ensureGameInstallRecord(state[slug]);
@@ -6663,6 +6718,14 @@ async function playGameInner(slug, join = null, editionSlug = null) {
       await ensureDefaultDisplaySettings(info.exe || info.dir);
     } catch (err) {
       console.warn("[openciv3] display ensure skipped:", err?.message || err);
+    }
+  }
+
+  if (slug === "renegade-x") {
+    try {
+      await maybePrepareRenegadeX(info);
+    } catch (err) {
+      console.warn("[renegade-x] prep skipped:", err?.message || err);
     }
   }
 
