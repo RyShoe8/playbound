@@ -127,6 +127,49 @@ for (const fullPath of loadable) {
   }
 }
 
+/*
+ * Undefined-name check. The one thing neither parsing nor loading can see.
+ *
+ * `isJar` in a launch error handler and `mainWindow` in the notification click
+ * handler were both references to names that do not exist. Both files parse,
+ * so --check passed them; both sit inside a function only some paths reach, so
+ * requiring the module passed them too. They failed at the worst possible
+ * moment instead — while reporting a launch failure, and when a player clicked
+ * a party invite.
+ *
+ * ESLint comes from platform/, which the launcher does not depend on, so a
+ * checkout with only launcher deps installed skips this with a notice rather
+ * than failing a build over a tool it was never given.
+ */
+// The JS entrypoint rather than the .bin shim: a .cmd needs shell:true on
+// Windows, and passing args through a shell is both a deprecation warning and
+// a quoting hazard for paths with spaces.
+const eslintBin = path.join(
+  launcherDir,
+  "..",
+  "platform",
+  "node_modules",
+  "eslint",
+  "bin",
+  "eslint.js"
+);
+const eslintConfig = path.join(launcherDir, "eslint.config.mjs");
+
+if (fs.existsSync(eslintBin) && fs.existsSync(eslintConfig)) {
+  const result = spawnSync(
+    process.execPath,
+    [eslintBin, "--no-config-lookup", "--config", eslintConfig, "."],
+    { cwd: launcherDir, encoding: "utf8" }
+  );
+  if (result.status !== 0) {
+    failed += 1;
+    console.error("\n[check-launcher-syntax] undefined names found:");
+    console.error((result.stdout || result.stderr || "").trimEnd());
+  }
+} else {
+  console.log("[check-launcher-syntax] no-undef check skipped (platform eslint not installed).");
+}
+
 if (failed > 0) {
   console.error(
     `\n[check-launcher-syntax] ${failed} file(s) failed to parse or load — not packaging.`
