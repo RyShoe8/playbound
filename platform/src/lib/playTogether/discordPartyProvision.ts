@@ -8,11 +8,13 @@
 
 import type { Document } from "mongoose";
 import DiscordConnection from "@/lib/models/DiscordConnection";
-import { trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
+import { partyEventProps, trackPartyFailure } from "@/lib/playTogether/partyTelemetry";
 
 type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
+  /** Leader's OS, so these server-side events can be attributed. */
+  leaderOs?: string | null;
   name?: string | null;
   discord?: {
     voiceChannelId?: string | null;
@@ -60,7 +62,7 @@ export async function provisionPartyDiscordVoice(
     });
 
     if (!res.ok) {
-      trackPartyFailure("discord", { op: "provision", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
+      trackPartyFailure("discord", { op: "provision", ...partyEventProps(party), status: res.status });
       return false;
     }
 
@@ -86,8 +88,7 @@ export async function provisionPartyDiscordVoice(
       err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     trackPartyFailure("discord", {
       op: timedOut ? "provision-timeout" : "provision",
-      partyId: String(party._id),
-      gameSlug: party.gameSlug,
+      ...partyEventProps(party),
       message: err,
     });
     return false;
@@ -116,12 +117,12 @@ export async function renamePartyDiscordVoice(
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
-      trackPartyFailure("discord", { op: "rename", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
+      trackPartyFailure("discord", { op: "rename", ...partyEventProps(party), status: res.status });
       return false;
     }
     return true;
   } catch (err) {
-    trackPartyFailure("discord", { op: "rename", partyId: String(party._id), gameSlug: party.gameSlug, message: err });
+    trackPartyFailure("discord", { op: "rename", ...partyEventProps(party), message: err });
     return false;
   }
 }
@@ -147,7 +148,7 @@ export async function placePartyDiscordVoice(party: PartyLike): Promise<boolean>
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
-      trackPartyFailure("discord", { op: "place", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
+      trackPartyFailure("discord", { op: "place", ...partyEventProps(party), status: res.status });
       return false;
     }
     const data = (await res.json()) as { categoryId?: string };
@@ -160,7 +161,7 @@ export async function placePartyDiscordVoice(party: PartyLike): Promise<boolean>
     await party.save();
     return true;
   } catch (err) {
-    trackPartyFailure("discord", { op: "place", partyId: String(party._id), gameSlug: party.gameSlug, message: err });
+    trackPartyFailure("discord", { op: "place", ...partyEventProps(party), message: err });
     return false;
   }
 }
@@ -196,7 +197,7 @@ export async function cleanupPartyDiscordVoice(
     });
 
     if (!res.ok) {
-      trackPartyFailure("discord", { op: "cleanup", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
+      trackPartyFailure("discord", { op: "cleanup", ...partyEventProps(party), status: res.status });
       return false;
     }
 
@@ -204,7 +205,7 @@ export async function cleanupPartyDiscordVoice(
     await party.save();
     return true;
   } catch (err) {
-    trackPartyFailure("discord", { op: "cleanup", partyId: String(party._id), gameSlug: party.gameSlug, message: err });
+    trackPartyFailure("discord", { op: "cleanup", ...partyEventProps(party), message: err });
     return false;
   }
 }
@@ -235,13 +236,13 @@ export async function moveDiscordUsersToPartyVoice(
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
-      trackPartyFailure("discord", { op: "move", partyId: String(party._id), gameSlug: party.gameSlug, status: res.status });
+      trackPartyFailure("discord", { op: "move", ...partyEventProps(party), status: res.status });
       return { moved: 0 };
     }
     const data = (await res.json()) as { moved?: number };
     return { moved: Number(data.moved) || 0 };
   } catch (err) {
-    trackPartyFailure("discord", { op: "move", partyId: String(party._id), gameSlug: party.gameSlug, message: err });
+    trackPartyFailure("discord", { op: "move", ...partyEventProps(party), message: err });
     return { moved: 0 };
   }
 }

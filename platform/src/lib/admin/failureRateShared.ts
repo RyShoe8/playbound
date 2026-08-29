@@ -103,9 +103,18 @@ export function emptyFailureRates(): FailureRates {
   };
 }
 
+/** Not a device. Server-side work, and rows we genuinely could not attribute. */
+export const SERVER_PLATFORM = "Server";
+export const UNKNOWN_PLATFORM = "Unknown";
+
 export function normalizeTelemetryPlatform(raw: unknown): string {
-  if (typeof raw !== "string" || !raw.trim()) return "Unknown";
+  if (typeof raw !== "string" || !raw.trim()) return UNKNOWN_PLATFORM;
   const s = raw.trim().toLowerCase();
+  // "unknown" is a value parseUserAgent actually writes, not an absent field.
+  // It has to land in the Unknown bucket rather than being title-cased into a
+  // platform named "Unknown" by accident — same output, but on purpose.
+  if (s === "unknown") return UNKNOWN_PLATFORM;
+  if (s === "server") return SERVER_PLATFORM;
   if (s.includes("mac") || s.includes("darwin") || s === "osx") return "macOS";
   if (s.includes("win")) return "Windows";
   if (s.includes("linux")) return "Linux";
@@ -117,14 +126,25 @@ export function normalizeTelemetryPlatform(raw: unknown): string {
 
 const PLATFORM_PRIORITY = ["Windows", "macOS", "Linux", "Android", "iOS", "Browser"];
 
+/**
+ * Always last, and in this order. They are answers about attribution rather
+ * than platforms, so a real platform with fewer events still reads above them.
+ */
+const PLATFORM_TRAILING = [SERVER_PLATFORM, UNKNOWN_PLATFORM];
+
 export function sortPlatforms(platforms: string[]): string[] {
+  const rank = (p: string) => {
+    const lead = PLATFORM_PRIORITY.indexOf(p);
+    if (lead !== -1) return lead;
+    const trail = PLATFORM_TRAILING.indexOf(p);
+    // Anything unrecognised sits between the known platforms and the
+    // non-device buckets, so a new OS shows up rather than hiding at the end.
+    if (trail !== -1) return 2000 + trail;
+    return 1000;
+  };
   return [...platforms].sort((a, b) => {
-    const idxA = PLATFORM_PRIORITY.indexOf(a);
-    const idxB = PLATFORM_PRIORITY.indexOf(b);
-    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-    if (idxA !== -1) return -1;
-    if (idxB !== -1) return 1;
-    return a.localeCompare(b);
+    const d = rank(a) - rank(b);
+    return d !== 0 ? d : a.localeCompare(b);
   });
 }
 

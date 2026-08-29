@@ -753,6 +753,12 @@ export async function createParty(opts: {
   wantVoice?: boolean;
   /** Where the room runs. Falls back to the game's default when unset or invalid. */
   hostMode?: string | null;
+  /**
+   * The creator's OS, from the request that opened the party. Recorded so
+   * server-side party telemetry can be attributed to a platform; see the
+   * `leaderOs` note on the Party schema.
+   */
+  leaderOs?: string | null;
 }): Promise<
   | ({ party: PartyPayload; status: 201 | 200; existing?: boolean } & PartyVoiceFollowup)
   | { error: string; status: 400 | 404 }
@@ -815,6 +821,7 @@ export async function createParty(opts: {
         },
       ],
       name: normalizePartyName(opts.name),
+      leaderOs: opts.leaderOs || null,
       gameSlug,
       editionSlug: opts.editionSlug || null,
       modSlugs: opts.modSlugs || [],

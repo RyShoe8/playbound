@@ -13,7 +13,12 @@ import {
   type HostedStatus,
 } from "./catalog";
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
-import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
+import {
+  partyEventProps,
+  trackPartyEvent,
+  trackPartyFailure,
+  trackPartyOk,
+} from "@/lib/playTogether/partyTelemetry";
 
 export type PartyHostFields = {
   roomId?: string | null;
@@ -29,6 +34,8 @@ export type PartyHostFields = {
 type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
+  /** Leader's OS, so these server-side events can be attributed. */
+  leaderOs?: string | null;
   editionSlug?: string | null;
   openRaMod?: string | null;
   maxSize?: number;
@@ -106,12 +113,12 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
     await party.save();
     trackPartyFailure("host", {
       op: "provision",
-      partyId: String(party._id),
+      ...partyEventProps(party),
       gameSlug: slug,
       message: result.error,
     });
     trackPartyEvent("party_hosted_failed", {
-      partyId: String(party._id),
+      ...partyEventProps(party),
       gameSlug: slug,
       message: result.error,
     });
@@ -127,9 +134,9 @@ export async function provisionPartyHost(party: PartyLike): Promise<boolean> {
   hosted.error = null;
   hosted.provisionedAt = new Date();
   await party.save();
-  trackPartyOk("host", { op: "provision", partyId: String(party._id), gameSlug: slug });
+  trackPartyOk("host", { op: "provision", ...partyEventProps(party), gameSlug: slug });
   trackPartyEvent("party_hosted_ready", {
-    partyId: String(party._id),
+    ...partyEventProps(party),
     gameSlug: slug,
     host: result.host,
     port: result.port,
