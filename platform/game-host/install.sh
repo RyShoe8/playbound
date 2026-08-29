@@ -135,23 +135,34 @@ echo "==> wrote $ENV_FILE"
 echo "==> OpenRA dedicated"
 OPENRA_DIR="$GAMES_DIR/openra"
 mkdir -p "$OPENRA_DIR"
-if [[ ! -x "$OPENRA_DIR/OpenRA.Server" ]]; then
+if [[ ! -x "$OPENRA_DIR/OpenRA.Server" || ! -d "$OPENRA_DIR/mods/cnc" || ! -d "$OPENRA_DIR/mods/d2k" ]]; then
   API="https://api.github.com/repos/OpenRA/OpenRA/releases/latest"
-  ASSET_URL="$(curl -fsSL "$API" | jq -r '.assets[] | select(.name | test("Red-Alert.*x86_64\\.AppImage$")) | .browser_download_url' | head -n1)"
-  if [[ -z "$ASSET_URL" || "$ASSET_URL" == "null" ]]; then
-    ASSET_URL="https://github.com/OpenRA/OpenRA/releases/download/release-20250330/OpenRA-Red-Alert-x86_64.AppImage"
+  TAG="$(curl -fsSL "$API" | jq -r '.tag_name // "release-20250330"')"
+  if [[ -z "$TAG" || "$TAG" == "null" ]]; then
+    TAG="release-20250330"
   fi
-  curl -fL --retry 3 -o /tmp/openra.AppImage "$ASSET_URL"
-  chmod +x /tmp/openra.AppImage
-  (cd /tmp && ./openra.AppImage --appimage-extract >/dev/null)
-  if [[ -x /tmp/squashfs-root/usr/lib/openra/OpenRA.Server ]]; then
-    cp -a /tmp/squashfs-root/usr/lib/openra/. "$OPENRA_DIR/"
-  elif [[ -x /tmp/squashfs-root/OpenRA.Server ]]; then
-    cp -a /tmp/squashfs-root/. "$OPENRA_DIR/"
-  else
-    echo "WARN: could not extract OpenRA.Server from AppImage; copy it into $OPENRA_DIR later"
-  fi
-  rm -rf /tmp/openra.AppImage /tmp/squashfs-root
+
+  for mod_img in "OpenRA-Red-Alert-x86_64.AppImage" "OpenRA-Tiberian-Dawn-x86_64.AppImage" "OpenRA-Dune-2000-x86_64.AppImage"; do
+    URL="https://github.com/OpenRA/OpenRA/releases/download/${TAG}/${mod_img}"
+    echo "Fetching $mod_img..."
+    if curl -fL --retry 3 -o /tmp/openra.AppImage "$URL"; then
+      chmod +x /tmp/openra.AppImage
+      (cd /tmp && ./openra.AppImage --appimage-extract >/dev/null 2>&1)
+      ROOT="/tmp/squashfs-root"
+      if [[ -d "$ROOT/usr/lib/openra" ]]; then
+        ROOT="$ROOT/usr/lib/openra"
+      fi
+      if [[ -x "$ROOT/OpenRA.Server" && ! -x "$OPENRA_DIR/OpenRA.Server" ]]; then
+        cp -a "$ROOT/." "$OPENRA_DIR/"
+      elif [[ -d "$ROOT/mods" ]]; then
+        mkdir -p "$OPENRA_DIR/mods"
+        cp -an "$ROOT/mods/." "$OPENRA_DIR/mods/"
+      fi
+      rm -rf /tmp/openra.AppImage /tmp/squashfs-root
+    else
+      echo "WARN: Failed to download $mod_img"
+    fi
+  done
 fi
 if [[ -x "$OPENRA_DIR/OpenRA.Server" ]]; then
   cat > "$OPENRA_DIR/run-server" <<'EOF'
