@@ -1,4 +1,15 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Minus,
+} from "lucide-react";
 import {
   WINDOW_LABELS,
   type FailureRates,
@@ -54,56 +65,129 @@ function Trend({ current, baseline }: { current: Tally; baseline: Tally }) {
   );
 }
 
-function Row({
+function MetricSection({
   label,
   pick,
+  pickPlatform,
   rates,
   emphasis,
+  expanded,
+  onToggle,
 }: {
   label: string;
   pick: (w: FailureWindow) => Tally;
+  pickPlatform: (w: FailureWindow, platform: string) => Tally | undefined;
   rates: FailureRates;
   emphasis?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
 }) {
+  const platforms = rates.platforms || [];
+  const activePlatforms = platforms.filter((p) =>
+    WINDOWS.some((w) => {
+      const t = pickPlatform(w, p);
+      return t && t.failed + t.completed > 0;
+    })
+  );
+
   return (
-    <tr className={emphasis ? "border-b border-border" : ""}>
-      <th
-        scope="row"
-        className={`py-2 pr-4 text-left align-middle ${
-          emphasis ? "text-sm font-bold" : "text-sm font-medium text-muted-foreground"
-        }`}
-      >
-        {label}
-      </th>
-      {WINDOWS.map((w) => {
-        const tally = pick(w);
-        return (
-          <td key={w} className="py-2 pr-4 align-middle">
-            {/*
-              Stacked, not inline. Side by side these ran together as "17%4/23",
-              and the pair was written failed/total — which reads just as easily
-              as failed/succeeded. Both numbers are named now.
-            */}
-            <div className="flex flex-col leading-tight">
-              <span
-                className={`${emphasis ? "text-xl font-extrabold" : "text-base font-bold"} ${rateTone(tally)}`}
+    <>
+      <tr className={emphasis ? "border-b border-border/80" : "border-t border-border/40"}>
+        <th
+          scope="row"
+          className={`py-2.5 pr-4 text-left align-middle ${
+            emphasis ? "text-sm font-bold text-foreground" : "text-sm font-semibold text-foreground/90"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {activePlatforms.length > 0 && onToggle ? (
+              <button
+                type="button"
+                onClick={onToggle}
+                className="inline-flex items-center gap-1 text-left font-inherit hover:text-primary transition-colors cursor-pointer"
+                title={expanded ? "Collapse platform breakdown" : "Expand platform breakdown"}
               >
-                {formatRate(tally)}
+                {expanded ? (
+                  <ChevronDown className="size-3.5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="size-3.5 text-muted-foreground" />
+                )}
+                <span>{label}</span>
+              </button>
+            ) : (
+              <span>{label}</span>
+            )}
+            {activePlatforms.length > 0 && (
+              <span className="rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {activePlatforms.length} {activePlatforms.length === 1 ? "platform" : "platforms"}
               </span>
-              {tally.failed + tally.completed > 0 ? (
-                <span className="mt-0.5 text-xs whitespace-nowrap text-muted-foreground">
-                  <span className="font-semibold text-red-500">{tally.failed}</span> failed
-                  <span className="mx-1">·</span>
-                  <span className="font-semibold text-emerald-500">{tally.completed}</span> ok
+            )}
+          </div>
+        </th>
+        {WINDOWS.map((w) => {
+          const tally = pick(w);
+          return (
+            <td key={w} className="py-2.5 pr-4 align-middle">
+              <div className="flex flex-col leading-tight">
+                <span
+                  className={`${emphasis ? "text-xl font-extrabold" : "text-base font-bold"} ${rateTone(tally)}`}
+                >
+                  {formatRate(tally)}
                 </span>
-              ) : (
-                <span className="mt-0.5 text-xs text-muted-foreground">no attempts</span>
-              )}
-            </div>
-          </td>
-        );
-      })}
-    </tr>
+                {tally.failed + tally.completed > 0 ? (
+                  <span className="mt-0.5 text-xs whitespace-nowrap text-muted-foreground">
+                    <span className="font-semibold text-red-500">{tally.failed}</span> failed
+                    <span className="mx-1">·</span>
+                    <span className="font-semibold text-emerald-500">{tally.completed}</span> ok
+                  </span>
+                ) : (
+                  <span className="mt-0.5 text-xs text-muted-foreground">no attempts</span>
+                )}
+              </div>
+            </td>
+          );
+        })}
+      </tr>
+
+      {expanded &&
+        activePlatforms.map((p) => (
+          <tr
+            key={p}
+            className="bg-muted/15 hover:bg-muted/25 transition-colors border-t border-border/20"
+          >
+            <th
+              scope="row"
+              className="py-1.5 pl-6 pr-4 text-left font-normal text-xs text-muted-foreground"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground/40 font-mono text-[11px]">└─</span>
+                <span className="font-medium text-foreground/80">{p}</span>
+              </div>
+            </th>
+            {WINDOWS.map((w) => {
+              const tally = pickPlatform(w, p) ?? { failed: 0, completed: 0, rate: null };
+              return (
+                <td key={w} className="py-1.5 pr-4 align-middle text-xs">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`font-semibold ${rateTone(tally)}`}>
+                      {formatRate(tally)}
+                    </span>
+                    {tally.failed + tally.completed > 0 ? (
+                      <span className="text-[11px] whitespace-nowrap text-muted-foreground">
+                        <span className="font-semibold text-red-500">{tally.failed}</span>
+                        <span className="mx-0.5 text-muted-foreground/60">/</span>
+                        <span>{tally.failed + tally.completed}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground/40">—</span>
+                    )}
+                  </div>
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+    </>
   );
 }
 
@@ -117,6 +201,30 @@ export function FailureRateCard({
 }) {
   const anyData = WINDOWS.some((w) => rates[w].overall.rate !== null);
   const scope = gameSlug ? gameSlug : "all games";
+  const hasPlatforms = (rates.platforms || []).length > 0;
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    Overall: true,
+    Installs: true,
+    Launches: true,
+    Party: true,
+  });
+
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const allExpanded = Object.values(expandedSections).every(Boolean);
+
+  const toggleAll = () => {
+    const nextState = !allExpanded;
+    setExpandedSections({
+      Overall: nextState,
+      Installs: nextState,
+      Launches: nextState,
+      Party: nextState,
+    });
+  };
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
@@ -131,19 +239,32 @@ export function FailureRateCard({
             </span>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Share of finished installs, launches and party operations that failed.
+            Share of finished installs, launches and party operations that failed, with per-platform breakdown.
           </p>
         </div>
-        <Trend current={rates.d1.overall} baseline={rates.d30.overall} />
+
+        <div className="flex items-center gap-3">
+          {hasPlatforms && anyData && (
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <Layers className="size-3" />
+              {allExpanded ? "Collapse platforms" : "Expand platforms"}
+            </button>
+          )}
+          <Trend current={rates.d1.overall} baseline={rates.d30.overall} />
+        </div>
       </div>
 
       {anyData ? (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[420px] text-sm">
+          <table className="w-full min-w-[460px] text-sm">
             <thead>
               <tr className="text-left text-xs tracking-wide text-muted-foreground uppercase">
                 <th scope="col" className="py-1 pr-4 font-semibold">
-                  <span className="sr-only">Metric</span>
+                  <span>Metric &amp; Platform</span>
                 </th>
                 {WINDOWS.map((w) => (
                   <th key={w} scope="col" className="py-1 pr-4 font-semibold">
@@ -153,10 +274,39 @@ export function FailureRateCard({
               </tr>
             </thead>
             <tbody>
-              <Row label="Overall" pick={(w) => rates[w].overall} rates={rates} emphasis />
-              <Row label="Installs" pick={(w) => rates[w].installs} rates={rates} />
-              <Row label="Launches" pick={(w) => rates[w].launches} rates={rates} />
-              <Row label="Party" pick={(w) => rates[w].party} rates={rates} />
+              <MetricSection
+                label="Overall"
+                pick={(w) => rates[w].overall}
+                pickPlatform={(w, p) => rates[w].byPlatform?.[p]?.overall}
+                rates={rates}
+                emphasis
+                expanded={expandedSections.Overall}
+                onToggle={() => toggleSection("Overall")}
+              />
+              <MetricSection
+                label="Installs"
+                pick={(w) => rates[w].installs}
+                pickPlatform={(w, p) => rates[w].byPlatform?.[p]?.installs}
+                rates={rates}
+                expanded={expandedSections.Installs}
+                onToggle={() => toggleSection("Installs")}
+              />
+              <MetricSection
+                label="Launches"
+                pick={(w) => rates[w].launches}
+                pickPlatform={(w, p) => rates[w].byPlatform?.[p]?.launches}
+                rates={rates}
+                expanded={expandedSections.Launches}
+                onToggle={() => toggleSection("Launches")}
+              />
+              <MetricSection
+                label="Party"
+                pick={(w) => rates[w].party}
+                pickPlatform={(w, p) => rates[w].byPlatform?.[p]?.party}
+                rates={rates}
+                expanded={expandedSections.Party}
+                onToggle={() => toggleSection("Party")}
+              />
             </tbody>
           </table>
         </div>
