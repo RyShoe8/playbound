@@ -28,7 +28,10 @@ export function isOneClickSlug(slug: string): boolean {
 }
 
 /** Deep link that hands off to the installed PlayBound Launcher. */
-export function launcherInstallUrl(slug: string): string {
+export function launcherInstallUrl(slug: string, editionSlug?: string | null): string {
+  if (editionSlug) {
+    return `playbound://install/${slug}?edition=${encodeURIComponent(editionSlug)}`;
+  }
   return `playbound://install/${slug}`;
 }
 
@@ -68,7 +71,10 @@ export function launcherLinkUrl(code: string): string {
 }
 
 /** Launch an installed game via the PlayBound Launcher. */
-export function launcherPlayUrl(slug: string): string {
+export function launcherPlayUrl(slug: string, editionSlug?: string | null): string {
+  if (editionSlug) {
+    return `playbound://play/${slug}?edition=${encodeURIComponent(editionSlug)}`;
+  }
   return `playbound://play/${slug}`;
 }
 

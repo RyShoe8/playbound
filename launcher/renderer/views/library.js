@@ -567,22 +567,8 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
 
   const actions = document.createElement("div");
   actions.className = "library-card-actions";
-  if (opts.ownedElsewhere) {
-    const group = document.createElement("div");
-    group.className = "library-action-group";
 
-    const installBtn = document.createElement("button");
-    installBtn.type = "button";
-    installBtn.className = "btn-primary btn-sm btn-lib-install";
-    installBtn.textContent = "Install";
-    installBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      api.openGameDetail(game.slug, "library");
-    });
-    group.appendChild(installBtn);
-    actions.appendChild(group);
-    head.appendChild(actions);
-  } else if (game.pending && !(game.exe || (game.installedEditions || []).some((e) => e.exe))) {
+  if (game.pending && !(game.exe || (game.installedEditions || []).some((e) => e.exe))) {
     actions.innerHTML = `
       <button class="btn-primary btn-sm btn-lib-locate" type="button">${selectExecutableLabel()}</button>
       <button class="btn-secondary btn-sm btn-lib-dismiss" type="button">Dismiss</button>
@@ -609,128 +595,80 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       api.renderLibraryView();
     });
     head.appendChild(actions);
-  } else if (!opts.orphan && (game.exe || game.dir || (game.installedEditions || []).length)) {
+  } else if (!opts.orphan) {
+    const catalogEntry = opts.catalogEntry;
+    const catalogEditions = Array.isArray(catalogEntry?.editions) ? catalogEntry.editions : [];
+
     const editions = Array.isArray(game.installedEditions)
       ? game.installedEditions.filter((e) => e.exe || e.dir)
       : [];
 
-    const catalogEntry = opts.catalogEntry;
-    const catalogEditions = Array.isArray(catalogEntry?.editions) ? catalogEntry.editions : [];
-    const baseEdition =
-      catalogEditions.find((ce) => ce.isDefault || ce.slug === "official" || ce.slug === "default") ||
-      (catalogEditions[0]?.type === "official" ? catalogEditions[0] : null) ||
-      catalogEditions[0] ||
-      null;
-
-    const isBaseInstalled = Boolean(
-      baseEdition && editions.some((e) => e.editionSlug === baseEdition.slug)
-    );
-    const hasOnlyNonBaseEditions = Boolean(
-      catalogEditions.length > 1 && editions.length > 0 && !isBaseInstalled && baseEdition
-    );
-
-    /*
-     * One row: which edition, then the single thing you came to do, then
-     * everything else behind a menu.
-     *
-     * Editions used to repeat a full button set per edition, so three editions
-     * meant three Play buttons, three Folders and three Removes stacked up —
-     * and picking the right row was the hard part. A selector makes the choice
-     * explicit and leaves exactly one Play on the card.
-     */
-    let selected = editions[0]?.editionSlug || game.editionSlug || null;
-    const selectedEdition = () => editions.find((e) => e.editionSlug === selected) || null;
-
-    let updatePlayButtonState = () => {};
-
-    if (editions.length > 1 || hasOnlyNonBaseEditions) {
-      const picker = document.createElement("select");
-      picker.className = "library-edition-select";
-      picker.setAttribute("aria-label", `Edition of ${game.title}`);
-      const optionsHtml = editions.map(
-        (ed) =>
-          `<option value="${escapeHtml(ed.editionSlug)}">${escapeHtml(
-            ed.editionName || ed.editionSlug
-          )}</option>`
-      );
-      if (hasOnlyNonBaseEditions) {
-        optionsHtml.push(
-          `<option value="__install_base__">★ ${escapeHtml(
-            baseEdition.name || "Base Game"
-          )} (Not Installed)</option>`
-        );
+    const installedMap = new Map();
+    for (const ed of editions) {
+      if (ed.editionSlug && (ed.exe || ed.dir)) {
+        installedMap.set(ed.editionSlug, ed);
       }
-      picker.innerHTML = optionsHtml.join("");
-      picker.value = selected || editions[0]?.editionSlug || "";
-      picker.addEventListener("click", (e) => e.stopPropagation());
-      picker.addEventListener("change", (e) => {
-        e.stopPropagation();
-        selected = picker.value;
-        // A save panel belongs to one edition; drop it rather than let it
-        // silently describe a different install than the one now selected.
-        block.querySelector(".library-saves-panel")?.remove();
-        updatePlayButtonState();
+    }
+    if (installedMap.size === 0 && (game.exe || game.dir)) {
+      const s = game.editionSlug || "official";
+      installedMap.set(s, {
+        editionSlug: s,
+        editionName: game.editionName || "Official",
+        exe: game.exe,
+        dir: game.dir,
       });
-      copy.appendChild(picker);
-    } else if (editions.length === 1 && isMeaningfulEditionName(editions[0].editionName)) {
-      /*
-       * Only when it says something. Nearly every game has exactly one
-       * edition called "Official", so printing it on every row was pure
-       * noise — the label earns its place only when the player is running
-       * something other than the standard build.
-       */
-      const label = document.createElement("span");
-      label.className = "library-edition-label";
-      label.title = editions[0].editionName;
-      label.textContent = editions[0].editionName;
-      copy.appendChild(label);
     }
 
-    if (hasOnlyNonBaseEditions) {
-      const baseNotice = document.createElement("div");
-      baseNotice.className = "library-base-missing-notice";
-      baseNotice.innerHTML = `
-        <span class="base-missing-tag">⚠️ Edition only</span>
-        <span class="base-missing-desc">Base game (${escapeHtml(
-          baseEdition.name || "Official"
-        )}) is not installed.</span>
-        <button class="btn-xs btn-primary btn-get-base" type="button">Get Base Game</button>
-      `;
-      baseNotice.querySelector(".btn-get-base")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        api.openEditionDetail(game.slug, baseEdition.slug, "library");
-      });
-      copy.appendChild(baseNotice);
+    const allEditions = [];
+    const seenSlugs = new Set();
+
+    if (catalogEditions.length > 0) {
+      for (const catEd of catalogEditions) {
+        const inst = installedMap.get(catEd.slug);
+        allEditions.push({
+          slug: catEd.slug,
+          name: catEd.name || catEd.slug,
+          type: catEd.type || "official",
+          isDefault: Boolean(catEd.isDefault),
+          isInstalled: Boolean(inst),
+          installedRecord: inst || null,
+          catalogRecord: catEd,
+        });
+        seenSlugs.add(catEd.slug);
+      }
     }
 
-    const group = document.createElement("div");
-    group.className = "library-action-group";
-
-    const play = document.createElement("button");
-    play.type = "button";
-    play.className = "btn-success btn-sm btn-lib-play";
-    play.textContent = "Play";
-
-    updatePlayButtonState = () => {
-      if (selected === "__install_base__") {
-        play.textContent = "Install Base Game";
-        play.className = "btn-primary btn-sm btn-lib-install";
-      } else {
-        play.textContent = "Play";
-        play.className = "btn-success btn-sm btn-lib-play";
+    for (const [s, inst] of installedMap.entries()) {
+      if (!seenSlugs.has(s)) {
+        allEditions.push({
+          slug: s,
+          name: inst.editionName || s,
+          type: inst.editionType || "custom",
+          isDefault: false,
+          isInstalled: true,
+          installedRecord: inst,
+          catalogRecord: null,
+        });
+        seenSlugs.add(s);
       }
-    };
-    updatePlayButtonState();
+    }
 
-    play.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (selected === "__install_base__") {
-        api.openEditionDetail(game.slug, baseEdition.slug, "library");
-        return;
-      }
-      const ed = editions.length > 1 ? selected : selected || null;
-      const curEd = selectedEdition();
-      const catEd = (catalogEntry?.editions || []).find((x) => x.slug === ed);
+    if (allEditions.length === 0) {
+      const isInstalled = Boolean(game.exe || game.dir);
+      allEditions.push({
+        slug: game.editionSlug || "official",
+        name: game.editionName || "Official",
+        type: "official",
+        isDefault: true,
+        isInstalled,
+        installedRecord: isInstalled ? game : null,
+        catalogRecord: null,
+      });
+    }
+
+    const launchEdition = async (ed) => {
+      const curEd = ed.installedRecord;
+      const catEd = ed.catalogRecord;
       const pickList = (...cands) => {
         for (const c of cands) {
           if (Array.isArray(c) && c.length > 0) return c;
@@ -753,14 +691,14 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         const launched = await maybeOfferPhoneControllerThenPlay(
           detail,
           async () => {
-            setStatus(`Checking Java / launching ${game.title}…`);
-            const res = await window.playbound.play(game.slug, null, ed);
+            setStatus(`Checking Java / launching ${game.title} (${ed.name})…`);
+            const res = await window.playbound.play(game.slug, null, ed.slug);
             startGameSession(game.slug, game.title);
             maybeShowLaunchGuidance(res, {
               title: game.title,
               slug: game.slug,
             });
-            setStatus(`Launched ${game.title}`);
+            setStatus(`Launched ${game.title} (${ed.name})`);
           },
           game.slug
         );
@@ -768,65 +706,185 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       } catch (err) {
         setStatus(err.message || String(err), true);
       }
-    });
-    group.appendChild(play);
+    };
 
-    const menuItems = [];
+    if (allEditions.length > 1) {
+      const editionsPanel = document.createElement("div");
+      editionsPanel.className = "library-card-extra library-card-editions";
 
-    if (hasOnlyNonBaseEditions && baseEdition) {
-      menuItems.push({
-        label: `Install Base Game (${baseEdition.name || "Official"})`,
-        onClick: () => {
-          api.openEditionDetail(game.slug, baseEdition.slug, "library");
-        },
-      });
-    }
+      const editionsHeader = document.createElement("div");
+      editionsHeader.className = "library-editions-header";
+      editionsHeader.innerHTML = `
+        <span class="library-editions-title">Editions (${allEditions.length})</span>
+      `;
+      editionsPanel.appendChild(editionsHeader);
 
-    menuItems.push({
-      label: "Open folder",
-      onClick: () => {
-        const dir = selectedEdition()?.dir || game.dir || editions[0]?.dir;
-        if (dir) window.playbound.openFolder(dir);
-        else setStatus("No folder recorded for this install.", true);
-      },
-    });
+      const editionsList = document.createElement("div");
+      editionsList.className = "library-editions-list";
 
-    menuItems.push({
-      label: "Save backups",
-      onClick: () => toggleSavesPanel(block, game, editions.length > 1 ? selected : selected || null),
-    });
+      for (const ed of allEditions) {
+        const row = document.createElement("div");
+        row.className = "library-edition-row";
 
-    if (game.slug === "openciv3") {
-      menuItems.push({
-        label: "Display settings",
-        onClick: () => toggleOpenCiv3DisplayPanel(block, game),
-      });
-    }
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "library-edition-row-info";
+        infoDiv.innerHTML = `
+          <span class="library-edition-row-name">${escapeHtml(ed.name)}</span>
+          ${ed.isDefault ? `<span class="library-edition-status-badge official">Official</span>` : ""}
+          ${
+            ed.isInstalled
+              ? `<span class="library-edition-status-badge installed">Installed</span>`
+              : `<span class="library-edition-status-badge not-installed">Not Installed</span>`
+          }
+        `;
+        row.appendChild(infoDiv);
 
-    menuItems.push({
-      label: editions.length > 1 ? "Remove this edition" : "Uninstall",
-      danger: true,
-      onClick: async () => {
-        const ed = editions.length > 1 ? selected : selected || null;
-        const label =
-          editions.length > 1
-            ? `${game.title} — ${selectedEdition()?.editionName || ed}`
-            : game.title;
-        try {
-          const res = await window.playbound.uninstall(game.slug, ed);
-          if (res?.status === "cancelled") return;
-          if (res?.warning) setStatus(`Removed ${label} from your library. ${res.warning}`, true);
-          else setStatus(`Uninstalled ${label}`);
-          api.renderLibraryView();
-        } catch (err) {
-          setStatus(err.message || String(err), true);
+        const rowActions = document.createElement("div");
+        rowActions.className = "library-edition-row-actions";
+
+        if (ed.isInstalled) {
+          const playBtn = document.createElement("button");
+          playBtn.type = "button";
+          playBtn.className = "btn-success btn-xs btn-lib-play";
+          playBtn.textContent = "Play";
+          playBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            launchEdition(ed);
+          });
+          rowActions.appendChild(playBtn);
+
+          const rowMenuItems = [];
+          rowMenuItems.push({
+            label: "Open folder",
+            onClick: () => {
+              const dir = ed.installedRecord?.dir || game.dir;
+              if (dir) window.playbound.openFolder(dir);
+              else setStatus("No folder recorded for this install.", true);
+            },
+          });
+          rowMenuItems.push({
+            label: "Save backups",
+            onClick: () => toggleSavesPanel(block, game, ed.slug),
+          });
+          if (game.slug === "openciv3") {
+            rowMenuItems.push({
+              label: "Display settings",
+              onClick: () => toggleOpenCiv3DisplayPanel(block, game),
+            });
+          }
+          rowMenuItems.push({
+            label: "Remove this edition",
+            danger: true,
+            onClick: async () => {
+              const label = `${game.title} — ${ed.name}`;
+              try {
+                const res = await window.playbound.uninstall(game.slug, ed.slug);
+                if (res?.status === "cancelled") return;
+                if (res?.warning) setStatus(`Removed ${label} from your library. ${res.warning}`, true);
+                else setStatus(`Uninstalled ${label}`);
+                api.renderLibraryView();
+              } catch (err) {
+                setStatus(err.message || String(err), true);
+              }
+            },
+          });
+          rowActions.appendChild(buildOverflowMenu(rowMenuItems));
+        } else {
+          const installBtn = document.createElement("button");
+          installBtn.type = "button";
+          installBtn.className = "btn-primary btn-xs btn-lib-install";
+          installBtn.textContent = "Install";
+          installBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            api.openEditionDetail(game.slug, ed.slug, "library");
+          });
+          rowActions.appendChild(installBtn);
         }
-      },
-    });
 
-    group.appendChild(buildOverflowMenu(menuItems));
-    actions.appendChild(group);
-    head.appendChild(actions);
+        row.appendChild(rowActions);
+        editionsList.appendChild(row);
+      }
+
+      editionsPanel.appendChild(editionsList);
+      block.appendChild(editionsPanel);
+    } else {
+      const ed = allEditions[0];
+      if (isMeaningfulEditionName(ed.name)) {
+        const label = document.createElement("span");
+        label.className = "library-edition-label";
+        label.title = ed.name;
+        label.textContent = ed.name;
+        copy.appendChild(label);
+      }
+
+      const group = document.createElement("div");
+      group.className = "library-action-group";
+
+      if (ed.isInstalled) {
+        const play = document.createElement("button");
+        play.type = "button";
+        play.className = "btn-success btn-sm btn-lib-play";
+        play.textContent = "Play";
+        play.addEventListener("click", (e) => {
+          e.stopPropagation();
+          launchEdition(ed);
+        });
+        group.appendChild(play);
+
+        const menuItems = [
+          {
+            label: "Open folder",
+            onClick: () => {
+              const dir = ed.installedRecord?.dir || game.dir;
+              if (dir) window.playbound.openFolder(dir);
+              else setStatus("No folder recorded for this install.", true);
+            },
+          },
+          {
+            label: "Save backups",
+            onClick: () => toggleSavesPanel(block, game, ed.slug),
+          },
+        ];
+        if (game.slug === "openciv3") {
+          menuItems.push({
+            label: "Display settings",
+            onClick: () => toggleOpenCiv3DisplayPanel(block, game),
+          });
+        }
+        menuItems.push({
+          label: "Uninstall",
+          danger: true,
+          onClick: async () => {
+            try {
+              const res = await window.playbound.uninstall(game.slug, ed.slug);
+              if (res?.status === "cancelled") return;
+              if (res?.warning) setStatus(`Removed ${game.title}. ${res.warning}`, true);
+              else setStatus(`Uninstalled ${game.title}`);
+              api.renderLibraryView();
+            } catch (err) {
+              setStatus(err.message || String(err), true);
+            }
+          },
+        });
+        group.appendChild(buildOverflowMenu(menuItems));
+      } else {
+        const install = document.createElement("button");
+        install.type = "button";
+        install.className = "btn-primary btn-sm btn-lib-install";
+        install.textContent = "Install";
+        install.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (ed.catalogRecord) {
+            api.openEditionDetail(game.slug, ed.slug, "library");
+          } else {
+            api.openGameDetail(game.slug, "library");
+          }
+        });
+        group.appendChild(install);
+      }
+      actions.appendChild(group);
+      head.appendChild(actions);
+    }
   }
 
   if (gameMods.length) {

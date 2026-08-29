@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Download, ExternalLink, FolderOpen, Play, Trash2 } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import {
+  launcherInstallUrl,
   launcherLocateUrl,
   launcherOpenFolderUrl,
   launcherPlayUrl,
@@ -24,11 +25,20 @@ import { shouldOfferLauncher, resolveMobileOutbound, parseMobileOs } from "@/lib
 import { MobileOutboundCta } from "@/components/MobileOutboundCta";
 import { cn } from "@/lib/utils";
 
+export type LibraryEditionItem = {
+  slug: string;
+  name: string;
+  type?: string;
+  isDefault?: boolean;
+};
+
 export type LibraryEntryMeta = {
   gameSlug: string;
   installed: boolean;
   saved: boolean;
   ownedElsewhere?: boolean;
+  editionSlug?: string | null;
+  installedEditions?: string[];
 };
 
 export type LibraryOrphan = {
@@ -87,7 +97,7 @@ function RemoveFromLibraryButton({
   );
 }
 
-function DesktopInstalledActions({ slug }: { slug: string }) {
+function DesktopInstalledActions({ slug, editionSlug }: { slug: string; editionSlug?: string | null }) {
   const router = useRouter();
   const [hidden, setHidden] = useState(false);
   const stopWatch = useRef<(() => void) | null>(null);
@@ -114,7 +124,7 @@ function DesktopInstalledActions({ slug }: { slug: string }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <a
-        href={launcherPlayUrl(slug)}
+        href={launcherPlayUrl(slug, editionSlug)}
         className={cn(chip, "bg-play text-play-foreground hover:brightness-110")}
       >
         <Play className="size-3 fill-current" /> Play
@@ -317,15 +327,27 @@ function DesktopLibraryRow({
   meta,
   mods,
   showLauncherActions,
+  editions = [],
 }: {
   game: Game;
   meta?: LibraryEntryMeta;
   mods: LibraryModItem[];
   showLauncherActions: boolean;
+  editions?: LibraryEditionItem[];
 }) {
   const installed = Boolean(meta?.installed);
   const saved = Boolean(meta?.saved);
   const ownedElsewhere = Boolean(meta?.ownedElsewhere) && !installed;
+
+  const installedEditionsList =
+    Array.isArray(meta?.installedEditions) && meta.installedEditions.length > 0
+      ? meta.installedEditions
+      : meta?.installed
+      ? [meta.editionSlug || "official"]
+      : [];
+  const installedEditionsSet = new Set(installedEditionsList);
+
+  const hasMultipleEditions = editions.length > 1;
 
   return (
     <article className="flex gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30">
@@ -350,35 +372,108 @@ function DesktopLibraryRow({
             game={game}
           />
         </div>
-        <div className="mt-auto pt-3 flex flex-wrap gap-2">
-          {installed && showLauncherActions ? (
-            <DesktopInstalledActions slug={game.slug} />
-          ) : ownedElsewhere && showLauncherActions ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <LauncherInstallButton
-                slug={game.slug}
-                label="Install on this PC"
-                className="!px-4 !py-1.5 !text-xs"
-              />
-              <RemoveFromLibraryButton slug={game.slug} />
+
+        {hasMultipleEditions && showLauncherActions ? (
+          <div className="mt-3 space-y-1.5 rounded-xl border border-border/70 bg-muted/20 p-2.5">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Editions ({editions.length})
             </div>
-          ) : ownedElsewhere ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <MobileOwnedElsewhereInstall game={game} />
-              <RemoveFromLibraryButton slug={game.slug} />
+            <div className="space-y-1.5">
+              {editions.map((ed) => {
+                const isEdInstalled = installedEditionsSet.has(ed.slug);
+                return (
+                  <div
+                    key={ed.slug}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-card/70 px-3 py-1.5 text-xs border border-border/40"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-semibold truncate text-foreground">{ed.name}</span>
+                      {ed.isDefault ? (
+                        <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          Official
+                        </span>
+                      ) : null}
+                      {isEdInstalled ? (
+                        <span className="rounded bg-play/15 px-1.5 py-0.5 text-[10px] font-semibold text-play">
+                          Installed
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isEdInstalled ? (
+                        <a
+                          href={launcherPlayUrl(game.slug, ed.slug)}
+                          className="inline-flex min-h-7 items-center gap-1 rounded-full bg-play px-2.5 text-[11px] font-bold text-play-foreground hover:brightness-110"
+                        >
+                          <Play className="size-3 fill-current" /> Play
+                        </a>
+                      ) : (
+                        <a
+                          href={launcherInstallUrl(game.slug, ed.slug)}
+                          className="inline-flex min-h-7 items-center gap-1 rounded-full bg-primary px-2.5 text-[11px] font-bold text-primary-foreground hover:brightness-110"
+                        >
+                          <Download className="size-3" /> Install
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href={`/games/${game.slug}`}
-                className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
-              >
-                <ExternalLink className="size-3" /> Open game
-              </Link>
-              <RemoveFromLibraryButton slug={game.slug} />
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {installed ? (
+                <>
+                  <a
+                    href={launcherOpenFolderUrl(game.slug)}
+                    className="inline-flex min-h-7 items-center gap-1 rounded-full bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+                    title="Open install folder"
+                  >
+                    <FolderOpen className="size-3" /> Folder
+                  </a>
+                  <a
+                    href={launcherLocateUrl(game.slug)}
+                    className="inline-flex min-h-7 items-center gap-1 rounded-full bg-secondary px-2.5 text-[11px] font-bold text-secondary-foreground hover:bg-secondary/70"
+                    title="Select .exe in the PlayBound app"
+                  >
+                    Locate
+                  </a>
+                </>
+              ) : null}
+              <RemoveFromLibraryButton slug={game.slug} className="!min-h-7" />
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="mt-auto pt-3 flex flex-wrap gap-2">
+            {installed && showLauncherActions ? (
+              <DesktopInstalledActions slug={game.slug} editionSlug={editions[0]?.slug} />
+            ) : ownedElsewhere && showLauncherActions ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <LauncherInstallButton
+                  slug={game.slug}
+                  label="Install on this PC"
+                  className="!px-4 !py-1.5 !text-xs"
+                />
+                <RemoveFromLibraryButton slug={game.slug} />
+              </div>
+            ) : ownedElsewhere ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <MobileOwnedElsewhereInstall game={game} />
+                <RemoveFromLibraryButton slug={game.slug} />
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/games/${game.slug}`}
+                  className="inline-flex min-h-8 items-center justify-center gap-1 rounded-full bg-secondary px-3 text-xs font-bold"
+                >
+                  <ExternalLink className="size-3" /> Open game
+                </Link>
+                <RemoveFromLibraryButton slug={game.slug} />
+              </div>
+            )}
+          </div>
+        )}
+
         {mods.length > 0 && (
           <div className="mt-2">
             <LibraryModsDisclosure mods={mods} />
@@ -394,11 +489,13 @@ export function LibraryGrid({
   entries,
   orphans,
   modsByBase,
+  editionsByGame = {},
 }: {
   games: Game[];
   entries: LibraryEntryMeta[];
   orphans: LibraryOrphan[];
   modsByBase: Record<string, LibraryModItem[]>;
+  editionsByGame?: Record<string, LibraryEditionItem[]>;
 }) {
   const { mode, device, setMode } = useCompatibilityFilter();
   const showLauncherActions = shouldOfferLauncher(device.type);
@@ -467,6 +564,7 @@ export function LibraryGrid({
                 meta={bySlug.get(game.slug)}
                 mods={modsByBase[game.slug] || []}
                 showLauncherActions={showLauncherActions}
+                editions={editionsByGame[game.slug] || []}
               />
             ))}
             {visibleOrphans.map((entry) => {
