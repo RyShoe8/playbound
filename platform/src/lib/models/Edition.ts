@@ -166,6 +166,18 @@ const EditionSchema = new Schema(
 
     /** Reserved for live player counts. Null means "unknown", never zero. */
     population: { type: Number, default: null },
+
+    /**
+     * Deletion marker for a static seed edition.
+     *
+     * Seed editions have no Mongo document to delete. The admin DELETE route
+     * creates a minimal row with this flag instead, and edition readers use
+     * its gameSlug/slug pair to suppress the matching static seed. Keeping the
+     * marker in the existing collection also preserves the unique per-game
+     * slug invariant and makes deletion survive deploys without a second
+     * persistence system.
+     */
+    suppressesSeed: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
