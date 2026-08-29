@@ -102,6 +102,7 @@ export function AutomatedEventPlannerManager() {
   const [candidateGames, setCandidateGames] = useState<CandidateGame[]>([]);
   const [logs, setLogs] = useState<MatchLog[]>([]);
   const [hostConfigured, setHostConfigured] = useState(false);
+  const [botConfigured, setBotConfigured] = useState(false);
 
   const loadData = useCallback(async (isSilent = false) => {
     try {
@@ -126,6 +127,7 @@ export function AutomatedEventPlannerManager() {
       setCandidateGames(data.candidateGames || []);
       setLogs(data.logs || []);
       setHostConfigured(Boolean(data.hostConfigured));
+      setBotConfigured(Boolean(data.botConfigured));
     } catch (err) {
       if (!isSilent) {
         setBanner({
@@ -713,10 +715,15 @@ export function AutomatedEventPlannerManager() {
             <div className="flex items-center gap-2.5">
               <VolumeX className="size-5 text-indigo-400" />
               <h3 className="font-semibold tracking-tight text-foreground">Discord Announcements</h3>
+              {botConfigured && (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 border border-emerald-500/20">
+                  Bot Connected (#events)
+                </span>
+              )}
             </div>
             <button
               onClick={handleTestDiscord}
-              disabled={actionLoading === "discord-test" || !config.discord?.webhookUrl}
+              disabled={actionLoading === "discord-test" || (!config.discord?.webhookUrl && !botConfigured)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/50 px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary disabled:opacity-40"
             >
               {actionLoading === "discord-test" ? (
@@ -730,13 +737,14 @@ export function AutomatedEventPlannerManager() {
 
           <div className="space-y-4 text-sm">
             <div>
-              <label className="font-medium text-foreground">Webhook URL</label>
-              <p className="text-xs text-muted-foreground">
-                Post embed to your Discord #announcements or #events channel.
+              <label className="font-medium text-foreground">Custom Webhook URL (Optional)</label>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                By default, announcements post directly to your server&apos;s <strong>#events</strong> channel via the PlayBound Discord Bot.
+                If using a manual Webhook URL instead, make sure it was generated inside the <strong>#events</strong> channel in Discord (Server Settings → Integrations → Webhooks), as Discord webhooks always post to whichever channel they were created in.
               </p>
               <input
                 type="url"
-                placeholder="https://discord.com/api/webhooks/..."
+                placeholder="Leave blank to use Discord bot (#events)"
                 value={config.discord?.webhookUrl || ""}
                 onChange={(e) =>
                   setConfig({
