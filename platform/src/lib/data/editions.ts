@@ -1863,41 +1863,6 @@ export const editions: EditionSeed[] = [
     verificationLevel: "playbound_verified",
   },
   {
-    gameSlug: "metal-slug-remake",
-    slug: "remake",
-    name: "Community Remake Edition (Default)",
-    shortDescription: "Portable 60 FPS arcade run-and-gun with 2-player local co-op.",
-    description:
-      "Complete 2D arcade side-scrolling experience with full controller support, authentic SNK weapon audio, and 2-player local co-op.",
-    type: "community",
-    status: "active",
-    visibility: "public",
-    isDefault: true,
-    sortOrder: 10,
-    links: {
-      website: "https://archive.org/details/metal-slug-remake-pc",
-    },
-    installMethod: "playbound_installer",
-    installConfig: {
-      playbound_installer: {
-        kind: "direct-zip",
-        url: "https://archive.org/download/metal-slug-remake-pc/MetalSlugRemake.zip",
-        fileName: "MetalSlugRemake.zip",
-        exeHint: "MetalSlug",
-        note: "Standalone portable arcade run-and-gun package with full controller mapping.",
-      },
-    },
-    requirements: {
-      min: "1.0 GHz CPU / 1 GB RAM / DirectX 9.0c GPU / 300 MB storage",
-      recommended: "Dual-Core CPU / 2 GB RAM / Dedicated GPU / 2 USB Gamepads",
-    },
-    features: ["Singleplayer", "Co-Op", "Controller Support", "Pixel Art", "High Framerate"],
-    tags: ["Run and Gun", "Arcade", "Pixel Art", "2D"],
-    aliases: ["Metal Slug PC Remake"],
-    version: "v1.0",
-    verificationLevel: "playbound_verified",
-  },
-  {
     gameSlug: "microsoft-allegiance",
     slug: "freeallegiance",
     name: "FreeAllegiance Standalone Client (Default)",

@@ -392,10 +392,43 @@ function filterRetiredEditions(gameSlug: string, editions: Edition[]): Edition[]
   return editions.filter((e) => e.slug !== "phantom-edition");
 }
 
+/**
+ * Merge database editions with static seeds while honoring deletion
+ * tombstones. `occupiedSeedSlugs` includes ordinary stored rows and hidden
+ * suppressesSeed rows, because either one must prevent the same seed slug from
+ * being materialized again.
+ */
+export function mergeStoredAndSeedEditions(
+  gameSlug: string,
+  stored: Edition[],
+  occupiedSeedSlugs: ReadonlySet<string>
+): Edition[] {
+  const seeds = seedEditions
+    .filter((seed) => seed.gameSlug === gameSlug && !occupiedSeedSlugs.has(seed.slug))
+    .map(seedToEdition);
+  return filterRetiredEditions(gameSlug, [...stored, ...seeds]);
+}
+
 async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]> {
   await dbConnect();
-  const docs = await EditionModel.find(filter).sort({ sortOrder: 1, name: 1 }).lean();
+  const docs = await EditionModel.find({
+    ...filter,
+    suppressesSeed: { $ne: true },
+  }).sort({ sortOrder: 1, name: 1 }).lean();
   return docs.map((d) => toEdition(d as LeanEdition));
+}
+
+/** Stored editions plus seed slugs deliberately deleted through admin. */
+async function fetchEditionStateForGame(
+  gameSlug: string
+): Promise<{ editions: Edition[]; occupiedSeedSlugs: Set<string> }> {
+  await dbConnect();
+  const docs = await EditionModel.find({ gameSlug }).sort({ sortOrder: 1, name: 1 }).lean();
+  const occupiedSeedSlugs = new Set(docs.map((d) => str((d as LeanEdition).slug)));
+  const editions = docs
+    .filter((d) => (d as LeanEdition).suppressesSeed !== true)
+    .map((d) => toEdition(d as LeanEdition));
+  return { editions, occupiedSeedSlugs };
 }
 
 /**
@@ -404,12 +437,8 @@ async function fetchEditions(filter: Record<string, unknown>): Promise<Edition[]
  */
 const loadStoredForGame = cache(async (gameSlug: string): Promise<Edition[]> => {
   try {
-    const fromDb = await fetchEditions({ gameSlug });
-    const dbSlugs = new Set(fromDb.map((e) => e.slug));
-    const seeds = seedEditions
-      .filter((s) => s.gameSlug === gameSlug && !dbSlugs.has(s.slug))
-      .map(seedToEdition);
-    return filterRetiredEditions(gameSlug, [...fromDb, ...seeds]);
+    const { editions: fromDb, occupiedSeedSlugs } = await fetchEditionStateForGame(gameSlug);
+    return mergeStoredAndSeedEditions(gameSlug, fromDb, occupiedSeedSlugs);
   } catch (err) {
     console.error("[editions] read failed:", err);
     const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug);
@@ -500,6 +529,17 @@ export async function getEditionById(rawId: string): Promise<Edition | undefined
     const parts = id.split(":");
     const gSlug = parts[1];
     const eSlug = parts[2];
+    try {
+      await dbConnect();
+      const suppressed = await EditionModel.exists({
+        gameSlug: gSlug,
+        slug: eSlug,
+        suppressesSeed: true,
+      });
+      if (suppressed) return undefined;
+    } catch (err) {
+      console.error("[editions] seed suppression lookup failed:", err);
+    }
     const s = seedEditions.find((x) => x.gameSlug === gSlug && x.slug === eSlug);
     return s ? seedToEdition(s) : undefined;
   }
@@ -516,7 +556,7 @@ export async function getEditionById(rawId: string): Promise<Edition | undefined
 /** All stored editions for a game including hidden — admin list. */
 export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[]> {
   try {
-    const stored = await fetchEditions({ gameSlug });
+    const { editions: stored, occupiedSeedSlugs } = await fetchEditionStateForGame(gameSlug);
     /*
      * Merge exactly as loadStoredForGame does, rather than returning only the
      * stored rows when any exist.
@@ -526,11 +566,7 @@ export async function listAllEditionsForGame(gameSlug: string): Promise<Edition[
      * it, so a live install route was invisible to the person responsible for
      * it — unlistable, unopenable, uneditable. Stored still wins per slug.
      */
-    const dbSlugs = new Set(stored.map((e) => e.slug));
-    const seeds = seedEditions
-      .filter((s) => s.gameSlug === gameSlug && !dbSlugs.has(s.slug))
-      .map(seedToEdition);
-    return filterRetiredEditions(gameSlug, [...stored, ...seeds]).sort(compareEditions);
+    return mergeStoredAndSeedEditions(gameSlug, stored, occupiedSeedSlugs).sort(compareEditions);
   } catch (err) {
     console.error("[editions] listAll failed:", err);
     const seeds = seedEditions.filter((s) => s.gameSlug === gameSlug).map(seedToEdition);
@@ -668,6 +704,7 @@ export async function searchEditions(query: string, limit = 20): Promise<Edition
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const rx = new RegExp(escaped, "i");
     const docs = await EditionModel.find({
+      suppressesSeed: { $ne: true },
       visibility: { $ne: "hidden" },
       $or: [
         { name: rx },

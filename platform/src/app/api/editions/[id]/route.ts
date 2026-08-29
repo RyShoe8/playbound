@@ -154,6 +154,48 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (isVirtualId(id)) return virtualRejection();
 
     await dbConnect();
+    const seedRef = parseSeedEditionId(id);
+    if (seedRef) {
+      const seedEdition = await getEditionById(id);
+      if (!seedEdition) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+
+      const gameDoc = await CatalogGame.findOne({ slug: seedRef.gameSlug })
+        .select("_id")
+        .lean();
+
+      /*
+       * A static seed has no document to remove. Persist a hidden tombstone
+       * with the same unique gameSlug/slug pair so every edition reader knows
+       * not to merge that seed back in on the next request or deployment.
+       */
+      await EditionModel.findOneAndUpdate(
+        { gameSlug: seedRef.gameSlug, slug: seedRef.slug },
+        {
+          $set: {
+            gameId: (gameDoc as { _id?: unknown } | null)?._id ?? null,
+            name: seedEdition.name,
+            shortDescription: "",
+            description: "",
+            type: seedEdition.type,
+            status: "archived",
+            visibility: "hidden",
+            sortOrder: seedEdition.sortOrder,
+            isDefault: false,
+            installMethod: "manual",
+            installConfig: {},
+            verified: false,
+            verificationLevel: "deprecated",
+            suppressesSeed: true,
+          },
+        },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+
+      return NextResponse.json({ success: true });
+    }
+
     const doc = await EditionModel.findByIdAndDelete(id);
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
