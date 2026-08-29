@@ -18,8 +18,20 @@
  *      ships. Renderer files therefore go through --input-type=module, which
  *      does reject it.
  *
+ *   3. Parsing is not loading. services/openraNat.js exported a function that
+ *      had been deleted in a rename; the file is perfectly valid JavaScript,
+ *      so every check above passed it, and requiring it threw ReferenceError.
+ *      main.js requires it at the top level, so the launcher did not start at
+ *      all — and it shipped. Modules under services/ are therefore required in
+ *      a child process as well as parsed, which is the only way an error that
+ *      exists solely at evaluation can be seen before a user sees it.
+ *
  * Keep CommonJS entrypoints on the plain path: main.js uses require() and is
  * not a module, so module parsing would reject it for the opposite reason.
+ * They are also parse-only for (3): bootstrap/main/preload reach for
+ * contextBridge and process.versions.electron as they load, so requiring them
+ * outside Electron fails for reasons that say nothing about the code. Loading
+ * services/ is what covers them in practice, since that is what they require.
  */
 
 const path = require("path");
@@ -33,6 +45,9 @@ const COMMONJS_FILES = ["bootstrap.js", "main.js", "preload.js"];
 
 /** Directories whose .js/.mjs files are ES modules. */
 const MODULE_DIRS = ["renderer"];
+
+/** CommonJS directories that are required, not just parsed. See (3) above. */
+const LOAD_DIRS = ["services"];
 
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
 
@@ -90,13 +105,35 @@ for (const fullPath of moduleFiles) {
   }
 }
 
+/*
+ * Load check. Test files are excluded because requiring one runs its
+ * assertions, which is the job of the test: scripts, not of a packaging gate.
+ */
+const loadFiles = [];
+for (const dir of LOAD_DIRS) {
+  collectModuleFiles(path.join(launcherDir, dir), loadFiles);
+}
+const loadable = loadFiles.filter((f) => !/\.test\.js$/.test(f) && /\.js$/.test(f));
+
+for (const fullPath of loadable) {
+  const result = spawnSync(process.execPath, ["-e", "require(process.argv[1])", fullPath], {
+    cwd: launcherDir,
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    failed += 1;
+    console.error(`\n[check-launcher-syntax] FAILED TO LOAD: ${path.relative(launcherDir, fullPath)}`);
+    console.error((result.stderr || "").trimEnd());
+  }
+}
+
 if (failed > 0) {
   console.error(
-    `\n[check-launcher-syntax] ${failed} file(s) failed to parse — not packaging.`
+    `\n[check-launcher-syntax] ${failed} file(s) failed to parse or load — not packaging.`
   );
   process.exit(1);
 }
 
 console.log(
-  `[check-launcher-syntax] OK: ${COMMONJS_FILES.join(", ")} + ${moduleFiles.length} module file(s)`
+  `[check-launcher-syntax] OK: ${COMMONJS_FILES.join(", ")} + ${moduleFiles.length} module file(s) parsed, ${loadable.length} service module(s) loaded`
 );

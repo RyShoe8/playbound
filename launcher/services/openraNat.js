@@ -125,8 +125,22 @@ function isOpenRaFamily(slug, entry) {
   );
 }
 
+/*
+ * `enableDiscoverNat` was exported here until it took the launcher down.
+ *
+ * The function was removed when this module inverted its behaviour — it used
+ * to turn OpenRA's DiscoverNatDevices on, and now turns it off, because the
+ * UPnP lease queries froze the game — but the export line stayed. Nothing ever
+ * called it, so the only thing it did was throw ReferenceError the moment this
+ * module was required, and main.js requires it at the top level, so the whole
+ * app failed to start.
+ *
+ * Parsing cannot catch this: the file is valid JavaScript and the error only
+ * exists at evaluation. check-launcher-syntax.js now requires each module as
+ * well as parsing it, so a dangling export cannot ship again.
+ */
 module.exports = {
-  enableDiscoverNat,
+  configureOpenRaSettings,
   ensureOpenRaUpnpSettings,
   prepareOpenRaNetwork,
   isOpenRaFamily,
