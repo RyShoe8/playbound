@@ -144,7 +144,9 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
   const os = detectOs(ctx.userAgent);
   const page = normalizePage(update.page);
 
-  const existing = (await Presence.findOne({ userId: ctx.userId }).lean()) as PresenceLean;
+  const existing = (await Presence.findOne({ userId: ctx.userId })
+    .select("status platform lastHeartbeat currentGameId currentEditionId")
+    .lean()) as PresenceLean;
   const preserve = shouldPreserveLauncherPlaying(existing, platform, update, now);
 
   const set: Record<string, unknown> = {
@@ -206,16 +208,23 @@ export async function startPresence(ctx: PresenceContext, update: PresenceUpdate
 /**
  * Record a heartbeat.
  *
- * This is the hot path — it runs once a minute for every open tab — so it is
- * two targeted updates by indexed key and nothing else. No reads, no
- * aggregation, and only the fields the client actually reported.
+ * This is the hot path — it runs once a minute for every open tab — so it does
+ * the least it can: one projected read to decide what to preserve, then
+ * targeted updates by indexed key, writing only the fields the client reported.
+ *
+ * The read cannot be folded into the write: `shouldPreserveLauncherPlaying`
+ * needs the previous row to decide what the update should even contain. It is
+ * projected to the five fields that decision and the activity diff below
+ * actually use, rather than hydrating the whole document to look at `status`.
  */
 export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
   await dbConnect();
   const now = new Date();
   const platform = detectPlatform(ctx.userAgent);
 
-  const existing = (await Presence.findOne({ userId: ctx.userId }).lean()) as PresenceLean;
+  const existing = (await Presence.findOne({ userId: ctx.userId })
+    .select("status platform lastHeartbeat currentGameId currentEditionId")
+    .lean()) as PresenceLean;
   const preserve = shouldPreserveLauncherPlaying(existing, platform, update, now);
 
   const set: Record<string, unknown> = { lastHeartbeat: now };
@@ -230,7 +239,10 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
   // blanking it. Even when preserving playing, web may update currentPage.
   if (update.page !== undefined) set.currentPage = normalizePage(update.page);
 
-  const presence = await Presence.findOneAndUpdate(
+  // `updateOne`, not `findOneAndUpdate`: the caller reports success and nothing
+  // reads the updated row back, so returning and hydrating it every beat was
+  // paying for a document to throw away.
+  await Presence.updateOne(
     { userId: ctx.userId },
     {
       $set: set,
@@ -238,8 +250,8 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
     },
     // Upsert so a heartbeat arriving after a sweep (or a server restart)
     // silently restores presence instead of failing.
-    { upsert: true, returnDocument: "after" }
-  ).lean();
+    { upsert: true }
+  );
 
   if (update.sessionId) {
     await PlatformSession.updateOne(
@@ -254,18 +266,37 @@ export async function heartbeat(ctx: PresenceContext, update: PresenceUpdate) {
       set.currentGameId !== undefined
         ? (set.currentGameId as string | null)
         : existing?.currentGameId ?? null;
-    void import("@/lib/playTogether/activityNotify").then(({ maybeNotifyFriendsStartedPlaying }) =>
-      maybeNotifyFriendsStartedPlaying({
-        userId: ctx.userId,
-        previousStatus: existing?.status,
-        previousGameId: existing?.currentGameId,
-        nextStatus,
-        nextGameId: nextGame,
-      })
-    );
-  }
 
-  return presence;
+    /*
+     * Only reach for the notifier when this beat could actually produce a
+     * notification — a transition *into* a game.
+     *
+     * These two conditions mirror the early returns at the top of
+     * maybeNotifyFriendsStartedPlaying, which still re-checks them; duplicating
+     * them here is what lets us skip the dynamic import and the promise chain
+     * rather than paying for both to reach a function that returns immediately.
+     * That is the overwhelming majority of beats: every browsing tab fails the
+     * first check, and someone actually playing fails the second on every beat
+     * after the one that started the session.
+     */
+    const startedPlaying =
+      nextStatus === "playing" &&
+      Boolean(nextGame) &&
+      !(existing?.status === "playing" && existing?.currentGameId === nextGame);
+
+    if (startedPlaying) {
+      void import("@/lib/playTogether/activityNotify").then(
+        ({ maybeNotifyFriendsStartedPlaying }) =>
+          maybeNotifyFriendsStartedPlaying({
+            userId: ctx.userId,
+            previousStatus: existing?.status,
+            previousGameId: existing?.currentGameId,
+            nextStatus,
+            nextGameId: nextGame,
+          })
+      );
+    }
+  }
 }
 
 /** Stamp or clear the party the user is in. Does not change online/playing. */
