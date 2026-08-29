@@ -62,9 +62,11 @@ function PageViewTracker() {
 
     // Idle so page_view POSTs don't contend with App Router RSC on soft nav.
     const send = () => {
+      const isWebdriver = typeof navigator !== "undefined" && Boolean(navigator.webdriver);
       void telemetry.page(path, {
         path,
         title: typeof document !== "undefined" ? document.title : undefined,
+        ...(isWebdriver ? { webdriver: true } : {}),
       });
     };
     let idleId: number | undefined;

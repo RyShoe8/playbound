@@ -10,6 +10,7 @@ type SearchParams = Promise<{
   event?: string;
   from?: string;
   to?: string;
+  includeBots?: string;
 }>;
 
 function startOfDay(d: Date): Date {
@@ -24,10 +25,27 @@ function daysAgo(n: number): Date {
   return startOfDay(d);
 }
 
+interface TelemetryDoc {
+  _id: unknown;
+  event: string;
+  userId?: string | null;
+  username?: string | null;
+  sessionId?: string | null;
+  url?: string | null;
+  country?: string | null;
+  browser?: string | null;
+  os?: string | null;
+  device?: string | null;
+  isBot?: boolean;
+  createdAt?: Date | string | null;
+  properties?: Record<string, unknown>;
+}
+
 async function loadAnalytics(filters: {
   event?: string;
   from?: string;
   to?: string;
+  includeBots?: boolean;
 }) {
   await dbConnect();
 
@@ -39,7 +57,8 @@ async function loadAnalytics(filters: {
   const d30 = daysAgo(30);
   const d60 = daysAgo(60);
 
-  const recentFilter: Record<string, unknown> = {};
+  const botCondition = filters.includeBots ? {} : { isBot: { $ne: true } };
+  const recentFilter: Record<string, unknown> = { ...botCondition };
   if (filters.event) recentFilter.event = filters.event;
   const createdAt: { $gte?: Date; $lte?: Date } = {};
   if (filters.from) {
@@ -67,25 +86,27 @@ async function loadAnalytics(filters: {
     uniqueSessions7dPrev,
     identifiedUsers7dPrev,
   ] = await Promise.all([
-    TelemetryEvent.countDocuments({ createdAt: { $gte: today } }),
-    TelemetryEvent.countDocuments({ createdAt: { $gte: d7 } }),
-    TelemetryEvent.countDocuments({ createdAt: { $gte: d30 } }),
+    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: today } }),
+    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: d7 } }),
+    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: d30 } }),
     TelemetryEvent.distinct("sessionId", {
+      ...botCondition,
       createdAt: { $gte: d7 },
       sessionId: { $nin: [null, ""] },
     }).then((ids) => ids.length),
     TelemetryEvent.distinct("userId", {
+      ...botCondition,
       createdAt: { $gte: d7 },
       userId: { $nin: [null, ""] },
     }).then((ids) => ids.length),
     TelemetryEvent.aggregate<{ _id: string; count: number }>([
-      { $match: { createdAt: { $gte: d7 } } },
+      { $match: { ...botCondition, createdAt: { $gte: d7 } } },
       { $group: { _id: "$event", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 15 },
     ]),
     TelemetryEvent.aggregate<{ _id: string; count: number }>([
-      { $match: { createdAt: { $gte: d14 } } },
+      { $match: { ...botCondition, createdAt: { $gte: d14 } } },
       {
         $group: {
           _id: {
@@ -99,10 +120,10 @@ async function loadAnalytics(filters: {
     TelemetryEvent.find(recentFilter)
       .sort({ createdAt: -1 })
       .limit(40)
-      .select("event userId sessionId url country browser os device createdAt properties")
+      .select("event userId sessionId url country browser os device isBot createdAt properties")
       .lean(),
-    TelemetryEvent.countDocuments({ createdAt: { $gte: yesterday, $lt: today } }),
-    TelemetryEvent.countDocuments({ createdAt: { $gte: d14, $lt: d7 } }),
+    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: yesterday, $lt: today } }),
+    TelemetryEvent.countDocuments({ ...botCondition, createdAt: { $gte: d14, $lt: d7 } }),
     TelemetryEvent.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
     TelemetryEvent.distinct("sessionId", {
       createdAt: { $gte: d14, $lt: d7 },
@@ -172,6 +193,7 @@ export default async function AdminAnalyticsPage({
       event: sp.event,
       from: sp.from,
       to: sp.to,
+      includeBots: Boolean(sp.includeBots),
     });
   } catch (err) {
     console.error("Failed to load telemetry analytics", err);
@@ -190,15 +212,27 @@ export default async function AdminAnalyticsPage({
       </div>
 
       {loadError || !data ? (
-        <p className="text-sm text-muted-foreground">
-          Could not load telemetry data. Check the database connection.
-        </p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
+          Could not load analytics. Make sure MongoDB is reachable.
+        </div>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <StatTile label="Events today" value={String(data.eventsToday)} trend={{ value: data.eventsTodayPrev, label: "yesterday" }} />
-            <StatTile label="Events (7d)" value={String(data.events7d)} trend={{ value: data.events7dPrev }} />
-            <StatTile label="Events (30d)" value={String(data.events30d)} trend={{ value: data.events30dPrev }} />
+            <StatTile
+              label="Events today"
+              value={String(data.eventsToday)}
+              trend={{ value: data.eventsTodayPrev, label: "yesterday" }}
+            />
+            <StatTile
+              label="Events (7d)"
+              value={String(data.events7d)}
+              trend={{ value: data.events7dPrev }}
+            />
+            <StatTile
+              label="Events (30d)"
+              value={String(data.events30d)}
+              trend={{ value: data.events30dPrev }}
+            />
             <StatTile
               label="Sessions (7d)"
               value={String(data.uniqueSessions7d)}
@@ -215,18 +249,21 @@ export default async function AdminAnalyticsPage({
           <section>
             <SectionHeader
               title="Daily volume"
-              subtitle="Last 14 days"
+              subtitle="Events over the last 14 days"
             />
             {data.dailyVolume.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No events yet.</p>
+              <p className="text-sm text-muted-foreground">No volume data.</p>
             ) : (
-              <ul className="space-y-2 rounded-xl border border-border bg-card p-4">
+              <ul className="space-y-2">
                 {data.dailyVolume.map((day) => (
-                  <li key={day._id} className="flex items-center gap-3 text-sm">
+                  <li
+                    key={day._id}
+                    className="flex items-center gap-3 text-sm"
+                  >
                     <span className="w-24 shrink-0 font-mono text-xs text-muted-foreground">
                       {day._id}
                     </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+                    <div className="h-4 flex-1 rounded-full bg-secondary overflow-hidden">
                       <div
                         className="h-full rounded-full bg-primary"
                         style={{
@@ -292,7 +329,9 @@ export default async function AdminAnalyticsPage({
               subtitle={
                 sp.event
                   ? `Filtered to ${sp.event}`
-                  : "Latest 40 events"
+                  : sp.includeBots
+                    ? "Latest 40 events (including bots)"
+                    : "Latest 40 events (excluding bots)"
               }
             />
             <form
@@ -327,13 +366,23 @@ export default async function AdminAnalyticsPage({
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
               </label>
+              <label className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-muted-foreground cursor-pointer select-none">
+                <input
+                  name="includeBots"
+                  type="checkbox"
+                  value="1"
+                  defaultChecked={Boolean(sp.includeBots)}
+                  className="rounded border-border"
+                />
+                Include bots
+              </label>
               <button
                 type="submit"
                 className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
               >
                 Filter
               </button>
-              {(sp.event || sp.from || sp.to) && (
+              {(sp.event || sp.from || sp.to || sp.includeBots) && (
                 <Link
                   href="/admin/analytics"
                   className="rounded-full border border-border bg-secondary px-4 py-2 text-sm font-bold"
@@ -391,9 +440,16 @@ export default async function AdminAnalyticsPage({
                         </td>
                         <td className="px-4 py-2.5">{doc.country || "—"}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">
-                          {[doc.browser, doc.os, doc.device]
-                            .filter(Boolean)
-                            .join(" · ") || "—"}
+                          <div className="flex items-center gap-1.5">
+                            {[doc.browser, doc.os, doc.device]
+                              .filter(Boolean)
+                              .join(" · ") || "—"}
+                            {doc.isBot && (
+                              <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500 uppercase tracking-wide">
+                                Bot
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
