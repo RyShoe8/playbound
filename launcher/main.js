@@ -7138,6 +7138,18 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   } catch (err) {
     const rawMessage = err?.message || String(err);
     const exeName = path.basename(launchPath || "") || "game";
+    /*
+     * Both branches below already read this, and neither declared it — the
+     * name is defined in two other functions, so nothing failed to parse and
+     * the reference only threw when a launch error was being *reported*. That
+     * turned any failure here into "ReferenceError: isJar is not defined",
+     * hiding the real reason, and surfaced on GoldenEye Source even though the
+     * game itself had started.
+     *
+     * Read from launchPath at this point rather than where it is first set,
+     * because the YSoccer online path reassigns it after that.
+     */
+    const isJar = /\.jar$/i.test(launchPath || "");
     let code = "UNKNOWN";
     let message = rawMessage;
     if (err?.code === "JAVA_MISSING" || (/Java 17\+/i.test(rawMessage) && !/exited immediately/i.test(rawMessage))) {
@@ -10254,10 +10266,13 @@ ipcMain.handle("show-desktop-notification", async (_event, opts) => {
         urgency: "critical",
       });
       notif.on("click", () => {
-        if (mainWindow) {
-          if (mainWindow.isMinimized()) mainWindow.restore();
-          mainWindow.show();
-          mainWindow.focus();
+        // `win` is the main window; `mainWindow` was never declared, so this
+        // handler threw and clicking a notification did nothing — including
+        // the party invites that only arrive this way.
+        if (win) {
+          if (win.isMinimized()) win.restore();
+          win.show();
+          win.focus();
         }
       });
       notif.show();
