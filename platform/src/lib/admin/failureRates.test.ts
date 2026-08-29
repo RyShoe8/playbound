@@ -140,4 +140,51 @@ describe("failure rate windows", () => {
       expect(empty[w].overall.rate).toBeNull();
     }
   });
+
+  it("breaks down rates by platform while preserving aggregate numbers", () => {
+    const rates = buildFailureRates([
+      {
+        _id: { event: FAILURE_RATE_EVENTS.installCompleted, platform: "win32" },
+        d1: 9,
+        d7: 18,
+        d30: 27,
+      },
+      {
+        _id: { event: FAILURE_RATE_EVENTS.installFailed, platform: "win32" },
+        d1: 1,
+        d7: 2,
+        d30: 3,
+      },
+      {
+        _id: { event: FAILURE_RATE_EVENTS.installCompleted, platform: "darwin" },
+        d1: 5,
+        d7: 10,
+        d30: 15,
+      },
+      {
+        _id: { event: FAILURE_RATE_EVENTS.installFailed, platform: "darwin" },
+        d1: 5,
+        d7: 10,
+        d30: 15,
+      },
+    ]);
+
+    // Global aggregates: 1 + 5 = 6 failed, 9 + 5 = 14 completed -> 6 / 20 = 30%
+    expect(rates.d1.installs.rate).toBeCloseTo(30);
+    expect(rates.d1.installs.failed).toBe(6);
+    expect(rates.d1.installs.completed).toBe(14);
+
+    // Platforms identified & sorted
+    expect(rates.platforms).toEqual(["Windows", "macOS"]);
+
+    // Windows: 1 failed, 9 completed -> 10%
+    expect(rates.d1.byPlatform["Windows"].installs.rate).toBeCloseTo(10);
+    expect(rates.d1.byPlatform["Windows"].installs.failed).toBe(1);
+    expect(rates.d1.byPlatform["Windows"].installs.completed).toBe(9);
+
+    // macOS: 5 failed, 5 completed -> 50%
+    expect(rates.d1.byPlatform["macOS"].installs.rate).toBeCloseTo(50);
+    expect(rates.d1.byPlatform["macOS"].installs.failed).toBe(5);
+    expect(rates.d1.byPlatform["macOS"].installs.completed).toBe(5);
+  });
 });

@@ -55,12 +55,25 @@ export type Tally = {
   rate: number | null;
 };
 
-export type FailureRates = Record<FailureWindow, {
+export type PlatformTallies = {
   installs: Tally;
   launches: Tally;
   party: Tally;
   overall: Tally;
-}>;
+};
+
+export type FailureRates = Record<
+  FailureWindow,
+  {
+    installs: Tally;
+    launches: Tally;
+    party: Tally;
+    overall: Tally;
+    byPlatform: Record<string, PlatformTallies>;
+  }
+> & {
+  platforms: string[];
+};
 
 function tally(failed: number, completed: number): Tally {
   const total = failed + completed;
@@ -71,21 +84,92 @@ const EMPTY_TALLY: Tally = { failed: 0, completed: 0, rate: null };
 
 export function emptyFailureRates(): FailureRates {
   return {
-    d1: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY },
-    d7: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY },
-    d30: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY },
+    d1: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
+    d7: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
+    d30: { installs: EMPTY_TALLY, launches: EMPTY_TALLY, party: EMPTY_TALLY, overall: EMPTY_TALLY, byPlatform: {} },
+    platforms: [],
   };
 }
 
-/** Shape the aggregation returns: one row per event with a count per window. */
-type EventCounts = { _id: string; d1: number; d7: number; d30: number };
+export function normalizeTelemetryPlatform(raw: unknown): string {
+  if (typeof raw !== "string" || !raw.trim()) return "Unknown";
+  const s = raw.trim().toLowerCase();
+  if (s.includes("mac") || s.includes("darwin") || s === "osx") return "macOS";
+  if (s.includes("win")) return "Windows";
+  if (s.includes("linux")) return "Linux";
+  if (s.includes("android")) return "Android";
+  if (s.includes("ios") || s.includes("iphone") || s.includes("ipad")) return "iOS";
+  if (s.includes("web") || s.includes("browser")) return "Browser";
+  return raw.trim().charAt(0).toUpperCase() + raw.trim().slice(1);
+}
+
+const PLATFORM_PRIORITY = ["Windows", "macOS", "Linux", "Android", "iOS", "Browser"];
+
+export function sortPlatforms(platforms: string[]): string[] {
+  return [...platforms].sort((a, b) => {
+    const idxA = PLATFORM_PRIORITY.indexOf(a);
+    const idxB = PLATFORM_PRIORITY.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+}
+
+/** Shape the aggregation returns: one row per event (and optional platform) with a count per window. */
+export type EventCounts = {
+  _id: string | { event: string; platform?: string | null };
+  d1: number;
+  d7: number;
+  d30: number;
+};
 
 export function buildFailureRates(rows: EventCounts[]): FailureRates {
-  const byEvent = new Map(rows.map((r) => [r._id, r]));
-  const count = (event: string, window: FailureWindow) => byEvent.get(event)?.[window] ?? 0;
+  const byEvent = new Map<string, { d1: number; d7: number; d30: number }>();
+  const byPlatformEvent = new Map<string, Map<string, { d1: number; d7: number; d30: number }>>();
+  const platformsWithData = new Set<string>();
 
+  for (const r of rows) {
+    const event = typeof r._id === "string" ? r._id : r._id?.event;
+    if (!event) continue;
+
+    const rawPlatform = typeof r._id === "object" ? r._id?.platform : null;
+    const platform = rawPlatform ? normalizeTelemetryPlatform(rawPlatform) : null;
+
+    // Sum into global byEvent
+    const curEvent = byEvent.get(event) ?? { d1: 0, d7: 0, d30: 0 };
+    curEvent.d1 += r.d1 || 0;
+    curEvent.d7 += r.d7 || 0;
+    curEvent.d30 += r.d30 || 0;
+    byEvent.set(event, curEvent);
+
+    // If platform is present, sum into byPlatformEvent
+    if (platform) {
+      if ((r.d1 || 0) + (r.d7 || 0) + (r.d30 || 0) > 0) {
+        platformsWithData.add(platform);
+      }
+      let platformMap = byPlatformEvent.get(platform);
+      if (!platformMap) {
+        platformMap = new Map();
+        byPlatformEvent.set(platform, platformMap);
+      }
+      const curPlatEvent = platformMap.get(event) ?? { d1: 0, d7: 0, d30: 0 };
+      curPlatEvent.d1 += r.d1 || 0;
+      curPlatEvent.d7 += r.d7 || 0;
+      curPlatEvent.d30 += r.d30 || 0;
+      platformMap.set(event, curPlatEvent);
+    }
+  }
+
+  const platforms = sortPlatforms(Array.from(platformsWithData));
   const windows: FailureWindow[] = ["d1", "d7", "d30"];
   const out = emptyFailureRates();
+  out.platforms = platforms;
+
+  const count = (event: string, window: FailureWindow) => byEvent.get(event)?.[window] ?? 0;
+  const pCount = (platform: string, event: string, window: FailureWindow) =>
+    byPlatformEvent.get(platform)?.get(event)?.[window] ?? 0;
+
   for (const w of windows) {
     const installs = tally(
       count(FAILURE_RATE_EVENTS.installFailed, w),
@@ -99,16 +183,46 @@ export function buildFailureRates(rows: EventCounts[]): FailureRates {
       count(FAILURE_RATE_EVENTS.partyFailed, w),
       count(FAILURE_RATE_EVENTS.partyCompleted, w)
     );
+    const overall = tally(
+      installs.failed + launches.failed + party.failed,
+      installs.completed + launches.completed + party.completed
+    );
+
+    const byPlatform: Record<string, PlatformTallies> = {};
+    for (const p of platforms) {
+      const pInstalls = tally(
+        pCount(p, FAILURE_RATE_EVENTS.installFailed, w),
+        pCount(p, FAILURE_RATE_EVENTS.installCompleted, w)
+      );
+      const pLaunches = tally(
+        pCount(p, FAILURE_RATE_EVENTS.launchFailed, w),
+        pCount(p, FAILURE_RATE_EVENTS.launchCompleted, w)
+      );
+      const pParty = tally(
+        pCount(p, FAILURE_RATE_EVENTS.partyFailed, w),
+        pCount(p, FAILURE_RATE_EVENTS.partyCompleted, w)
+      );
+      const pOverall = tally(
+        pInstalls.failed + pLaunches.failed + pParty.failed,
+        pInstalls.completed + pLaunches.completed + pParty.completed
+      );
+      byPlatform[p] = {
+        installs: pInstalls,
+        launches: pLaunches,
+        party: pParty,
+        overall: pOverall,
+      };
+    }
+
     out[w] = {
       installs,
       launches,
       party,
-      overall: tally(
-        installs.failed + launches.failed + party.failed,
-        installs.completed + launches.completed + party.completed
-      ),
+      overall,
+      byPlatform,
     };
   }
+
   return out;
 }
 
@@ -142,7 +256,10 @@ export async function getFailureRates(
       },
       {
         $group: {
-          _id: "$event",
+          _id: {
+            event: "$event",
+            platform: { $ifNull: ["$os", { $ifNull: ["$properties.platform", "Unknown"] }] },
+          },
           d1: { $sum: { $cond: [{ $gte: ["$createdAt", since1] }, 1, 0] } },
           d7: { $sum: { $cond: [{ $gte: ["$createdAt", since7] }, 1, 0] } },
           d30: { $sum: 1 },
