@@ -591,7 +591,8 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
     return { error: `Host is at capacity (${MAX_ROOMS} rooms)` };
   }
 
-  let resolved = resolveRecipe(gameSlug);
+  const roomCtx = { editionSlug, mod, partyId, name };
+  let resolved = resolveRecipe(gameSlug, roomCtx);
   if (!resolved) return { error: `Game ${gameSlug} is not hostable` };
 
   if (gameSlug === ET_SLUG) {
@@ -622,7 +623,7 @@ async function startRoom({ gameSlug, partyId, name, editionSlug, mod }) {
           missingDedicatedBinaryMessage(gameSlug, resolved.recipe),
       };
     }
-    resolved = resolveRecipe(gameSlug);
+    resolved = resolveRecipe(gameSlug, roomCtx);
   }
   const { recipe, binary } = resolved;
   if (!binary) {

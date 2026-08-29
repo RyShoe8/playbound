@@ -25,6 +25,9 @@ function openRaModName(editionSlug) {
   const raw = String(editionSlug || "").toLowerCase();
   if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
+  if (raw.includes("combined") || raw.includes("ca")) return "ca";
+  if (raw.includes("openhv") || raw === "hv") return "hv";
+  if (raw.includes("ra2")) return "ra2";
   return "ra";
 }
 

@@ -93,6 +93,9 @@ function openRaMod(editionSlug) {
   const raw = String(editionSlug || "").toLowerCase();
   if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
+  if (raw.includes("combined") || raw.includes("ca")) return "ca";
+  if (raw.includes("openhv") || raw === "hv") return "hv";
+  if (raw.includes("ra2")) return "ra2";
   return "ra";
 }
 
@@ -127,7 +130,23 @@ export const recipes = {
     portStart: 1234,
     portEnd: 1250,
     protocol: "tcp",
-    binaries: gameBin("openra", ["OpenRA.Server", "openra-server"]),
+    binaries: [
+      ...gameBin("openra", ["OpenRA.Server", "openra-server"]),
+      ...gameBin("combined-arms", ["OpenRA.Server", "openra-server"]),
+      ...gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]),
+    ],
+    resolveBinary: (candidates, ctx) => {
+      const ed = String(ctx?.editionSlug || "").toLowerCase();
+      if (ed.includes("combined") || ed === "ca") {
+        const caBin = firstExisting(gameBin("combined-arms", ["OpenRA.Server", "openra-server"]));
+        if (caBin) return caBin;
+      }
+      if (ed.includes("openhv") || ed === "hv") {
+        const hvBin = firstExisting(gameBin("openhv", ["OpenHV.Server", "openhv-server", "OpenRA.Server"]));
+        if (hvBin) return hvBin;
+      }
+      return firstExisting(candidates);
+    },
     args: (port, ctx) => [
       // ctx.mod is an explicit override for the "official" edition, which is
       // one client covering ra/cnc/d2k — editionSlug alone can't say which.
@@ -564,14 +583,22 @@ export const recipes = {
     spawnEnv: () => ({ SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" }),
     args: (port, ctx, binary) => {
       const isChoc = binary && binary.toLowerCase().includes("chocolate");
+      const iwadArgs = [];
+      const ed = String(ctx?.editionSlug || "").toLowerCase();
+      if (ed.includes("phase-1") || ed.includes("phase1") || ed === "1") {
+        iwadArgs.push("-iwad", "freedoom1.wad");
+      } else if (ed.includes("phase-2") || ed.includes("phase2") || ed === "2") {
+        iwadArgs.push("-iwad", "freedoom2.wad");
+      }
       if (isChoc) {
-        return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party"];
+        return ["-port", String(port), "-servername", ctx.name || "PlayBound.club Party", ...iwadArgs];
       }
       return [
         "-port",
         String(port),
         "+sv_hostname",
         ctx.name || "PlayBound.club Party",
+        ...iwadArgs,
       ];
     },
   },
@@ -640,11 +667,11 @@ export const recipes = {
   },
 };
 
-export function resolveRecipe(slug) {
+export function resolveRecipe(slug, ctx) {
   const recipe = recipes[slug];
   if (!recipe) return null;
   const binary = recipe.resolveBinary
-    ? recipe.resolveBinary(recipe.binaries)
+    ? recipe.resolveBinary(recipe.binaries, ctx)
     : firstExisting(recipe.binaries);
   return { recipe, binary };
 }

@@ -7,7 +7,9 @@ import MirrorAttempt from "@/lib/models/MirrorAttempt";
 import MirrorJob from "@/lib/models/MirrorJob";
 import CatalogGame from "@/lib/models/CatalogGame";
 import Edition from "@/lib/models/Edition";
+import CatalogMod from "@/lib/models/CatalogMod";
 import { editions as seedEditions } from "@/lib/data/editions";
+import { mods as seedMods } from "@/lib/data/mods";
 import { launcherInstallBySlug } from "@/lib/data/launcherInstall";
 import { ensureArtifact } from "@/lib/mirrors/ensureArtifact";
 import type { ArtifactType } from "@/lib/models/Artifact";
@@ -60,15 +62,28 @@ export async function resolveItchDownloadUrl(pageUrl: string, uploadIdHint?: str
 /**
  * Some older artifact rows were created before the launcher reported its
  * source URL. The catalog recipe is an explicit, read-only fallback for that
- * exact game or edition; it does not alter the game, the artifact, or any source record.
+ * exact game, edition, or mod; it does not alter the game, the artifact, or any source record.
  */
 export async function catalogArchiveSourceUrl(
   gameSlug: string | null | undefined,
-  editionSlug?: string | null | undefined
+  editionSlug?: string | null | undefined,
+  modSlug?: string | null | undefined
 ): Promise<string | null> {
   const slug = String(gameSlug || "").trim();
   const eSlug = String(editionSlug || "").trim();
-  if (!slug) return null;
+  const mSlug = String(modSlug || "").trim();
+  if (!slug && !mSlug) return null;
+
+  if (mSlug) {
+    const doc = await CatalogMod.findOne({ slug: mSlug }).select("directUrl githubRepo website").lean();
+    const seed = seedMods.find((m) => m.slug === mSlug);
+    const directUrl = String(doc?.directUrl || seed?.directUrl || "").trim();
+    if (/^https:\/\//i.test(directUrl)) return directUrl;
+    const repo = String(doc?.githubRepo || seed?.repo || "").trim();
+    if (repo && /^https:\/\//i.test(repo)) return repo;
+    const website = String(doc?.website || seed?.website || "").trim();
+    if (website && /^https:\/\//i.test(website)) return website;
+  }
 
   if (eSlug) {
     const doc = await Edition.findOne({ gameSlug: slug, slug: eSlug }).select("installConfig").lean();
@@ -444,6 +459,18 @@ export async function archiveArtifactToVps(
       sourceLabel = "R2 hot cache";
     }
   }
+  let editionSlug: string | undefined;
+  let modSlug: string | undefined;
+  if (artifact.artifactType === "edition") {
+    const match = artifact.relativePath?.match(/\/editions\/([^/]+)\//) ||
+      artifact.artifactId?.match(/^([^-]+)-edition-([^-]+)/);
+    if (match) editionSlug = match[1] || match[2];
+  } else if (artifact.artifactType === "mod") {
+    const match = artifact.relativePath?.match(/\/mods\/([^/]+)/) ||
+      artifact.artifactId?.match(/^([^-]+)-mod-([^-]+)/);
+    if (match) modSlug = match[1] || match[2] || artifact.artifactId;
+  }
+
   /*
    * Prefer a current catalog URL when it names this exact file. Operational
    * MirrorSource rows are historical telemetry and may contain expired itch
@@ -451,13 +478,13 @@ export async function archiveArtifactToVps(
    * package URL was current. Exact filename matching prevents substituting a
    * sibling edition or a different package.
    */
-  if (!sourceUrl && artifact.gameSlug && artifact.filename) {
-    const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug);
+  if (!sourceUrl && (artifact.gameSlug || modSlug) && artifact.filename) {
+    const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
     if (catalogUrl) {
       try {
-        if (decodeURIComponent(new URL(catalogUrl).pathname).split("/").pop() === artifact.filename) {
+        if (decodeURIComponent(new URL(catalogUrl).pathname).split("/").pop() === artifact.filename || artifact.artifactType === "mod") {
           sourceUrl = catalogUrl;
-          sourceLabel = "current catalog download";
+          sourceLabel = artifact.artifactType === "mod" ? "catalog mod source" : "current catalog download";
         }
       } catch {
         /* Fall through to the explicitly selected/recorded source. */
@@ -507,10 +534,10 @@ export async function archiveArtifactToVps(
     if (candidate.startsWith("https://")) {
       sourceUrl = candidate;
     } else {
-      const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug);
+      const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
       if (catalogUrl) {
         sourceUrl = catalogUrl;
-        sourceLabel = "current catalog download";
+        sourceLabel = artifact.artifactType === "mod" ? "catalog mod source" : "current catalog download";
       }
     }
     if (!sourceUrl) {
