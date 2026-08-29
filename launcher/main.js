@@ -4645,11 +4645,21 @@ async function applyControllerConfig(slug, installDir) {
 
   let profile = controllerProfiles.pickPrimary(lastKnownGamepads);
   const couchActive = Boolean(couchHost?.getState?.()?.active);
+  /*
+   * YSoccer only sees a pad if its preferences already name one, so with no pad
+   * connected it gets a stand-in and the file is seeded with the known
+   * controller names. That is not configuring anyone's controller, so it does
+   * not ask — but a player who *does* have a pad plugged in should be asked
+   * like every other game, which is what the blanket `slug !== "ysoccer"`
+   * exclusion below used to prevent.
+   */
+  let syntheticProfile = false;
   if (!profile && couchActive) {
     profile = { family: "xbox", label: "Phone Controller", rawId: "Controller (GC101 1.03)" };
   }
   if (!profile && slug === "ysoccer") {
     profile = { family: "xbox", label: "Controller", rawId: "Controller (GC101 1.03)" };
+    syntheticProfile = true;
   }
   if (!profile) return false;
 
@@ -4669,7 +4679,7 @@ async function applyControllerConfig(slug, installDir) {
   const next = gameControllerConfig.applyProfile(slug, current, profile);
   if (next == null) return false;
 
-  if (!couchActive && slug !== "ysoccer" && !(await shouldConfigureController(slug, profile))) {
+  if (!couchActive && !syntheticProfile && !(await shouldConfigureController(slug, profile))) {
     console.log(`[controller] declined for ${slug}`);
     return false;
   }
