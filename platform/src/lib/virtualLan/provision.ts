@@ -17,7 +17,12 @@ import {
 } from "./client";
 import { getVirtualLanConfig, isVirtualLanGame } from "@/lib/multiplayer/adapters";
 import { defaultHostMode } from "@/lib/multiplayer/hostModes";
-import { trackPartyEvent, trackPartyFailure, trackPartyOk } from "@/lib/playTogether/partyTelemetry";
+import {
+  partyEventProps,
+  trackPartyEvent,
+  trackPartyFailure,
+  trackPartyOk,
+} from "@/lib/playTogether/partyTelemetry";
 
 export type PartyLanStatus = "none" | "pending" | "ready" | "failed";
 
@@ -34,6 +39,8 @@ export type PartyLanFields = Partial<NetBirdParty> & {
 type PartyLike = Document & {
   _id: { toString(): string };
   gameSlug: string;
+  /** Leader's OS, so these server-side events can be attributed. */
+  leaderOs?: string | null;
   maxSize?: number;
   /** Where the room runs. A self-hosted room needs the overlay to be reachable. */
   hostMode?: string | null;
@@ -105,14 +112,14 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
     const netbirdStatus = /NetBird (\d+)/.exec(result.error)?.[1];
     trackPartyFailure("lan", {
       op: "provision",
-      partyId: String(party._id),
+      ...partyEventProps(party),
       gameSlug: slug,
       message: result.error,
       status: netbirdStatus ? Number(netbirdStatus) : undefined,
       code: netbirdStatus ? `NETBIRD_${netbirdStatus}` : "NETBIRD_PROVISION_FAILED",
     });
     trackPartyEvent("party_lan_failed", {
-      partyId: String(party._id),
+      ...partyEventProps(party),
       gameSlug: slug,
       message: result.error,
       code: netbirdStatus ? `NETBIRD_${netbirdStatus}` : "NETBIRD_PROVISION_FAILED",
@@ -131,9 +138,9 @@ export async function provisionPartyLan(party: PartyLike): Promise<boolean> {
   lan.pendingAt = null;
   lan.provisionedAt = new Date();
   await party.save();
-  trackPartyOk("lan", { op: "provision", partyId: String(party._id), gameSlug: slug });
+  trackPartyOk("lan", { op: "provision", ...partyEventProps(party), gameSlug: slug });
   trackPartyEvent("party_lan_ready", {
-    partyId: String(party._id),
+    ...partyEventProps(party),
     gameSlug: slug,
     groupId: result.groupId,
   });

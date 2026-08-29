@@ -4,23 +4,69 @@ export type PartyTelemetryProps = {
   partyId?: string;
   gameSlug?: string | null;
   userId?: string | null;
+  /**
+   * The party leader's OS, when the party recorded one. These events are
+   * raised on the server, so there is no User-Agent to derive it from — see
+   * the note below.
+   */
+  platform?: string | null;
   [key: string]: unknown;
 };
 
-/** Fire-and-forget party ops events. Never throws into the mutation path. */
+/**
+ * Fire-and-forget party ops events. Never throws into the mutation path.
+ *
+ * `origin: "server"` is stamped on every one of them because that is exactly
+ * what they are: provisioning work the server does on a party's behalf, with
+ * no request and no User-Agent behind it. Without it `saveEvent` recorded
+ * `os: "unknown"` and the Ops platform breakdown showed every party operation
+ * as Unknown — which reads as "we failed to detect this user's platform" and
+ * led to the conclusion that macOS and Linux were being lost. They were not;
+ * party events simply never carried a platform at all.
+ *
+ * `platform` carries the leader's OS when the party has one, so a party
+ * failure is attributable to a real platform rather than to the server. The
+ * origin stamp is what the card falls back to when it is absent.
+ */
 export function trackPartyEvent(event: string, props: PartyTelemetryProps): void {
-  const { userId, ...rest } = props;
+  const { userId, platform, ...rest } = props;
   void saveEvent({
     event,
     properties: {
       ...rest,
       partyId: rest.partyId || undefined,
       gameSlug: rest.gameSlug || undefined,
+      platform: platform || undefined,
+      origin: "server",
     },
     userId: userId ?? null,
   }).catch((err) => {
     console.warn("trackPartyEvent failed", event, err);
   });
+}
+
+/**
+ * The identifying props every party event carries, taken from the party.
+ *
+ * Exists so the leader's OS reaches telemetry from one place. It was
+ * previously `partyId` and `gameSlug` written out at each of eighteen call
+ * sites, and adding a third field to all of them by hand is exactly how one
+ * gets missed — which for this field would be invisible, since the event still
+ * saves and simply lands in the wrong bucket.
+ *
+ * `gameSlug` is still overridable: the host and LAN modules resolve the slug
+ * themselves and pass the resolved one.
+ */
+export function partyEventProps(party: {
+  _id: { toString(): string };
+  gameSlug?: string | null;
+  leaderOs?: string | null;
+}): { partyId: string; gameSlug: string | null; platform: string | null } {
+  return {
+    partyId: String(party._id),
+    gameSlug: party.gameSlug ?? null,
+    platform: party.leaderOs ?? null,
+  };
 }
 
 /**

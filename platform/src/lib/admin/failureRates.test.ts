@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   buildFailureRates,
   emptyFailureRates,
+  normalizeTelemetryPlatform,
+  sortPlatforms,
   FAILURE_RATE_EVENTS,
+  SERVER_PLATFORM,
+  UNKNOWN_PLATFORM,
 } from "./failureRates";
 
 /**
@@ -186,5 +190,68 @@ describe("failure rate windows", () => {
     expect(rates.d1.byPlatform["macOS"].installs.rate).toBeCloseTo(50);
     expect(rates.d1.byPlatform["macOS"].installs.failed).toBe(5);
     expect(rates.d1.byPlatform["macOS"].installs.completed).toBe(5);
+  });
+});
+
+/**
+ * Every party operation was reported as Unknown, which reads as "we could not
+ * detect this user's platform" and led to the conclusion that macOS and Linux
+ * were being mislabelled. They were not: party events are raised server-side
+ * and never carried a platform at all, so the bucket was hiding real Mac and
+ * Linux party activity behind a word that means something else.
+ */
+describe("platform attribution", () => {
+  it("maps the tokens the launcher actually reports", () => {
+    // Platform.getOS() returns exactly these three.
+    expect(normalizeTelemetryPlatform("windows")).toBe("Windows");
+    expect(normalizeTelemetryPlatform("macos")).toBe("macOS");
+    expect(normalizeTelemetryPlatform("linux")).toBe("Linux");
+    // …and the shapes a User-Agent parse produces.
+    expect(normalizeTelemetryPlatform("darwin")).toBe("macOS");
+    expect(normalizeTelemetryPlatform("win32")).toBe("Windows");
+  });
+
+  it("keeps 'unknown' and 'server' as distinct answers", () => {
+    // parseUserAgent writes the literal string "unknown" when there is no UA,
+    // so this is a real stored value and not just an absent field.
+    expect(normalizeTelemetryPlatform("unknown")).toBe(UNKNOWN_PLATFORM);
+    expect(normalizeTelemetryPlatform("")).toBe(UNKNOWN_PLATFORM);
+    expect(normalizeTelemetryPlatform(null)).toBe(UNKNOWN_PLATFORM);
+    expect(normalizeTelemetryPlatform("server")).toBe(SERVER_PLATFORM);
+    expect(SERVER_PLATFORM).not.toBe(UNKNOWN_PLATFORM);
+  });
+
+  it("sorts real platforms above Server and Unknown", () => {
+    expect(
+      sortPlatforms([UNKNOWN_PLATFORM, "macOS", SERVER_PLATFORM, "Windows", "Linux"])
+    ).toEqual(["Windows", "macOS", "Linux", SERVER_PLATFORM, UNKNOWN_PLATFORM]);
+  });
+
+  it("puts an unrecognised platform above the non-device buckets, not last", () => {
+    // A new OS appearing in the data should be visible, not filed away at the
+    // bottom next to the rows that mean "no platform".
+    expect(sortPlatforms([UNKNOWN_PLATFORM, "Haiku", SERVER_PLATFORM, "Windows"])).toEqual([
+      "Windows",
+      "Haiku",
+      SERVER_PLATFORM,
+      UNKNOWN_PLATFORM,
+    ]);
+  });
+
+  it("counts Server and Unknown as separate platform rows", () => {
+    const rates = buildFailureRates([
+      { _id: { event: FAILURE_RATE_EVENTS.partyFailed, platform: "Server" }, d1: 6, d7: 6, d30: 6 },
+      { _id: { event: FAILURE_RATE_EVENTS.partyCompleted, platform: "Server" }, d1: 4, d7: 4, d30: 4 },
+      { _id: { event: FAILURE_RATE_EVENTS.partyFailed, platform: "macos" }, d1: 1, d7: 1, d30: 1 },
+      { _id: { event: FAILURE_RATE_EVENTS.partyCompleted, platform: "macos" }, d1: 9, d7: 9, d30: 9 },
+    ]);
+
+    expect(rates.platforms).toEqual(["macOS", SERVER_PLATFORM]);
+    expect(rates.d1.byPlatform[SERVER_PLATFORM].party.rate).toBeCloseTo(60);
+    // The whole point: a Mac party failure is now its own row rather than
+    // being folded into an undifferentiated Unknown.
+    expect(rates.d1.byPlatform["macOS"].party.rate).toBeCloseTo(10);
+    expect(rates.d1.party.failed).toBe(7);
+    expect(rates.d1.party.completed).toBe(13);
   });
 });

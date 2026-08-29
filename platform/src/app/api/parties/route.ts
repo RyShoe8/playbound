@@ -6,6 +6,7 @@ import {
   listDiscoverableParties,
 } from "@/lib/playTogether/party";
 import { PARTY_VISIBILITIES, type PartyVisibility } from "@/lib/playTogether/types";
+import { detectOs } from "@/lib/presence/server";
 
 /**
  * GET /api/parties — user's active parties + discoverable friend parties.
@@ -74,6 +75,13 @@ export async function POST(req: Request) {
       // createParty validates this against the game and falls back to its
       // default, so an unknown value here is safe rather than rejected.
       hostMode: typeof hostMode === "string" ? hostMode : null,
+      /*
+       * This request is the only point in a party's life where a User-Agent
+       * exists — every later provisioning step runs server-side on the party's
+       * behalf. Reusing presence's detector so "what OS is this" has one
+       * answer, including the launcher's own UA form.
+       */
+      leaderOs: detectOs(req.headers.get("user-agent")),
     });
 
     if ("error" in result) {

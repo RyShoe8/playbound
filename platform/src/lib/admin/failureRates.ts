@@ -4,7 +4,6 @@ import {
   FAILURE_RATE_EVENTS,
   buildFailureRates,
   emptyFailureRates,
-  normalizeTelemetryPlatform,
   type EventCounts,
   type FailureRates,
 } from "./failureRateShared";
@@ -16,6 +15,51 @@ import {
  * here so server callers and tests keep importing from one place.
  */
 export * from "./failureRateShared";
+
+/**
+ * A field that is present but says nothing. `parseUserAgent` returns the
+ * *string* `"unknown"` when there is no User-Agent to read, so `os` is almost
+ * never null — which made the previous `$ifNull: ["$os", …]` chain dead code
+ * in exactly the case it existed for. An event carrying a perfectly good
+ * `properties.platform` still bucketed as Unknown because `os` held "unknown".
+ */
+const absent = (field: string) => ({
+  $in: [{ $toLower: { $toString: { $ifNull: [field, ""] } } }, ["", "unknown", "null", "undefined"]],
+});
+
+const usable = (field: string) => ({ $cond: [absent(field), null, field] });
+
+/**
+ * Which platform a row is attributed to.
+ *
+ * Ordered by how much the source actually knows: `os` is derived from the
+ * User-Agent or the launcher's own report, `properties.platform` is what a
+ * server-side caller passed explicitly, and the last step is a label rather
+ * than a guess.
+ *
+ * "Server" and "Unknown" are deliberately different answers. Party operations
+ * run on the server on a party's behalf and have no client OS to record, so
+ * calling them Unknown reads as failed detection and invites the conclusion
+ * that macOS and Linux are being mislabelled. They are not — the launcher
+ * reports `macos`/`linux` and both map correctly. Unknown now means only what
+ * it says: a client event whose platform we could not determine.
+ */
+export const PLATFORM_EXPR = {
+  $let: {
+    vars: { os: usable("$os"), prop: usable("$properties.platform") },
+    in: {
+      $ifNull: [
+        "$$os",
+        {
+          $ifNull: [
+            "$$prop",
+            { $cond: [{ $eq: ["$properties.origin", "server"] }, "Server", "Unknown"] },
+          ],
+        },
+      ],
+    },
+  },
+} as const;
 
 export async function getFailureRates(
   opts: { gameSlug?: string | null; now?: Date } = {}
@@ -44,7 +88,7 @@ export async function getFailureRates(
         $group: {
           _id: {
             event: "$event",
-            platform: { $ifNull: ["$os", { $ifNull: ["$properties.platform", "Unknown"] }] },
+            platform: PLATFORM_EXPR,
           },
           d1: { $sum: { $cond: [{ $gte: ["$createdAt", since1] }, 1, 0] } },
           d7: { $sum: { $cond: [{ $gte: ["$createdAt", since7] }, 1, 0] } },

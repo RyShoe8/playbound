@@ -118,6 +118,18 @@ const PartySchema = new Schema(
 
     name: { type: String, default: null, maxlength: 60 },
 
+    /**
+     * The leader's OS at creation, for attributing party telemetry.
+     *
+     * Party provisioning — Discord, hosting, virtual LAN — runs server-side
+     * with no request behind it, so those events had no platform and every one
+     * of them landed in the Ops card's Unknown bucket. Stamping it once here
+     * costs nothing at creation and lets a party failure be attributed to a
+     * real platform. Null for parties created before this existed, which the
+     * card reports as Server rather than pretending to know.
+     */
+    leaderOs: { type: String, default: null },
+
     // Game configuration — optional at create; leader picks it in the party window.
     gameSlug: { type: String, default: "", index: true },
     editionSlug: { type: String, default: null },
@@ -247,6 +259,8 @@ export type PartyDoc = {
   leaderId: Types.ObjectId;
   members: PartyMemberDoc[];
   name?: string | null;
+  /** Leader's OS at creation; null for parties predating the field. */
+  leaderOs?: string | null;
   gameSlug: string;
   editionSlug?: string | null;
   modSlugs: string[];
