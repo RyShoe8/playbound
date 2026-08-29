@@ -15,7 +15,7 @@ import {
   type FailureRates,
   type FailureWindow,
   type Tally,
-} from "@/lib/admin/failureRates";
+} from "@/lib/admin/failureRateShared";
 
 const WINDOWS: FailureWindow[] = ["d1", "d7", "d30"];
 
