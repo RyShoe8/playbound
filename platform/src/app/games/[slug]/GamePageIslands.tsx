@@ -17,8 +17,6 @@ import {
   getGameLiveStats,
   getGameTopPlayers,
   getEditionLiveStats,
-  getCatalogLiveStats,
-  playingNowBySlug,
 } from "@/lib/liveActivity";
 import { gameScopedUgcFilter } from "@/lib/ugcTarget";
 import { issueForGame } from "@/lib/weekly";
@@ -253,9 +251,8 @@ export async function GameWhyIssueLink({ gameSlug }: { gameSlug: string }) {
 
 export async function GameSimilarBlock({ game }: { game: Game }) {
   const includeTesting = await viewerCanSeeTesting();
-  const [allGames, liveStats, { mode, tiers }] = await Promise.all([
+  const [allGames, { mode, tiers }] = await Promise.all([
     listGames({ includeTesting }),
-    getCatalogLiveStats(),
     getDiscoveryContext(),
   ]);
   const similar = filterGamesByMode(
@@ -267,7 +264,12 @@ export async function GameSimilarBlock({ game }: { game: Game }) {
   return (
     <section>
       <h2 className="mb-4 text-lg font-bold">More Like This</h2>
-      <CompatibleMoreLikeThis games={similar} playingNowBySlug={playingNowBySlug(liveStats)} />
+      {/*
+       * Do not load the catalog-wide activity snapshot here. A single game
+       * page should query that game, not fan out to every provider merely to
+       * decorate recommendation cards with transient player counts.
+       */}
+      <CompatibleMoreLikeThis games={similar} />
     </section>
   );
 }
