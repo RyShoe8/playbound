@@ -60,6 +60,7 @@ import { fetchLeagueOfLegendsServers } from "./providers/league-of-legends";
 import { fetchGenshinImpactServers } from "./providers/genshin-impact";
 import { fetchTripleAServers } from "./providers/triplea";
 import { hasServerBrowser } from "./browserGames";
+import { isUpstreamTimeout } from "./errors";
 import type { GameServer, ServerListResult, ServerProvider } from "./types";
 
 // Counting semantics, source priority, and zero-vs-unknown rules are documented
@@ -436,7 +437,14 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
     return { supported: true, servers, updatedAt };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load servers";
-    console.error(`[servers] ${slug}:`, err);
+    if (isUpstreamTimeout(err)) {
+      // Upstream population feeds are best-effort. Keep the response honest
+      // (unavailable, not a false zero) without dumping every DOMException
+      // constant into the production error log.
+      console.info(`[servers] ${slug}: upstream request timed out; server list unavailable`);
+    } else {
+      console.error(`[servers] ${slug}:`, err);
+    }
     return { supported: true, servers: [], updatedAt, error: message };
   }
 }

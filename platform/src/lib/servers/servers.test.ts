@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { isUpstreamTimeout } from "./errors";
 import { mapSteamServerListRows } from "./providers/steam-server-list";
 import { parseOsrsWorlds, osrsWorldsToServers } from "./providers/old-school-runescape";
+
+describe("isUpstreamTimeout", () => {
+  it("recognizes Node timeout DOMExceptions without matching ordinary failures", () => {
+    expect(isUpstreamTimeout(new DOMException("The operation was aborted due to timeout", "TimeoutError"))).toBe(true);
+    expect(isUpstreamTimeout({ code: 23, message: "timeout" })).toBe(true);
+    expect(isUpstreamTimeout(new Error("Steam GetServerList returned 403"))).toBe(false);
+    expect(isUpstreamTimeout(new DOMException("The operation was aborted", "AbortError"))).toBe(false);
+  });
+});
 
 describe("steam-server-list mapSteamServerListRows", () => {
   it("maps Steam GetServerList rows to GameServer", () => {

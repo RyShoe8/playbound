@@ -1,4 +1,5 @@
 import { attachGeo } from "../geo";
+import { isUpstreamTimeout } from "../errors";
 import type { GameServer } from "../types";
 import { MAX_SERVERS } from "../types";
 import { fetchSteamConcurrentPlayers } from "./steam-concurrent";
@@ -159,10 +160,15 @@ export async function fetchSteamServerList(opts: {
     const concurrentTotal = await concurrentPromise;
     return [...concurrentTotal, ...servers];
   } catch (err) {
-    console.warn(
-      `[servers] ${label}: server list unavailable, using concurrent count —`,
-      err instanceof Error ? err.message : err
-    );
+    // A busy Steam list endpoint is expected occasionally, and the concurrent
+    // count is a valid fallback. Preserve warnings for credentials, response,
+    // parsing, and other failures that may need intervention.
+    if (!isUpstreamTimeout(err)) {
+      console.warn(
+        `[servers] ${label}: server list unavailable, using concurrent count —`,
+        err instanceof Error ? err.message : err
+      );
+    }
     return concurrentPromise;
   }
 }
