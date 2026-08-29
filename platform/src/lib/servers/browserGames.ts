@@ -36,6 +36,7 @@ const DEDICATED_SERVER_GAMES: ReadonlySet<string> = new Set([
   "old-school-runescape",
   "star-wars-galaxies",
   "triplea",
+  "renegade-x",
 ]);
 
 /**
