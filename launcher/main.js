@@ -1699,8 +1699,66 @@ function editionInstallDir(slug, editionSlug) {
   return path.join(gamesRoot(), slug, editionSlug || DEFAULT_EDITION_SLUG);
 }
 
+function maybeDiscoverBaseGameInEditionDir(slug, game, state) {
+  if (!Array.isArray(catalog) || !game) return;
+  const catEntry = catalog.find((e) => e.slug === slug);
+  if (!catEntry || !Array.isArray(catEntry.editions) || catEntry.editions.length <= 1) return;
+  const baseEdCat =
+    catEntry.editions.find((ce) => ce.isDefault || ce.slug === "official" || ce.slug === "default") ||
+    (catEntry.editions[0]?.type === "official" ? catEntry.editions[0] : null) ||
+    catEntry.editions[0];
+  if (!baseEdCat) return;
+
+  const baseEdSlug = baseEdCat.slug || DEFAULT_EDITION_SLUG;
+  if (game.editions?.[baseEdSlug] && playableExePath(game.editions[baseEdSlug])) return;
+
+  const installedEntries = listEditionEntries(game).filter((e) => e.dir && fs.existsSync(e.dir));
+  for (const entry of installedEntries) {
+    const dir = entry.dir;
+    const exeHint =
+      baseEdCat.installConfig?.playbound_installer?.exeHint || catEntry.exeHint || null;
+    let foundExe = null;
+    if (exeHint) {
+      const candidates = exeHint.split("|").map((h) => h.trim().toLowerCase()).filter(Boolean);
+      try {
+        const files = fs.readdirSync(dir);
+        for (const f of files) {
+          const lower = f.toLowerCase();
+          if (lower.endsWith(".exe") || lower.endsWith(".app") || lower.endsWith(".jar")) {
+            if (candidates.some((c) => lower.includes(c))) {
+              foundExe = path.join(dir, f);
+              break;
+            }
+          }
+        }
+      } catch {}
+    }
+    if (foundExe && fs.existsSync(foundExe)) {
+      if (!game.editions) game.editions = {};
+      game.editions[baseEdSlug] = {
+        version: entry.version || null,
+        exe: foundExe,
+        dir,
+        installedAt: entry.installedAt || new Date().toISOString(),
+        editionSlug: baseEdSlug,
+        editionName: baseEdCat.name || "Official",
+        editionType: baseEdCat.type || "official",
+        connectArgs: Array.isArray(baseEdCat.installConfig?.playbound_installer?.connectArgs)
+          ? baseEdCat.installConfig.playbound_installer.connectArgs
+          : undefined,
+      };
+      if (state) {
+        state[slug] = game;
+        saveState(state);
+      }
+      break;
+    }
+  }
+}
+
 function installedEditionsPayload(slug, state = loadState()) {
   const game = ensureGameInstallRecord(state[slug]);
+  maybeDiscoverBaseGameInEditionDir(slug, game, state);
   const catEntry = catalog.find((e) => e.slug === slug);
   const pickList = (...cands) => {
     for (const c of cands) {
