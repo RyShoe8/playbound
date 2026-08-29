@@ -614,6 +614,21 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       ? game.installedEditions.filter((e) => e.exe || e.dir)
       : [];
 
+    const catalogEntry = opts.catalogEntry;
+    const catalogEditions = Array.isArray(catalogEntry?.editions) ? catalogEntry.editions : [];
+    const baseEdition =
+      catalogEditions.find((ce) => ce.isDefault || ce.slug === "official" || ce.slug === "default") ||
+      (catalogEditions[0]?.type === "official" ? catalogEditions[0] : null) ||
+      catalogEditions[0] ||
+      null;
+
+    const isBaseInstalled = Boolean(
+      baseEdition && editions.some((e) => e.editionSlug === baseEdition.slug)
+    );
+    const hasOnlyNonBaseEditions = Boolean(
+      catalogEditions.length > 1 && editions.length > 0 && !isBaseInstalled && baseEdition
+    );
+
     /*
      * One row: which edition, then the single thing you came to do, then
      * everything else behind a menu.
@@ -626,19 +641,27 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     let selected = editions[0]?.editionSlug || game.editionSlug || null;
     const selectedEdition = () => editions.find((e) => e.editionSlug === selected) || null;
 
-    if (editions.length > 1) {
+    let updatePlayButtonState = () => {};
+
+    if (editions.length > 1 || hasOnlyNonBaseEditions) {
       const picker = document.createElement("select");
       picker.className = "library-edition-select";
       picker.setAttribute("aria-label", `Edition of ${game.title}`);
-      picker.innerHTML = editions
-        .map(
-          (ed) =>
-            `<option value="${escapeHtml(ed.editionSlug)}">${escapeHtml(
-              ed.editionName || ed.editionSlug
-            )}</option>`
-        )
-        .join("");
-      picker.value = selected || editions[0].editionSlug;
+      const optionsHtml = editions.map(
+        (ed) =>
+          `<option value="${escapeHtml(ed.editionSlug)}">${escapeHtml(
+            ed.editionName || ed.editionSlug
+          )}</option>`
+      );
+      if (hasOnlyNonBaseEditions) {
+        optionsHtml.push(
+          `<option value="__install_base__">★ ${escapeHtml(
+            baseEdition.name || "Base Game"
+          )} (Not Installed)</option>`
+        );
+      }
+      picker.innerHTML = optionsHtml.join("");
+      picker.value = selected || editions[0]?.editionSlug || "";
       picker.addEventListener("click", (e) => e.stopPropagation());
       picker.addEventListener("change", (e) => {
         e.stopPropagation();
@@ -646,6 +669,7 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
         // A save panel belongs to one edition; drop it rather than let it
         // silently describe a different install than the one now selected.
         block.querySelector(".library-saves-panel")?.remove();
+        updatePlayButtonState();
       });
       copy.appendChild(picker);
     } else if (editions.length === 1 && isMeaningfulEditionName(editions[0].editionName)) {
@@ -662,6 +686,23 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       copy.appendChild(label);
     }
 
+    if (hasOnlyNonBaseEditions) {
+      const baseNotice = document.createElement("div");
+      baseNotice.className = "library-base-missing-notice";
+      baseNotice.innerHTML = `
+        <span class="base-missing-tag">⚠️ Edition only</span>
+        <span class="base-missing-desc">Base game (${escapeHtml(
+          baseEdition.name || "Official"
+        )}) is not installed.</span>
+        <button class="btn-xs btn-primary btn-get-base" type="button">Get Base Game</button>
+      `;
+      baseNotice.querySelector(".btn-get-base")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        api.openEditionDetail(game.slug, baseEdition.slug, "library");
+      });
+      copy.appendChild(baseNotice);
+    }
+
     const group = document.createElement("div");
     group.className = "library-action-group";
 
@@ -669,11 +710,26 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     play.type = "button";
     play.className = "btn-success btn-sm btn-lib-play";
     play.textContent = "Play";
+
+    updatePlayButtonState = () => {
+      if (selected === "__install_base__") {
+        play.textContent = "Install Base Game";
+        play.className = "btn-primary btn-sm btn-lib-install";
+      } else {
+        play.textContent = "Play";
+        play.className = "btn-success btn-sm btn-lib-play";
+      }
+    };
+    updatePlayButtonState();
+
     play.addEventListener("click", async (e) => {
       e.stopPropagation();
+      if (selected === "__install_base__") {
+        api.openEditionDetail(game.slug, baseEdition.slug, "library");
+        return;
+      }
       const ed = editions.length > 1 ? selected : selected || null;
       const curEd = selectedEdition();
-      const catalogEntry = opts.catalogEntry;
       const catEd = (catalogEntry?.editions || []).find((x) => x.slug === ed);
       const pickList = (...cands) => {
         for (const c of cands) {
@@ -716,6 +772,15 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
     group.appendChild(play);
 
     const menuItems = [];
+
+    if (hasOnlyNonBaseEditions && baseEdition) {
+      menuItems.push({
+        label: `Install Base Game (${baseEdition.name || "Official"})`,
+        onClick: () => {
+          api.openEditionDetail(game.slug, baseEdition.slug, "library");
+        },
+      });
+    }
 
     menuItems.push({
       label: "Open folder",

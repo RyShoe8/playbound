@@ -3253,6 +3253,43 @@ body {
   max-width: 100%;
 }
 
+.library-base-missing-notice {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  font-size: 11px;
+  color: #fbbf24;
+}
+
+.library-base-missing-notice .base-missing-tag {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+  background: rgba(245, 158, 11, 0.2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.library-base-missing-notice .base-missing-desc {
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 140px;
+}
+
+.library-base-missing-notice .btn-get-base {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
 .library-card-title {
   font-size: 16px;
   font-weight: 700;
