@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, FolderOpen, Play, Trash2 } from "lucide-react";
+import { Download, ExternalLink, FolderOpen, Play, Trash2, Users } from "lucide-react";
 import type { Game } from "@/lib/data/types";
 import {
   launcherInstallUrl,
@@ -97,7 +97,98 @@ function RemoveFromLibraryButton({
   );
 }
 
-function DesktopInstalledActions({ slug, editionSlug }: { slug: string; editionSlug?: string | null }) {
+/**
+ * "Join Multiplayer" — into a server that actually has a game happening.
+ *
+ * The server is chosen on click rather than on render. Deciding it for every
+ * card up front would poll every master server in the catalog on every library
+ * view, and the answer is stale within seconds regardless.
+ *
+ * The button hides itself once it knows this game has no command-line join, so
+ * it never promises a one-click join it would have to deliver as "here is an
+ * address, type it in yourself". That check comes back with the server lookup:
+ * asking first would be a second round trip to hide a button nobody clicked.
+ *
+ * Actually joining is the launcher's job — the browser cannot start a game —
+ * so this opens the same playbound://join link the launcher already handles.
+ */
+function JoinMultiplayerButton({
+  slug,
+  title,
+  className,
+}: {
+  slug: string;
+  title: string;
+  className: string;
+}) {
+  const [state, setState] = useState<"idle" | "finding" | "hidden">("idle");
+  const [note, setNote] = useState<string | null>(null);
+
+  if (state === "hidden") return null;
+
+  async function join() {
+    setState("finding");
+    setNote(null);
+    try {
+      const res = await fetch(`/api/games/${encodeURIComponent(slug)}/best-server`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("lookup failed");
+      const data = (await res.json()) as {
+        canDirectJoin?: boolean;
+        server?: { name?: string; players?: number; maxPlayers?: number } | null;
+        joinUrl?: string;
+        reason?: string;
+      };
+
+      if (!data.canDirectJoin) {
+        // Nothing to offer for this game — take the button away rather than
+        // leaving one that will fail the same way on every press.
+        setState("hidden");
+        return;
+      }
+      if (!data.server || !data.joinUrl) {
+        setNote(
+          data.reason === "no-servers"
+            ? "No servers listed right now"
+            : "No server with enough players nearby"
+        );
+        setState("idle");
+        return;
+      }
+      window.location.href = data.joinUrl;
+      setState("idle");
+    } catch {
+      setNote("Couldn't check servers");
+      setState("idle");
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={join}
+        disabled={state === "finding"}
+        className={cn(className, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
+        title={`Find a busy ${title} server and join it`}
+      >
+        <Users className="size-3" /> {state === "finding" ? "Finding…" : "Join Multiplayer"}
+      </button>
+      {note ? <span className="text-[11px] text-muted-foreground">{note}</span> : null}
+    </>
+  );
+}
+
+function DesktopInstalledActions({
+  slug,
+  editionSlug,
+  title,
+}: {
+  slug: string;
+  editionSlug?: string | null;
+  title: string;
+}) {
   const router = useRouter();
   const [hidden, setHidden] = useState(false);
   const stopWatch = useRef<(() => void) | null>(null);
@@ -129,6 +220,7 @@ function DesktopInstalledActions({ slug, editionSlug }: { slug: string; editionS
       >
         <Play className="size-3 fill-current" /> Play
       </a>
+      <JoinMultiplayerButton slug={slug} title={title} className={chip} />
       <a
         href={launcherOpenFolderUrl(slug)}
         className={cn(chip, "bg-secondary text-secondary-foreground hover:bg-secondary/70")}
@@ -445,7 +537,11 @@ function DesktopLibraryRow({
         ) : (
           <div className="mt-auto pt-3 flex flex-wrap gap-2">
             {installed && showLauncherActions ? (
-              <DesktopInstalledActions slug={game.slug} editionSlug={editions[0]?.slug} />
+              <DesktopInstalledActions
+                slug={game.slug}
+                editionSlug={editions[0]?.slug}
+                title={game.title}
+              />
             ) : ownedElsewhere && showLauncherActions ? (
               <div className="flex flex-wrap items-center gap-2">
                 <LauncherInstallButton
@@ -591,7 +687,10 @@ export function LibraryGrid({
                     </div>
                     <div className="mt-auto pt-3 flex flex-wrap gap-2">
                       {entry.installed && showLauncherActions ? (
-                        <DesktopInstalledActions slug={entry.gameSlug} />
+                        <DesktopInstalledActions
+                          slug={entry.gameSlug}
+                          title={entry.gameSlug}
+                        />
                       ) : (
                         <RemoveFromLibraryButton slug={entry.gameSlug} />
                       )}
