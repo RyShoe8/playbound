@@ -8,6 +8,7 @@ import dbConnect from "@/lib/db";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import { gamesFor, listGames } from "@/lib/catalog";
+import { listPublicEditionsForGame } from "@/lib/editions";
 import { isLauncherInstallable } from "@/lib/launcher";
 import { listMods } from "@/lib/mods";
 import { LibraryGrid } from "@/components/LibraryGrid";
@@ -98,6 +99,12 @@ export default async function LibraryPage() {
         platform: r.platform as string | undefined,
         installed: Boolean(r.installed),
         saved: Boolean(r.saved),
+        editionSlug: r.editionSlug ? String(r.editionSlug) : null,
+        installedEditions: Array.isArray(r.installedEditions)
+          ? r.installedEditions.map(String)
+          : r.editionSlug
+          ? [String(r.editionSlug)]
+          : [],
       })),
       gamesBySlug,
       viewerPlatform
@@ -117,6 +124,24 @@ export default async function LibraryPage() {
     entries.map((e) => e.gameSlug),
     { includeUnpublished: true }
   );
+
+  const editionsByGame: Record<string, { slug: string; name: string; type?: string; isDefault?: boolean }[]> = {};
+  await Promise.all(
+    games.map(async (game) => {
+      try {
+        const eds = await listPublicEditionsForGame(game);
+        editionsByGame[game.slug] = eds.map((e) => ({
+          slug: e.slug,
+          name: e.name,
+          type: e.type,
+          isDefault: Boolean(e.isDefault),
+        }));
+      } catch {
+        editionsByGame[game.slug] = [];
+      }
+    })
+  );
+
   const knownSlugs = new Set(games.map((g) => g.slug));
   const orphanEntries = entries.filter((e) => !knownSlugs.has(e.gameSlug));
   const hasAny = entries.length > 0;
@@ -195,6 +220,7 @@ export default async function LibraryPage() {
           entries={entries}
           orphans={orphanEntries}
           modsByBase={modsByBase}
+          editionsByGame={editionsByGame}
         />
       )}
     </div>

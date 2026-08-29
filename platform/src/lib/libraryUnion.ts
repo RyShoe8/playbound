@@ -25,6 +25,8 @@ export type LibraryRowInput = {
   platform?: string;
   installed?: boolean;
   saved?: boolean;
+  editionSlug?: string | null;
+  installedEditions?: string[];
 };
 
 export type LibraryUnionEntry = {
@@ -35,6 +37,8 @@ export type LibraryUnionEntry = {
   saved: boolean;
   /** Included because owned on another platform, not installed here. */
   ownedElsewhere: boolean;
+  editionSlug?: string | null;
+  installedEditions?: string[];
 };
 
 function platformOf(r: { platform?: string }): LibraryPlatform {
@@ -96,7 +100,13 @@ export function buildLibraryUnionEntries(
   const visible = new Set(visiblePlatformsFor(viewerPlatform));
   const bySlug = new Map<
     string,
-    { localInstalled: boolean; localSaved: boolean; remoteOwned: boolean }
+    {
+      localInstalled: boolean;
+      localSaved: boolean;
+      remoteOwned: boolean;
+      editionSlug?: string | null;
+      installedEditions: string[];
+    }
   >();
 
   for (const r of rows) {
@@ -109,10 +119,18 @@ export function buildLibraryUnionEntries(
       localInstalled: false,
       localSaved: false,
       remoteOwned: false,
+      editionSlug: null,
+      installedEditions: [],
     };
 
     if (visible.has(p)) {
-      if (r.installed) cur.localInstalled = true;
+      if (r.installed) {
+        cur.localInstalled = true;
+        if (r.editionSlug) cur.editionSlug = r.editionSlug;
+        if (Array.isArray(r.installedEditions)) {
+          cur.installedEditions = [...new Set([...cur.installedEditions, ...r.installedEditions])];
+        }
+      }
       if (r.saved && !r.installed) cur.localSaved = true;
     } else {
       cur.remoteOwned = true;
@@ -127,12 +145,17 @@ export function buildLibraryUnionEntries(
   for (const [slug, state] of bySlug) {
     const localOwned = state.localInstalled || state.localSaved;
     if (localOwned) {
-      entries.push({
+      const entry: LibraryUnionEntry = {
         gameSlug: slug,
         installed: state.localInstalled,
         saved: state.localSaved && !state.localInstalled,
         ownedElsewhere: state.remoteOwned && !state.localInstalled,
-      });
+      };
+      if (state.editionSlug) entry.editionSlug = state.editionSlug;
+      if (state.installedEditions && state.installedEditions.length > 0) {
+        entry.installedEditions = state.installedEditions;
+      }
+      entries.push(entry);
       continue;
     }
 
