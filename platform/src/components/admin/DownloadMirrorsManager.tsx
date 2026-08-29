@@ -806,12 +806,6 @@ export function DownloadMirrorsManager() {
       {activeTab === "cache" && (
         <div className="space-y-4">
           <LauncherReleaseUploader />
-          <div className="flex items-start gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-sm text-sky-100">
-            <Archive className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
-            <p>
-              <span className="font-semibold">Archive to VPS</span> copies from R2 when available, otherwise from its approved public source. It does not change any game catalog data.
-            </p>
-          </div>
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
