@@ -9,7 +9,7 @@ import { unstable_cache } from "next/cache";
 import { listGames } from "@/lib/catalog";
 import { listMods } from "@/lib/mods";
 import { editions as seedEditions } from "@/lib/data/editions";
-import { hasServerProvider, listServersForGame } from "@/lib/servers/registry";
+import { getPlayerCountForGame, hasServerProvider, listServersForGame } from "@/lib/servers/registry";
 import { fetchHoloCurePlayers } from "@/lib/servers/providers/steam-concurrent";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
@@ -39,7 +39,7 @@ const ACTIVE_WINDOW_MS = 20 * 60 * 1000;
  * number that is the sum of forty games. One game contributing zero on a slow
  * poll is a rounding error in that sum. A twelve-second homepage is not.
  */
-const MULTIPLAYER_FANOUT_MS = 6000;
+const MULTIPLAYER_FANOUT_MS = 8500;
 
 export type CatalogPopularGame = {
   slug: string;
@@ -91,12 +91,7 @@ function propertyMatch(scope: Scope): Record<string, unknown> {
 
 async function multiplayerForGame(slug: string): Promise<{ players: number; servers: number }> {
   try {
-    const result = await listServersForGame(slug);
-    const servers = result.servers ?? [];
-    return {
-      players: servers.reduce((sum, s) => sum + (Number(s.players) || 0), 0),
-      servers: servers.length,
-    };
+    return await getPlayerCountForGame(slug);
   } catch {
     return { players: 0, servers: 0 };
   }

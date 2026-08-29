@@ -38,6 +38,7 @@ export type ServerListResult = {
 export interface ServerProvider {
   slug: string;
   fetchServers: () => Promise<GameServer[]>;
+  fetchPlayerCount?: () => Promise<{ players: number; servers: number }>;
 }
 
 export const MAX_SERVERS = 100;
