@@ -31,12 +31,17 @@ export async function GET() {
         .filter((source) => /^https:\/\//i.test(String(source.url || "")))
         .sort((a, b) => a.priority - b.priority || a.createdAt.getTime() - b.createdAt.getTime())[0];
       let editionSlug: string | undefined;
+      let modSlug: string | undefined;
       if (a.artifactType === "edition") {
         const match = (a as { relativePath?: string }).relativePath?.match(/\/editions\/([^/]+)\//) ||
           a.artifactId?.match(/^([^-]+)-edition-([^-]+)/);
         if (match) editionSlug = match[1] || match[2];
+      } else if (a.artifactType === "mod") {
+        const match = (a as { relativePath?: string }).relativePath?.match(/\/mods\/([^/]+)/) ||
+          a.artifactId?.match(/^([^-]+)-mod-([^-]+)/);
+        if (match) modSlug = match[1] || match[2] || a.artifactId;
       }
-      const archiveSourceUrl = archiveSource?.url || await catalogArchiveSourceUrl(a.gameSlug, editionSlug);
+      const archiveSourceUrl = archiveSource?.url || await catalogArchiveSourceUrl(a.gameSlug, editionSlug, modSlug);
       const healthyPublic = artSources.some((s) => s.healthStatus === "healthy");
       const degradedPublic = artSources.some((s) => s.healthStatus === "degraded");
 

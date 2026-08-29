@@ -15,7 +15,7 @@
  * this exists to prevent. Change one, change the other.
  */
 
-export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts";
+export type OpenRaMod = "ra" | "cnc" | "d2k" | "ts" | "ca" | "hv" | "ra2";
 
 /**
  * Red Alert is the default because it is OpenRA's flagship mod and the one an
@@ -33,6 +33,9 @@ export function openRaModFor(editionSlug: string | null | undefined): OpenRaMod 
    */
   if (raw.includes("cnc") || raw.includes("tiberian") || raw === "td") return "cnc";
   if (raw.includes("d2k") || raw.includes("dune")) return "d2k";
+  if (raw.includes("combined") || raw.includes("ca")) return "ca";
+  if (raw.includes("openhv") || raw === "hv") return "hv";
+  if (raw.includes("ra2")) return "ra2";
   return "ra";
 }
 

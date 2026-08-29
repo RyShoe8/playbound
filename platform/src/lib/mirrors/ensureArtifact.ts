@@ -52,7 +52,9 @@ export async function ensureArtifact(input: {
     relativePath: input.gameSlug
       ? input.artifactType === "edition"
         ? `games/${input.gameSlug}/editions/${input.version || "default"}/${input.filename || artifactId}`
-        : `games/${input.gameSlug}/${input.version || "unknown"}/${input.filename || artifactId}`
+        : input.artifactType === "mod"
+          ? `games/${input.gameSlug}/mods/${input.filename || artifactId}`
+          : `games/${input.gameSlug}/${input.version || "unknown"}/${input.filename || artifactId}`
       : `artifacts/${artifactId}`,
     sizeBytes: input.sizeBytes || 0,
     sha256: input.sha256 || "",

@@ -23,6 +23,9 @@ describe("mod resolution", () => {
     expect(openRaModFor("td")).toBe("cnc");
     expect(openRaModFor("d2k")).toBe("d2k");
     expect(openRaModFor("dune-2000")).toBe("d2k");
+    expect(openRaModFor("combined-arms")).toBe("ca");
+    expect(openRaModFor("openhv")).toBe("hv");
+    expect(openRaModFor("ra2")).toBe("ra2");
   });
 });
 

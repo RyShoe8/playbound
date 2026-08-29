@@ -26,17 +26,28 @@ function openRaSupportDirs() {
   return dirs;
 }
 
-function enableDiscoverNat(contents) {
-  const text = String(contents || "");
-  if (/DiscoverNatDevices\s*:\s*True/i.test(text)) return text;
-  if (/DiscoverNatDevices\s*:/i.test(text)) {
-    return text.replace(/DiscoverNatDevices\s*:\s*\w+/i, "DiscoverNatDevices: True");
+function configureOpenRaSettings(contents) {
+  let text = String(contents || "");
+
+  // Turn DiscoverNatDevices off: UPnP lease queries on consumer routers hang for 5-10
+  // seconds periodically and cause OpenRA to freeze during gameplay. PlayBound handles
+  // network routing via managed servers and NetBird virtual LANs instead.
+  if (/DiscoverNatDevices\s*:\s*False/i.test(text)) {
+    // already disabled
+  } else if (/DiscoverNatDevices\s*:/i.test(text)) {
+    text = text.replace(/DiscoverNatDevices\s*:\s*\w+/i, "DiscoverNatDevices: False");
+  } else if (/^Server:\s*$/m.test(text)) {
+    text = text.replace(/^Server:\s*$/m, "Server:\n\tDiscoverNatDevices: False");
+  } else {
+    text = text ? `Server:\n\tDiscoverNatDevices: False\n${text}` : "Server:\n\tDiscoverNatDevices: False\n";
   }
-  if (/^Server:\s*$/m.test(text)) {
-    return text.replace(/^Server:\s*$/m, "Server:\n\tDiscoverNatDevices: True");
+
+  // Set timeout to 1000ms max to prevent any lingering delay if enabled manually
+  if (/NatDiscoveryTimeout\s*:\s*\d+/i.test(text)) {
+    text = text.replace(/NatDiscoveryTimeout\s*:\s*\d+/i, "NatDiscoveryTimeout: 1000");
   }
-  const prefix = "Server:\n\tDiscoverNatDevices: True\n";
-  return text ? `${prefix}${text}` : `${prefix}`;
+
+  return text;
 }
 
 async function ensureOpenRaUpnpSettings() {
@@ -47,11 +58,11 @@ async function ensureOpenRaUpnpSettings() {
     try {
       if (fs.existsSync(file)) {
         const prev = await fsp.readFile(file, "utf8");
-        const next = enableDiscoverNat(prev);
+        const next = configureOpenRaSettings(prev);
         if (next !== prev) {
           await fsp.writeFile(file, next, "utf8");
           wrote = true;
-        } else if (/DiscoverNatDevices\s*:\s*True/i.test(prev)) {
+        } else if (/DiscoverNatDevices\s*:\s*False/i.test(prev)) {
           wrote = true;
         }
         continue;
@@ -59,7 +70,7 @@ async function ensureOpenRaUpnpSettings() {
       if (fs.existsSync(dir) || dir === dirs[0]) {
         await fsp.mkdir(dir, { recursive: true });
         if (!fs.existsSync(file)) {
-          await fsp.writeFile(file, enableDiscoverNat(""), "utf8");
+          await fsp.writeFile(file, configureOpenRaSettings(""), "utf8");
           wrote = true;
         }
       }
