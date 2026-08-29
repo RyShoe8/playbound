@@ -26,7 +26,9 @@ export const launcherInstallBySlug: Record<string, LauncherInstall> = {
     fileName: "GoldenEye_Source_v5.0.6_full.exe",
     versionLabel: "5.0.6",
     knownExePaths: [
+      "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource\\gesource_run.exe",
       "%PROGRAMFILES(X86)%\\Steam\\steamapps\\sourcemods\\gesource_run.exe",
+      "%PROGRAMFILES%\\Steam\\steamapps\\sourcemods\\gesource\\gesource_run.exe",
       "%PROGRAMFILES%\\Steam\\steamapps\\sourcemods\\gesource_run.exe",
     ],
     connectArgs: ["+connect", "{host}:{port}"],

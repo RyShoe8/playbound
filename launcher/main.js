@@ -8333,6 +8333,13 @@ async function runGameUninstaller(slug, entry, dir) {
   return false;
 }
 
+function isDedicatedSourcemodDir(dir) {
+  if (!dir) return false;
+  const norm = path.resolve(dir).replace(/\\/g, "/").toLowerCase();
+  const m = norm.match(/\/steamapps\/sourcemods\/([^/]+)$/);
+  return Boolean(m && m[1] && m[1] !== "sourcemods");
+}
+
 /**
  * Delete or uninstall a game directory.
  * Runs official uninstaller for installer games, and cleanly deletes PlayBound managed folders.
@@ -8360,8 +8367,9 @@ async function tryRemovePlayBoundInstallDir(slug, dir, entry = null) {
     pathUnderRoot(path.resolve(dir), path.join(process.env.LOCALAPPDATA, "Programs")) &&
     !sameFsPath(path.resolve(dir), path.join(process.env.LOCALAPPDATA, "Programs"))
   );
+  const isSourcemodDir = isDedicatedSourcemodDir(dir);
 
-  if ((isManaged || isDedicatedProgramDir) && !isUnsafeUninstallDir(dir) && !isProtectedSaveDirectory(dir)) {
+  if ((isManaged || isDedicatedProgramDir || isSourcemodDir) && !isUnsafeUninstallDir(dir) && !isProtectedSaveDirectory(dir)) {
     try {
       prepareDirRemoval(slug, [{ dir }]);
       await removeDirWithRetries(dir);
@@ -8466,6 +8474,44 @@ async function uninstallGame(slug, editionSlug = null) {
     const warning = await tryRemovePlayBoundInstallDir(slug, dir, entry);
     if (warning) warnings.push(warning);
   }
+
+  if (slug === "goldeneye-source") {
+    // Check all Steam library roots for sourcemods/gesource and remove it
+    for (const root of steamLibraryRoots()) {
+      const modDir = path.join(root, "steamapps", "sourcemods", "gesource");
+      if (fs.existsSync(modDir)) {
+        try {
+          await removeDirWithRetries(modDir);
+        } catch (err) {
+          console.warn("[uninstall] could not delete gesource:", err?.message || err);
+        }
+      }
+    }
+    // Also clean up any lingering 7zip installer temp files in AppData/Local/Temp
+    try {
+      if (process.platform === "win32" && process.env.LOCALAPPDATA) {
+        const tempRoot = path.join(process.env.LOCALAPPDATA, "Temp");
+        if (fs.existsSync(tempRoot)) {
+          const items = fs.readdirSync(tempRoot);
+          for (const item of items) {
+            if (/^7ZipSfx/i.test(item)) {
+              const sfxDir = path.join(tempRoot, item);
+              if (fs.existsSync(path.join(sfxDir, "gesource.7z"))) {
+                try {
+                  fs.rmSync(sfxDir, { recursive: true, force: true });
+                } catch {
+                  /* ignore */
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   delete state[slug];
   await finishGameUninstall(slug, state);
   return { status: "uninstalled", dir: game.dir || null, warning: warnings[0] || null };
