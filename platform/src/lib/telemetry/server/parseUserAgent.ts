@@ -45,6 +45,16 @@ export function parseLauncherUserAgent(raw: string): ParsedUserAgent | null {
   };
 }
 
+const BOT_PATTERN =
+  /\b(bot|crawler|spider|scraper|slurp|headless|phantom|puppeteer|playwright|selenium|wget|curl|python-requests|node-fetch|axios|postman|bytespider|gptbot|claudebot|perplexity|semrush|ahrefs|mj12bot|dotbot|googlebot|bingbot|yandexbot|duckduckbot|baiduspider)\b/i;
+
+export function isBotUserAgent(ua: string | null | undefined): boolean {
+  const raw = (ua || "").trim();
+  if (!raw) return true;
+  if (BOT_PATTERN.test(raw)) return true;
+  return false;
+}
+
 export function parseUserAgent(ua: string | null | undefined): ParsedUserAgent {
   const raw = (ua || "").trim();
   if (!raw) {
@@ -73,6 +83,7 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUserAgent {
   else if (/Safari\//i.test(raw) && !/Chrome\//i.test(raw)) browser = "Safari";
   else if (/Firefox\//i.test(raw)) browser = "Firefox";
   else if (/MSIE|Trident\//i.test(raw)) browser = "IE";
+  else if (BOT_PATTERN.test(raw)) browser = "Bot";
 
   let device = "desktop";
   if (/iPad|Tablet/i.test(raw)) device = "tablet";

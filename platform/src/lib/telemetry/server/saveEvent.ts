@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
-import { launcherOsLabel, parseUserAgent } from "./parseUserAgent";
+import { isBotUserAgent, launcherOsLabel, parseUserAgent } from "./parseUserAgent";
 import { maybeUpsertAutoBugFromTelemetry } from "@/lib/autoBugReport";
 
 export interface SaveTelemetryEventInput {
@@ -52,6 +52,11 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
         }
       : ua;
 
+  const isBot =
+    Boolean(props.isBot) ||
+    Boolean(props.webdriver) ||
+    (props.source !== "launcher" && isBotUserAgent(input.userAgent));
+
   const createdAt = input.timestamp
     ? new Date(input.timestamp)
     : new Date();
@@ -66,9 +71,10 @@ export async function saveEvent(input: SaveTelemetryEventInput): Promise<void> {
     referrer,
     ip: input.ip ?? null,
     country: input.country ?? null,
-    browser: client.browser,
+    browser: isBot && client.browser === "unknown" ? "Bot" : client.browser,
     os: client.os,
     device: deviceFromProps || client.device,
+    isBot,
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
   });
 

@@ -110,7 +110,7 @@ export async function catalogArchiveSourceUrl(
   const useCuratedMirror =
     /^https:\/\//i.test(String(seed?.url || "")) &&
     !/itch\.io/i.test(String(seed?.url || "")) &&
-    /itch\.io/i.test(String(stored?.url || ""));
+    (!stored?.url || /itch\.io/i.test(String(stored?.url || "")) || stored?.kind === "external");
   const recipe = useCuratedMirror
     ? seed
     : stored?.kind && stored.kind !== "external"
@@ -484,7 +484,14 @@ export async function archiveArtifactToVps(
     const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
     if (catalogUrl) {
       try {
-        if (decodeURIComponent(new URL(catalogUrl).pathname).split("/").pop() === artifact.filename || artifact.artifactType === "mod") {
+        const catalogPath = decodeURIComponent(new URL(catalogUrl).pathname);
+        const catalogFilename = catalogPath.split("/").pop() || "";
+        const isMatch =
+          catalogFilename === artifact.filename ||
+          catalogFilename.endsWith(`-${artifact.filename}`) ||
+          catalogFilename.toLowerCase().endsWith(artifact.filename.toLowerCase()) ||
+          artifact.artifactType === "mod";
+        if (isMatch) {
           sourceUrl = catalogUrl;
           sourceLabel = artifact.artifactType === "mod" ? "catalog mod source" : "current catalog download";
         }
@@ -495,9 +502,9 @@ export async function archiveArtifactToVps(
   }
   // The admin cache row already has this exact URL from its Public sources
   // record. Prefer it when supplied so archiving does not depend on a second
-  // lookup of historic telemetry identifiers.
+  // lookup of historic telemetry identifiers, unless it is an expiring itch link.
   const preferred = String(preferredSourceUrl || "").trim();
-  if (!sourceUrl && preferred.startsWith("https://")) {
+  if (!sourceUrl && preferred.startsWith("https://") && !/itch\.io|hwcdn\.net/i.test(preferred)) {
     sourceUrl = preferred;
     sourceLabel = "selected public source";
   }
@@ -533,13 +540,17 @@ export async function archiveArtifactToVps(
       }
     }
     const candidate = String(source?.url || "").trim();
-    if (candidate.startsWith("https://")) {
+    if (candidate.startsWith("https://") && !/itch\.io|hwcdn\.net/i.test(candidate)) {
       sourceUrl = candidate;
     } else {
       const catalogUrl = await catalogArchiveSourceUrl(artifact.gameSlug, editionSlug, modSlug);
-      if (catalogUrl) {
+      if (catalogUrl && !/itch\.io|hwcdn\.net/i.test(catalogUrl)) {
         sourceUrl = catalogUrl;
         sourceLabel = artifact.artifactType === "mod" ? "catalog mod source" : "current catalog download";
+      } else if (candidate.startsWith("https://")) {
+        sourceUrl = candidate;
+      } else if (preferred.startsWith("https://")) {
+        sourceUrl = preferred;
       }
     }
     if (!sourceUrl) {

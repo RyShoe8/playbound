@@ -14,6 +14,7 @@ export interface TelemetryEventDoc {
   browser?: string | null;
   os?: string | null;
   device?: string | null;
+  isBot?: boolean;
   createdAt: Date;
 }
 
@@ -31,11 +32,13 @@ const TelemetryEventSchema = new Schema(
     browser: { type: String, default: null },
     os: { type: String, default: null },
     device: { type: String, default: null },
+    isBot: { type: Boolean, default: false, index: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
 TelemetryEventSchema.index({ createdAt: -1 });
+TelemetryEventSchema.index({ isBot: 1, createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, createdAt: -1 });
 TelemetryEventSchema.index({ event: 1, sessionId: 1, createdAt: -1 });
 TelemetryEventSchema.index({ userId: 1, createdAt: -1 });
