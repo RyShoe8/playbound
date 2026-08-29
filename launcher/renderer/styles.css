@@ -3135,11 +3135,33 @@ body {
  * rows give the controls somewhere to go and let editions and mods sit inside
  * the same bordered card as the game they belong to.
  */
+/*
+ * Columns, not a grid.
+ *
+ * A grid aligns rows, so two side-by-side cards always shared a height and
+ * expanding one game's editions pushed the game beside it down the page. These
+ * are independent stacks — the column count and which card goes in which are
+ * decided in library.js, because CSS multi-column would rebalance and throw
+ * cards to the other side of the page the moment one was expanded.
+ */
 .library-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  align-items: flex-start;
   gap: 14px;
-  align-items: start;
+}
+
+.library-column {
+  flex: 1 1 0;
+  /* Without this a wide card refuses to shrink and overflows the view. */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Loading and empty states are single children, not columns — let them span. */
+.library-grid > :not(.library-column) {
+  flex: 1 1 100%;
 }
 
 #view-library .view-title {
@@ -3159,12 +3181,10 @@ body {
  * Two across only when each card is still wide enough for title + actions.
  * The default 1200px window used to trip the old 1180px breakpoint, which
  * squeezed Select .exe / Dismiss over the game title.
+ *
+ * The breakpoint itself now lives in library.js as LIBRARY_TWO_COLUMN_QUERY,
+ * since JS decides how many columns to build. Keep the two in step.
  */
-@media (min-width: 1540px) {
-  .library-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 .library-game-block {
   width: auto;
@@ -3340,6 +3360,51 @@ body {
   margin-bottom: 8px;
 }
 
+/*
+ * The editions list collapses. Same disclosure shape as the mods panel below
+ * it, so a card has one way of hiding a list rather than two.
+ */
+.library-editions-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.library-editions-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.library-editions-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Worth opening or not — visible without expanding. */
+.library-editions-summary {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.library-editions-toggle .chevron {
+  transition: transform 0.15s ease;
+}
+
+.library-editions-toggle .chevron.open {
+  transform: rotate(180deg);
+}
+
 .library-editions-title {
   font-size: 11px;
   font-weight: 700;
@@ -3352,6 +3417,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-top: 8px;
+}
+
+.library-editions-list.hidden {
+  display: none;
 }
 
 .library-edition-row {
