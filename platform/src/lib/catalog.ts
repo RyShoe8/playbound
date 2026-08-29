@@ -480,6 +480,76 @@ export async function listGames(opts?: { includeTesting?: boolean }): Promise<Ga
   return loadPublishedGames();
 }
 
+/**
+ * The slice of a game the friends/party path needs — and nothing else.
+ *
+ * `resolveJoinCapability` takes a `Pick` of five fields and `supportsMultiplayer`
+ * additionally reads `launchMethods`; a friends list otherwise only wants
+ * slug -> title. Six fields, out of a document carrying descriptions, media,
+ * screenshots, system requirements, FAQ and install recipes.
+ */
+export type JoinCatalogGame = Pick<
+  Game,
+  "slug" | "title" | "features" | "tags" | "launchMethods" | "browserPlayable"
+>;
+
+/**
+ * Exported for the equivalence test in catalogJoinProjection.test.ts, which
+ * asserts that a projected game resolves the same join capability as the full
+ * one for every game in the catalog. If `supportsMultiplayer` or
+ * `resolveJoinCapability` grows a new field, that test is what fails.
+ */
+export function toJoinCatalogGame(game: Game): JoinCatalogGame {
+  return {
+    slug: game.slug,
+    title: game.title,
+    features: game.features,
+    tags: game.tags,
+    launchMethods: game.launchMethods,
+    browserPlayable: game.browserPlayable,
+  };
+}
+
+/**
+ * A separate cache entry holding only those six fields.
+ *
+ * `unstable_cache` stores its value as a JSON string and calls JSON.parse on
+ * every hit, not just on a miss (next/dist/server/web/spec-extension/
+ * unstable-cache.js). So a cache hit is not free: it costs a full deserialize
+ * of whatever was cached. Measured against the seed catalog that is 607 KB and
+ * ~1.9ms to reach six fields totalling 25.8 KB — and `listFriendsForUser` is on
+ * /api/friends and /api/party-sync, which a party polls every 3 seconds.
+ *
+ * Deliberately derived by running the same `readVisibleGames` -> `toGame`
+ * pipeline and projecting the result, rather than by querying Mongo with a
+ * projection. `toGame` merges each document against its seed entry field by
+ * field, so a second reader that skipped it would quietly answer differently
+ * about launchMethods or browserPlayable for any game relying on that merge —
+ * and "joinable" changing for some games is a far worse outcome than the
+ * duplicate read this costs once per revalidate window.
+ *
+ * Carries the `catalog` tag, so an admin write drops this alongside the full
+ * entries instead of leaving the two to disagree.
+ */
+const loadJoinCatalog = cache(async (): Promise<JoinCatalogGame[]> =>
+  unstable_cache(
+    async () => (await readVisibleGames(true)).map(toJoinCatalogGame),
+    ["catalog-games", "join"],
+    { revalidate: 300, tags: ["catalog"] }
+  )()
+);
+
+/**
+ * Visible catalog, projected for join/presence resolution.
+ *
+ * Use this anywhere a caller only needs to answer "is this multiplayer, and
+ * what is it called" — notably the friends list and shared-library lookups.
+ * Anything rendering a game needs `listGames` and its full objects.
+ */
+export function listGamesForJoin(): Promise<JoinCatalogGame[]> {
+  return loadJoinCatalog();
+}
+
 /** All games including drafts (admin). */
 export async function listAllGames(): Promise<
   (Game & { published: boolean; status: CatalogStatus; updatedAt?: string; publishedAt?: string | null; installCount?: number })[]

@@ -3,7 +3,7 @@ import LibraryEntry from "@/lib/models/LibraryEntry";
 import Presence from "@/lib/models/Presence";
 import Friend from "@/lib/models/Friend";
 import User from "@/lib/models/User";
-import { listGames } from "@/lib/catalog";
+import { listGames, listGamesForJoin } from "@/lib/catalog";
 import { isMultiplayerGame } from "@/lib/playTogether/multiplayer";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 import { maskPresenceForOthers } from "@/lib/friends/presenceMask";
@@ -199,7 +199,9 @@ export async function listSharedLibraryByFriend(
     LibraryEntry.find({ userId: { $in: friendIds }, installed: true })
       .select("userId gameSlug")
       .lean(),
-    listGames({ includeTesting: true }),
+    // Only slug -> title is read below, and this is reached from the friends
+    // list on every party poll.
+    listGamesForJoin(),
   ]);
 
   const mySlugs = new Set(myLib.map((r) => String(r.gameSlug)));

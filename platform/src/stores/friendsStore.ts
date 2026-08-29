@@ -69,10 +69,16 @@ type FriendsState = {
   setSelectedFriend: (friend: FriendUser | null) => void;
   startPolling: (intervalMs?: number) => void;
   stopPolling: () => void;
+  /** Requests-only poll for badge counts. Cheap: skips the full friends/presence query. */
+  startRequestsPolling: (intervalMs?: number) => void;
+  stopRequestsPolling: () => void;
 };
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let pollSubscribers = 0;
+
+let requestsPollInterval: ReturnType<typeof setInterval> | null = null;
+let requestsPollSubscribers = 0;
 
 export const useFriendsStore = create<FriendsState>((set, get) => ({
   friends: [],
@@ -275,6 +281,24 @@ export const useFriendsStore = create<FriendsState>((set, get) => ({
     if (pollSubscribers === 0 && pollInterval) {
       clearInterval(pollInterval);
       pollInterval = null;
+    }
+  },
+
+  startRequestsPolling: (intervalMs = 30000) => {
+    requestsPollSubscribers += 1;
+    get().fetchRequests();
+    if (requestsPollInterval) return;
+
+    requestsPollInterval = setInterval(() => {
+      get().fetchRequests();
+    }, intervalMs);
+  },
+
+  stopRequestsPolling: () => {
+    requestsPollSubscribers = Math.max(0, requestsPollSubscribers - 1);
+    if (requestsPollSubscribers === 0 && requestsPollInterval) {
+      clearInterval(requestsPollInterval);
+      requestsPollInterval = null;
     }
   },
 }));

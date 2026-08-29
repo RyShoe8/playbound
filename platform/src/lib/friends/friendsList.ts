@@ -3,7 +3,7 @@ import Friend from "@/lib/models/Friend";
 import Presence from "@/lib/models/Presence";
 import Party from "@/lib/models/Party";
 import DiscordConnection from "@/lib/models/DiscordConnection";
-import { listGames } from "@/lib/catalog";
+import { listGamesForJoin } from "@/lib/catalog";
 import { applyPresenceFreshness, maskPresenceForOthers } from "@/lib/friends/presenceMask";
 import { resolveJoinCapability } from "@/lib/playTogether/joinCapability";
 import { listSharedLibraryByFriend } from "@/lib/playTogether/sharedGames";
@@ -67,7 +67,9 @@ export async function listFriendsForUser(userId: string) {
     await Promise.all([
     Presence.find({ userId: { $in: friendIds } }).lean(),
     DiscordConnection.find({ userId: { $in: friendIds } }).select("userId").lean(),
-    listGames({ includeTesting: true }),
+    // Projected: this runs on every party poll, and all it needs from a game is
+    // a title and enough to answer "can I join". See listGamesForJoin.
+    listGamesForJoin(),
     listSharedLibraryByFriend(userId, friendIdStrings),
     Party.find({
       status: { $nin: ["ended"] },

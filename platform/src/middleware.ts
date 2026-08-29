@@ -69,6 +69,23 @@ export const config = {
   /**
    * Skip Next internals, static assets and files with extensions. The matcher
    * does the cheap filtering so getToken only runs on real page requests.
+   *
+   * `api/presence` and `api/couch` are skipped too, because they are the two
+   * highest-frequency paths on the site — a heartbeat per tab per minute, and a
+   * controller signal poll every 500ms while a phone is connecting — and a
+   * signed-in request to either was paying a full JWT decrypt here on top of
+   * the getServerSession() the route itself does.
+   *
+   * Safe to skip specifically because the gate has nothing to enforce on them:
+   * it exists to stop a placeholder `pb_<hex>` account creating content under
+   * that name, and neither family creates any. Both authenticate on their own
+   * (couch by controller token), and both are called by XHR, where a redirect
+   * to /welcome would be parsed as JSON and break the caller rather than gate
+   * it. Content-creating routes stay matched — do not widen this to `api`.
+   *
+   * Both carry a trailing slash so they exclude a path segment rather than a
+   * name prefix: bare `api/presence` would also un-gate a future
+   * `/api/presence-admin`, which is not what this is claiming to allow.
    */
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|robots.txt|sitemap.xml|llms.txt|.*\\..*).*)"],
+  matcher: ["/((?!_next/static|_next/image|api/presence/|api/couch/|favicon.ico|icon|apple-icon|opengraph-image|robots.txt|sitemap.xml|llms.txt|.*\\..*).*)"],
 };

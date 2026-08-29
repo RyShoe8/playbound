@@ -80,25 +80,37 @@ function NotificationsShownTracker({
  */
 export function NotificationBell() {
   const { status } = useSession();
-  const startPolling = useFriendsStore((s) => s.startPolling);
-  const stopPolling = useFriendsStore((s) => s.stopPolling);
+  const startPolling = useFriendsStore((s) => s.startRequestsPolling);
+  const stopPolling = useFriendsStore((s) => s.stopRequestsPolling);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotifItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const shownRef = useRef<Set<string>>(new Set());
 
-  const refresh = useCallback(async () => {
+  /**
+   * The badge needs `unreadCount` every pass; the list is only rendered while
+   * the panel is open. Polling the cheap form when it is closed keeps the badge
+   * exactly as fresh while skipping fifty documents nobody is looking at.
+   */
+  const refresh = useCallback(async (full: boolean) => {
     try {
-      const res = await fetch("/api/notifications");
+      const res = await fetch(full ? "/api/notifications" : "/api/notifications?count=1");
       if (!res.ok) return;
       const data = await res.json();
-      setItems(data.items || []);
+      // Only a full read carries items; a count-only reply must not blank them.
+      if (full) setItems(data.items || []);
       setUnreadCount(Number(data.unreadCount) || 0);
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Read by the poll timer so the cadence never restarts on open/close.
+  const openRef = useRef(false);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -106,8 +118,8 @@ export function NotificationBell() {
       return;
     }
     startPolling(30000);
-    const kickoff = window.setTimeout(() => void refresh(), 0);
-    const t = setInterval(() => void refresh(), CADENCE.notificationPollMs);
+    const kickoff = window.setTimeout(() => void refresh(false), 0);
+    const t = setInterval(() => void refresh(openRef.current), CADENCE.notificationPollMs);
     return () => {
       clearTimeout(kickoff);
       clearInterval(t);
@@ -155,7 +167,8 @@ export function NotificationBell() {
         type="button"
         onClick={() => {
           setOpen((v) => !v);
-          if (!open) void refresh();
+          // Opening is the first time the list is actually needed.
+          if (!open) void refresh(true);
         }}
         className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         aria-label="Notifications"
@@ -265,7 +278,7 @@ export function NotificationBell() {
                                 })
                               );
                               if (!n.readAt) void markRead(n.id);
-                              void refresh();
+                              void refresh(true);
                             } catch {
                               /* ignore */
                             }
