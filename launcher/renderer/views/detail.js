@@ -584,9 +584,6 @@ async function renderGameDetailView(slug, opts = {}) {
   const genreChips = (detail.genres || [])
     .map((g) => `<span class="chip">${escapeHtml(g)}</span>`)
     .join("");
-  const featureItems = (detail.features || [])
-    .map((f) => `<li class="feature-card"><span class="feature-card-mark" aria-hidden="true">✦</span><span>${escapeHtml(f)}</span></li>`)
-    .join("");
   const shots = (detail.screenshots || [])
     .slice(0, 8)
     .map(
