@@ -131,7 +131,7 @@ const ServerLobbyAuthSchema = new Schema(
 
 const CatalogGameSchema = new Schema(
   {
-    slug: { type: String, required: true, unique: true, index: true },
+    slug: { type: String, required: true, unique: true },
     /**
      * Slugs this game used to live at. Renaming would otherwise 404 every
      * indexed URL, inbound link and shared page for the old slug, so the old
@@ -291,7 +291,6 @@ const CatalogGameSchema = new Schema(
   { timestamps: true }
 );
 
-CatalogGameSchema.index({ slug: 1 });
 CatalogGameSchema.index({ updatedAt: -1 });
 CatalogGameSchema.index({ status: 1, playboundSupported: 1, title: 1 });
 CatalogGameSchema.index({ "launcherInstall.versionCheckStatus": 1 });
