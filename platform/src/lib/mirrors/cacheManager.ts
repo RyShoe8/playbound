@@ -79,8 +79,10 @@ export async function catalogArchiveSourceUrl(
     const seed = seedMods.find((m) => m.slug === mSlug);
     const directUrl = String(doc?.directUrl || seed?.directUrl || "").trim();
     if (/^https:\/\//i.test(directUrl)) return directUrl;
-    const repo = String(doc?.githubRepo || seed?.repo || "").trim();
-    if (repo && /^https:\/\//i.test(repo)) return repo;
+    const repo = String(doc?.githubRepo || seed?.githubRepo || "").trim();
+    if (repo) {
+      return repo.startsWith("https://") ? repo : `https://github.com/${repo}`;
+    }
     const website = String(doc?.website || seed?.website || "").trim();
     if (website && /^https:\/\//i.test(website)) return website;
   }
