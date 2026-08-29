@@ -44,6 +44,56 @@ const HW_VERDICT_LABEL = {
   unknown: "Unknown",
 };
 
+function getFeatureIcon(featureText) {
+  const text = String(featureText || "").toLowerCase();
+  // Singleplayer / Campaign / Solo / Story
+  if (text.includes("singleplayer") || text.includes("single player") || text.includes("single-player") || text.includes("solo") || text.includes("campaign") || text.includes("story")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  }
+  // Multiplayer / Co-op / Online / PvP / Teams
+  if (text.includes("multiplayer") || text.includes("multi-player") || text.includes("co-op") || text.includes("coop") || text.includes("online") || text.includes("pvp")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+  }
+  // Dedicated Servers / Server Browser / Server / Hosting / Network / LAN
+  if (text.includes("server") || text.includes("host") || text.includes("lan") || text.includes("network") || text.includes("lobby")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>`;
+  }
+  // 64-bit Engine / Engine / CPU / Architecture / Performance / Framerate / 60fps / 120fps
+  if (text.includes("64-bit") || text.includes("32-bit") || text.includes("engine") || text.includes("cpu") || text.includes("fps") || text.includes("performance") || text.includes("speed") || text.includes("optimized") || text.includes("fast")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>`;
+  }
+  // Widescreen Support / Resolution / 4K / HD / Display / Graphics / Visuals / Ultrawide / FOV
+  if (text.includes("widescreen") || text.includes("resolution") || text.includes("display") || text.includes("graphics") || text.includes("visual") || text.includes("ultrawide") || text.includes("4k") || text.includes("hd") || text.includes("fov") || text.includes("monitor") || text.includes("texture")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`;
+  }
+  // Cross-Platform / Linux / macOS / Windows / Steam Deck / Platform / Port
+  if (text.includes("cross-platform") || text.includes("crossplatform") || text.includes("platform") || text.includes("linux") || text.includes("mac") || text.includes("windows") || text.includes("deck") || text.includes("steam deck") || text.includes("portable")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
+  }
+  // Controller Support / Gamepad / Keyboard / Mouse / Controls
+  if (text.includes("controller") || text.includes("gamepad") || text.includes("input") || text.includes("keyboard") || text.includes("mouse") || text.includes("control")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`;
+  }
+  // Audio / Sound / Music / Soundtrack / Voice / Speech
+  if (text.includes("audio") || text.includes("sound") || text.includes("music") || text.includes("ost") || text.includes("voice") || text.includes("speech") || text.includes("stereo")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+  }
+  // Mods / Modding / Addon / Add-on / Community / Workshop / Custom Content
+  if (text.includes("mod") || text.includes("addon") || text.includes("pack") || text.includes("workshop") || text.includes("custom") || text.includes("editor") || text.includes("tool")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>`;
+  }
+  // Save / Cloud / Cloud Saves / Backup / Checkpoint
+  if (text.includes("save") || text.includes("cloud") || text.includes("backup") || text.includes("sync")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
+  }
+  // Bugfixes / QoL / Patch / Fixes / Stability / Quality
+  if (text.includes("fix") || text.includes("patch") || text.includes("qol") || text.includes("stability") || text.includes("quality")) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+  }
+  // Default: Sparkles
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>`;
+}
+
 function formatHwRam(mb) {
   if (mb == null) return null;
   if (mb >= 1024) return `${Math.round(mb / 1024)} GB`;
@@ -647,6 +697,14 @@ async function renderGameDetailView(slug, opts = {}) {
         <div class="req-card"><div class="req-label">Recommended</div><p>${escapeHtml(detail.systemRequirements.recommended || "—")}</p></div>
       </div>`
     : "";
+  const featureItems = (detail.features || [])
+    .map(
+      (f) => `<li class="edition-feature-card">
+        <span class="edition-feature-icon" aria-hidden="true">${getFeatureIcon(f)}</span>
+        <span class="edition-feature-text">${escapeHtml(f)}</span>
+      </li>`
+    )
+    .join("");
 
   // A newer render started while this one was fetching — let it win rather
   // than painting stale state over it.
@@ -2331,7 +2389,12 @@ async function renderEditionDetailView(gameSlug, editionSlug, opts = {}) {
     : gameDetail?.approxSize || "—";
 
   const featureItems = (edition.features || [])
-    .map((f) => `<li><span class="feature-bullet">✦</span><span>${escapeHtml(f)}</span></li>`)
+    .map(
+      (f) => `<li class="edition-feature-card">
+        <span class="edition-feature-icon" aria-hidden="true">${getFeatureIcon(f)}</span>
+        <span class="edition-feature-text">${escapeHtml(f)}</span>
+      </li>`
+    )
     .join("");
 
   const reqGridHtml =
