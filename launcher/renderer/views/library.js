@@ -78,7 +78,10 @@ async function loadLibraryLocalData() {
 }
 
 function paintLibraryLoading(list) {
-  list.innerHTML = `<p class="view-sub" style="grid-column:1/-1;text-align:center;padding:40px 0">Loading library…</p>`;
+  // No columns while loading; the redistribute listener keys off this being
+  // empty, so it must not hold cards that are no longer on the page.
+  libraryCards = [];
+  list.innerHTML = `<p class="view-sub" style="text-align:center;padding:40px 0">Loading library…</p>`;
 }
 
 function paintLibraryList(list, { installed, installedMods, modTitles, catalog, cloudLib }) {
@@ -97,8 +100,9 @@ function paintLibraryList(list, { installed, installedMods, modTitles, catalog, 
   const hasAnyGames = hasLocalGames || hasMods || otherDeviceSlugs.length > 0;
 
   if (!hasAnyGames) {
+    libraryCards = [];
     list.innerHTML = `
-      <div style="text-align: center; padding: 40px 0; grid-column: 1 / -1;">
+      <div style="text-align: center; padding: 40px 0;">
         <p class="view-sub">No games yet. Browse the catalog or add one you already installed.</p>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
           <button class="btn-primary" id="btn-go-games" type="button">Browse Games</button>
@@ -113,11 +117,13 @@ function paintLibraryList(list, { installed, installedMods, modTitles, catalog, 
     return;
   }
 
-  list.replaceChildren();
+  // Built as a flat, ordered list and distributed into columns at the end —
+  // see layoutLibraryColumns for why the columns are not a CSS grid.
+  const cards = [];
 
   for (const game of installed) {
     const gameMods = installedMods.filter((m) => m.baseGameSlug === game.slug);
-    list.appendChild(
+    cards.push(
       buildLibraryGameBlock(game, gameMods, modTitles, {
         catalogEntry: catalogBySlug.get(game.slug),
       })
@@ -140,7 +146,7 @@ function paintLibraryList(list, { installed, installedMods, modTitles, catalog, 
       approxSize: catEntry?.approxSize || "",
       testing: Boolean(catEntry?.testing || catEntry?.status === "testing"),
     };
-    list.appendChild(buildLibraryGameBlock(cloudGame, [], modTitles, { ownedElsewhere: true }));
+    cards.push(buildLibraryGameBlock(cloudGame, [], modTitles, { ownedElsewhere: true }));
   }
 
   const orphanMods = installedMods.filter(
@@ -169,8 +175,57 @@ function paintLibraryList(list, { installed, installedMods, modTitles, catalog, 
       dir: null,
       exe: null,
     };
-    list.appendChild(buildLibraryGameBlock(fakeGame, mods, modTitles, { orphan: true }));
+    cards.push(buildLibraryGameBlock(fakeGame, mods, modTitles, { orphan: true }));
   }
+
+  layoutLibraryColumns(list, cards);
+}
+
+/**
+ * Two columns that scroll past each other, rather than a grid.
+ *
+ * A CSS grid aligns rows, so the taller of two side-by-side cards sets the
+ * height of both: expanding one game's editions pushed the game beside it down
+ * the page and left a gap under it. Each column is its own stack here, so
+ * expanding a card only moves what is below it in that column.
+ *
+ * Round-robin rather than first-half/second-half, because it keeps the
+ * left-right reading order the grid had — splitting in halves would move every
+ * card to a different place the first time this shipped.
+ */
+const LIBRARY_TWO_COLUMN_QUERY = "(min-width: 1540px)";
+
+/** The ordered cards, kept so a breakpoint change can redistribute them. */
+let libraryCards = [];
+
+function layoutLibraryColumns(list, cards) {
+  libraryCards = cards;
+  const count = window.matchMedia(LIBRARY_TWO_COLUMN_QUERY).matches ? 2 : 1;
+  const columns = [];
+  for (let i = 0; i < count; i += 1) {
+    const column = document.createElement("div");
+    column.className = "library-column";
+    columns.push(column);
+  }
+  cards.forEach((card, i) => columns[i % count].appendChild(card));
+  list.replaceChildren(...columns);
+}
+
+/*
+ * Redistribute on the breakpoint rather than re-rendering. The same card
+ * elements are moved between columns, so an expanded editions panel — and any
+ * open menu or save-backups panel — survives the window being resized.
+ */
+if (typeof window !== "undefined" && window.matchMedia) {
+  const mq = window.matchMedia(LIBRARY_TWO_COLUMN_QUERY);
+  const onChange = () => {
+    const list = document.getElementById("library-list");
+    if (!list || libraryCards.length === 0) return;
+    if (!list.isConnected) return;
+    layoutLibraryColumns(list, libraryCards);
+  };
+  if (mq.addEventListener) mq.addEventListener("change", onChange);
+  else if (mq.addListener) mq.addListener(onChange);
 }
 
 async function enrichLibraryList(list, local) {
@@ -481,6 +536,40 @@ function buildOverflowMenu(items) {
  * no information. Anything else — Project Quarm, Rat King Adventure — is
  * precisely what someone needs to see.
  */
+/*
+ * Which games have their editions expanded.
+ *
+ * Kept outside the render because the library re-renders itself after every
+ * install, uninstall and edition action — without this, expanding a game's
+ * editions and then removing one would collapse the panel under the player
+ * mid-task. Persisted so it also survives a restart, and read through a
+ * try/catch because a renderer with storage disabled must still work.
+ */
+const EXPANDED_EDITIONS_KEY = "playbound_library_expanded_editions";
+
+function loadExpandedEditions() {
+  try {
+    const raw = localStorage.getItem(EXPANDED_EDITIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+const expandedEditions = loadExpandedEditions();
+
+function setEditionsExpanded(slug, open) {
+  if (!slug) return;
+  if (open) expandedEditions.add(slug);
+  else expandedEditions.delete(slug);
+  try {
+    localStorage.setItem(EXPANDED_EDITIONS_KEY, JSON.stringify([...expandedEditions]));
+  } catch {
+    /* storage unavailable — the panel still toggles for this session */
+  }
+}
+
 function isMeaningfulEditionName(name) {
   const trimmed = String(name || "").trim();
   if (!trimmed) return false;
@@ -638,19 +727,52 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       }
     }
 
+    /*
+     * An install whose slug does not match the catalog is still that edition.
+     *
+     * Matching on slug alone produced two rows with the same label whenever the
+     * two sides disagreed on the slug — which is exactly what the synthesised
+     * fallback above does when a game has no per-edition install records: it
+     * invents "official" and names it after `game.editionName`. YSoccer showed
+     * as two editions both called "Ysoccer" that way, one from the catalog and
+     * one invented, with no way for a player to tell them apart.
+     *
+     * So fall back to the display name before deciding an install is a
+     * separate edition, and when it matches, mark the catalog row installed
+     * rather than adding a second one.
+     */
+    const canonicalName = (value) => String(value || "").trim().toLowerCase();
+    const catalogByName = new Map();
+    for (const row of allEditions) {
+      const key = canonicalName(row.name);
+      if (key && !catalogByName.has(key)) catalogByName.set(key, row);
+    }
+
     for (const [s, inst] of installedMap.entries()) {
-      if (!seenSlugs.has(s)) {
-        allEditions.push({
-          slug: s,
-          name: inst.editionName || s,
-          type: inst.editionType || "custom",
-          isDefault: false,
-          isInstalled: true,
-          installedRecord: inst,
-          catalogRecord: null,
-        });
+      if (seenSlugs.has(s)) continue;
+
+      const sameName = catalogByName.get(canonicalName(inst.editionName));
+      if (sameName) {
+        // Same edition, recorded under a different slug. Adopt the install so
+        // Play and the folder actions work, and do not add a duplicate row.
+        if (!sameName.isInstalled) {
+          sameName.isInstalled = true;
+          sameName.installedRecord = inst;
+        }
         seenSlugs.add(s);
+        continue;
       }
+
+      allEditions.push({
+        slug: s,
+        name: inst.editionName || s,
+        type: inst.editionType || "custom",
+        isDefault: false,
+        isInstalled: true,
+        installedRecord: inst,
+        catalogRecord: null,
+      });
+      seenSlugs.add(s);
     }
 
     if (allEditions.length === 0) {
@@ -712,15 +834,41 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
       const editionsPanel = document.createElement("div");
       editionsPanel.className = "library-card-extra library-card-editions";
 
-      const editionsHeader = document.createElement("div");
-      editionsHeader.className = "library-editions-header";
-      editionsHeader.innerHTML = `
+      /*
+       * Collapsed by default, and independently per game.
+       *
+       * A library of games each listing every edition is mostly rows nobody
+       * asked for, and in the two-column layout a long list used to decide how
+       * tall the whole row was. The count stays visible while collapsed so the
+       * panel is still worth opening.
+       */
+      const installedCount = allEditions.filter((e) => e.isInstalled).length;
+      const open = expandedEditions.has(game.slug);
+
+      const editionsToggle = document.createElement("button");
+      editionsToggle.type = "button";
+      editionsToggle.className = "library-editions-toggle";
+      editionsToggle.setAttribute("aria-expanded", String(open));
+      editionsToggle.innerHTML = `
         <span class="library-editions-title">Editions (${allEditions.length})</span>
+        <span class="library-editions-toggle-right">
+          <span class="library-editions-summary">${installedCount} installed</span>
+          <span class="chevron${open ? " open" : ""}">▾</span>
+        </span>
       `;
-      editionsPanel.appendChild(editionsHeader);
+      editionsPanel.appendChild(editionsToggle);
 
       const editionsList = document.createElement("div");
-      editionsList.className = "library-editions-list";
+      editionsList.className = `library-editions-list${open ? "" : " hidden"}`;
+
+      editionsToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const nowHidden = editionsList.classList.toggle("hidden");
+        const isOpen = !nowHidden;
+        editionsToggle.setAttribute("aria-expanded", String(isOpen));
+        editionsToggle.querySelector(".chevron")?.classList.toggle("open", isOpen);
+        setEditionsExpanded(game.slug, isOpen);
+      });
 
       for (const ed of allEditions) {
         const row = document.createElement("div");
