@@ -166,6 +166,22 @@ function editIniSection(text, section, mutate) {
   return [...lines.slice(0, start + 1), ...body, ...lines.slice(end)].join("\n");
 }
 
+/**
+ * True when a joystick config binds movement to something that is not a stick.
+ *
+ * SDL exposes a recognised pad with the left stick on axes 0 and 1; 4 and 5 are
+ * the triggers. An entry pointing movement at those is not a preference to
+ * respect, it is a config that cannot work — and it has to be distinguishable
+ * from a good one, or every check says "already configured" and the player is
+ * stuck with a pad the game appears not to see.
+ */
+function hasUnusableAxes(text) {
+  for (const m of String(text || "").matchAll(/xAxis:(\d+),\s*yAxis:(\d+)/g)) {
+    if (Number(m[1]) >= 4 || Number(m[2]) >= 4) return true;
+  }
+  return false;
+}
+
 function iniKeyOf(line) {
   const m = /^\s*([^=\s]+)\s*=/.exec(line);
   return m ? m[1].toLowerCase() : null;
@@ -641,6 +657,16 @@ const GAMES = {
       if (profile.family === "xbox" && !/Xbox|GC101/i.test(s)) return true;
       if (profile.family === "dualshock4" && !/DualShock|PS4/i.test(s)) return true;
       if (profile.rawId && !s.includes(profile.rawId)) return true;
+      /*
+       * A config can name the right pad and still be unusable.
+       *
+       * An entry that puts movement on axis 4 or higher has it on the triggers
+       * rather than the left stick, which reads to a player as "the game does
+       * not see my controller" — and every check above says it is configured,
+       * so nothing offered to fix it. Both PlayBound's own PlayStation mapping
+       * and YSoccer's in-game binding produced exactly that.
+       */
+      if (hasUnusableAxes(s)) return true;
       return false;
     },
     apply(text, profile) {
@@ -660,19 +686,24 @@ const GAMES = {
         `{class:JoystickConfig,name:Xbox One Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:XInput Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Xbox Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
-        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
-        `{class:JoystickConfig,name:Wireless Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
-        `{class:JoystickConfig,name:PS5 Controller,xAxis:4,yAxis:5,button1:2,button2:1}`,
-        `{class:JoystickConfig,name:PS4 Controller,xAxis:4,yAxis:5,button1:1,button2:2}`,
+        `{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:Wireless Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:PS5 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
+        `{class:JoystickConfig,name:PS4 Controller,xAxis:0,yAxis:1,button1:0,button2:1}`,
         `{class:JoystickConfig,name:Wireless Gamepad,xAxis:0,yAxis:1,button1:0,button2:1}`,
       ];
 
       if (profile?.rawId && !configs.some((c) => c.includes(`name:${profile.rawId}`))) {
-        const xAx = isDualSense || isDualShock4 ? 4 : 1;
-        const yAx = isDualSense || isDualShock4 ? 5 : 0;
-        const b1 = isDualSense || isDualShock4 ? 2 : 0;
-        const b2 = 1;
-        configs.unshift(`{class:JoystickConfig,name:${profile.rawId},xAxis:${xAx},yAxis:${yAx},button1:${b1},button2:${b2}}`);
+        /*
+         * One layout for every pad, because that is what the game sees.
+         *
+         * gdx-controllers talks to SDL on desktop, and SDL reports a
+         * recognised pad the same way whatever its brand: left stick on axes 0
+         * and 1, face buttons 0 and 1. PlayStation pads were special-cased to
+         * axes 4 and 5, which are the triggers — so the stick moved nothing and
+         * the game was unplayable with a DualSense.
+         */
+        configs.unshift(`{class:JoystickConfig,name:${profile.rawId},xAxis:0,yAxis:1,button1:0,button2:1}`);
       }
 
       const entryXml = `<entry key="joystickConfigs">[${configs.join(",")}]</entry>`;
