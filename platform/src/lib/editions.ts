@@ -285,6 +285,9 @@ function deriveInstallMethod(game: Game): { method: InstallMethod; config: Editi
           overlayDest: recipe.overlayDest ?? null,
           unwrapSingleRoot: recipe.unwrapSingleRoot || undefined,
           needsDosBox: recipe.needsDosBox || undefined,
+          // Carried through, or an edition derived from a game's recipe would
+          // silently lose the flag and install unelevated.
+          needsAdmin: recipe.needsAdmin || undefined,
           requiresBaseDir: recipe.requiresBaseDir || undefined,
         },
       },
