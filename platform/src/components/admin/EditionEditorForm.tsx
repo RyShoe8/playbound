@@ -1492,6 +1492,27 @@ function InstallMethodFields({
             value={config.playbound_installer?.exeHint ?? ""}
             onChange={(v) => patchConfig("playbound_installer", { exeHint: v })}
           />
+          {/*
+            Editions carry their own install recipe, and the launcher reads
+            needsAdmin from *this* config when a game installs through an
+            edition — so the game-level flag does not cover it. Without this the
+            box could only be ticked on the game, and an edition install would
+            still spawn unelevated and be refused by Windows.
+          */}
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              className="size-4"
+              checked={Boolean(config.playbound_installer?.needsAdmin)}
+              onChange={(e) =>
+                patchConfig("playbound_installer", { needsAdmin: e.target.checked })
+              }
+            />
+            Run as administrator
+            <span className="text-xs font-normal text-muted-foreground">
+              (loader needs elevation — players get a UAC prompt)
+            </span>
+          </label>
           <RecipeJsonField
             value={config.playbound_installer ?? {}}
             onChange={(next) => replaceConfig("playbound_installer", next)}

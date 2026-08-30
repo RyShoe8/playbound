@@ -190,6 +190,16 @@ export interface EditionInstallConfig {
      */
     unwrapSingleRoot?: boolean;
     needsDosBox?: boolean;
+    /**
+     * Launch this edition elevated.
+     *
+     * Separate from the game's own flag because an edition carries its own
+     * install recipe, and the launcher reads needsAdmin from whichever recipe
+     * it installed from — so a game-level flag does not cover an edition
+     * install. Curated, never inferred: Windows reports "needs elevation" and
+     * "antivirus blocked this" as the same error.
+     */
+    needsAdmin?: boolean;
     /** Prompt user to pick an existing base client folder first. */
     requiresBaseDir?: boolean;
     /** Numbered get-to-playing steps shown on the edition page + launcher. */

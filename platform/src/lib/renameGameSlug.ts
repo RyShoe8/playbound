@@ -5,10 +5,14 @@ import DiscussionPost from "@/lib/models/DiscussionPost";
 import DiscussionReply from "@/lib/models/DiscussionReply";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import Edition from "@/lib/models/Edition";
+import FreeOffer from "@/lib/models/FreeOffer";
+import GearRecommendation from "@/lib/models/GearRecommendation";
 import GuidePost from "@/lib/models/GuidePost";
 import LibraryEntry from "@/lib/models/LibraryEntry";
 import LibraryModEntry from "@/lib/models/LibraryModEntry";
 import PlatformEvent from "@/lib/models/PlatformEvent";
+import PlayInvite from "@/lib/models/PlayInvite";
+import Party from "@/lib/models/Party";
 import Review from "@/lib/models/Review";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 
@@ -30,10 +34,24 @@ const REFERENCES: { label: string; model: { updateMany: (f: object, u: object) =
   // would orphan every edition: the game page would fall back to its virtual
   // Official edition and the real ones would be unreachable.
   { label: "editions", model: Edition, field: "gameSlug" },
+  /*
+   * Hardware advice is per game and keyed by slug. A rename left it pointing
+   * at a slug nothing answers to, so the admin hardware section reported
+   * "game not found" for a game that plainly existed.
+   */
+  { label: "gearRecommendations", model: GearRecommendation, field: "gameSlug" },
+  { label: "freeOffers", model: FreeOffer, field: "gameSlug" },
   { label: "guides", model: GuidePost, field: "gameSlug" },
   { label: "libraryEntries", model: LibraryEntry, field: "gameSlug" },
   { label: "libraryModEntries", model: LibraryModEntry, field: "baseGameSlug" },
   { label: "events", model: PlatformEvent, field: "gameSlug" },
+  /*
+   * Live rather than historical: a party or invite mid-flight would otherwise
+   * point at a game that no longer resolves, and fail at the moment someone
+   * clicks join.
+   */
+  { label: "parties", model: Party, field: "gameSlug" },
+  { label: "playInvites", model: PlayInvite, field: "gameSlug" },
   { label: "reviews", model: Review, field: "gameSlug" },
   { label: "weeklyIssues", model: WeeklyIssue, field: "gameSlug" },
 ];
