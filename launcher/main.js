@@ -1991,6 +1991,7 @@ function catalogEntryFromEdition(edition) {
       overlayDest: cfg.overlayDest || undefined,
       unwrapSingleRoot: Boolean(cfg.unwrapSingleRoot),
       needsDosBox: Boolean(cfg.needsDosBox),
+      needsAdmin: Boolean(cfg.needsAdmin),
       requiresBaseDir: Boolean(cfg.requiresBaseDir),
       checksumMd5: cfg.checksumMd5 || cfg.md5 || undefined,
       modLoader: cfg.modLoader || undefined,
@@ -4607,7 +4608,8 @@ let lastKnownGamepads = [];
  * config touched at all. Asking every launch would be worse, so the answer is
  * remembered and only a pad they have never been asked about prompts again.
  */
-async function shouldConfigureController(slug, profile) {
+async function shouldConfigureController(slug, profile, opts = {}) {
+  const padConnected = opts.padConnected !== false;
   const settings = loadSettings();
   const answers = settings.controllerConfig || {};
   const key = `${slug}:${profile.family}`;
@@ -4620,12 +4622,21 @@ async function shouldConfigureController(slug, profile) {
     buttons: ["Set it up", "No thanks"],
     defaultId: 0,
     cancelId: 1,
-    title: "Controller detected",
-    message: `Set up your ${profile.label} for ${title}?`,
+    // "Controller detected" would be a lie with nothing plugged in, and the
+    // offer is worth making anyway — several of these games only see a pad if
+    // their config already names one.
+    title: padConnected ? "Controller detected" : "Controller support",
+    message: padConnected
+      ? `Set up your ${profile.label} for ${title}?`
+      : `Set up controller support for ${title}?`,
     detail:
       `PlayBound can write the button layout into ${title}'s settings so you do ` +
       `not have to bind it in-game. You can still change any of it afterwards, ` +
-      `and PlayBound will not touch it again once you have.`,
+      `and PlayBound will not touch it again once you have.` +
+      (padConnected
+        ? ""
+        : ` Nothing is plugged in right now — doing this first means a pad works ` +
+          `as soon as you connect one.`),
     checkboxLabel: "Remember for this game",
     checkboxChecked: true,
   });
@@ -4645,23 +4656,20 @@ async function applyControllerConfig(slug, installDir) {
 
   let profile = controllerProfiles.pickPrimary(lastKnownGamepads);
   const couchActive = Boolean(couchHost?.getState?.()?.active);
-  /*
-   * YSoccer only sees a pad if its preferences already name one, so with no pad
-   * connected it gets a stand-in and the file is seeded with the known
-   * controller names. That is not configuring anyone's controller, so it does
-   * not ask — but a player who *does* have a pad plugged in should be asked
-   * like every other game, which is what the blanket `slug !== "ysoccer"`
-   * exclusion below used to prevent.
-   */
-  let syntheticProfile = false;
   if (!profile && couchActive) {
     profile = { family: "xbox", label: "Phone Controller", rawId: "Controller (GC101 1.03)" };
   }
-  if (!profile && slug === "ysoccer") {
-    profile = { family: "xbox", label: "Controller", rawId: "Controller (GC101 1.03)" };
-    syntheticProfile = true;
-  }
-  if (!profile) return false;
+  /*
+   * Nothing plugged in is not a reason to stay quiet.
+   *
+   * Several of these games only detect a pad if their config already names
+   * one, so the useful moment to write it is before the player connects
+   * anything — and a game that supports a controller should make the same
+   * offer either way. YSoccer used to be special-cased into configuring
+   * silently, which is why it never asked.
+   */
+  const padConnected = Boolean(profile);
+  if (!profile) profile = controllerProfiles.defaultProfile();
 
   let current = "";
   try {
@@ -4679,7 +4687,9 @@ async function applyControllerConfig(slug, installDir) {
   const next = gameControllerConfig.applyProfile(slug, current, profile);
   if (next == null) return false;
 
-  if (!couchActive && !syntheticProfile && !(await shouldConfigureController(slug, profile))) {
+  // Couch mode is already the player asking for a controller, so it does not
+  // ask again. Everything else gets the same prompt, pad or no pad.
+  if (!couchActive && !(await shouldConfigureController(slug, profile, { padConnected }))) {
     console.log(`[controller] declined for ${slug}`);
     return false;
   }
@@ -7622,6 +7632,12 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
     child = GameLauncher.spawnGame(exePath, args, {
       gameSlug: slug,
       needsDosBox: Boolean(catalog.find((e) => e.slug === slug)?.needsDosBox),
+      /*
+       * Curated per game, not inferred. Windows reports "needs elevation" and
+       * "antivirus blocked this" as the same EACCES, so a launcher that guessed
+       * would throw a UAC prompt at people whose real problem was Defender.
+       */
+      elevate: Boolean(catalog.find((e) => e.slug === slug)?.needsAdmin),
       env: opts.env,
     });
   } catch (err) {

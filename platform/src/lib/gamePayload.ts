@@ -164,6 +164,8 @@ export const launcherInstallSchema = z
     overlayDest: optionalTrimmed,
     unwrapSingleRoot: z.boolean().optional(),
     needsDosBox: z.boolean().optional(),
+    /** Launch elevated. Curated per game — see launcherInstall.ts. */
+    needsAdmin: z.boolean().optional(),
     needsDotNetMajor: z.number().int().positive().optional(),
   })
   .superRefine((val, ctx) => {
@@ -713,6 +715,7 @@ export function toPayloadLauncherInstall(
     overlayDest: li.overlayDest ?? null,
     unwrapSingleRoot: li.unwrapSingleRoot || undefined,
     needsDosBox: li.needsDosBox || undefined,
+    needsAdmin: li.needsAdmin || undefined,
     needsDotNetMajor: li.needsDotNetMajor || undefined,
   };
 }

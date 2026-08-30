@@ -6,7 +6,7 @@
  * follows checks that it declines to act.
  */
 const assert = require("assert");
-const { pickPrimary, familyFor } = require("./controllerProfiles");
+const { pickPrimary, familyFor, defaultProfile } = require("./controllerProfiles");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -476,6 +476,32 @@ mrboom trigger-rally ysoccer wolfenstein-enemy-territory dc-universe-online`
   assert.deepStrictEqual(missing, [], `unassessed: ${missing.join(", ")}`);
 });
 
+
+/*
+ * Nothing plugged in still gets the offer.
+ *
+ * Games like YSoccer only detect a pad once their config names one, so the
+ * config has to be writable before a controller is connected. That means the
+ * writers have to cope with the stand-in profile, not just a real pad.
+ */
+test("builds a usable profile when no pad is connected", () => {
+  const p = defaultProfile();
+  assert.strictEqual(typeof p.family, "string");
+  assert.ok(p.family, "family must be set - it keys the remembered answer");
+  assert.strictEqual(p.label, "Gamepad");
+  assert.ok(p.buttons && p.axes, "standard mapping must be present");
+  // pickPrimary returns null with no pads; that is what triggers the default.
+  assert.strictEqual(pickPrimary([]), null);
+  assert.strictEqual(pickPrimary([{ connected: false, id: "" }]), null);
+});
+
+test("writes YSoccer joystick config from the no-pad profile", () => {
+  const out = applyProfile("ysoccer", "", defaultProfile());
+  assert.ok(out, "a fresh config must be produced without a controller attached");
+  assert.ok(/joystickConfigs/.test(out), "must contain the libGDX joystick block");
+  // The known controller names are what let YSoccer see a pad later.
+  assert.ok(/GC101/.test(out) && /Xbox/.test(out), "must seed known controller names");
+});
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
