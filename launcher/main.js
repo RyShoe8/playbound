@@ -3803,10 +3803,28 @@ $paths = @(
 )
 $items = Get-ItemProperty $paths | Where-Object { $_.DisplayName -or $_.DisplayIcon -or $_.InstallLocation }
 $hit = $null
+# An installer writes whatever name it likes, and it is rarely ours to the
+# character: "Metal Slug: Awakening" registers as "Metal Slug Awakening", and
+# "Privateer Gemini Gold" as plain "Privateer". Comparing on letters and digits
+# alone survives punctuation, and the prefix test runs both ways because the
+# registered name is as often shorter than the catalog title as longer.
+function Get-Norm([string]$s) { return ($s -replace '[^a-zA-Z0-9]', '').ToLower() }
 foreach ($title in $titles) {
   if (-not $title) { continue }
+  $nt = Get-Norm $title
+  # Too short to be distinctive: a three-letter prefix would match half the
+  # machine, and a wrong hit sends the player's Play button at another game.
+  if ($nt.Length -lt 4) { continue }
   $hit = $items |
-    Where-Object { $_.DisplayName -and ($_.DisplayName -eq $title -or $_.DisplayName -like ($title + '*')) } |
+    Where-Object {
+      if (-not $_.DisplayName) { return $false }
+      $dn = Get-Norm $_.DisplayName
+      if (-not $dn) { return $false }
+      if ($dn -eq $nt) { return $true }
+      if ($dn.Length -ge 6 -and $nt.StartsWith($dn)) { return $true }
+      if ($nt.Length -ge 6 -and $dn.StartsWith($nt)) { return $true }
+      $false
+    } |
     Select-Object -First 1 DisplayName, InstallLocation, DisplayIcon
   if ($hit) { break }
 }
