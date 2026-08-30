@@ -1,4 +1,8 @@
 import dbConnect from "@/lib/db";
+import Artifact from "@/lib/models/Artifact";
+import AutomatedEventConfig from "@/lib/models/AutomatedEventConfig";
+import AutomatedEventLog from "@/lib/models/AutomatedEventLog";
+import BugReport from "@/lib/models/BugReport";
 import CatalogCollection from "@/lib/models/CatalogCollection";
 import CatalogMod from "@/lib/models/CatalogMod";
 import DiscussionPost from "@/lib/models/DiscussionPost";
@@ -14,6 +18,7 @@ import PlatformEvent from "@/lib/models/PlatformEvent";
 import PlayInvite from "@/lib/models/PlayInvite";
 import Party from "@/lib/models/Party";
 import Review from "@/lib/models/Review";
+import StoreMatchSuggestion from "@/lib/models/StoreMatchSuggestion";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
 
 /**
@@ -25,7 +30,16 @@ import WeeklyIssue from "@/lib/models/WeeklyIssue";
  * as a base game. Kept as one list so a new collection that references a game
  * has a single obvious place to be registered.
  */
-const REFERENCES: { label: string; model: { updateMany: (f: object, u: object) => unknown }; field: string }[] = [
+type SlugReference = {
+  label: string;
+  model: {
+    updateMany: (f: object, u: object) => unknown;
+    countDocuments: (f: object) => Promise<number>;
+  };
+  field: string;
+};
+
+const REFERENCES: SlugReference[] = [
   { label: "mods", model: CatalogMod, field: "baseGameSlug" },
   { label: "discussionPosts", model: DiscussionPost, field: "gameSlug" },
   { label: "discussionReplies", model: DiscussionReply, field: "gameSlug" },
@@ -52,6 +66,23 @@ const REFERENCES: { label: string; model: { updateMany: (f: object, u: object) =
    */
   { label: "parties", model: Party, field: "gameSlug" },
   { label: "playInvites", model: PlayInvite, field: "gameSlug" },
+  { label: "bugReports", model: BugReport, field: "gameSlug" },
+  { label: "storeMatchSuggestions", model: StoreMatchSuggestion, field: "gameSlug" },
+  /*
+   * Download mirrors are per game; a stale slug here detaches a game from the
+   * artifacts it is served from.
+   */
+  { label: "artifacts", model: Artifact, field: "gameSlug" },
+  { label: "automatedEventLogs", model: AutomatedEventLog, field: "gameSlug" },
+  /*
+   * Nested rather than top-level: the live session a pop-up event is currently
+   * running. Dotted paths work the same way in an update filter.
+   */
+  {
+    label: "automatedEventSessions",
+    model: AutomatedEventConfig,
+    field: "activeSession.gameSlug",
+  },
   { label: "reviews", model: Review, field: "gameSlug" },
   { label: "weeklyIssues", model: WeeklyIssue, field: "gameSlug" },
 ];
@@ -109,4 +140,30 @@ export async function cascadeGameSlugRename(
  */
 export function staticReferenceWarning(oldSlug: string): string {
   return `Collections were updated automatically. If "${oldSlug}" also appears in src/lib/data/comparisons.ts or alternatives.ts, update those by hand — they still live in code.`;
+}
+
+/**
+ * What a rename *would* move, without moving it.
+ *
+ * Repairing rows orphaned by an earlier rename means running this against
+ * production data, and the only safe way to offer that is to be able to see
+ * the blast radius first. Counts come from the same REFERENCES list the write
+ * uses, so a preview cannot claim a collection the repair would skip.
+ */
+export async function previewGameSlugRename(
+  oldSlug: string,
+  newSlug: string
+): Promise<SlugRenameReport> {
+  await dbConnect();
+  const report: SlugRenameReport = {};
+  if (!oldSlug || !newSlug || oldSlug === newSlug) return report;
+
+  const collections = await CatalogCollection.countDocuments({ gameSlugs: oldSlug });
+  if (collections > 0) report.collections = collections;
+
+  for (const ref of REFERENCES) {
+    const n = await ref.model.countDocuments({ [ref.field]: oldSlug });
+    if (n > 0) report[ref.label] = n;
+  }
+  return report;
 }
