@@ -453,7 +453,33 @@ test("auto-configures YSoccer with libGDX JoystickConfig XML", () => {
   const next = applyProfile("ysoccer", emptyXml, dualsense);
   assert(next.includes("joystickConfigs"));
   assert(next.includes("DualSense Wireless Controller"));
-  assert(next.includes("xAxis:4"));
+  /*
+   * Axes 0 and 1, not 4 and 5.
+   *
+   * This assertion used to require xAxis:4, which is the trigger — so it was
+   * pinning the bug in place: a DualSense could not move at all, and the test
+   * agreed with the broken output. gdx-controllers talks to SDL on desktop,
+   * and SDL reports every recognised pad the same way, left stick on 0 and 1.
+   */
+  const ds = next.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
+  assert(/xAxis:0/.test(ds), `DualSense must use the left stick: ${ds}`);
+  assert(/yAxis:1/.test(ds), `DualSense must use the left stick: ${ds}`);
+});
+
+test("treats a config bound to the triggers as needing a rewrite", () => {
+  /*
+   * The state a stuck player is actually in: the file names their pad, so every
+   * other check says "configured", while movement points at an axis that is not
+   * a stick. Taken from a real YSoccer19 prefs file.
+   */
+  const stuck =
+    `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<properties>\n` +
+    `<entry key="joystickConfigs">[{class:JoystickConfig,name:DualSense Wireless Controller,xAxis:4,yAxis:3,button1:1,button2:2}]</entry>\n` +
+    `</properties>\n`;
+  const rewritten = applyProfile("ysoccer", stuck, dualsense);
+  assert(rewritten, "a config on the triggers must be rewritten, not left alone");
+  const ds = rewritten.match(/\{class:JoystickConfig,name:DualSense[^}]*\}/)[0];
+  assert(/xAxis:0/.test(ds) && /yAxis:1/.test(ds), `still unusable: ${ds}`);
 });
 
 /* ── every catalogued controller game has an answer ────────────────────── */
