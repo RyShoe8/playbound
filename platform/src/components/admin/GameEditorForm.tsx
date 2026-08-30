@@ -1988,6 +1988,24 @@ export function GameEditorForm({
                     />
                     Auto-update pinned download URLs (daily cron)
                   </label>
+                  {/*
+                    Windows cannot raise privileges on a normal spawn, so a game
+                    whose loader demands elevation fails before it starts. This
+                    has to be curated: Windows reports "needs elevation" and
+                    "antivirus blocked this" as the same error, so the launcher
+                    cannot tell them apart and must be told.
+                  */}
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.launcherInstall?.needsAdmin)}
+                      onChange={(e) => patchLauncher({ needsAdmin: e.target.checked })}
+                    />
+                    Run as administrator
+                    <span className="text-xs font-normal text-muted-foreground">
+                      (loader needs elevation — players get a UAC prompt)
+                    </span>
+                  </label>
                   {form.launcherInstall?.detectedVersion ? (
                     <span className="text-xs text-muted-foreground">
                       Detected: {form.launcherInstall.detectedVersion}
