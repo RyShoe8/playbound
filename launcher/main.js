@@ -681,6 +681,7 @@ let context = null;
 /** Background poll after opening a Windows installer wizard */
 let installerPollTimer = null;
 let installerPollSlug = null;
+let installerPollCancel = null;
 /** Delayed full-drive BFS — only after known-path poll grace period */
 let exeScanDelayTimer = null;
 /** @type {{ slug: string, abort: boolean, generation: number } | null} */
@@ -4237,6 +4238,7 @@ function markInstalledFromExe(slug, entry, exe, version) {
 }
 
 function stopInstallerPoll() {
+  installerPollCancel = null;
   if (installerPollTimer) {
     clearInterval(installerPollTimer);
     installerPollTimer = null;
@@ -4248,10 +4250,37 @@ function stopInstallerPoll() {
   }
 }
 
+/** Stop a waiting installer poll for `slug`, failing whoever awaits it. */
+function abortInstallerPoll(slug) {
+  if (!installerPollCancel) return false;
+  if (slug && installerPollSlug !== slug) return false;
+  const cancel = installerPollCancel;
+  const err = new Error("Install cancelled");
+  err.code = "INSTALL_CANCELLED";
+  cancel(err);
+  return true;
+}
+
 function startInstallerPoll(slug, entry, version, onComplete) {
   stopInstallerPoll();
   stopExeScan(slug);
   installerPollSlug = slug;
+  /*
+   * How cancelling reaches a poll that is already waiting.
+   *
+   * This waits up to ten minutes for an installer the player is driving, and
+   * an AbortController cannot touch it — there is no request to abort. Without
+   * a hook the install queue sat behind a cancelled item until the poll timed
+   * out on its own.
+   */
+  installerPollCancel = (err) => {
+    stopInstallerPoll();
+    if (onComplete) {
+      const cb = onComplete;
+      onComplete = null;
+      cb(err);
+    }
+  };
   markPendingInstall(slug, version, {
     editionSlug: entry?.editionSlug,
     editionName: entry?.editionName,
@@ -5459,6 +5488,25 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     abortController,
   };
 
+  /*
+   * What the next install waits on.
+   *
+   * The queue used to chain on the job promise itself, which assumed a job
+   * always settles. Cancelling does not make that true: abort only reaches an
+   * in-flight download, so a task stuck waiting on an installer poll or an
+   * external hand-off stayed pending after being cancelled — and every item
+   * behind it waited on a promise that would never resolve. Cancelling a failed
+   * install stopped the queue dead.
+   *
+   * This resolves when the task leaves the queue for any reason at all:
+   * finished, failed, or cancelled.
+   */
+  let releaseQueue;
+  task.finished = new Promise((resolve) => {
+    releaseQueue = resolve;
+  });
+  task.releaseQueue = () => releaseQueue();
+
   installQueue.push(task);
   broadcastInstallQueue();
 
@@ -5488,6 +5536,9 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     }
     await waitFor;
     if (task.cancelled) {
+      // Outside the try/finally below, so release the chain here too rather
+      // than leaning on the cancel path having already done it.
+      task.releaseQueue();
       const err = new Error("Install cancelled");
       err.code = "INSTALL_CANCELLED";
       throw err;
@@ -5529,6 +5580,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
       }
       const idx = installQueue.indexOf(task);
       if (idx >= 0) installQueue.splice(idx, 1);
+      task.releaseQueue();
       broadcastInstallQueue();
     }
   })()
@@ -5543,7 +5595,7 @@ async function installGame(slug, targetDir, editionSlug, selectedAddons) {
     });
 
   gameInstallJobs.set(key, job);
-  installQueueTail = job.catch(() => {});
+  installQueueTail = task.finished;
   return job;
 }
 
@@ -5567,6 +5619,7 @@ function cancelInstallQueueItem(slug, editionSlug) {
   } catch (err) {
     console.warn("abort failed:", err);
   }
+  abortInstallerPoll(task.slug);
 
   if (activeInstallTask === task) {
     activeInstallTask = null;
@@ -5577,6 +5630,17 @@ function cancelInstallQueueItem(slug, editionSlug) {
   if (idx >= 0) installQueue.splice(idx, 1);
   gameInstallJobs.delete(task.id);
   gameInstallJobs.delete(key);
+
+  /*
+   * Let the queue move on even if the cancelled job never settles.
+   *
+   * abort() reaches an in-flight download, but not an installer poll or an
+   * external hand-off waiting on the player. Those kept running after being
+   * cancelled, and everything behind them waited forever on a promise that had
+   * already been struck off the queue. Releasing here is what actually starts
+   * the next item.
+   */
+  task.releaseQueue?.();
 
   broadcastInstallQueue();
   sendProgress({ phase: "cancelled", slug, message: "Install cancelled." });
