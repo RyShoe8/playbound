@@ -4608,6 +4608,111 @@ let lastKnownGamepads = [];
  * config touched at all. Asking every launch would be worse, so the answer is
  * remembered and only a pad they have never been asked about prompts again.
  */
+/**
+ * Games the player has agreed to launch with administrator rights.
+ *
+ * The catalog's `needsAdmin` covers titles somebody has curated, but it is
+ * looked up by slug and a game added with "Add existing game" has no catalog
+ * row at all — `custom-…` slugs can never match one. That is most of the
+ * cases where this comes up, because a loader demanding elevation is exactly
+ * the kind of thing people install by hand. So the answer is remembered here
+ * as well, per game, and either source is enough.
+ */
+function elevationRemembered(slug) {
+  try {
+    return Boolean(loadSettings().elevatedGames?.[slug]);
+  } catch {
+    return false;
+  }
+}
+
+function rememberElevation(slug, allow) {
+  try {
+    const settings = loadSettings();
+    settings.elevatedGames = { ...(settings.elevatedGames || {}), [slug]: allow };
+    saveSettings(settings);
+  } catch {
+    /* the retry still happens this launch; only the memory is lost */
+  }
+}
+
+/** True for the failure Windows reports when an executable demands elevation. */
+function looksLikeElevationRefusal(err) {
+  if (process.platform !== "win32") return false;
+  const text = String(err?.message || err || "");
+  return err?.code === "EACCES" || /\bEACCES\b/.test(text);
+}
+
+/**
+ * Offer to relaunch with administrator rights after Windows refused.
+ *
+ * Asked rather than done silently: elevation is a real privilege escalation
+ * and a UAC prompt out of nowhere is not something a game launcher should
+ * produce. Asked only *after* a failure, because libuv reports the same EACCES
+ * for "this needs elevation" and "antivirus blocked this" — so before the
+ * attempt there is nothing to distinguish a game that needs this from one
+ * being held by Defender, and guessing would prompt the wrong people.
+ */
+async function offerElevatedRetry(slug, title, exeName) {
+  const { response, checkboxChecked } = await dialog.showMessageBox(win || undefined, {
+    type: "question",
+    buttons: ["Run as administrator", "Cancel"],
+    defaultId: 0,
+    cancelId: 1,
+    title: "Windows blocked the game",
+    message: `Run ${title} as administrator?`,
+    detail:
+      `Windows would not start ${exeName}. Some games use a loader that has to ` +
+      `run with administrator rights. Windows will ask you to confirm.\n\n` +
+      `If that is not it, antivirus may be holding the file instead — cancel ` +
+      `and try opening the folder and running it once yourself.`,
+    checkboxLabel: "Always run this game as administrator",
+    checkboxChecked: true,
+  });
+
+  const allow = response === 0;
+  if (allow && checkboxChecked) rememberElevation(slug, true);
+  return allow;
+}
+
+/**
+ * Launch, and offer elevation if Windows refuses for that reason.
+ *
+ * The original error is rethrown when the player declines or the elevated
+ * attempt also fails, so the classification below still sees the real failure
+ * rather than a second-order one about the retry.
+ */
+async function spawnWithElevationFallback(slug, launchPath, args, opts) {
+  const entry = catalog.find((e) => e.slug === slug);
+  /*
+   * Resolved here rather than left to spawnTrackedExe, so the catch below can
+   * tell whether the attempt was already elevated. Otherwise a game that is
+   * flagged, launches elevated, and fails anyway would be offered elevation a
+   * second time — a UAC prompt for something that just had one.
+   */
+  const alreadyElevated =
+    opts?.elevate ?? Boolean(entry?.needsAdmin || elevationRemembered(slug));
+
+  try {
+    return await spawnTrackedExe(slug, launchPath, args, { ...opts, elevate: alreadyElevated });
+  } catch (err) {
+    if (alreadyElevated || !looksLikeElevationRefusal(err)) throw err;
+
+    const title = entry?.title || slug;
+    const exeName = path.basename(launchPath || "") || "the game";
+    if (!(await offerElevatedRetry(slug, title, exeName))) throw err;
+
+    try {
+      return await spawnTrackedExe(slug, launchPath, args, { ...opts, elevate: true });
+    } catch {
+      // Elevation was not the problem after all; do not leave the game marked
+      // as needing it, or every future launch opens a pointless UAC prompt.
+      rememberElevation(slug, false);
+      throw err;
+    }
+  }
+}
+
 async function shouldConfigureController(slug, profile, opts = {}) {
   const padConnected = opts.padConnected !== false;
   const settings = loadSettings();
@@ -7154,7 +7259,7 @@ async function playGameInner(slug, join = null, editionSlug = null) {
   }
 
   try {
-    await spawnTrackedExe(slug, launchPath, args, { env: launchEnv });
+    await spawnWithElevationFallback(slug, launchPath, args, { env: launchEnv });
   } catch (err) {
     const rawMessage = err?.message || String(err);
     const exeName = path.basename(launchPath || "") || "game";
@@ -7633,11 +7738,18 @@ function spawnTrackedExe(slug, exePath, args = [], opts = {}) {
       gameSlug: slug,
       needsDosBox: Boolean(catalog.find((e) => e.slug === slug)?.needsDosBox),
       /*
-       * Curated per game, not inferred. Windows reports "needs elevation" and
-       * "antivirus blocked this" as the same EACCES, so a launcher that guessed
-       * would throw a UAC prompt at people whose real problem was Defender.
+       * Never inferred from a failure — Windows reports "needs elevation" and
+       * "antivirus blocked this" as the same EACCES, so guessing would throw a
+       * UAC prompt at people whose real problem was Defender.
+       *
+       * Two sources, because one is not enough: the catalog flag covers curated
+       * titles, and the remembered answer covers everything else — including
+       * games added by hand, which have no catalog row to carry a flag.
+       * An explicit opts.elevate is the retry below saying it already asked.
        */
-      elevate: Boolean(catalog.find((e) => e.slug === slug)?.needsAdmin),
+      elevate:
+        opts.elevate ??
+        Boolean(catalog.find((e) => e.slug === slug)?.needsAdmin || elevationRemembered(slug)),
       env: opts.env,
     });
   } catch (err) {
