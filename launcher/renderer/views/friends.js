@@ -2940,9 +2940,41 @@ async function prepareVirtualLan(party, lan) {
  * server joins directly, a browser title opens externally, and anything else
  * launches locally — falling back to the game page when it is not installed.
  */
+/**
+ * Whether this game is installed and actually launchable.
+ *
+ * `exe` and `!pending` are the same conditions the library uses to decide a
+ * game is ready — a row can exist for a download that never finished.
+ */
+async function isGameReadyToPlay(slug) {
+  try {
+    const installed = await window.playbound.getInstalled();
+    return (installed || []).some((g) => g?.slug === slug && g.exe && !g.pending);
+  } catch {
+    // Unknown is not "missing": failing the check must not block a launch that
+    // would have worked. play() still refuses if it really is not installed.
+    return true;
+  }
+}
+
 async function launchPartyGame(party) {
   const slug = party.gameSlug;
   if (!slug) return;
+
+  /*
+   * Check before joining rather than letting play() refuse.
+   *
+   * Joining an event or party for a game you do not own is completely normal —
+   * it is how you find out the event exists — and the launcher answered that
+   * with a bare "Not installed", which reads as a broken button rather than a
+   * missing game. Say which game, and put them where the install button is.
+   */
+  if (!(await isGameReadyToPlay(slug))) {
+    const title = party.gameTitle || slug;
+    setStatus(`${title} isn't installed yet — install it, then join.`, true);
+    api.openGameDetail(slug, "friends");
+    return;
+  }
 
   /*
    * A public self-hosted room is the only case that needs a router mapping:
