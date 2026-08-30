@@ -8883,6 +8883,33 @@ ipcMain.handle("play-mod", (_event, slug) => playMod(slug));
  * here rather than by the API. An entry that is explicitly null means the
  * client joins from an in-game menu, which is not a one-click join.
  */
+/*
+ * Read and set the per-game elevation preference directly.
+ *
+ * The retry offer only appears after a launch has already failed, and a game
+ * added by hand has no catalog row for `needsAdmin` — so without this there is
+ * no way to configure a game that is known to need administrator rights until
+ * it has gone wrong once.
+ */
+ipcMain.handle("get-run-as-admin", (_event, slug) => {
+  const clean = String(slug || "");
+  const entry = catalog.find((e) => e.slug === clean);
+  return {
+    enabled: elevationRemembered(clean) || Boolean(entry?.needsAdmin),
+    // The catalog's answer is not the player's to turn off here; saying which
+    // source it came from lets the menu show it as fixed rather than a toggle
+    // that appears not to work.
+    fromCatalog: Boolean(entry?.needsAdmin),
+  };
+});
+
+ipcMain.handle("set-run-as-admin", (_event, slug, on) => {
+  const clean = String(slug || "");
+  if (!clean) return { ok: false };
+  rememberElevation(clean, Boolean(on));
+  return { ok: true, enabled: Boolean(on) };
+});
+
 ipcMain.on("join-capability", (event, slug) => {
   let canCommandLineJoin = false;
   try {

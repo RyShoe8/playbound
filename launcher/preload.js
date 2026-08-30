@@ -45,6 +45,15 @@ contextBridge.exposeInMainWorld("playbound", {
    * every card flickering a button in after paint.
    */
   joinCapability: (slug) => ipcRenderer.sendSync("join-capability", slug),
+  /**
+   * Per-game "always run as administrator".
+   *
+   * Settable before anything goes wrong, so a game known to need elevation
+   * does not have to fail once to be configured — which is the only route a
+   * custom-added game has, since it has no catalog row to carry the flag.
+   */
+  getRunAsAdmin: (slug) => ipcRenderer.invoke("get-run-as-admin", slug),
+  setRunAsAdmin: (slug, on) => ipcRenderer.invoke("set-run-as-admin", slug, Boolean(on)),
   findBestServer: (slug) => ipcRenderer.invoke("find-best-server", slug),
   postTelemetry: (payload) => ipcRenderer.invoke("post-telemetry", payload),
   uninstall: (slug, editionSlug) => ipcRenderer.invoke("uninstall", slug, editionSlug || null),

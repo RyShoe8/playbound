@@ -276,6 +276,10 @@ async function renderLibraryView() {
   const local = await loadLibraryLocalData();
   const hasLocal = local.installed.length > 0 || local.installedMods.length > 0;
 
+  // Before painting: the menu item's label depends on this, and it cannot wait
+  // on IPC while the menu is opening.
+  await loadRunAsAdminState(local.installed.map((g) => g.slug).filter(Boolean));
+
   if (hasLocal) {
     paintLibraryList(list, {
       ...local,
@@ -1002,6 +1006,8 @@ function buildLibraryGameBlock(game, gameMods, modTitles, opts = {}) {
             onClick: () => toggleOpenCiv3DisplayPanel(block, game),
           });
         }
+        const adminItem = buildRunAsAdminMenuItem(game);
+        if (adminItem) menuItems.push(adminItem);
         menuItems.push({
           label: "Uninstall",
           danger: true,
@@ -1430,6 +1436,76 @@ async function toggleOpenCiv3DisplayPanel(block, game) {
       setStatus(err.message || String(err), true);
     }
   });
+}
+
+/**
+ * Elevation state, read once per render so the menu label is right.
+ *
+ * Populated by the same pass that builds the cards, because a menu item cannot
+ * wait on IPC to decide its own label without the menu opening blank.
+ */
+const runAsAdminState = new Map();
+
+async function loadRunAsAdminState(slugs) {
+  runAsAdminState.clear();
+  if (!window.playbound?.getRunAsAdmin) return;
+  await Promise.all(
+    slugs.map(async (slug) => {
+      try {
+        runAsAdminState.set(slug, await window.playbound.getRunAsAdmin(slug));
+      } catch {
+        /* leave unset; the item just does not render */
+      }
+    })
+  );
+}
+
+/**
+ * "Always run as administrator", per game.
+ *
+ * Some games ship a loader that Windows will not start without elevation.
+ * The launcher offers this after a launch fails, but that means failing once
+ * to configure it — and a game added by hand has no catalog row to carry the
+ * `needsAdmin` flag, so a failure was the *only* way to set it. This is the
+ * way to say so up front.
+ *
+ * Windows-only: elevation is a Windows concept, and ShellExecute's runas verb
+ * is what implements it.
+ */
+function buildRunAsAdminMenuItem(game) {
+  if (!/win/i.test(navigator.platform || "") && navigator.userAgent.indexOf("Windows") === -1) {
+    return null;
+  }
+  const state = runAsAdminState.get(game.slug);
+  if (!state) return null;
+
+  // Set by the catalog rather than by this player — showing a toggle that
+  // cannot turn it off would just look broken.
+  if (state.fromCatalog && state.enabled) {
+    return {
+      label: "Runs as administrator (required)",
+      onClick: () =>
+        setStatus(`${game.title} is set to run as administrator because it needs it.`),
+    };
+  }
+
+  return {
+    label: state.enabled ? "Don't run as administrator" : "Always run as administrator",
+    onClick: async () => {
+      const next = !state.enabled;
+      try {
+        await window.playbound.setRunAsAdmin(game.slug, next);
+        setStatus(
+          next
+            ? `${game.title} will run as administrator. Windows will ask you to confirm each launch.`
+            : `${game.title} will run normally.`
+        );
+        api.renderLibraryView();
+      } catch (err) {
+        setStatus(err?.message || String(err), true);
+      }
+    },
+  };
 }
 
 /**
