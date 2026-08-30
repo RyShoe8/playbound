@@ -12,10 +12,57 @@ export const SITE_URL = (
 
 export const SITE_NAME = "PlayBound";
 
+/** The public host, whatever origin happened to build this. */
+const CANONICAL_HOST = "playbound.club";
+
+/**
+ * The bare host to print on artwork that is seen outside the site.
+ *
+ * SITE_URL is localhost in development and can be a preview host on Vercel, so
+ * printing it directly means a share card that says "localhost:3000" or
+ * "playbound-five.vercel.app" to everyone a link is sent to. Nobody looks at
+ * their own share card while working on the site — that is precisely how this
+ * one went on advertising "The Home of Free Gaming" long after it stopped
+ * being true — so a wrong host here would not be noticed either.
+ *
+ * Anything that is not a real public origin therefore falls back rather than
+ * being shown.
+ */
+export function publicHostFrom(siteUrl: string): string {
+  let host: string;
+  try {
+    host = new URL(siteUrl).host;
+  } catch {
+    return CANONICAL_HOST;
+  }
+  if (!host) return CANONICAL_HOST;
+  // A port means a dev server; .vercel.app and .local mean a preview or a LAN
+  // box. None of them are somewhere a reader could go.
+  if (host.includes(":")) return CANONICAL_HOST;
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/i.test(host)) return CANONICAL_HOST;
+  if (/\.(vercel\.app|local|localhost|test|internal)$/i.test(host)) return CANONICAL_HOST;
+  return host;
+}
+
 export const SITE_TAGLINE = "Discover. Play. Connect.";
 
 export const SITE_DESCRIPTION =
   "Great games don't have to cost $70. PlayBound finds exceptional free and affordable games, tests them, improves them with the best community tools and mods, and makes them easier to install and play together.";
+
+/**
+ * One line for the share card.
+ *
+ * SITE_DESCRIPTION is three clauses long and unreadable at the size a social
+ * preview renders, so the card needs its own shorter line — but it must not be
+ * a *separate* claim. The share image previously carried its own hardcoded
+ * copy and went on saying "The Home of Free Gaming" long after the catalog
+ * stopped being free-only, because nothing tied it to the description here.
+ */
+export const SITE_SOCIAL_SUBTITLE =
+  "Exceptional free and affordable games — tested, improved, and easy to play together.";
+
+/** Host for share artwork. Never a dev or preview origin — see publicHostFrom. */
+export const SITE_PUBLIC_HOST = publicHostFrom(SITE_URL);
 
 /** Public Discord invite (sidebar + Organization.sameAs). */
 export const SITE_DISCORD_INVITE = "https://discord.gg/yc7WdxATar";
