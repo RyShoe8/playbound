@@ -2653,23 +2653,80 @@ async function resolveDownload(entry) {
   });
   if (!res.ok) throw new Error(`GitHub API ${res.status} for ${entry.repo}`);
   const release = await res.json();
-  let asset = null;
-  for (const pattern of assetPatternsForEntry(entry)) {
-    asset = pickGithubAsset(release.assets, pattern);
-    if (asset && hostOsAssetScore(asset.name) >= 0) break;
-    if (asset && process.platform !== "darwin") break;
-    asset = null;
+
+  const findAsset = (candidate) => {
+    let found = null;
+    for (const pattern of assetPatternsForEntry(entry)) {
+      found = pickGithubAsset(candidate.assets, pattern);
+      if (found && hostOsAssetScore(found.name) >= 0) break;
+      if (found && process.platform !== "darwin") break;
+      found = null;
+    }
+    if (!found && process.platform === "darwin") {
+      const candidates = sortAssetsForHost(candidate.assets).filter(
+        (a) => hostOsAssetScore(a.name) >= 0
+      );
+      found = candidates[0] || null;
+    }
+    return found;
+  };
+
+  let matched = findAsset(release);
+  let matchedRelease = release;
+
+  /*
+   * The newest release is not always a release of the thing we install.
+   *
+   * TES3MP shipped a VR build as its latest, carrying only
+   * `tes3mp.Win64.release.0.8.1.VR.client.zip` — so a recipe correctly asking
+   * for the desktop client found nothing and the install failed, even though
+   * the desktop build existed one release back. Upstreams do this routinely:
+   * VR forks, ARM-only hotfixes, a platform-specific respin.
+   *
+   * So a miss on `latest` walks back through recent releases rather than
+   * giving up. Bounded, and prereleases stay excluded: this is for finding the
+   * build the recipe already describes, not for loosening what it accepts.
+   */
+  if (!matched) {
+    try {
+      const listRes = await fetch(
+        `https://api.github.com/repos/${entry.repo}/releases?per_page=10`,
+        { headers: { "user-agent": "playbound-launcher", accept: "application/vnd.github+json" } }
+      );
+      if (listRes.ok) {
+        const releases = await listRes.json();
+        for (const candidate of Array.isArray(releases) ? releases : []) {
+          if (candidate?.prerelease || candidate?.draft) continue;
+          if (candidate?.tag_name === release?.tag_name) continue;
+          const found = findAsset(candidate);
+          if (found) {
+            matched = found;
+            matchedRelease = candidate;
+            console.log(
+              `[install] ${entry.repo}: no match in ${release.tag_name}, using ${candidate.tag_name}`
+            );
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      // The error below is about the latest release either way; a failed
+      // lookback must not replace it with a network complaint.
+      console.warn(`[install] ${entry.repo}: release lookback failed:`, err?.message || err);
+    }
   }
-  if (!asset && process.platform === "darwin") {
-    const candidates = sortAssetsForHost(release.assets).filter((a) => hostOsAssetScore(a.name) >= 0);
-    asset = candidates[0] || null;
-  }
-  if (!asset) {
+
+  if (!matched) {
     throw new Error(
       `No ${process.platform === "darwin" ? "macOS" : "matching"} asset for ${entry.repo} ${release.tag_name}`
     );
   }
-  return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, size: asset.size };
+  return {
+    url: matched.browser_download_url,
+    name: matched.name,
+    version: matchedRelease.tag_name,
+    size: matched.size,
+  };
 }
 
 async function resolveModDownload(install) {
