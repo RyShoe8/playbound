@@ -1493,26 +1493,43 @@ function InstallMethodFields({
             onChange={(v) => patchConfig("playbound_installer", { exeHint: v })}
           />
           {/*
-            Editions carry their own install recipe, and the launcher reads
-            needsAdmin from *this* config when a game installs through an
-            edition — so the game-level flag does not cover it. Without this the
-            box could only be ticked on the game, and an edition install would
-            still spawn unelevated and be refused by Windows.
+            The launch behaviours a recipe can ask for.
+
+            An edition carries its own install recipe, and the launcher reads
+            these from *this* config when a game installs through an edition —
+            so the game-level equivalents do not cover it. They were reachable
+            only through the raw recipe JSON below, which meant knowing the
+            field names existed at all.
           */}
-          <label className="flex items-center gap-2 text-sm font-semibold">
-            <input
-              type="checkbox"
-              className="size-4"
-              checked={Boolean(config.playbound_installer?.needsAdmin)}
-              onChange={(e) =>
-                patchConfig("playbound_installer", { needsAdmin: e.target.checked })
-              }
-            />
-            Run as administrator
-            <span className="text-xs font-normal text-muted-foreground">
-              (loader needs elevation — players get a UAC prompt)
+          <div className="sm:col-span-2 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-border/60 bg-secondary/30 px-3 py-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Launch behaviour
             </span>
-          </label>
+            <RecipeToggle
+              label="Run as administrator"
+              hint="loader needs elevation — players get a UAC prompt"
+              checked={Boolean(config.playbound_installer?.needsAdmin)}
+              onChange={(v) => patchConfig("playbound_installer", { needsAdmin: v })}
+            />
+            <RecipeToggle
+              label="Run through DOSBox"
+              hint="DOS-era executable"
+              checked={Boolean(config.playbound_installer?.needsDosBox)}
+              onChange={(v) => patchConfig("playbound_installer", { needsDosBox: v })}
+            />
+            <RecipeToggle
+              label="Unwrap single root folder"
+              hint="archive contains one wrapper directory"
+              checked={Boolean(config.playbound_installer?.unwrapSingleRoot)}
+              onChange={(v) => patchConfig("playbound_installer", { unwrapSingleRoot: v })}
+            />
+            <RecipeToggle
+              label="Needs existing base install"
+              hint="player picks a base game folder first"
+              checked={Boolean(config.playbound_installer?.requiresBaseDir)}
+              onChange={(v) => patchConfig("playbound_installer", { requiresBaseDir: v })}
+            />
+          </div>
           <RecipeJsonField
             value={config.playbound_installer ?? {}}
             onChange={(next) => replaceConfig("playbound_installer", next)}
@@ -1542,6 +1559,32 @@ function InstallMethodFields({
  * Local draft state so a half-typed object does not blow away the form on every
  * keystroke; the parent is only updated once the text parses to an object.
  */
+/** One recipe flag. Label and hint on the same line so a row of them scans. */
+function RecipeToggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm font-semibold" title={hint}>
+      <input
+        type="checkbox"
+        className="size-4"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {label}
+      <span className="text-xs font-normal text-muted-foreground">({hint})</span>
+    </label>
+  );
+}
+
 function RecipeJsonField({
   value,
   onChange,
