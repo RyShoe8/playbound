@@ -210,6 +210,45 @@ class GameLauncher {
       ? path.dirname(launchPath)
       : path.dirname(launchPath);
 
+    /*
+     * A game whose executable demands elevation.
+     *
+     * CreateProcess cannot raise privileges, so spawning one of these directly
+     * fails with ERROR_ELEVATION_REQUIRED — which libuv reports as EACCES, the
+     * same code it uses for an antivirus block. The launcher cannot tell those
+     * apart from the error alone, which is why this is a curated per-game flag
+     * rather than something inferred from a failure.
+     *
+     * ShellExecute is the only API that can elevate, so it goes through
+     * PowerShell's Start-Process. `-Wait` matters: without it PowerShell exits
+     * immediately and the returned child is dead on arrival, which the early
+     * exit watch would report as the game failing to start. With it the
+     * PowerShell process lives exactly as long as the game, so it stands in for
+     * the child. Process tracking polls by image name as well, so playtime is
+     * still attributed to the game itself.
+     *
+     * The player sees a UAC prompt. Declining it makes Start-Process throw,
+     * which surfaces as a launch failure — correct, because the game did not
+     * start.
+     */
+    if (opts.elevate && process.platform === "win32") {
+      const psArgs = [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        buildElevatedStartProcess(cmd, finalArgs, cwd),
+      ];
+      return spawn("powershell.exe", psArgs, {
+        cwd,
+        detached: true,
+        stdio: "ignore",
+        env,
+        windowsHide: true,
+        shell: false,
+      });
+    }
+
     return spawn(cmd, finalArgs, {
       cwd,
       detached: true,
@@ -220,6 +259,36 @@ class GameLauncher {
       shell: false,
     });
   }
+}
+
+/** Single-quoted PowerShell literal — the only escape inside one is a doubled quote. */
+function psQuote(value) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+/**
+ * The Start-Process command that runs a game elevated.
+ *
+ * Built as a string rather than passed as arguments because -Command takes a
+ * script, so every path has to be quoted for PowerShell itself. Paths here come
+ * from the install directory and have already passed isAllowedExecutablePath,
+ * but they routinely contain spaces and apostrophes.
+ */
+function buildElevatedStartProcess(cmd, args, cwd) {
+  const parts = [
+    "Start-Process",
+    "-FilePath",
+    psQuote(cmd),
+    "-WorkingDirectory",
+    psQuote(cwd),
+    "-Verb",
+    "RunAs",
+    "-Wait",
+  ];
+  if (args.length > 0) {
+    parts.push("-ArgumentList", args.map(psQuote).join(","));
+  }
+  return parts.join(" ");
 }
 
 function isWindowsAppsStub(filePath) {
@@ -330,3 +399,11 @@ GameLauncher.JAVA_MISSING_MSG = JAVA_MISSING_MSG;
 GameLauncher.JAVA_EARLY_EXIT_MSG = JAVA_EARLY_EXIT_MSG;
 
 module.exports = GameLauncher;
+/*
+ * Exported for GameLauncher.test.js. This string is handed to
+ * `powershell -Command`, so a quoting mistake is arbitrary command execution
+ * from an install path — it is worth asserting directly rather than only
+ * through a spawn nobody can run in a test.
+ */
+module.exports.buildElevatedStartProcess = buildElevatedStartProcess;
+module.exports.psQuote = psQuote;

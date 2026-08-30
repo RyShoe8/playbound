@@ -109,6 +109,28 @@ function profileFromGamepad(pad) {
   };
 }
 
+/**
+ * The profile to write when nothing is plugged in.
+ *
+ * Several of these games only detect a pad if their config already names one,
+ * so the useful moment to write it is *before* the player connects anything —
+ * which means "no controller attached" cannot be a reason to skip the offer.
+ * The standard layout under an honest label is the best available guess, and
+ * every writer this feeds is overwritable by hand afterwards.
+ */
+function defaultProfile() {
+  return {
+    family: GENERIC.id,
+    label: GENERIC.label,
+    deviceType: GENERIC.deviceType,
+    isFlightstick: false,
+    rawId: "",
+    standardMapping: true,
+    buttons: { ...STANDARD.buttons },
+    axes: { ...STANDARD.axes },
+  };
+}
+
 /** The first connected pad, or null. Ignores the phantom empty slots. */
 function pickPrimary(pads) {
   if (!Array.isArray(pads)) return null;
@@ -123,5 +145,6 @@ module.exports = {
   STANDARD,
   familyFor,
   profileFromGamepad,
+  defaultProfile,
   pickPrimary,
 };

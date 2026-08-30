@@ -101,6 +101,17 @@ export type LauncherInstall = {
    */
   needsDosBox?: boolean;
   /**
+   * Launch this game elevated.
+   *
+   * Curated per game rather than inferred, because Windows reports "this
+   * executable requires elevation" and "antivirus blocked this executable" as
+   * the same EACCES — so a launcher that guessed would throw a UAC prompt at
+   * players whose real problem was Defender. Set it only for a title whose
+   * loader genuinely demands administrator rights, such as Metal Slug
+   * Awakening's msawminloader.exe.
+   */
+  needsAdmin?: boolean;
+  /**
    * Windows-only: framework-dependent titles that need this .NET major
    * (Desktop Runtime). PlayBound downloads a portable copy under userData and
    * launches with DOTNET_ROOT when the machine does not already have one.
@@ -166,6 +177,8 @@ export type LauncherCatalogEntry = {
   overlayDest?: string;
   unwrapSingleRoot?: boolean;
   needsDosBox?: boolean;
+  /** Launch elevated; see the note on the install-config field. */
+  needsAdmin?: boolean;
   /** Windows: portable .NET Desktop Runtime major to ensure before Play. */
   needsDotNetMajor?: number;
   /** Ask the player to locate a copy they own before installing anything. */
@@ -347,6 +360,7 @@ export function toLauncherCatalogEntry(input: {
   if (li.overlayDest) entry.overlayDest = li.overlayDest;
   if (li.unwrapSingleRoot) entry.unwrapSingleRoot = true;
   if (li.needsDosBox) entry.needsDosBox = true;
+  if (li.needsAdmin) entry.needsAdmin = true;
   if (typeof li.needsDotNetMajor === "number" && li.needsDotNetMajor > 0) {
     entry.needsDotNetMajor = li.needsDotNetMajor;
   }
