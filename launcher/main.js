@@ -4068,9 +4068,52 @@ function findExeInSlugGamesDir(entry) {
   return null;
 }
 
+/**
+ * Where Steam actually put a game, from Steam's own records.
+ *
+ * A Steam install lands wherever the player's libraries are — frequently a
+ * second drive — under a folder name only Steam knows. Every other detection
+ * path here guesses: a knownExePath someone wrote down, a registry title, or a
+ * walk of PlayBound's own games directory, which a Steam game is never in. So
+ * a Steam title with no hand-written hints was undetectable, and installing one
+ * through PlayBound left it out of the library entirely.
+ *
+ * appmanifest_<appid>.acf is Valve's own record of the install, and `installdir`
+ * in it is the folder under steamapps/common. Reading that is exact rather than
+ * a guess, and needs nothing per game beyond the app id.
+ */
+function findSteamInstallExe(entry) {
+  const appId = String(entry?.steamAppId || "").trim();
+  if (!/^\d+$/.test(appId)) return null;
+  let libraries = [];
+  try {
+    libraries = steamLibraryDirs();
+  } catch {
+    return null;
+  }
+  for (const lib of libraries) {
+    try {
+      const manifest = path.join(lib, "steamapps", `appmanifest_${appId}.acf`);
+      if (!fs.existsSync(manifest)) continue;
+      const installDir = /"installdir"\s*"([^"]+)"/i.exec(fs.readFileSync(manifest, "utf8"))?.[1];
+      if (!installDir) continue;
+      const dir = path.join(lib, "steamapps", "common", installDir);
+      if (!fs.existsSync(dir)) continue;
+      const exe = findExecutable(dir, entry.exeHint);
+      if (exe) return exe;
+    } catch {
+      // One unreadable library must not stop the others being checked.
+    }
+  }
+  return null;
+}
+
 function findKnownExecutable(entry) {
   const known = findKnownPathOnly(entry);
   if (known) return known;
+  // Before any guessing: Steam knows exactly where it put things.
+  const steamExe = findSteamInstallExe(entry);
+  if (steamExe) return steamExe;
   /*
    * macOS installs land in /Applications, and almost no recipe carries a mac
    * knownExePath — 28 of the 33 that define any are Windows-only. Every other
@@ -5603,14 +5646,20 @@ async function installGameInner(slug, targetDir, editionSlug, selectedAddons) {
       campaign: "launcher_install_external",
       content: slug,
     });
-    // No post-install hand-off here: there is no install directory yet at this
-    // point, so it had nothing to open and only ever fired the Discord jump.
-    // A plain external entry is a hand-off and we are done. One that also
-    // carries a mod loader is not: PlayBound still has to place the mod files
-    // once the store finishes installing, so watch for the executable the same
-    // way a downloaded installer is watched. Without this the store opens and
-    // the mods are never applied.
-    if (entry.modLoader) {
+    /*
+     * Watch for the game to appear, whatever the store does next.
+     *
+     * This used to watch only when the entry carried a mod loader, on the
+     * reasoning that a plain external entry "is a hand-off and we are done".
+     * That is true of PlayBound's work and false of the player's: they clicked
+     * Install in PlayBound, Steam finished, and the game never joined their
+     * library — which is what Strikers Club and Ye Old Guild Clerk both did.
+     *
+     * Watching costs nothing when nobody installs: the poll gives up after ten
+     * minutes and leaves a pending card offering Locate, which is a better
+     * ending than silence either way.
+     */
+    {
       const externalEntry = {
         ...entry,
         editionSlug: entry.editionSlug || editionMeta?.editionSlug || DEFAULT_EDITION_SLUG,
