@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Globe, MapPin, Newspaper } from "lucide-react";
 import { getDeveloper } from "@/lib/developers";
 import { gamesByDeveloper } from "@/lib/catalog";
-import { listDiscoverableGames } from "@/lib/access/discover";
+import { DiscoverableCountTile } from "@/components/access/DiscoverableCountTile";
 import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
 import { getCatalogLiveStats, playingNowBySlug } from "@/lib/liveActivity";
@@ -11,6 +11,21 @@ import { withOutboundUtm } from "@/lib/utm";
 import { pageMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/JsonLd";
+
+/*
+ * ISR, matched to the live-activity window.
+ *
+ * These pages carry player counts from getCatalogLiveStats, which shares a
+ * 900s unstable_cache entry. Without a route-level revalidate the rendered
+ * HTML would be cached until a catalog or developer edit dropped its tag, and
+ * the counts inside it would sit at whatever they were when the page was first
+ * built — the inner cache expiring does not re-render the page around it.
+ * 900 keeps the page exactly as fresh as the freshest thing on it.
+ *
+ * Admin edits still land immediately: the writes call revalidateTag("catalog")
+ * and revalidateTag("developers"), which drops the route cache too.
+ */
+export const revalidate = 900;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -55,12 +70,25 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
   const dev = await getDeveloper(slug);
   if (!dev) notFound();
 
-  const [allDevGames, liveStats] = await Promise.all([
+  /*
+   * Every game by this developer, unfiltered.
+   *
+   * Discovery mode used to be applied here, which meant reading a cookie —
+   * and a cookie read opts the whole route out of prerendering, so this page
+   * was re-rendered from scratch for every visitor and never cached at the
+   * edge. The filter was also redundant: CompatibleCardRow already applies
+   * the viewer's mode client-side, so it ran twice and only the second one
+   * was load-bearing.
+   *
+   * Rendering the canonical set also settles which repo the Releases section
+   * follows. That used to be picked from the post-filter list, so a FREE-mode
+   * viewer could be shown a different developer's release feed than everyone
+   * else on the same URL.
+   */
+  const [devGames, liveStats] = await Promise.all([
     gamesByDeveloper(dev.slug),
     getCatalogLiveStats(),
   ]);
-  const discoverable = new Set((await listDiscoverableGames()).map((g) => g.slug));
-  const devGames = allDevGames.filter((g) => discoverable.has(g.slug));
   const repo = devGames.find((g) => g.githubRepo)?.githubRepo;
   const releases = repo ? await fetchGithubReleases(repo, 3) : [];
 
@@ -126,7 +154,7 @@ export default async function DeveloperPage({ params }: { params: Promise<{ slug
       </section>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <StatTile label="Games" value={String(devGames.length)} />
+        <DiscoverableCountTile label="Games" slugs={devGames.map((g) => g.slug)} />
         <StatTile label="Founded" value={String(dev.founded)} />
         <StatTile label="Location" value={dev.location} />
       </div>

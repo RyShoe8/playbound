@@ -1,11 +1,25 @@
-import Link from "next/link";
 import { Users } from "lucide-react";
-import { listDiscoverableGames } from "@/lib/access/discover";
+import { listGames } from "@/lib/catalog";
+import { DeveloperDirectory } from "@/components/access/DeveloperDirectory";
 import { listDevelopers } from "@/lib/developers";
 import { pageMetadata } from "@/lib/seo";
-import { Avatar } from "@/components/ui/bits";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+
+/*
+ * ISR, matched to the live-activity window.
+ *
+ * These pages carry player counts from getCatalogLiveStats, which shares a
+ * 900s unstable_cache entry. Without a route-level revalidate the rendered
+ * HTML would be cached until a catalog or developer edit dropped its tag, and
+ * the counts inside it would sit at whatever they were when the page was first
+ * built — the inner cache expiring does not re-render the page around it.
+ * 900 keeps the page exactly as fresh as the freshest thing on it.
+ *
+ * Admin edits still land immediately: the writes call revalidateTag("catalog")
+ * and revalidateTag("developers"), which drops the route cache too.
+ */
+export const revalidate = 900;
 
 export const metadata = pageMetadata({
   title: "The Teams Behind the Free Games",
@@ -15,15 +29,25 @@ export const metadata = pageMetadata({
 });
 
 export default async function DevelopersIndexPage() {
-  const games = await listDiscoverableGames();
-  const countBySlug = new Map<string, number>();
+  /*
+   * The canonical directory: every published game, no viewer's mode applied.
+   *
+   * Narrowing here would mean reading a cookie, and a cookie read costs the
+   * whole route its prerendering — to produce, for everyone who has not
+   * touched the toggle, exactly the output below. DeveloperDirectory applies
+   * the preference in the browser instead.
+   */
+  const games = await listGames();
+  const slugsByDeveloper = new Map<string, string[]>();
   for (const game of games) {
-    countBySlug.set(game.developerSlug, (countBySlug.get(game.developerSlug) ?? 0) + 1);
+    const bucket = slugsByDeveloper.get(game.developerSlug) ?? [];
+    bucket.push(game.slug);
+    slugsByDeveloper.set(game.developerSlug, bucket);
   }
 
-  // Only show teams with a game in the catalog — avoids empty profile pages.
+  // Only teams with a game in the catalog — avoids empty profile pages.
   const active = (await listDevelopers())
-    .filter((d) => (countBySlug.get(d.slug) ?? 0) > 0)
+    .filter((d) => (slugsByDeveloper.get(d.slug)?.length ?? 0) > 0)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -64,27 +88,16 @@ export default async function DevelopersIndexPage() {
         alive for a decade or more without charging anyone a penny. Here they are.
       </p>
 
-      <ul className="mt-10 grid gap-3 sm:grid-cols-2">
-        {active.map((dev) => (
-          <li key={dev.slug}>
-            <Link
-              href={`/developers/${dev.slug}`}
-              className="flex h-full items-start gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
-            >
-              <Avatar name={dev.name} hue={dev.artHue} size="lg" />
-              <div className="min-w-0">
-                <p className="font-bold">{dev.name}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">{dev.tagline}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {countBySlug.get(dev.slug)}{" "}
-                  {countBySlug.get(dev.slug) === 1 ? "game" : "games"} · since{" "}
-                  {dev.founded}
-                </p>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <DeveloperDirectory
+        developers={active.map((dev) => ({
+          slug: dev.slug,
+          name: dev.name,
+          tagline: dev.tagline,
+          founded: dev.founded,
+          artHue: dev.artHue,
+          gameSlugs: slugsByDeveloper.get(dev.slug) ?? [],
+        }))}
+      />
     </div>
   );
 }
