@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
+import { gamesByDeveloper, listGames } from "@/lib/catalog";
 import { Globe, MapPin, Newspaper } from "lucide-react";
 import { getDeveloper } from "@/lib/developers";
-import { gamesByDeveloper } from "@/lib/catalog";
 import { DiscoverableCountTile } from "@/components/access/DiscoverableCountTile";
 import { fetchGithubReleases } from "@/lib/github";
 import { CompatibleCardRow } from "@/components/CompatibleCardRow";
@@ -42,7 +42,11 @@ export const revalidate = 900;
  * renders it and every request after that is served from the cache.
  */
 export async function generateStaticParams() {
-  return [];
+  // Only developers with a published game. The rest render an empty profile,
+  // are excluded from the sitemap, and carry noIndex in generateMetadata —
+  // prerendering them would spend build time on pages we ask nobody to visit.
+  const games = await listGames();
+  return [...new Set(games.map((g) => g.developerSlug))].filter(Boolean).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
