@@ -7,8 +7,6 @@ import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
 import { eventsForFamily, type OpsFamily } from "@/lib/admin/opsEvents";
 
-export const runtime = "nodejs";
-
 const querySchema = z.object({
   event: z.string().min(1).max(128).optional(),
   family: z.enum(["all", "launcher", "party"]).optional(),

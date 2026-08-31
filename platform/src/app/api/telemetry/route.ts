@@ -10,8 +10,6 @@ import { isTelemetryExcludedPath } from "@/lib/telemetry/types";
 import { SITE_URL } from "@/lib/site";
 import { userFromLauncherBearer } from "@/lib/library";
 
-export const runtime = "nodejs";
-
 const MAX_PROP_KEYS = 40;
 const MAX_PROP_JSON = 8_000;
 
