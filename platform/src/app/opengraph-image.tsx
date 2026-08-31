@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { cacheLife, cacheTag } from "next/cache";
 import { newestGame } from "@/lib/catalog";
 import {
   SITE_NAME,
@@ -265,7 +266,22 @@ function heroCard(game: {
   );
 }
 
-export default async function Image() {
+/*
+ * The rendered PNG, cached as bytes.
+ *
+ * This carried `export const revalidate = 3600` before Cache Components, and
+ * removing it turned the route dynamic — so every social crawler hit paid a
+ * full Satori render of a 1200x630 card that changes only when a new game is
+ * added. The data behind it was already cached; the drawing was not.
+ *
+ * Bytes rather than the ImageResponse itself, because "use cache" can only
+ * hold serializable values and a Response is not one. Tagged "catalog" so
+ * adding a game refreshes the card rather than waiting out the window.
+ */
+async function ogImageBytes(): Promise<ArrayBuffer> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("catalog");
   let content = brandedCard();
   try {
     const game = await newestGame();
@@ -273,5 +289,11 @@ export default async function Image() {
   } catch {
     // Catalog unavailable — the branded card still says who this is.
   }
-  return new ImageResponse(content, { ...size });
+  return new ImageResponse(content, { ...size }).arrayBuffer();
+}
+
+export default async function Image() {
+  return new Response(await ogImageBytes(), {
+    headers: { "content-type": contentType },
+  });
 }
