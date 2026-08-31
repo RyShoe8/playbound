@@ -9,8 +9,6 @@ import {
   usedBytesForUser,
 } from "@/lib/saves/r2";
 
-export const runtime = "nodejs";
-
 /**
  * Cloud saves for one game+edition.
  *
