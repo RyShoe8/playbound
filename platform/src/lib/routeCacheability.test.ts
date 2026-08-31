@@ -19,7 +19,13 @@ import path from "path";
  *
  * Add routes here as they are migrated. Do not remove one to make this pass.
  */
-const CACHEABLE_ROUTES = ["src/app/developers/page.tsx", "src/app/developers/[slug]/page.tsx"];
+const CACHEABLE_ROUTES = [
+  "src/app/developers/page.tsx",
+  "src/app/developers/[slug]/page.tsx",
+  "src/app/collections/page.tsx",
+  "src/app/collections/[slug]/page.tsx",
+  "src/app/alternatives/[slug]/page.tsx",
+];
 
 const SRC = "src";
 
@@ -87,7 +93,7 @@ describe("cacheable routes stay free of request-time APIs", () => {
    * failure mode that makes a guard like this worse than none.
    */
   it("still detects the filter on a route that has not been migrated", () => {
-    const notMigrated = "src/app/collections/[slug]/page.tsx";
+    const notMigrated = "src/app/page.tsx";
     if (!fs.existsSync(notMigrated)) return; // migrated or moved; nothing to assert
     const trails = dynamicPaths(notMigrated);
     expect(trails.length).toBeGreaterThan(0);
