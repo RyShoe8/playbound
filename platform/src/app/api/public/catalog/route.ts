@@ -2,8 +2,6 @@ import { listGames, collections } from "@/lib/catalog";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { SITE_URL, QUALITY_BAR } from "@/lib/site";
 
-export const revalidate = 3600;
-
 /**
  * The catalog as normalised JSON.
  *

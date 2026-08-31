@@ -19,8 +19,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/events",
 });
 
-export const dynamic = "force-dynamic";
-
 type ListedEvent = Awaited<ReturnType<typeof listPublicEvents>>[number];
 
 /** Pull matching events into one exclusive bucket so a card never repeats. */

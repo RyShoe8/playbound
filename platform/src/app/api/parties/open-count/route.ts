@@ -14,7 +14,6 @@ import { countOpenPublicParties } from "@/lib/playTogether/party";
  * Public and unauthenticated: it is a single aggregate count of parties that
  * are already public, and it names none of them.
  */
-export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

@@ -19,7 +19,6 @@ import { absoluteUrl } from "@/lib/site";
  * Admin edits still land immediately: the writes call revalidateTag("catalog")
  * and revalidateTag("developers"), which drops the route cache too.
  */
-export const revalidate = 900;
 
 export const metadata = pageMetadata({
   title: "The Teams Behind the Free Games",

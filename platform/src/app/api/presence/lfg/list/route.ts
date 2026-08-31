@@ -9,7 +9,6 @@ import { listLookingToParty } from "@/lib/playTogether/lookingToParty";
  * Signed-in only. Unlike the bare count this names people and exposes their
  * library, which is not something to hand to anonymous callers.
  */
-export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);

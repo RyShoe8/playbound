@@ -39,7 +39,6 @@ import { absoluteUrl } from "@/lib/site";
  * build rather than at request time. dynamicParams defaults to true, so every
  * slug still renders on first request and is cached after.
  */
-export const revalidate = 900;
 
 export async function generateStaticParams() {
   /*

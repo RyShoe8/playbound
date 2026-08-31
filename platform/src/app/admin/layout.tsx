@@ -21,7 +21,6 @@ export const metadata: Metadata = {
  * Set on the layout so it covers all nineteen admin routes and any added later,
  * rather than relying on each new page to remember.
  */
-export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);

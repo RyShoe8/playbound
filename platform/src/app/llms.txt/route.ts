@@ -6,8 +6,6 @@ import { listWeeklyIssues } from "@/lib/weekly";
 import { SITE_URL, SITE_NAME, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
 
-export const revalidate = 3600;
-
 /**
  * Machine-readable catalog summary for AI crawlers and agents.
  *

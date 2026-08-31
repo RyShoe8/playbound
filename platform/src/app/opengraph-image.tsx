@@ -29,7 +29,6 @@ export const contentType = "image/png";
  * app hits. At build time the newest game would freeze until the next deploy,
  * and the cover fetch below would have to reach a site that is not up yet.
  */
-export const revalidate = 3600;
 
 function PlayMark({ box }: { box: number }) {
   const icon = Math.round(box * 0.44);
