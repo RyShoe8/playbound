@@ -26,6 +26,23 @@ import {
 } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
 
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx.
+ *
+ * generateStaticParams is what makes `revalidate` count on a dynamic segment;
+ * without it Next renders per request and serves `private, no-store`, which is
+ * what these 59 pages were doing despite reaching no request-time API.
+ *
+ * The slugs are the adapter keys — a static module, no database — and the page
+ * 404s for anything outside them, so they are worth listing: every one is
+ * prerendered at build rather than on first request.
+ */
+export const revalidate = 900;
+
+export function generateStaticParams() {
+  return Object.keys(MULTIPLAYER_ADAPTERS).map((slug) => ({ slug }));
+}
+
 export async function generateMetadata({
   params,
 }: {

@@ -29,6 +29,8 @@ const CACHEABLE_ROUTES = [
   "src/app/weekly/page.tsx",
   "src/app/launcher/page.tsx",
   "src/app/gear/[category]/page.tsx",
+  "src/app/play-with-friends/[slug]/page.tsx",
+  "src/app/compare/[slug]/page.tsx",
 ];
 
 const SRC = "src";
