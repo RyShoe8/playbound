@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import CatalogCollection from "@/lib/models/CatalogCollection";
@@ -39,6 +40,8 @@ export async function POST(req: Request) {
     }
 
     const doc = await CatalogCollection.create(body);
+    // listCollections() is cached now; drop it so the new row shows at once.
+    revalidateTag("collections", { expire: 0 });
     return NextResponse.json({ success: true, slug: doc.slug }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
