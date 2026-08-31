@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCollection } from "@/lib/collections";
 import { gamesFor } from "@/lib/catalog";
-import { getDiscoveryContext } from "@/lib/access/discover";
-import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { CollectionGamesList } from "@/components/CollectionGamesList";
 import { Badge } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
@@ -14,6 +12,12 @@ import {
   faqSchema,
   breadcrumbSchema,
 } from "@/components/JsonLd";
+
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx for the
+ * reasoning. Admin writes still land immediately via revalidateTag("catalog").
+ */
+export const revalidate = 900;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -38,14 +42,26 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   const allGames = await gamesFor(collection.gameSlugs);
   if (allGames.length === 0) notFound();
 
-  const { mode, tiers } = await getDiscoveryContext();
-  const visibleGames = filterGamesByMode(allGames, mode, tiers);
+  /*
+   * Discovery mode is no longer resolved here.
+   *
+   * It reached exactly one thing on this page — which game the FAQ calls the
+   * top pick — while the grid (CollectionGamesList), the CollectionPage schema
+   * and the "N games" line all already used the unfiltered list. Resolving it
+   * meant reading a cookie, and that one read opted the whole route out of
+   * prerendering.
+   *
+   * The FAQ now names the same game the schema does, which is also the
+   * consistency this page was missing: a FREE viewer could be told the top
+   * pick was one game while the structured data on the same URL said another.
+   * CollectionGamesList still applies the viewer's mode to the grid.
+   */
 
   const faq = [
     {
       q: `What is the best ${collection.title.toLowerCase().replace(/^best /, "")}?`,
-      a: (visibleGames[0] || allGames[0])
-        ? `PlayBound's top pick is ${(visibleGames[0] || allGames[0]).title} — ${(visibleGames[0] || allGames[0]).tagline} It runs on ${(visibleGames[0] || allGames[0]).platforms.join(", ")}.`
+      a: allGames[0]
+        ? `PlayBound's top pick is ${allGames[0].title} — ${allGames[0].tagline} It runs on ${allGames[0].platforms.join(", ")}.`
         : collection.description,
     },
     {

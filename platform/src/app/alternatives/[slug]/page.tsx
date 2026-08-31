@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Award, Check } from "lucide-react";
 import { gamesFor } from "@/lib/catalog";
-import { getDiscoveryContext } from "@/lib/access/discover";
-import { filterGamesByMode } from "@/lib/access/discoveryMode";
 import { alternativePages, alternativesBySlug } from "@/lib/data/alternatives";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { GameArt } from "@/components/GameArt";
@@ -22,6 +20,12 @@ import { absoluteUrl } from "@/lib/site";
 export function generateStaticParams() {
   return alternativePages.map((p) => ({ slug: p.slug }));
 }
+
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx for the
+ * reasoning. Admin writes still land immediately via revalidateTag("catalog").
+ */
+export const revalidate = 900;
 
 export async function generateMetadata({
   params,
@@ -61,13 +65,32 @@ export default async function AlternativesPage({
   const page = alternativesBySlug.get(slug);
   if (!page) notFound();
 
+  /*
+   * The whole article, as written. Discovery mode is not applied here.
+   *
+   * Two reasons, and the second is why this differs from the catalog listings
+   * that do still filter in the browser.
+   *
+   * It cost the page its cacheability for almost nothing. Resolving the mode
+   * means reading a cookie, which opts the route out of prerendering — and
+   * across the 27 alternatives pages exactly one contains a pick that FREE
+   * mode would drop. The other 26 paid for a filter that removed nothing.
+   *
+   * More importantly this is editorial, not a grid. Filtering here did not
+   * hide a card: `top`, the FAQ and the ItemList schema are all derived from
+   * this list, so a FREE viewer was served a different top pick, a different
+   * set of questions and different structured data at the same URL. Discovery
+   * mode is a browsing preference for the catalog; it should not rewrite an
+   * article about which games we recommend and why.
+   *
+   * The one affected page is /alternatives/world-of-warcraft, whose top pick
+   * (EverQuest) is paid. It now appears for everyone, priced, as written.
+   */
   const games = await gamesFor(page.picks.map((p) => p.slug));
-  const { mode, tiers } = await getDiscoveryContext();
-  const visible = new Set(filterGamesByMode(games, mode, tiers).map((g) => g.slug));
   const bySlug = new Map(games.map((g) => [g.slug, g]));
   const ordered = page.picks
     .map((pick) => ({ pick, game: bySlug.get(pick.slug) }))
-    .filter((x) => x.game && visible.has(x.game.slug));
+    .filter((x) => x.game);
   const top = ordered.find((x) => x.pick.slug === page.topPick) ?? ordered[0];
 
   const faq = [

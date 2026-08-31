@@ -1,10 +1,16 @@
-import Link from "next/link";
 import { Layers } from "lucide-react";
 import { listCollections } from "@/lib/collections";
-import { listDiscoverableGames, filterDiscoverableCollections } from "@/lib/access/discover";
+import { listGames } from "@/lib/catalog";
+import { CollectionDirectory } from "@/components/access/CollectionDirectory";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx for the
+ * reasoning. Admin writes still land immediately via revalidateTag("catalog").
+ */
+export const revalidate = 900;
 
 export const metadata = pageMetadata({
   title: "Curated Collections of Free Games",
@@ -14,11 +20,18 @@ export const metadata = pageMetadata({
 });
 
 export default async function CollectionsIndexPage() {
-  const [games, collections] = await Promise.all([
-    listDiscoverableGames(),
-    listCollections().then(filterDiscoverableCollections),
-  ]);
-  const bySlug = new Map(games.map((g) => [g.slug, g]));
+  /*
+   * Every collection and every game, unfiltered. CollectionDirectory applies
+   * the viewer's discovery mode in the browser; resolving it here would mean a
+   * cookie read, which costs the route its prerendering to produce output that
+   * is identical for anyone who has not changed the setting.
+   */
+  const [games, collections] = await Promise.all([listGames(), listCollections()]);
+  const referenced = new Set(collections.flatMap((c) => c.gameSlugs));
+  const titleBySlug: Record<string, string> = {};
+  for (const game of games) {
+    if (referenced.has(game.slug)) titleBySlug[game.slug] = game.title;
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
@@ -58,38 +71,15 @@ export default async function CollectionsIndexPage() {
         of ninety games answers nothing.
       </p>
 
-      <ul className="mt-10 grid gap-4">
-        {collections.map((collection) => {
-          const titles = collection.gameSlugs
-            .map((s) => bySlug.get(s)?.title)
-            .filter(Boolean)
-            .slice(0, 5);
-          return (
-            <li key={collection.slug}>
-              <Link
-                href={`/collections/${collection.slug}`}
-                className="block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="text-lg font-bold">{collection.title}</h2>
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {collection.gameSlugs.length} games
-                  </span>
-                </div>
-                <p className="mt-2 leading-relaxed text-muted-foreground">
-                  {collection.description}
-                </p>
-                {titles.length > 0 && (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground">Includes: </span>
-                    {titles.join(", ")}
-                  </p>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <CollectionDirectory
+        collections={collections.map((c) => ({
+          slug: c.slug,
+          title: c.title,
+          description: c.description,
+          gameSlugs: c.gameSlugs,
+        }))}
+        titleBySlug={titleBySlug}
+      />
     </div>
   );
 }
