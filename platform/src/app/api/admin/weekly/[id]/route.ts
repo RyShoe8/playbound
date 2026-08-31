@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import WeeklyIssue from "@/lib/models/WeeklyIssue";
@@ -66,6 +67,8 @@ export async function PATCH(
       await saveNewsletterFooterTemplate(body.emailDraft.footer);
     }
 
+    // listWeeklyIssues is cached now; drop it so the change shows at once.
+    revalidateTag("weekly", { expire: 0 });
     return NextResponse.json({ success: true, slug: existing.slug, id: String(existing._id) });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -90,6 +93,8 @@ export async function DELETE(
     if (!doc) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    // listWeeklyIssues is cached now; drop it so the change shows at once.
+    revalidateTag("weekly", { expire: 0 });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Admin delete weekly error:", err);
