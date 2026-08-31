@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 import dbConnect from "@/lib/db";
 import DeveloperModel from "@/lib/models/Developer";
 import { developers as seedDevelopers } from "@/lib/data/developers";
@@ -29,7 +29,18 @@ function toDeveloper(doc: LeanDeveloper): Developer {
  * and still populates the Developer dropdown in the admin editors, rather than
  * offering an empty list that would make games unsaveable.
  */
-const loadPublished = cache(async (): Promise<Developer[]> => {
+async function loadPublished(): Promise<Developer[]> {
+  /*
+   * A cache boundary, not just per-request memoization — see the same change
+   * in collections.ts. mongoose reads the clock inside dbConnect, which Cache
+   * Components forbids during a prerender unless the work is behind "use
+   * cache", so every /developers/[slug] page failed to build.
+   *
+   * The "developers" tag already exists; the admin routes invalidate it.
+   */
+  "use cache";
+  cacheLife("hours");
+  cacheTag("developers");
   try {
     await dbConnect();
     const docs = await DeveloperModel.find({ published: true }).sort({ name: 1 }).lean();
@@ -38,7 +49,7 @@ const loadPublished = cache(async (): Promise<Developer[]> => {
     console.error("[developers] read failed, falling back to seed:", err);
   }
   return [...seedDevelopers].sort((a, b) => a.name.localeCompare(b.name));
-});
+}
 
 export async function listDevelopers(): Promise<Developer[]> {
   return loadPublished();
