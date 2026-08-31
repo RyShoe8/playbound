@@ -21,8 +21,7 @@ async function buildCatalogJson() {
 
   const [games, tiers] = await Promise.all([listGames(), gameAccessTiers()]);
 
-  return Response.json(
-    {
+  return {
       source: `PlayBound (${SITE_URL})`,
       documentation: `${SITE_URL}/llms.txt`,
       standard: {
@@ -71,16 +70,14 @@ async function buildCatalogJson() {
         url: `${SITE_URL}/collections/${c.slug}`,
         games: c.gameSlugs,
       })),
-    },
-    {
-      headers: {
-        "cache-control": "public, max-age=3600, s-maxage=3600",
-        "access-control-allow-origin": "*",
-      },
-    }
-  );
+  };
 }
 
 export async function GET() {
-  return buildCatalogJson();
+  return Response.json(await buildCatalogJson(), {
+    headers: {
+      "cache-control": "public, max-age=3600, s-maxage=3600",
+      "access-control-allow-origin": "*",
+    },
+  });
 }
