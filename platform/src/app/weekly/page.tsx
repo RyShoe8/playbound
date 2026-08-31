@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { gamesFor } from "@/lib/catalog";
-import { filterDiscoverableBySlug } from "@/lib/access/discover";
 import { listWeeklyIssues } from "@/lib/weekly";
 import { pageMetadata, sizeLabel } from "@/lib/seo";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx for the
+ * reasoning. Admin writes still land immediately via revalidateTag("catalog").
+ */
+export const revalidate = 900;
 
 export const metadata = pageMetadata({
   title: "PlayBound Weekly — Every Pick, Archived",
@@ -17,8 +22,20 @@ export const metadata = pageMetadata({
 });
 
 export default async function WeeklyIndexPage() {
-  const issuesRaw = await listWeeklyIssues();
-  const visibleIssues = await filterDiscoverableBySlug(issuesRaw, (i) => i.gameSlug);
+  /*
+   * The complete archive. Discovery mode is not applied here.
+   *
+   * Weekly is a publication, and this is its back catalogue — filtering it
+   * removed whole past issues from the archive index rather than hiding a
+   * card, which is not what a browsing preference should do to editorial. The
+   * section's own description ("one high-value free or affordable game per
+   * week") says outright that some picks are paid, so dropping those in FREE
+   * mode contradicted the thing it was describing.
+   *
+   * It also cost the route its prerendering: resolving the mode means reading
+   * a cookie, and that one read makes the whole page render per request.
+   */
+  const visibleIssues = await listWeeklyIssues();
   const games = await gamesFor(visibleIssues.map((i) => i.gameSlug));
   const bySlug = new Map(games.map((g) => [g.slug, g]));
 

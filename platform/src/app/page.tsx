@@ -1,19 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
-import { Gem, Newspaper, Server } from "lucide-react";
+import { Newspaper, Server } from "lucide-react";
 import { getGame, listGames, listGamesNewestFirst, mostPopularGames } from "@/lib/catalog";
 import { listCollections } from "@/lib/collections";
 import { listMods } from "@/lib/mods";
 import { listServersForGame } from "@/lib/servers/registry";
-import {
-  filterDiscoverableBySlug,
-  filterDiscoverableCollections,
-  getDiscoveryContext,
-} from "@/lib/access/discover";
-import { filterBySlugAccess } from "@/lib/access/discoveryMode";
-import { CardRow } from "@/components/GameCard";
-import { ModPreviewCard } from "@/components/ModPreviewCard";
+import { FeaturedModsRow } from "@/components/access/FeaturedModsRow";
+import { FeaturedCollectionsRow } from "@/components/access/FeaturedCollectionsRow";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { FreeGamesSection, FreeGamesSectionFallback } from "@/components/FreeGamesSection";
 import { RecaptchaNotice } from "@/components/RecaptchaNotice";
@@ -31,8 +24,12 @@ const HOME_SERVER_SLUGS = ["openra", "openttd", "luanti"] as const;
 const FEATURED_MODS_LIMIT = 8;
 
 async function loadServerPreviews(): Promise<HomeServerPreview[]> {
-  const { mode, tiers } = await getDiscoveryContext();
-  const slugs = filterBySlugAccess([...HOME_SERVER_SLUGS], mode, tiers, (slug) => slug);
+  /*
+   * No discovery filter here. All three of HOME_SERVER_SLUGS are free, so the
+   * filter never removed anything — it only read a cookie, and that read was
+   * enough to stop the homepage being prerendered at all.
+   */
+  const slugs = [...HOME_SERVER_SLUGS];
   const settled = await Promise.allSettled(
     slugs.map(async (slug): Promise<HomeServerPreview | null> => {
       const [game, result] = await Promise.all([getGame(slug), listServersForGame(slug)]);
@@ -95,6 +92,12 @@ function HomeLiveServersFallback() {
  * already correct from the layout defaults, and re-stating them would mean two
  * places to keep in sync for no gain.
  */
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx for the
+ * reasoning. Admin writes still land immediately via revalidateTag("catalog").
+ */
+export const revalidate = 900;
+
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
@@ -115,11 +118,20 @@ export default async function HomePage() {
       listCollections(),
     ]);
 
-  const featuredMods = (
-    await filterDiscoverableBySlug(mods.slice(0, FEATURED_MODS_LIMIT * 3), (m) => m.baseGameSlug)
-  ).slice(0, FEATURED_MODS_LIMIT);
-  const featuredCollections = (await filterDiscoverableCollections(collections)).slice(0, 3);
+  /*
+   * Candidate pools, not final rows. FeaturedModsRow and FeaturedCollectionsRow
+   * apply the viewer's discovery mode and then slice, which is the order the
+   * server used and has to stay: slicing first would leave a FREE viewer short
+   * whenever a paid entry landed in the top few.
+   */
   const gameBySlug = new Map(games.map((g) => [g.slug, g]));
+  const modCandidates = mods.slice(0, FEATURED_MODS_LIMIT * 3).map((m) => {
+    const base = gameBySlug.get(m.baseGameSlug);
+    return {
+      mod: m,
+      baseGame: base ? { slug: base.slug, title: base.title, coverImage: base.coverImage } : null,
+    };
+  });
 
   return (
     <div className="space-y-12 px-4 py-6 sm:px-6 lg:px-8">
@@ -169,61 +181,18 @@ export default async function HomePage() {
       </Suspense>
 
       {/* ── Mods ───────────────────────────────────────────────── */}
-      {featuredMods.length > 0 && (
-        <section>
-          <SectionHeader
-            title="Mods"
-            subtitle="Packageable add-ons for PlayBound titles"
-            href="/mods"
-          />
-          <CardRow>
-            {featuredMods.map((m) => {
-              const base = gameBySlug.get(m.baseGameSlug);
-              return (
-                <ModPreviewCard
-                  key={m.slug}
-                  mod={m}
-                  baseGame={
-                    base
-                      ? {
-                          slug: base.slug,
-                          title: base.title,
-                          coverImage: base.coverImage,
-                        }
-                      : null
-                  }
-                />
-              );
-            })}
-          </CardRow>
-        </section>
-      )}
+      <FeaturedModsRow candidates={modCandidates} limit={FEATURED_MODS_LIMIT} />
 
       {/* ── Collections ────────────────────────────────────────── */}
-      {featuredCollections.length > 0 && (
-        <section>
-          <SectionHeader
-            title="Curated Collections"
-            subtitle="Hand-picked groupings from PlayBound"
-            href="/collections"
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredCollections.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/collections/${c.slug}`}
-                className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
-              >
-                <p className="flex items-center gap-1.5 font-bold">
-                  <Gem className="size-3.5 text-primary" /> {c.title}
-                </p>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{c.gameSlugs.length} games</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <FeaturedCollectionsRow
+        collections={collections.map((c) => ({
+          slug: c.slug,
+          title: c.title,
+          description: c.description,
+          gameSlugs: c.gameSlugs,
+        }))}
+        limit={3}
+      />
     </div>
   );
 }

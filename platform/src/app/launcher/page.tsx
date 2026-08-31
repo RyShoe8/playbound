@@ -16,7 +16,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
-import { listDiscoverableGames } from "@/lib/access/discover";
+import { listGames } from "@/lib/catalog";
 import { isLauncherInstallable, launcherInstallUrl } from "@/lib/launcher";
 import { LauncherHeroDownload } from "@/components/LauncherHeroDownload";
 import { GameArt } from "@/components/GameArt";
@@ -24,6 +24,12 @@ import { Badge, SectionHeader } from "@/components/ui/bits";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema, ORGANIZATION_ID } from "@/components/JsonLd";
 import { absoluteUrl } from "@/lib/site";
+
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx for the
+ * reasoning. Admin writes still land immediately via revalidateTag("catalog").
+ */
+export const revalidate = 900;
 
 export const metadata: Metadata = pageMetadata({
   title: "Launcher — Install, Play, Party Up in One Click",
@@ -126,7 +132,15 @@ const steps = [
 ];
 
 export default async function LauncherPage() {
-  const games = await listDiscoverableGames();
+  /*
+   * The full catalog, not the viewer's slice of it.
+   *
+   * This number is a claim about the launcher — how many games it can install
+   * — and narrowing it by a browsing preference made the claim smaller without
+   * making it truer. Reading the mode also meant a cookie read, which is what
+   * kept this marketing page from ever being prerendered.
+   */
+  const games = await listGames();
   const installable = games.filter((g) => isLauncherInstallable(g));
 
   return (
