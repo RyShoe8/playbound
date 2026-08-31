@@ -115,7 +115,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE_URL}/weekly/${i.slug}`,
       changeFrequency: "yearly" as const,
       priority: 0.7,
-      lastModified: new Date(i.publishedAt),
+      ...lastMod(i.publishedAt),
     })),
     ...alternativePages.map((p) => ({
       url: `${SITE_URL}/alternatives/${p.slug}`,
