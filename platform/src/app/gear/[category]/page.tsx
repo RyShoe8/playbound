@@ -6,6 +6,23 @@ import { listGearByCategory, resolveGearCategory } from "@/lib/gear";
 import { pageMetadata } from "@/lib/seo";
 import { JsonLd, graph, breadcrumbSchema } from "@/components/JsonLd";
 
+/*
+ * ISR, matched to the live-activity window — see developers/page.tsx.
+ *
+ * generateStaticParams is what makes `revalidate` do anything on a dynamic
+ * segment: without the export Next renders per request and serves
+ * `private, no-store`, which is what /gear/handhelds was doing despite this
+ * route reaching no request-time API at all. Empty rather than the real
+ * categories so the build does not read the catalog; dynamicParams defaults
+ * to true, so the first request for a category renders it and the rest are
+ * served from cache.
+ */
+export const revalidate = 900;
+
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params;
   /*
