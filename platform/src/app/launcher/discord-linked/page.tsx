@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { privateMetadata } from "@/lib/seo";
 
 /*
@@ -13,6 +14,10 @@ export default async function LauncherDiscordLinkedPage({
 }: {
   searchParams: Promise<{ discord?: string }>;
 }) {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const sp = await searchParams;
   const ok = sp.discord === "linked";
   return (

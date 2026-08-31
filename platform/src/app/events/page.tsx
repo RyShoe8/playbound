@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { Plus } from "lucide-react";
@@ -33,6 +34,10 @@ function takeExclusive(
 }
 
 export default async function EventsPage() {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const [eventsRaw, session, pastRaw, openPartiesRaw] = await Promise.all([
     listPublicEvents({ limit: 80 }),
     getServerSession(authOptions),
