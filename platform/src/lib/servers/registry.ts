@@ -427,14 +427,28 @@ export function isKnownServerGame(slug: string): boolean {
 }
 
 export async function listServersForGame(slug: string): Promise<ServerListResult> {
-  const updatedAt = new Date().toISOString();
+  /*
+   * The clock is read after the fetch, not before it.
+   *
+   * `updatedAt` means "when this list was retrieved", so taking the reading
+   * first was always slightly wrong — it timestamped the attempt rather than
+   * the answer, and by up to the fifteen-second provider timeout.
+   *
+   * Cache Components makes it an error rather than an inaccuracy: a prerender
+   * may not read the current time until it has read some real data first, and
+   * this was the first statement in the function. That failed the build of the
+   * homepage, whose live-servers section calls it for three games.
+   *
+   * The unsupported branch has no fetch to sit behind, and no list to
+   * timestamp either, so it reports the epoch instead of inventing a reading.
+   */
   const provider = providers[slug];
   if (!provider) {
-    return { supported: false, servers: [], updatedAt };
+    return { supported: false, servers: [], updatedAt: new Date(0).toISOString() };
   }
   try {
     const servers: GameServer[] = await provider.fetchServers();
-    return { supported: true, servers, updatedAt };
+    return { supported: true, servers, updatedAt: new Date().toISOString() };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load servers";
     if (isUpstreamTimeout(err)) {
@@ -445,7 +459,7 @@ export async function listServersForGame(slug: string): Promise<ServerListResult
     } else {
       console.error(`[servers] ${slug}:`, err);
     }
-    return { supported: true, servers: [], updatedAt, error: message };
+    return { supported: true, servers: [], updatedAt: new Date().toISOString(), error: message };
   }
 }
 

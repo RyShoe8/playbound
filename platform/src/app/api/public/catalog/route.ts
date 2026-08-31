@@ -1,8 +1,7 @@
 import { listGames, collections } from "@/lib/catalog";
+import { cacheLife, cacheTag } from "next/cache";
 import { gameAccessTiers, tierFor } from "@/lib/access/tiers";
 import { SITE_URL, QUALITY_BAR } from "@/lib/site";
-
-export const revalidate = 3600;
 
 /**
  * The catalog as normalised JSON.
@@ -11,11 +10,18 @@ export const revalidate = 3600;
  * licence, platform, Steam Deck and quality-bar fields across every title —
  * they are a dataset that exists nowhere else in one shape. Open by design.
  */
-export async function GET() {
+/*
+ * Cached, not rebuilt per request — see llms.txt for the same regression.
+ * This route was prerendered before the migration removed its revalidate.
+ */
+async function buildCatalogJson() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("catalog");
+
   const [games, tiers] = await Promise.all([listGames(), gameAccessTiers()]);
 
-  return Response.json(
-    {
+  return {
       source: `PlayBound (${SITE_URL})`,
       documentation: `${SITE_URL}/llms.txt`,
       standard: {
@@ -64,12 +70,14 @@ export async function GET() {
         url: `${SITE_URL}/collections/${c.slug}`,
         games: c.gameSlugs,
       })),
+  };
+}
+
+export async function GET() {
+  return Response.json(await buildCatalogJson(), {
+    headers: {
+      "cache-control": "public, max-age=3600, s-maxage=3600",
+      "access-control-allow-origin": "*",
     },
-    {
-      headers: {
-        "cache-control": "public, max-age=3600, s-maxage=3600",
-        "access-control-allow-origin": "*",
-      },
-    }
-  );
+  });
 }

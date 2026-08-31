@@ -2,8 +2,6 @@ import { listGames } from "@/lib/catalog";
 import { listServersForGame } from "@/lib/servers/registry";
 import { SITE_URL } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
-
 type GameServerSummary = {
   slug: string;
   title: string;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getGame, listAllGames } from "@/lib/catalog";
@@ -12,6 +13,9 @@ export default async function NewEditionPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { slug } = await params;
   const [game, games] = await Promise.all([
     getGame(slug, { includeUnpublished: true }),

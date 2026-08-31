@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/db";
+import { cacheLife, cacheTag } from "next/cache";
 import WeeklyIssueModel from "@/lib/models/WeeklyIssue";
 import NewsletterEmailTemplate from "@/lib/models/NewsletterEmailTemplate";
 import type { NewsletterEmailDraft } from "@/lib/newsletterEmail";
@@ -70,7 +71,31 @@ async function mongoHasIssues(): Promise<boolean> {
 export async function listWeeklyIssues(opts?: {
   includeUnpublished?: boolean;
 }): Promise<WeeklyIssue[]> {
-  const includeUnpublished = Boolean(opts?.includeUnpublished);
+  // Drafts are admin-only and must never be served from a shared cache entry,
+  // the same rule listMods follows for unpublished mods.
+  if (opts?.includeUnpublished) return listWeeklyIssuesUncached(true);
+  return listPublishedWeeklyIssues();
+}
+
+/**
+ * The public list, behind a cache boundary.
+ *
+ * mongoose reads the clock inside dbConnect, and Cache Components will not
+ * allow that during a prerender unless the work sits behind "use cache" — so
+ * without this /weekly and /weekly/[slug] cannot be built at all.
+ *
+ * Tagged rather than left to expire: the tag is new, because this loader was
+ * previously uncached across requests and the admin routes had nothing to
+ * invalidate. They drop it now, so publishing an issue still shows at once.
+ */
+async function listPublishedWeeklyIssues(): Promise<WeeklyIssue[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("weekly");
+  return listWeeklyIssuesUncached(false);
+}
+
+async function listWeeklyIssuesUncached(includeUnpublished: boolean): Promise<WeeklyIssue[]> {
   try {
     if (await mongoHasIssues()) {
       const filter: Record<string, unknown> = {};

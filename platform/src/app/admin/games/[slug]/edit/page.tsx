@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { listDevelopers } from "@/lib/developers";
@@ -17,6 +18,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function AdminEditGamePage({ params }: { params: Promise<{ slug: string }> }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { slug } = await params;
   const game = await getGame(slug, { includeUnpublished: true });
   if (!game) notFound();

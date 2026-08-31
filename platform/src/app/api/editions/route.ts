@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { zodFieldError } from "@/lib/zodFieldError";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
@@ -22,6 +23,8 @@ export async function GET(req: Request) {
     const editions = await searchEditions(q);
     return NextResponse.json({ editions });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("Search editions error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

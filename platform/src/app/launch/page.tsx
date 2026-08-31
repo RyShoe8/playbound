@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getGame } from "@/lib/catalog";
 import { pageMetadata } from "@/lib/seo";
@@ -32,6 +33,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function LaunchPage({ searchParams }: Props) {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const sp = await searchParams;
   const gameSlug = sp.game || sp.slug;
   if (!gameSlug) {

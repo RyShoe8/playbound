@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
@@ -12,6 +13,9 @@ import { LocalTime } from "@/components/LocalTime";
 export const metadata: Metadata = { title: "Game Submissions" };
 
 export default async function AdminSubmissionsPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") redirect("/");
 

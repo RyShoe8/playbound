@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Newspaper, Server } from "lucide-react";
 import { getGame, listGames, listGamesNewestFirst, mostPopularGames } from "@/lib/catalog";
@@ -56,6 +57,22 @@ async function loadServerPreviews(): Promise<HomeServerPreview[]> {
 }
 
 async function HomeLiveServersSection() {
+  /*
+   * Request-time by declaration, inside the Suspense boundary below.
+   *
+   * This is live data — who is on which server right now — so prerendering it
+   * would bake a snapshot into the static shell and serve it until the next
+   * revalidation. connection() stops the prerender here, which is exactly the
+   * split Partial Prerendering is for: the rest of the homepage is static HTML
+   * and this one section streams in per request.
+   *
+   * It also ends a game of whack-a-mole. The server stack reads the clock in
+   * several places for its own reasons — a fetch timestamp in the registry, a
+   * TTL check in the geo lookup, and more below that — and Cache Components
+   * rejects every one of them during a prerender. Declaring the boundary is
+   * one fix; chasing the clock reads is one fix per provider.
+   */
+  await connection();
   const serverPreviews = await loadServerPreviews();
   return <HomeServerPreviews rows={serverPreviews} />;
 }
@@ -96,7 +113,6 @@ function HomeLiveServersFallback() {
  * ISR, matched to the live-activity window — see developers/page.tsx for the
  * reasoning. Admin writes still land immediately via revalidateTag("catalog").
  */
-export const revalidate = 900;
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },

@@ -153,11 +153,22 @@ export function TelemetryProvider({
 
   return (
     <>
-      <TelemetryScripts enabled={gaEnabled} />
+      {/*
+        Each of these reads the pathname or the session while rendering, which
+        Cache Components counts as uncached data. PageViewTracker was already
+        boundaried for useSearchParams; the other two need it for the same
+        reason. All three render nothing, so the fallback is null and the
+        static shell is unaffected.
+      */}
+      <Suspense fallback={null}>
+        <TelemetryScripts enabled={gaEnabled} />
+      </Suspense>
       <Suspense fallback={null}>
         <PageViewTracker />
       </Suspense>
-      <IdentifyFromSession />
+      <Suspense fallback={null}>
+        <IdentifyFromSession />
+      </Suspense>
       {children}
     </>
   );

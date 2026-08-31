@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listWeeklyIssuesAdmin } from "@/lib/weekly";
@@ -7,6 +8,9 @@ import { getGame } from "@/lib/catalog";
 export const metadata: Metadata = { title: "Admin · Weekly" };
 
 export default async function AdminWeeklyPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const issues = await listWeeklyIssuesAdmin();
   const titles = new Map<string, string>();
   await Promise.all(

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllCollections } from "@/lib/collections";
@@ -7,6 +8,9 @@ import { listGames } from "@/lib/catalog";
 export const metadata: Metadata = { title: "Admin · Collections" };
 
 export default async function AdminCollectionsPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const [collections, games] = await Promise.all([listAllCollections(), listGames()]);
   const known = new Set(games.map((g) => g.slug));
 

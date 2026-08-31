@@ -1,4 +1,5 @@
 import { PremiumSelect } from "@/components/ui/PremiumSelect";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -141,17 +142,43 @@ export default async function RootLayout({
             {/* Renders nothing; drives the presence heartbeat. Inside
                 SessionProvider because presence only exists for signed-in
                 users, and mounted once so only one session is ever opened. */}
-            <PresenceProvider />
+            {/*
+              Suspense around everything below that reads the pathname, the
+              router or the session while rendering.
+
+              Cache Components treats those as uncached data, because on a route
+              whose params are not known at build there is no pathname to read —
+              which made the whole shell block prerendering. The boundaries do
+              not cost the pages that matter anything: where the params are
+              known the content resolves during the build and lands in the
+              static HTML, nav links included. Only genuinely dynamic routes
+              fall back and stream.
+            */}
+            <Suspense fallback={null}>
+              <PresenceProvider />
+            </Suspense>
             <PartySyncProvider />
             <PopoutDetector />
             <CompatibilityShell accessTiers={accessTiers}>
-              <div className="shell-sidebar"><Sidebar /></div>
+              <div className="shell-sidebar">
+                <Suspense fallback={null}>
+                  <Sidebar />
+                </Suspense>
+              </div>
               <div className="shell-main flex min-h-screen min-w-0 max-w-full flex-col pb-16 lg:pb-0 lg:pl-60">
-                <div className="shell-topbar w-full max-w-full"><TopBar /></div>
+                <div className="shell-topbar w-full max-w-full">
+                  <Suspense fallback={null}>
+                    <TopBar />
+                  </Suspense>
+                </div>
                 <main className="flex-1 min-w-0 max-w-full">{children}</main>
                 <div className="shell-footer w-full max-w-full"><Footer /></div>
               </div>
-              <div className="shell-mobilenav w-full max-w-full"><MobileNav /></div>
+              <div className="shell-mobilenav w-full max-w-full">
+                <Suspense fallback={null}>
+                  <MobileNav />
+                </Suspense>
+              </div>
             </CompatibilityShell>
           </TelemetryProvider>
         </SessionProvider>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Bug, CalendarDays, Download, Gamepad2, Inbox, Plus, Shield, Users } from "lucide-react";
 import dbConnect from "@/lib/db";
@@ -106,6 +107,9 @@ function loadDashboardKpis() {
 }
 
 export default async function AdminPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const [kpis, games, brokenModCount] = await Promise.all([
     loadDashboardKpis(),
     listAllGames(),

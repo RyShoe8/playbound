@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { KeyRound, LogIn } from "lucide-react";
@@ -16,6 +17,10 @@ export default async function LauncherAuthPage({
 }: {
   searchParams: Promise<{ from?: string }>;
 }) {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const sp = await searchParams;
   const fromApp = sp.from === "app";
   const session = await getServerSession(authOptions);
