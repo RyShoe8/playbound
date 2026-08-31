@@ -33,14 +33,16 @@ import { absoluteUrl } from "@/lib/site";
  * without it Next renders per request and serves `private, no-store`, which is
  * what these 59 pages were doing despite reaching no request-time API.
  *
- * The slugs are the adapter keys — a static module, no database — and the page
- * 404s for anything outside them, so they are worth listing: every one is
- * prerendered at build rather than on first request.
+ * Empty rather than the adapter keys. Listing them looked right — they are a
+ * static module and the page 404s outside them — but MULTIPLAYER_ADAPTERS has
+ * entries whose game is not published, and those call notFound() during the
+ * build rather than at request time. dynamicParams defaults to true, so every
+ * slug still renders on first request and is cached after.
  */
 export const revalidate = 900;
 
-export function generateStaticParams() {
-  return Object.keys(MULTIPLAYER_ADAPTERS).map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({
