@@ -102,9 +102,14 @@ export function CatalogStatsCard({
    *
    * The homepage is served from the CDN, so a count computed during render is
    * frozen — create a public party, load the homepage, and it still reads 0
-   * until something revalidates. Partial Prerendering is not enabled, so a
-   * request-time hole would force the entire route dynamic and cost the page
-   * its cache. Fetching here keeps the page cached and the number live.
+   * until something revalidates. Fetching here keeps the page cached and the
+   * number live.
+   *
+   * This used to say a request-time hole would force the whole route dynamic,
+   * which was true before Cache Components. It is not now: the homepage is a
+   * partial prerender and a Suspense boundary would stream just this number.
+   * The client fetch is kept because it also refreshes between revalidations,
+   * which a streamed server value would not.
    *
    * Starts from the server-rendered value so there is no flash of 0, and a
    * failed fetch simply leaves it in place.
