@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-import { listGames, collections } from "@/lib/catalog";
+import { listGames } from "@/lib/catalog";
+import { listCollections } from "@/lib/collections";
 import { listAllPublicEditions } from "@/lib/editions";
 import { listDevelopers } from "@/lib/developers";
 import { listMods } from "@/lib/mods";
@@ -19,13 +20,23 @@ import { lastMod, newestUpdate } from "@/lib/sitemapDates";
  * no standalone value that would compete with the game page itself.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [games, mods, weekly, editions, gear, events] = await Promise.all([
+  const [games, mods, weekly, editions, gear, events, collections] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
     listWeeklyIssues(),
     listAllPublicEditions(),
     listPublishedGear(),
     listPublicEvents({ limit: 100, includePast: false }),
+    /*
+     * The managed list, not the static seed.
+     *
+     * This read `collections` from src/lib/data, which is stale relative to
+     * the database — it advertised 13 collections while /collections, which
+     * reads listCollections(), links 8. The extra five were reachable but
+     * unlinked: orphans submitted to Google that nothing on the site points
+     * at. The database is the source of truth, so the sitemap reads it.
+     */
+    listCollections(),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
