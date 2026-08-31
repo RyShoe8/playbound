@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import { unstable_rethrow } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { userFromLauncherBearer } from "@/lib/library";
 
@@ -13,7 +14,9 @@ export async function viewerCanSeeTesting(): Promise<boolean> {
   try {
     const session = await getServerSession(authOptions);
     return canAccessTesting(session?.user);
-  } catch {
+  } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     return false;
   }
 }
@@ -23,7 +26,9 @@ export async function viewerIsAdmin(): Promise<boolean> {
   try {
     const session = await getServerSession(authOptions);
     return session?.user?.role === "admin";
-  } catch {
+  } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     return false;
   }
 }

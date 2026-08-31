@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { assertPublicHttpUrl } from "@/lib/pageMeta";
@@ -90,6 +91,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: "Epic product not found" }, { status: 404 });
   } catch (error) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(error);
     console.error("Epic Scrape Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

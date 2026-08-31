@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
@@ -66,6 +67,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, id: submission._id }, { status: 201 });
   } catch (error) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { z } from "zod";
@@ -166,6 +167,8 @@ export async function GET(_req: Request, ctx: Ctx) {
       },
     });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("Event detail error:", err);
     return NextResponse.json({ error: "Failed to load event" }, { status: 500 });
   }

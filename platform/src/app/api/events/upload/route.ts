@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -58,6 +59,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: blob.url });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("Event cover upload error:", err);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }

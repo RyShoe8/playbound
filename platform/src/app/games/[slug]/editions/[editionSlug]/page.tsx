@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, unstable_rethrow } from "next/navigation";
 import {
   BookOpen,
   ChevronDown,
@@ -861,6 +861,8 @@ async function ModsTab({
       installedModSlugs = new Set(rows.map((r) => String(r.modSlug)));
     }
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("Edition mods tab library load failed:", err);
   }
 
