@@ -11,6 +11,7 @@ import { listPublishedGear } from "@/lib/gear";
 import { listPublicEvents } from "@/lib/events/service";
 import { MULTIPLAYER_ADAPTERS } from "@/lib/multiplayer/adapters";
 import { SITE_URL } from "@/lib/site";
+import { cacheLife, cacheTag } from "next/cache";
 import { lastMod, newestUpdate } from "@/lib/sitemapDates";
 
 /**
@@ -19,7 +20,21 @@ import { lastMod, newestUpdate } from "@/lib/sitemapDates";
  * Deliberately excludes /games/[slug]/play — it is a launch interstitial with
  * no standalone value that would compete with the game page itself.
  */
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+/*
+ * Cached, not rebuilt per request.
+ *
+ * This carried `export const revalidate = 3600` before Cache Components. The
+ * migration removed it, and without a replacement the route turned dynamic —
+ * meaning every crawler hit re-read the games, mods, editions, gear, events,
+ * collections and developers to assemble 846 URLs from scratch.
+ *
+ * Tagged "catalog" so a game edit still refreshes it rather than waiting out
+ * the window.
+ */
+async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("catalog");
   const [games, mods, weekly, editions, gear, events, collections] = await Promise.all([
     listGames(),
     listMods({ view: "card" }),
@@ -192,4 +207,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ...lastMod(newestUpdate(gameDatesByDeveloper.get(d.slug) || [])),
       })),
   ];
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return buildSitemap();
 }

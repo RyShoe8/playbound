@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { authOptions } from "@/lib/auth";
@@ -11,6 +12,9 @@ import { EditEventForm } from "./EditEventForm";
 type Props = { params: Promise<{ id: string }> };
 
 export default async function EditEventPage({ params }: Props) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") redirect("/events");
 

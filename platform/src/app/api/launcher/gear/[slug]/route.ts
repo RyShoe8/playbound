@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
 import GearRecommendation from "@/lib/models/GearRecommendation";
@@ -112,6 +113,8 @@ export async function GET(
       }
     );
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("launcher gear detail error:", err);
     return NextResponse.json({ error: "Failed to load gear detail" }, { status: 500 });
   }

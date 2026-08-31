@@ -8,8 +8,6 @@ import {
   statSnapshot,
 } from "@/lib/saves/r2";
 
-export const runtime = "nodejs";
-
 /**
  * Mint a presigned URL for pulling one snapshot back down.
  *

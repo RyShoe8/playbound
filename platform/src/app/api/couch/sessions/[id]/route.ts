@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { ensureCouchStore } from "@/lib/couch/ensureStore";
 import {
   assertHost,
@@ -28,6 +29,8 @@ export async function GET(req: Request, context: RouteContext) {
     }
     return NextResponse.json(publicCouchSnapshot(session));
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("GET /api/couch/sessions/[id] failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
@@ -79,6 +82,8 @@ export async function DELETE(req: Request, context: RouteContext) {
     await endCouchSession(session);
     return NextResponse.json({ ok: true });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("DELETE /api/couch/sessions/[id] failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { BookOpen, CheckCircle2, HelpCircle, MessagesSquare, Star, Users } from "lucide-react";
 import dbConnect from "@/lib/db";
@@ -75,6 +76,10 @@ const kindIcon = { review: Star, guide: BookOpen, discussion: MessagesSquare };
 const kindLabel = { review: "reviewed", guide: "published a guide for", discussion: "started a discussion on" };
 
 export default async function CommunityPage() {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const includeTesting = await viewerCanSeeTesting();
   const activity = await getRecentActivity();
   const rows = await Promise.all(

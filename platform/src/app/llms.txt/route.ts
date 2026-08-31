@@ -1,4 +1,5 @@
 import { listGames, collections } from "@/lib/catalog";
+import { cacheLife, cacheTag } from "next/cache";
 import { listDevelopers } from "@/lib/developers";
 import { alternativePages } from "@/lib/data/alternatives";
 import { comparisons } from "@/lib/data/comparisons";
@@ -6,15 +7,26 @@ import { listWeeklyIssues } from "@/lib/weekly";
 import { SITE_URL, SITE_NAME, QUALITY_BAR } from "@/lib/site";
 import { sizeLabel } from "@/lib/seo";
 
-export const revalidate = 3600;
-
 /**
  * Machine-readable catalog summary for AI crawlers and agents.
  *
  * Generated from the live catalog so it never drifts. Adoption of the llms.txt
  * convention is not universal, but the cost is one small generated file.
  */
-export async function GET() {
+/*
+ * Cached, not regenerated per request.
+ *
+ * This carried `export const revalidate = 3600` before Cache Components, which
+ * the migration removed — and without a replacement the route went from
+ * prerendered to dynamic, rebuilding the whole catalog summary on every hit.
+ * A GET export cannot itself carry the directive, so the work moves into a
+ * cached helper.
+ */
+async function buildLlmsTxt(): Promise<string> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("catalog");
+
   const games = await listGames();
   const issues = await listWeeklyIssues();
   const lines: string[] = [];
@@ -146,7 +158,11 @@ export async function GET() {
   );
   lines.push("");
 
-  return new Response(lines.join("\n"), {
+  return lines.join("\n");
+}
+
+export async function GET() {
+  return new Response(await buildLlmsTxt(), {
     headers: {
       "content-type": "text/plain; charset=utf-8",
       "cache-control": "public, max-age=3600, s-maxage=3600",

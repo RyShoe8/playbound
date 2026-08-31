@@ -25,7 +25,6 @@ import { JsonLd, graph, itemListSchema, breadcrumbSchema } from "@/components/Js
  * Admin edits still land immediately: the writes call revalidateTag("catalog")
  * and revalidateTag("developers"), which drops the route cache too.
  */
-export const revalidate = 900;
 
 /*
  * Required for ISR on a dynamic segment. Without a generateStaticParams

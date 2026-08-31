@@ -10,7 +10,6 @@ import { countLookingToParty } from "@/lib/playTogether/lookingToParty";
  *
  * Public and unauthenticated — a single aggregate that names nobody.
  */
-export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

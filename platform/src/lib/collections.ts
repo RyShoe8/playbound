@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 import dbConnect from "@/lib/db";
 import CatalogCollection from "@/lib/models/CatalogCollection";
 import { collections as seedCollections } from "@/lib/data/collections";
@@ -24,7 +24,24 @@ function toCollection(doc: LeanCollection): Collection {
  * environment (or a failed connection) still renders the curated lists rather
  * than an empty Collections page.
  */
-const loadPublished = cache(async (): Promise<Collection[]> => {
+async function loadPublished(): Promise<Collection[]> {
+  /*
+   * A cache boundary, not just per-request memoization.
+   *
+   * Cache Components refuses to read the clock while prerendering unless the
+   * work sits behind one, and mongoose reads it internally — dbConnect checks
+   * connection.readyState — so this threw during the build of every
+   * /collections/[slug] page. React's cache() dedupes within one request and
+   * is not such a boundary; "use cache" is.
+   *
+   * Tagged so admin edits still land immediately rather than waiting out the
+   * window. That tag is new: this loader was previously uncached across
+   * requests, so the collections admin routes had nothing to invalidate and
+   * did not try.
+   */
+  "use cache";
+  cacheLife("hours");
+  cacheTag("collections");
   try {
     await dbConnect();
     const docs = await CatalogCollection.find({ published: true })
@@ -35,7 +52,7 @@ const loadPublished = cache(async (): Promise<Collection[]> => {
     console.error("[collections] read failed, falling back to seed:", err);
   }
   return seedCollections;
-});
+}
 
 export async function listCollections(): Promise<Collection[]> {
   return loadPublished();

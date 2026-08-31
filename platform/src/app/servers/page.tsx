@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { getServerSession } from "next-auth/next";
 import { Server } from "lucide-react";
@@ -18,6 +19,10 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function ServersPage() {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const session = await getServerSession(authOptions);
   let installedGameSlugs: string[] = [];
   let installedModSlugs: string[] = [];

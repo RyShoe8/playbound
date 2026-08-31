@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import dbConnect from "@/lib/db";
@@ -7,6 +8,9 @@ import Gear from "@/lib/models/Gear";
 export const metadata: Metadata = { title: "Admin · Gear" };
 
 export default async function AdminGearPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   await dbConnect();
   
   // Sort by createdAt descending

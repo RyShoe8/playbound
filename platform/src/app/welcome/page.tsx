@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { suggestUsername } from "@/lib/oauthUser";
@@ -12,6 +13,10 @@ export default async function WelcomePage({
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
 

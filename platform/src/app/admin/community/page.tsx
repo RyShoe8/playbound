@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import Link from "next/link";
 import dbConnect from "@/lib/db";
 import ContentReport from "@/lib/models/ContentReport";
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminCommunityPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   await dbConnect();
   const [openReports, removedTopics, lockedTopics, suspended, audit] = await Promise.all([
     ContentReport.find({ status: "open" }).sort({ createdAt: -1 }).limit(50).lean(),

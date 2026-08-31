@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import dbConnect from "@/lib/db";
 import CatalogGame from "@/lib/models/CatalogGame";
 import FreeOffer from "@/lib/models/FreeOffer";
@@ -17,6 +18,9 @@ import Link from "next/link";
 export const metadata: Metadata = { title: "eCommerce | Admin" };
 
 export default async function AdminEcommercePage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   await dbConnect();
   await ensureCommerceStores();
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { getFriendsUserId } from "@/lib/friendsAuth";
 import { listLookingToParty } from "@/lib/playTogether/lookingToParty";
 
@@ -9,7 +10,6 @@ import { listLookingToParty } from "@/lib/playTogether/lookingToParty";
  * Signed-in only. Unlike the bare count this names people and exposes their
  * library, which is not something to hand to anonymous callers.
  */
-export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const userId = await getFriendsUserId(req);
@@ -22,6 +22,8 @@ export async function GET(req: Request) {
     const players = await listLookingToParty(limit);
     return NextResponse.json({ players }, { headers: { "cache-control": "no-store" } });
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("GET /api/presence/lfg/list failed:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

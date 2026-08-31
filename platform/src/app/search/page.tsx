@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { FolderHeart, Hammer, Search, SlidersHorizontal } from "lucide-react";
@@ -37,6 +38,10 @@ export default async function SearchPage({
     price?: string;
   }>;
 }) {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const params = await searchParams;
   const q = params.q ?? "";
 

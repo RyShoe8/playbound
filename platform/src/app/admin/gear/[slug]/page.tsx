@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
@@ -7,6 +8,9 @@ import { GearEditorForm } from "@/components/admin/GearEditorForm";
 export const metadata: Metadata = { title: "Admin · Edit Gear" };
 
 export default async function EditGearPage({ params }: { params: Promise<{ slug: string }> }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { slug } = await params;
   await dbConnect();
   const gear = await Gear.findOne({ slug }).lean();

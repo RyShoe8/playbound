@@ -12,7 +12,6 @@ import { absoluteUrl } from "@/lib/site";
  * ISR, matched to the live-activity window — see developers/page.tsx for the
  * reasoning. Admin writes still land immediately via revalidateTag("catalog").
  */
-export const revalidate = 900;
 
 export const metadata = pageMetadata({
   title: "PlayBound Weekly — Every Pick, Archived",

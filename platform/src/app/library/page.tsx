@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
@@ -34,6 +35,10 @@ export const metadata: Metadata = {
 };
 
 export default async function LibraryPage() {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {

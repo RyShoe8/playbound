@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Gear from "@/lib/models/Gear";
 import { absoluteMediaUrl } from "@/lib/launcherInstall";
@@ -48,6 +49,8 @@ export async function GET(req: Request) {
       }
     );
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("launcher gear error:", err);
     return NextResponse.json({ error: "Failed to load gear" }, { status: 500 });
   }

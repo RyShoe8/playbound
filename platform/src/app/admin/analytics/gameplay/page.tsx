@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import dbConnect from "@/lib/db";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
 import User from "@/lib/models/User";
@@ -322,6 +323,9 @@ export default async function GameplayAnalyticsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const sp = await searchParams;
   let data: Awaited<ReturnType<typeof loadGameplayAnalytics>> | null = null;
   let loadError = false;

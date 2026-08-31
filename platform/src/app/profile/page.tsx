@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { BookOpen, LogIn, MessagesSquare, Star } from "lucide-react";
@@ -24,6 +25,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
+  // Per-request by nature: live data, the signed-in viewer, or both.
+  // Reads the database before it reads anything request-scoped, which
+  // Cache Components will not allow during a prerender.
+  await connection();
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {

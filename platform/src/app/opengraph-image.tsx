@@ -29,7 +29,6 @@ export const contentType = "image/png";
  * app hits. At build time the newest game would freeze until the next deploy,
  * and the cover fetch below would have to reach a site that is not up yet.
  */
-export const revalidate = 3600;
 
 function PlayMark({ box }: { box: number }) {
   const icon = Math.round(box * 0.44);
@@ -266,6 +265,21 @@ function heroCard(game: {
   );
 }
 
+/*
+ * Rendered per request, deliberately.
+ *
+ * This carried `export const revalidate = 3600` before Cache Components. The
+ * obvious replacement — a "use cache" helper returning the PNG bytes, since a
+ * Response is not serializable — does not work: filling the cache with a
+ * Satori render times out the prerender (USE_CACHE_TIMEOUT), taking about
+ * fifty seconds before the build gives up.
+ *
+ * So the render stays uncached and this route is dynamic. The cost is bounded:
+ * newestGame() reads through the catalog's own cache, so the database is not
+ * touched per request and only the 1200x630 draw repeats. That is worse than
+ * the prerendered card this used to be, and it is the one place in this
+ * migration where the new model is a step back rather than forward.
+ */
 export default async function Image() {
   let content = brandedCard();
   try {
