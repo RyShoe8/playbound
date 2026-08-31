@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { listAllGames } from "@/lib/catalog";
 import { getWeeklyIssueAdmin } from "@/lib/weekly";
@@ -15,6 +16,9 @@ export default async function AdminEditWeeklyPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { slug } = await params;
   const issue = await getWeeklyIssueAdmin({ slug });
   if (!issue) notFound();

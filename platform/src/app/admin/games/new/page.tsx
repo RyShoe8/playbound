@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { listDevelopers } from "@/lib/developers";
 import { emptyGameDraft, slugifyTitle, type GamePayload } from "@/lib/gamePayload";
 import { listGames } from "@/lib/catalog";
@@ -14,6 +15,9 @@ export default async function AdminNewGamePage({
 }: {
   searchParams: Promise<{ fromSubmission?: string; import?: string }>;
 }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const { fromSubmission } = await searchParams;
   let initial: GamePayload = emptyGameDraft();
   initial.website = "https://example.com";

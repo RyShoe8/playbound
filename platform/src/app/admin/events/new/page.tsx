@@ -1,10 +1,14 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { listGames } from "@/lib/catalog";
 import { NewEventForm } from "./NewEventForm";
 
 export default async function NewEventPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") redirect("/events");
 

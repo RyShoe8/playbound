@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -9,6 +10,9 @@ import { serializeEvent } from "@/lib/events/serialize";
 import { AdminEventsTable } from "@/components/events/AdminEventsTable";
 
 export default async function AdminEventsPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") redirect("/");
 

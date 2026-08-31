@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { listGames } from "@/lib/catalog";
 import { CollectionEditorForm } from "@/components/admin/CollectionEditorForm";
 
 export const metadata: Metadata = { title: "Admin · New collection" };
 
 export default async function NewCollectionPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const games = await listGames();
 
   return (

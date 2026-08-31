@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import { listAllEditions } from "@/lib/editions";
@@ -10,6 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminAllEditionsPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const [editions, games] = await Promise.all([
     listAllEditions(true),
     listAllGames(),

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Activity } from "lucide-react";
@@ -19,6 +20,9 @@ export default async function AdminOpsPage({
 }: {
   searchParams: Promise<{ game?: string; area?: string; family?: string }>;
 }) {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   const params = await searchParams;
   const family: OpsFamily =
     params.family === "launcher" || params.family === "party" || params.family === "all"

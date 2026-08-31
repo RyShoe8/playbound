@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/db";
+import { connection } from "next/server";
 import GuidePost from "@/lib/models/GuidePost";
 import DiscussionTopic from "@/lib/models/DiscussionTopic";
 import TelemetryEvent from "@/lib/models/TelemetryEvent";
@@ -102,6 +103,9 @@ async function loadContentAnalytics() {
 }
 
 export default async function ContentAnalyticsPage() {
+  // Never prerendered — see the layout. Each segment prerenders
+  // independently, so the layout's opt-out does not cover this page.
+  await connection();
   let data: Awaited<ReturnType<typeof loadContentAnalytics>> | null = null;
   let loadError = false;
 
