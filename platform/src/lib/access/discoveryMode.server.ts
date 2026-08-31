@@ -7,6 +7,7 @@
  */
 
 import { cache } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -35,6 +36,8 @@ export const getDiscoveryMode = cache(async (): Promise<DiscoveryMode> => {
       .lean<{ preferences?: { discoveryMode?: string } }>();
     return parseDiscoveryMode(user?.preferences?.discoveryMode);
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("[access] discovery mode read failed:", err);
     return DEFAULT_DISCOVERY_MODE;
   }

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, unstable_rethrow } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { ChevronDown, Film, Gamepad2, Image as ImageIcon, Newspaper, Play, Sparkles, Trophy, Wrench } from "lucide-react";
 import { authOptions } from "@/lib/auth";
@@ -704,6 +704,8 @@ async function ModsTab({ game }: { game: Game }) {
       installedModSlugs = new Set(rows.map((r) => String(r.modSlug)));
     }
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("Mods tab library load failed:", err);
   }
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -183,6 +184,8 @@ export async function POST(req: Request) {
     });
     return withCors(req, NextResponse.json({ ok: true }));
   } catch (err) {
+    // Let Next's own control-flow errors through — see unstable_rethrow.
+    unstable_rethrow(err);
     console.error("[telemetry] save failed", err);
     // Fail-soft to clients — do not leak internals.
     return withCors(req, NextResponse.json({ ok: true }));
